@@ -4,15 +4,11 @@ import { useCallback, useEffect, useState } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { 
   User, 
-  Mail, 
-  Phone, 
   MapPin, 
-  Calendar,
-  Save,
-  Loader2,
-  CheckCircle,
-} from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@crm-eco/ui/components/card';
+  FloppyDisk,
+  CircleNotch,
+} from '@phosphor-icons/react';
+import { Card, CardContent, CardHeader, CardTitle } from '@crm-eco/ui/components/card';
 import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
 import { Label } from '@crm-eco/ui/components/label';
@@ -25,6 +21,8 @@ import {
 } from '@crm-eco/ui/components/select';
 import { toast } from 'sonner';
 import { updateMemberProfile } from './actions';
+import { PageHeader } from '@/components/PageHeader';
+import { Bezel } from '@/components/ui/Bezel';
 
 interface MemberProfile {
   id: string;
@@ -140,7 +138,7 @@ export default function ProfilePage() {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <CircleNotch weight="light" className="h-8 w-8 animate-spin text-[var(--mp-teal)]" />
       </div>
     );
   }
@@ -155,48 +153,48 @@ export default function ProfilePage() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">My Profile</h1>
-          <p className="text-slate-500">Manage your personal information</p>
-        </div>
-        <Button onClick={handleSave} disabled={saving} className="gap-2">
-          {saving ? (
-            <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-          ) : (
-            <Save className="h-4 w-4" aria-hidden />
-          )}
-          Save Changes
-        </Button>
-      </div>
+      <PageHeader
+        title="My Profile"
+        description="Manage your personal information"
+        actions={
+          <Button onClick={handleSave} disabled={saving} className="gap-2">
+            {saving ? (
+              <CircleNotch weight="light" className="h-4 w-4 animate-spin" aria-hidden />
+            ) : (
+              <FloppyDisk weight="light" className="h-4 w-4" aria-hidden />
+            )}
+            Save Changes
+          </Button>
+        }
+      />
 
       {/* Member ID Card */}
-      <Card className="bg-gradient-to-r from-blue-600 to-blue-700 text-white">
-        <CardContent className="py-6">
+      <Bezel variant="hero">
+        <div className="px-6 py-6 md:px-7">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-blue-100 text-sm">Member ID</p>
-              <p className="text-2xl font-bold font-mono">{profile.id}</p>
+              <p className="mp-kicker mp-kicker-light">Member ID</p>
+              <p className="font-mono text-2xl font-bold tracking-[-0.02em]">{profile.id}</p>
             </div>
             <div className="text-right">
               <p className="text-lg font-semibold">
                 {profile.first_name} {profile.last_name}
               </p>
               {profile.date_of_birth && (
-                <p className="text-blue-100 text-sm">
+                <p className="text-sm text-white/70">
                   Age: {calculateAge(profile.date_of_birth)}
                 </p>
               )}
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </Bezel>
 
       {/* Personal Information */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <User className="h-5 w-5" aria-hidden />
+            <User weight="light" className="h-5 w-5" aria-hidden />
             Personal Information
           </CardTitle>
         </CardHeader>
@@ -270,7 +268,7 @@ export default function ProfilePage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <MapPin className="h-5 w-5" aria-hidden />
+            <MapPin weight="light" className="h-5 w-5" aria-hidden />
             Address
           </CardTitle>
         </CardHeader>

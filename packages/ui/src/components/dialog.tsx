@@ -42,8 +42,8 @@ const DialogContent = React.forwardRef<
         'fixed left-[50%] top-[50%] z-50 grid translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background shadow-lg duration-200',
         // Mobile: full width with small margin, scrollable if content overflows
         'w-[calc(100%-2rem)] max-h-[calc(100vh-4rem)] overflow-y-auto',
-        // Desktop: constrained max-width
-        'sm:w-full sm:max-w-lg sm:max-h-[85vh]',
+        // Desktop: power-user default (override down with sm:max-w-md/lg for confirms)
+        'sm:w-full sm:max-w-2xl sm:max-h-[85vh]',
         // Padding - slightly less on mobile
         'p-4 sm:p-6',
         // Animations

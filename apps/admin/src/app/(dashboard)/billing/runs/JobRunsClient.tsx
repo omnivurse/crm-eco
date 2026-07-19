@@ -1,8 +1,8 @@
 'use client';
 
+import { CaretDown, CaretRight, Play, WarningCircle } from '@phosphor-icons/react';
 import { useState, useMemo, Fragment } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@crm-eco/ui';
-import { Play, ChevronDown, ChevronRight, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { PageHeader } from '@/components/ui/PageHeader';
 
@@ -130,7 +130,7 @@ export function JobRunsClient({ jobRuns }: { jobRuns: JobRun[] }) {
       <PageHeader
         title="Billing Job Runs"
         description="Audit log for billing and commission processing runs"
-        icon={<Play className="w-6 h-6" />}
+        icon={<Play weight="light" className="w-6 h-6" />}
         gradient="from-amber-500 to-orange-400"
         backHref="/billing"
         backLabel="Back to Billing"
@@ -191,7 +191,7 @@ export function JobRunsClient({ jobRuns }: { jobRuns: JobRun[] }) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
-            <Play className="h-5 w-5" />
+            <Play weight="light" className="h-5 w-5" />
             Job Runs
             <span className="text-sm font-normal text-slate-500">
               ({filteredRuns.length} {filteredRuns.length === 1 ? 'run' : 'runs'})
@@ -230,9 +230,9 @@ export function JobRunsClient({ jobRuns }: { jobRuns: JobRun[] }) {
                         >
                           <td className="py-2 pr-2 text-slate-400">
                             {isExpanded ? (
-                              <ChevronDown className="h-4 w-4" />
+                              <CaretDown weight="light" className="h-4 w-4" />
                             ) : (
-                              <ChevronRight className="h-4 w-4" />
+                              <CaretRight weight="light" className="h-4 w-4" />
                             )}
                           </td>
                           <td className="py-2 pr-4">
@@ -258,7 +258,7 @@ export function JobRunsClient({ jobRuns }: { jobRuns: JobRun[] }) {
                           <td className="py-2">
                             {cbTripped ? (
                               <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-medium">
-                                <AlertCircle className="h-3 w-3" />
+                                <WarningCircle weight="light" className="h-3 w-3" />
                                 Tripped
                               </span>
                             ) : (
@@ -336,7 +336,7 @@ export function JobRunsClient({ jobRuns }: { jobRuns: JobRun[] }) {
             </div>
           ) : (
             <div className="text-center py-8 text-slate-500">
-              <Play className="h-8 w-8 mx-auto mb-2 text-slate-300" />
+              <Play weight="light" className="h-8 w-8 mx-auto mb-2 text-slate-300" />
               {jobRuns.length === 0
                 ? 'No job runs recorded yet'
                 : 'No runs match the current filters'}

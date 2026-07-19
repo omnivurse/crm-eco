@@ -7,17 +7,21 @@ export default function CrmUpdatePasswordLayout({
 }) {
   return (
     <AuthSplitLayout
+      variant="crm"
       hero={
         <AuthHeroPanel
+          variant="crm"
+          badge="CRM Core"
+          showQuotes={false}
           headline={
             <>
-              <span className="block">Empowering</span>
-              <span className="block bg-gradient-to-r from-[#67e8f9] to-[#a5f3fc] bg-clip-text text-transparent">
-                Healthier Lives
+              <span className="block">Choose a</span>
+              <span className="block bg-gradient-to-r from-cyan-300 to-emerald-300 bg-clip-text text-transparent">
+                new password
               </span>
             </>
           }
-          subtitle="Building stronger communities through shared health and compassionate care."
+          subtitle="Set a strong password to protect your CRM workspace."
         />
       }
     >

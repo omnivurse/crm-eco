@@ -1,7 +1,7 @@
 'use client';
 
+import { Buildings, CreditCard, DotsThreeVertical, Star, Trash } from '@phosphor-icons/react';
 import { Card, CardContent, Button, Badge } from '@crm-eco/ui';
-import { CreditCard, Building2, Trash2, Star, MoreVertical } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -49,9 +49,9 @@ export function PaymentProfileCard({
               }`}
             >
               {isCard ? (
-                <CreditCard className="h-6 w-6 text-blue-600" />
+                <CreditCard weight="light" className="h-6 w-6 text-blue-600" />
               ) : (
-                <Building2 className="h-6 w-6 text-green-600" />
+                <Buildings weight="light" className="h-6 w-6 text-green-600" />
               )}
             </div>
             <div>
@@ -64,7 +64,7 @@ export function PaymentProfileCard({
                 </p>
                 {profile.isDefault && (
                   <Badge variant="default" className="text-xs">
-                    <Star className="h-3 w-3 mr-1" />
+                    <Star weight="light" className="h-3 w-3 mr-1" />
                     Default
                   </Badge>
                 )}
@@ -91,13 +91,13 @@ export function PaymentProfileCard({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" disabled={isProcessing}>
-                <MoreVertical className="h-4 w-4" />
+                <DotsThreeVertical weight="light" className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               {!profile.isDefault && onSetDefault && (
                 <DropdownMenuItem onClick={() => onSetDefault(profile.id)}>
-                  <Star className="h-4 w-4 mr-2" />
+                  <Star weight="light" className="h-4 w-4 mr-2" />
                   Set as Default
                 </DropdownMenuItem>
               )}
@@ -106,7 +106,7 @@ export function PaymentProfileCard({
                   onClick={() => onDelete(profile.id)}
                   className="text-red-600"
                 >
-                  <Trash2 className="h-4 w-4 mr-2" />
+                  <Trash weight="light" className="h-4 w-4 mr-2" />
                   Delete
                 </DropdownMenuItem>
               )}

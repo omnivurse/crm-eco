@@ -1,5 +1,6 @@
 'use client';
 
+import { ArrowClockwise, ArrowLeft, Calendar, CheckCircle, CurrencyDollar, FileText, Play, Users, Warning } from '@phosphor-icons/react';
 import { useState, useEffect } from 'react';
 import {
   Card,
@@ -14,17 +15,6 @@ import {
   Textarea,
   Progress,
 } from '@crm-eco/ui';
-import {
-  Users,
-  Calendar,
-  DollarSign,
-  RefreshCw,
-  ArrowLeft,
-  FileText,
-  CheckCircle,
-  AlertTriangle,
-  Play,
-} from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@crm-eco/lib/supabase/client';
@@ -309,7 +299,7 @@ export default function GenerateGroupInvoicePage() {
       <div className="flex items-center gap-4">
         <Link href="/invoices">
           <Button variant="ghost" size="icon">
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft weight="light" className="h-4 w-4" />
           </Button>
         </Link>
         <div>
@@ -331,7 +321,7 @@ export default function GenerateGroupInvoicePage() {
                 <div className="animate-pulse h-10 bg-slate-100 rounded" />
               ) : groups.length === 0 ? (
                 <div className="text-center py-8">
-                  <Users className="h-10 w-10 text-slate-200 mx-auto mb-2" />
+                  <Users weight="light" className="h-10 w-10 text-slate-200 mx-auto mb-2" />
                   <p className="text-muted-foreground">No invoice groups found</p>
                   <Link href="/invoices/groups">
                     <Button variant="outline" size="sm" className="mt-2">
@@ -468,7 +458,7 @@ export default function GenerateGroupInvoicePage() {
                   </div>
                   {isRetro && (
                     <Badge variant="outline" className="w-full justify-center">
-                      <AlertTriangle className="h-3 w-3 mr-1" />
+                      <Warning weight="light" className="h-3 w-3 mr-1" />
                       Retroactive Invoice
                     </Badge>
                   )}
@@ -499,7 +489,7 @@ export default function GenerateGroupInvoicePage() {
             <Card className="border-emerald-200 bg-emerald-50">
               <CardContent className="pt-6">
                 <div className="flex items-center gap-2 mb-4">
-                  <CheckCircle className="h-5 w-5 text-emerald-600" />
+                  <CheckCircle weight="light" className="h-5 w-5 text-emerald-600" />
                   <span className="font-medium text-emerald-900">Generation Complete</span>
                 </div>
                 <div className="space-y-2 text-sm">
@@ -539,12 +529,12 @@ export default function GenerateGroupInvoicePage() {
             >
               {generating ? (
                 <>
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  <ArrowClockwise weight="light" className="h-4 w-4 mr-2 animate-spin" />
                   Generating...
                 </>
               ) : (
                 <>
-                  <Play className="h-4 w-4 mr-2" />
+                  <Play weight="light" className="h-4 w-4 mr-2" />
                   Generate Invoices
                 </>
               )}

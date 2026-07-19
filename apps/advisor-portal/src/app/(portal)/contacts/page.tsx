@@ -5,7 +5,15 @@ import {
   resolveLeadsModuleId,
 } from '@crm-eco/lib';
 import Link from 'next/link';
-import { Users, Phone, Mail, ChevronRight, Search } from 'lucide-react';
+import {
+  Users,
+  Phone,
+  Envelope,
+  CaretRight,
+  MagnifyingGlass,
+} from '@phosphor-icons/react/dist/ssr';
+import { PageHeader } from '@/components/PageHeader';
+import { Bezel } from '@/components/ui/Bezel';
 
 export const dynamic = 'force-dynamic';
 
@@ -95,8 +103,8 @@ export default async function ContactsPage() {
 
     if (!advisorInfo?.advisor_id || !advisorInfo?.organization_id) {
         return (
-            <div className="flex items-center justify-center h-64">
-                <p className="text-gray-500">Unable to load contacts.</p>
+            <div className="flex h-64 items-center justify-center">
+                <p className="text-[var(--adv-slate)]">Unable to load contacts.</p>
             </div>
         );
     }
@@ -113,86 +121,95 @@ export default async function ContactsPage() {
 
     return (
         <div className="space-y-6">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Contacts</h1>
-                    <p className="text-gray-500 dark:text-gray-400 mt-1">
-                        {leads.length} leads, {members.length} members
-                    </p>
-                </div>
-            </div>
+            <PageHeader
+                kicker="Book of business"
+                title="Contacts"
+                description={`${leads.length} leads, ${members.length} members`}
+            />
 
-            {/* Search */}
             <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <MagnifyingGlass
+                    weight="light"
+                    className="absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-[var(--adv-slate)]"
+                    aria-hidden
+                />
                 <input
                     type="text"
                     placeholder="Search contacts..."
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-advisor-500"
+                    className="w-full rounded-[0.85rem] border border-[rgba(28,25,23,0.1)] bg-white py-2.5 pl-11 pr-4 text-[var(--adv-ink)] placeholder:text-[var(--adv-slate)]/60 focus:outline-none focus:ring-2 focus:ring-[var(--adv-teal)]/30"
                 />
             </div>
 
-            {/* Contacts List */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
-                {allContacts.length === 0 ? (
-                    <div className="p-12 text-center">
-                        <Users className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-                        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                            No contacts yet
-                        </h3>
-                        <p className="text-gray-500 dark:text-gray-400 max-w-sm mx-auto">
-                            Contacts assigned to you will appear here. Ask your administrator to assign leads or members.
-                        </p>
-                    </div>
-                ) : (
-                    <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                        {allContacts.map((contact) => (
-                            <Link
-                                key={`${contact.type}-${contact.id}`}
-                                href={`/contacts/${contact.type}/${contact.id}`}
-                                className="flex items-center gap-4 p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-                            >
-                                <div className="w-10 h-10 rounded-full bg-advisor-100 dark:bg-advisor-900/30 flex items-center justify-center flex-shrink-0">
-                                    <span className="text-advisor-700 dark:text-advisor-400 font-medium">
-                                        {contact.first_name?.charAt(0) || '?'}
-                                    </span>
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2">
-                                        <p className="font-medium text-gray-900 dark:text-white truncate">
-                                            {contact.first_name} {contact.last_name}
-                                        </p>
-                                        <span
-                                            className={`px-2 py-0.5 text-xs font-medium rounded-full ${contact.type === 'member'
-                                                ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                                                : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-                                                }`}
-                                        >
-                                            {contact.type}
+            <Bezel>
+                <div className="overflow-hidden">
+                    {allContacts.length === 0 ? (
+                        <div className="p-12 text-center">
+                            <Users
+                                weight="light"
+                                className="mx-auto mb-4 h-12 w-12 text-[var(--adv-slate)]/40"
+                                aria-hidden
+                            />
+                            <h3 className="adv-display mb-2 text-lg font-semibold tracking-[-0.02em] text-[var(--adv-ink)]">
+                                No contacts yet
+                            </h3>
+                            <p className="mx-auto max-w-sm text-[var(--adv-slate)]">
+                                Contacts assigned to you will appear here. Ask your administrator to assign leads or members.
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="divide-y divide-[rgba(28,25,23,0.06)]">
+                            {allContacts.map((contact) => (
+                                <Link
+                                    key={`${contact.type}-${contact.id}`}
+                                    href={`/contacts/${contact.type}/${contact.id}`}
+                                    className="flex items-center gap-4 p-4 transition-colors hover:bg-[rgba(11,109,133,0.04)]"
+                                >
+                                    <div className="grid h-10 w-10 shrink-0 place-items-center rounded-[0.85rem] bg-[var(--adv-sage-soft)]">
+                                        <span className="font-medium text-[var(--adv-teal)]">
+                                            {contact.first_name?.charAt(0) || '?'}
                                         </span>
                                     </div>
-                                    <div className="flex items-center gap-4 mt-1 text-sm text-gray-500 dark:text-gray-400">
-                                        {contact.email && (
-                                            <span className="flex items-center gap-1 truncate">
-                                                <Mail className="w-3.5 h-3.5" />
-                                                {contact.email}
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex items-center gap-2">
+                                            <p className="truncate font-medium text-[var(--adv-ink)]">
+                                                {contact.first_name} {contact.last_name}
+                                            </p>
+                                            <span
+                                                className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                                                    contact.type === 'member'
+                                                        ? 'bg-[var(--adv-sage-soft)] text-[var(--adv-sage)]'
+                                                        : 'bg-[rgba(11,109,133,0.1)] text-[var(--adv-teal)]'
+                                                }`}
+                                            >
+                                                {contact.type}
                                             </span>
-                                        )}
-                                        {contact.phone && (
-                                            <span className="flex items-center gap-1">
-                                                <Phone className="w-3.5 h-3.5" />
-                                                {contact.phone}
-                                            </span>
-                                        )}
+                                        </div>
+                                        <div className="mt-1 flex items-center gap-4 text-sm text-[var(--adv-slate)]">
+                                            {contact.email && (
+                                                <span className="flex items-center gap-1 truncate">
+                                                    <Envelope weight="light" className="h-3.5 w-3.5" aria-hidden />
+                                                    {contact.email}
+                                                </span>
+                                            )}
+                                            {contact.phone && (
+                                                <span className="flex items-center gap-1">
+                                                    <Phone weight="light" className="h-3.5 w-3.5" aria-hidden />
+                                                    {contact.phone}
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
-                                <ChevronRight className="w-5 h-5 text-gray-400" />
-                            </Link>
-                        ))}
-                    </div>
-                )}
-            </div>
+                                    <CaretRight
+                                        weight="light"
+                                        className="h-5 w-5 text-[var(--adv-slate)]/50"
+                                        aria-hidden
+                                    />
+                                </Link>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </Bezel>
         </div>
     );
 }

@@ -1,6 +1,7 @@
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
-import { Presentation, Plus, ExternalLink, Eye } from 'lucide-react';
-import Link from 'next/link';
+import { MonitorPlay, Plus, ArrowSquareOut, Eye } from '@phosphor-icons/react/dist/ssr';
+import { PageHeader } from '@/components/PageHeader';
+import { Bezel } from '@/components/ui/Bezel';
 
 export const dynamic = 'force-dynamic';
 
@@ -55,8 +56,8 @@ export default async function PresentationsPage() {
 
     if (!advisorInfo?.id || !advisorInfo?.organization_id) {
         return (
-            <div className="flex items-center justify-center h-64">
-                <p className="text-gray-500">Unable to load presentations.</p>
+            <div className="flex h-64 items-center justify-center">
+                <p className="text-[var(--adv-slate)]">Unable to load presentations.</p>
             </div>
         );
     }
@@ -68,98 +69,115 @@ export default async function PresentationsPage() {
 
     return (
         <div className="space-y-6">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Presentations</h1>
-                    <p className="text-gray-500 dark:text-gray-400 mt-1">
-                        Create and share presentations with your contacts
-                    </p>
-                </div>
-                <button className="flex items-center gap-2 px-4 py-2 bg-advisor-500 hover:bg-advisor-600 text-white font-medium rounded-lg transition-colors">
-                    <Plus className="w-4 h-4" />
-                    New Presentation
-                </button>
-            </div>
+            <PageHeader
+                kicker="Share"
+                title="Presentations"
+                description="Create and share presentations with your contacts"
+                actions={
+                    <button
+                        type="button"
+                        className="inline-flex items-center gap-2 rounded-full bg-[var(--adv-ink)] px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                    >
+                        <Plus weight="light" className="h-4 w-4" aria-hidden />
+                        New Presentation
+                    </button>
+                }
+            />
 
-            {/* Templates */}
             {templates.length > 0 && (
                 <div>
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Templates</h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <h2 className="adv-display mb-4 text-lg font-semibold tracking-[-0.02em] text-[var(--adv-ink)]">
+                        Templates
+                    </h2>
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                         {templates.map((template) => (
-                            <div
-                                key={template.id}
-                                className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 hover:shadow-md transition-shadow cursor-pointer group"
-                            >
-                                <div className="aspect-video bg-gray-100 dark:bg-gray-700 rounded-lg mb-3 flex items-center justify-center">
-                                    {template.thumbnail_url ? (
-                                        // eslint-disable-next-line @next/next/no-img-element -- dynamic external thumbnail URL
-                                        <img
-                                            src={template.thumbnail_url}
-                                            alt={template.name}
-                                            className="w-full h-full object-cover rounded-lg"
-                                        />
-                                    ) : (
-                                        <Presentation className="w-8 h-8 text-gray-400" />
+                            <Bezel key={template.id}>
+                                <div className="group cursor-pointer p-4">
+                                    <div className="mb-3 flex aspect-video items-center justify-center rounded-[0.85rem] bg-[var(--adv-sage-soft)]">
+                                        {template.thumbnail_url ? (
+                                            // eslint-disable-next-line @next/next/no-img-element -- dynamic external thumbnail URL
+                                            <img
+                                                src={template.thumbnail_url}
+                                                alt={template.name}
+                                                className="h-full w-full rounded-[0.85rem] object-cover"
+                                            />
+                                        ) : (
+                                            <MonitorPlay
+                                                weight="light"
+                                                className="h-8 w-8 text-[var(--adv-slate)]/50"
+                                                aria-hidden
+                                            />
+                                        )}
+                                    </div>
+                                    <h3 className="font-medium text-[var(--adv-ink)] transition-colors group-hover:text-[var(--adv-teal)]">
+                                        {template.name}
+                                    </h3>
+                                    {template.description && (
+                                        <p className="mt-1 line-clamp-2 text-sm text-[var(--adv-slate)]">
+                                            {template.description}
+                                        </p>
                                     )}
                                 </div>
-                                <h3 className="font-medium text-gray-900 dark:text-white group-hover:text-advisor-600 transition-colors">
-                                    {template.name}
-                                </h3>
-                                {template.description && (
-                                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
-                                        {template.description}
-                                    </p>
-                                )}
-                            </div>
+                            </Bezel>
                         ))}
                     </div>
                 </div>
             )}
 
-            {/* My Presentations */}
             <div>
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                <h2 className="adv-display mb-4 text-lg font-semibold tracking-[-0.02em] text-[var(--adv-ink)]">
                     My Presentations
                 </h2>
 
                 {presentations.length === 0 ? (
-                    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-12 text-center">
-                        <Presentation className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-                        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                            No presentations yet
-                        </h3>
-                        <p className="text-gray-500 dark:text-gray-400 max-w-sm mx-auto mb-6">
-                            Create your first presentation from a template to share with contacts.
-                        </p>
-                        <button className="inline-flex items-center gap-2 px-4 py-2 bg-advisor-500 hover:bg-advisor-600 text-white font-medium rounded-lg transition-colors">
-                            <Plus className="w-4 h-4" />
-                            Create Presentation
-                        </button>
-                    </div>
+                    <Bezel>
+                        <div className="p-12 text-center">
+                            <MonitorPlay
+                                weight="light"
+                                className="mx-auto mb-4 h-12 w-12 text-[var(--adv-slate)]/40"
+                                aria-hidden
+                            />
+                            <h3 className="adv-display mb-2 text-lg font-semibold tracking-[-0.02em] text-[var(--adv-ink)]">
+                                No presentations yet
+                            </h3>
+                            <p className="mx-auto mb-6 max-w-sm text-[var(--adv-slate)]">
+                                Create your first presentation from a template to share with contacts.
+                            </p>
+                            <button
+                                type="button"
+                                className="inline-flex items-center gap-2 rounded-full bg-[var(--adv-teal)] px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                            >
+                                <Plus weight="light" className="h-4 w-4" aria-hidden />
+                                Create Presentation
+                            </button>
+                        </div>
+                    </Bezel>
                 ) : (
-                    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-                        <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                    <Bezel>
+                        <div className="divide-y divide-[rgba(28,25,23,0.06)] overflow-hidden">
                             {presentations.map((pres) => (
                                 <div
                                     key={pres.id}
-                                    className="flex items-center gap-4 p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                                    className="flex items-center gap-4 p-4 transition-colors hover:bg-[rgba(11,109,133,0.04)]"
                                 >
-                                    <div className="w-10 h-10 bg-advisor-100 dark:bg-advisor-900/30 rounded-lg flex items-center justify-center">
-                                        <Presentation className="w-5 h-5 text-advisor-600 dark:text-advisor-400" />
+                                    <div className="grid h-10 w-10 place-items-center rounded-[0.85rem] bg-[var(--adv-sage-soft)]">
+                                        <MonitorPlay
+                                            weight="light"
+                                            className="h-5 w-5 text-[var(--adv-teal)]"
+                                            aria-hidden
+                                        />
                                     </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="font-medium text-gray-900 dark:text-white truncate">
+                                    <div className="min-w-0 flex-1">
+                                        <p className="truncate font-medium text-[var(--adv-ink)]">
                                             {pres.title}
                                         </p>
-                                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                                        <p className="text-sm text-[var(--adv-slate)]">
                                             {pres.template?.name && `From: ${pres.template.name} • `}
                                             {new Date(pres.created_at).toLocaleDateString()}
                                         </p>
                                     </div>
-                                    <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-                                        <Eye className="w-4 h-4" />
+                                    <div className="flex items-center gap-2 text-sm text-[var(--adv-slate)]">
+                                        <Eye weight="light" className="h-4 w-4" aria-hidden />
                                         {pres.views_count || 0}
                                     </div>
                                     {pres.share_slug && pres.is_public && (
@@ -167,15 +185,15 @@ export default async function PresentationsPage() {
                                             href={`/shared/${pres.share_slug}`}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="p-2 text-gray-400 hover:text-advisor-500 transition-colors"
+                                            className="p-2 text-[var(--adv-slate)]/50 transition-colors hover:text-[var(--adv-teal)]"
                                         >
-                                            <ExternalLink className="w-4 h-4" />
+                                            <ArrowSquareOut weight="light" className="h-4 w-4" aria-hidden />
                                         </a>
                                     )}
                                 </div>
                             ))}
                         </div>
-                    </div>
+                    </Bezel>
                 )}
             </div>
         </div>

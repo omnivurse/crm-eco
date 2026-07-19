@@ -2,20 +2,20 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Button } from '@crm-eco/ui';
 import {
-  ArrowRight,
-  CircleDollarSign,
-  CalendarClock,
+  ArrowUpRight,
+  CurrencyCircleDollar,
+  CalendarBlank,
   Headphones,
-  ClipboardCheck,
+  ClipboardText,
   GraduationCap,
   Rocket,
   Megaphone,
-  LayoutDashboard,
-  BadgePercent,
-  HeartHandshake,
-  Quote,
+  SquaresFour,
+  Percent,
+  Handshake,
+  Quotes,
   Star,
-} from 'lucide-react';
+} from '@phosphor-icons/react/dist/ssr';
 import { Reveal } from '@/components/sections/Reveal';
 import {
   Container,
@@ -39,12 +39,12 @@ export const metadata: Metadata = {
 
 const WHY_PARTNER = [
   {
-    icon: HeartHandshake,
+    icon: Handshake,
     title: 'A product clients actually love',
     body: 'Health care sharing is affordable, transparent, and welcoming to everyone — no networks, no health questionnaire to get a quote. It is an easy story to tell and a relationship that keeps families coming back.',
   },
   {
-    icon: CalendarClock,
+    icon: CalendarBlank,
     title: 'Sell all year long',
     body: 'There is no open-enrollment window. Households can join whenever life changes, so you are never waiting on a calendar to grow your book or help someone who needs coverage today.',
   },
@@ -57,7 +57,7 @@ const WHY_PARTNER = [
 
 const STEPS = [
   {
-    icon: ClipboardCheck,
+    icon: ClipboardText,
     step: '01',
     title: 'Apply to partner',
     body: 'Tell us about your practice and the families you serve. We review applications quickly and reach out within a couple of business days.',
@@ -78,7 +78,7 @@ const STEPS = [
 
 const WHAT_YOU_GET = [
   {
-    icon: BadgePercent,
+    icon: Percent,
     title: 'Competitive compensation',
     body: 'Earn fair, transparent commissions on every household you enroll, with a structure that rewards consistency and growth. You always know what you have earned.',
   },
@@ -88,7 +88,7 @@ const WHAT_YOU_GET = [
     body: 'Co-branded materials, plain-language explainers, social assets, and talking points — everything you need to introduce sharing clearly and confidently.',
   },
   {
-    icon: LayoutDashboard,
+    icon: SquaresFour,
     title: 'A real back office',
     body: 'A dedicated advisor portal to enroll members, manage your book, and see your commissions — backed by a support team that handles the heavy lifting.',
   },
@@ -149,7 +149,7 @@ export default function ForAdvisorsPage() {
                     className="w-full gap-2 pif-grad-care font-semibold text-white shadow-lg shadow-pif-teal/25 hover:opacity-95 sm:w-auto"
                   >
                     Become an Advisor
-                    <ArrowRight className="h-4 w-4" />
+                    <ArrowUpRight className="h-4 w-4" />
                   </Button>
                 </Link>
                 <Link href="/contact">
@@ -231,7 +231,7 @@ export default function ForAdvisorsPage() {
               className="inline-flex items-center gap-2 font-semibold text-pif-teal-700 transition-colors hover:text-pif-green-600"
             >
               Start your advisor application
-              <ArrowRight className="h-4 w-4" />
+              <ArrowUpRight className="h-4 w-4" />
             </Link>
           </div>
         </Container>
@@ -338,7 +338,7 @@ export default function ForAdvisorsPage() {
                       <Star key={n} className="h-4 w-4 fill-current" />
                     ))}
                   </div>
-                  <Quote className="mb-3 h-7 w-7 text-pif-teal-200" />
+                  <Quotes className="mb-3 h-7 w-7 text-pif-teal-200" />
                   <blockquote className="flex-1 leading-relaxed text-slate-700">
                     {t.quote}
                   </blockquote>
@@ -358,7 +358,7 @@ export default function ForAdvisorsPage() {
         <Container>
           <Reveal>
             <div className="mx-auto flex max-w-3xl flex-col items-center gap-5 rounded-3xl border border-pif-gold-100 bg-pif-gold-50/60 p-10 text-center ring-1 ring-pif-gold-100">
-              <IconChip icon={CircleDollarSign} variant="gold" />
+              <IconChip icon={CurrencyCircleDollar} variant="gold" />
               <h3 className="font-heading text-2xl font-semibold text-pif-navy-800">
                 Earn while you help families pay it forward
               </h3>

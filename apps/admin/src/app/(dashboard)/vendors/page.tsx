@@ -1,5 +1,5 @@
+import { ArrowClockwise, Buildings, Plus, Pulse, TrendUp } from '@phosphor-icons/react/dist/ssr';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Badge } from '@crm-eco/ui';
-import { Plus, Building2, TrendingUp, RefreshCw, Activity } from 'lucide-react';
 import Link from 'next/link';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { VendorTable } from '@/components/vendors/VendorTable';
@@ -116,7 +116,7 @@ export default async function VendorsPage() {
         </div>
         <Link href="/vendors/new">
           <Button>
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus weight="light" className="h-4 w-4 mr-2" />
             Add Vendor
           </Button>
         </Link>
@@ -127,25 +127,25 @@ export default async function VendorsPage() {
         <StatCard
           title="Total Vendors"
           value={stats.totalVendors}
-          icon={Building2}
+          icon={Buildings}
           color="blue"
         />
         <StatCard
           title="Active Vendors"
           value={stats.activeVendors}
-          icon={TrendingUp}
+          icon={TrendUp}
           color="green"
         />
         <StatCard
           title="Files In Progress"
           value={stats.filesInProgress}
-          icon={RefreshCw}
+          icon={ArrowClockwise}
           color="amber"
         />
         <StatCard
           title="Changes (7d)"
           value={stats.changesLast7Days}
-          icon={Activity}
+          icon={Pulse}
           color="red"
         />
       </div>

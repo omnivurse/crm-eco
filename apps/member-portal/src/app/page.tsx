@@ -9,7 +9,7 @@ import {
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@crm-eco/ui';
-import { Heart, ArrowRight } from 'lucide-react';
+import { Heart, ArrowRight } from '@phosphor-icons/react/dist/ssr';
 import { MemberDashboardShell } from '@/components/dashboard';
 
 export default async function MemberDashboard() {
@@ -29,8 +29,8 @@ export default async function MemberDashboard() {
     // User is authenticated but has no member record
     return (
       <div className="max-w-2xl mx-auto text-center py-12">
-        <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-primary/10 flex items-center justify-center">
-          <Heart className="w-8 h-8 text-primary" aria-hidden />
+        <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-[rgba(11,109,133,0.06)] flex items-center justify-center">
+          <Heart weight="light" className="w-8 h-8 text-[var(--mp-teal)]" aria-hidden />
         </div>
         <h1 className="text-2xl font-bold text-slate-900 mb-4">Welcome to Double Helix Hub</h1>
         <p className="text-slate-600 mb-8">
@@ -40,7 +40,7 @@ export default async function MemberDashboard() {
         <Link href="/enroll">
           <Button size="lg" className="gap-2">
             Start Your Enrollment
-            <ArrowRight className="w-4 h-4" />
+            <ArrowRight weight="light" className="w-4 h-4" />
           </Button>
         </Link>
       </div>

@@ -1,5 +1,5 @@
+import { ArrowLeft, GearSix } from '@phosphor-icons/react/dist/ssr';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button } from '@crm-eco/ui';
-import { ArrowLeft, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { ActiveRateSetControl } from '@/components/products/ActiveRateSetControl';
 import { RateQuoteCalculator } from '@/components/products/RateQuoteCalculator';
@@ -11,11 +11,11 @@ export default function RateSettingsPage() {
       <div className="flex items-center gap-4">
         <Link href="/products">
           <Button variant="ghost" size="icon">
-            <ArrowLeft className="h-5 w-5" />
+            <ArrowLeft weight="light" className="h-5 w-5" />
           </Button>
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Rate Settings</h1>
+          <h1 className="text-2xl font-bold text-slate-900">Rate GearSix</h1>
           <p className="text-slate-500">
             Manage rate set overrides and test the rate engine
           </p>
@@ -23,7 +23,7 @@ export default function RateSettingsPage() {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        {/* Left: Settings */}
+        {/* Left: GearSix */}
         <div className="xl:col-span-2 space-y-6">
           <ActiveRateSetControl />
 

@@ -1,7 +1,7 @@
 'use client';
 
+import { DownloadSimple, UploadSimple } from '@phosphor-icons/react';
 import { useState, useEffect } from 'react';
-import { Download, Upload } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@crm-eco/ui/components/dialog';
 import { Button } from '@crm-eco/ui/components/button';
 import type { DocumentVersion } from './types';
@@ -73,9 +73,9 @@ export function VersionHistoryDialog({
                 <button
                   onClick={() => documentId && onDownloadVersion(documentId, v.version_number)}
                   className="p-1 hover:bg-gray-200 rounded"
-                  title="Download this version"
+                  title="DownloadSimple this version"
                 >
-                  <Download className="w-4 h-4" />
+                  <DownloadSimple weight="light" className="w-4 h-4" />
                 </button>
               </div>
             ))
@@ -86,8 +86,8 @@ export function VersionHistoryDialog({
           <label className="cursor-pointer">
             <Button variant="outline" size="sm" className="gap-1.5" asChild disabled={uploading}>
               <span>
-                <Upload className="w-3.5 h-3.5" />
-                {uploading ? 'Uploading...' : 'Upload New Version'}
+                <UploadSimple weight="light" className="w-3.5 h-3.5" />
+                {uploading ? 'Uploading...' : 'UploadSimple New Version'}
               </span>
             </Button>
             <input type="file" className="hidden" onChange={handleUploadVersion} disabled={uploading} />

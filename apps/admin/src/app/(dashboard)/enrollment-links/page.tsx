@@ -1,20 +1,9 @@
 'use client';
 
+import { ArrowSquareOut, Copy, DotsThree, Eye, EyeSlash, Globe, Plus, QrCode, TrendUp, Users } from '@phosphor-icons/react';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@crm-eco/lib/supabase/client';
-import {
-  Plus,
-  ExternalLink,
-  Eye,
-  Users,
-  TrendingUp,
-  Copy,
-  QrCode,
-  MoreHorizontal,
-  Globe,
-  EyeOff,
-} from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@crm-eco/ui/components/card';
 import { Badge } from '@crm-eco/ui/components/badge';
@@ -155,7 +144,7 @@ export default function EnrollmentLinksPage() {
         </div>
         <Link href="/enrollment-links/new">
           <Button className="gap-2">
-            <Plus className="w-4 h-4" />
+            <Plus weight="light" className="w-4 h-4" />
             Create Landing Page
           </Button>
         </Link>
@@ -171,7 +160,7 @@ export default function EnrollmentLinksPage() {
                 <p className="text-2xl font-bold">{stats.totalPages}</p>
               </div>
               <div className="p-3 bg-blue-100 rounded-lg">
-                <Globe className="w-5 h-5 text-blue-600" />
+                <Globe weight="light" className="w-5 h-5 text-blue-600" />
               </div>
             </div>
           </CardContent>
@@ -185,7 +174,7 @@ export default function EnrollmentLinksPage() {
                 <p className="text-2xl font-bold text-emerald-600">{stats.publishedPages}</p>
               </div>
               <div className="p-3 bg-emerald-100 rounded-lg">
-                <Eye className="w-5 h-5 text-emerald-600" />
+                <Eye weight="light" className="w-5 h-5 text-emerald-600" />
               </div>
             </div>
           </CardContent>
@@ -199,7 +188,7 @@ export default function EnrollmentLinksPage() {
                 <p className="text-2xl font-bold">{stats.totalViews.toLocaleString()}</p>
               </div>
               <div className="p-3 bg-purple-100 rounded-lg">
-                <Users className="w-5 h-5 text-purple-600" />
+                <Users weight="light" className="w-5 h-5 text-purple-600" />
               </div>
             </div>
           </CardContent>
@@ -213,7 +202,7 @@ export default function EnrollmentLinksPage() {
                 <p className="text-2xl font-bold text-amber-600">{stats.totalSubmissions}</p>
               </div>
               <div className="p-3 bg-amber-100 rounded-lg">
-                <TrendingUp className="w-5 h-5 text-amber-600" />
+                <TrendUp weight="light" className="w-5 h-5 text-amber-600" />
               </div>
             </div>
           </CardContent>
@@ -224,14 +213,14 @@ export default function EnrollmentLinksPage() {
       {landingPages.length === 0 ? (
         <Card>
           <CardContent className="py-16 text-center">
-            <Globe className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+            <Globe weight="light" className="w-12 h-12 text-slate-300 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-slate-900 mb-2">No landing pages yet</h3>
             <p className="text-slate-600 mb-6">
               Create your first enrollment landing page to start collecting leads.
             </p>
             <Link href="/enrollment-links/new">
               <Button>
-                <Plus className="w-4 h-4 mr-2" />
+                <Plus weight="light" className="w-4 h-4 mr-2" />
                 Create Landing Page
               </Button>
             </Link>
@@ -260,15 +249,15 @@ export default function EnrollmentLinksPage() {
                     </p>
                     <div className="flex items-center gap-4 text-sm text-slate-500">
                       <span className="flex items-center gap-1">
-                        <Eye className="w-4 h-4" />
+                        <Eye weight="light" className="w-4 h-4" />
                         {page.views || 0} views
                       </span>
                       <span className="flex items-center gap-1">
-                        <Users className="w-4 h-4" />
+                        <Users weight="light" className="w-4 h-4" />
                         {page.submissions || 0} submissions
                       </span>
                       <span className="flex items-center gap-1">
-                        <TrendingUp className="w-4 h-4" />
+                        <TrendUp weight="light" className="w-4 h-4" />
                         {getConversionRate(page.views || 0, page.submissions || 0)} conversion
                       </span>
                     </div>
@@ -281,7 +270,7 @@ export default function EnrollmentLinksPage() {
                       onClick={() => copyLink(page.slug)}
                       className="gap-1"
                     >
-                      <Copy className="w-4 h-4" />
+                      <Copy weight="light" className="w-4 h-4" />
                       Copy Link
                     </Button>
 
@@ -296,7 +285,7 @@ export default function EnrollmentLinksPage() {
                         rel="noopener noreferrer"
                         className="gap-1"
                       >
-                        <ExternalLink className="w-4 h-4" />
+                        <ArrowSquareOut weight="light" className="w-4 h-4" />
                         Preview
                       </a>
                     </Button>
@@ -304,7 +293,7 @@ export default function EnrollmentLinksPage() {
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="sm">
-                          <MoreHorizontal className="w-4 h-4" />
+                          <DotsThree weight="light" className="w-4 h-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
@@ -315,19 +304,19 @@ export default function EnrollmentLinksPage() {
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
                           <Link href={`/enrollment-links/${page.id}/qr`}>
-                            <QrCode className="w-4 h-4 mr-2" />
+                            <QrCode weight="light" className="w-4 h-4 mr-2" />
                             Generate QR Code
                           </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => togglePublished(page)}>
                           {page.is_published ? (
                             <>
-                              <EyeOff className="w-4 h-4 mr-2" />
+                              <EyeSlash weight="light" className="w-4 h-4 mr-2" />
                               Unpublish
                             </>
                           ) : (
                             <>
-                              <Eye className="w-4 h-4 mr-2" />
+                              <Eye weight="light" className="w-4 h-4 mr-2" />
                               Publish
                             </>
                           )}

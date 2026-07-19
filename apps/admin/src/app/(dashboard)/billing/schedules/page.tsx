@@ -1,5 +1,6 @@
 'use client';
 
+import { ArrowClockwise, ArrowLeft, Calendar, CircleNotch, CreditCard, CurrencyDollar, Pause, Play, XCircle } from '@phosphor-icons/react';
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, Button } from '@crm-eco/ui';
 import { StatusBadge } from '@crm-eco/ui/components/status-badge';
@@ -7,17 +8,6 @@ import { createClient } from '@crm-eco/lib/supabase/client';
 import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import { format } from 'date-fns';
 import Link from 'next/link';
-import {
-  ArrowLeft,
-  Calendar,
-  RefreshCw,
-  Loader2,
-  Pause,
-  Play,
-  XCircle,
-  CreditCard,
-  DollarSign,
-} from 'lucide-react';
 import { toast } from 'sonner';
 
 interface BillingSchedule {
@@ -210,7 +200,7 @@ export default function BillingSchedulesPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <CircleNotch weight="light" className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -231,7 +221,7 @@ export default function BillingSchedulesPage() {
         <div className="flex items-center gap-4">
           <Button variant="outline" size="sm" asChild>
             <Link href="/billing">
-              <ArrowLeft className="h-4 w-4 mr-2" />
+              <ArrowLeft weight="light" className="h-4 w-4 mr-2" />
               Back
             </Link>
           </Button>
@@ -241,7 +231,7 @@ export default function BillingSchedulesPage() {
           </div>
         </div>
         <Button variant="outline" size="sm" onClick={loadSchedules}>
-          <RefreshCw className="h-4 w-4 mr-2" />
+          <ArrowClockwise weight="light" className="h-4 w-4 mr-2" />
           Refresh
         </Button>
       </div>
@@ -252,7 +242,7 @@ export default function BillingSchedulesPage() {
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-green-100 rounded-lg">
-                <Calendar className="h-5 w-5 text-green-600" />
+                <Calendar weight="light" className="h-5 w-5 text-green-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{schedules.filter(s => s.status === 'active').length}</p>
@@ -265,7 +255,7 @@ export default function BillingSchedulesPage() {
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-blue-100 rounded-lg">
-                <DollarSign className="h-5 w-5 text-blue-600" />
+                <CurrencyDollar weight="light" className="h-5 w-5 text-blue-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold">${totalMonthlyRevenue.toFixed(0)}</p>
@@ -278,7 +268,7 @@ export default function BillingSchedulesPage() {
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-yellow-100 rounded-lg">
-                <Pause className="h-5 w-5 text-yellow-600" />
+                <Pause weight="light" className="h-5 w-5 text-yellow-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{schedules.filter(s => s.status === 'paused').length}</p>
@@ -291,7 +281,7 @@ export default function BillingSchedulesPage() {
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-slate-100 rounded-lg">
-                <XCircle className="h-5 w-5 text-slate-600" />
+                <XCircle weight="light" className="h-5 w-5 text-slate-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{schedules.filter(s => s.status === 'cancelled').length}</p>
@@ -366,7 +356,7 @@ export default function BillingSchedulesPage() {
                       <td className="py-3 text-sm">
                         {schedule.payment_profile ? (
                           <div className="flex items-center gap-2">
-                            <CreditCard className="h-4 w-4 text-slate-400" />
+                            <CreditCard weight="light" className="h-4 w-4 text-slate-400" />
                             <span>
                               {schedule.payment_profile.card_type || schedule.payment_profile.payment_type}
                             </span>
@@ -412,7 +402,7 @@ export default function BillingSchedulesPage() {
                               disabled={processingId === schedule.id}
                               title="Pause"
                             >
-                              <Pause className="h-4 w-4" />
+                              <Pause weight="light" className="h-4 w-4" />
                             </Button>
                           )}
                           {schedule.status === 'paused' && (
@@ -423,7 +413,7 @@ export default function BillingSchedulesPage() {
                               disabled={processingId === schedule.id}
                               title="Resume"
                             >
-                              <Play className="h-4 w-4" />
+                              <Play weight="light" className="h-4 w-4" />
                             </Button>
                           )}
                           {['active', 'paused'].includes(schedule.status) && (
@@ -435,7 +425,7 @@ export default function BillingSchedulesPage() {
                               title="Cancel"
                               className="text-red-600 hover:text-red-700"
                             >
-                              <XCircle className="h-4 w-4" />
+                              <XCircle weight="light" className="h-4 w-4" />
                             </Button>
                           )}
                         </div>
@@ -445,7 +435,7 @@ export default function BillingSchedulesPage() {
                 ) : (
                   <tr>
                     <td colSpan={7} className="py-8 text-center text-slate-500">
-                      <Calendar className="h-8 w-8 mx-auto mb-2 text-slate-300" />
+                      <Calendar weight="light" className="h-8 w-8 mx-auto mb-2 text-slate-300" />
                       No billing schedules found
                     </td>
                   </tr>

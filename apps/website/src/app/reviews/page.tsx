@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Star, Quote, ShieldCheck, BadgeCheck, MessageSquareHeart, Sparkles } from 'lucide-react';
+import { Star, Quotes, ShieldCheck, SealCheck, ChatCircleDots, Sparkle } from '@phosphor-icons/react/dist/ssr';
 import { Reveal } from '@/components/sections/Reveal';
 import {
   Container,
@@ -121,13 +121,13 @@ const EXPERT_NOTES = [
       'Members regularly share their experiences on the major health care sharing review and comparison sites — and consistently rate transparency and support among the reasons they stay.',
   },
   {
-    icon: BadgeCheck,
+    icon: SealCheck,
     title: 'Verified members only',
     body:
       'Every review on this page comes from a current or former member of our community. We never pay for testimonials or edit them to sound rosier than the real experience.',
   },
   {
-    icon: MessageSquareHeart,
+    icon: ChatCircleDots,
     title: 'Recommended by members',
     body:
       'Most of our growth comes the old-fashioned way — one family telling another. The trust members place in us is something we work to re-earn every single month.',
@@ -157,7 +157,7 @@ export default function ReviewsPage() {
           <div className="grid items-center gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:gap-20">
             <Reveal>
               <div className="inline-flex items-center gap-2 rounded-full bg-pif-teal-50 px-4 py-1.5 ring-1 ring-pif-teal-100">
-                <Sparkles className="h-4 w-4 text-pif-teal-600" />
+                <Sparkle className="h-4 w-4 text-pif-teal-600" />
                 <span className="text-sm font-semibold text-pif-teal-700">Member Reviews</span>
               </div>
               <h1 className="mt-6 font-heading text-[clamp(2.25rem,5.5vw,3.75rem)] font-semibold leading-[1.08] text-pif-navy-800 text-balance">
@@ -207,7 +207,7 @@ export default function ReviewsPage() {
                 <figure className="flex flex-col rounded-2xl border border-pif-navy-100 bg-white p-7 shadow-sm ring-1 ring-pif-navy/5 transition-shadow duration-300 hover:shadow-lg hover:shadow-pif-navy/10">
                   <div className="mb-4 flex items-center justify-between">
                     <Stars count={r.stars} />
-                    <Quote className="h-7 w-7 text-pif-teal-100" aria-hidden="true" />
+                    <Quotes className="h-7 w-7 text-pif-teal-100" aria-hidden="true" />
                   </div>
                   <blockquote className="leading-relaxed text-slate-700">{r.quote}</blockquote>
                   <figcaption className="mt-6 flex items-center gap-3 border-t border-pif-navy-100 pt-5">

@@ -1,5 +1,6 @@
 'use client';
 
+import { Buildings, CalendarBlank, Camera, CheckCircle, CircleNotch, Clock, EnvelopeSimple, FloppyDisk, Globe, Key, Monitor, Moon, Palette, Phone, ShieldCheck, Sun, User, WarningCircle } from '@phosphor-icons/react';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import {
@@ -27,26 +28,6 @@ import {
   SelectValue,
   Switch,
 } from '@crm-eco/ui';
-import {
-  Save,
-  Loader2,
-  User,
-  Building2,
-  Shield,
-  Globe,
-  Clock,
-  Mail,
-  Phone,
-  Camera,
-  CalendarDays,
-  KeyRound,
-  Palette,
-  Monitor,
-  Moon,
-  Sun,
-  CheckCircle,
-  AlertCircle,
-} from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ProfileData {
@@ -372,7 +353,7 @@ export default function ProfilePage() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center space-y-3">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mx-auto" />
+          <CircleNotch weight="light" className="h-8 w-8 animate-spin text-muted-foreground mx-auto" />
           <p className="text-sm text-muted-foreground">Loading profile...</p>
         </div>
       </div>
@@ -383,7 +364,7 @@ export default function ProfilePage() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center space-y-3">
-          <AlertCircle className="h-8 w-8 text-destructive mx-auto" />
+          <WarningCircle weight="light" className="h-8 w-8 text-destructive mx-auto" />
           <p className="text-sm text-muted-foreground">Unable to load profile data.</p>
           <Button variant="outline" onClick={loadProfile}>
             Try Again
@@ -405,11 +386,11 @@ export default function ProfilePage() {
         </div>
         <Button onClick={handleSaveProfile} disabled={isSaving || !hasChanges}>
           {isSaving ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            <CircleNotch weight="light" className="mr-2 h-4 w-4 animate-spin" />
           ) : (
-            <Save className="mr-2 h-4 w-4" />
+            <FloppyDisk weight="light" className="mr-2 h-4 w-4" />
           )}
-          Save Changes
+          FloppyDisk Changes
         </Button>
       </div>
 
@@ -431,7 +412,7 @@ export default function ProfilePage() {
                 className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                 onClick={() => toast.info('Avatar upload coming soon.')}
               >
-                <Camera className="h-6 w-6 text-white" />
+                <Camera weight="light" className="h-6 w-6 text-white" />
               </button>
             </div>
 
@@ -444,12 +425,12 @@ export default function ProfilePage() {
                 </Badge>
                 {profile.is_active !== false ? (
                   <Badge variant="outline" className="text-green-700 border-green-300 bg-green-50 dark:text-green-400 dark:border-green-800 dark:bg-green-950">
-                    <CheckCircle className="h-3 w-3 mr-1" />
+                    <CheckCircle weight="light" className="h-3 w-3 mr-1" />
                     Active
                   </Badge>
                 ) : (
                   <Badge variant="outline" className="text-red-700 border-red-300 bg-red-50 dark:text-red-400 dark:border-red-800 dark:bg-red-950">
-                    <AlertCircle className="h-3 w-3 mr-1" />
+                    <WarningCircle weight="light" className="h-3 w-3 mr-1" />
                     Inactive
                   </Badge>
                 )}
@@ -458,18 +439,18 @@ export default function ProfilePage() {
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-sm text-muted-foreground">
                 {organization && (
                   <span className="flex items-center gap-1.5">
-                    <Building2 className="h-3.5 w-3.5" />
+                    <Buildings weight="light" className="h-3.5 w-3.5" />
                     {adminSettings?.company_name || organization.name}
                   </span>
                 )}
                 {profile.phone && (
                   <span className="flex items-center gap-1.5">
-                    <Phone className="h-3.5 w-3.5" />
+                    <Phone weight="light" className="h-3.5 w-3.5" />
                     {profile.phone}
                   </span>
                 )}
                 <span className="flex items-center gap-1.5">
-                  <CalendarDays className="h-3.5 w-3.5" />
+                  <CalendarBlank weight="light" className="h-3.5 w-3.5" />
                   Joined {formatDate(profile.created_at)}
                 </span>
               </div>
@@ -485,28 +466,28 @@ export default function ProfilePage() {
             value="personal"
             className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 pb-3"
           >
-            <User className="h-4 w-4 mr-2" />
+            <User weight="light" className="h-4 w-4 mr-2" />
             Personal Info
           </TabsTrigger>
           <TabsTrigger
             value="business"
             className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 pb-3"
           >
-            <Building2 className="h-4 w-4 mr-2" />
+            <Buildings weight="light" className="h-4 w-4 mr-2" />
             Business Details
           </TabsTrigger>
           <TabsTrigger
             value="preferences"
             className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 pb-3"
           >
-            <Palette className="h-4 w-4 mr-2" />
+            <Palette weight="light" className="h-4 w-4 mr-2" />
             Preferences
           </TabsTrigger>
           <TabsTrigger
             value="security"
             className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 pb-3"
           >
-            <Shield className="h-4 w-4 mr-2" />
+            <ShieldCheck weight="light" className="h-4 w-4 mr-2" />
             Security
           </TabsTrigger>
         </TabsList>
@@ -516,7 +497,7 @@ export default function ProfilePage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <User className="h-5 w-5" />
+                <User weight="light" className="h-5 w-5" />
                 Personal Information
               </CardTitle>
               <CardDescription>
@@ -554,7 +535,7 @@ export default function ProfilePage() {
                 <div className="space-y-2">
                   <Label htmlFor="email">Email Address</Label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <EnvelopeSimple weight="light" className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="email"
                       value={profile.email}
@@ -570,7 +551,7 @@ export default function ProfilePage() {
                 <div className="space-y-2">
                   <Label htmlFor="phone">Phone Number</Label>
                   <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Phone weight="light" className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="phone"
                       value={phone}
@@ -587,7 +568,7 @@ export default function ProfilePage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Clock className="h-5 w-5" />
+                <Clock weight="light" className="h-5 w-5" />
                 Account Details
               </CardTitle>
               <CardDescription>
@@ -632,7 +613,7 @@ export default function ProfilePage() {
                   <div className="space-y-1">
                     <p className="text-sm font-medium text-muted-foreground">Super Admin</p>
                     <Badge variant="default" className="text-xs">
-                      <Shield className="h-3 w-3 mr-1" />
+                      <ShieldCheck weight="light" className="h-3 w-3 mr-1" />
                       Yes
                     </Badge>
                   </div>
@@ -647,7 +628,7 @@ export default function ProfilePage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Building2 className="h-5 w-5" />
+                <Buildings weight="light" className="h-5 w-5" />
                 Organization
               </CardTitle>
               <CardDescription>
@@ -687,7 +668,7 @@ export default function ProfilePage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5" />
+                <ShieldCheck weight="light" className="h-5 w-5" />
                 Roles &amp; Permissions
               </CardTitle>
               <CardDescription>
@@ -779,9 +760,9 @@ export default function ProfilePage() {
                       className="flex items-center gap-2 text-sm px-3 py-2 rounded-md bg-muted/30"
                     >
                       {item.granted ? (
-                        <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400 shrink-0" />
+                        <CheckCircle weight="light" className="h-4 w-4 text-green-600 dark:text-green-400 shrink-0" />
                       ) : (
-                        <AlertCircle className="h-4 w-4 text-muted-foreground shrink-0" />
+                        <WarningCircle weight="light" className="h-4 w-4 text-muted-foreground shrink-0" />
                       )}
                       <span className={item.granted ? '' : 'text-muted-foreground'}>
                         {item.label}
@@ -797,7 +778,7 @@ export default function ProfilePage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Mail className="h-5 w-5" />
+                <EnvelopeSimple weight="light" className="h-5 w-5" />
                 Business Contact
               </CardTitle>
               <CardDescription>
@@ -839,7 +820,7 @@ export default function ProfilePage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Palette className="h-5 w-5" />
+                <Palette weight="light" className="h-5 w-5" />
                 Appearance
               </CardTitle>
               <CardDescription>
@@ -889,7 +870,7 @@ export default function ProfilePage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Globe className="h-5 w-5" />
+                <Globe weight="light" className="h-5 w-5" />
                 Regional Settings
               </CardTitle>
               <CardDescription>
@@ -919,7 +900,7 @@ export default function ProfilePage() {
                 <div className="space-y-2">
                   <Label>Current Time</Label>
                   <div className="flex items-center gap-2 h-10 px-3 rounded-md border bg-muted/50 text-sm">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <Clock weight="light" className="h-4 w-4 text-muted-foreground" />
                     <span>
                       {new Date().toLocaleTimeString('en-US', {
                         timeZone: timeZone || 'America/New_York',
@@ -941,7 +922,7 @@ export default function ProfilePage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <KeyRound className="h-5 w-5" />
+                <Key weight="light" className="h-5 w-5" />
                 Change Password
               </CardTitle>
               <CardDescription>
@@ -991,9 +972,9 @@ export default function ProfilePage() {
                   variant="default"
                 >
                   {isChangingPassword ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <CircleNotch weight="light" className="mr-2 h-4 w-4 animate-spin" />
                   ) : (
-                    <KeyRound className="mr-2 h-4 w-4" />
+                    <Key weight="light" className="mr-2 h-4 w-4" />
                   )}
                   Update Password
                 </Button>
@@ -1004,7 +985,7 @@ export default function ProfilePage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5" />
+                <ShieldCheck weight="light" className="h-5 w-5" />
                 Account Security
               </CardTitle>
               <CardDescription>
@@ -1016,7 +997,7 @@ export default function ProfilePage() {
                 <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/20">
                   <div className="flex items-center gap-3">
                     <div className="h-10 w-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                      <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
+                      <CheckCircle weight="light" className="h-5 w-5 text-green-600 dark:text-green-400" />
                     </div>
                     <div>
                       <p className="text-sm font-medium">Email Verified</p>
@@ -1031,7 +1012,7 @@ export default function ProfilePage() {
                 <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/20">
                   <div className="flex items-center gap-3">
                     <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
-                      <Shield className="h-5 w-5 text-muted-foreground" />
+                      <ShieldCheck weight="light" className="h-5 w-5 text-muted-foreground" />
                     </div>
                     <div>
                       <p className="text-sm font-medium">Two-Factor Authentication</p>
@@ -1048,7 +1029,7 @@ export default function ProfilePage() {
                 <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/20">
                   <div className="flex items-center gap-3">
                     <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
-                      <Clock className="h-5 w-5 text-muted-foreground" />
+                      <Clock weight="light" className="h-5 w-5 text-muted-foreground" />
                     </div>
                     <div>
                       <p className="text-sm font-medium">Last Profile Update</p>

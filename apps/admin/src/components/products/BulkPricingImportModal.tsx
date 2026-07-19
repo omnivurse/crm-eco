@@ -1,5 +1,6 @@
 'use client';
 
+import { ArrowRight, Check, CircleNotch, DownloadSimple, FileXls, Table, UploadSimple, Warning, X } from '@phosphor-icons/react';
 import { useState, useCallback } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import {
@@ -12,17 +13,6 @@ import {
   Button,
   Badge,
 } from '@crm-eco/ui';
-import {
-  Upload,
-  Download,
-  FileSpreadsheet,
-  Loader2,
-  Check,
-  X,
-  AlertTriangle,
-  ArrowRight,
-  Table,
-} from 'lucide-react';
 import { toast } from 'sonner';
 
 interface BulkPricingImportModalProps {
@@ -387,7 +377,7 @@ export function BulkPricingImportModal({
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Upload className="h-5 w-5" />
+            <UploadSimple weight="light" className="h-5 w-5" />
             Bulk Pricing Import
           </DialogTitle>
           <DialogDescription>
@@ -407,19 +397,19 @@ export function BulkPricingImportModal({
                 }`}>
                   {i + 1}
                 </div>
-                {i < 3 && <ArrowRight className="h-4 w-4 text-slate-300" />}
+                {i < 3 && <ArrowRight weight="light" className="h-4 w-4 text-slate-300" />}
               </div>
             ))}
           </div>
 
-          {/* Upload Step */}
+          {/* UploadSimple Step */}
           {step === 'upload' && (
             <div className="space-y-6 py-4">
               <div className="border-2 border-dashed rounded-lg p-8 text-center">
-                <FileSpreadsheet className="h-12 w-12 mx-auto mb-4 text-slate-400" />
-                <p className="text-lg font-medium mb-2">Upload CSV File</p>
+                <FileXls weight="light" className="h-12 w-12 mx-auto mb-4 text-slate-400" />
+                <p className="text-lg font-medium mb-2">UploadSimple CSV File</p>
                 <p className="text-sm text-slate-500 mb-4">
-                  Upload a CSV file with pricing data
+                  UploadSimple a CSV file with pricing data
                 </p>
                 <input
                   type="file"
@@ -432,9 +422,9 @@ export function BulkPricingImportModal({
                   <Button asChild disabled={isProcessing}>
                     <span>
                       {isProcessing ? (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        <CircleNotch weight="light" className="h-4 w-4 mr-2 animate-spin" />
                       ) : (
-                        <Upload className="h-4 w-4 mr-2" />
+                        <UploadSimple weight="light" className="h-4 w-4 mr-2" />
                       )}
                       Select File
                     </span>
@@ -446,12 +436,12 @@ export function BulkPricingImportModal({
                 <div>
                   <p className="font-medium">Need a template?</p>
                   <p className="text-sm text-slate-500">
-                    Download a sample CSV with the correct format
+                    DownloadSimple a sample CSV with the correct format
                   </p>
                 </div>
                 <Button variant="outline" onClick={downloadTemplate}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Download Template
+                  <DownloadSimple weight="light" className="h-4 w-4 mr-2" />
+                  DownloadSimple Template
                 </Button>
               </div>
 
@@ -476,7 +466,7 @@ export function BulkPricingImportModal({
           {step === 'mapping' && (
             <div className="space-y-4 py-4">
               <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                <Table className="h-5 w-5 text-blue-600" />
+                <Table weight="light" className="h-5 w-5 text-blue-600" />
                 <span className="text-sm text-blue-900">
                   Found {headers.length} columns and {rows.length} data rows
                 </span>
@@ -490,7 +480,7 @@ export function BulkPricingImportModal({
                     <div className="w-40">
                       <Badge variant="default">{field} *</Badge>
                     </div>
-                    <ArrowRight className="h-4 w-4 text-slate-300" />
+                    <ArrowRight weight="light" className="h-4 w-4 text-slate-300" />
                     <select
                       className="flex-1 border rounded-lg px-3 py-2"
                       value={columnMapping[field] || ''}
@@ -509,7 +499,7 @@ export function BulkPricingImportModal({
                     <div className="w-40">
                       <Badge variant="outline">{field}</Badge>
                     </div>
-                    <ArrowRight className="h-4 w-4 text-slate-300" />
+                    <ArrowRight weight="light" className="h-4 w-4 text-slate-300" />
                     <select
                       className="flex-1 border rounded-lg px-3 py-2"
                       value={columnMapping[field] || ''}
@@ -559,7 +549,7 @@ export function BulkPricingImportModal({
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-4 bg-green-50 rounded-lg border border-green-200">
                   <div className="flex items-center gap-2">
-                    <Check className="h-5 w-5 text-green-600" />
+                    <Check weight="light" className="h-5 w-5 text-green-600" />
                     <span className="font-medium text-green-900">
                       {validationResult.valid.length} Valid Rows
                     </span>
@@ -569,7 +559,7 @@ export function BulkPricingImportModal({
                 {validationResult.errors.length > 0 && (
                   <div className="p-4 bg-red-50 rounded-lg border border-red-200">
                     <div className="flex items-center gap-2">
-                      <X className="h-5 w-5 text-red-600" />
+                      <X weight="light" className="h-5 w-5 text-red-600" />
                       <span className="font-medium text-red-900">
                         {validationResult.errors.length} Errors
                       </span>
@@ -635,7 +625,7 @@ export function BulkPricingImportModal({
           {/* Importing Step */}
           {step === 'importing' && (
             <div className="flex flex-col items-center justify-center py-12">
-              <Loader2 className="h-12 w-12 animate-spin text-teal-600 mb-4" />
+              <CircleNotch weight="light" className="h-12 w-12 animate-spin text-teal-600 mb-4" />
               <p className="text-lg font-medium">Importing pricing data...</p>
               <p className="text-sm text-slate-500">This may take a moment</p>
             </div>
@@ -645,7 +635,7 @@ export function BulkPricingImportModal({
           {step === 'complete' && (
             <div className="flex flex-col items-center justify-center py-12">
               <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mb-4">
-                <Check className="h-8 w-8 text-green-600" />
+                <Check weight="light" className="h-8 w-8 text-green-600" />
               </div>
               <p className="text-lg font-medium mb-4">Import Complete!</p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-center">

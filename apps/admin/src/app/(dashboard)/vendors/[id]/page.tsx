@@ -1,3 +1,4 @@
+import { ArrowClockwise, ArrowLeft, Buildings, Calendar, CaretRight, CheckCircle, Clock, Database, EnvelopeSimple, FileText, GearSix, Globe, Link as LinkIcon, PencilSimple, Phone, Trash, UploadSimple, User, Warning, XCircle } from '@phosphor-icons/react/dist/ssr';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -13,28 +14,6 @@ import {
   TabsList,
   TabsTrigger,
 } from '@crm-eco/ui';
-import {
-  ArrowLeft,
-  Building2,
-  Edit,
-  Trash2,
-  RefreshCw,
-  Settings2,
-  Globe,
-  Mail,
-  Phone,
-  User,
-  Calendar,
-  Clock,
-  FileText,
-  CheckCircle,
-  XCircle,
-  AlertTriangle,
-  ChevronRight,
-  Link as LinkIcon,
-  Database,
-  Upload,
-} from 'lucide-react';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { formatDistanceToNow, format } from 'date-fns';
 import { getActiveTenant } from '@/lib/tenant';
@@ -116,10 +95,10 @@ function StatusBadge({ status }: { status: string }) {
 // Connection Type Badge
 function ConnectionTypeBadge({ type }: { type: string }) {
   const config: Record<string, { label: string; icon: React.ReactNode; className: string }> = {
-    manual: { label: 'Manual', icon: <Upload className="w-3 h-3" />, className: 'bg-slate-100 text-slate-600' },
-    sftp: { label: 'SFTP', icon: <Database className="w-3 h-3" />, className: 'bg-blue-100 text-blue-600' },
-    api: { label: 'API', icon: <LinkIcon className="w-3 h-3" />, className: 'bg-purple-100 text-purple-600' },
-    webhook: { label: 'Webhook', icon: <RefreshCw className="w-3 h-3" />, className: 'bg-green-100 text-green-600' },
+    manual: { label: 'Manual', icon: <UploadSimple weight="light" className="w-3 h-3" />, className: 'bg-slate-100 text-slate-600' },
+    sftp: { label: 'SFTP', icon: <Database weight="light" className="w-3 h-3" />, className: 'bg-blue-100 text-blue-600' },
+    api: { label: 'API', icon: <LinkIcon weight="light" className="w-3 h-3" />, className: 'bg-purple-100 text-purple-600' },
+    webhook: { label: 'Webhook', icon: <ArrowClockwise weight="light" className="w-3 h-3" />, className: 'bg-green-100 text-green-600' },
   };
 
   const { label, icon, className } = config[type] || config.manual;
@@ -136,16 +115,16 @@ function ConnectionTypeBadge({ type }: { type: string }) {
 function FileStatusIcon({ status }: { status: string }) {
   switch (status) {
     case 'completed':
-      return <CheckCircle className="w-4 h-4 text-green-500" />;
+      return <CheckCircle weight="light" className="w-4 h-4 text-green-500" />;
     case 'processing':
     case 'validating':
-      return <RefreshCw className="w-4 h-4 text-blue-500 animate-spin" />;
+      return <ArrowClockwise weight="light" className="w-4 h-4 text-blue-500 animate-spin" />;
     case 'failed':
-      return <XCircle className="w-4 h-4 text-red-500" />;
+      return <XCircle weight="light" className="w-4 h-4 text-red-500" />;
     case 'pending':
-      return <Clock className="w-4 h-4 text-amber-500" />;
+      return <Clock weight="light" className="w-4 h-4 text-amber-500" />;
     default:
-      return <FileText className="w-4 h-4 text-slate-400" />;
+      return <FileText weight="light" className="w-4 h-4 text-slate-400" />;
   }
 }
 
@@ -170,7 +149,7 @@ export default async function VendorDetailPage({
         <div className="flex items-center gap-4">
           <Link href="/vendors">
             <Button variant="ghost" size="icon" className="rounded-full">
-              <ArrowLeft className="w-5 h-5" />
+              <ArrowLeft weight="light" className="w-5 h-5" />
             </Button>
           </Link>
           <div className="flex items-center gap-4">
@@ -178,7 +157,7 @@ export default async function VendorDetailPage({
               {vendor.logo_url ? (
                 <img src={vendor.logo_url} alt={vendor.name} className="w-8 h-8" />
               ) : (
-                <Building2 className="w-7 h-7 text-slate-400" />
+                <Buildings weight="light" className="w-7 h-7 text-slate-400" />
               )}
             </div>
             <div>
@@ -195,12 +174,12 @@ export default async function VendorDetailPage({
         <div className="flex gap-2">
           <Link href={`/vendors/${vendor.id}/edit`}>
             <Button variant="outline" className="gap-2">
-              <Edit className="w-4 h-4" />
-              Edit
+              <PencilSimple weight="light" className="w-4 h-4" />
+              PencilSimple
             </Button>
           </Link>
           <Button variant="outline" className="gap-2 text-red-600 hover:text-red-700 hover:bg-red-50">
-            <Trash2 className="w-4 h-4" />
+            <Trash weight="light" className="w-4 h-4" />
             Delete
           </Button>
         </div>
@@ -255,13 +234,13 @@ export default async function VendorDetailPage({
             <CardContent className="space-y-3">
               {vendor.contact_name && (
                 <div className="flex items-center gap-3">
-                  <User className="w-4 h-4 text-slate-400" />
+                  <User weight="light" className="w-4 h-4 text-slate-400" />
                   <span className="text-sm text-slate-700">{vendor.contact_name}</span>
                 </div>
               )}
               {vendor.contact_email && (
                 <div className="flex items-center gap-3">
-                  <Mail className="w-4 h-4 text-slate-400" />
+                  <EnvelopeSimple weight="light" className="w-4 h-4 text-slate-400" />
                   <a href={`mailto:${vendor.contact_email}`} className="text-sm text-blue-600 hover:underline">
                     {vendor.contact_email}
                   </a>
@@ -269,13 +248,13 @@ export default async function VendorDetailPage({
               )}
               {vendor.contact_phone && (
                 <div className="flex items-center gap-3">
-                  <Phone className="w-4 h-4 text-slate-400" />
+                  <Phone weight="light" className="w-4 h-4 text-slate-400" />
                   <span className="text-sm text-slate-700">{vendor.contact_phone}</span>
                 </div>
               )}
               {vendor.website_url && (
                 <div className="flex items-center gap-3">
-                  <Globe className="w-4 h-4 text-slate-400" />
+                  <Globe weight="light" className="w-4 h-4 text-slate-400" />
                   <a
                     href={vendor.website_url}
                     target="_blank"
@@ -358,7 +337,7 @@ export default async function VendorDetailPage({
                 <CardContent>
                   {files.length === 0 ? (
                     <div className="text-center py-12">
-                      <FileText className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                      <FileText weight="light" className="w-12 h-12 text-slate-300 mx-auto mb-3" />
                       <p className="text-slate-500">No files uploaded yet</p>
                     </div>
                   ) : (
@@ -401,7 +380,7 @@ export default async function VendorDetailPage({
                 <CardContent>
                   {changes.length === 0 ? (
                     <div className="text-center py-12">
-                      <CheckCircle className="w-12 h-12 text-green-300 mx-auto mb-3" />
+                      <CheckCircle weight="light" className="w-12 h-12 text-green-300 mx-auto mb-3" />
                       <p className="text-slate-500">No changes detected</p>
                     </div>
                   ) : (
@@ -446,7 +425,7 @@ export default async function VendorDetailPage({
                 <CardContent>
                   {connectors.length === 0 ? (
                     <div className="text-center py-12">
-                      <Settings2 className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                      <GearSix weight="light" className="w-12 h-12 text-slate-300 mx-auto mb-3" />
                       <p className="text-slate-500">No connectors configured</p>
                     </div>
                   ) : (

@@ -258,7 +258,7 @@ export function ReplyForm({
         <button
           onClick={handleSendReply}
           disabled={(!replyHtml.trim() || replyHtml === '<p></p>') || sending}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium rounded-lg transition-colors"
         >
           {sending ? (
             <Loader2 className="w-4 h-4 animate-spin" />

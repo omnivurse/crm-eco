@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@crm-eco/ui';
-import { User, Users, Heart, Pill, DollarSign, MapPin } from 'lucide-react';
+import { User, Users, Heart, Pill, CurrencyDollar, MapPin } from '@phosphor-icons/react/dist/ssr';
 
 interface EnrollmentSnapshot {
   intake?: {
@@ -86,18 +86,17 @@ export function EnrollmentDetailsCard({
     <Card className="h-full">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-lg">
-          <User className="w-5 h-5 text-blue-600" />
+          <User weight="light" className="h-5 w-5 text-[var(--mp-teal)]" />
           Enrollment Details
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-5">
-        {/* Primary Member */}
         <div>
-          <h4 className="text-sm font-medium text-slate-500 mb-2 flex items-center gap-1">
-            <User className="w-4 h-4" />
+          <h4 className="mb-2 flex items-center gap-1 text-sm font-medium text-slate-500">
+            <User weight="light" className="h-4 w-4" />
             Primary Member
           </h4>
-          <div className="bg-slate-50 rounded-lg p-3 space-y-1">
+          <div className="space-y-1 rounded-lg bg-slate-50 p-3">
             <p className="font-medium text-slate-900">
               {primaryMember.first_name} {primaryMember.last_name}
             </p>
@@ -106,21 +105,20 @@ export function EnrollmentDetailsCard({
               <p className="text-sm text-slate-600">{primaryMember.phone}</p>
             )}
             {primaryMember.state && (
-              <p className="text-sm text-slate-600 flex items-center gap-1">
-                <MapPin className="w-3 h-3" />
+              <p className="flex items-center gap-1 text-sm text-slate-600">
+                <MapPin weight="light" className="h-3 w-3" />
                 {primaryMember.state}
               </p>
             )}
           </div>
         </div>
 
-        {/* Household */}
         <div>
-          <h4 className="text-sm font-medium text-slate-500 mb-2 flex items-center gap-1">
-            <Users className="w-4 h-4" />
+          <h4 className="mb-2 flex items-center gap-1 text-sm font-medium text-slate-500">
+            <Users weight="light" className="h-4 w-4" />
             Household
           </h4>
-          <div className="bg-slate-50 rounded-lg p-3">
+          <div className="rounded-lg bg-slate-50 p-3">
             <p className="text-sm text-slate-900">{getHouseholdSummary()}</p>
             {householdMembers.length > 0 && (
               <div className="mt-2 space-y-1">
@@ -134,40 +132,38 @@ export function EnrollmentDetailsCard({
           </div>
         </div>
 
-        {/* Plan Details */}
         {plan && (
           <div>
-            <h4 className="text-sm font-medium text-slate-500 mb-2 flex items-center gap-1">
-              <Heart className="w-4 h-4" />
+            <h4 className="mb-2 flex items-center gap-1 text-sm font-medium text-slate-500">
+              <Heart weight="light" className="h-4 w-4" />
               Plan
             </h4>
-            <div className="bg-blue-50 rounded-lg p-3">
-              <p className="font-medium text-blue-900">{plan.name}</p>
-              <p className="text-sm text-blue-700">{plan.code}</p>
-              <p className="text-lg font-semibold text-blue-900 mt-1 flex items-center gap-1">
-                <DollarSign className="w-4 h-4" />
+            <div className="rounded-lg bg-[rgba(11,109,133,0.06)] p-3">
+              <p className="font-medium text-[var(--mp-ink)]">{plan.name}</p>
+              <p className="text-sm text-[var(--mp-teal)]">{plan.code}</p>
+              <p className="mt-1 flex items-center gap-1 text-lg font-semibold text-[var(--mp-ink)]">
+                <CurrencyDollar weight="light" className="h-4 w-4" />
                 {plan.monthly_share}/month
               </p>
             </div>
           </div>
         )}
 
-        {/* Rx Medications */}
         {rxMedications.length > 0 && (
           <div>
-            <h4 className="text-sm font-medium text-slate-500 mb-2 flex items-center gap-1">
-              <Pill className="w-4 h-4" />
+            <h4 className="mb-2 flex items-center gap-1 text-sm font-medium text-slate-500">
+              <Pill weight="light" className="h-4 w-4" />
               Medications
             </h4>
-            <div className="bg-slate-50 rounded-lg p-3 space-y-2">
+            <div className="space-y-2 rounded-lg bg-slate-50 p-3">
               {rxMedications.map((med, idx) => (
-                <div key={idx} className="flex justify-between items-center">
+                <div key={idx} className="flex items-center justify-between">
                   <span className="text-sm text-slate-900">{med.name}</span>
                   <span className="text-sm text-slate-500">{med.dosage}</span>
                 </div>
               ))}
               {rxPricing?.summary && (
-                <p className="text-xs text-slate-500 pt-2 border-t mt-2">
+                <p className="mt-2 border-t pt-2 text-xs text-slate-500">
                   {rxPricing.summary}
                 </p>
               )}
@@ -175,14 +171,13 @@ export function EnrollmentDetailsCard({
           </div>
         )}
 
-        {/* Payment Method */}
         {snapshot.payment?.payment_method && (
           <div>
-            <h4 className="text-sm font-medium text-slate-500 mb-2 flex items-center gap-1">
-              <DollarSign className="w-4 h-4" />
+            <h4 className="mb-2 flex items-center gap-1 text-sm font-medium text-slate-500">
+              <CurrencyDollar weight="light" className="h-4 w-4" />
               Payment
             </h4>
-            <div className="bg-slate-50 rounded-lg p-3">
+            <div className="rounded-lg bg-slate-50 p-3">
               <p className="text-sm text-slate-900">
                 {snapshot.payment.payment_method === 'bank_draft' ? 'Bank Draft (ACH)' : 'Credit/Debit Card'}
               </p>
@@ -198,4 +193,3 @@ export function EnrollmentDetailsCard({
     </Card>
   );
 }
-

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { RefreshCw, X } from 'lucide-react';
+import { ArrowsClockwise, X } from '@phosphor-icons/react';
 
 /**
  * Service-worker update toast — listens for the `sw-update-available` custom
@@ -24,16 +24,16 @@ export function UpdateToast() {
 
   return (
     <div
-      className="fixed left-1/2 top-3 z-50 -translate-x-1/2 rounded-full border border-slate-200 bg-white px-3 py-2 shadow-md"
+      className="fixed left-1/2 top-3 z-50 -translate-x-1/2 rounded-full border border-[rgba(11,109,133,0.12)] bg-white px-3 py-2 shadow-[var(--mp-shadow-soft)]"
       role="status"
       aria-live="polite"
     >
       <div className="flex items-center gap-2">
-        <RefreshCw className="h-4 w-4 text-slate-700" />
+        <ArrowsClockwise weight="light" className="h-4 w-4 text-[var(--mp-teal)]" />
         <span className="text-sm text-slate-800">New version available</span>
         <button
           onClick={() => location.reload()}
-          className="ml-2 rounded-md bg-slate-900 px-2.5 py-1 text-xs font-medium text-white hover:bg-slate-800"
+          className="ml-2 rounded-full bg-[var(--mp-teal)] px-2.5 py-1 text-xs font-medium text-white hover:opacity-90"
         >
           Refresh
         </button>
@@ -42,7 +42,7 @@ export function UpdateToast() {
           aria-label="Dismiss"
           className="ml-1 rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
         >
-          <X className="h-3.5 w-3.5" />
+          <X weight="light" className="h-3.5 w-3.5" />
         </button>
       </div>
     </div>

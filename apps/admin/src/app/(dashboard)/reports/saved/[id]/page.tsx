@@ -1,22 +1,9 @@
 'use client';
 
+import { ArrowLeft, ChartBar, CircleNotch, Clock, ClockCounterClockwise, FloppyDisk, GearSix, Play, Star, Table, Trash, WarningCircle } from '@phosphor-icons/react';
 import { useState, useEffect } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import {
-  ArrowLeft,
-  Play,
-  Save,
-  Settings,
-  BarChart3,
-  Table,
-  History,
-  Loader2,
-  AlertCircle,
-  Star,
-  Clock,
-  Trash2,
-} from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import { Input } from '@crm-eco/ui/components/input';
@@ -233,7 +220,7 @@ export default function AdminSavedReportDetailPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-16">
-        <Loader2 className="w-8 h-8 animate-spin text-[#0891b2]" />
+        <CircleNotch weight="light" className="w-8 h-8 animate-spin text-[#0891b2]" />
       </div>
     );
   }
@@ -241,14 +228,14 @@ export default function AdminSavedReportDetailPage() {
   if (!report) {
     return (
       <div className="text-center py-16">
-        <AlertCircle className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+        <WarningCircle weight="light" className="w-16 h-16 text-slate-300 mx-auto mb-4" />
         <h1 className="text-xl font-bold text-slate-900 mb-2">Report Not Found</h1>
         <p className="text-slate-500 mb-4">
           The report you're looking for doesn't exist.
         </p>
         <Link href="/reports/saved">
           <Button variant="outline">
-            <ArrowLeft className="w-4 h-4 mr-2" />
+            <ArrowLeft weight="light" className="w-4 h-4 mr-2" />
             Back to Saved Reports
           </Button>
         </Link>
@@ -265,13 +252,13 @@ export default function AdminSavedReportDetailPage() {
             href="/reports/saved"
             className="flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 mb-2"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft weight="light" className="w-4 h-4" />
             Back to Saved Reports
           </Link>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold text-slate-900">{report.name}</h1>
             {report.is_favorite && (
-              <Star className="w-5 h-5 text-amber-500 fill-current" />
+              <Star weight="light" className="w-5 h-5 text-amber-500 fill-current" />
             )}
           </div>
           {report.description && (
@@ -279,18 +266,18 @@ export default function AdminSavedReportDetailPage() {
           )}
           <div className="flex items-center gap-4 text-sm text-slate-500 mt-2">
             <span className="flex items-center gap-1">
-              <BarChart3 className="w-4 h-4" />
+              <ChartBar weight="light" className="w-4 h-4" />
               {report.data_source}
             </span>
             {report.run_count !== undefined && (
               <span className="flex items-center gap-1">
-                <Play className="w-4 h-4" />
+                <Play weight="light" className="w-4 h-4" />
                 {report.run_count} runs
               </span>
             )}
             {report.last_run_at && (
               <span className="flex items-center gap-1">
-                <Clock className="w-4 h-4" />
+                <Clock weight="light" className="w-4 h-4" />
                 Last run {new Date(report.last_run_at).toLocaleDateString()}
               </span>
             )}
@@ -303,23 +290,22 @@ export default function AdminSavedReportDetailPage() {
             onClick={handleToggleFavorite}
             className={report.is_favorite ? 'text-amber-500' : ''}
           >
-            <Star className={`w-4 h-4 ${report.is_favorite ? 'fill-current' : ''}`} />
+            <Star weight="light" className={`w-4 h-4 ${report.is_favorite ? 'fill-current' : ''}`} />
           </Button>
           <Button
             onClick={handleRunReport}
             disabled={isRunning}
-            className="bg-[#0891b2] hover:bg-[#0e7490] text-white"
           >
             {isRunning ? (
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              <CircleNotch weight="light" className="w-4 h-4 mr-2 animate-spin" />
             ) : (
-              <Play className="w-4 h-4 mr-2" />
+              <Play weight="light" className="w-4 h-4 mr-2" />
             )}
             {isRunning ? 'Running...' : 'Run Report'}
           </Button>
           <ExportButton onExport={handleExport} disabled={results.length === 0} />
           <Button variant="outline" onClick={handleDelete} className="text-red-600">
-            <Trash2 className="w-4 h-4" />
+            <Trash weight="light" className="w-4 h-4" />
           </Button>
         </div>
       </div>
@@ -327,7 +313,7 @@ export default function AdminSavedReportDetailPage() {
       {/* Error Alert */}
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+          <WarningCircle weight="light" className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
           <div>
             <p className="font-medium text-red-800">Error</p>
             <p className="text-sm text-red-600">{error}</p>
@@ -339,11 +325,11 @@ export default function AdminSavedReportDetailPage() {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="overview" className="flex items-center gap-2">
-            <BarChart3 className="w-4 h-4" />
+            <ChartBar weight="light" className="w-4 h-4" />
             Overview
           </TabsTrigger>
           <TabsTrigger value="data" className="flex items-center gap-2">
-            <Table className="w-4 h-4" />
+            <Table weight="light" className="w-4 h-4" />
             Data
             {results.length > 0 && (
               <span className="ml-1 text-xs bg-[#0891b2]/10 text-[#0891b2] px-1.5 py-0.5 rounded">
@@ -352,12 +338,12 @@ export default function AdminSavedReportDetailPage() {
             )}
           </TabsTrigger>
           <TabsTrigger value="history" className="flex items-center gap-2">
-            <History className="w-4 h-4" />
-            History
+            <ClockCounterClockwise weight="light" className="w-4 h-4" />
+            ClockCounterClockwise
           </TabsTrigger>
           <TabsTrigger value="settings" className="flex items-center gap-2">
-            <Settings className="w-4 h-4" />
-            Settings
+            <GearSix weight="light" className="w-4 h-4" />
+            GearSix
           </TabsTrigger>
         </TabsList>
 
@@ -407,11 +393,11 @@ export default function AdminSavedReportDetailPage() {
                 <h3 className="font-semibold text-slate-900 mb-3">Quick Actions</h3>
                 <div className="space-y-2">
                   <Button
-                    className="w-full bg-[#0891b2] hover:bg-[#0e7490] text-white"
+                    className="w-full"
                     onClick={handleRunReport}
                     disabled={isRunning}
                   >
-                    <Play className="w-4 h-4 mr-2" />
+                    <Play weight="light" className="w-4 h-4 mr-2" />
                     Run Report
                   </Button>
                   <DateRangePicker
@@ -461,15 +447,14 @@ export default function AdminSavedReportDetailPage() {
             </div>
           ) : (
             <div className="bg-white rounded-xl p-8 border border-slate-200 text-center">
-              <Table className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+              <Table weight="light" className="w-12 h-12 text-slate-300 mx-auto mb-3" />
               <h3 className="font-semibold text-slate-900 mb-1">No Data Yet</h3>
               <p className="text-sm text-slate-500 mb-4">Run the report to see results</p>
               <Button
                 onClick={handleRunReport}
                 disabled={isRunning}
-                className="bg-[#0891b2] hover:bg-[#0e7490] text-white"
               >
-                <Play className="w-4 h-4 mr-2" />
+                <Play weight="light" className="w-4 h-4 mr-2" />
                 Run Report
               </Button>
             </div>
@@ -478,15 +463,15 @@ export default function AdminSavedReportDetailPage() {
 
         <TabsContent value="history" className="mt-4">
           <div className="bg-white rounded-xl p-6 border border-slate-200 text-center">
-            <History className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-            <h3 className="font-semibold text-slate-900 mb-1">Run History</h3>
+            <ClockCounterClockwise weight="light" className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+            <h3 className="font-semibold text-slate-900 mb-1">Run ClockCounterClockwise</h3>
             <p className="text-sm text-slate-500">Run history will be tracked here</p>
           </div>
         </TabsContent>
 
         <TabsContent value="settings" className="mt-4">
           <div className="bg-white rounded-xl p-6 border border-slate-200 max-w-2xl">
-            <h2 className="text-lg font-semibold text-slate-900 mb-4">Report Settings</h2>
+            <h2 className="text-lg font-semibold text-slate-900 mb-4">Report GearSix</h2>
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Report Name</Label>
@@ -508,14 +493,13 @@ export default function AdminSavedReportDetailPage() {
               <Button
                 onClick={handleSaveChanges}
                 disabled={isSaving}
-                className="bg-[#0891b2] hover:bg-[#0e7490] text-white"
               >
                 {isSaving ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  <CircleNotch weight="light" className="w-4 h-4 mr-2 animate-spin" />
                 ) : (
-                  <Save className="w-4 h-4 mr-2" />
+                  <FloppyDisk weight="light" className="w-4 h-4 mr-2" />
                 )}
-                Save Changes
+                FloppyDisk Changes
               </Button>
             </div>
           </div>

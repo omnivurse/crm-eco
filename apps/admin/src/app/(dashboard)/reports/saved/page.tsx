@@ -1,20 +1,9 @@
 'use client';
 
+import { ArrowLeft, Clock, DotsThreeVertical, FileText, MagnifyingGlass, PencilSimple, Play, Plus, Star, Trash } from '@phosphor-icons/react';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import {
-  ArrowLeft,
-  Search,
-  Star,
-  Clock,
-  Play,
-  MoreVertical,
-  Trash2,
-  Edit,
-  FileText,
-  Plus,
-} from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import { Input } from '@crm-eco/ui/components/input';
@@ -123,7 +112,7 @@ export default function AdminSavedReportsPage() {
             href="/reports"
             className="flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 mb-2"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft weight="light" className="w-4 h-4" />
             Back to Reports
           </Link>
           <h1 className="text-2xl font-bold text-slate-900">Saved Reports</h1>
@@ -134,8 +123,8 @@ export default function AdminSavedReportsPage() {
 
         <div className="flex items-center gap-3">
           <Link href="/reports/templates">
-            <Button className="bg-[#0891b2] hover:bg-[#0e7490] text-white">
-              <Plus className="w-4 h-4 mr-2" />
+            <Button>
+              <Plus weight="light" className="w-4 h-4 mr-2" />
               New Report
             </Button>
           </Link>
@@ -145,9 +134,9 @@ export default function AdminSavedReportsPage() {
       {/* Filters */}
       <div className="flex flex-col md:flex-row gap-4">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <MagnifyingGlass weight="light" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <Input
-            placeholder="Search reports..."
+            placeholder="MagnifyingGlass reports..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9"
@@ -173,7 +162,7 @@ export default function AdminSavedReportsPage() {
           onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
           className={showFavoritesOnly ? 'bg-amber-500 hover:bg-amber-600 text-white' : ''}
         >
-          <Star className={`w-4 h-4 mr-2 ${showFavoritesOnly ? 'fill-current' : ''}`} />
+          <Star weight="light" className={`w-4 h-4 mr-2 ${showFavoritesOnly ? 'fill-current' : ''}`} />
           Favorites
         </Button>
       </div>
@@ -216,7 +205,7 @@ export default function AdminSavedReportsPage() {
                       {report.name}
                     </Link>
                     {report.is_favorite && (
-                      <Star className="w-4 h-4 text-amber-500 fill-current flex-shrink-0" />
+                      <Star weight="light" className="w-4 h-4 text-amber-500 fill-current flex-shrink-0" />
                     )}
                   </div>
                   {report.description && (
@@ -226,7 +215,7 @@ export default function AdminSavedReportsPage() {
                   )}
                   <div className="flex items-center gap-4 text-xs text-slate-500">
                     <span className="flex items-center gap-1">
-                      <FileText className="w-3 h-3" />
+                      <FileText weight="light" className="w-3 h-3" />
                       {report.data_source}
                     </span>
                     {report.template_category && (
@@ -236,13 +225,13 @@ export default function AdminSavedReportsPage() {
                     )}
                     {report.run_count !== undefined && (
                       <span className="flex items-center gap-1">
-                        <Play className="w-3 h-3" />
+                        <Play weight="light" className="w-3 h-3" />
                         {report.run_count} runs
                       </span>
                     )}
                     {report.last_run_at && (
                       <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
+                        <Clock weight="light" className="w-3 h-3" />
                         Last run {new Date(report.last_run_at).toLocaleDateString()}
                       </span>
                     )}
@@ -256,25 +245,25 @@ export default function AdminSavedReportsPage() {
                     onClick={() => handleToggleFavorite(report.id)}
                     className={report.is_favorite ? 'text-amber-500' : ''}
                   >
-                    <Star className={`w-4 h-4 ${report.is_favorite ? 'fill-current' : ''}`} />
+                    <Star weight="light" className={`w-4 h-4 ${report.is_favorite ? 'fill-current' : ''}`} />
                   </Button>
                   <Link href={`/reports/saved/${report.id}?run=true`}>
-                    <Button size="sm" className="bg-[#0891b2] hover:bg-[#0e7490] text-white">
-                      <Play className="w-4 h-4 mr-1" />
+                    <Button size="sm" >
+                      <Play weight="light" className="w-4 h-4 mr-1" />
                       Run
                     </Button>
                   </Link>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button size="sm" variant="ghost">
-                        <MoreVertical className="w-4 h-4" />
+                        <DotsThreeVertical weight="light" className="w-4 h-4" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem asChild>
                         <Link href={`/reports/saved/${report.id}`}>
-                          <Edit className="w-4 h-4 mr-2" />
-                          Edit
+                          <PencilSimple weight="light" className="w-4 h-4 mr-2" />
+                          PencilSimple
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
@@ -282,7 +271,7 @@ export default function AdminSavedReportsPage() {
                         onClick={() => handleDeleteReport(report.id)}
                         className="text-red-600"
                       >
-                        <Trash2 className="w-4 h-4 mr-2" />
+                        <Trash weight="light" className="w-4 h-4 mr-2" />
                         Delete
                       </DropdownMenuItem>
                     </DropdownMenuContent>
@@ -294,7 +283,7 @@ export default function AdminSavedReportsPage() {
         </div>
       ) : (
         <div className="bg-white rounded-xl p-8 border border-slate-200 text-center">
-          <FileText className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+          <FileText weight="light" className="w-16 h-16 text-slate-300 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-slate-900 mb-1">
             {searchQuery || filterCategory !== 'all' || showFavoritesOnly
               ? 'No matching reports'
@@ -310,8 +299,8 @@ export default function AdminSavedReportsPage() {
               <Button variant="outline">Browse Templates</Button>
             </Link>
             <Link href="/reports/templates">
-              <Button className="bg-[#0891b2] hover:bg-[#0e7490] text-white">
-                <Plus className="w-4 h-4 mr-2" />
+              <Button>
+                <Plus weight="light" className="w-4 h-4 mr-2" />
                 Create Report
               </Button>
             </Link>

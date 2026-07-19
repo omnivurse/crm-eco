@@ -1,8 +1,8 @@
 'use client';
 
+import { Buildings, Eye, PencilSimple, Trash } from '@phosphor-icons/react';
 import Link from 'next/link';
 import { Badge, Button } from '@crm-eco/ui';
-import { Eye, Edit, Building2, Trash2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import type { Vendor } from '@crm-eco/lib/types';
 
@@ -38,7 +38,7 @@ export function VendorTable({ vendors }: VendorTableProps) {
   if (vendors.length === 0) {
     return (
       <div className="text-center py-12">
-        <Building2 className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+        <Buildings weight="light" className="w-12 h-12 text-slate-300 mx-auto mb-4" />
         <h3 className="text-lg font-medium text-slate-900 mb-1">No vendors yet</h3>
         <p className="text-slate-500 mb-4">Get started by adding your first vendor integration</p>
         <Link href="/vendors/new">
@@ -71,7 +71,7 @@ export function VendorTable({ vendors }: VendorTableProps) {
                     {vendor.logo_url ? (
                       <img src={vendor.logo_url} alt={vendor.name} className="w-6 h-6" />
                     ) : (
-                      <Building2 className="w-5 h-5 text-slate-400" />
+                      <Buildings weight="light" className="w-5 h-5 text-slate-400" />
                     )}
                   </div>
                   <div>
@@ -114,12 +114,12 @@ export function VendorTable({ vendors }: VendorTableProps) {
                 <div className="flex items-center justify-end gap-1">
                   <Link href={`/vendors/${vendor.id}`}>
                     <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                      <Eye className="h-4 w-4" />
+                      <Eye weight="light" className="h-4 w-4" />
                     </Button>
                   </Link>
                   <Link href={`/vendors/${vendor.id}/edit`}>
                     <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                      <Edit className="h-4 w-4" />
+                      <PencilSimple weight="light" className="h-4 w-4" />
                     </Button>
                   </Link>
                 </div>

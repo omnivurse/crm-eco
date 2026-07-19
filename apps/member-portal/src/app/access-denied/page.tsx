@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ShieldX, ArrowLeft, Mail } from 'lucide-react';
+import { ShieldSlash, ArrowLeft, Envelope } from '@phosphor-icons/react/dist/ssr';
 import { Button } from '@crm-eco/ui/components/button';
 
 interface PageProps {
@@ -33,42 +33,42 @@ export default async function AccessDeniedPage({ searchParams }: PageProps) {
   const isMemberGate = reason === 'no_member' || reason === 'no_membership';
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-      <div className="max-w-md w-full text-center">
-        <div className="w-20 h-20 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-6">
-          <ShieldX className="w-10 h-10 text-red-600" />
+    <div className="flex min-h-screen items-center justify-center bg-[var(--mp-canvas)] p-4">
+      <div className="w-full max-w-md text-center">
+        <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-red-100">
+          <ShieldSlash weight="light" className="h-10 w-10 text-red-600" />
         </div>
         
-        <h1 className="text-2xl font-bold text-slate-900 mb-4">Access Denied</h1>
+        <h1 className="mb-4 text-2xl font-bold tracking-[-0.03em] text-[var(--mp-ink)]">Access Denied</h1>
         
-        <p className="text-slate-600 mb-8">
+        <p className="mb-8 text-slate-600">
           {getReasonMessage()}
         </p>
 
-        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+        <div className="flex flex-col justify-center gap-3 sm:flex-row">
           <Link href="/">
-            <Button variant="outline" className="gap-2 w-full sm:w-auto">
-              <ArrowLeft className="h-4 w-4" />
+            <Button variant="outline" className="w-full gap-2 rounded-full sm:w-auto">
+              <ArrowLeft weight="light" className="h-4 w-4" />
               Go Home
             </Button>
           </Link>
           
           {reason === 'not_authenticated' ? (
             <Link href="/signin">
-              <Button className="gap-2 w-full sm:w-auto">
+              <Button className="w-full gap-2 rounded-full bg-[var(--mp-teal)] hover:bg-[var(--mp-teal-soft)] sm:w-auto">
                 Sign In
               </Button>
             </Link>
           ) : isMemberGate ? (
             <Link href="/enroll">
-              <Button className="gap-2 w-full sm:w-auto">
+              <Button className="w-full gap-2 rounded-full bg-[var(--mp-teal)] hover:bg-[var(--mp-teal-soft)] sm:w-auto">
                 Enroll Now
               </Button>
             </Link>
           ) : (
             <a href="mailto:support@doublehelixhub.com">
-              <Button className="gap-2 w-full sm:w-auto">
-                <Mail className="h-4 w-4" />
+              <Button className="w-full gap-2 rounded-full bg-[var(--mp-teal)] hover:bg-[var(--mp-teal-soft)] sm:w-auto">
+                <Envelope weight="light" className="h-4 w-4" />
                 Contact Support
               </Button>
             </a>

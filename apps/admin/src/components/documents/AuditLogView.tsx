@@ -1,6 +1,6 @@
 'use client';
 
-import { ClipboardList } from 'lucide-react';
+import { ClipboardText } from '@phosphor-icons/react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@crm-eco/ui/components/table';
 import type { DocumentAuditEntry } from './types';
 import { getActionLabel, formatDateTime } from './utils';
@@ -18,7 +18,7 @@ export function AuditLogView({ entries, loading }: AuditLogViewProps) {
   if (entries.length === 0) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-12 text-gray-400">
-        <ClipboardList className="w-12 h-12 mb-3" />
+        <ClipboardText weight="light" className="w-12 h-12 mb-3" />
         <p className="text-lg font-medium">No activity yet</p>
       </div>
     );

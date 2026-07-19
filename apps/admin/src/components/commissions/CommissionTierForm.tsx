@@ -1,5 +1,6 @@
 'use client';
 
+import { ArrowLeft, CircleNotch, FloppyDisk } from '@phosphor-icons/react';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@crm-eco/lib/supabase/client';
@@ -19,7 +20,6 @@ import {
   Label,
   Switch,
 } from '@crm-eco/ui';
-import { Loader2, Save, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 // Commission tier type (tables may not be in generated types yet)
 interface CommissionTier {
@@ -203,7 +203,7 @@ export function CommissionTierForm({ tier, organizationId }: CommissionTierFormP
         <div className="flex items-center gap-4">
           <Link href="/commissions/tiers">
             <Button variant="ghost" size="icon">
-              <ArrowLeft className="h-5 w-5" />
+              <ArrowLeft weight="light" className="h-5 w-5" />
             </Button>
           </Link>
           <div>
@@ -223,14 +223,14 @@ export function CommissionTierForm({ tier, organizationId }: CommissionTierFormP
               onClick={handleDelete}
               disabled={deleting || saving}
             >
-              {deleting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {deleting && <CircleNotch weight="light" className="h-4 w-4 mr-2 animate-spin" />}
               Delete
             </Button>
           )}
           <Button type="submit" disabled={saving}>
-            {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            <Save className="h-4 w-4 mr-2" />
-            {isEdit ? 'Save Changes' : 'Create Tier'}
+            {saving && <CircleNotch weight="light" className="h-4 w-4 mr-2 animate-spin" />}
+            <FloppyDisk weight="light" className="h-4 w-4 mr-2" />
+            {isEdit ? 'FloppyDisk Changes' : 'Create Tier'}
           </Button>
         </div>
       </div>

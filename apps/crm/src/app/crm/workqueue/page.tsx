@@ -8,7 +8,7 @@ export const metadata = {
 
 export default function WorkqueuePage() {
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="w-full space-y-6">
       {/* Header */}
       <div>
         <div className="flex items-center gap-3">

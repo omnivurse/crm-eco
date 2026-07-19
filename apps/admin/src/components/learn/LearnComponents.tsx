@@ -1,8 +1,8 @@
 'use client';
 
+import { ArrowLeft, Clock } from '@phosphor-icons/react';
 import Link from 'next/link';
 import { cn } from '@crm-eco/ui';
-import { ArrowLeft, Clock } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 
 // ─── Article Layout ─────────────────────────────────────────────────────────
@@ -30,7 +30,7 @@ export function ArticleLayout({
       <div className="mb-6">
         <Button variant="ghost" size="sm" className="gap-2 text-slate-500 hover:text-slate-700" asChild>
           <Link href={backHref}>
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft weight="light" className="w-4 h-4" />
             {backLabel}
           </Link>
         </Button>
@@ -46,7 +46,7 @@ export function ArticleLayout({
             )}
             {readTime && (
               <span className="flex items-center gap-1 text-sm text-slate-400 whitespace-nowrap">
-                <Clock className="w-4 h-4" />
+                <Clock weight="light" className="w-4 h-4" />
                 {readTime}
               </span>
             )}

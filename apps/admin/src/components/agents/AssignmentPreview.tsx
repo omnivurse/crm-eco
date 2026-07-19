@@ -1,5 +1,6 @@
 'use client';
 
+import { ArrowClockwise, ArrowRight, CircleNotch, ClockCounterClockwise, Play, Users } from '@phosphor-icons/react';
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import {
@@ -11,15 +12,6 @@ import {
   Button,
   Badge,
 } from '@crm-eco/ui';
-import {
-  RefreshCw,
-  ArrowRight,
-  Users,
-  Loader2,
-  Play,
-  History,
-} from 'lucide-react';
-
 interface Agent {
   id: string;
   first_name: string;
@@ -161,7 +153,7 @@ export function AssignmentPreview({ rule, agents, organizationId }: AssignmentPr
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
-            <Users className="h-4 w-4" />
+            <Users weight="light" className="h-4 w-4" />
             Assignment Preview
           </CardTitle>
           <CardDescription>Fixed assignment to a specific agent</CardDescription>
@@ -198,7 +190,7 @@ export function AssignmentPreview({ rule, agents, organizationId }: AssignmentPr
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="text-base flex items-center gap-2">
-              <RefreshCw className="h-4 w-4" />
+              <ArrowClockwise weight="light" className="h-4 w-4" />
               Assignment Preview
             </CardTitle>
             <CardDescription>
@@ -209,7 +201,7 @@ export function AssignmentPreview({ rule, agents, organizationId }: AssignmentPr
             </CardDescription>
           </div>
           <Button variant="outline" size="sm" onClick={loadPreview} disabled={isLoading}>
-            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+            {isLoading ? <CircleNotch weight="light" className="h-4 w-4 animate-spin" /> : <ArrowClockwise weight="light" className="h-4 w-4" />}
           </Button>
         </div>
       </CardHeader>
@@ -217,7 +209,7 @@ export function AssignmentPreview({ rule, agents, organizationId }: AssignmentPr
         {/* Preview Queue */}
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            <CircleNotch weight="light" className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         ) : preview.length === 0 ? (
           <p className="text-sm text-slate-500 text-center py-4">
@@ -249,7 +241,7 @@ export function AssignmentPreview({ rule, agents, organizationId }: AssignmentPr
                     </Badge>
                   </div>
                   {index < preview.length - 1 && (
-                    <ArrowRight className="h-4 w-4 text-slate-300 flex-shrink-0" />
+                    <ArrowRight weight="light" className="h-4 w-4 text-slate-300 flex-shrink-0" />
                   )}
                 </div>
               ))}
@@ -261,7 +253,7 @@ export function AssignmentPreview({ rule, agents, organizationId }: AssignmentPr
         <div className="border-t pt-4">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2 text-sm text-slate-600">
-              <Play className="h-4 w-4" />
+              <Play weight="light" className="h-4 w-4" />
               <span>Test Assignment</span>
             </div>
             <Button
@@ -271,9 +263,9 @@ export function AssignmentPreview({ rule, agents, organizationId }: AssignmentPr
               disabled={isSimulating || !rule.is_enabled}
             >
               {isSimulating ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                <CircleNotch weight="light" className="h-4 w-4 animate-spin mr-2" />
               ) : (
-                <Play className="h-4 w-4 mr-2" />
+                <Play weight="light" className="h-4 w-4 mr-2" />
               )}
               Simulate
             </Button>

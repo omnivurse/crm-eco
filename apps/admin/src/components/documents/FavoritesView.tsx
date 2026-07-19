@@ -1,6 +1,6 @@
 'use client';
 
-import { Star, Folder } from 'lucide-react';
+import { Folder, Star } from '@phosphor-icons/react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@crm-eco/ui/components/table';
 import type { Document, DocFolder } from './types';
 import { getFileIcon, formatFileSize, formatDate } from './utils';
@@ -22,7 +22,7 @@ export function FavoritesView({ favDocs, favFolders, loading, onOpenFolder, onDo
   if (favDocs.length === 0 && favFolders.length === 0) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-12 text-gray-400">
-        <Star className="w-12 h-12 mb-3" />
+        <Star weight="light" className="w-12 h-12 mb-3" />
         <p className="text-lg font-medium">No favorites</p>
         <p className="text-sm">Star documents and folders to access them quickly.</p>
       </div>
@@ -45,7 +45,7 @@ export function FavoritesView({ favDocs, favFolders, loading, onOpenFolder, onDo
             <TableRow key={folder.id} className="cursor-pointer hover:bg-gray-50">
               <TableCell>
                 <button onClick={() => onOpenFolder(folder.id)} className="flex items-center gap-2 text-sm hover:text-blue-600">
-                  <Folder className="w-4 h-4 text-blue-400" />
+                  <Folder weight="light" className="w-4 h-4 text-blue-400" />
                   {folder.name}
                 </button>
               </TableCell>
@@ -57,7 +57,7 @@ export function FavoritesView({ favDocs, favFolders, loading, onOpenFolder, onDo
                   className="p-1 hover:bg-gray-100 rounded"
                   title="Remove from favorites"
                 >
-                  <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                  <Star weight="light" className="w-4 h-4 text-yellow-500 fill-yellow-500" />
                 </button>
               </TableCell>
             </TableRow>
@@ -68,7 +68,7 @@ export function FavoritesView({ favDocs, favFolders, loading, onOpenFolder, onDo
               <TableRow key={doc.id} className="cursor-pointer hover:bg-gray-50">
                 <TableCell>
                   <button onClick={() => onDownload(doc.id)} className="flex items-center gap-2 text-sm hover:text-blue-600">
-                    <Icon className="w-4 h-4 text-gray-400" />
+                    <Icon weight="light" className="w-4 h-4 text-gray-400" />
                     {doc.name}
                   </button>
                 </TableCell>
@@ -80,7 +80,7 @@ export function FavoritesView({ favDocs, favFolders, loading, onOpenFolder, onDo
                     className="p-1 hover:bg-gray-100 rounded"
                     title="Remove from favorites"
                   >
-                    <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                    <Star weight="light" className="w-4 h-4 text-yellow-500 fill-yellow-500" />
                   </button>
                 </TableCell>
               </TableRow>

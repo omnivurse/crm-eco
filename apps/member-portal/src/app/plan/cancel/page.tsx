@@ -1,11 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ChevronLeft, AlertTriangle } from 'lucide-react';
+import { Warning } from '@phosphor-icons/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@crm-eco/ui';
 import { createClient } from '@crm-eco/lib/supabase/client';
+import { PageHeader } from '@/components/PageHeader';
 
 interface InactiveReason {
   code: string;
@@ -77,17 +77,12 @@ export default function PlanCancelPage() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-6 px-4 py-8">
-      <Link href="/plan" className="inline-flex items-center text-sm text-blue-600 hover:underline">
-        <ChevronLeft className="mr-1 h-4 w-4" /> Back to Plan
-      </Link>
-
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Cancel membership</h1>
-        <p className="mt-1 text-sm text-slate-600">
-          We&apos;re sorry to see you go. Cancellation requests are reviewed by our team
-          before becoming final.
-        </p>
-      </div>
+      <PageHeader
+        title="Cancel membership"
+        description="We're sorry to see you go. Cancellation requests are reviewed by our team before becoming final."
+        backHref="/plan"
+        backLabel="Back to Plan"
+      />
 
       <Card>
         <CardHeader>
@@ -140,7 +135,7 @@ export default function PlanCancelPage() {
           ) : (
             <div className="rounded-lg border-2 border-red-300 bg-red-50 p-4">
               <div className="flex items-start gap-3">
-                <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-red-600" />
+                <Warning weight="light" className="mt-0.5 h-5 w-5 flex-shrink-0 text-red-600" />
                 <div className="flex-1">
                   <p className="font-semibold text-red-900">
                     Are you sure you want to cancel?

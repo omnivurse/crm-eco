@@ -421,7 +421,6 @@ function ProductModal({
             <Button
               type="submit"
               disabled={saving}
-              className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400"
             >
               {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               {product ? 'Save Changes' : 'Create Product'}

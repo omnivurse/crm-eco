@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Input, Label, Button } from '@crm-eco/ui';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@crm-eco/ui';
-import { Loader2, ArrowRight } from 'lucide-react';
+import { CircleNotch, ArrowRight } from '@phosphor-icons/react';
 import type { PrefillData } from '@crm-eco/enrollment';
 
 const US_STATES = [
@@ -140,8 +140,8 @@ export function SelfServeIntakeStep({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-        <p className="text-sm text-blue-800">
+      <div className="bg-[rgba(11,109,133,0.06)] border border-[rgba(11,109,133,0.15)] rounded-lg p-4 mb-6">
+        <p className="text-sm text-[var(--mp-ink)]">
           <strong>Welcome!</strong> Please provide your contact information. 
           This will be used for all communications about your membership and benefits.
         </p>
@@ -267,13 +267,13 @@ export function SelfServeIntakeStep({
         <Button type="submit" disabled={loading} className="gap-2">
           {loading ? (
             <>
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <CircleNotch weight="light" className="w-4 h-4 animate-spin" />
               Saving...
             </>
           ) : (
             <>
               Continue
-              <ArrowRight className="w-4 h-4" />
+              <ArrowRight weight="light" className="w-4 h-4" />
             </>
           )}
         </Button>

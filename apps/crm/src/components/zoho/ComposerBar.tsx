@@ -163,7 +163,7 @@ export function ComposerBar({
               size="sm"
               onClick={handleSubmit}
               disabled={!content.trim() || submitting}
-              className="h-8 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white"
+              className="h-8"
             >
               {submitting ? (
                 <Loader2 className="w-4 h-4 animate-spin" />

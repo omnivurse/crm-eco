@@ -12,19 +12,19 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Legacy alias — maps to Double Helix Hub cyan brand
+        // Soft Structuralism spruce teal (was bright cyan)
         advisor: {
-          50: '#ecfeff',
-          100: '#cffafe',
-          200: '#a5f3fc',
-          300: '#67e8f9',
-          400: '#22d3ee',
-          500: '#06b6d4',
-          600: '#0891b2',
-          700: '#0e7490',
-          800: '#155e75',
-          900: '#164e63',
-          950: '#083344',
+          50: '#f0f9fb',
+          100: '#d9f0f4',
+          200: '#b7e0e9',
+          300: '#85c8d6',
+          400: '#4da6bc',
+          500: '#0b6d85',
+          600: '#0a5f74',
+          700: '#0e4f61',
+          800: '#134150',
+          900: '#153744',
+          950: '#0a232e',
         },
       },
     },

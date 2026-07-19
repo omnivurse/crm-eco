@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle, Button, Textarea, Label } from '@crm-eco/ui';
-import { Loader2, Send } from 'lucide-react';
+import { CircleNotch, PaperPlaneTilt } from '@phosphor-icons/react';
 import { addMemberTicketComment } from '@/app/support/actions';
 
 interface SupportTicketReplyFormProps {
@@ -76,12 +76,12 @@ export function SupportTicketReplyForm({ ticketId, disabled = false }: SupportTi
             <Button type="submit" disabled={loading || !message.trim()} className="gap-2">
               {loading ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                  <CircleNotch weight="light" className="h-4 w-4 animate-spin" aria-hidden />
                   Sending…
                 </>
               ) : (
                 <>
-                  <Send className="h-4 w-4" aria-hidden />
+                  <PaperPlaneTilt weight="light" className="h-4 w-4" aria-hidden />
                   Send reply
                 </>
               )}
@@ -120,21 +120,21 @@ export function SupportTicketThread({
         <CardTitle className="text-base">Conversation</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="rounded-lg bg-blue-50 p-4">
-          <div className="mb-1 flex items-center justify-between gap-2 text-xs text-blue-700">
+        <div className="rounded-lg bg-[var(--mp-mist)] p-4">
+          <div className="mb-1 flex items-center justify-between gap-2 text-xs text-[var(--mp-teal)]">
             <span className="font-medium">You · original message</span>
             <time dateTime={ticketCreatedAt}>
               {format(new Date(ticketCreatedAt), 'MMM d, yyyy h:mm a')}
             </time>
           </div>
-          <p className="whitespace-pre-wrap text-sm text-blue-900">{ticketDescription}</p>
+          <p className="whitespace-pre-wrap text-sm text-[var(--mp-ink)]">{ticketDescription}</p>
         </div>
 
         {comments.map((comment) => (
           <div
             key={comment.id}
             className={`rounded-lg p-4 ${
-              comment.is_member ? 'bg-blue-50' : 'border border-slate-200 bg-white'
+              comment.is_member ? 'bg-[var(--mp-mist)]' : 'border border-slate-200 bg-white'
             }`}
           >
             <div className="mb-1 flex items-center justify-between gap-2 text-xs text-slate-500">

@@ -1,7 +1,7 @@
+import { Clock, Heart, ShieldCheck } from '@phosphor-icons/react/dist/ssr';
 import type { Metadata } from 'next';
 import { createServiceRoleClient } from '@crm-eco/lib/supabase/server';
 import { notFound } from 'next/navigation';
-import { Shield, Heart, Clock } from 'lucide-react';
 import { PublicEnrollmentWizard } from '../PublicEnrollmentWizard';
 
 export const dynamic = 'force-dynamic';
@@ -158,7 +158,7 @@ export default async function PublicLandingEnrollPage({ params }: PageProps) {
           <div className="flex flex-wrap justify-center gap-6 mt-6">
             {[
               { icon: Clock, text: 'Takes ~5 minutes' },
-              { icon: Shield, text: 'Secure & private' },
+              { icon: ShieldCheck, text: 'Secure & private' },
               { icon: Heart, text: 'No obligation' },
             ].map((item) => (
               <div key={item.text} className="flex items-center gap-2 text-sm opacity-80">

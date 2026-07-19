@@ -1,5 +1,6 @@
 'use client';
 
+import { ArrowClockwise, Clock, File, FileXls, Hash, MapPin, Monitor, Pulse, ShieldCheck, User } from '@phosphor-icons/react';
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
@@ -19,18 +20,6 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@crm-eco/ui/components/sheet';
-import {
-  Shield,
-  RefreshCw,
-  Activity,
-  FileJson,
-  FileSpreadsheet,
-  Clock,
-  User,
-  MapPin,
-  Monitor,
-  Hash,
-} from 'lucide-react';
 import { RiskLevelBadge } from '@crm-eco/ui/components/risk-level-badge';
 import { format } from 'date-fns';
 
@@ -167,7 +156,7 @@ export function AuditLogsClient({ initialLogs, users, profile }: AuditLogsClient
           </div>
 
           <Button variant="outline" size="sm" onClick={() => auditFeed.refresh()}>
-            <RefreshCw className="w-4 h-4 mr-2" />
+            <ArrowClockwise weight="light" className="w-4 h-4 mr-2" />
             Refresh
           </Button>
 
@@ -179,13 +168,13 @@ export function AuditLogsClient({ initialLogs, users, profile }: AuditLogsClient
                 format: 'csv',
                 label: 'CSV',
                 description: 'Spreadsheet format',
-                icon: <FileSpreadsheet className="w-4 h-4" />,
+                icon: <FileXls weight="light" className="w-4 h-4" />,
               },
               {
                 format: 'json',
                 label: 'JSON',
                 description: 'Raw data format',
-                icon: <FileJson className="w-4 h-4" />,
+                icon: <File weight="light" className="w-4 h-4" />,
               },
             ]}
           />
@@ -197,7 +186,7 @@ export function AuditLogsClient({ initialLogs, users, profile }: AuditLogsClient
         <div className="p-4 rounded-xl bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-white/10">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800">
-              <Activity className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+              <Pulse weight="light" className="w-4 h-4 text-slate-600 dark:text-slate-400" />
             </div>
             <div>
               <p className="text-2xl font-bold text-slate-900 dark:text-white">
@@ -210,7 +199,7 @@ export function AuditLogsClient({ initialLogs, users, profile }: AuditLogsClient
         <div className="p-4 rounded-xl bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-white/10">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-red-100 dark:bg-red-500/20">
-              <Shield className="w-4 h-4 text-red-600 dark:text-red-400" />
+              <ShieldCheck weight="light" className="w-4 h-4 text-red-600 dark:text-red-400" />
             </div>
             <div>
               <p className="text-2xl font-bold text-slate-900 dark:text-white">
@@ -223,7 +212,7 @@ export function AuditLogsClient({ initialLogs, users, profile }: AuditLogsClient
         <div className="p-4 rounded-xl bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-white/10">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-orange-100 dark:bg-orange-500/20">
-              <Shield className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+              <ShieldCheck weight="light" className="w-4 h-4 text-orange-600 dark:text-orange-400" />
             </div>
             <div>
               <p className="text-2xl font-bold text-slate-900 dark:text-white">
@@ -236,7 +225,7 @@ export function AuditLogsClient({ initialLogs, users, profile }: AuditLogsClient
         <div className="p-4 rounded-xl bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-white/10">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-500/20">
-              <Shield className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+              <ShieldCheck weight="light" className="w-4 h-4 text-amber-600 dark:text-amber-400" />
             </div>
             <div>
               <p className="text-2xl font-bold text-slate-900 dark:text-white">
@@ -264,7 +253,7 @@ export function AuditLogsClient({ initialLogs, users, profile }: AuditLogsClient
         <SheetContent className="w-[500px] sm:max-w-[500px]">
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2">
-              <Activity className="w-5 h-5" />
+              <Pulse weight="light" className="w-5 h-5" />
               Audit Log Details
             </SheetTitle>
             <SheetDescription>
@@ -285,7 +274,7 @@ export function AuditLogsClient({ initialLogs, users, profile }: AuditLogsClient
               {/* Details Grid */}
               <div className="grid gap-4">
                 <div className="flex items-start gap-3">
-                  <Clock className="w-4 h-4 mt-0.5 text-slate-400" />
+                  <Clock weight="light" className="w-4 h-4 mt-0.5 text-slate-400" />
                   <div>
                     <p className="text-xs text-slate-500 uppercase tracking-wider">Timestamp</p>
                     <p className="text-sm text-slate-900 dark:text-white">
@@ -295,7 +284,7 @@ export function AuditLogsClient({ initialLogs, users, profile }: AuditLogsClient
                 </div>
 
                 <div className="flex items-start gap-3">
-                  <User className="w-4 h-4 mt-0.5 text-slate-400" />
+                  <User weight="light" className="w-4 h-4 mt-0.5 text-slate-400" />
                   <div>
                     <p className="text-xs text-slate-500 uppercase tracking-wider">Actor</p>
                     <p className="text-sm text-slate-900 dark:text-white">
@@ -308,7 +297,7 @@ export function AuditLogsClient({ initialLogs, users, profile }: AuditLogsClient
                 </div>
 
                 <div className="flex items-start gap-3">
-                  <Activity className="w-4 h-4 mt-0.5 text-slate-400" />
+                  <Pulse weight="light" className="w-4 h-4 mt-0.5 text-slate-400" />
                   <div>
                     <p className="text-xs text-slate-500 uppercase tracking-wider">Action</p>
                     <p className="text-sm text-slate-900 dark:text-white">
@@ -320,7 +309,7 @@ export function AuditLogsClient({ initialLogs, users, profile }: AuditLogsClient
 
                 {selectedLog.target_entity_type && (
                   <div className="flex items-start gap-3">
-                    <Hash className="w-4 h-4 mt-0.5 text-slate-400" />
+                    <Hash weight="light" className="w-4 h-4 mt-0.5 text-slate-400" />
                     <div>
                       <p className="text-xs text-slate-500 uppercase tracking-wider">Target</p>
                       <p className="text-sm text-slate-900 dark:text-white">
@@ -333,7 +322,7 @@ export function AuditLogsClient({ initialLogs, users, profile }: AuditLogsClient
 
                 {selectedLog.ip_address && (
                   <div className="flex items-start gap-3">
-                    <MapPin className="w-4 h-4 mt-0.5 text-slate-400" />
+                    <MapPin weight="light" className="w-4 h-4 mt-0.5 text-slate-400" />
                     <div>
                       <p className="text-xs text-slate-500 uppercase tracking-wider">IP Address</p>
                       <p className="text-sm text-slate-900 dark:text-white">
@@ -345,7 +334,7 @@ export function AuditLogsClient({ initialLogs, users, profile }: AuditLogsClient
 
                 {selectedLog.user_agent && (
                   <div className="flex items-start gap-3">
-                    <Monitor className="w-4 h-4 mt-0.5 text-slate-400" />
+                    <Monitor weight="light" className="w-4 h-4 mt-0.5 text-slate-400" />
                     <div>
                       <p className="text-xs text-slate-500 uppercase tracking-wider">User Agent</p>
                       <p className="text-sm text-slate-900 dark:text-white truncate">

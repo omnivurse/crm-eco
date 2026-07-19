@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Input, Label, Button, Card, CardContent } from '@crm-eco/ui';
-import { Loader2, ArrowRight, AlertTriangle, Check } from 'lucide-react';
+import { CircleNotch, ArrowRight, Warning, Check } from '@phosphor-icons/react';
 
 interface ComplianceData {
   acknowledged_not_insurance?: boolean;
@@ -73,7 +73,7 @@ export function SelfServeComplianceStep({
       <Card className="bg-amber-50 border-amber-300">
         <CardContent className="pt-6">
           <div className="flex gap-4">
-            <AlertTriangle className="w-6 h-6 text-amber-600 flex-shrink-0" />
+            <Warning weight="light" className="w-6 h-6 text-amber-600 flex-shrink-0" />
             <div>
               <h4 className="font-semibold text-amber-900 mb-2">
                 Important: Please Read Carefully
@@ -97,10 +97,10 @@ export function SelfServeComplianceStep({
               className={`flex-shrink-0 w-6 h-6 rounded border-2 flex items-center justify-center transition-colors ${
                 formData.acknowledged_not_insurance
                   ? 'bg-green-600 border-green-600 text-white'
-                  : 'border-slate-300 hover:border-blue-500'
+                  : 'border-slate-300 hover:border-[var(--mp-teal)]'
               }`}
             >
-              {formData.acknowledged_not_insurance && <Check className="w-4 h-4" />}
+              {formData.acknowledged_not_insurance && <Check weight="light" className="w-4 h-4" />}
             </button>
             <div className="flex-1">
               <h4 className="font-semibold text-slate-900 mb-2">
@@ -135,10 +135,10 @@ export function SelfServeComplianceStep({
               className={`flex-shrink-0 w-6 h-6 rounded border-2 flex items-center justify-center transition-colors ${
                 formData.acknowledged_sharing_guidelines
                   ? 'bg-green-600 border-green-600 text-white'
-                  : 'border-slate-300 hover:border-blue-500'
+                  : 'border-slate-300 hover:border-[var(--mp-teal)]'
               }`}
             >
-              {formData.acknowledged_sharing_guidelines && <Check className="w-4 h-4" />}
+              {formData.acknowledged_sharing_guidelines && <Check weight="light" className="w-4 h-4" />}
             </button>
             <div className="flex-1">
               <h4 className="font-semibold text-slate-900 mb-2">
@@ -173,10 +173,10 @@ export function SelfServeComplianceStep({
               className={`flex-shrink-0 w-6 h-6 rounded border-2 flex items-center justify-center transition-colors ${
                 formData.acknowledged_pre_existing_conditions
                   ? 'bg-green-600 border-green-600 text-white'
-                  : 'border-slate-300 hover:border-blue-500'
+                  : 'border-slate-300 hover:border-[var(--mp-teal)]'
               }`}
             >
-              {formData.acknowledged_pre_existing_conditions && <Check className="w-4 h-4" />}
+              {formData.acknowledged_pre_existing_conditions && <Check weight="light" className="w-4 h-4" />}
             </button>
             <div className="flex-1">
               <h4 className="font-semibold text-slate-900 mb-2">
@@ -268,13 +268,13 @@ export function SelfServeComplianceStep({
         >
           {loading ? (
             <>
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <CircleNotch weight="light" className="w-4 h-4 animate-spin" />
               Saving...
             </>
           ) : (
             <>
               Continue
-              <ArrowRight className="w-4 h-4" />
+              <ArrowRight weight="light" className="w-4 h-4" />
             </>
           )}
         </Button>

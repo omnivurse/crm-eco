@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@crm-eco/ui';
-import { Activity, ArrowRight, FileText, AlertTriangle, MessageSquare, Edit } from 'lucide-react';
+import { Pulse, ArrowRight, FileText, Warning, ChatCircle, PencilSimple } from '@phosphor-icons/react/dist/ssr';
 import { format } from 'date-fns';
 
 // Event type mapping to friendly labels
@@ -10,27 +10,27 @@ const eventTypeConfig: Record<string, {
 }> = {
   status_change: {
     label: 'Status Updated',
-    icon: <ArrowRight className="w-3 h-3" />,
-    className: 'text-blue-600 bg-blue-50',
+    icon: <ArrowRight weight="light" className="h-3 w-3" />,
+    className: 'text-[var(--mp-teal)] bg-[rgba(11,109,133,0.08)]',
   },
   step_completed: {
     label: 'Step Completed',
-    icon: <FileText className="w-3 h-3" />,
+    icon: <FileText weight="light" className="h-3 w-3" />,
     className: 'text-green-600 bg-green-50',
   },
   warning_flagged: {
     label: 'Warning Added',
-    icon: <AlertTriangle className="w-3 h-3" />,
+    icon: <Warning weight="light" className="h-3 w-3" />,
     className: 'text-amber-600 bg-amber-50',
   },
   note: {
     label: 'Note',
-    icon: <MessageSquare className="w-3 h-3" />,
+    icon: <ChatCircle weight="light" className="h-3 w-3" />,
     className: 'text-slate-600 bg-slate-50',
   },
   field_update: {
     label: 'Details Updated',
-    icon: <Edit className="w-3 h-3" />,
+    icon: <PencilSimple weight="light" className="h-3 w-3" />,
     className: 'text-slate-600 bg-slate-50',
   },
 };
@@ -54,12 +54,12 @@ export function EnrollmentActivityCard({ auditLog }: EnrollmentActivityCardProps
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-lg">
-            <Activity className="w-5 h-5 text-blue-600" />
+            <Pulse weight="light" className="h-5 w-5 text-[var(--mp-teal)]" />
             Activity History
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-slate-500 text-center py-4">
+          <p className="py-4 text-center text-sm text-slate-500">
             No activity recorded yet.
           </p>
         </CardContent>
@@ -71,12 +71,12 @@ export function EnrollmentActivityCard({ auditLog }: EnrollmentActivityCardProps
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-lg">
-          <Activity className="w-5 h-5 text-blue-600" />
+          <Pulse weight="light" className="h-5 w-5 text-[var(--mp-teal)]" />
           Activity History
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-3 max-h-80 overflow-y-auto">
+        <div className="max-h-80 space-y-3 overflow-y-auto">
           {auditLog.map((entry) => {
             const config = eventTypeConfig[entry.event_type] || eventTypeConfig.note;
             
@@ -88,33 +88,31 @@ export function EnrollmentActivityCard({ auditLog }: EnrollmentActivityCardProps
             return (
               <div
                 key={entry.id}
-                className="flex gap-3 p-3 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors"
+                className="flex gap-3 rounded-lg bg-slate-50 p-3 transition-colors hover:bg-slate-100"
               >
-                {/* Icon */}
-                <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${config.className}`}>
+                <div className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${config.className}`}>
                   {config.icon}
                 </div>
 
-                {/* Content */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
                     <span className="text-sm font-medium text-slate-900">
                       {config.label}
                     </span>
                     {hasTransition && (
-                      <span className="text-xs text-slate-500 flex items-center gap-1">
+                      <span className="flex items-center gap-1 text-xs text-slate-500">
                         <span className="capitalize">{oldStatus}</span>
-                        <ArrowRight className="w-3 h-3" />
+                        <ArrowRight weight="light" className="h-3 w-3" />
                         <span className="capitalize">{newStatus}</span>
                       </span>
                     )}
                   </div>
                   {entry.message && (
-                    <p className="text-sm text-slate-600 mt-0.5 truncate">
+                    <p className="mt-0.5 truncate text-sm text-slate-600">
                       {entry.message}
                     </p>
                   )}
-                  <p className="text-xs text-slate-400 mt-1">
+                  <p className="mt-1 text-xs text-slate-400">
                     {format(new Date(entry.created_at), 'MMM d, yyyy h:mm a')}
                   </p>
                 </div>
@@ -126,4 +124,3 @@ export function EnrollmentActivityCard({ auditLog }: EnrollmentActivityCardProps
     </Card>
   );
 }
-

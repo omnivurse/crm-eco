@@ -315,7 +315,7 @@ export const ListView = memo(function ListView({
         </div>
         <p className="text-lg font-medium text-slate-900 dark:text-white mb-1">No records found</p>
         <p className="text-sm text-slate-500 mb-4">Get started by creating a new record.</p>
-        <Button className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400" asChild>
+        <Button asChild>
           <Link href={`/crm/modules/${moduleKey}/new`}>
             <Plus className="w-4 h-4 mr-2" />
             Create Record

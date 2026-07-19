@@ -1,5 +1,6 @@
 'use client';
 
+import { Calendar, CircleNotch, CurrencyDollar, FloppyDisk, PencilSimple, Plus, Trash, Users, X } from '@phosphor-icons/react';
 import { useState, useCallback, useEffect } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
 import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
@@ -21,8 +22,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@crm-eco/ui';
-import { Plus, Trash2, Edit, Save, X, Loader2, DollarSign, Users, Calendar } from 'lucide-react';
-
 interface IuaLevel {
   id: string;
   plan_id: string;
@@ -95,7 +94,7 @@ export function PricingMatrixEditor({ productId, organizationId }: PricingMatrix
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'iua' | 'age' | 'benefits' | 'matrix'>('iua');
 
-  // Edit states
+  // PencilSimple states
   const [editingIua, setEditingIua] = useState<IuaLevel | null>(null);
   const [editingAge, setEditingAge] = useState<AgeBracket | null>(null);
   const [editingBenefit, setEditingBenefit] = useState<BenefitType | null>(null);
@@ -302,7 +301,7 @@ export function PricingMatrixEditor({ productId, organizationId }: PricingMatrix
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+        <CircleNotch weight="light" className="w-8 h-8 animate-spin text-slate-400" />
       </div>
     );
   }
@@ -321,10 +320,10 @@ export function PricingMatrixEditor({ productId, organizationId }: PricingMatrix
       {/* Tab Navigation */}
       <div className="flex gap-2 border-b">
         {[
-          { key: 'iua', label: 'IUA Levels', icon: DollarSign },
+          { key: 'iua', label: 'IUA Levels', icon: CurrencyDollar },
           { key: 'age', label: 'Age Brackets', icon: Calendar },
           { key: 'benefits', label: 'Benefits', icon: Users },
-          { key: 'matrix', label: 'Pricing Matrix', icon: DollarSign },
+          { key: 'matrix', label: 'Pricing Matrix', icon: CurrencyDollar },
         ].map((tab) => (
           <button
             key={tab.key}
@@ -352,7 +351,7 @@ export function PricingMatrixEditor({ productId, organizationId }: PricingMatrix
               </CardDescription>
             </div>
             <Button onClick={() => setShowNewIua(true)} size="sm">
-              <Plus className="w-4 h-4 mr-2" />
+              <Plus weight="light" className="w-4 h-4 mr-2" />
               Add IUA Level
             </Button>
           </CardHeader>
@@ -387,7 +386,7 @@ export function PricingMatrixEditor({ productId, organizationId }: PricingMatrix
                         size="icon"
                         onClick={() => setEditingIua(level)}
                       >
-                        <Edit className="w-4 h-4" />
+                        <PencilSimple weight="light" className="w-4 h-4" />
                       </Button>
                       <Button
                         variant="ghost"
@@ -395,7 +394,7 @@ export function PricingMatrixEditor({ productId, organizationId }: PricingMatrix
                         onClick={() => deleteIuaLevel(level.id)}
                         className="text-red-600 hover:text-red-700"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash weight="light" className="w-4 h-4" />
                       </Button>
                     </div>
                   </div>
@@ -417,7 +416,7 @@ export function PricingMatrixEditor({ productId, organizationId }: PricingMatrix
               </CardDescription>
             </div>
             <Button onClick={() => setShowNewAge(true)} size="sm">
-              <Plus className="w-4 h-4 mr-2" />
+              <Plus weight="light" className="w-4 h-4 mr-2" />
               Add Age Bracket
             </Button>
           </CardHeader>
@@ -450,7 +449,7 @@ export function PricingMatrixEditor({ productId, organizationId }: PricingMatrix
                         size="icon"
                         onClick={() => setEditingAge(bracket)}
                       >
-                        <Edit className="w-4 h-4" />
+                        <PencilSimple weight="light" className="w-4 h-4" />
                       </Button>
                       <Button
                         variant="ghost"
@@ -458,7 +457,7 @@ export function PricingMatrixEditor({ productId, organizationId }: PricingMatrix
                         onClick={() => deleteAgeBracket(bracket.id)}
                         className="text-red-600 hover:text-red-700"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash weight="light" className="w-4 h-4" />
                       </Button>
                     </div>
                   </div>
@@ -480,7 +479,7 @@ export function PricingMatrixEditor({ productId, organizationId }: PricingMatrix
               </CardDescription>
             </div>
             <Button onClick={() => setShowNewBenefit(true)} size="sm">
-              <Plus className="w-4 h-4 mr-2" />
+              <Plus weight="light" className="w-4 h-4 mr-2" />
               Add Benefit
             </Button>
           </CardHeader>
@@ -519,7 +518,7 @@ export function PricingMatrixEditor({ productId, organizationId }: PricingMatrix
                         size="icon"
                         onClick={() => setEditingBenefit(benefit)}
                       >
-                        <Edit className="w-4 h-4" />
+                        <PencilSimple weight="light" className="w-4 h-4" />
                       </Button>
                       <Button
                         variant="ghost"
@@ -527,7 +526,7 @@ export function PricingMatrixEditor({ productId, organizationId }: PricingMatrix
                         onClick={() => deleteBenefitType(benefit.id)}
                         className="text-red-600 hover:text-red-700"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash weight="light" className="w-4 h-4" />
                       </Button>
                     </div>
                   </div>
@@ -702,7 +701,7 @@ function IuaLevelDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{level ? 'Edit IUA Level' : 'Add IUA Level'}</DialogTitle>
+          <DialogTitle>{level ? 'PencilSimple IUA Level' : 'Add IUA Level'}</DialogTitle>
           <DialogDescription>
             Configure the Initial Unshareable Amount option
           </DialogDescription>
@@ -755,8 +754,8 @@ function IuaLevelDialog({
             Cancel
           </Button>
           <Button onClick={handleSubmit} disabled={saving || !amount}>
-            {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            Save
+            {saving && <CircleNotch weight="light" className="w-4 h-4 mr-2 animate-spin" />}
+            FloppyDisk
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -813,7 +812,7 @@ function AgeBracketDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{bracket ? 'Edit Age Bracket' : 'Add Age Bracket'}</DialogTitle>
+          <DialogTitle>{bracket ? 'PencilSimple Age Bracket' : 'Add Age Bracket'}</DialogTitle>
           <DialogDescription>
             Configure age-based pricing tier
           </DialogDescription>
@@ -866,8 +865,8 @@ function AgeBracketDialog({
             Cancel
           </Button>
           <Button onClick={handleSubmit} disabled={saving || !minAge || !maxAge}>
-            {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            Save
+            {saving && <CircleNotch weight="light" className="w-4 h-4 mr-2 animate-spin" />}
+            FloppyDisk
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -932,7 +931,7 @@ function BenefitTypeDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{benefit ? 'Edit Benefit' : 'Add Benefit'}</DialogTitle>
+          <DialogTitle>{benefit ? 'PencilSimple Benefit' : 'Add Benefit'}</DialogTitle>
           <DialogDescription>
             Configure product benefit coverage
           </DialogDescription>
@@ -1004,8 +1003,8 @@ function BenefitTypeDialog({
             Cancel
           </Button>
           <Button onClick={handleSubmit} disabled={saving || !benefitName}>
-            {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            Save
+            {saving && <CircleNotch weight="light" className="w-4 h-4 mr-2 animate-spin" />}
+            FloppyDisk
           </Button>
         </DialogFooter>
       </DialogContent>

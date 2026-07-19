@@ -1,20 +1,10 @@
 'use client';
 
+import { ArrowLeft, Calendar, Clock, DeviceMobile, Eye, Globe, Monitor, TrendUp, Users } from '@phosphor-icons/react';
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@crm-eco/lib/supabase/client';
-import {
-  ArrowLeft,
-  Eye,
-  Users,
-  TrendingUp,
-  Clock,
-  Globe,
-  Smartphone,
-  Monitor,
-  Calendar,
-} from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@crm-eco/ui/components/card';
 import {
@@ -194,7 +184,7 @@ export default function LandingPageAnalyticsPage() {
         <div className="flex items-center gap-4">
           <Link href={`/enrollment-links/${id}`}>
             <Button variant="ghost" size="icon">
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft weight="light" className="w-4 h-4" />
             </Button>
           </Link>
           <div>
@@ -205,7 +195,7 @@ export default function LandingPageAnalyticsPage() {
 
         <Select value={dateRange} onValueChange={setDateRange}>
           <SelectTrigger className="w-40">
-            <Calendar className="w-4 h-4 mr-2" />
+            <Calendar weight="light" className="w-4 h-4 mr-2" />
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -226,7 +216,7 @@ export default function LandingPageAnalyticsPage() {
                 <p className="text-2xl font-bold">{landingPage.views.toLocaleString()}</p>
               </div>
               <div className="p-3 bg-blue-100 rounded-lg">
-                <Eye className="w-5 h-5 text-blue-600" />
+                <Eye weight="light" className="w-5 h-5 text-blue-600" />
               </div>
             </div>
           </CardContent>
@@ -240,7 +230,7 @@ export default function LandingPageAnalyticsPage() {
                 <p className="text-2xl font-bold text-emerald-600">{landingPage.submissions}</p>
               </div>
               <div className="p-3 bg-emerald-100 rounded-lg">
-                <Users className="w-5 h-5 text-emerald-600" />
+                <Users weight="light" className="w-5 h-5 text-emerald-600" />
               </div>
             </div>
           </CardContent>
@@ -254,7 +244,7 @@ export default function LandingPageAnalyticsPage() {
                 <p className="text-2xl font-bold text-amber-600">{getConversionRate()}</p>
               </div>
               <div className="p-3 bg-amber-100 rounded-lg">
-                <TrendingUp className="w-5 h-5 text-amber-600" />
+                <TrendUp weight="light" className="w-5 h-5 text-amber-600" />
               </div>
             </div>
           </CardContent>
@@ -272,7 +262,7 @@ export default function LandingPageAnalyticsPage() {
                 </p>
               </div>
               <div className="p-3 bg-purple-100 rounded-lg">
-                <Clock className="w-5 h-5 text-purple-600" />
+                <Clock weight="light" className="w-5 h-5 text-purple-600" />
               </div>
             </div>
           </CardContent>
@@ -338,21 +328,21 @@ export default function LandingPageAnalyticsPage() {
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Monitor className="w-4 h-4 text-slate-500" />
+                <Monitor weight="light" className="w-4 h-4 text-slate-500" />
                 <span>Desktop</span>
               </div>
               <span className="font-medium">{deviceStats.desktop}</span>
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Smartphone className="w-4 h-4 text-slate-500" />
+                <DeviceMobile weight="light" className="w-4 h-4 text-slate-500" />
                 <span>Mobile</span>
               </div>
               <span className="font-medium">{deviceStats.mobile}</span>
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Globe className="w-4 h-4 text-slate-500" />
+                <Globe weight="light" className="w-4 h-4 text-slate-500" />
                 <span>Other</span>
               </div>
               <span className="font-medium">{deviceStats.tablet + deviceStats.unknown}</span>
@@ -375,7 +365,7 @@ export default function LandingPageAnalyticsPage() {
               {topReferrers.map(([domain, count], idx) => (
                 <div key={idx} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Globe className="w-4 h-4 text-slate-400" />
+                    <Globe weight="light" className="w-4 h-4 text-slate-400" />
                     <span>{domain === 'direct' ? 'Direct / No Referrer' : domain}</span>
                   </div>
                   <div className="flex items-center gap-4">

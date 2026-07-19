@@ -1,10 +1,10 @@
 'use client';
 
+import { ArrowLeft } from '@phosphor-icons/react';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, Button, Input, Label } from '@crm-eco/ui';
-import { ArrowLeft } from 'lucide-react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 
 interface PlanRow {
@@ -84,7 +84,7 @@ export default function NewPriceChangePage() {
       <div className="flex items-center gap-3">
         <Link href="/billing/price-changes">
           <Button variant="ghost" size="sm">
-            <ArrowLeft className="mr-2 h-4 w-4" />
+            <ArrowLeft weight="light" className="mr-2 h-4 w-4" />
             Back
           </Button>
         </Link>

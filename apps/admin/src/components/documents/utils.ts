@@ -1,24 +1,26 @@
+'use client';
+
+import type { Icon } from '@phosphor-icons/react';
 import {
   File,
-  FileText,
-  FileImage,
-  FileSpreadsheet,
   FileArchive,
-  FileVideo,
   FileAudio,
+  FileImage,
+  FileText,
+  FileVideo,
+  FileXls,
   Presentation,
-  type LucideIcon,
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 import { createElement } from 'react';
 
-export function getFileIcon(mimeType: string | null): LucideIcon {
+export function getFileIcon(mimeType: string | null): Icon {
   if (!mimeType) return File;
   if (mimeType.startsWith('image/')) return FileImage;
   if (mimeType.startsWith('video/')) return FileVideo;
   if (mimeType.startsWith('audio/')) return FileAudio;
   if (mimeType.includes('pdf')) return FileText;
   if (mimeType.includes('spreadsheet') || mimeType.includes('excel') || mimeType.includes('csv'))
-    return FileSpreadsheet;
+    return FileXls;
   if (mimeType.includes('presentation') || mimeType.includes('powerpoint'))
     return Presentation;
   if (mimeType.includes('zip') || mimeType.includes('tar') || mimeType.includes('gzip') || mimeType.includes('rar'))
@@ -29,7 +31,7 @@ export function getFileIcon(mimeType: string | null): LucideIcon {
 }
 
 /**
- * Stable wrapper that renders the right lucide icon for a mime type.
+ * Stable wrapper that renders the right Phosphor icon for a mime type.
  *
  * `react-hooks/static-components` flags `const Icon = getFileIcon(mt); <Icon />`
  * inside a render body because the linter can't see that `getFileIcon` returns
@@ -43,7 +45,7 @@ export function FileIcon({
   mimeType: string | null;
   className?: string;
 }) {
-  return createElement(getFileIcon(mimeType), { className });
+  return createElement(getFileIcon(mimeType), { className, weight: 'light' });
 }
 
 export function formatFileSize(bytes: number | null): string {

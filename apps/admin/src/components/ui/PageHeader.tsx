@@ -1,7 +1,7 @@
 'use client';
 
 import { ReactNode } from 'react';
-import { ChevronLeft } from 'lucide-react';
+import { CaretLeft } from '@phosphor-icons/react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@crm-eco/ui';
 
@@ -44,9 +44,9 @@ export function PageHeader({
       {backHref !== undefined && (
         <button
           onClick={handleBack}
-          className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 mb-4 transition-colors group"
+          className="group mb-4 flex items-center gap-1.5 text-sm text-[var(--adm-muted)] transition-colors hover:text-[var(--adm-ink)]"
         >
-          <ChevronLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+          <CaretLeft weight="light" className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
           {backLabel}
         </button>
       )}
@@ -70,7 +70,7 @@ export function PageHeader({
           <div>
             <h1
               className={cn(
-                'font-bold text-slate-900 tracking-tight',
+                'font-bold tracking-tight text-[var(--adm-ink)]',
                 size === 'large' ? 'text-3xl' : size === 'small' ? 'text-xl' : 'text-2xl'
               )}
             >
@@ -79,7 +79,7 @@ export function PageHeader({
             {description && (
               <p
                 className={cn(
-                  'text-slate-500 mt-1',
+                  'mt-1 text-[var(--adm-muted)]',
                   size === 'large' ? 'text-base' : 'text-sm'
                 )}
               >
@@ -115,14 +115,14 @@ export function SectionHeader({
   return (
     <div
       className={cn(
-        'flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-4 border-b border-slate-200',
+        'flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-4 border-b border-[var(--adm-hairline)]',
         className
       )}
     >
       <div>
-        <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
+        <h2 className="text-lg font-semibold text-[var(--adm-ink)]">{title}</h2>
         {description && (
-          <p className="text-sm text-slate-500 mt-0.5">{description}</p>
+          <p className="mt-0.5 text-sm text-[var(--adm-muted)]">{description}</p>
         )}
       </div>
       {actions && <div className="flex items-center gap-2">{actions}</div>}
@@ -151,7 +151,7 @@ export function CardHeaderTitle({
   return (
     <div
       className={cn(
-        'flex items-center justify-between p-6 border-b border-slate-100',
+        'flex items-center justify-between p-6 border-b border-[var(--adm-hairline)]',
         className
       )}
     >
@@ -162,9 +162,9 @@ export function CardHeaderTitle({
           </div>
         )}
         <div>
-          <h3 className="text-lg font-bold text-slate-900">{title}</h3>
+          <h3 className="text-lg font-bold text-[var(--adm-ink)]">{title}</h3>
           {description && (
-            <p className="text-sm text-slate-500">{description}</p>
+            <p className="text-sm text-[var(--adm-muted)]">{description}</p>
           )}
         </div>
       </div>

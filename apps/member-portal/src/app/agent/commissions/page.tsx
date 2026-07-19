@@ -2,16 +2,15 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
-import { 
-  DollarSign, 
-  TrendingUp,
+import {
+  CurrencyDollar,
+  TrendUp,
   Clock,
   CheckCircle,
   Calendar,
-  ArrowUpRight,
-  Filter,
+  Funnel,
   Download,
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@crm-eco/ui/components/card';
 import { Button } from '@crm-eco/ui/components/button';
 import { Badge } from '@crm-eco/ui/components/badge';
@@ -153,7 +152,7 @@ export default function AgentCommissionsPage() {
   const getStatusBadge = (status: string) => {
     const colors: Record<string, string> = {
       pending: 'bg-amber-100 text-amber-700',
-      approved: 'bg-blue-100 text-blue-700',
+      approved: 'bg-[rgba(11,109,133,0.1)] text-[var(--mp-teal)]',
       paid: 'bg-green-100 text-green-700',
       rejected: 'bg-red-100 text-red-700',
     };
@@ -167,7 +166,7 @@ export default function AgentCommissionsPage() {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <DollarSign className="h-12 w-12 animate-pulse text-slate-400" />
+        <CurrencyDollar weight="light" className="h-12 w-12 animate-pulse text-slate-400" />
       </div>
     );
   }
@@ -177,7 +176,7 @@ export default function AgentCommissionsPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-slate-900">My Commissions</h1>
         <Button variant="outline" className="gap-2">
-          <Download className="h-4 w-4" />
+          <Download weight="light" className="h-4 w-4" />
           Export
         </Button>
       </div>
@@ -194,7 +193,7 @@ export default function AgentCommissionsPage() {
                 </p>
               </div>
               <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center">
-                <DollarSign className="h-5 w-5 text-slate-600" />
+                <CurrencyDollar weight="light" className="h-5 w-5 text-slate-600" />
               </div>
             </div>
           </CardContent>
@@ -204,12 +203,12 @@ export default function AgentCommissionsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-slate-500">This Month</p>
-                <p className="text-2xl font-bold text-blue-600">
+                <p className="text-2xl font-bold text-[var(--mp-teal)]">
                   ${stats.thisMonth.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </p>
               </div>
-              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                <TrendingUp className="h-5 w-5 text-blue-600" />
+              <div className="w-10 h-10 rounded-full bg-[rgba(11,109,133,0.1)] flex items-center justify-center">
+                <TrendUp weight="light" className="h-5 w-5 text-[var(--mp-teal)]" />
               </div>
             </div>
           </CardContent>
@@ -224,7 +223,7 @@ export default function AgentCommissionsPage() {
                 </p>
               </div>
               <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
-                <Clock className="h-5 w-5 text-amber-600" />
+                <Clock weight="light" className="h-5 w-5 text-amber-600" />
               </div>
             </div>
           </CardContent>
@@ -239,7 +238,7 @@ export default function AgentCommissionsPage() {
                 </p>
               </div>
               <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-                <CheckCircle className="h-5 w-5 text-green-600" />
+                <CheckCircle weight="light" className="h-5 w-5 text-green-600" />
               </div>
             </div>
           </CardContent>
@@ -247,18 +246,18 @@ export default function AgentCommissionsPage() {
       </div>
 
       {/* Payout Info */}
-      <Card className="bg-blue-50 border-blue-200">
+      <Card className="bg-[rgba(11,109,133,0.06)] border-[rgba(11,109,133,0.18)]">
         <CardContent className="flex items-center justify-between py-4">
           <div className="flex items-center gap-3">
-            <Calendar className="h-5 w-5 text-blue-600" />
+            <Calendar weight="light" className="h-5 w-5 text-[var(--mp-teal)]" />
             <div>
-              <p className="font-medium text-blue-900">Next Payout Date</p>
-              <p className="text-sm text-blue-700">25th of each month</p>
+              <p className="font-medium text-[#084556]">Next Payout Date</p>
+              <p className="text-sm text-[var(--mp-teal)]">25th of each month</p>
             </div>
           </div>
           <div className="text-right">
-            <p className="font-medium text-blue-900">Estimated Payout</p>
-            <p className="text-lg font-bold text-blue-700">
+            <p className="font-medium text-[#084556]">Estimated Payout</p>
+            <p className="text-lg font-bold text-[var(--mp-teal)]">
               ${stats.pendingPayout.toLocaleString(undefined, { minimumFractionDigits: 2 })}
             </p>
           </div>
@@ -284,7 +283,7 @@ export default function AgentCommissionsPage() {
               </Select>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-[150px]">
-                  <Filter className="h-4 w-4 mr-2" />
+                  <Funnel weight="light" className="h-4 w-4 mr-2" />
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -300,7 +299,7 @@ export default function AgentCommissionsPage() {
         <CardContent>
           {filteredTransactions.length === 0 ? (
             <div className="text-center py-12">
-              <DollarSign className="h-12 w-12 mx-auto mb-4 text-slate-300" />
+              <CurrencyDollar weight="light" className="h-12 w-12 mx-auto mb-4 text-slate-300" />
               <h3 className="text-lg font-medium text-slate-900 mb-2">No commissions yet</h3>
               <p className="text-slate-500">
                 Your commissions will appear here as you enroll members.

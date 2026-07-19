@@ -3,13 +3,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { 
-  BarChart3, 
-  TrendingUp,
+  ChartBar,
+  TrendUp,
   Users,
-  DollarSign,
+  CurrencyDollar,
   Calendar,
   Download,
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@crm-eco/ui/components/card';
 import { Button } from '@crm-eco/ui/components/button';
 import {
@@ -141,7 +141,7 @@ export default function AgentReportsPage() {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <BarChart3 className="h-12 w-12 animate-pulse text-slate-400" />
+        <ChartBar weight="light" className="h-12 w-12 animate-pulse text-slate-400" />
       </div>
     );
   }
@@ -153,7 +153,7 @@ export default function AgentReportsPage() {
         <div className="flex gap-2">
           <Select value={period} onValueChange={setPeriod}>
             <SelectTrigger className="w-[150px]">
-              <Calendar className="h-4 w-4 mr-2" />
+              <Calendar weight="light" className="h-4 w-4 mr-2" />
               <SelectValue placeholder="Period" />
             </SelectTrigger>
             <SelectContent>
@@ -164,7 +164,7 @@ export default function AgentReportsPage() {
             </SelectContent>
           </Select>
           <Button variant="outline" className="gap-2">
-            <Download className="h-4 w-4" />
+            <Download weight="light" className="h-4 w-4" />
             Export
           </Button>
         </div>
@@ -179,8 +179,8 @@ export default function AgentReportsPage() {
                 <p className="text-sm text-slate-500">Total Enrollments</p>
                 <p className="text-3xl font-bold">{totalEnrollments}</p>
               </div>
-              <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
-                <Users className="h-6 w-6 text-blue-600" />
+              <div className="w-12 h-12 rounded-full bg-[rgba(11,109,133,0.1)] flex items-center justify-center">
+                <Users weight="light" className="h-6 w-6 text-[var(--mp-teal)]" />
               </div>
             </div>
           </CardContent>
@@ -195,7 +195,7 @@ export default function AgentReportsPage() {
                 </p>
               </div>
               <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
-                <DollarSign className="h-6 w-6 text-green-600" />
+                <CurrencyDollar weight="light" className="h-6 w-6 text-green-600" />
               </div>
             </div>
           </CardContent>
@@ -205,12 +205,12 @@ export default function AgentReportsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-slate-500">Avg Revenue/Member</p>
-                <p className="text-3xl font-bold text-purple-600">
+                <p className="text-3xl font-bold text-[var(--mp-teal)]">
                   ${totalEnrollments > 0 ? (totalRevenue / totalEnrollments).toFixed(2) : '0.00'}
                 </p>
               </div>
-              <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
-                <TrendingUp className="h-6 w-6 text-purple-600" />
+              <div className="w-12 h-12 rounded-full bg-[rgba(11,109,133,0.1)] flex items-center justify-center">
+                <TrendUp weight="light" className="h-6 w-6 text-[var(--mp-teal)]" />
               </div>
             </div>
           </CardContent>
@@ -239,7 +239,7 @@ export default function AgentReportsPage() {
                       <span className="w-16 text-sm text-slate-500">{formatMonth(item.month)}</span>
                       <div className="flex-1 h-8 bg-slate-100 rounded-full overflow-hidden">
                         <div 
-                          className="h-full bg-blue-500 rounded-full flex items-center justify-end pr-3"
+                          className="h-full bg-[rgba(11,109,133,0.06)]0 rounded-full flex items-center justify-end pr-3"
                           style={{ width: `${Math.max(percentage, 10)}%` }}
                         >
                           <span className="text-xs text-white font-medium">{item.count}</span>
@@ -323,7 +323,7 @@ export default function AgentReportsPage() {
                       <tr key={product.name} className="border-b last:border-0">
                         <td className="py-3">
                           <div className="flex items-center gap-3">
-                            <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm font-medium">
+                            <span className="w-6 h-6 rounded-full bg-[rgba(11,109,133,0.1)] text-[var(--mp-teal)] flex items-center justify-center text-sm font-medium">
                               {index + 1}
                             </span>
                             {product.name}

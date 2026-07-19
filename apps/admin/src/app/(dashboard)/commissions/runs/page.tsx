@@ -1,5 +1,5 @@
+import { CheckCircle, Clock, Hash, Pulse, Timer, Warning, XCircle } from '@phosphor-icons/react/dist/ssr';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Badge } from '@crm-eco/ui';
-import { Activity, CheckCircle, XCircle, Clock, Timer, Hash, AlertTriangle } from 'lucide-react';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import Link from 'next/link';
 import { format, formatDistanceToNow } from 'date-fns';
@@ -50,28 +50,28 @@ function getStatusBadge(status: string) {
     case 'completed':
       return (
         <Badge className="bg-emerald-100 text-emerald-700">
-          <CheckCircle className="w-3 h-3 mr-1" />
+          <CheckCircle weight="light" className="w-3 h-3 mr-1" />
           Completed
         </Badge>
       );
     case 'running':
       return (
         <Badge className="bg-blue-100 text-blue-700">
-          <Clock className="w-3 h-3 mr-1 animate-spin" />
+          <Clock weight="light" className="w-3 h-3 mr-1 animate-spin" />
           Running
         </Badge>
       );
     case 'failed':
       return (
         <Badge className="bg-red-100 text-red-700">
-          <XCircle className="w-3 h-3 mr-1" />
+          <XCircle weight="light" className="w-3 h-3 mr-1" />
           Failed
         </Badge>
       );
     case 'cancelled':
       return (
         <Badge className="bg-slate-100 text-slate-600">
-          <AlertTriangle className="w-3 h-3 mr-1" />
+          <Warning weight="light" className="w-3 h-3 mr-1" />
           Cancelled
         </Badge>
       );
@@ -131,7 +131,7 @@ export default async function CommissionRunsPage() {
       <PageHeader
         title="Commission Job Runs"
         description="History of commission accrual processing runs"
-        icon={<Activity className="w-6 h-6" />}
+        icon={<Pulse weight="light" className="w-6 h-6" />}
         gradient="from-emerald-500 to-teal-400"
         backHref="/commissions"
         backLabel="Commissions"
@@ -150,7 +150,7 @@ export default async function CommissionRunsPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
-                <Hash className="h-5 w-5 text-slate-600" />
+                <Hash weight="light" className="h-5 w-5 text-slate-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{totalRuns}</p>
@@ -163,7 +163,7 @@ export default async function CommissionRunsPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center">
-                <CheckCircle className="h-5 w-5 text-emerald-600" />
+                <CheckCircle weight="light" className="h-5 w-5 text-emerald-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{completedRuns}</p>
@@ -176,7 +176,7 @@ export default async function CommissionRunsPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center">
-                <XCircle className="h-5 w-5 text-red-600" />
+                <XCircle weight="light" className="h-5 w-5 text-red-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{failedRuns}</p>
@@ -189,7 +189,7 @@ export default async function CommissionRunsPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
-                <Timer className="h-5 w-5 text-blue-600" />
+                <Timer weight="light" className="h-5 w-5 text-blue-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold">
@@ -213,7 +213,7 @@ export default async function CommissionRunsPage() {
         <CardContent className="p-0">
           {runs.length === 0 ? (
             <div className="text-center py-16">
-              <Activity className="h-12 w-12 text-slate-200 mx-auto mb-4" />
+              <Pulse weight="light" className="h-12 w-12 text-slate-200 mx-auto mb-4" />
               <p className="text-lg font-medium">No commission runs yet</p>
               <p className="text-sm text-muted-foreground">
                 Click &quot;Run now&quot; to trigger the first commission accrual

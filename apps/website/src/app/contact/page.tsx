@@ -16,16 +16,16 @@ import {
   SelectValue,
 } from '@crm-eco/ui';
 import {
-  Mail,
+  EnvelopeSimple,
   Phone,
   Clock,
-  LifeBuoy,
-  Send,
-  CheckCircle2,
+  Lifebuoy,
+  PaperPlaneTilt,
+  CheckCircle,
   Users,
-  ArrowRight,
-  MessageCircle,
-} from 'lucide-react';
+  ArrowUpRight,
+  ChatCircle,
+} from '@phosphor-icons/react';
 import { Reveal } from '@/components/sections/Reveal';
 import {
   Container,
@@ -124,14 +124,14 @@ export default function ContactPage() {
       note: 'Real people, ready to help with enrollment and sharing questions.',
     },
     {
-      icon: Mail,
+      icon: EnvelopeSimple,
       label: 'General questions',
       value: EMAIL.general,
       href: `mailto:${EMAIL.general}`,
       note: 'New to sharing? Start here and we will point you the right way.',
     },
     {
-      icon: LifeBuoy,
+      icon: Lifebuoy,
       label: 'Member support',
       value: EMAIL.support,
       href: `mailto:${EMAIL.support}`,
@@ -157,7 +157,7 @@ export default function ContactPage() {
               welcome.
             </p>
             <div className="mt-8 inline-flex items-center gap-2 rounded-full bg-pif-green-50 px-4 py-2 text-sm font-semibold text-pif-green-700 ring-1 ring-pif-green-100">
-              <Users className="h-4 w-4" />
+              <Users weight="light" className="h-4 w-4" />
               Welcoming to all — no requirements, no judgment
             </div>
           </div>
@@ -174,7 +174,7 @@ export default function ContactPage() {
                 {submitted ? (
                   <div className="py-12 text-center">
                     <span className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full pif-grad-care text-white shadow-md shadow-pif-teal/25">
-                      <CheckCircle2 className="h-8 w-8" />
+                      <CheckCircle weight="light" className="h-8 w-8" />
                     </span>
                     <h2 className="font-heading text-2xl font-semibold text-pif-navy-800">
                       Thank you for reaching out!
@@ -286,7 +286,7 @@ export default function ContactPage() {
                         className="w-full gap-2 hub-btn-gradient text-white"
                       >
                         Send Message
-                        <Send className="h-4 w-4" />
+                        <PaperPlaneTilt weight="light" className="h-4 w-4" />
                       </Button>
                       <p className="text-center text-sm text-slate-500">
                         We typically reply within 1&ndash;2 business days.
@@ -351,7 +351,7 @@ export default function ContactPage() {
                 <div className="mt-6 overflow-hidden rounded-2xl hub-section-dark p-7 shadow-lg shadow-pif-navy/20">
                   <div className="flex items-start gap-4">
                     <span className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-white/10 text-pif-gold-300 ring-1 ring-white/15">
-                      <MessageCircle className="h-6 w-6" />
+                      <ChatCircle weight="light" className="h-6 w-6" />
                     </span>
                     <div>
                       <p className="font-heading text-lg font-semibold text-white">
@@ -366,7 +366,7 @@ export default function ContactPage() {
                         className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-pif-gold-300 transition-colors hover:text-pif-gold-200"
                       >
                         Go to the member portal
-                        <ArrowRight className="h-4 w-4" />
+                        <ArrowUpRight weight="light" className="h-4 w-4" />
                       </Link>
                     </div>
                   </div>

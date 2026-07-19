@@ -1,16 +1,16 @@
 'use client';
 
+import { BookOpen, ChartBar, Compass, GearSix, Lightning } from '@phosphor-icons/react';
 import React from 'react';
-import { BookOpen, Compass, Zap, BarChart3, Settings } from 'lucide-react';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { getAllCommands } from '../command-registry';
 import { useTerminal } from '../terminal-provider';
 
 const categoryMeta: Record<string, { icon: React.ElementType; title: string }> = {
   navigation: { icon: Compass, title: 'Navigation' },
-  actions: { icon: Zap, title: 'Actions' },
-  data: { icon: BarChart3, title: 'Data Display' },
-  system: { icon: Settings, title: 'System' },
+  actions: { icon: Lightning, title: 'Actions' },
+  data: { icon: ChartBar, title: 'Data Display' },
+  system: { icon: GearSix, title: 'System' },
 };
 
 export function HelpPanel() {
@@ -28,7 +28,7 @@ export function HelpPanel() {
     <div className="rounded-lg border bg-card overflow-hidden">
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-3 border-b bg-muted/30">
-        <BookOpen className="w-4 h-4 text-primary" />
+        <BookOpen weight="light" className="w-4 h-4 text-primary" />
         <span className="text-sm font-semibold tracking-wide font-heading flex-1">
           Command Reference
         </span>
@@ -39,7 +39,7 @@ export function HelpPanel() {
         {Object.entries(categories).map(([category, cmds]) => {
           if (cmds.length === 0) return null;
           const meta = categoryMeta[category];
-          const Icon = meta?.icon ?? Zap;
+          const Icon = meta?.icon ?? Lightning;
           return (
             <div key={category}>
               <div className="flex items-center gap-2 mb-2.5">

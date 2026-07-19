@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { FileText, Download, Trash2, RotateCcw, Loader2 } from 'lucide-react';
+import { FileText, Download, Trash, ArrowsClockwise, CircleNotch } from '@phosphor-icons/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@crm-eco/ui';
 import type { NeedAttachmentView } from '@/lib/data/need-attachments';
 import { removeNeedAttachment, restoreNeedAttachment } from '@/lib/needs/attachment-client';
@@ -89,7 +89,7 @@ export function NeedAttachmentsCard({ needId, attachments, canRemove = true }: N
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base">
-          <FileText className="h-4 w-4 text-slate-500" aria-hidden />
+          <FileText weight="light" className="h-4 w-4 text-slate-500" aria-hidden />
           Supporting documents
         </CardTitle>
       </CardHeader>
@@ -113,7 +113,7 @@ export function NeedAttachmentsCard({ needId, attachments, canRemove = true }: N
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 rounded-md border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
                   >
-                    <Download className="h-3.5 w-3.5" aria-hidden />
+                    <Download weight="light" className="h-3.5 w-3.5" aria-hidden />
                     Download
                   </a>
                 ) : null}
@@ -126,9 +126,9 @@ export function NeedAttachmentsCard({ needId, attachments, canRemove = true }: N
                     className="inline-flex items-center rounded-md p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
                   >
                     {busyId === a.id ? (
-                      <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                      <CircleNotch weight="light" className="h-4 w-4 animate-spin" aria-hidden />
                     ) : (
-                      <Trash2 className="h-4 w-4" aria-hidden />
+                      <Trash weight="light" className="h-4 w-4" aria-hidden />
                     )}
                   </button>
                 ) : null}
@@ -147,12 +147,12 @@ export function NeedAttachmentsCard({ needId, attachments, canRemove = true }: N
                 type="button"
                 onClick={() => void handleUndo(a)}
                 disabled={busyId === a.id}
-                className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-blue-700 hover:text-blue-800 disabled:opacity-50"
+                className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-[var(--mp-teal)] hover:opacity-80 disabled:opacity-50"
               >
                 {busyId === a.id ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+                  <CircleNotch weight="light" className="h-3.5 w-3.5 animate-spin" aria-hidden />
                 ) : (
-                  <RotateCcw className="h-3.5 w-3.5" aria-hidden />
+                  <ArrowsClockwise weight="light" className="h-3.5 w-3.5" aria-hidden />
                 )}
                 Undo
               </button>

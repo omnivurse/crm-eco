@@ -1,8 +1,8 @@
 'use client';
 
+import { CheckCircle, CircleNotch, EnvelopeSimple, Key, WarningCircle } from '@phosphor-icons/react';
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, Button, Badge } from '@crm-eco/ui';
-import { KeyRound, Loader2, CheckCircle2, AlertCircle, Mail } from 'lucide-react';
 import { inviteMemberToPortal } from '../actions';
 
 export function MemberPortalAccess({
@@ -35,14 +35,14 @@ export function MemberPortalAccess({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <KeyRound className="h-5 w-5" />
+          <Key weight="light" className="h-5 w-5" />
           Portal Access
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         {linked ? (
           <Badge variant="default" className="gap-1">
-            <CheckCircle2 className="h-3 w-3" />
+            <CheckCircle weight="light" className="h-3 w-3" />
             Has portal login
           </Badge>
         ) : (
@@ -53,7 +53,7 @@ export function MemberPortalAccess({
               their login.
             </p>
             <Button onClick={handleInvite} disabled={loading || !email} className="w-full gap-2">
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+              {loading ? <CircleNotch weight="light" className="h-4 w-4 animate-spin" /> : <EnvelopeSimple weight="light" className="h-4 w-4" />}
               Invite to Portal
             </Button>
           </>
@@ -65,9 +65,9 @@ export function MemberPortalAccess({
             }`}
           >
             {msg.ok ? (
-              <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0" />
+              <CheckCircle weight="light" className="h-4 w-4 mt-0.5 shrink-0" />
             ) : (
-              <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+              <WarningCircle weight="light" className="h-4 w-4 mt-0.5 shrink-0" />
             )}
             <span>{msg.text}</span>
           </div>

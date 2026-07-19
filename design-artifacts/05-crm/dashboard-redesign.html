@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CRM — Dashboard Redesign Artifact</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --void: #050505;
+      --panel: #0a0a0a;
+      --ink: #f4f4f5;
+      --muted: #a1a1aa;
+      --cyan: #22d3ee;
+      --teal: #0b6d85;
+      --emerald: #34d399;
+      --hairline: rgba(255,255,255,0.08);
+      --ease: cubic-bezier(0.32, 0.72, 0, 1);
+      --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+      --shadow-glass:
+        0 1px 2px rgba(0,0,0,0.4),
+        0 12px 40px rgba(0,0,0,0.45),
+        inset 0 1px 0 rgba(255,255,255,0.06);
+      --font: "Plus Jakarta Sans", system-ui, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font);
+      background: #111;
+      color: var(--ink);
+      min-height: 100dvh;
+      overflow-x: hidden;
+    }
+
+    .artifact-bar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+      padding: 0.75rem 1.25rem;
+      background: rgba(5,5,5,0.92);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--hairline);
+      color: #fff; font-size: 0.75rem;
+    }
+    .artifact-meta { opacity: 0.5; }
+    .toggle {
+      display: inline-flex; padding: 3px; border-radius: 999px;
+      background: rgba(255,255,255,0.06); border: 1px solid var(--hairline);
+    }
+    .toggle button {
+      border: 0; background: transparent; color: rgba(255,255,255,0.45);
+      font: inherit; font-size: 0.7rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.14em;
+      padding: 0.45rem 0.9rem; border-radius: 999px; cursor: pointer;
+      transition: all 500ms var(--ease);
+    }
+    .toggle button.active { background: #fff; color: #050505; }
+
+    .view { display: none; padding-top: 52px; padding-bottom: 2rem; }
+    .view.active { display: block; }
+
+    /* ════════════ BEFORE ════════════ */
+    .before {
+      background: #f8fafc; color: #0f172a; min-height: calc(100dvh - 52px);
+    }
+    .before-top {
+      height: 3.25rem; background: #fff; border-bottom: 1px solid #e2e8f0;
+      display: flex; align-items: center; gap: 1rem; padding: 0 1rem;
+      font-size: 0.85rem; font-weight: 600;
+    }
+    .before-tabs {
+      display: flex; gap: 0.25rem; padding: 0.5rem 1rem;
+      background: #fff; border-bottom: 1px solid #e2e8f0; font-size: 0.8rem; color: #64748b;
+      overflow-x: auto;
+    }
+    .before-tabs span {
+      padding: 0.4rem 0.75rem; border-radius: 0.4rem; white-space: nowrap;
+    }
+    .before-tabs .on { background: #ecfeff; color: #0e7490; font-weight: 600; }
+    .before-body { display: flex; min-height: 28rem; }
+    .before-side {
+      width: 14rem; border-right: 1px solid #e2e8f0; background: #fff;
+      padding: 1rem; font-size: 0.8rem; color: #475569; display: none;
+    }
+    @media (min-width: 1024px) { .before-side { display: block; } }
+    .before-side div { padding: 0.5rem 0.65rem; border-radius: 0.4rem; margin-bottom: 0.2rem; }
+    .before-side .on { background: #f1f5f9; font-weight: 600; color: #0f172a; }
+    .before-main { flex: 1; padding: 1.5rem; }
+    .before-main h1 { font-size: 1.5rem; font-weight: 700; }
+    .before-main .sub { color: #64748b; margin: 0.35rem 0 1.25rem; font-size: 0.9rem; }
+    .before-kpis {
+      display: grid; gap: 0.85rem;
+      grid-template-columns: 1fr;
+    }
+    @media (min-width: 768px) { .before-kpis { grid-template-columns: repeat(2, 1fr); } }
+    @media (min-width: 1024px) { .before-kpis { grid-template-columns: repeat(4, 1fr); } }
+    .before-kpi {
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 0.75rem;
+      padding: 1.1rem; box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    }
+    .before-kpi label { font-size: 0.75rem; color: #64748b; }
+    .before-kpi strong { display: block; font-size: 1.35rem; margin-top: 0.25rem; }
+    .before-grid {
+      margin-top: 1.25rem; display: grid; gap: 1rem;
+    }
+    @media (min-width: 1024px) { .before-grid { grid-template-columns: 1fr 1fr; } }
+    .before-card {
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 0.75rem; padding: 1.1rem;
+    }
+    .before-card h3 { font-size: 0.95rem; font-weight: 600; margin-bottom: 0.75rem; }
+    .before-row {
+      padding: 0.65rem 0; border-top: 1px solid #f1f5f9;
+      font-size: 0.85rem; color: #475569;
+    }
+
+    /* ════════════ AFTER — Ethereal Glass + Asymmetrical Bento ════════════ */
+    .after {
+      position: relative;
+      background:
+        radial-gradient(ellipse 55% 45% at 8% 0%, rgba(34,211,238,0.09), transparent 55%),
+        radial-gradient(ellipse 45% 40% at 92% 15%, rgba(52,211,153,0.07), transparent 50%),
+        radial-gradient(ellipse 40% 30% at 50% 100%, rgba(11,109,133,0.08), transparent 55%),
+        var(--void);
+      min-height: calc(100dvh - 52px);
+      color: var(--ink);
+    }
+
+    .grain {
+      position: fixed; inset: 0; z-index: 50; pointer-events: none; opacity: 0.04;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+
+    /* Floating glass top island */
+    .island-wrap {
+      position: sticky; top: 68px; z-index: 40;
+      display: flex; justify-content: center; padding: 0 1rem;
+      pointer-events: none;
+    }
+    .island {
+      pointer-events: auto;
+      width: 100%; max-width: 80rem;
+      display: flex; align-items: center; gap: 0.75rem;
+      padding: 0.4rem 0.45rem 0.4rem 1rem;
+      border-radius: 999px;
+      background: rgba(10,10,10,0.72);
+      border: 1px solid var(--hairline);
+      box-shadow: var(--shadow-glass);
+      backdrop-filter: blur(24px);
+      animation: fadeUp 800ms var(--ease-out) both;
+    }
+    .island-brand {
+      font-size: 0.85rem; font-weight: 700; letter-spacing: -0.02em;
+      white-space: nowrap;
+    }
+    .island-brand em {
+      font-style: normal; font-size: 0.62rem; font-weight: 600;
+      color: var(--cyan); margin-left: 0.4rem;
+      letter-spacing: 0.1em; text-transform: uppercase;
+    }
+    .island-search {
+      flex: 1; display: none; align-items: center; gap: 0.5rem;
+      margin: 0 0.5rem; padding: 0.45rem 0.85rem;
+      border-radius: 999px; background: rgba(255,255,255,0.04);
+      border: 1px solid var(--hairline);
+      font-size: 0.75rem; color: var(--muted);
+    }
+    @media (min-width: 768px) { .island-search { display: flex; } }
+    .island-search kbd {
+      margin-left: auto; font-size: 0.65rem; padding: 0.15rem 0.4rem;
+      border-radius: 0.35rem; border: 1px solid var(--hairline);
+      color: rgba(255,255,255,0.4);
+    }
+    .island-actions { display: flex; align-items: center; gap: 0.35rem; margin-left: auto; }
+    .island-pill {
+      display: none; align-items: center; gap: 0.35rem;
+      padding: 0.4rem 0.75rem; border-radius: 999px;
+      font-size: 0.75rem; font-weight: 550; color: var(--muted);
+      border: 1px solid transparent; cursor: pointer; background: transparent;
+      transition: all 500ms var(--ease);
+    }
+    @media (min-width: 900px) { .island-pill { display: inline-flex; } }
+    .island-pill:hover { background: rgba(255,255,255,0.05); color: #fff; }
+    .island-cta {
+      display: inline-flex; align-items: center; gap: 0.45rem;
+      padding: 0.4rem 0.4rem 0.4rem 1rem; border-radius: 999px;
+      background: linear-gradient(135deg, #0e8c9a, #0b6d85);
+      color: #fff; font-size: 0.75rem; font-weight: 600; border: 0; cursor: pointer;
+      transition: transform 600ms var(--ease);
+    }
+    .island-cta:hover { transform: scale(0.98); }
+    .island-cta .ico {
+      width: 1.65rem; height: 1.65rem; border-radius: 999px;
+      background: rgba(255,255,255,0.15); display: grid; place-items: center;
+      transition: transform 600ms var(--ease);
+    }
+    .island-cta:hover .ico { transform: translate(2px, -1px) scale(1.05); }
+    .island-av {
+      width: 2rem; height: 2rem; border-radius: 999px;
+      background: linear-gradient(135deg, #22d3ee, #0b6d85);
+      flex-shrink: 0;
+    }
+
+    /* Module tab pills */
+    .mod-wrap {
+      max-width: 80rem; margin: 0.85rem auto 0; padding: 0 1rem;
+    }
+    .mods {
+      display: flex; gap: 0.35rem; overflow-x: auto; padding: 0.25rem;
+      scrollbar-width: none;
+    }
+    .mods::-webkit-scrollbar { display: none; }
+    .mods a {
+      text-decoration: none; white-space: nowrap;
+      padding: 0.45rem 0.9rem; border-radius: 999px;
+      font-size: 0.75rem; font-weight: 500; color: var(--muted);
+      border: 1px solid transparent;
+      transition: all 500ms var(--ease);
+    }
+    .mods a:hover { color: #fff; background: rgba(255,255,255,0.04); }
+    .mods a.on {
+      color: var(--cyan);
+      background: rgba(34,211,238,0.08);
+      border-color: rgba(34,211,238,0.18);
+    }
+
+    .dash {
+      max-width: 80rem; margin: 0 auto;
+      padding: 1.5rem 1rem 3rem;
+    }
+    @media (min-width: 768px) { .dash { padding: 2rem 1.5rem 4rem; } }
+
+    .workspace {
+      display: grid; gap: 1rem;
+      grid-template-columns: 1fr;
+    }
+    @media (min-width: 1024px) {
+      .workspace {
+        grid-template-columns: 13.5rem 1fr;
+        align-items: start;
+      }
+    }
+
+    /* Glass contextual rail */
+    .ctx-rail {
+      display: none;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--hairline);
+      border-radius: 1.75rem;
+      padding: 0.35rem;
+      backdrop-filter: blur(20px);
+    }
+    @media (min-width: 1024px) { .ctx-rail { display: block; position: sticky; top: 9.5rem; } }
+    .ctx-inner {
+      background: rgba(10,10,10,0.65);
+      border-radius: calc(1.75rem - 0.35rem);
+      padding: 0.85rem 0.65rem;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+    }
+    .ctx-inner a {
+      display: flex; align-items: center; gap: 0.55rem;
+      text-decoration: none; color: var(--muted);
+      font-size: 0.78rem; font-weight: 500;
+      padding: 0.55rem 0.7rem; border-radius: 999px;
+      transition: all 500ms var(--ease);
+    }
+    .ctx-inner a:hover, .ctx-inner a.on {
+      background: rgba(34,211,238,0.08); color: var(--cyan);
+    }
+
+    /* Asymmetrical Bento */
+    .bento {
+      display: grid; gap: 1rem;
+      grid-template-columns: 1fr;
+    }
+    @media (min-width: 768px) {
+      .bento {
+        grid-template-columns: repeat(12, 1fr);
+        gap: 1.1rem;
+      }
+      .span-8 { grid-column: span 8; }
+      .span-4 { grid-column: span 4; }
+      .span-6 { grid-column: span 6; }
+      .span-3 { grid-column: span 3; }
+      .span-12 { grid-column: span 12; }
+      .row-2 { grid-row: span 2; }
+    }
+
+    .reveal {
+      opacity: 0; transform: translateY(1.5rem); filter: blur(4px);
+      animation: fadeUp 850ms var(--ease-out) both;
+    }
+    .reveal:nth-child(1) { animation-delay: 50ms; }
+    .reveal:nth-child(2) { animation-delay: 110ms; }
+    .reveal:nth-child(3) { animation-delay: 170ms; }
+    .reveal:nth-child(4) { animation-delay: 230ms; }
+    .reveal:nth-child(5) { animation-delay: 290ms; }
+    .reveal:nth-child(6) { animation-delay: 350ms; }
+
+    @keyframes fadeUp {
+      to { opacity: 1; transform: translateY(0); filter: blur(0); }
+    }
+
+    .bezel {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--hairline);
+      border-radius: 1.75rem;
+      padding: 0.35rem;
+      height: 100%;
+      transition: transform 700ms var(--ease), box-shadow 700ms var(--ease);
+    }
+    .bezel:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 16px 48px rgba(0,0,0,0.35);
+    }
+    .bezel-inner {
+      background: rgba(10,10,10,0.85);
+      border-radius: calc(1.75rem - 0.35rem);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+      height: 100%;
+      overflow: hidden;
+    }
+    .bezel-hero .bezel-inner {
+      background: linear-gradient(145deg, rgba(11,109,133,0.45) 0%, rgba(5,5,5,0.95) 55%, rgba(52,211,153,0.12) 120%);
+    }
+    .pad { padding: 1.35rem 1.45rem; }
+    @media (min-width: 768px) { .pad { padding: 1.5rem 1.65rem; } }
+
+    .kicker {
+      font-size: 10px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.18em; color: rgba(34,211,238,0.85); margin-bottom: 0.55rem;
+    }
+    .hero-hi {
+      font-size: clamp(1.85rem, 3.5vw, 2.65rem);
+      font-weight: 700; letter-spacing: -0.035em; line-height: 1.1;
+      margin-bottom: 0.5rem;
+    }
+    .hero-sub {
+      font-size: 0.95rem; color: var(--muted); max-width: 28rem; line-height: 1.55;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1.4rem; }
+    .btn-glass {
+      display: inline-flex; align-items: center; gap: 0.45rem;
+      padding: 0.45rem 0.45rem 0.45rem 1.1rem; border-radius: 999px;
+      background: #fff; color: #050505; font-size: 0.82rem; font-weight: 600;
+      border: 0; cursor: pointer; transition: transform 600ms var(--ease);
+    }
+    .btn-glass:hover { transform: scale(0.98); }
+    .btn-glass .ico {
+      width: 1.75rem; height: 1.75rem; border-radius: 999px;
+      background: rgba(0,0,0,0.08); display: grid; place-items: center;
+    }
+    .btn-ghost {
+      display: inline-flex; align-items: center;
+      padding: 0.65rem 1.1rem; border-radius: 999px;
+      border: 1px solid var(--hairline); background: transparent;
+      color: #fff; font-size: 0.82rem; font-weight: 550; cursor: pointer;
+      transition: background 500ms var(--ease);
+    }
+    .btn-ghost:hover { background: rgba(255,255,255,0.05); }
+
+    .stat-label {
+      font-size: 10px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.14em; color: var(--muted); margin-bottom: 0.4rem;
+    }
+    .stat-value {
+      font-size: clamp(1.6rem, 2.5vw, 2rem);
+      font-weight: 700; letter-spacing: -0.03em; line-height: 1;
+    }
+    .stat-meta { margin-top: 0.45rem; font-size: 0.75rem; color: var(--muted); }
+    .stat-up { color: var(--emerald); }
+
+    .card-title {
+      font-size: 1rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.85rem;
+    }
+    .list-row {
+      display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
+      padding: 0.75rem 0; border-bottom: 1px solid var(--hairline);
+      font-size: 0.85rem;
+    }
+    .list-row:last-child { border-bottom: 0; }
+    .list-row .muted { font-size: 0.72rem; color: var(--muted); margin-top: 0.15rem; }
+    .badge {
+      font-size: 0.65rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.08em; padding: 0.25rem 0.55rem; border-radius: 999px;
+      background: rgba(34,211,238,0.1); color: var(--cyan);
+    }
+    .badge-warn { background: rgba(251,191,36,0.12); color: #fbbf24; }
+
+    /* Spec */
+    .spec { max-width: 80rem; margin: 0 auto; padding: 0 1rem 2rem; }
+    .spec-shell {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--hairline);
+      border-radius: 1.75rem; padding: 0.35rem;
+    }
+    .spec-inner {
+      background: rgba(10,10,10,0.9);
+      border-radius: calc(1.75rem - 0.35rem);
+      padding: 2rem 1.5rem;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+    }
+    @media (min-width: 768px) { .spec-inner { padding: 2.5rem; } }
+    .spec h2 { font-size: 1.35rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.4rem; }
+    .spec .lede { color: var(--muted); font-size: 0.95rem; margin-bottom: 1.75rem; max-width: 42rem; }
+    .spec-grid { display: grid; gap: 1rem; }
+    @media (min-width: 768px) { .spec-grid { grid-template-columns: repeat(3, 1fr); } }
+    .spec-item {
+      padding: 1.15rem; border-radius: 1.15rem;
+      background: rgba(255,255,255,0.03); border: 1px solid var(--hairline);
+    }
+    .spec-item h3 {
+      font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.16em; color: var(--cyan); margin-bottom: 0.45rem;
+    }
+    .spec-item p { font-size: 0.85rem; color: var(--muted); line-height: 1.5; }
+    .spec-item ul { margin-top: 0.55rem; padding-left: 1rem; font-size: 0.8rem; color: var(--muted); line-height: 1.6; }
+    .footnote {
+      margin-top: 1.75rem; padding-top: 1.25rem;
+      border-top: 1px solid var(--hairline);
+      font-size: 0.75rem; color: #71717a; line-height: 1.5;
+    }
+    code {
+      font-size: 0.85em; background: rgba(255,255,255,0.06);
+      padding: 0.1em 0.4em; border-radius: 4px; color: #e4e4e7;
+    }
+
+    @media (max-width: 767px) {
+      .bezel:hover { transform: none; }
+      .span-8, .span-4, .span-6, .span-3, .span-12 { grid-column: span 1; }
+      .row-2 { grid-row: auto; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .reveal, .island { animation: none !important; opacity: 1; transform: none; filter: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="artifact-bar">
+    <div>
+      <strong>App 5 · CRM</strong>
+      <span class="artifact-meta"> · Ethereal Glass · Asymmetrical Bento</span>
+    </div>
+    <div class="toggle" role="group" aria-label="Before or after">
+      <button type="button" id="btn-before">Before</button>
+      <button type="button" id="btn-after" class="active">After</button>
+    </div>
+  </div>
+
+  <!-- BEFORE -->
+  <div class="view" id="view-before">
+    <div class="before">
+      <div class="before-top">
+        <span>Double Helix CRM</span>
+        <span style="flex:1;color:#94a3b8;font-weight:400;font-size:0.8rem">Search…</span>
+        <span style="color:#64748b;font-weight:500">Admin</span>
+      </div>
+      <div class="before-tabs">
+        <span class="on">Home</span><span>Leads</span><span>Contacts</span><span>Deals</span><span>Accounts</span><span>Tasks</span>
+      </div>
+      <div class="before-body">
+        <aside class="before-side">
+          <div class="on">Dashboard</div>
+          <div>Pipeline</div>
+          <div>Reports</div>
+          <div>Imports</div>
+          <div>Settings</div>
+        </aside>
+        <main class="before-main">
+          <h1>Good afternoon, Alex!</h1>
+          <p class="sub">Here's what's happening in your CRM today.</p>
+          <div class="before-kpis">
+            <div class="before-kpi"><label>Leads</label><strong>1,284</strong></div>
+            <div class="before-kpi"><label>Contacts</label><strong>3,902</strong></div>
+            <div class="before-kpi"><label>Deals</label><strong>216</strong></div>
+            <div class="before-kpi"><label>Accounts</label><strong>148</strong></div>
+          </div>
+          <div class="before-grid">
+            <div class="before-card">
+              <h3>Upcoming tasks</h3>
+              <div class="before-row">Follow up with Rivera · Due today</div>
+              <div class="before-row">Send proposal · Due tomorrow</div>
+            </div>
+            <div class="before-card">
+              <h3>Recent activity</h3>
+              <div class="before-row">Lead created · Jordan Lee</div>
+              <div class="before-row">Deal updated · Family Share</div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+  </div>
+
+  <!-- AFTER -->
+  <div class="view active" id="view-after">
+    <div class="grain" aria-hidden="true"></div>
+    <div class="after">
+      <div class="island-wrap">
+        <header class="island" aria-label="CRM chrome">
+          <span class="island-brand">Double Helix<em>CRM</em></span>
+          <div class="island-search">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+            Search records, views, commands…
+            <kbd>⌘K</kbd>
+          </div>
+          <div class="island-actions">
+            <button class="island-pill" type="button">Import</button>
+            <button class="island-cta" type="button">
+              New
+              <span class="ico" aria-hidden="true">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 5v14M5 12h14"/></svg>
+              </span>
+            </button>
+            <div class="island-av" aria-hidden="true"></div>
+          </div>
+        </header>
+      </div>
+
+      <div class="mod-wrap">
+        <nav class="mods" aria-label="Modules">
+          <a href="#" class="on">Home</a>
+          <a href="#">Leads</a>
+          <a href="#">Contacts</a>
+          <a href="#">Deals</a>
+          <a href="#">Accounts</a>
+          <a href="#">Tasks</a>
+          <a href="#">Reports</a>
+          <a href="#">Settings</a>
+        </nav>
+      </div>
+
+      <div class="dash">
+        <div class="workspace">
+          <aside class="ctx-rail reveal" aria-label="Context">
+            <div class="ctx-inner">
+              <a href="#" class="on">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+                Dashboard
+              </a>
+              <a href="#">Pipeline</a>
+              <a href="#">Work queue</a>
+              <a href="#">Imports</a>
+              <a href="#">Analytics</a>
+            </div>
+          </aside>
+
+          <div class="bento">
+            <!-- Hero -->
+            <div class="reveal span-8 row-2">
+              <div class="bezel bezel-hero">
+                <div class="bezel-inner pad">
+                  <p class="kicker">Operations</p>
+                  <h1 class="hero-hi">Good afternoon, Alex</h1>
+                  <p class="hero-sub">
+                    Your workbench for pipeline, people, and follow-through —
+                    denser when you need it, calm when you don’t.
+                  </p>
+                  <div class="hero-actions">
+                    <button class="btn-glass" type="button">
+                      Open pipeline
+                      <span class="ico" aria-hidden="true">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 17L17 7M9 7h8v8"/></svg>
+                      </span>
+                    </button>
+                    <button class="btn-ghost" type="button">Command palette</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="reveal span-4">
+              <div class="bezel">
+                <div class="bezel-inner pad">
+                  <p class="stat-label">Leads</p>
+                  <p class="stat-value">1,284</p>
+                  <p class="stat-meta"><span class="stat-up">↑ 12%</span> vs last week</p>
+                </div>
+              </div>
+            </div>
+            <div class="reveal span-4">
+              <div class="bezel">
+                <div class="bezel-inner pad">
+                  <p class="stat-label">Open deals</p>
+                  <p class="stat-value">216</p>
+                  <p class="stat-meta">$1.4M pipeline</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tasks -->
+            <div class="reveal span-6">
+              <div class="bezel">
+                <div class="bezel-inner pad">
+                  <h2 class="card-title">Work queue</h2>
+                  <div class="list-row">
+                    <div>
+                      <strong>Follow up with Rivera</strong>
+                      <div class="muted">Call · Due today</div>
+                    </div>
+                    <span class="badge-warn badge">Urgent</span>
+                  </div>
+                  <div class="list-row">
+                    <div>
+                      <strong>Send Family Share proposal</strong>
+                      <div class="muted">Email · Due tomorrow</div>
+                    </div>
+                    <span class="badge">High</span>
+                  </div>
+                  <div class="list-row">
+                    <div>
+                      <strong>Review import batch #482</strong>
+                      <div class="muted">Import · Due Fri</div>
+                    </div>
+                    <span class="badge">Normal</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Activity -->
+            <div class="reveal span-6">
+              <div class="bezel">
+                <div class="bezel-inner pad">
+                  <h2 class="card-title">Recent activity</h2>
+                  <div class="list-row">
+                    <div>
+                      <strong>Lead created</strong>
+                      <div class="muted">Jordan Lee · 12m ago</div>
+                    </div>
+                  </div>
+                  <div class="list-row">
+                    <div>
+                      <strong>Deal stage updated</strong>
+                      <div class="muted">Family Share → Proposal · 1h ago</div>
+                    </div>
+                  </div>
+                  <div class="list-row">
+                    <div>
+                      <strong>Contact enrolled</strong>
+                      <div class="muted">Martins household · Yesterday</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Module strip -->
+            <div class="reveal span-12">
+              <div class="bezel">
+                <div class="bezel-inner pad" style="display:grid;gap:0.75rem;grid-template-columns:repeat(2,1fr)">
+                  <div style="padding:0.85rem 1rem;border-radius:1rem;background:rgba(255,255,255,0.03);border:1px solid var(--hairline)">
+                    <p class="stat-label">Contacts</p>
+                    <p class="stat-value" style="font-size:1.5rem">3,902</p>
+                  </div>
+                  <div style="padding:0.85rem 1rem;border-radius:1rem;background:rgba(255,255,255,0.03);border:1px solid var(--hairline)">
+                    <p class="stat-label">Accounts</p>
+                    <p class="stat-value" style="font-size:1.5rem">148</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <section class="spec">
+        <div class="spec-shell">
+          <div class="spec-inner">
+            <h2>App 5 upgrade brief</h2>
+            <p class="lede">
+              Proposed direction for <code>apps/crm</code> —
+              Ethereal Glass + Asymmetrical Bento. A dark OLED workbench for operators —
+              not another light gray Zoho clone, and not the same Editorial Split as App 2.
+            </p>
+            <div class="spec-grid">
+              <div class="spec-item">
+                <h3>Replace</h3>
+                <p>Flat slate admin chrome that feels dated at scale.</p>
+                <ul>
+                  <li>Inter → Plus Jakarta Sans</li>
+                  <li>Lucide → Phosphor Light</li>
+                  <li>Edge sticky top bar → floating glass island</li>
+                  <li>Flat module strip → glass pill tabs</li>
+                  <li>Hard sidebar rail → glass contextual rail</li>
+                  <li>Equal 4-col KPI row → asymmetrical bento</li>
+                  <li>Light slate-50 canvas → OLED void + cyan/emerald mesh</li>
+                </ul>
+              </div>
+              <div class="spec-item">
+                <h3>Keep</h3>
+                <p>CRM IA and power features that already work.</p>
+                <ul>
+                  <li>CrmShell: top bar · module tabs · contextual sidebar · bottom bar</li>
+                  <li>Command palette (⌘K)</li>
+                  <li>Module stats / tasks / activity / imports</li>
+                  <li>Offline banner + sync toasts</li>
+                  <li>Gizmo / create flows / record detail shells</li>
+                </ul>
+              </div>
+              <div class="spec-item">
+                <h3>Ship order</h3>
+                <p>Highest daily-use surface first — CRM is huge.</p>
+                <ul>
+                  <li>1. Shell tokens + glass island top bar</li>
+                  <li>2. Module tabs + contextual rail</li>
+                  <li>3. Dashboard bento</li>
+                  <li>4. List / pipeline / record chrome polish</li>
+                  <li>5. Login + bottom bar polish</li>
+                </ul>
+              </div>
+            </div>
+            <p class="footnote">
+              Artifact only — no production code changed. Toggle Before / After above.
+              Reply <strong>implement app 5</strong> to wire this into <code>apps/crm</code>
+              (shell + dashboard first; deeper modules in a uniform follow-through),
+              or request tweaks first.
+            </p>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const beforeBtn = document.getElementById('btn-before');
+    const afterBtn = document.getElementById('btn-after');
+    const beforeView = document.getElementById('view-before');
+    const afterView = document.getElementById('view-after');
+
+    function show(which) {
+      const isAfter = which === 'after';
+      afterBtn.classList.toggle('active', isAfter);
+      beforeBtn.classList.toggle('active', !isAfter);
+      afterView.classList.toggle('active', isAfter);
+      beforeView.classList.toggle('active', !isAfter);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    beforeBtn.addEventListener('click', () => show('before'));
+    afterBtn.addEventListener('click', () => show('after'));
+  </script>
+</body>
+</html>

@@ -1,14 +1,5 @@
+import { ArrowRight, CheckCircle, Clock, CreditCard, CurrencyDollar, TrendUp, Warning, XCircle } from '@phosphor-icons/react/dist/ssr';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@crm-eco/ui';
-import {
-  CreditCard,
-  DollarSign,
-  AlertTriangle,
-  TrendingUp,
-  Clock,
-  CheckCircle,
-  XCircle,
-  ArrowRight,
-} from 'lucide-react';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import Link from 'next/link';
 import { formatDistanceToNow, format } from 'date-fns';
@@ -130,14 +121,14 @@ async function getRecentTransactions(): Promise<RecentTransaction[]> {
 function getStatusIcon(status: string) {
   switch (status) {
     case 'success':
-      return <CheckCircle className="h-4 w-4 text-green-500" />;
+      return <CheckCircle weight="light" className="h-4 w-4 text-green-500" />;
     case 'failed':
-      return <XCircle className="h-4 w-4 text-red-500" />;
+      return <XCircle weight="light" className="h-4 w-4 text-red-500" />;
     case 'pending':
     case 'processing':
-      return <Clock className="h-4 w-4 text-yellow-500" />;
+      return <Clock weight="light" className="h-4 w-4 text-yellow-500" />;
     default:
-      return <Clock className="h-4 w-4 text-gray-400" />;
+      return <Clock weight="light" className="h-4 w-4 text-gray-400" />;
   }
 }
 
@@ -201,7 +192,7 @@ export default async function BillingPage() {
       title: 'Collected This Month',
       value: `$${(stats?.totalCollected ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
       description: 'Total successful payments',
-      icon: DollarSign,
+      icon: CurrencyDollar,
       color: 'text-green-600',
       bg: 'bg-green-100',
     },
@@ -209,7 +200,7 @@ export default async function BillingPage() {
       title: 'Active Schedules',
       value: stats?.activeSchedules ?? 0,
       description: 'Recurring billing setups',
-      icon: TrendingUp,
+      icon: TrendUp,
       color: 'text-blue-600',
       bg: 'bg-blue-100',
     },
@@ -225,7 +216,7 @@ export default async function BillingPage() {
       title: 'Failed Payments',
       value: stats?.failedPayments ?? 0,
       description: 'Require attention',
-      icon: AlertTriangle,
+      icon: Warning,
       color: 'text-red-600',
       bg: 'bg-red-100',
       href: '/billing/failures',
@@ -238,7 +229,7 @@ export default async function BillingPage() {
       <PageHeader
         title="Billing"
         description="Manage payments, transactions, and billing schedules"
-        icon={<CreditCard className="w-6 h-6" />}
+        icon={<CreditCard weight="light" className="w-6 h-6" />}
         gradient="from-amber-500 to-orange-400"
       />
 
@@ -287,7 +278,7 @@ export default async function BillingPage() {
               href="/billing/transactions"
               className="text-sm text-blue-600 hover:underline flex items-center gap-1"
             >
-              View All <ArrowRight className="h-4 w-4" />
+              View All <ArrowRight weight="light" className="h-4 w-4" />
             </Link>
           </CardHeader>
           <CardContent>
@@ -332,7 +323,7 @@ export default async function BillingPage() {
               </div>
             ) : (
               <div className="text-center py-8 text-slate-500">
-                <CreditCard className="h-8 w-8 mx-auto mb-2 text-slate-300" />
+                <CreditCard weight="light" className="h-8 w-8 mx-auto mb-2 text-slate-300" />
                 No transactions yet
               </div>
             )}
@@ -351,7 +342,7 @@ export default async function BillingPage() {
               className="block p-3 rounded-lg border hover:bg-slate-50 transition-colors"
             >
               <div className="flex items-center gap-3">
-                <DollarSign className="h-5 w-5 text-green-600" />
+                <CurrencyDollar weight="light" className="h-5 w-5 text-green-600" />
                 <div>
                   <p className="font-medium text-sm">View Transactions</p>
                   <p className="text-xs text-slate-500">Browse all payment history</p>
@@ -363,7 +354,7 @@ export default async function BillingPage() {
               className="block p-3 rounded-lg border hover:bg-slate-50 transition-colors"
             >
               <div className="flex items-center gap-3">
-                <Clock className="h-5 w-5 text-purple-600" />
+                <Clock weight="light" className="h-5 w-5 text-purple-600" />
                 <div>
                   <p className="font-medium text-sm">Invoices</p>
                   <p className="text-xs text-slate-500">View and manage invoices</p>
@@ -375,7 +366,7 @@ export default async function BillingPage() {
               className="block p-3 rounded-lg border hover:bg-slate-50 transition-colors"
             >
               <div className="flex items-center gap-3">
-                <TrendingUp className="h-5 w-5 text-blue-600" />
+                <TrendUp weight="light" className="h-5 w-5 text-blue-600" />
                 <div>
                   <p className="font-medium text-sm">Billing Schedules</p>
                   <p className="text-xs text-slate-500">Manage recurring billing</p>
@@ -387,7 +378,7 @@ export default async function BillingPage() {
               className="block p-3 rounded-lg border hover:bg-slate-50 transition-colors"
             >
               <div className="flex items-center gap-3">
-                <AlertTriangle className="h-5 w-5 text-red-600" />
+                <Warning weight="light" className="h-5 w-5 text-red-600" />
                 <div>
                   <p className="font-medium text-sm">Failed Payments</p>
                   <p className="text-xs text-slate-500">Resolve payment issues</p>
@@ -399,7 +390,7 @@ export default async function BillingPage() {
               className="block p-3 rounded-lg border hover:bg-slate-50 transition-colors"
             >
               <div className="flex items-center gap-3">
-                <CreditCard className="h-5 w-5 text-blue-600" />
+                <CreditCard weight="light" className="h-5 w-5 text-blue-600" />
                 <div>
                   <p className="font-medium text-sm">Manage Payment Methods</p>
                   <p className="text-xs text-slate-500">View member payment profiles</p>

@@ -1,5 +1,7 @@
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
-import { BookOpen, ChevronRight, Clock } from 'lucide-react';
+import { BookOpen, CaretRight } from '@phosphor-icons/react/dist/ssr';
+import { PageHeader } from '@/components/PageHeader';
+import { Bezel } from '@/components/ui/Bezel';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,8 +37,8 @@ export default async function TrainingPage() {
 
     if (!advisorInfo?.organization_id) {
         return (
-            <div className="flex items-center justify-center h-64">
-                <p className="text-gray-500">Unable to load training content.</p>
+            <div className="flex h-64 items-center justify-center">
+                <p className="text-[var(--adv-slate)]">Unable to load training content.</p>
             </div>
         );
     }
@@ -45,54 +47,64 @@ export default async function TrainingPage() {
 
     return (
         <div className="space-y-6">
-            {/* Header */}
-            <div>
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Training</h1>
-                <p className="text-gray-500 dark:text-gray-400 mt-1">
-                    Playbooks and resources to help you succeed
-                </p>
-            </div>
+            <PageHeader
+                kicker="Resources"
+                title="Training"
+                description="Playbooks and resources to help you succeed"
+            />
 
-            {/* Playbooks Grid */}
             {playbooks.length === 0 ? (
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-12 text-center">
-                    <BookOpen className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                        No training materials yet
-                    </h3>
-                    <p className="text-gray-500 dark:text-gray-400 max-w-sm mx-auto">
-                        Your administrator will add playbooks and training content here.
-                    </p>
-                </div>
+                <Bezel>
+                    <div className="p-12 text-center">
+                        <BookOpen
+                            weight="light"
+                            className="mx-auto mb-4 h-12 w-12 text-[var(--adv-slate)]/40"
+                            aria-hidden
+                        />
+                        <h3 className="adv-display mb-2 text-lg font-semibold tracking-[-0.02em] text-[var(--adv-ink)]">
+                            No training materials yet
+                        </h3>
+                        <p className="mx-auto max-w-sm text-[var(--adv-slate)]">
+                            Your administrator will add playbooks and training content here.
+                        </p>
+                    </div>
+                </Bezel>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                     {playbooks.map((playbook) => (
-                        <div
-                            key={playbook.id}
-                            className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 hover:shadow-md transition-shadow cursor-pointer group"
-                        >
-                            <div className="flex items-start gap-4">
-                                <div className="w-12 h-12 bg-advisor-100 dark:bg-advisor-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
-                                    <BookOpen className="w-6 h-6 text-advisor-600 dark:text-advisor-400" />
+                        <Bezel key={playbook.id}>
+                            <div className="group cursor-pointer p-5">
+                                <div className="flex items-start gap-4">
+                                    <div className="grid h-12 w-12 shrink-0 place-items-center rounded-[0.85rem] bg-[var(--adv-sage-soft)]">
+                                        <BookOpen
+                                            weight="light"
+                                            className="h-6 w-6 text-[var(--adv-teal)]"
+                                            aria-hidden
+                                        />
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <h3 className="font-semibold text-[var(--adv-ink)] transition-colors group-hover:text-[var(--adv-teal)]">
+                                            {playbook.title}
+                                        </h3>
+                                        {playbook.description && (
+                                            <p className="mt-1 line-clamp-2 text-sm text-[var(--adv-slate)]">
+                                                {playbook.description}
+                                            </p>
+                                        )}
+                                        {playbook.category && (
+                                            <span className="mt-2 inline-block rounded-full bg-[rgba(28,25,23,0.05)] px-2 py-0.5 text-xs text-[var(--adv-slate)]">
+                                                {playbook.category}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <CaretRight
+                                        weight="light"
+                                        className="h-5 w-5 text-[var(--adv-slate)]/40 transition-colors group-hover:text-[var(--adv-teal)]"
+                                        aria-hidden
+                                    />
                                 </div>
-                                <div className="flex-1 min-w-0">
-                                    <h3 className="font-semibold text-gray-900 dark:text-white group-hover:text-advisor-600 dark:group-hover:text-advisor-400 transition-colors">
-                                        {playbook.title}
-                                    </h3>
-                                    {playbook.description && (
-                                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
-                                            {playbook.description}
-                                        </p>
-                                    )}
-                                    {playbook.category && (
-                                        <span className="inline-block mt-2 px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs rounded">
-                                            {playbook.category}
-                                        </span>
-                                    )}
-                                </div>
-                                <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-advisor-500 transition-colors" />
                             </div>
-                        </div>
+                        </Bezel>
                     ))}
                 </div>
             )}

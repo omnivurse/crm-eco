@@ -1,9 +1,8 @@
 import Link from 'next/link';
-import { Button } from '@crm-eco/ui';
 import {
-  ArrowRight, Heart, Globe, CalendarClock, UserPlus, PiggyBank, LifeBuoy,
-  Stethoscope, Pill, Video, Scale, Gift, HeartHandshake, Star, Quote,
-} from 'lucide-react';
+  ArrowUpRight, Heart, Globe, CalendarBlank, UserPlus, PiggyBank, Lifebuoy,
+  Stethoscope, Pill, VideoCamera, Scales, Gift, Handshake, Star, Quotes,
+} from '@phosphor-icons/react/dist/ssr';
 import { HeroSection } from '@/components/HeroSection';
 import { HomePlanCards } from '@/components/HomePlanCards';
 import { Reveal } from '@/components/sections/Reveal';
@@ -17,21 +16,21 @@ import { STATS } from '@/lib/site';
 const VALUE_PROPS = [
   { icon: Heart, title: 'Welcoming', body: 'Open to people of every background and belief. There is no religious requirement and no health questionnaire to get a quote.' },
   { icon: Globe, title: 'Flexible', body: 'Keep the doctors and hospitals you already trust. There are no provider networks and no referrals to chase.' },
-  { icon: CalendarClock, title: 'Accessible', body: 'No open-enrollment window. Join whenever life calls for it, and your sharing begins the first of the following month.' },
+  { icon: CalendarBlank, title: 'Accessible', body: 'No open-enrollment window. Join whenever life calls for it, and your sharing begins the first of the following month.' },
 ];
 
 const STEPS = [
   { icon: UserPlus, step: '01', title: 'Become a member', body: 'Pick the program that fits your household and enroll online in minutes. No agents, no pressure.' },
   { icon: PiggyBank, step: '02', title: 'Share each month', body: 'Your affordable monthly share goes into a community that supports one another — a fraction of typical premiums.' },
-  { icon: LifeBuoy, step: '03', title: 'Get support when you need it', body: 'When a medical need arises, submit a sharing request. Eligible needs are shared by the community, often within days.' },
+  { icon: Lifebuoy, step: '03', title: 'Get support when you need it', body: 'When a medical need arises, submit a sharing request. Eligible needs are shared by the community, often within days.' },
 ];
 
 const SERVICES = [
-  { icon: HeartHandshake, title: 'Medical Cost Sharing', body: 'The heart of your membership — eligible doctor visits, hospital stays, surgeries and more, shared by the community.' },
+  { icon: Handshake, title: 'Medical Cost Sharing', body: 'The heart of your membership — eligible doctor visits, hospital stays, surgeries and more, shared by the community.' },
   { icon: Stethoscope, title: 'Preventive Care', body: 'Annual wellness visits and screenings that help you stay ahead of problems, included in your membership.' },
   { icon: Pill, title: 'Prescription Savings', body: 'Meaningful discounts on everyday and specialty medications through our pharmacy savings program.' },
-  { icon: Video, title: 'Virtual Care', body: 'Talk to a licensed provider by phone or video, day or night, usually at no additional cost.' },
-  { icon: Scale, title: 'Medical Advocacy', body: 'Our team reviews and negotiates large bills on your behalf, so you are never facing the system alone.' },
+  { icon: VideoCamera, title: 'Virtual Care', body: 'Talk to a licensed provider by phone or video, day or night, usually at no additional cost.' },
+  { icon: Scales, title: 'Medical Advocacy', body: 'Our team reviews and negotiates large bills on your behalf, so you are never facing the system alone.' },
   { icon: Gift, title: 'Giving Fund', body: 'A way for our community to come alongside members with needs that fall outside the guidelines.' },
 ];
 
@@ -47,7 +46,7 @@ export default function HomePage() {
       <HeroSection />
 
       {/* Value props */}
-      <section className="bg-white py-20 md:py-24">
+      <section className="bg-white py-24 md:py-32">
         <Container>
           <Reveal>
             <SectionHeading
@@ -56,13 +55,15 @@ export default function HomePage() {
               subtitle="Three things make sharing different from insurance — and they all come back to people helping people."
             />
           </Reveal>
-          <div className="mt-14 grid gap-6 md:grid-cols-3">
+          <div className="mt-16 grid gap-5 md:grid-cols-3">
             {VALUE_PROPS.map((v, i) => (
               <Reveal key={v.title} delay={i * 0.08}>
-                <div className="h-full rounded-2xl border border-pif-navy-100 bg-white p-8 text-center shadow-sm ring-1 ring-pif-navy/5">
-                  <IconChip icon={v.icon} variant="brand" className="mx-auto mb-5" />
-                  <h3 className="font-heading text-xl font-semibold text-pif-navy-800">{v.title}</h3>
-                  <p className="mt-3 leading-relaxed text-slate-600">{v.body}</p>
+                <div className="pif-bezel h-full">
+                  <div className="pif-bezel-inner flex h-full flex-col p-8 text-center">
+                    <IconChip icon={v.icon} variant="brand" className="mx-auto mb-5" />
+                    <h3 className="font-heading text-xl font-medium text-pif-navy-800">{v.title}</h3>
+                    <p className="mt-3 leading-relaxed text-slate-600">{v.body}</p>
+                  </div>
                 </div>
               </Reveal>
             ))}
@@ -71,7 +72,7 @@ export default function HomePage() {
       </section>
 
       {/* How it works */}
-      <section className="hub-section-muted py-20 md:py-28">
+      <section className="hub-section-muted py-24 md:py-32">
         <Container>
           <Reveal>
             <SectionHeading
@@ -80,22 +81,24 @@ export default function HomePage() {
               subtitle="No deductibles to satisfy, no networks to navigate. Just a transparent, three-step rhythm of community care."
             />
           </Reveal>
-          <div className="mx-auto mt-14 grid max-w-5xl gap-8 md:grid-cols-3">
+          <div className="mx-auto mt-16 grid max-w-5xl gap-5 md:grid-cols-3">
             {STEPS.map((s, i) => (
               <Reveal key={s.step} delay={i * 0.08}>
-                <div className="relative h-full rounded-2xl border border-pif-navy-100 bg-white p-7 shadow-sm ring-1 ring-pif-navy/5">
-                  <span className="absolute right-6 top-5 font-heading text-5xl font-bold text-pif-navy-50">{s.step}</span>
-                  <IconChip icon={s.icon} variant="soft" className="mb-5" />
-                  <h3 className="font-heading text-xl font-semibold text-pif-navy-800">{s.title}</h3>
-                  <p className="mt-3 leading-relaxed text-slate-600">{s.body}</p>
+                <div className="pif-bezel relative h-full">
+                  <div className="pif-bezel-inner relative h-full p-7">
+                    <span className="absolute right-6 top-5 font-heading text-5xl font-medium text-pif-navy-50">{s.step}</span>
+                    <IconChip icon={s.icon} variant="soft" className="mb-5" />
+                    <h3 className="font-heading text-xl font-medium text-pif-navy-800">{s.title}</h3>
+                    <p className="mt-3 leading-relaxed text-slate-600">{s.body}</p>
+                  </div>
                 </div>
               </Reveal>
             ))}
           </div>
           <div className="mt-12 text-center">
-            <Link href="/how-it-works" className="inline-flex items-center gap-2 font-semibold text-pif-teal-700 transition-colors hover:text-pif-green-600">
+            <Link href="/how-it-works" className="inline-flex items-center gap-2 font-semibold text-pif-teal-700 transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:gap-3 hover:text-pif-green-600">
               See exactly how sharing works
-              <ArrowRight className="h-4 w-4" />
+              <ArrowUpRight weight="light" className="h-4 w-4" />
             </Link>
           </div>
         </Container>
@@ -105,11 +108,11 @@ export default function HomePage() {
       <HomePlanCards />
 
       {/* Results + image */}
-      <section className="bg-white py-20 md:py-28">
+      <section className="bg-white py-24 md:py-32">
         <Container>
           <div className="grid items-center gap-12 md:grid-cols-2 lg:gap-20">
             <Reveal className="order-2 md:order-1">
-              <BrandImage image={IMAGES.familyTogether} aspect="aspect-[4/3]" />
+              <BrandImage image={IMAGES.familyTogether} aspect="aspect-[4/3]" tilt="left" />
             </Reveal>
             <Reveal className="order-1 md:order-2" delay={0.1}>
               <SectionHeading
@@ -137,7 +140,7 @@ export default function HomePage() {
       </section>
 
       {/* Services / features */}
-      <section className="hub-section-muted py-20 md:py-28">
+      <section className="hub-section-muted py-24 md:py-32">
         <Container>
           <Reveal>
             <SectionHeading
@@ -146,7 +149,7 @@ export default function HomePage() {
               subtitle="Your membership is more than cost sharing — it is a full circle of care that surrounds you and your family."
             />
           </Reveal>
-          <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-16 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {SERVICES.map((s, i) => (
               <Reveal key={s.title} delay={(i % 3) * 0.07}>
                 <FeatureCard icon={s.icon} title={s.title} href="/services" linkLabel="Explore services">
@@ -159,7 +162,7 @@ export default function HomePage() {
       </section>
 
       {/* Testimonials */}
-      <section className="bg-white py-20 md:py-28">
+      <section className="bg-white py-24 md:py-32">
         <Container>
           <Reveal>
             <SectionHeading
@@ -168,22 +171,24 @@ export default function HomePage() {
               subtitle="Real members, real needs met. This is what community care looks like."
             />
           </Reveal>
-          <div className="mx-auto mt-14 grid max-w-6xl gap-6 md:grid-cols-3">
+          <div className="mx-auto mt-16 grid max-w-6xl gap-5 md:grid-cols-3">
             {TESTIMONIALS.map((t, i) => (
               <Reveal key={t.name} delay={i * 0.08}>
-                <figure className="flex h-full flex-col rounded-2xl border border-pif-navy-100 bg-white p-7 shadow-sm ring-1 ring-pif-navy/5">
-                  <div className="mb-4 flex items-center gap-1 text-pif-gold-400">
-                    {Array.from({ length: 5 }).map((_, n) => (
-                      <Star key={n} className="h-4 w-4 fill-current" />
-                    ))}
-                  </div>
-                  <Quote className="mb-3 h-7 w-7 text-pif-teal-200" />
-                  <blockquote className="flex-1 leading-relaxed text-slate-700">{t.quote}</blockquote>
-                  <figcaption className="mt-6 border-t border-pif-navy-100 pt-5">
-                    <p className="font-semibold text-pif-navy-800">{t.name}</p>
-                    <p className="text-sm text-slate-500">{t.role}</p>
-                  </figcaption>
-                </figure>
+                <div className={`pif-bezel h-full ${i === 1 ? 'md:-translate-y-2' : ''}`}>
+                  <figure className="pif-bezel-inner flex h-full flex-col p-7">
+                    <div className="mb-4 flex items-center gap-1 text-pif-gold-400">
+                      {Array.from({ length: 5 }).map((_, n) => (
+                        <Star key={n} weight="fill" className="h-4 w-4" />
+                      ))}
+                    </div>
+                    <Quotes weight="light" className="mb-3 h-7 w-7 text-pif-teal-200" />
+                    <blockquote className="flex-1 leading-relaxed text-slate-700">{t.quote}</blockquote>
+                    <figcaption className="mt-6 border-t border-pif-navy-50 pt-5">
+                      <p className="font-semibold text-pif-navy-800">{t.name}</p>
+                      <p className="text-sm text-slate-500">{t.role}</p>
+                    </figcaption>
+                  </figure>
+                </div>
               </Reveal>
             ))}
           </div>
@@ -191,7 +196,7 @@ export default function HomePage() {
       </section>
 
       {/* A different model — dark */}
-      <section className="hub-section-dark relative overflow-hidden py-20 md:py-28">
+      <section className="hub-section-dark relative overflow-hidden py-24 md:py-32">
         <Container>
           <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-20">
             <div>
@@ -219,14 +224,14 @@ export default function HomePage() {
               />
             </div>
             <Reveal delay={0.1}>
-              <BrandImage image={IMAGES.consultation} aspect="aspect-[4/3]" scrim={false} className="ring-white/10" />
+              <BrandImage image={IMAGES.consultation} aspect="aspect-[4/3]" scrim={false} tilt="right" />
             </Reveal>
           </div>
         </Container>
       </section>
 
       {/* Stats strip */}
-      <section className="bg-white py-16 md:py-20">
+      <section className="bg-white py-20 md:py-24">
         <Container>
           <Reveal>
             <StatStrip

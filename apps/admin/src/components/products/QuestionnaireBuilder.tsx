@@ -1,5 +1,7 @@
 'use client';
 
+import type { Icon as LucideIcon } from '@phosphor-icons/react';
+import { Archive, ArrowDown, ArrowUp, CheckCircle, CircleNotch, ClipboardText, FileText, GitBranch, PencilSimple, Plus, Star, Trash } from '@phosphor-icons/react';
 /**
  * QuestionnaireBuilder — admin no-code questionnaire builder. [B3a-UI]
  *
@@ -37,7 +39,7 @@
  * expect.
  *
  * Self-contained: imports only existing admin UI primitives (@crm-eco/ui),
- * lucide-react icons, sonner, the RLS client, and the shared rules vocab. It
+ * Phosphor icons, sonner, the RLS client, and the shared rules vocab. It
  * deliberately does NOT import @crm-eco/shared.
  */
 
@@ -63,21 +65,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@crm-eco/ui';
-import {
-  Plus,
-  Trash2,
-  Edit2,
-  Loader2,
-  ArrowUp,
-  ArrowDown,
-  ClipboardList,
-  GitBranch,
-  CheckCircle2,
-  Archive,
-  Star,
-  FileText,
-  type LucideIcon,
-} from 'lucide-react';
 import { toast } from 'sonner';
 import {
   RULE_CONDITION_OPERATORS,
@@ -464,7 +451,7 @@ export function QuestionnaireBuilder({ organizationId, planId, planName }: Quest
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+        <CircleNotch weight="light" className="w-8 h-8 animate-spin text-slate-400" />
       </div>
     );
   }
@@ -498,7 +485,7 @@ export function QuestionnaireBuilder({ organizationId, planId, planName }: Quest
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle className="flex items-center gap-2">
-              <ClipboardList className="h-5 w-5" />
+              <ClipboardText weight="light" className="h-5 w-5" />
               Questionnaire Templates
             </CardTitle>
             <CardDescription>
@@ -514,14 +501,14 @@ export function QuestionnaireBuilder({ organizationId, planId, planName }: Quest
             }}
             size="sm"
           >
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus weight="light" className="h-4 w-4 mr-2" />
             New Template
           </Button>
         </CardHeader>
         <CardContent>
           {templates.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-slate-500">
-              <ClipboardList className="h-12 w-12 mb-4 opacity-50" />
+              <ClipboardText weight="light" className="h-12 w-12 mb-4 opacity-50" />
               <p className="font-medium">No questionnaire templates yet</p>
               <p className="text-sm">Create a template, add questions, then publish it.</p>
             </div>
@@ -538,7 +525,7 @@ export function QuestionnaireBuilder({ organizationId, planId, planName }: Quest
                       <StatusBadge status={template.status} />
                       {template.is_default && (
                         <Badge variant="default" className="gap-1">
-                          <Star className="h-3 w-3" /> Default
+                          <Star weight="light" className="h-3 w-3" /> Default
                         </Badge>
                       )}
                     </div>
@@ -548,7 +535,7 @@ export function QuestionnaireBuilder({ organizationId, planId, planName }: Quest
                   </div>
                   <div className="flex items-center gap-1 flex-wrap justify-end">
                     <Button variant="outline" size="sm" onClick={() => setActiveTemplateId(template.id)}>
-                      <Edit2 className="h-4 w-4 mr-1" />
+                      <PencilSimple weight="light" className="h-4 w-4 mr-1" />
                       Edit
                     </Button>
                     {template.status === 'draft' && (
@@ -558,7 +545,7 @@ export function QuestionnaireBuilder({ organizationId, planId, planName }: Quest
                         onClick={() => setStatus(template, 'published')}
                         disabled={saving}
                       >
-                        <CheckCircle2 className="h-4 w-4 mr-1" />
+                        <CheckCircle weight="light" className="h-4 w-4 mr-1" />
                         Publish
                       </Button>
                     )}
@@ -569,7 +556,7 @@ export function QuestionnaireBuilder({ organizationId, planId, planName }: Quest
                         onClick={() => setStatus(template, 'archived')}
                         disabled={saving}
                       >
-                        <Archive className="h-4 w-4 mr-1" />
+                        <Archive weight="light" className="h-4 w-4 mr-1" />
                         Archive
                       </Button>
                     )}
@@ -591,7 +578,7 @@ export function QuestionnaireBuilder({ organizationId, planId, planName }: Quest
                         disabled={saving}
                         title="Set as org default questionnaire"
                       >
-                        <Star className="h-4 w-4" />
+                        <Star weight="light" className="h-4 w-4" />
                       </Button>
                     )}
                     {planId && template.status === 'published' && (
@@ -614,7 +601,7 @@ export function QuestionnaireBuilder({ organizationId, planId, planName }: Quest
                       }}
                       title="Rename / edit details"
                     >
-                      <Edit2 className="h-4 w-4" />
+                      <PencilSimple weight="light" className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="ghost"
@@ -623,7 +610,7 @@ export function QuestionnaireBuilder({ organizationId, planId, planName }: Quest
                       onClick={() => deleteTemplate(template)}
                       disabled={saving}
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash weight="light" className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
@@ -763,7 +750,7 @@ function TemplateDialog({
             Cancel
           </Button>
           <Button onClick={handleSubmit} disabled={saving || !name || !key}>
-            {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            {saving && <CircleNotch weight="light" className="h-4 w-4 mr-2 animate-spin" />}
             {template ? 'Save' : 'Create Template'}
           </Button>
         </DialogFooter>
@@ -1006,7 +993,7 @@ function TemplateEditor({
               <StatusBadge status={template.status} />
               {template.is_default && (
                 <Badge variant="default" className="gap-1">
-                  <Star className="h-3 w-3" /> Default
+                  <Star weight="light" className="h-3 w-3" /> Default
                 </Badge>
               )}
             </h2>
@@ -1026,7 +1013,7 @@ function TemplateEditor({
       {/* Tabs */}
       <div className="flex gap-2 border-b">
         {[
-          { key: 'questions' as const, label: 'Questions', icon: ClipboardList, count: questions.length },
+          { key: 'questions' as const, label: 'Questions', icon: ClipboardText, count: questions.length },
           { key: 'logic' as const, label: 'Conditional Logic', icon: GitBranch, count: logic.length },
         ].map((tab) => (
           <button
@@ -1049,7 +1036,7 @@ function TemplateEditor({
 
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+          <CircleNotch weight="light" className="w-8 h-8 animate-spin text-slate-400" />
         </div>
       ) : activeTab === 'questions' ? (
         <Card>
@@ -1066,7 +1053,7 @@ function TemplateEditor({
                 setShowNewQuestion(true);
               }}
             >
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus weight="light" className="h-4 w-4 mr-2" />
               Add Question
             </Button>
           </CardHeader>
@@ -1084,7 +1071,7 @@ function TemplateEditor({
                         onClick={() => moveQuestion(index, -1)}
                         title="Move up"
                       >
-                        <ArrowUp className="h-4 w-4" />
+                        <ArrowUp weight="light" className="h-4 w-4" />
                       </button>
                       <button
                         className="text-slate-400 hover:text-slate-700 disabled:opacity-30"
@@ -1092,7 +1079,7 @@ function TemplateEditor({
                         onClick={() => moveQuestion(index, 1)}
                         title="Move down"
                       >
-                        <ArrowDown className="h-4 w-4" />
+                        <ArrowDown weight="light" className="h-4 w-4" />
                       </button>
                     </div>
                     <div className="flex-1 min-w-0">
@@ -1119,7 +1106,7 @@ function TemplateEditor({
                           setShowNewQuestion(true);
                         }}
                       >
-                        <Edit2 className="h-4 w-4" />
+                        <PencilSimple weight="light" className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="ghost"
@@ -1128,7 +1115,7 @@ function TemplateEditor({
                         disabled={readonly || saving}
                         onClick={() => deleteQuestion(q)}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash weight="light" className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>
@@ -1154,7 +1141,7 @@ function TemplateEditor({
                 setShowNewLogic(true);
               }}
             >
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus weight="light" className="h-4 w-4 mr-2" />
               Add Rule
             </Button>
           </CardHeader>
@@ -1205,7 +1192,7 @@ function TemplateEditor({
                             setShowNewLogic(true);
                           }}
                         >
-                          <Edit2 className="h-4 w-4" />
+                          <PencilSimple weight="light" className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="ghost"
@@ -1214,7 +1201,7 @@ function TemplateEditor({
                           disabled={readonly || saving}
                           onClick={() => deleteLogic(rule)}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash weight="light" className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
@@ -1420,7 +1407,7 @@ function QuestionDialog({
               <div className="flex items-center justify-between">
                 <Label>Options *</Label>
                 <Button variant="outline" size="sm" onClick={addOption}>
-                  <Plus className="h-3 w-3 mr-1" />
+                  <Plus weight="light" className="h-3 w-3 mr-1" />
                   Add Option
                 </Button>
               </div>
@@ -1447,7 +1434,7 @@ function QuestionDialog({
                       className="text-red-500 hover:text-red-600 shrink-0"
                       onClick={() => removeOption(i)}
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash weight="light" className="h-4 w-4" />
                     </Button>
                   </div>
                 ))}
@@ -1496,7 +1483,7 @@ function QuestionDialog({
             Cancel
           </Button>
           <Button onClick={handleSubmit} disabled={saving || !label || !key}>
-            {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            {saving && <CircleNotch weight="light" className="h-4 w-4 mr-2 animate-spin" />}
             {question ? 'Save' : 'Add Question'}
           </Button>
         </DialogFooter>
@@ -1761,14 +1748,14 @@ function LogicDialog({
                       disabled={conditions.length === 1}
                       onClick={() => removeCondition(i)}
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash weight="light" className="h-4 w-4" />
                     </Button>
                   </div>
                 );
               })}
             </div>
             <Button variant="outline" size="sm" onClick={addCondition}>
-              <Plus className="h-3 w-3 mr-1" />
+              <Plus weight="light" className="h-3 w-3 mr-1" />
               Add Condition
             </Button>
             <p className="text-xs text-slate-500">
@@ -1783,7 +1770,7 @@ function LogicDialog({
             Cancel
           </Button>
           <Button onClick={handleSubmit} disabled={saving || !sourceId || !targetId}>
-            {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            {saving && <CircleNotch weight="light" className="h-4 w-4 mr-2 animate-spin" />}
             {rule ? 'Save Rule' : 'Add Rule'}
           </Button>
         </DialogFooter>

@@ -171,7 +171,7 @@ export function SplitCreateButton({
                 onClick={() => handleOptionClick(primary)}
                 className={cn(
                     'rounded-r-none border-r-0',
-                    'bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400',
+                    'bg-primary hover:bg-primary/90 text-primary-foreground',
                     'text-white font-medium',
                     sizeClasses[size]
                 )}
@@ -282,7 +282,7 @@ export function QuickCreateButton({ className }: { className?: string }) {
                     size="icon"
                     className={cn(
                         'h-10 w-10 rounded-full',
-                        'bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400',
+                        'bg-primary hover:bg-primary/90 text-primary-foreground',
                         'text-white shadow-lg hover:shadow-xl transition-shadow',
                         className
                     )}

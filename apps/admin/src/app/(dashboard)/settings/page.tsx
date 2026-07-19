@@ -1,5 +1,6 @@
 'use client';
 
+import { Bell, CircleNotch, FloppyDisk, Globe, Lightning, Palette, ShieldCheck } from '@phosphor-icons/react';
 import { useState, useEffect } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import {
@@ -13,7 +14,6 @@ import {
   Label,
   Switch,
 } from '@crm-eco/ui';
-import { Save, Palette, Bell, Shield, Zap, Loader2, Globe } from 'lucide-react';
 import { toast } from 'sonner';
 import { saveOrgBranding, getOrgBranding } from './actions';
 
@@ -229,7 +229,7 @@ export default function SettingsPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <CircleNotch weight="light" className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -245,11 +245,11 @@ export default function SettingsPage() {
         </div>
         <Button onClick={handleSave} disabled={isSaving}>
           {isSaving ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            <CircleNotch weight="light" className="mr-2 h-4 w-4 animate-spin" />
           ) : (
-            <Save className="mr-2 h-4 w-4" />
+            <FloppyDisk weight="light" className="mr-2 h-4 w-4" />
           )}
-          Save Changes
+          FloppyDisk Changes
         </Button>
       </div>
 
@@ -257,7 +257,7 @@ export default function SettingsPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Palette className="h-5 w-5" />
+            <Palette weight="light" className="h-5 w-5" />
             Branding Defaults
           </CardTitle>
           <CardDescription>
@@ -326,13 +326,13 @@ export default function SettingsPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Globe className="h-5 w-5" />
+            <Globe weight="light" className="h-5 w-5" />
             Tenant Domains
           </CardTitle>
           <CardDescription>
             The subdomain and vanity domain your members and admins use to
             reach this organization. Branding above and these domains are
-            saved to your organization record when you click Save.
+            saved to your organization record when you click FloppyDisk.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -370,7 +370,7 @@ export default function SettingsPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5" />
+            <ShieldCheck weight="light" className="h-5 w-5" />
             Enrollment Settings
           </CardTitle>
           <CardDescription>
@@ -411,7 +411,7 @@ export default function SettingsPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Bell className="h-5 w-5" />
+            <Bell weight="light" className="h-5 w-5" />
             Notifications
           </CardTitle>
           <CardDescription>
@@ -474,7 +474,7 @@ export default function SettingsPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Zap className="h-5 w-5" />
+            <Lightning weight="light" className="h-5 w-5" />
             Rate Configuration
           </CardTitle>
           <CardDescription>

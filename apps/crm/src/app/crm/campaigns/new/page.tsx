@@ -265,7 +265,7 @@ export default function NewCampaignPage() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="w-full">
       {/* Header */}
       <div className="flex items-center gap-4 mb-6">
         <Button variant="ghost" size="icon" className="rounded-full" asChild>
@@ -542,7 +542,7 @@ export default function NewCampaignPage() {
             <Button
               onClick={() => handleSave(true)}
               disabled={saving || recipients.length === 0}
-              className="gap-2 bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-400 hover:to-cyan-400"
+              className="gap-2"
             >
               {saving ? (
                 <Loader2 className="w-4 h-4 animate-spin" />

@@ -1,18 +1,9 @@
 'use client';
 
+import { Copy, DotsThree, Eye, FileText, MagnifyingGlass, PencilSimple, Plus, Trash } from '@phosphor-icons/react';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@crm-eco/lib/supabase/client';
-import {
-  Plus,
-  FileText,
-  MoreHorizontal,
-  Search,
-  Edit,
-  Trash2,
-  Copy,
-  Eye,
-} from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import { Input } from '@crm-eco/ui/components/input';
@@ -225,7 +216,7 @@ export default function EmailTemplatesPage() {
         </div>
         <Link href="/communications/templates/new">
           <Button>
-            <Plus className="w-4 h-4 mr-2" />
+            <Plus weight="light" className="w-4 h-4 mr-2" />
             Create Template
           </Button>
         </Link>
@@ -234,9 +225,9 @@ export default function EmailTemplatesPage() {
       {/* Filters */}
       <div className="flex gap-4">
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <MagnifyingGlass weight="light" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <Input
-            placeholder="Search templates..."
+            placeholder="MagnifyingGlass templates..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
@@ -260,7 +251,7 @@ export default function EmailTemplatesPage() {
       {filteredTemplates.length === 0 ? (
         <Card>
           <CardContent className="py-16 text-center">
-            <FileText className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+            <FileText weight="light" className="w-12 h-12 text-slate-300 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-slate-900 mb-2">No templates found</h3>
             <p className="text-slate-600 mb-6">
               {templates.length === 0
@@ -270,7 +261,7 @@ export default function EmailTemplatesPage() {
             {templates.length === 0 && (
               <Link href="/communications/templates/new">
                 <Button>
-                  <Plus className="w-4 h-4 mr-2" />
+                  <Plus weight="light" className="w-4 h-4 mr-2" />
                   Create Template
                 </Button>
               </Link>
@@ -295,24 +286,24 @@ export default function EmailTemplatesPage() {
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="icon">
-                        <MoreHorizontal className="w-4 h-4" />
+                        <DotsThree weight="light" className="w-4 h-4" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem asChild>
                         <Link href={`/communications/templates/${template.id}`}>
-                          <Edit className="w-4 h-4 mr-2" />
-                          Edit
+                          <PencilSimple weight="light" className="w-4 h-4 mr-2" />
+                          PencilSimple
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
                         <Link href={`/communications/templates/${template.id}/preview`}>
-                          <Eye className="w-4 h-4 mr-2" />
+                          <Eye weight="light" className="w-4 h-4 mr-2" />
                           Preview
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => duplicateTemplate(template)}>
-                        <Copy className="w-4 h-4 mr-2" />
+                        <Copy weight="light" className="w-4 h-4 mr-2" />
                         Duplicate
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => toggleActive(template)}>
@@ -323,7 +314,7 @@ export default function EmailTemplatesPage() {
                           onClick={() => deleteTemplate(template)}
                           className="text-red-600"
                         >
-                          <Trash2 className="w-4 h-4 mr-2" />
+                          <Trash weight="light" className="w-4 h-4 mr-2" />
                           Delete
                         </DropdownMenuItem>
                       )}

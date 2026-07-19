@@ -1,5 +1,6 @@
 'use client';
 
+import { ArrowClockwise, ArrowRight, CaretLeft, ChartBar, Check, CircleNotch, DotsSixVertical, Eye, MagnifyingGlass, MapPin, PencilSimple, Plus, Target, Trash, Users, X } from '@phosphor-icons/react';
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import {
@@ -21,24 +22,6 @@ import {
   DialogFooter,
   Checkbox,
 } from '@crm-eco/ui';
-import {
-  RefreshCw,
-  Plus,
-  Search,
-  Edit2,
-  Trash2,
-  ChevronLeft,
-  Users,
-  MapPin,
-  BarChart3,
-  Target,
-  Loader2,
-  Check,
-  X,
-  ArrowRight,
-  GripVertical,
-  Eye,
-} from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { AssignmentPreview } from '@/components/agents';
@@ -77,8 +60,8 @@ interface Agent {
 }
 
 const STRATEGIES = [
-  { value: 'round_robin', label: 'Round Robin', icon: RefreshCw, description: 'Rotate assignments among selected agents in order' },
-  { value: 'least_loaded', label: 'Least Loaded', icon: BarChart3, description: 'Assign to agent with fewest active records' },
+  { value: 'round_robin', label: 'Round Robin', icon: ArrowClockwise, description: 'Rotate assignments among selected agents in order' },
+  { value: 'least_loaded', label: 'Least Loaded', icon: ChartBar, description: 'Assign to agent with fewest active records' },
   { value: 'territory', label: 'Territory', icon: MapPin, description: 'Assign based on geographic or custom territories' },
   { value: 'fixed', label: 'Fixed Owner', icon: Target, description: 'Always assign to a specific agent' },
 ];
@@ -329,14 +312,14 @@ export default function AgentAssignmentPage() {
 
   const getStrategyIcon = (strategy: string) => {
     const strategyDef = STRATEGIES.find((s) => s.value === strategy);
-    if (!strategyDef) return RefreshCw;
+    if (!strategyDef) return ArrowClockwise;
     return strategyDef.icon;
   };
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <CircleNotch weight="light" className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -347,7 +330,7 @@ export default function AgentAssignmentPage() {
       <div className="flex items-center gap-4">
         <Link href="/agents">
           <Button variant="ghost" size="icon">
-            <ChevronLeft className="h-5 w-5" />
+            <CaretLeft weight="light" className="h-5 w-5" />
           </Button>
         </Link>
         <div className="flex-1">
@@ -355,7 +338,7 @@ export default function AgentAssignmentPage() {
           <p className="text-slate-500">Configure how leads and enrollments are automatically assigned to agents</p>
         </div>
         <Button onClick={handleNewRule}>
-          <Plus className="h-4 w-4 mr-2" />
+          <Plus weight="light" className="h-4 w-4 mr-2" />
           New Rule
         </Button>
       </div>
@@ -364,7 +347,7 @@ export default function AgentAssignmentPage() {
       <Card className="bg-blue-50 border-blue-200">
         <CardContent className="py-4">
           <div className="flex items-start gap-3">
-            <RefreshCw className="h-5 w-5 text-blue-600 mt-0.5" />
+            <ArrowClockwise weight="light" className="h-5 w-5 text-blue-600 mt-0.5" />
             <div>
               <p className="font-medium text-blue-900">How Assignment Rules Work</p>
               <p className="text-sm text-blue-700">
@@ -383,7 +366,7 @@ export default function AgentAssignmentPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center">
-                <Target className="h-5 w-5 text-purple-600" />
+                <Target weight="light" className="h-5 w-5 text-purple-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{rules.length}</p>
@@ -396,7 +379,7 @@ export default function AgentAssignmentPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center">
-                <Check className="h-5 w-5 text-green-600" />
+                <Check weight="light" className="h-5 w-5 text-green-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{rules.filter((r) => r.is_enabled).length}</p>
@@ -409,7 +392,7 @@ export default function AgentAssignmentPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
-                <Users className="h-5 w-5 text-blue-600" />
+                <Users weight="light" className="h-5 w-5 text-blue-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{agents.length}</p>
@@ -422,7 +405,7 @@ export default function AgentAssignmentPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-teal-50 flex items-center justify-center">
-                <RefreshCw className="h-5 w-5 text-teal-600" />
+                <ArrowClockwise weight="light" className="h-5 w-5 text-teal-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{rules.filter((r) => r.strategy === 'round_robin').length}</p>
@@ -442,9 +425,9 @@ export default function AgentAssignmentPage() {
               <CardDescription>Rules are evaluated in priority order</CardDescription>
             </div>
             <div className="relative w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <MagnifyingGlass weight="light" className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search rules..."
+                placeholder="MagnifyingGlass rules..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9"
@@ -455,11 +438,11 @@ export default function AgentAssignmentPage() {
         <CardContent>
           {filteredRules.length === 0 ? (
             <div className="text-center py-12 text-slate-500">
-              <RefreshCw className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <ArrowClockwise weight="light" className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p className="text-lg font-medium">No assignment rules yet</p>
               <p className="text-sm mb-4">Create your first rule to automatically assign leads to agents</p>
               <Button onClick={handleNewRule}>
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus weight="light" className="h-4 w-4 mr-2" />
                 Create Rule
               </Button>
             </div>
@@ -475,7 +458,7 @@ export default function AgentAssignmentPage() {
                   >
                     <div className="flex items-center gap-4">
                       <div className="flex items-center gap-2 text-slate-400">
-                        <GripVertical className="h-5 w-5" />
+                        <DotsSixVertical weight="light" className="h-5 w-5" />
                         <span className="text-sm font-medium w-8">#{index + 1}</span>
                       </div>
                       <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
@@ -493,13 +476,13 @@ export default function AgentAssignmentPage() {
                         <div className="flex items-center gap-4 mt-1 text-sm text-slate-500">
                           {agentCount > 0 && (
                             <span className="flex items-center gap-1">
-                              <Users className="h-3.5 w-3.5" />
+                              <Users weight="light" className="h-3.5 w-3.5" />
                               {agentCount} agent{agentCount !== 1 ? 's' : ''}
                             </span>
                           )}
                           {rule.conditions.length > 0 && (
                             <span className="flex items-center gap-1">
-                              <Target className="h-3.5 w-3.5" />
+                              <Target weight="light" className="h-3.5 w-3.5" />
                               {rule.conditions.length} condition{rule.conditions.length !== 1 ? 's' : ''}
                             </span>
                           )}
@@ -518,11 +501,11 @@ export default function AgentAssignmentPage() {
                             onClick={() => setPreviewRule(previewRule?.id === rule.id ? null : rule)}
                             className={previewRule?.id === rule.id ? 'bg-teal-100' : ''}
                           >
-                            <Eye className="h-4 w-4" />
+                            <Eye weight="light" className="h-4 w-4" />
                           </Button>
                         )}
                         <Button variant="ghost" size="sm" onClick={() => handleEditRule(rule)}>
-                          <Edit2 className="h-4 w-4" />
+                          <PencilSimple weight="light" className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="ghost"
@@ -532,7 +515,7 @@ export default function AgentAssignmentPage() {
                             setIsDeleteModalOpen(true);
                           }}
                         >
-                          <Trash2 className="h-4 w-4 text-red-500" />
+                          <Trash weight="light" className="h-4 w-4 text-red-500" />
                         </Button>
                       </div>
                     </div>
@@ -690,7 +673,7 @@ export default function AgentAssignmentPage() {
                     {formData.selected_agents.length} agent{formData.selected_agents.length !== 1 ? 's' : ''} selected
                     {formData.strategy === 'round_robin' && (
                       <span className="ml-2">
-                        <ArrowRight className="inline h-3 w-3" /> Will rotate in selection order
+                        <ArrowRight weight="light" className="inline h-3 w-3" /> Will rotate in selection order
                       </span>
                     )}
                   </p>
@@ -742,7 +725,7 @@ export default function AgentAssignmentPage() {
               <div className="flex items-center justify-between">
                 <Label>Conditions (optional)</Label>
                 <Button variant="outline" size="sm" onClick={addCondition}>
-                  <Plus className="h-4 w-4 mr-1" />
+                  <Plus weight="light" className="h-4 w-4 mr-1" />
                   Add
                 </Button>
               </div>
@@ -785,7 +768,7 @@ export default function AgentAssignmentPage() {
                     className="flex-1"
                   />
                   <Button variant="ghost" size="sm" onClick={() => removeCondition(index)}>
-                    <X className="h-4 w-4 text-red-500" />
+                    <X weight="light" className="h-4 w-4 text-red-500" />
                   </Button>
                 </div>
               ))}
@@ -804,7 +787,7 @@ export default function AgentAssignmentPage() {
                 formData.strategy === 'fixed' && !formData.fixed_owner
               )}
             >
-              {isSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {isSaving && <CircleNotch weight="light" className="h-4 w-4 mr-2 animate-spin" />}
               {selectedRule ? 'Update Rule' : 'Create Rule'}
             </Button>
           </DialogFooter>
@@ -825,7 +808,7 @@ export default function AgentAssignmentPage() {
               Cancel
             </Button>
             <Button variant="destructive" onClick={handleDeleteRule} disabled={isSaving}>
-              {isSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {isSaving && <CircleNotch weight="light" className="h-4 w-4 mr-2 animate-spin" />}
               Delete
             </Button>
           </DialogFooter>

@@ -27,12 +27,10 @@ export function AgentShell({ children, agent }: AgentShellProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const pathname = usePathname();
 
-  // Close mobile menu on route change
   useEffect(() => {
     queueMicrotask(() => setMobileMenuOpen(false));
   }, [pathname]);
 
-  // Prevent body scroll when mobile menu is open
   useEffect(() => {
     if (mobileMenuOpen) {
       document.body.style.overflow = 'hidden';
@@ -45,31 +43,28 @@ export function AgentShell({ children, agent }: AgentShellProps) {
   }, [mobileMenuOpen]);
 
   return (
-    <div className="flex min-h-screen bg-slate-100">
-      {/* Mobile Overlay */}
+    <div className="mp-atmosphere flex min-h-screen">
       {mobileMenuOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          className="fixed inset-0 z-40 bg-[rgba(11,18,32,0.28)] backdrop-blur-[2px] lg:hidden"
           onClick={() => setMobileMenuOpen(false)}
           aria-hidden="true"
         />
       )}
 
-      {/* Sidebar */}
       <AgentSidebar
         agent={agent}
         mobileMenuOpen={mobileMenuOpen}
         onMobileClose={() => setMobileMenuOpen(false)}
       />
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex min-w-0 flex-1 flex-col">
         <AgentTopNav
           agent={agent}
           mobileMenuOpen={mobileMenuOpen}
           onMobileMenuToggle={() => setMobileMenuOpen(!mobileMenuOpen)}
         />
-        <main className="flex-1 p-3 sm:p-4 lg:p-6 xl:p-8 2xl:p-10 overflow-auto">
+        <main className="flex-1 overflow-auto p-3 sm:p-4 lg:p-6 xl:p-8 2xl:p-10">
           {children}
         </main>
       </div>

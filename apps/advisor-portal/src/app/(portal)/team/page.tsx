@@ -1,5 +1,7 @@
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
-import { Users2, TrendingUp, DollarSign, ChevronRight } from 'lucide-react';
+import { UsersThree, TrendUp, CurrencyDollar } from '@phosphor-icons/react/dist/ssr';
+import { PageHeader } from '@/components/PageHeader';
+import { Bezel } from '@/components/ui/Bezel';
 
 export const dynamic = 'force-dynamic';
 
@@ -44,8 +46,8 @@ export default async function TeamPage() {
 
     if (!advisorInfo?.advisor_id) {
         return (
-            <div className="flex items-center justify-center h-64">
-                <p className="text-gray-500">Unable to load team data.</p>
+            <div className="flex h-64 items-center justify-center">
+                <p className="text-[var(--adv-slate)]">Unable to load team data.</p>
             </div>
         );
     }
@@ -61,108 +63,115 @@ export default async function TeamPage() {
 
     return (
         <div className="space-y-6">
-            {/* Header */}
-            <div>
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Team</h1>
-                <p className="text-gray-500 dark:text-gray-400 mt-1">
-                    View your downline and team performance
-                </p>
-            </div>
+            <PageHeader
+                kicker="Organization"
+                title="Team"
+                description="View your downline and team performance"
+            />
 
-            {/* Team Stats */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
-                            <Users2 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-3">
+                <Bezel>
+                    <div className="flex items-center gap-3 p-5">
+                        <div className="grid h-10 w-10 place-items-center rounded-[0.85rem] bg-[rgba(11,109,133,0.1)]">
+                            <UsersThree weight="light" className="h-5 w-5 text-[var(--adv-teal)]" aria-hidden />
                         </div>
                         <div>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">Team Members</p>
-                            <p className="text-xl font-bold text-gray-900 dark:text-white">{teamStats.members}</p>
+                            <p className="text-sm text-[var(--adv-slate)]">Team Members</p>
+                            <p className="adv-display text-xl font-semibold tracking-[-0.02em] text-[var(--adv-ink)]">
+                                {teamStats.members}
+                            </p>
                         </div>
                     </div>
-                </div>
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-advisor-100 dark:bg-advisor-900/30 rounded-lg flex items-center justify-center">
-                            <TrendingUp className="w-5 h-5 text-advisor-600 dark:text-advisor-400" />
+                </Bezel>
+                <Bezel variant="sage">
+                    <div className="flex items-center gap-3 p-5">
+                        <div className="grid h-10 w-10 place-items-center rounded-[0.85rem] bg-white/10">
+                            <TrendUp weight="light" className="h-5 w-5 text-white" aria-hidden />
                         </div>
                         <div>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">Team Production</p>
-                            <p className="text-xl font-bold text-gray-900 dark:text-white">
+                            <p className="text-sm text-white/60">Team Production</p>
+                            <p className="adv-display text-xl font-semibold tracking-[-0.02em]">
                                 ${teamStats.production.toLocaleString()}
                             </p>
                         </div>
                     </div>
-                </div>
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg flex items-center justify-center">
-                            <DollarSign className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                </Bezel>
+                <Bezel variant="deep">
+                    <div className="flex items-center gap-3 p-5">
+                        <div className="grid h-10 w-10 place-items-center rounded-[0.85rem] bg-white/10">
+                            <CurrencyDollar weight="light" className="h-5 w-5 text-white" aria-hidden />
                         </div>
                         <div>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">Team Commissions</p>
-                            <p className="text-xl font-bold text-gray-900 dark:text-white">
+                            <p className="text-sm text-white/60">Team Commissions</p>
+                            <p className="adv-display text-xl font-semibold tracking-[-0.02em]">
                                 ${teamStats.commissions.toLocaleString()}
                             </p>
                         </div>
                     </div>
-                </div>
+                </Bezel>
             </div>
 
-            {/* Team List */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
-                <div className="p-5 border-b border-gray-200 dark:border-gray-700">
-                    <h2 className="font-semibold text-gray-900 dark:text-white">Direct Reports</h2>
-                </div>
-
-                {downline.length === 0 ? (
-                    <div className="p-12 text-center">
-                        <Users2 className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-                        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                            No team members
-                        </h3>
-                        <p className="text-gray-500 dark:text-gray-400 max-w-sm mx-auto">
-                            Advisors in your downline will appear here.
-                        </p>
+            <Bezel>
+                <div>
+                    <div className="border-b border-[rgba(28,25,23,0.06)] p-5">
+                        <h2 className="adv-display text-lg font-semibold tracking-[-0.02em] text-[var(--adv-ink)]">
+                            Direct Reports
+                        </h2>
                     </div>
-                ) : (
-                    <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                        {downline.map((advisor) => (
-                            <div
-                                key={advisor.id}
-                                className="flex items-center gap-4 p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-                            >
-                                <div className="w-10 h-10 rounded-full bg-advisor-100 dark:bg-advisor-900/30 flex items-center justify-center">
-                                    <span className="text-advisor-700 dark:text-advisor-400 font-medium">
-                                        {advisor.first_name?.charAt(0)}
+
+                    {downline.length === 0 ? (
+                        <div className="p-12 text-center">
+                            <UsersThree
+                                weight="light"
+                                className="mx-auto mb-4 h-12 w-12 text-[var(--adv-slate)]/40"
+                                aria-hidden
+                            />
+                            <h3 className="adv-display mb-2 text-lg font-semibold tracking-[-0.02em] text-[var(--adv-ink)]">
+                                No team members
+                            </h3>
+                            <p className="mx-auto max-w-sm text-[var(--adv-slate)]">
+                                Advisors in your downline will appear here.
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="divide-y divide-[rgba(28,25,23,0.06)]">
+                            {downline.map((advisor) => (
+                                <div
+                                    key={advisor.id}
+                                    className="flex items-center gap-4 p-4 transition-colors hover:bg-[rgba(11,109,133,0.04)]"
+                                >
+                                    <div className="grid h-10 w-10 place-items-center rounded-[0.85rem] bg-[var(--adv-sage-soft)]">
+                                        <span className="font-medium text-[var(--adv-teal)]">
+                                            {advisor.first_name?.charAt(0)}
+                                        </span>
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <p className="font-medium text-[var(--adv-ink)]">
+                                            {advisor.first_name} {advisor.last_name}
+                                        </p>
+                                        <p className="text-sm text-[var(--adv-slate)]">{advisor.email}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-sm font-medium text-[var(--adv-ink)]">
+                                            ${(advisor.personal_production || 0).toLocaleString()}
+                                        </p>
+                                        <p className="text-xs text-[var(--adv-slate)]">production</p>
+                                    </div>
+                                    <span
+                                        className={`rounded-full px-2 py-1 text-xs font-medium ${
+                                            advisor.status === 'active'
+                                                ? 'bg-[var(--adv-sage-soft)] text-[var(--adv-sage)]'
+                                                : 'bg-[rgba(28,25,23,0.06)] text-[var(--adv-slate)]'
+                                        }`}
+                                    >
+                                        {advisor.status}
                                     </span>
                                 </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="font-medium text-gray-900 dark:text-white">
-                                        {advisor.first_name} {advisor.last_name}
-                                    </p>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400">{advisor.email}</p>
-                                </div>
-                                <div className="text-right">
-                                    <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                        ${(advisor.personal_production || 0).toLocaleString()}
-                                    </p>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400">production</p>
-                                </div>
-                                <span
-                                    className={`px-2 py-1 text-xs font-medium rounded-full ${advisor.status === 'active'
-                                        ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                                        : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
-                                        }`}
-                                >
-                                    {advisor.status}
-                                </span>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </Bezel>
         </div>
     );
 }

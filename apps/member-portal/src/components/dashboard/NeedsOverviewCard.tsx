@@ -1,8 +1,8 @@
 import Link from 'next/link';
-import { Card, CardContent, CardHeader, CardTitle } from '@crm-eco/ui';
-import { HeartPulse, ArrowRight, FileQuestion } from 'lucide-react';
+import { ArrowUpRight, SealQuestion } from '@phosphor-icons/react/dist/ssr';
 import { format } from 'date-fns';
 import { StatusBadge } from './StatusBadge';
+import { Bezel } from '@/components/ui/Bezel';
 
 interface NeedSummary {
   id: string;
@@ -33,79 +33,66 @@ const formatAmount = (amount: number | null | undefined) => {
 export function NeedsOverviewCard({ needs }: NeedsOverviewCardProps) {
   if (!needs || needs.length === 0) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <HeartPulse className="w-5 h-5 text-slate-400" aria-hidden />
-            Needs & Sharing Activity
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-6">
-            <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-slate-100 flex items-center justify-center">
-              <FileQuestion className="w-7 h-7 text-slate-400" aria-hidden />
+      <Bezel>
+        <div className="p-6 md:p-7">
+          <p className="mp-kicker mp-kicker-teal">Needs</p>
+          <h2 className="mb-4 text-[1.05rem] font-bold tracking-[-0.02em] text-[var(--mp-ink)]">
+            Recent sharing requests
+          </h2>
+          <div className="py-4 text-center">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--mp-mist)]">
+              <SealQuestion weight="light" className="h-7 w-7 text-slate-400" aria-hidden />
             </div>
-            <p className="text-slate-600 mb-2">No Needs on file yet.</p>
+            <p className="mb-1 text-[var(--mp-ink)]">No Needs on file yet.</p>
             <p className="text-sm text-slate-500">
               When you submit a Need for sharing, you&apos;ll see updates here.
             </p>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </Bezel>
     );
   }
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <HeartPulse className="w-5 h-5 text-blue-600" aria-hidden />
-          Needs & Sharing Activity
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-3">
+    <Bezel>
+      <div className="p-6 md:p-7">
+        <div className="mb-2 flex items-baseline justify-between gap-3">
+          <div>
+            <p className="mp-kicker mp-kicker-teal">Needs</p>
+            <h2 className="text-[1.05rem] font-bold tracking-[-0.02em] text-[var(--mp-ink)]">
+              Recent sharing requests
+            </h2>
+          </div>
+          <Link
+            href="/needs"
+            className="inline-flex shrink-0 items-center gap-1 text-[0.8rem] font-semibold text-[var(--mp-teal)]"
+          >
+            See all
+            <ArrowUpRight weight="light" className="h-3.5 w-3.5" aria-hidden />
+          </Link>
+        </div>
+
+        <div>
           {needs.slice(0, 4).map((need) => (
             <div
               key={need.id}
-              className="flex items-start justify-between p-3 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors"
+              className="flex items-center justify-between border-b border-[rgba(11,109,133,0.06)] py-3 last:border-0"
             >
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <p className="text-sm font-medium text-slate-900 truncate">
-                    {need.need_type}
-                  </p>
-                  <StatusBadge status={need.status} showIcon={false} />
-                </div>
-                <p className="text-xs text-slate-500">
-                  {format(new Date(need.created_at), 'MMM d, yyyy')}
+              <div className="min-w-0">
+                <p className="truncate text-[0.85rem] font-semibold text-[var(--mp-ink)]">
+                  {need.need_type}
+                </p>
+                <p className="mt-0.5 text-[0.75rem] text-slate-500">
+                  {need.status === 'paid' && need.reimbursed_amount > 0
+                    ? `Shared ${format(new Date(need.created_at), 'MMM d')} · ${formatAmount(need.reimbursed_amount)}`
+                    : `Submitted ${format(new Date(need.created_at), 'MMM d')} · ${formatAmount(need.total_amount)}`}
                 </p>
               </div>
-              <div className="text-right ml-3">
-                <p className="text-sm font-semibold text-slate-900">
-                  {formatAmount(need.total_amount)}
-                </p>
-                {need.status === 'paid' && need.reimbursed_amount > 0 && (
-                  <p className="text-xs text-green-600">
-                    Shared: {formatAmount(need.reimbursed_amount)}
-                  </p>
-                )}
-              </div>
+              <StatusBadge status={need.status} showIcon={false} />
             </div>
           ))}
         </div>
-
-        <div className="mt-4 pt-3 border-t">
-          <Link 
-            href="/needs" 
-            className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
-          >
-            View all Needs
-            <ArrowRight className="w-3 h-3" aria-hidden />
-          </Link>
-        </div>
-      </CardContent>
-    </Card>
+      </div>
+    </Bezel>
   );
 }
-

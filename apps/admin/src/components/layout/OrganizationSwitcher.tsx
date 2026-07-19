@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useTransition } from 'react';
-import { ChevronDown, Check, Building2, Loader2 } from 'lucide-react';
+import { CaretDown, Check, Buildings, CircleNotch } from '@phosphor-icons/react';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { switchTenant } from '@/app/actions/switch-tenant';
 
@@ -106,11 +106,12 @@ export function OrganizationSwitcher({
           </span>
         </span>
         {pending ? (
-          <Loader2 className="h-3.5 w-3.5 animate-spin text-slate-400" />
+          <CircleNotch weight="light" className="h-3.5 w-3.5 animate-spin text-[var(--adm-muted)]" />
         ) : (
-          <ChevronDown
+          <CaretDown
+            weight="light"
             className={cn(
-              'h-3.5 w-3.5 text-slate-400 transition-transform',
+              'h-3.5 w-3.5 text-[var(--adm-muted)] transition-transform',
               open && 'rotate-180',
             )}
           />
@@ -124,7 +125,7 @@ export function OrganizationSwitcher({
           className="absolute right-0 z-50 mt-2 w-80 origin-top-right overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/10 ring-1 ring-black/5 dark:border-slate-700 dark:bg-slate-900 dark:ring-white/5"
         >
           <div className="flex items-center gap-2 border-b border-slate-100 px-3 py-2.5 dark:border-slate-800">
-            <Building2 className="h-3.5 w-3.5 text-slate-400" />
+            <Buildings weight="light" className="h-3.5 w-3.5 text-[var(--adm-muted)]" />
             <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-slate-500">
               Switch organization
             </p>
@@ -167,7 +168,7 @@ export function OrganizationSwitcher({
                       </span>
                     </span>
                     {selected && (
-                      <Check className="h-4 w-4 shrink-0 text-teal-600 dark:text-teal-300" />
+                      <Check weight="bold" className="h-4 w-4 shrink-0 text-[var(--adm-cyan)]" />
                     )}
                   </button>
                 </li>

@@ -266,7 +266,7 @@ export default function OrganizerPage() {
     }
 
     return (
-        <div className="max-w-7xl mx-auto space-y-6">
+        <div className="w-full space-y-6">
             {/* Header */}
             <div className="flex items-start justify-between">
                 <div>

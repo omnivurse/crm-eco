@@ -1,30 +1,9 @@
 'use client';
 
+import { ArrowClockwise, ArrowUpRight, Calendar, CaretRight, ChartBar, Clock, CurrencyDollar, DownloadSimple, FileText, GearSix, Lightning, MagnifyingGlass, Play, Plus, SquaresFour, Star, Target, TrendUp, Users, Wallet } from '@phosphor-icons/react';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import {
-  BarChart3,
-  TrendingUp,
-  Users,
-  DollarSign,
-  Target,
-  Calendar,
-  ArrowUpRight,
-  Download,
-  RefreshCw,
-  LayoutGrid,
-  Settings,
-  Wallet,
-  Zap,
-  FileText,
-  Star,
-  Clock,
-  Play,
-  Plus,
-  ChevronRight,
-  Search,
-} from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
 import { Tabs, TabsList, TabsTrigger } from '@crm-eco/ui/components/tabs';
@@ -70,7 +49,7 @@ function QuickStatCard({
           </div>
         </div>
         {href && (
-          <ArrowUpRight className="w-4 h-4 text-slate-400 group-hover:text-slate-600 transition-colors" />
+          <ArrowUpRight weight="light" className="w-4 h-4 text-slate-400 group-hover:text-slate-600 transition-colors" />
         )}
       </div>
     </div>
@@ -106,19 +85,19 @@ function ReportTemplateCard({
   };
 
   const iconMap: Record<string, React.ElementType> = {
-    DollarSign,
+    CurrencyDollar,
     Target,
     Users,
-    Settings,
+    GearSix,
     Wallet,
-    Zap,
-    BarChart3,
-    TrendingUp,
+    Lightning,
+    ChartBar,
+    TrendUp,
     Calendar,
     FileText,
   };
 
-  const IconComponent = icon ? (iconMap[icon] || BarChart3) : BarChart3;
+  const IconComponent = icon ? (iconMap[icon] || ChartBar) : ChartBar;
   const gradient = categoryColors[category] || 'from-slate-500 to-slate-600';
 
   return (
@@ -130,7 +109,7 @@ function ReportTemplateCard({
         <div className={`p-2.5 rounded-xl bg-gradient-to-br ${gradient}`}>
           <IconComponent className="w-5 h-5 text-white" />
         </div>
-        <ArrowUpRight className="w-4 h-4 text-slate-400 group-hover:text-[#0891b2] transition-colors" />
+        <ArrowUpRight weight="light" className="w-4 h-4 text-slate-400 group-hover:text-[#0891b2] transition-colors" />
       </div>
       <h3 className="text-slate-900 font-semibold mb-1 group-hover:text-[#0891b2] transition-colors">
         {name}
@@ -179,17 +158,17 @@ function SavedReportCard({
               : 'text-slate-400 hover:text-amber-500 hover:bg-amber-500/10'
           }`}
         >
-          <Star className={`w-4 h-4 ${isFavorite ? 'fill-current' : ''}`} />
+          <Star weight="light" className={`w-4 h-4 ${isFavorite ? 'fill-current' : ''}`} />
         </button>
       </div>
       <div className="flex items-center justify-between mt-3">
         <div className="flex items-center gap-1 text-xs text-slate-500">
-          <Clock className="w-3 h-3" />
+          <Clock weight="light" className="w-3 h-3" />
           <span>{lastRun || 'Never run'}</span>
         </div>
         <div className="flex items-center gap-2">
           <Button size="sm" variant="ghost" className="h-7 px-2" onClick={onRun}>
-            <Play className="w-3 h-3 mr-1" />
+            <Play weight="light" className="w-3 h-3 mr-1" />
             Run
           </Button>
           <Link href={`/reports/saved/${id}`}>
@@ -204,13 +183,13 @@ function SavedReportCard({
 }
 
 const categoryIcons: Record<string, React.ElementType> = {
-  all: LayoutGrid,
-  sales: DollarSign,
+  all: SquaresFour,
+  sales: CurrencyDollar,
   marketing: Target,
   team: Users,
-  operations: Settings,
+  operations: GearSix,
   finance: Wallet,
-  productivity: Zap,
+  productivity: Lightning,
 };
 
 export default function AdminReportsPage() {
@@ -297,13 +276,13 @@ export default function AdminReportsPage() {
 
         <div className="flex items-center gap-3">
           <Link href="/reports/templates">
-            <Button className="bg-[#0891b2] hover:bg-[#0e7490] text-white">
-              <Plus className="w-4 h-4 mr-2" />
+            <Button>
+              <Plus weight="light" className="w-4 h-4 mr-2" />
               Create Report
             </Button>
           </Link>
           <Button variant="outline">
-            <RefreshCw className="w-4 h-4" />
+            <ArrowClockwise weight="light" className="w-4 h-4" />
           </Button>
         </div>
       </div>
@@ -326,13 +305,13 @@ export default function AdminReportsPage() {
         <QuickStatCard
           title="Run This Month"
           value={stats.reportsThisMonth}
-          icon={TrendingUp}
+          icon={TrendUp}
           color="emerald"
         />
         <QuickStatCard
           title="Total Exports"
           value={stats.totalExports}
-          icon={Download}
+          icon={DownloadSimple}
           color="amber"
         />
       </div>
@@ -348,9 +327,9 @@ export default function AdminReportsPage() {
           </div>
           <div className="flex items-center gap-3">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <MagnifyingGlass weight="light" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <Input
-                placeholder="Search templates..."
+                placeholder="MagnifyingGlass templates..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9 w-64"
@@ -359,7 +338,7 @@ export default function AdminReportsPage() {
             <Link href="/reports/templates">
               <Button variant="outline" size="sm">
                 View All
-                <ChevronRight className="w-4 h-4 ml-1" />
+                <CaretRight weight="light" className="w-4 h-4 ml-1" />
               </Button>
             </Link>
           </div>
@@ -369,7 +348,7 @@ export default function AdminReportsPage() {
         <Tabs value={activeCategory} onValueChange={(v) => setActiveCategory(v as TemplateCategory)}>
           <TabsList className="bg-slate-100 p-1 h-auto flex-wrap">
             {TEMPLATE_CATEGORIES.map((cat) => {
-              const IconComponent = categoryIcons[cat.id] || LayoutGrid;
+              const IconComponent = categoryIcons[cat.id] || SquaresFour;
               return (
                 <TabsTrigger
                   key={cat.id}
@@ -403,7 +382,7 @@ export default function AdminReportsPage() {
             <Link href="/reports/templates">
               <Button variant="outline">
                 View All {filteredTemplates.length} Templates
-                <ChevronRight className="w-4 h-4 ml-1" />
+                <CaretRight weight="light" className="w-4 h-4 ml-1" />
               </Button>
             </Link>
           </div>
@@ -420,7 +399,7 @@ export default function AdminReportsPage() {
           <Link href="/reports/saved">
             <Button variant="ghost" size="sm">
               View All
-              <ChevronRight className="w-4 h-4 ml-1" />
+              <CaretRight weight="light" className="w-4 h-4 ml-1" />
             </Button>
           </Link>
         </div>
@@ -442,7 +421,7 @@ export default function AdminReportsPage() {
           </div>
         ) : (
           <div className="bg-white rounded-xl p-8 border border-slate-200 text-center">
-            <FileText className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+            <FileText weight="light" className="w-12 h-12 text-slate-300 mx-auto mb-3" />
             <h3 className="text-slate-900 font-semibold mb-1">No saved reports yet</h3>
             <p className="text-slate-500 text-sm mb-4">
               Create your first report from a template
@@ -452,8 +431,8 @@ export default function AdminReportsPage() {
                 <Button variant="outline">Browse Templates</Button>
               </Link>
               <Link href="/reports/templates">
-                <Button className="bg-[#0891b2] hover:bg-[#0e7490] text-white">
-                  <Plus className="w-4 h-4 mr-2" />
+                <Button>
+                  <Plus weight="light" className="w-4 h-4 mr-2" />
                   Create Report
                 </Button>
               </Link>

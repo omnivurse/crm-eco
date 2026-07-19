@@ -1,5 +1,6 @@
 'use client';
 
+import { CircleNotch, WarningCircle } from '@phosphor-icons/react';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
@@ -19,7 +20,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@crm-eco/ui';
-import { Loader2, AlertCircle } from 'lucide-react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import type { Vendor } from '@crm-eco/lib/types';
 
@@ -175,7 +175,7 @@ export function VendorForm({ initialData }: VendorFormProps) {
     <form onSubmit={handleSubmit} className="space-y-6">
       {error && (
         <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+          <WarningCircle weight="light" className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
           <div>
             <p className="font-medium text-red-800">Error</p>
             <p className="text-sm text-red-700">{error}</p>
@@ -473,7 +473,7 @@ export function VendorForm({ initialData }: VendorFormProps) {
           Cancel
         </Button>
         <Button type="submit" disabled={loading}>
-          {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+          {loading && <CircleNotch weight="light" className="w-4 h-4 mr-2 animate-spin" />}
           {isEditing ? 'Update Vendor' : 'Create Vendor'}
         </Button>
       </div>

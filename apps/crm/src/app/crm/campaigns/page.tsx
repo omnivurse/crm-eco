@@ -416,7 +416,6 @@ export default function CampaignsPage() {
 
         <Button 
           onClick={() => router.push('/crm/campaigns/new')}
-          className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-400 hover:to-cyan-400"
         >
           <Plus className="w-4 h-4 mr-2" />
           New Campaign

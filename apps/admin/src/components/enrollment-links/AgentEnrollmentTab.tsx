@@ -1,19 +1,9 @@
 'use client';
 
+import { ArrowClockwise, ArrowSquareOut, Copy, DownloadSimple, Eye, Link as LinkIcon, Palette, TrendUp, Users } from '@phosphor-icons/react';
 import { useState, useRef } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { QRCodeSVG } from 'qrcode.react';
-import {
-  Link as LinkIcon,
-  Copy,
-  ExternalLink,
-  Download,
-  RefreshCw,
-  Eye,
-  Users,
-  TrendingUp,
-  Palette,
-} from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
 import { Label } from '@crm-eco/ui/components/label';
@@ -143,7 +133,7 @@ export function AgentEnrollmentTab({ agent, stats, onUpdate }: AgentEnrollmentTa
                   <p className="text-2xl font-bold">{stats.totalMembers}</p>
                 </div>
                 <div className="p-3 bg-blue-100 rounded-lg">
-                  <Users className="w-5 h-5 text-blue-600" />
+                  <Users weight="light" className="w-5 h-5 text-blue-600" />
                 </div>
               </div>
             </CardContent>
@@ -157,7 +147,7 @@ export function AgentEnrollmentTab({ agent, stats, onUpdate }: AgentEnrollmentTa
                   <p className="text-2xl font-bold text-emerald-600">{stats.totalEnrollments}</p>
                 </div>
                 <div className="p-3 bg-emerald-100 rounded-lg">
-                  <TrendingUp className="w-5 h-5 text-emerald-600" />
+                  <TrendUp weight="light" className="w-5 h-5 text-emerald-600" />
                 </div>
               </div>
             </CardContent>
@@ -171,7 +161,7 @@ export function AgentEnrollmentTab({ agent, stats, onUpdate }: AgentEnrollmentTa
                   <p className="text-2xl font-bold text-amber-600">{stats.monthlyEnrollments}</p>
                 </div>
                 <div className="p-3 bg-amber-100 rounded-lg">
-                  <Eye className="w-5 h-5 text-amber-600" />
+                  <Eye weight="light" className="w-5 h-5 text-amber-600" />
                 </div>
               </div>
             </CardContent>
@@ -184,7 +174,7 @@ export function AgentEnrollmentTab({ agent, stats, onUpdate }: AgentEnrollmentTa
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <LinkIcon className="w-5 h-5" />
+              <LinkIcon weight="light" className="w-5 h-5" />
               Enrollment Link
             </CardTitle>
             <CardDescription>
@@ -211,7 +201,7 @@ export function AgentEnrollmentTab({ agent, stats, onUpdate }: AgentEnrollmentTa
                   disabled={regenerating}
                   title="Regenerate code"
                 >
-                  <RefreshCw className={`w-4 h-4 ${regenerating ? 'animate-spin' : ''}`} />
+                  <ArrowClockwise weight="light" className={`w-4 h-4 ${regenerating ? 'animate-spin' : ''}`} />
                 </Button>
               </div>
             </div>
@@ -226,11 +216,11 @@ export function AgentEnrollmentTab({ agent, stats, onUpdate }: AgentEnrollmentTa
                     className="flex-1 bg-slate-50 text-sm"
                   />
                   <Button variant="outline" size="icon" onClick={copyLink}>
-                    <Copy className="w-4 h-4" />
+                    <Copy weight="light" className="w-4 h-4" />
                   </Button>
                   <Button variant="outline" size="icon" asChild>
                     <a href={getEnrollmentUrl()} target="_blank" rel="noopener noreferrer">
-                      <ExternalLink className="w-4 h-4" />
+                      <ArrowSquareOut weight="light" className="w-4 h-4" />
                     </a>
                   </Button>
                 </div>
@@ -265,7 +255,7 @@ export function AgentEnrollmentTab({ agent, stats, onUpdate }: AgentEnrollmentTa
 
                 <div className="flex items-center justify-center gap-2">
                   <div className="flex items-center gap-2">
-                    <Palette className="w-4 h-4 text-slate-400" />
+                    <Palette weight="light" className="w-4 h-4 text-slate-400" />
                     <Input
                       type="color"
                       value={qrColor}
@@ -282,7 +272,7 @@ export function AgentEnrollmentTab({ agent, stats, onUpdate }: AgentEnrollmentTa
                     className="flex-1"
                     onClick={() => downloadQR('svg')}
                   >
-                    <Download className="w-4 h-4 mr-1" />
+                    <DownloadSimple weight="light" className="w-4 h-4 mr-1" />
                     SVG
                   </Button>
                   <Button
@@ -290,7 +280,7 @@ export function AgentEnrollmentTab({ agent, stats, onUpdate }: AgentEnrollmentTa
                     className="flex-1"
                     onClick={() => downloadQR('png')}
                   >
-                    <Download className="w-4 h-4 mr-1" />
+                    <DownloadSimple weight="light" className="w-4 h-4 mr-1" />
                     PNG
                   </Button>
                 </div>

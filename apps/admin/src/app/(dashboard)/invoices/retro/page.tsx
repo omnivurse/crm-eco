@@ -1,5 +1,6 @@
 'use client';
 
+import { ArrowClockwise, ArrowLeft, Calendar, CaretLeft, CaretRight, Clock, ClockCounterClockwise, DownloadSimple, Eye, FileText, MagnifyingGlass, User, Users, Warning } from '@phosphor-icons/react';
 import { useState, useEffect } from 'react';
 import {
   Card,
@@ -19,22 +20,6 @@ import {
   DialogTitle,
   Textarea,
 } from '@crm-eco/ui';
-import {
-  FileText,
-  Search,
-  Download,
-  RefreshCw,
-  ArrowLeft,
-  AlertTriangle,
-  Calendar,
-  User,
-  Users,
-  History,
-  Eye,
-  ChevronLeft,
-  ChevronRight,
-  Clock,
-} from 'lucide-react';
 import Link from 'next/link';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { toast } from 'sonner';
@@ -278,7 +263,7 @@ export default function RetroInvoicingPage() {
         <div className="flex items-center gap-4">
           <Link href="/invoices">
             <Button variant="ghost" size="icon">
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft weight="light" className="h-4 w-4" />
             </Button>
           </Link>
           <div>
@@ -288,18 +273,18 @@ export default function RetroInvoicingPage() {
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" onClick={exportRetroInvoices}>
-            <Download className="h-4 w-4 mr-2" />
+            <DownloadSimple weight="light" className="h-4 w-4 mr-2" />
             Export
           </Button>
           <Link href="/invoices/generate/individual">
             <Button variant="outline">
-              <User className="h-4 w-4 mr-2" />
+              <User weight="light" className="h-4 w-4 mr-2" />
               Individual Retro
             </Button>
           </Link>
           <Link href="/invoices/generate/group">
             <Button>
-              <Users className="h-4 w-4 mr-2" />
+              <Users weight="light" className="h-4 w-4 mr-2" />
               Group Retro
             </Button>
           </Link>
@@ -310,7 +295,7 @@ export default function RetroInvoicingPage() {
       <Card className="border-amber-200 bg-amber-50">
         <CardContent className="pt-6">
           <div className="flex items-start gap-3">
-            <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5" />
+            <Warning weight="light" className="h-5 w-5 text-amber-600 mt-0.5" />
             <div>
               <p className="font-medium text-amber-900">Retroactive Invoice Guidelines</p>
               <p className="text-sm text-amber-700 mt-1">
@@ -329,7 +314,7 @@ export default function RetroInvoicingPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-amber-100 rounded-lg">
-                <History className="h-5 w-5 text-amber-600" />
+                <ClockCounterClockwise weight="light" className="h-5 w-5 text-amber-600" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total Retro Invoices</p>
@@ -343,7 +328,7 @@ export default function RetroInvoicingPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-slate-100 rounded-lg">
-                <FileText className="h-5 w-5 text-slate-600" />
+                <FileText weight="light" className="h-5 w-5 text-slate-600" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total Amount</p>
@@ -357,7 +342,7 @@ export default function RetroInvoicingPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-blue-100 rounded-lg">
-                <Clock className="h-5 w-5 text-blue-600" />
+                <Clock weight="light" className="h-5 w-5 text-blue-600" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Pending</p>
@@ -371,7 +356,7 @@ export default function RetroInvoicingPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-purple-100 rounded-lg">
-                <Users className="h-5 w-5 text-purple-600" />
+                <Users weight="light" className="h-5 w-5 text-purple-600" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Batch Jobs</p>
@@ -389,7 +374,7 @@ export default function RetroInvoicingPage() {
           size="sm"
           onClick={() => setActiveTab('invoices')}
         >
-          <FileText className="h-4 w-4 mr-2" />
+          <FileText weight="light" className="h-4 w-4 mr-2" />
           Invoices ({retroInvoices.length})
         </Button>
         <Button
@@ -397,7 +382,7 @@ export default function RetroInvoicingPage() {
           size="sm"
           onClick={() => setActiveTab('jobs')}
         >
-          <Users className="h-4 w-4 mr-2" />
+          <Users weight="light" className="h-4 w-4 mr-2" />
           Batch Jobs ({retroJobs.length})
         </Button>
         <Button
@@ -405,7 +390,7 @@ export default function RetroInvoicingPage() {
           size="sm"
           onClick={() => setActiveTab('audit')}
         >
-          <History className="h-4 w-4 mr-2" />
+          <ClockCounterClockwise weight="light" className="h-4 w-4 mr-2" />
           Audit Log ({auditLog.length})
         </Button>
       </div>
@@ -420,9 +405,9 @@ export default function RetroInvoicingPage() {
                 <CardDescription>All retroactively generated invoices</CardDescription>
               </div>
               <div className="relative w-64">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <MagnifyingGlass weight="light" className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search..."
+                  placeholder="MagnifyingGlass..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-9"
@@ -433,11 +418,11 @@ export default function RetroInvoicingPage() {
           <CardContent className="p-0">
             {loading ? (
               <div className="flex items-center justify-center py-16">
-                <RefreshCw className="h-8 w-8 animate-spin text-slate-400" />
+                <ArrowClockwise weight="light" className="h-8 w-8 animate-spin text-slate-400" />
               </div>
             ) : paginatedInvoices.length === 0 ? (
               <div className="text-center py-16">
-                <History className="h-12 w-12 text-slate-200 mx-auto mb-4" />
+                <ClockCounterClockwise weight="light" className="h-12 w-12 text-slate-200 mx-auto mb-4" />
                 <p className="text-lg font-medium">No Retro Invoices</p>
                 <p className="text-sm text-muted-foreground">
                   No retroactive invoices have been generated yet
@@ -463,7 +448,7 @@ export default function RetroInvoicingPage() {
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-2">
                             <Badge variant="outline" className="text-amber-600 border-amber-300">
-                              <AlertTriangle className="h-3 w-3 mr-1" />
+                              <Warning weight="light" className="h-3 w-3 mr-1" />
                               Retro
                             </Badge>
                             <span className="font-mono text-sm">{invoice.invoice_number}</span>
@@ -499,7 +484,7 @@ export default function RetroInvoicingPage() {
                               setShowDetailModal(true);
                             }}
                           >
-                            <Eye className="h-4 w-4" />
+                            <Eye weight="light" className="h-4 w-4" />
                           </Button>
                         </td>
                       </tr>
@@ -523,7 +508,7 @@ export default function RetroInvoicingPage() {
                     onClick={() => setCurrentPage(currentPage - 1)}
                     disabled={currentPage === 1}
                   >
-                    <ChevronLeft className="h-4 w-4" />
+                    <CaretLeft weight="light" className="h-4 w-4" />
                   </Button>
                   <span className="text-sm">
                     Page {currentPage} of {totalPages}
@@ -534,7 +519,7 @@ export default function RetroInvoicingPage() {
                     onClick={() => setCurrentPage(currentPage + 1)}
                     disabled={currentPage === totalPages}
                   >
-                    <ChevronRight className="h-4 w-4" />
+                    <CaretRight weight="light" className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
@@ -552,11 +537,11 @@ export default function RetroInvoicingPage() {
           <CardContent className="p-0">
             {loading ? (
               <div className="flex items-center justify-center py-16">
-                <RefreshCw className="h-8 w-8 animate-spin text-slate-400" />
+                <ArrowClockwise weight="light" className="h-8 w-8 animate-spin text-slate-400" />
               </div>
             ) : retroJobs.length === 0 ? (
               <div className="text-center py-16">
-                <Users className="h-12 w-12 text-slate-200 mx-auto mb-4" />
+                <Users weight="light" className="h-12 w-12 text-slate-200 mx-auto mb-4" />
                 <p className="text-lg font-medium">No Batch Jobs</p>
                 <p className="text-sm text-muted-foreground">
                   No retro batch generation jobs have been run
@@ -619,11 +604,11 @@ export default function RetroInvoicingPage() {
           <CardContent className="p-0">
             {loading ? (
               <div className="flex items-center justify-center py-16">
-                <RefreshCw className="h-8 w-8 animate-spin text-slate-400" />
+                <ArrowClockwise weight="light" className="h-8 w-8 animate-spin text-slate-400" />
               </div>
             ) : auditLog.length === 0 ? (
               <div className="text-center py-16">
-                <History className="h-12 w-12 text-slate-200 mx-auto mb-4" />
+                <ClockCounterClockwise weight="light" className="h-12 w-12 text-slate-200 mx-auto mb-4" />
                 <p className="text-lg font-medium">No Audit Entries</p>
                 <p className="text-sm text-muted-foreground">No retro invoicing activity recorded yet</p>
               </div>
@@ -679,7 +664,7 @@ export default function RetroInvoicingPage() {
               <div className="flex items-center justify-between p-4 bg-amber-50 rounded-lg">
                 <div>
                   <Badge variant="outline" className="text-amber-600 border-amber-300 mb-2">
-                    <AlertTriangle className="h-3 w-3 mr-1" />
+                    <Warning weight="light" className="h-3 w-3 mr-1" />
                     Retroactive Invoice
                   </Badge>
                   <p className="font-mono text-lg font-bold">{selectedInvoice.invoice_number}</p>

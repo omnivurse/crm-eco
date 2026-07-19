@@ -1,5 +1,6 @@
 'use client';
 
+import { ArrowCounterClockwise, CheckCircle, CircleNotch, Clock, CurrencyDollar, DotsThreeVertical, Pause, XCircle } from '@phosphor-icons/react';
 import { useState, useEffect } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { guaranteedUpdateWithVersion } from '@crm-eco/lib';
@@ -22,7 +23,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@crm-eco/ui';
-import { Loader2, MoreVertical, CheckCircle, XCircle, Clock, Pause, RotateCcw, DollarSign } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 // Commission transaction type (tables may not be in generated types yet)
 interface CommissionTransaction {
@@ -248,7 +248,7 @@ export default function CommissionTransactionsPage() {
   if (loading && transactions.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+        <CircleNotch weight="light" className="h-8 w-8 animate-spin text-blue-500" />
         <p className="ml-3 text-slate-500">Loading transactions...</p>
       </div>
     );
@@ -301,7 +301,7 @@ export default function CommissionTransactionsPage() {
                   variant="outline"
                   onClick={() => bulkUpdateStatus('approved')}
                 >
-                  <CheckCircle className="h-4 w-4 mr-1" />
+                  <CheckCircle weight="light" className="h-4 w-4 mr-1" />
                   Approve
                 </Button>
                 <Button
@@ -309,7 +309,7 @@ export default function CommissionTransactionsPage() {
                   variant="outline"
                   onClick={() => bulkUpdateStatus('held')}
                 >
-                  <Pause className="h-4 w-4 mr-1" />
+                  <Pause weight="light" className="h-4 w-4 mr-1" />
                   Hold
                 </Button>
               </div>
@@ -327,7 +327,7 @@ export default function CommissionTransactionsPage() {
         <CardContent>
           {transactions.length === 0 ? (
             <div className="text-center py-12 text-slate-500">
-              <DollarSign className="h-12 w-12 mx-auto mb-4 text-slate-300" />
+              <CurrencyDollar weight="light" className="h-12 w-12 mx-auto mb-4 text-slate-300" />
               <p className="text-lg font-medium">No transactions found</p>
               <p className="text-sm">Commission transactions will appear here once enrollments are processed.</p>
             </div>
@@ -406,9 +406,9 @@ export default function CommissionTransactionsPage() {
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon" disabled={processingId === transaction.id}>
                               {processingId === transaction.id ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
+                                <CircleNotch weight="light" className="h-4 w-4 animate-spin" />
                               ) : (
-                                <MoreVertical className="h-4 w-4" />
+                                <DotsThreeVertical weight="light" className="h-4 w-4" />
                               )}
                             </Button>
                           </DropdownMenuTrigger>
@@ -416,25 +416,25 @@ export default function CommissionTransactionsPage() {
                             {transaction.status === 'pending' && (
                               <>
                                 <DropdownMenuItem onClick={() => updateTransactionStatus(transaction.id, 'approved')}>
-                                  <CheckCircle className="mr-2 h-4 w-4 text-green-600" />
+                                  <CheckCircle weight="light" className="mr-2 h-4 w-4 text-green-600" />
                                   Approve
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => updateTransactionStatus(transaction.id, 'held')}>
-                                  <Pause className="mr-2 h-4 w-4 text-yellow-600" />
+                                  <Pause weight="light" className="mr-2 h-4 w-4 text-yellow-600" />
                                   Hold
                                 </DropdownMenuItem>
                               </>
                             )}
                             {transaction.status === 'held' && (
                               <DropdownMenuItem onClick={() => updateTransactionStatus(transaction.id, 'approved')}>
-                                <CheckCircle className="mr-2 h-4 w-4 text-green-600" />
+                                <CheckCircle weight="light" className="mr-2 h-4 w-4 text-green-600" />
                                 Approve
                               </DropdownMenuItem>
                             )}
                             {transaction.status === 'approved' && (
                               <>
                                 <DropdownMenuItem onClick={() => updateTransactionStatus(transaction.id, 'held')}>
-                                  <Pause className="mr-2 h-4 w-4 text-yellow-600" />
+                                  <Pause weight="light" className="mr-2 h-4 w-4 text-yellow-600" />
                                   Hold
                                 </DropdownMenuItem>
                               </>
@@ -444,7 +444,7 @@ export default function CommissionTransactionsPage() {
                                 onClick={() => updateTransactionStatus(transaction.id, 'reversed')}
                                 className="text-red-600"
                               >
-                                <RotateCcw className="mr-2 h-4 w-4" />
+                                <ArrowCounterClockwise weight="light" className="mr-2 h-4 w-4" />
                                 Reverse
                               </DropdownMenuItem>
                             )}

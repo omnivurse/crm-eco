@@ -1,5 +1,6 @@
 'use client';
 
+import { Buildings, CheckCircle, CircleNotch, Funnel, MagnifyingGlass, MapPin, Users, X } from '@phosphor-icons/react';
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import {
@@ -15,17 +16,6 @@ import {
   Badge,
   Checkbox,
 } from '@crm-eco/ui';
-import {
-  Search,
-  Users,
-  Loader2,
-  Filter,
-  X,
-  Building2,
-  MapPin,
-  CheckCircle2,
-} from 'lucide-react';
-
 interface Agent {
   id: string;
   first_name: string;
@@ -71,7 +61,7 @@ export function SearchAgentsModal({
   multiSelect = false,
   excludeIds = [],
   filterStates,
-  title = 'Search Agents',
+  title = 'MagnifyingGlass Agents',
   description = 'Find and select agents',
   enableMultiCorp = false,
 }: SearchAgentsModalProps) {
@@ -80,7 +70,7 @@ export function SearchAgentsModal({
   const [isLoading, setIsLoading] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
 
-  // Search/Filter state
+  // MagnifyingGlass/Funnel state
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string[]>(['active']);
   const [stateFilter, setStateFilter] = useState<string[]>(filterStates || []);
@@ -129,7 +119,7 @@ export function SearchAgentsModal({
         query = query.in('status', statusFilter);
       }
 
-      // Search filter
+      // MagnifyingGlass filter
       if (searchQuery) {
         query = query.or(`first_name.ilike.%${searchQuery}%,last_name.ilike.%${searchQuery}%,email.ilike.%${searchQuery}%`);
       }
@@ -145,7 +135,7 @@ export function SearchAgentsModal({
       const { data } = await query as { data: Agent[] | null };
 
       if (data) {
-        // Filter by state (client-side since license_states is an array)
+        // Funnel by state (client-side since license_states is an array)
         let filteredAgents = data;
 
         if (stateFilter.length > 0) {
@@ -229,19 +219,19 @@ export function SearchAgentsModal({
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
+            <Users weight="light" className="h-5 w-5" />
             {title}
           </DialogTitle>
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
 
         <div className="flex-1 overflow-hidden flex flex-col space-y-4">
-          {/* Search Bar */}
+          {/* MagnifyingGlass Bar */}
           <div className="flex gap-2">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <MagnifyingGlass weight="light" className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search by name or email..."
+                placeholder="MagnifyingGlass by name or email..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9"
@@ -252,7 +242,7 @@ export function SearchAgentsModal({
               onClick={() => setShowFilters(!showFilters)}
               className={showFilters ? 'bg-slate-100' : ''}
             >
-              <Filter className="h-4 w-4 mr-2" />
+              <Funnel weight="light" className="h-4 w-4 mr-2" />
               Filters
               {(stateFilter.length > 0 || tierFilter || statusFilter.length !== 1) && (
                 <Badge variant="secondary" className="ml-2">
@@ -268,13 +258,13 @@ export function SearchAgentsModal({
               <div className="flex items-center justify-between">
                 <Label className="font-medium">Filters</Label>
                 <Button variant="ghost" size="sm" onClick={clearFilters}>
-                  <X className="h-4 w-4 mr-1" />
+                  <X weight="light" className="h-4 w-4 mr-1" />
                   Clear All
                 </Button>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                {/* Status Filter */}
+                {/* Status Funnel */}
                 <div className="space-y-2">
                   <Label className="text-sm">Status</Label>
                   <div className="flex flex-wrap gap-2">
@@ -295,17 +285,17 @@ export function SearchAgentsModal({
                 <div className="space-y-2">
                   <Label className="text-sm">Commission Tier</Label>
                   <Input
-                    placeholder="Filter by tier..."
+                    placeholder="Funnel by tier..."
                     value={tierFilter}
                     onChange={(e) => setTierFilter(e.target.value)}
                   />
                 </div>
               </div>
 
-              {/* State Filter */}
+              {/* State Funnel */}
               <div className="space-y-2">
                 <Label className="text-sm flex items-center gap-2">
-                  <MapPin className="h-4 w-4" />
+                  <MapPin weight="light" className="h-4 w-4" />
                   Licensed States
                 </Label>
                 <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto border rounded p-2 bg-white">
@@ -327,7 +317,7 @@ export function SearchAgentsModal({
 
               {enableMultiCorp && (
                 <div className="flex items-center gap-2 pt-2 border-t">
-                  <Building2 className="h-4 w-4 text-muted-foreground" />
+                  <Buildings weight="light" className="h-4 w-4 text-muted-foreground" />
                   <p className="text-sm text-muted-foreground">
                     Multi-organization search enabled - showing agents from all accessible organizations
                   </p>
@@ -340,11 +330,11 @@ export function SearchAgentsModal({
           <div className="flex-1 overflow-y-auto border rounded-lg">
             {isLoading ? (
               <div className="flex items-center justify-center h-48">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                <CircleNotch weight="light" className="h-8 w-8 animate-spin text-muted-foreground" />
               </div>
             ) : agents.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-48 text-slate-500">
-                <Users className="h-12 w-12 mb-4 opacity-50" />
+                <Users weight="light" className="h-12 w-12 mb-4 opacity-50" />
                 <p>No agents found</p>
                 <p className="text-sm">Try adjusting your search or filters</p>
               </div>
@@ -398,7 +388,7 @@ export function SearchAgentsModal({
                           {agent.status}
                         </Badge>
                         {isSelected && (
-                          <CheckCircle2 className="h-5 w-5 text-teal-600" />
+                          <CheckCircle weight="light" className="h-5 w-5 text-teal-600" />
                         )}
                       </div>
                     </div>

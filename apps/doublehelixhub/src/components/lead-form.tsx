@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, type FormEvent } from 'react';
+import { ArrowUpRight } from '@phosphor-icons/react';
 
 type Status = 'idle' | 'submitting' | 'success' | 'error';
 
@@ -22,7 +23,6 @@ export function LeadForm() {
       phone: String(formData.get('phone') ?? ''),
       productInterest: String(formData.get('productInterest') ?? 'both'),
       notes: String(formData.get('notes') ?? ''),
-      // Honeypot — real users never fill this hidden field; bots do.
       website: String(formData.get('website') ?? ''),
     };
 
@@ -48,9 +48,9 @@ export function LeadForm() {
 
   if (status === 'success') {
     return (
-      <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-6 text-center">
-        <h3 className="text-lg font-semibold text-foreground">Thanks — we&rsquo;ll be in touch.</h3>
-        <p className="mt-2 text-sm text-muted-foreground">
+      <div className="rounded-2xl border border-emerald-400/25 bg-emerald-400/10 p-8 text-center">
+        <h3 className="font-heading text-lg font-semibold text-white">Thanks — we&rsquo;ll be in touch.</h3>
+        <p className="mt-2 text-sm text-white/55">
           Your request landed in our queue. Expect a reply within one business day.
         </p>
       </div>
@@ -59,7 +59,6 @@ export function LeadForm() {
 
   return (
     <form onSubmit={handleSubmit} className="grid gap-4">
-      {/* Honeypot — hidden from humans; bots that fill it are dropped server-side. */}
       <div
         className="pointer-events-none absolute left-[-9999px] top-[-9999px] h-0 w-0 overflow-hidden"
         aria-hidden="true"
@@ -77,12 +76,8 @@ export function LeadForm() {
         <Field label="Phone" name="phone" type="tel" />
       </div>
       <div>
-        <label className="mb-1 block text-sm font-medium text-foreground">I&rsquo;m interested in</label>
-        <select
-          name="productInterest"
-          defaultValue="both"
-          className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
-        >
+        <label className="mb-1.5 block text-sm font-medium text-white/70">I&rsquo;m interested in</label>
+        <select name="productInterest" defaultValue="both" className="dh-select">
           <option value="crm">CRM Core</option>
           <option value="admin">Admin Enrollment</option>
           <option value="both">Both</option>
@@ -90,22 +85,21 @@ export function LeadForm() {
         </select>
       </div>
       <div>
-        <label className="mb-1 block text-sm font-medium text-foreground">Anything we should know?</label>
-        <textarea
-          name="notes"
-          rows={3}
-          className="block w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
-        />
+        <label className="mb-1.5 block text-sm font-medium text-white/70">Anything we should know?</label>
+        <textarea name="notes" rows={3} className="dh-textarea" />
       </div>
       <button
         type="submit"
         disabled={status === 'submitting'}
-        className="inline-flex h-11 items-center justify-center rounded-md gradient-helix px-6 text-sm font-semibold text-white shadow-sm transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+        className="group dh-btn-island dh-btn-white mt-1 w-full justify-between disabled:cursor-not-allowed disabled:opacity-60"
       >
         {status === 'submitting' ? 'Sending…' : 'Request access'}
+        <span className="dh-btn-ico">
+          <ArrowUpRight weight="light" className="h-3.5 w-3.5" />
+        </span>
       </button>
       {status === 'error' && errorMessage && (
-        <p className="text-sm text-destructive">{errorMessage}</p>
+        <p className="text-sm text-red-400">{errorMessage}</p>
       )}
     </form>
   );
@@ -124,17 +118,11 @@ function Field({
 }) {
   return (
     <div>
-      <label htmlFor={name} className="mb-1 block text-sm font-medium text-foreground">
+      <label htmlFor={name} className="mb-1.5 block text-sm font-medium text-white/70">
         {label}
-        {required && <span className="text-destructive"> *</span>}
+        {required && <span className="text-cyan-400"> *</span>}
       </label>
-      <input
-        id={name}
-        name={name}
-        type={type}
-        required={required}
-        className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
-      />
+      <input id={name} name={name} type={type} required={required} className="dh-input" />
     </div>
   );
 }

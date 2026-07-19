@@ -1,7 +1,7 @@
 'use client';
 
+import { TerminalWindow } from '@phosphor-icons/react';
 import React, { useRef, useEffect } from 'react';
-import { Terminal } from 'lucide-react';
 import { cn } from '@crm-eco/ui/lib/utils';
 import {
   Table,
@@ -113,7 +113,7 @@ export function CommandOutput() {
         {output.length === 0 && !currentPanel && (
           <div className="flex flex-col items-center justify-center py-10 text-center">
             <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-primary/10 text-primary mb-4">
-              <Terminal className="w-6 h-6" />
+              <TerminalWindow weight="light" className="w-6 h-6" />
             </div>
             <h2 className="text-lg font-semibold font-heading text-foreground mb-1">
               Command Center

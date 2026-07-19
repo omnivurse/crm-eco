@@ -1,5 +1,6 @@
 'use client';
 
+import { ArrowClockwise, ArrowLeft, Buildings, Calendar, CheckCircle, CircleNotch, Clock, CurrencyDollar, DownloadSimple, FileText, UploadSimple, Warning, XCircle } from '@phosphor-icons/react';
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import {
@@ -34,21 +35,6 @@ import {
   Label,
   Progress,
 } from '@crm-eco/ui';
-import {
-  Download,
-  Upload,
-  FileText,
-  Clock,
-  CheckCircle2,
-  XCircle,
-  AlertTriangle,
-  Loader2,
-  Calendar,
-  DollarSign,
-  Building2,
-  RefreshCw,
-  ArrowLeft,
-} from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 import Link from 'next/link';
@@ -390,7 +376,7 @@ export default function NachaPage() {
         .update({ status: 'exported', nacha_job_id: job.id })
         .in('id', Array.from(selectedTransactions));
 
-      // Download file
+      // DownloadSimple file
       const blob = new Blob([nachaContent], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -507,7 +493,7 @@ export default function NachaPage() {
           <div className="flex items-center gap-4">
             <Link href="/billing">
               <Button variant="ghost" size="icon">
-                <ArrowLeft className="w-4 h-4" />
+                <ArrowLeft weight="light" className="w-4 h-4" />
               </Button>
             </Link>
             <div>
@@ -517,11 +503,11 @@ export default function NachaPage() {
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" onClick={() => setShowImportModal(true)}>
-              <Upload className="w-4 h-4 mr-2" />
+              <UploadSimple weight="light" className="w-4 h-4 mr-2" />
               Import Return File
             </Button>
             <Button onClick={() => setShowExportModal(true)}>
-              <Download className="w-4 h-4 mr-2" />
+              <DownloadSimple weight="light" className="w-4 h-4 mr-2" />
               Export NACHA
             </Button>
           </div>
@@ -557,11 +543,11 @@ export default function NachaPage() {
               <CardContent>
                 {loading ? (
                   <div className="flex items-center justify-center py-12">
-                    <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+                    <CircleNotch weight="light" className="w-8 h-8 animate-spin text-slate-400" />
                   </div>
                 ) : pendingTransactions.length === 0 ? (
                   <div className="text-center py-12">
-                    <DollarSign className="w-12 h-12 text-slate-200 mx-auto mb-3" />
+                    <CurrencyDollar weight="light" className="w-12 h-12 text-slate-200 mx-auto mb-3" />
                     <p className="text-slate-500">No pending ACH transactions</p>
                   </div>
                 ) : (
@@ -639,7 +625,7 @@ export default function NachaPage() {
               <CardContent>
                 {nachaFiles.length === 0 ? (
                   <div className="text-center py-12">
-                    <FileText className="w-12 h-12 text-slate-200 mx-auto mb-3" />
+                    <FileText weight="light" className="w-12 h-12 text-slate-200 mx-auto mb-3" />
                     <p className="text-slate-500">No NACHA files yet</p>
                   </div>
                 ) : (
@@ -659,7 +645,7 @@ export default function NachaPage() {
                         <TableRow key={file.id}>
                           <TableCell>
                             <div className="flex items-center gap-2">
-                              <FileText className="w-4 h-4 text-slate-400" />
+                              <FileText weight="light" className="w-4 h-4 text-slate-400" />
                               <span className="font-mono text-sm">{file.file_name}</span>
                             </div>
                           </TableCell>
@@ -739,12 +725,12 @@ export default function NachaPage() {
             <Button onClick={handleExport} disabled={exporting || selectedTransactions.size === 0}>
               {exporting ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  <CircleNotch weight="light" className="w-4 h-4 mr-2 animate-spin" />
                   Exporting...
                 </>
               ) : (
                 <>
-                  <Download className="w-4 h-4 mr-2" />
+                  <DownloadSimple weight="light" className="w-4 h-4 mr-2" />
                   Export File
                 </>
               )}
@@ -771,7 +757,7 @@ export default function NachaPage() {
               <label htmlFor="nacha-import" className="cursor-pointer">
                 {importFile ? (
                   <div>
-                    <FileText className="w-12 h-12 text-emerald-500 mx-auto mb-2" />
+                    <FileText weight="light" className="w-12 h-12 text-emerald-500 mx-auto mb-2" />
                     <p className="font-medium text-slate-700">{importFile.name}</p>
                     <p className="text-sm text-slate-500">
                       {(importFile.size / 1024).toFixed(1)} KB
@@ -779,7 +765,7 @@ export default function NachaPage() {
                   </div>
                 ) : (
                   <div>
-                    <Upload className="w-12 h-12 text-slate-400 mx-auto mb-2" />
+                    <UploadSimple weight="light" className="w-12 h-12 text-slate-400 mx-auto mb-2" />
                     <p className="font-medium text-slate-700">Click to upload</p>
                     <p className="text-sm text-slate-500">.txt, .ach, or .nacha files</p>
                   </div>
@@ -803,12 +789,12 @@ export default function NachaPage() {
             <Button onClick={handleImport} disabled={importing || !importFile}>
               {importing ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  <CircleNotch weight="light" className="w-4 h-4 mr-2 animate-spin" />
                   Processing...
                 </>
               ) : (
                 <>
-                  <Upload className="w-4 h-4 mr-2" />
+                  <UploadSimple weight="light" className="w-4 h-4 mr-2" />
                   Import File
                 </>
               )}

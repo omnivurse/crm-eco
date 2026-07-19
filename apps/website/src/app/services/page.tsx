@@ -1,16 +1,16 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import {
-  ArrowRight,
-  HeartHandshake,
+  ArrowUpRight,
+  Handshake,
   Stethoscope,
   Pill,
-  Video,
-  Scale,
+  VideoCamera,
+  Scales,
   Gift,
   Baby,
-  Activity,
-} from 'lucide-react';
+  Pulse,
+} from '@phosphor-icons/react/dist/ssr';
 import { Reveal } from '@/components/sections/Reveal';
 import {
   Container,
@@ -34,7 +34,7 @@ export const metadata: Metadata = {
 
 const SERVICES = [
   {
-    icon: HeartHandshake,
+    icon: Handshake,
     title: 'Medical Cost Sharing',
     body: 'The heart of your membership. Eligible doctor visits, hospital stays, surgeries and emergencies are shared by the community — so you never carry a major medical need alone.',
     iconVariant: 'brand' as const,
@@ -50,12 +50,12 @@ const SERVICES = [
     body: 'Meaningful discounts on everyday and specialty medications through our pharmacy savings program, accepted at thousands of pharmacies nationwide.',
   },
   {
-    icon: Video,
+    icon: VideoCamera,
     title: 'Virtual Care & Telehealth',
     body: 'Talk to a licensed provider by phone or video, day or night — for colds, prescriptions, and quick questions — usually at no additional cost to you.',
   },
   {
-    icon: Scale,
+    icon: Scales,
     title: 'Medical Advocacy',
     body: 'Our team reviews and negotiates large bills on your behalf, catching errors and lowering balances so you are never facing the system by yourself.',
     href: '/medical-advocacy',
@@ -75,7 +75,7 @@ const SERVICES = [
     body: 'Prenatal visits, delivery and newborn care are eligible for sharing — so growing families can welcome a new arrival with support, not financial worry.',
   },
   {
-    icon: Activity,
+    icon: Pulse,
     title: 'Wellness',
     body: 'Resources, tools and incentives to help you build healthy habits that last — because caring for the whole person is what community is all about.',
   },
@@ -114,7 +114,7 @@ export default function ServicesPage() {
                   className="inline-flex items-center justify-center gap-2 rounded-full pif-grad-care px-7 py-3.5 font-semibold text-white shadow-lg shadow-pif-teal/25 transition-transform hover:-translate-y-0.5"
                 >
                   Become a Member
-                  <ArrowRight className="h-4 w-4" />
+                  <ArrowUpRight className="h-4 w-4" />
                 </Link>
                 <Link
                   href="/plans"
@@ -199,9 +199,9 @@ export default function ServicesPage() {
               </p>
               <div className="mt-9 grid gap-4 sm:grid-cols-3">
                 {[
-                  { icon: Video, label: '24/7 virtual care' },
-                  { icon: Scale, label: 'Bill advocacy' },
-                  { icon: HeartHandshake, label: 'Member care team' },
+                  { icon: VideoCamera, label: '24/7 virtual care' },
+                  { icon: Scales, label: 'Bill advocacy' },
+                  { icon: Handshake, label: 'Member care team' },
                 ].map((item) => (
                   <div
                     key={item.label}

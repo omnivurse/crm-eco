@@ -1,7 +1,7 @@
 'use client';
 
+import { CaretRight, EnvelopeSimple, Eye, Phone, Trophy, UserCircleGear } from '@phosphor-icons/react';
 import { Badge, Button } from '@crm-eco/ui';
-import { Eye, UserCog, Mail, Phone, Award, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { format } from 'date-fns';
 
@@ -80,23 +80,23 @@ function AgentCard({ agent }: { agent: Agent }) {
             )}
           </div>
         </div>
-        <ChevronRight className="w-5 h-5 text-slate-400 flex-shrink-0" />
+        <CaretRight weight="light" className="w-5 h-5 text-slate-400 flex-shrink-0" />
       </div>
 
       <div className="space-y-2 text-sm">
         <div className="flex items-center gap-2 text-slate-600">
-          <Mail className="w-4 h-4 flex-shrink-0 text-slate-400" />
+          <EnvelopeSimple weight="light" className="w-4 h-4 flex-shrink-0 text-slate-400" />
           <span className="truncate">{agent.email}</span>
         </div>
         {agent.phone && (
           <div className="flex items-center gap-2 text-slate-600">
-            <Phone className="w-4 h-4 flex-shrink-0 text-slate-400" />
+            <Phone weight="light" className="w-4 h-4 flex-shrink-0 text-slate-400" />
             <span>{agent.phone}</span>
           </div>
         )}
         {agent.license_number && (
           <div className="flex items-center gap-2 text-slate-600">
-            <Award className="w-4 h-4 flex-shrink-0 text-slate-400" />
+            <Trophy weight="light" className="w-4 h-4 flex-shrink-0 text-slate-400" />
             <span className="font-mono text-xs">{agent.license_number}</span>
           </div>
         )}
@@ -134,7 +134,7 @@ export function AgentTable({ agents }: AgentTableProps) {
   if (agents.length === 0) {
     return (
       <div className="text-center py-12">
-        <UserCog className="h-12 w-12 mx-auto text-slate-300 mb-4" />
+        <UserCircleGear weight="light" className="h-12 w-12 mx-auto text-slate-300 mb-4" />
         <p className="text-slate-500">No agents found</p>
         <Link href="/agents/new" className="text-blue-600 text-sm hover:underline mt-2 inline-block">
           Add your first agent
@@ -223,7 +223,7 @@ export function AgentTable({ agents }: AgentTableProps) {
                 <td className="py-3">
                   <Link href={`/agents/${agent.id}`}>
                     <Button variant="ghost" size="sm">
-                      <Eye className="h-4 w-4" />
+                      <Eye weight="light" className="h-4 w-4" />
                     </Button>
                   </Link>
                 </td>

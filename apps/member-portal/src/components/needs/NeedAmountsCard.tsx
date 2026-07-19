@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle, Badge } from '@crm-eco/ui';
-import { DollarSign, CreditCard, Banknote } from 'lucide-react';
+import { CurrencyDollar, CreditCard, Money } from '@phosphor-icons/react/dist/ssr';
 import { format } from 'date-fns';
 
 interface NeedAmountsCardProps {
@@ -45,7 +45,7 @@ const getReimbursementStatusBadge = (status: string | null) => {
     case 'completed':
       return <Badge className="bg-green-100 text-green-800">Completed</Badge>;
     case 'processing':
-      return <Badge className="bg-blue-100 text-blue-800">Processing</Badge>;
+      return <Badge className="bg-[rgba(11,109,133,0.1)] text-[var(--mp-teal)]">Processing</Badge>;
     case 'pending':
       return <Badge className="bg-amber-100 text-amber-800">Pending</Badge>;
     case 'not_requested':
@@ -91,7 +91,7 @@ export function NeedAmountsCard({ need }: NeedAmountsCardProps) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-xl">
-          <DollarSign className="w-6 h-6 text-green-600" aria-hidden />
+          <CurrencyDollar weight="light" className="w-6 h-6 text-green-600" aria-hidden />
           Amounts & Reimbursement
         </CardTitle>
       </CardHeader>
@@ -100,7 +100,7 @@ export function NeedAmountsCard({ need }: NeedAmountsCardProps) {
           {/* Left: Amounts */}
           <div className="space-y-4">
             <h3 className="font-semibold text-slate-900 flex items-center gap-2">
-              <Banknote className="w-4 h-4" aria-hidden /> Financial Summary
+              <Money weight="light" className="w-4 h-4" aria-hidden /> Financial Summary
             </h3>
             
             <div className="space-y-3">
@@ -148,7 +148,7 @@ export function NeedAmountsCard({ need }: NeedAmountsCardProps) {
             {/* Payment Info */}
             <div className="space-y-4">
               <h3 className="font-semibold text-slate-900 flex items-center gap-2">
-                <CreditCard className="w-4 h-4" aria-hidden /> Your Payment to Provider
+                <CreditCard weight="light" className="w-4 h-4" aria-hidden /> Your Payment to Provider
               </h3>
               
               <div className="space-y-3 bg-slate-50 p-4 rounded-lg">

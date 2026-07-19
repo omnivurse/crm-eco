@@ -166,9 +166,36 @@ function redirectWithCookies(
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  // Fail closed for protected routes when env is missing — never throw from
+  // createServerClient (that surfaces as a hard 500 on every navigation).
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.error(
+      '[Middleware] NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY are not set. ' +
+        'Add them to apps/crm/.env.local (see .env.example).',
+    );
+    const pathname = request.nextUrl.pathname;
+    const publicPrefixes = [
+      '/crm-login',
+      '/crm-access-denied',
+      '/login',
+      '/reset-password',
+      '/update-password',
+      '/accept-invite',
+    ];
+    const isPublicRoute =
+      pathname === '/' || publicPrefixes.some((prefix) => pathname.startsWith(prefix));
+    if (isPublicRoute) {
+      return supabaseResponse;
+    }
+    return NextResponse.redirect(new URL('/crm-login?error=config', request.url));
+  }
+
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseAnonKey,
     {
       cookies: {
         getAll() {

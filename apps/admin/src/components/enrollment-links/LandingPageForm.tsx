@@ -1,22 +1,12 @@
 'use client';
 
+import { ArrowLeft, ArrowSquareOut, Eye, FileText, FloppyDisk, GearSix, Palette, Trash, Users } from '@phosphor-icons/react';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import {
-  ArrowLeft,
-  Save,
-  Trash2,
-  Eye,
-  Palette,
-  Settings,
-  FileText,
-  Users,
-  ExternalLink,
-} from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
@@ -293,7 +283,7 @@ export function LandingPageForm({ landingPage }: LandingPageFormProps) {
         <div className="flex items-center gap-4">
           <Link href="/enrollment-links">
             <Button type="button" variant="ghost" size="icon">
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft weight="light" className="w-4 h-4" />
             </Button>
           </Link>
           <div>
@@ -320,7 +310,7 @@ export function LandingPageForm({ landingPage }: LandingPageFormProps) {
                   rel="noopener noreferrer"
                   className="gap-2"
                 >
-                  <ExternalLink className="w-4 h-4" />
+                  <ArrowSquareOut weight="light" className="w-4 h-4" />
                   Preview
                 </a>
               </Button>
@@ -328,7 +318,7 @@ export function LandingPageForm({ landingPage }: LandingPageFormProps) {
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button type="button" variant="outline" className="text-red-600">
-                    <Trash2 className="w-4 h-4 mr-2" />
+                    <Trash weight="light" className="w-4 h-4 mr-2" />
                     Delete
                   </Button>
                 </AlertDialogTrigger>
@@ -352,8 +342,8 @@ export function LandingPageForm({ landingPage }: LandingPageFormProps) {
           )}
 
           <Button type="submit" disabled={saving} className="gap-2">
-            <Save className="w-4 h-4" />
-            {saving ? 'Saving...' : 'Save Page'}
+            <FloppyDisk weight="light" className="w-4 h-4" />
+            {saving ? 'Saving...' : 'FloppyDisk Page'}
           </Button>
         </div>
       </div>
@@ -361,19 +351,19 @@ export function LandingPageForm({ landingPage }: LandingPageFormProps) {
       <Tabs defaultValue="content" className="space-y-6">
         <TabsList>
           <TabsTrigger value="content" className="gap-2">
-            <FileText className="w-4 h-4" />
+            <FileText weight="light" className="w-4 h-4" />
             Content
           </TabsTrigger>
           <TabsTrigger value="design" className="gap-2">
-            <Palette className="w-4 h-4" />
+            <Palette weight="light" className="w-4 h-4" />
             Design
           </TabsTrigger>
           <TabsTrigger value="settings" className="gap-2">
-            <Settings className="w-4 h-4" />
-            Settings
+            <GearSix weight="light" className="w-4 h-4" />
+            GearSix
           </TabsTrigger>
           <TabsTrigger value="plans" className="gap-2">
-            <Users className="w-4 h-4" />
+            <Users weight="light" className="w-4 h-4" />
             Plans
           </TabsTrigger>
         </TabsList>
@@ -540,7 +530,7 @@ export function LandingPageForm({ landingPage }: LandingPageFormProps) {
           </Card>
         </TabsContent>
 
-        {/* Settings Tab */}
+        {/* GearSix Tab */}
         <TabsContent value="settings">
           <div className="space-y-6">
             <Card>

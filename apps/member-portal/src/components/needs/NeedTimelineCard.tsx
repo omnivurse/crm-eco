@@ -1,5 +1,13 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@crm-eco/ui';
-import { History, CheckCircle, Clock, FileText, MessageSquare, AlertTriangle, Send } from 'lucide-react';
+import {
+  ClockCounterClockwise,
+  CheckCircle,
+  Clock,
+  FileText,
+  ChatCircle,
+  Warning,
+  PaperPlaneTilt,
+} from '@phosphor-icons/react/dist/ssr';
 import { format } from 'date-fns';
 
 interface NeedEvent {
@@ -22,74 +30,74 @@ const getEventConfig = (eventType: string) => {
   const configs: Record<string, { label: string; icon: React.ReactNode; className: string }> = {
     created: {
       label: 'Need Created',
-      icon: <FileText className="w-4 h-4" aria-hidden />,
-      className: 'text-blue-600 bg-blue-100',
+      icon: <FileText weight="light" className="w-4 h-4" aria-hidden />,
+      className: 'text-[var(--mp-teal)] bg-[rgba(11,109,133,0.1)]',
     },
     submitted: {
       label: 'Submitted for Review',
-      icon: <Send className="w-4 h-4" aria-hidden />,
-      className: 'text-blue-600 bg-blue-100',
+      icon: <PaperPlaneTilt weight="light" className="w-4 h-4" aria-hidden />,
+      className: 'text-[var(--mp-teal)] bg-[rgba(11,109,133,0.1)]',
     },
     docs_received: {
       label: 'Documents Received',
-      icon: <FileText className="w-4 h-4" aria-hidden />,
+      icon: <FileText weight="light" className="w-4 h-4" aria-hidden />,
       className: 'text-green-600 bg-green-100',
     },
     docs_requested: {
       label: 'Documents Requested',
-      icon: <AlertTriangle className="w-4 h-4" aria-hidden />,
+      icon: <Warning weight="light" className="w-4 h-4" aria-hidden />,
       className: 'text-amber-600 bg-amber-100',
     },
     in_review: {
       label: 'In Review',
-      icon: <Clock className="w-4 h-4" aria-hidden />,
-      className: 'text-blue-600 bg-blue-100',
+      icon: <Clock weight="light" className="w-4 h-4" aria-hidden />,
+      className: 'text-[var(--mp-teal)] bg-[rgba(11,109,133,0.1)]',
     },
     approved: {
       label: 'Approved',
-      icon: <CheckCircle className="w-4 h-4" aria-hidden />,
+      icon: <CheckCircle weight="light" className="w-4 h-4" aria-hidden />,
       className: 'text-green-600 bg-green-100',
     },
     paid: {
       label: 'Reimbursement Processed',
-      icon: <CheckCircle className="w-4 h-4" aria-hidden />,
+      icon: <CheckCircle weight="light" className="w-4 h-4" aria-hidden />,
       className: 'text-green-600 bg-green-100',
     },
     denied: {
       label: 'Not Approved',
-      icon: <AlertTriangle className="w-4 h-4" aria-hidden />,
+      icon: <Warning weight="light" className="w-4 h-4" aria-hidden />,
       className: 'text-red-600 bg-red-100',
     },
     closed: {
       label: 'Closed',
-      icon: <CheckCircle className="w-4 h-4" aria-hidden />,
+      icon: <CheckCircle weight="light" className="w-4 h-4" aria-hidden />,
       className: 'text-slate-600 bg-slate-100',
     },
     note: {
       label: 'Update',
-      icon: <MessageSquare className="w-4 h-4" aria-hidden />,
+      icon: <ChatCircle weight="light" className="w-4 h-4" aria-hidden />,
       className: 'text-slate-600 bg-slate-100',
     },
     status_change: {
       label: 'Status Changed',
-      icon: <Clock className="w-4 h-4" aria-hidden />,
-      className: 'text-blue-600 bg-blue-100',
+      icon: <Clock weight="light" className="w-4 h-4" aria-hidden />,
+      className: 'text-[var(--mp-teal)] bg-[rgba(11,109,133,0.1)]',
     },
     consent_recorded: {
       label: 'Member Consent Recorded',
-      icon: <CheckCircle className="w-4 h-4" aria-hidden />,
+      icon: <CheckCircle weight="light" className="w-4 h-4" aria-hidden />,
       className: 'text-green-600 bg-green-100',
     },
     payment_recorded: {
       label: 'Payment Information Added',
-      icon: <CheckCircle className="w-4 h-4" aria-hidden />,
-      className: 'text-blue-600 bg-blue-100',
+      icon: <CheckCircle weight="light" className="w-4 h-4" aria-hidden />,
+      className: 'text-[var(--mp-teal)] bg-[rgba(11,109,133,0.1)]',
     },
   };
 
   return configs[eventType] || {
     label: eventType.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
-    icon: <History className="w-4 h-4" aria-hidden />,
+    icon: <ClockCounterClockwise weight="light" className="w-4 h-4" aria-hidden />,
     className: 'text-slate-600 bg-slate-100',
   };
 };
@@ -117,7 +125,7 @@ export function NeedTimelineCard({ events }: NeedTimelineCardProps) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-xl">
-            <History className="w-6 h-6 text-slate-600" aria-hidden />
+            <ClockCounterClockwise weight="light" className="w-6 h-6 text-slate-600" aria-hidden />
             Activity & Updates
           </CardTitle>
         </CardHeader>
@@ -134,7 +142,7 @@ export function NeedTimelineCard({ events }: NeedTimelineCardProps) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-xl">
-          <History className="w-6 h-6 text-slate-600" aria-hidden />
+          <ClockCounterClockwise weight="light" className="w-6 h-6 text-slate-600" aria-hidden />
           Activity & Updates
         </CardTitle>
       </CardHeader>
@@ -144,7 +152,7 @@ export function NeedTimelineCard({ events }: NeedTimelineCardProps) {
           <div className="absolute left-4 top-0 bottom-0 w-px bg-slate-200" />
 
           <div className="space-y-6">
-            {events.map((event, index) => {
+            {events.map((event) => {
               const config = getEventConfig(event.event_type);
               const eventDate = event.occurred_at || event.created_at;
               const hasStatusChange = event.old_status && event.new_status;
@@ -188,4 +196,3 @@ export function NeedTimelineCard({ events }: NeedTimelineCardProps) {
     </Card>
   );
 }
-

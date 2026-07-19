@@ -24,12 +24,12 @@ import {
   User,
   Calendar,
   Heart,
-  MoreHorizontal,
-  Edit,
-  Trash2,
-  Loader2,
+  DotsThree,
+  Pencil,
+  Trash,
+  CircleNotch,
   UserPlus,
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 import { Card, CardContent } from '@crm-eco/ui/components/card';
 import { Button } from '@crm-eco/ui/components/button';
 import { Badge } from '@crm-eco/ui/components/badge';
@@ -57,6 +57,7 @@ import {
 } from '@crm-eco/ui/components/dropdown-menu';
 import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import { toast } from 'sonner';
+import { PageHeader } from '@/components/PageHeader';
 
 export default function DependentsPage() {
   const [dependents, setDependents] = useState<DependentWithCoverage[]>([]);
@@ -366,59 +367,59 @@ export default function DependentsPage() {
   const getRelationshipIcon = (relationship: string) => {
     switch (relationship.toLowerCase()) {
       case 'spouse':
-        return <Heart className="h-4 w-4 text-pink-500" aria-hidden />;
+        return <Heart weight="light" className="h-4 w-4 text-pink-500" aria-hidden />;
       case 'child':
-        return <User className="h-4 w-4 text-blue-500" aria-hidden />;
+        return <User weight="light" className="h-4 w-4 text-[var(--mp-teal)]" aria-hidden />;
       default:
-        return <User className="h-4 w-4 text-slate-500" aria-hidden />;
+        return <User weight="light" className="h-4 w-4 text-slate-500" aria-hidden />;
     }
   };
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+      <div className="flex h-64 items-center justify-center">
+        <CircleNotch weight="light" className="h-8 w-8 animate-spin text-[var(--mp-teal)]" />
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">My Dependents</h1>
-          <p className="text-slate-500">Manage family members on your plan</p>
-        </div>
-        <Button onClick={() => handleOpenDialog()} className="gap-2">
-          <Plus className="h-4 w-4" aria-hidden />
-          Add Dependent
-        </Button>
-      </div>
+      <PageHeader
+        title="My Dependents"
+        description="Manage family members on your plan"
+        actions={
+          <Button onClick={() => handleOpenDialog()} className="gap-2">
+            <Plus weight="light" className="h-4 w-4" aria-hidden />
+            Add Dependent
+          </Button>
+        }
+      />
 
       {dependents.length === 0 ? (
-        <Card className="text-center py-12">
+        <Card className="py-12 text-center">
           <CardContent>
-            <Users className="h-16 w-16 mx-auto mb-4 text-slate-300" aria-hidden />
-            <h2 className="text-xl font-semibold text-slate-900 mb-2">No Dependents</h2>
-            <p className="text-slate-500 mb-6 max-w-md mx-auto">
+            <Users weight="light" className="mx-auto mb-4 h-16 w-16 text-slate-300" aria-hidden />
+            <h2 className="mb-2 text-xl font-semibold text-slate-900">No Dependents</h2>
+            <p className="mx-auto mb-6 max-w-md text-slate-500">
               You haven&apos;t added any dependents to your membership yet. Add your spouse or
               children to include them in your coverage.
             </p>
             <Button onClick={() => handleOpenDialog()} className="gap-2">
-              <UserPlus className="h-4 w-4" aria-hidden />
+              <UserPlus weight="light" className="h-4 w-4" aria-hidden />
               Add Your First Dependent
             </Button>
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {dependents.map((dependent) => (
             <Card key={dependent.id}>
               <CardContent className="pt-6">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center">
-                      <User className="h-6 w-6 text-slate-600" aria-hidden />
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100">
+                      <User weight="light" className="h-6 w-6 text-slate-600" aria-hidden />
                     </div>
                     <div>
                       <h3 className="font-semibold text-slate-900">
@@ -448,36 +449,36 @@ export default function DependentsPage() {
                         className="h-11 w-11"
                         aria-label={`Actions for ${dependent.first_name} ${dependent.last_name}`}
                       >
-                        <MoreHorizontal className="h-4 w-4" />
+                        <DotsThree weight="light" className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => handleOpenDialog(dependent)}>
-                        <Edit className="mr-2 h-4 w-4" aria-hidden />
+                        <Pencil weight="light" className="mr-2 h-4 w-4" aria-hidden />
                         Edit info
                       </DropdownMenuItem>
                       {isCurrentlyCovered(dependent) ? (
                         <DropdownMenuItem onClick={() => openCoverageAction(dependent, 'end')}>
-                          <Trash2 className="mr-2 h-4 w-4" aria-hidden />
+                          <Trash weight="light" className="mr-2 h-4 w-4" aria-hidden />
                           End coverage…
                         </DropdownMenuItem>
                       ) : (
                         <DropdownMenuItem onClick={() => openCoverageAction(dependent, 'start')}>
-                          <UserPlus className="mr-2 h-4 w-4" aria-hidden />
+                          <UserPlus weight="light" className="mr-2 h-4 w-4" aria-hidden />
                           Add to coverage…
                         </DropdownMenuItem>
                       )}
                       <DropdownMenuItem
                         onClick={() => openCoverageAction(dependent, 'log_historical')}
                       >
-                        <Calendar className="mr-2 h-4 w-4" aria-hidden />
+                        <Calendar weight="light" className="mr-2 h-4 w-4" aria-hidden />
                         Log historical period…
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onClick={() => handlePurgeDependent(dependent)}
                         className="text-red-600"
                       >
-                        <Trash2 className="mr-2 h-4 w-4" aria-hidden />
+                        <Trash weight="light" className="mr-2 h-4 w-4" aria-hidden />
                         Purge record (and history)
                       </DropdownMenuItem>
                     </DropdownMenuContent>
@@ -682,7 +683,7 @@ export default function DependentsPage() {
               }
             >
               {saving ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <CircleNotch weight="light" className="h-4 w-4 animate-spin" />
               ) : editingDependent ? (
                 'Update'
               ) : (
@@ -779,7 +780,7 @@ export default function DependentsPage() {
               onClick={handleCoverageActionSave}
               disabled={coverageSaving || !coverageForm.date}
             >
-              {coverageSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" aria-hidden /> : null}
+              {coverageSaving ? <CircleNotch weight="light" className="mr-2 h-4 w-4 animate-spin" aria-hidden /> : null}
               {coverageAction?.mode === 'end' ? 'End coverage' : 'Save period'}
             </Button>
           </div>

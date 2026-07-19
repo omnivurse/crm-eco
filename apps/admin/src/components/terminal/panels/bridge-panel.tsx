@@ -1,37 +1,22 @@
 'use client';
 
+import { Buildings, ChartBar, ClipboardText, Clock, CreditCard, EnvelopeSimple, GearSix, Handshake, Hash, Info, MagnifyingGlass, Package, Rocket, Users } from '@phosphor-icons/react';
 import React from 'react';
-import {
-  Search,
-  Users,
-  HeartHandshake,
-  Package,
-  ClipboardList,
-  Building,
-  CreditCard,
-  Mail,
-  BarChart3,
-  Settings,
-  Hash,
-  Clock,
-  Rocket,
-  Info,
-} from 'lucide-react';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { Badge } from '@crm-eco/ui/components/badge';
 import { useTerminal } from '../terminal-provider';
 
 const quickActions = [
-  { label: 'Search', icon: Search, command: 'search' },
+  { label: 'MagnifyingGlass', icon: MagnifyingGlass, command: 'search' },
   { label: 'Members', icon: Users, command: 'member' },
-  { label: 'Agents', icon: HeartHandshake, command: 'agent' },
+  { label: 'Agents', icon: Handshake, command: 'agent' },
   { label: 'Products', icon: Package, command: 'product' },
-  { label: 'Enrollments', icon: ClipboardList, command: 'enrollment' },
-  { label: 'Vendors', icon: Building, command: 'vendor' },
+  { label: 'Enrollments', icon: ClipboardText, command: 'enrollment' },
+  { label: 'Vendors', icon: Buildings, command: 'vendor' },
   { label: 'Billing', icon: CreditCard, command: 'billing' },
-  { label: 'Emails', icon: Mail, command: 'email' },
-  { label: 'Reports', icon: BarChart3, command: 'reports' },
-  { label: 'Settings', icon: Settings, command: 'settings' },
+  { label: 'Emails', icon: EnvelopeSimple, command: 'email' },
+  { label: 'Reports', icon: ChartBar, command: 'reports' },
+  { label: 'GearSix', icon: GearSix, command: 'settings' },
   { label: 'Counts', icon: Hash, command: 'count' },
   { label: 'Activity', icon: Clock, command: 'recent' },
 ];
@@ -50,7 +35,7 @@ export function BridgePanel() {
     <div className="rounded-lg border bg-card overflow-hidden">
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-3 border-b bg-muted/30">
-        <Rocket className="w-4 h-4 text-primary" />
+        <Rocket weight="light" className="w-4 h-4 text-primary" />
         <span className="text-sm font-semibold tracking-wide font-heading flex-1">
           Command Bridge
         </span>
@@ -71,7 +56,7 @@ export function BridgePanel() {
                 key={tip.text}
                 className="flex items-center gap-2.5 px-3 py-2 rounded-md bg-muted/40 border-l-2 border-primary/40"
               >
-                <Info className="w-3.5 h-3.5 text-primary shrink-0" />
+                <Info weight="light" className="w-3.5 h-3.5 text-primary shrink-0" />
                 <span className="text-xs text-muted-foreground">
                   Type{' '}
                   <code className="bg-muted rounded px-1 py-0.5 font-mono text-foreground text-[11px]">

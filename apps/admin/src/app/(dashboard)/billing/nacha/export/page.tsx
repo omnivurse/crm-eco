@@ -1,5 +1,6 @@
 'use client';
 
+import { ArrowClockwise, ArrowLeft, Buildings, Calendar, CheckCircle, CircleNotch, Clock, CurrencyDollar, DownloadSimple, Eye, FileText, Funnel, MagnifyingGlass, XCircle } from '@phosphor-icons/react';
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import {
@@ -25,22 +26,6 @@ import {
   Label,
   Textarea,
 } from '@crm-eco/ui';
-import {
-  Download,
-  FileText,
-  Clock,
-  CheckCircle2,
-  XCircle,
-  Loader2,
-  Calendar,
-  DollarSign,
-  RefreshCw,
-  ArrowLeft,
-  Search,
-  Filter,
-  Eye,
-  Building2,
-} from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 import Link from 'next/link';
@@ -207,7 +192,7 @@ export default function NachaExportPage() {
     }
   }, [organizationId, fetchPendingTransactions, fetchExportHistory]);
 
-  // Filter transactions
+  // Funnel transactions
   const filteredTransactions = pendingTransactions.filter((txn) => {
     const matchesSearch =
       !searchQuery ||
@@ -402,7 +387,7 @@ export default function NachaExportPage() {
         },
       });
 
-      // Download file
+      // DownloadSimple file
       const blob = new Blob([nachaContent], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -447,7 +432,7 @@ export default function NachaExportPage() {
         <div className="flex items-center gap-4">
           <Link href="/billing">
             <Button variant="ghost" size="icon">
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft weight="light" className="w-4 h-4" />
             </Button>
           </Link>
           <div>
@@ -463,7 +448,7 @@ export default function NachaExportPage() {
             onClick={() => setShowExportModal(true)}
             disabled={selectedTransactions.size === 0}
           >
-            <Download className="w-4 h-4 mr-2" />
+            <DownloadSimple weight="light" className="w-4 h-4 mr-2" />
             Create Export ({selectedTransactions.size})
           </Button>
         </div>
@@ -475,7 +460,7 @@ export default function NachaExportPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-blue-100 rounded-lg">
-                <Clock className="h-5 w-5 text-blue-600" />
+                <Clock weight="light" className="h-5 w-5 text-blue-600" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Pending</p>
@@ -489,7 +474,7 @@ export default function NachaExportPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-emerald-100 rounded-lg">
-                <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                <CheckCircle weight="light" className="h-5 w-5 text-emerald-600" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Selected</p>
@@ -503,7 +488,7 @@ export default function NachaExportPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-teal-100 rounded-lg">
-                <DollarSign className="h-5 w-5 text-teal-600" />
+                <CurrencyDollar weight="light" className="h-5 w-5 text-teal-600" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Selected Amount</p>
@@ -517,7 +502,7 @@ export default function NachaExportPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-purple-100 rounded-lg">
-                <FileText className="h-5 w-5 text-purple-600" />
+                <FileText weight="light" className="h-5 w-5 text-purple-600" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Exports Today</p>
@@ -540,16 +525,16 @@ export default function NachaExportPage() {
         <CardContent className="pt-6">
           <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <MagnifyingGlass weight="light" className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search by member name or email..."
+                placeholder="MagnifyingGlass by member name or email..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9"
               />
             </div>
             <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-muted-foreground" />
+              <Funnel weight="light" className="h-4 w-4 text-muted-foreground" />
               <select
                 className="border rounded px-3 py-2 text-sm"
                 value={typeFilter}
@@ -561,7 +546,7 @@ export default function NachaExportPage() {
               </select>
             </div>
             <Button variant="outline" onClick={handlePreview} disabled={selectedTransactions.size === 0}>
-              <Eye className="h-4 w-4 mr-2" />
+              <Eye weight="light" className="h-4 w-4 mr-2" />
               Preview File
             </Button>
           </div>
@@ -579,7 +564,7 @@ export default function NachaExportPage() {
               </CardDescription>
             </div>
             <Button variant="outline" size="sm" onClick={fetchPendingTransactions}>
-              <RefreshCw className="h-4 w-4 mr-2" />
+              <ArrowClockwise weight="light" className="h-4 w-4 mr-2" />
               Refresh
             </Button>
           </div>
@@ -587,11 +572,11 @@ export default function NachaExportPage() {
         <CardContent>
           {loading ? (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+              <CircleNotch weight="light" className="w-8 h-8 animate-spin text-slate-400" />
             </div>
           ) : filteredTransactions.length === 0 ? (
             <div className="text-center py-12">
-              <DollarSign className="w-12 h-12 text-slate-200 mx-auto mb-3" />
+              <CurrencyDollar weight="light" className="w-12 h-12 text-slate-200 mx-auto mb-3" />
               <p className="text-slate-500">No pending ACH transactions</p>
             </div>
           ) : (
@@ -647,7 +632,7 @@ export default function NachaExportPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <Building2 className="h-4 w-4 text-slate-400" />
+                        <Buildings weight="light" className="h-4 w-4 text-slate-400" />
                         <span className="font-mono text-sm">****{txn.account_number_last4 || '0000'}</span>
                       </div>
                     </TableCell>
@@ -669,7 +654,7 @@ export default function NachaExportPage() {
         <CardContent>
           {exportHistory.length === 0 ? (
             <div className="text-center py-8">
-              <FileText className="w-10 h-10 text-slate-200 mx-auto mb-2" />
+              <FileText weight="light" className="w-10 h-10 text-slate-200 mx-auto mb-2" />
               <p className="text-sm text-slate-500">No exports yet</p>
             </div>
           ) : (
@@ -689,7 +674,7 @@ export default function NachaExportPage() {
                   <TableRow key={job.id}>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <FileText className="w-4 h-4 text-slate-400" />
+                        <FileText weight="light" className="w-4 h-4 text-slate-400" />
                         <span className="font-mono text-sm">{job.job_name}</span>
                       </div>
                     </TableCell>
@@ -770,13 +755,13 @@ export default function NachaExportPage() {
             <Button onClick={handleExport} disabled={exporting || selectedTransactions.size === 0}>
               {exporting ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  <CircleNotch weight="light" className="w-4 h-4 mr-2 animate-spin" />
                   Exporting...
                 </>
               ) : (
                 <>
-                  <Download className="w-4 h-4 mr-2" />
-                  Export & Download
+                  <DownloadSimple weight="light" className="w-4 h-4 mr-2" />
+                  Export & DownloadSimple
                 </>
               )}
             </Button>

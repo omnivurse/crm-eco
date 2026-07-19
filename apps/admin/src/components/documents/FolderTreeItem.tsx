@@ -1,7 +1,7 @@
 'use client';
 
+import { CaretDown, CaretRight, Folder, FolderOpen, Star } from '@phosphor-icons/react';
 import { useState } from 'react';
-import { ChevronRight, ChevronDown, Folder, FolderOpen, Star } from 'lucide-react';
 import type { DocFolder } from './types';
 
 interface FolderTreeItemProps {
@@ -32,18 +32,18 @@ export function FolderTreeItem({ folder, allFolders, currentFolderId, onSelect, 
             onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
             className="p-0.5 hover:bg-gray-200 rounded"
           >
-            {expanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+            {expanded ? <CaretDown weight="light" className="w-3.5 h-3.5" /> : <CaretRight weight="light" className="w-3.5 h-3.5" />}
           </button>
         ) : (
           <span className="w-4.5" />
         )}
         {isActive ? (
-          <FolderOpen className="w-4 h-4 text-blue-600 shrink-0" />
+          <FolderOpen weight="light" className="w-4 h-4 text-blue-600 shrink-0" />
         ) : (
-          <Folder className="w-4 h-4 text-gray-400 shrink-0" />
+          <Folder weight="light" className="w-4 h-4 text-gray-400 shrink-0" />
         )}
         <span className="truncate flex-1 text-left">{folder.name}</span>
-        {folder.is_favorite && <Star className="w-3 h-3 text-yellow-500 fill-yellow-500 shrink-0" />}
+        {folder.is_favorite && <Star weight="light" className="w-3 h-3 text-yellow-500 fill-yellow-500 shrink-0" />}
       </button>
       {expanded && hasChildren && (
         <div>

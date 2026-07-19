@@ -3,15 +3,15 @@ import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import {
   ArrowLeft,
-  Network,
-  Mail,
+  ShareNetwork,
+  Envelope,
   Phone,
   MapPin,
   Calendar,
   Users,
   FileText,
-  TrendingUp,
-} from 'lucide-react';
+  TrendUp,
+} from '@phosphor-icons/react/dist/ssr';
 import { Card, CardContent, CardHeader, CardTitle } from '@crm-eco/ui/components/card';
 import { Button } from '@crm-eco/ui/components/button';
 import { Badge } from '@crm-eco/ui/components/badge';
@@ -110,7 +110,7 @@ export default async function AgentDownlineDetailPage({ params }: PageProps) {
       <div className="flex items-center gap-4">
         <Link href="/agent/downline">
           <Button variant="ghost" size="icon">
-            <ArrowLeft className="h-5 w-5" />
+            <ArrowLeft weight="light" className="h-5 w-5" />
           </Button>
         </Link>
         <div className="flex-1">
@@ -131,10 +131,10 @@ export default async function AgentDownlineDetailPage({ params }: PageProps) {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-slate-500">Members</p>
-                <p className="text-2xl font-bold text-blue-600">{memberCount || 0}</p>
+                <p className="text-2xl font-bold text-[var(--mp-teal)]">{memberCount || 0}</p>
               </div>
-              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                <Users className="h-5 w-5 text-blue-600" />
+              <div className="w-10 h-10 rounded-full bg-[rgba(11,109,133,0.1)] flex items-center justify-center">
+                <Users weight="light" className="h-5 w-5 text-[var(--mp-teal)]" />
               </div>
             </div>
           </CardContent>
@@ -144,10 +144,10 @@ export default async function AgentDownlineDetailPage({ params }: PageProps) {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-slate-500">Enrollments</p>
-                <p className="text-2xl font-bold text-purple-600">{enrollmentCount || 0}</p>
+                <p className="text-2xl font-bold text-[var(--mp-teal)]">{enrollmentCount || 0}</p>
               </div>
-              <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
-                <FileText className="h-5 w-5 text-purple-600" />
+              <div className="w-10 h-10 rounded-full bg-[rgba(11,109,133,0.1)] flex items-center justify-center">
+                <FileText weight="light" className="h-5 w-5 text-[var(--mp-teal)]" />
               </div>
             </div>
           </CardContent>
@@ -159,7 +159,7 @@ export default async function AgentDownlineDetailPage({ params }: PageProps) {
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Network className="h-5 w-5" />
+              <ShareNetwork weight="light" className="h-5 w-5" />
               Agent Information
             </CardTitle>
           </CardHeader>
@@ -189,14 +189,14 @@ export default async function AgentDownlineDetailPage({ params }: PageProps) {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex items-start gap-3">
-                <Mail className="h-5 w-5 text-slate-400 mt-0.5" />
+                <Envelope weight="light" className="h-5 w-5 text-slate-400 mt-0.5" />
                 <div>
                   <label className="text-sm font-medium text-slate-500">Email</label>
                   <p className="text-slate-900">{downlineAgent.email || '-'}</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <Phone className="h-5 w-5 text-slate-400 mt-0.5" />
+                <Phone weight="light" className="h-5 w-5 text-slate-400 mt-0.5" />
                 <div>
                   <label className="text-sm font-medium text-slate-500">Phone</label>
                   <p className="text-slate-900">
@@ -210,7 +210,7 @@ export default async function AgentDownlineDetailPage({ params }: PageProps) {
               <>
                 <hr />
                 <div className="flex items-start gap-3">
-                  <MapPin className="h-5 w-5 text-slate-400 mt-0.5" />
+                  <MapPin weight="light" className="h-5 w-5 text-slate-400 mt-0.5" />
                   <div>
                     <label className="text-sm font-medium text-slate-500">Address</label>
                     <p className="text-slate-900">
@@ -237,7 +237,7 @@ export default async function AgentDownlineDetailPage({ params }: PageProps) {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
+                <Calendar weight="light" className="h-5 w-5" />
                 Agent Since
               </CardTitle>
             </CardHeader>
@@ -265,7 +265,7 @@ export default async function AgentDownlineDetailPage({ params }: PageProps) {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5" />
+                <TrendUp weight="light" className="h-5 w-5" />
                 Production
               </CardTitle>
             </CardHeader>
@@ -298,7 +298,7 @@ export default async function AgentDownlineDetailPage({ params }: PageProps) {
         {downlineAgent.email && (
           <Button variant="outline" className="gap-2" asChild>
             <a href={`mailto:${downlineAgent.email}`}>
-              <Mail className="h-4 w-4" />
+              <Envelope weight="light" className="h-4 w-4" />
               Send Email
             </a>
           </Button>
@@ -306,7 +306,7 @@ export default async function AgentDownlineDetailPage({ params }: PageProps) {
         {(downlineAgent.phone || downlineAgent.mobile_phone) && (
           <Button variant="outline" className="gap-2" asChild>
             <a href={`tel:${downlineAgent.phone || downlineAgent.mobile_phone}`}>
-              <Phone className="h-4 w-4" />
+              <Phone weight="light" className="h-4 w-4" />
               Call Agent
             </a>
           </Button>

@@ -2,8 +2,9 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { Bell, ChevronLeft, CheckCheck, Loader2 } from 'lucide-react';
+import { Bell, Checks, CircleNotch } from '@phosphor-icons/react';
 import { Card, CardContent } from '@crm-eco/ui';
+import { PageHeader } from '@/components/PageHeader';
 
 interface Notification {
   id: string;
@@ -52,40 +53,33 @@ export default function NotificationsPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 px-4 py-8">
-      <Link href="/" className="inline-flex items-center text-sm text-blue-600 hover:underline">
-        <ChevronLeft className="mr-1 h-4 w-4" aria-hidden /> Back
-      </Link>
-
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="flex items-center gap-2 text-2xl font-bold text-slate-900">
-            <Bell className="h-6 w-6" aria-hidden />
-            Notifications
-          </h1>
-          <p className="mt-1 text-sm text-slate-600">
-            {unread > 0 ? `${unread} unread` : 'All caught up'}
-          </p>
-        </div>
-        {unread > 0 && (
-          <button
-            onClick={markAllRead}
-            disabled={marking}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-          >
-            <CheckCheck className="h-4 w-4" aria-hidden />
-            Mark all read
-          </button>
-        )}
-      </div>
+      <PageHeader
+        title="Notifications"
+        description={unread > 0 ? `${unread} unread` : 'All caught up'}
+        backHref="/"
+        backLabel="Back"
+        actions={
+          unread > 0 ? (
+            <button
+              onClick={markAllRead}
+              disabled={marking}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+            >
+              <Checks weight="light" className="h-4 w-4" aria-hidden />
+              Mark all read
+            </button>
+          ) : undefined
+        }
+      />
 
       {loading ? (
         <div className="flex justify-center py-12">
-          <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+          <CircleNotch weight="light" className="h-6 w-6 animate-spin text-slate-400" />
         </div>
       ) : notifications.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
-            <Bell className="mx-auto mb-3 h-12 w-12 text-slate-300" aria-hidden />
+            <Bell weight="light" className="mx-auto mb-3 h-12 w-12 text-slate-300" aria-hidden />
             <p className="text-slate-500">You don&apos;t have any notifications yet.</p>
           </CardContent>
         </Card>
@@ -97,13 +91,13 @@ export default function NotificationsPage() {
                 className={`rounded-xl border p-4 transition ${
                   n.is_read
                     ? 'border-slate-200 bg-white'
-                    : 'border-blue-200 bg-blue-50'
+                    : 'border-[rgba(11,109,133,0.2)] bg-[var(--mp-mist)]'
                 }`}
               >
                 <div className="flex items-start gap-3">
                   <div
                     className={`mt-1.5 h-2 w-2 flex-shrink-0 rounded-full ${
-                      n.is_read ? 'bg-transparent' : 'bg-blue-500'
+                      n.is_read ? 'bg-transparent' : 'bg-[var(--mp-teal)]'
                     }`}
                   />
                   <div className="min-w-0 flex-1">

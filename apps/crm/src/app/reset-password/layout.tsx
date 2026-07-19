@@ -7,17 +7,21 @@ export default function CrmResetPasswordLayout({
 }) {
   return (
     <AuthSplitLayout
+      variant="crm"
       hero={
         <AuthHeroPanel
+          variant="crm"
+          badge="CRM Core"
+          showQuotes={false}
           headline={
             <>
-              <span className="block">Empowering</span>
-              <span className="block bg-gradient-to-r from-[#67e8f9] to-[#a5f3fc] bg-clip-text text-transparent">
-                Healthier Lives
+              <span className="block">Reset access</span>
+              <span className="block bg-gradient-to-r from-cyan-300 to-emerald-300 bg-clip-text text-transparent">
+                securely
               </span>
             </>
           }
-          subtitle="Building stronger communities through shared health and compassionate care."
+          subtitle="We'll email a secure link so you can get back to your pipeline."
         />
       }
     >

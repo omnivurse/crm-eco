@@ -1,23 +1,8 @@
 'use client';
 
+import { ArrowLeft, ArrowUpRight, Calendar, ChartBar, CurrencyDollar, FileText, GearSix, Lightning, MagnifyingGlass, SquaresFour, Target, TrendUp, Users, Wallet } from '@phosphor-icons/react';
 import { useState } from 'react';
 import Link from 'next/link';
-import {
-  BarChart3,
-  ArrowLeft,
-  Search,
-  LayoutGrid,
-  DollarSign,
-  Target,
-  Users,
-  Settings,
-  Wallet,
-  Zap,
-  TrendingUp,
-  Calendar,
-  FileText,
-  ArrowUpRight,
-} from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
 import { Tabs, TabsList, TabsTrigger } from '@crm-eco/ui/components/tabs';
@@ -29,13 +14,13 @@ import {
 } from '@crm-eco/shared';
 
 const categoryIcons: Record<string, React.ElementType> = {
-  all: LayoutGrid,
-  sales: DollarSign,
+  all: SquaresFour,
+  sales: CurrencyDollar,
   marketing: Target,
   team: Users,
-  operations: Settings,
+  operations: GearSix,
   finance: Wallet,
-  productivity: Zap,
+  productivity: Lightning,
 };
 
 const categoryColors: Record<string, string> = {
@@ -48,29 +33,29 @@ const categoryColors: Record<string, string> = {
 };
 
 const iconMap: Record<string, React.ElementType> = {
-  DollarSign,
+  CurrencyDollar,
   Target,
   Users,
-  Settings,
+  GearSix,
   Wallet,
-  Zap,
-  BarChart3,
-  TrendingUp,
+  Lightning,
+  ChartBar,
+  TrendUp,
   Calendar,
   FileText,
   MapPin: Target,
-  Activity: TrendingUp,
+  Activity: TrendUp,
   UserCheck: Users,
   Award: Target,
   Trophy: Target,
   Map: Target,
   GitBranch: Users,
   Package: Wallet,
-  Plus: Zap,
+  Plus: Lightning,
   Clock: Calendar,
-  PieChart: BarChart3,
+  PieChart: ChartBar,
   Globe: Target,
-  RefreshCw: TrendingUp,
+  RefreshCw: TrendUp,
 };
 
 function ReportTemplateCard({
@@ -88,7 +73,7 @@ function ReportTemplateCard({
   icon?: string;
   dataSource: string;
 }) {
-  const IconComponent = icon ? (iconMap[icon] || BarChart3) : BarChart3;
+  const IconComponent = icon ? (iconMap[icon] || ChartBar) : ChartBar;
   const gradient = categoryColors[category] || 'from-slate-500 to-slate-600';
   const categoryLabel = TEMPLATE_CATEGORIES.find((c) => c.id === category)?.label || category;
 
@@ -101,7 +86,7 @@ function ReportTemplateCard({
         <div className={`p-2.5 rounded-xl bg-gradient-to-br ${gradient}`}>
           <IconComponent className="w-5 h-5 text-white" />
         </div>
-        <ArrowUpRight className="w-4 h-4 text-slate-400 group-hover:text-[#0891b2] transition-colors" />
+        <ArrowUpRight weight="light" className="w-4 h-4 text-slate-400 group-hover:text-[#0891b2] transition-colors" />
       </div>
       <h3 className="text-slate-900 font-semibold mb-1 group-hover:text-[#0891b2] transition-colors">
         {name}
@@ -138,7 +123,7 @@ export default function AdminTemplatesPage() {
             href="/reports"
             className="flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 mb-2"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft weight="light" className="w-4 h-4" />
             Back to Reports
           </Link>
           <h1 className="text-2xl font-bold text-slate-900">Report Templates</h1>
@@ -148,9 +133,9 @@ export default function AdminTemplatesPage() {
         </div>
 
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <MagnifyingGlass weight="light" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <Input
-            placeholder="Search templates..."
+            placeholder="MagnifyingGlass templates..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9 w-72"
@@ -162,7 +147,7 @@ export default function AdminTemplatesPage() {
       <Tabs value={activeCategory} onValueChange={(v) => setActiveCategory(v as TemplateCategory)}>
         <TabsList className="bg-slate-100 p-1 h-auto flex-wrap">
           {TEMPLATE_CATEGORIES.map((cat) => {
-            const IconComponent = categoryIcons[cat.id] || LayoutGrid;
+            const IconComponent = categoryIcons[cat.id] || SquaresFour;
             const count =
               cat.id === 'all'
                 ? REPORT_TEMPLATES.length
@@ -207,7 +192,7 @@ export default function AdminTemplatesPage() {
         </div>
       ) : (
         <div className="text-center py-16">
-          <BarChart3 className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+          <ChartBar weight="light" className="w-16 h-16 text-slate-300 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-slate-900 mb-1">No templates found</h3>
           <p className="text-slate-500">
             Try adjusting your search or browse a different category

@@ -1,5 +1,6 @@
 'use client';
 
+import { Calendar, CaretLeft, CaretRight, CheckCircle, CircleNotch, Clock, GridNine, Info, List, Pause, PencilSimple, Play, Plus, Trash, WarningCircle } from '@phosphor-icons/react';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import {
@@ -28,23 +29,6 @@ import {
   TabsList,
   TabsTrigger,
 } from '@crm-eco/ui';
-import {
-  Plus,
-  Calendar,
-  Clock,
-  Play,
-  Pause,
-  Pencil,
-  Trash2,
-  Loader2,
-  CheckCircle2,
-  AlertCircle,
-  ChevronLeft,
-  ChevronRight,
-  List,
-  Grid3X3,
-  Info,
-} from 'lucide-react';
 import { format, formatDistanceToNow, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, addMonths, subMonths, isSameDay, getDay, startOfWeek, endOfWeek } from 'date-fns';
 import { toast } from 'sonner';
 
@@ -447,17 +431,17 @@ export default function SchedulerPage() {
                 onClick={() => setViewMode('list')}
                 className={`p-2 rounded ${viewMode === 'list' ? 'bg-slate-100' : 'hover:bg-slate-50'}`}
               >
-                <List className="w-4 h-4" />
+                <List weight="light" className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setViewMode('calendar')}
                 className={`p-2 rounded ${viewMode === 'calendar' ? 'bg-slate-100' : 'hover:bg-slate-50'}`}
               >
-                <Grid3X3 className="w-4 h-4" />
+                <GridNine weight="light" className="w-4 h-4" />
               </button>
             </div>
             <Button onClick={openCreateModal}>
-              <Plus className="w-4 h-4 mr-2" />
+              <Plus weight="light" className="w-4 h-4 mr-2" />
               New Schedule
             </Button>
           </div>
@@ -466,7 +450,7 @@ export default function SchedulerPage() {
         {/* View Content */}
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+            <CircleNotch weight="light" className="w-8 h-8 animate-spin text-slate-400" />
           </div>
         ) : viewMode === 'list' ? (
           // List View
@@ -474,11 +458,11 @@ export default function SchedulerPage() {
             <Card>
               <CardContent className="py-12">
                 <div className="text-center">
-                  <Calendar className="w-12 h-12 text-slate-200 mx-auto mb-3" />
+                  <Calendar weight="light" className="w-12 h-12 text-slate-200 mx-auto mb-3" />
                   <p className="text-slate-500">No scheduled jobs yet</p>
                   <p className="text-sm text-slate-400 mb-4">Create a schedule to automate recurring tasks</p>
                   <Button onClick={openCreateModal}>
-                    <Plus className="w-4 h-4 mr-2" />
+                    <Plus weight="light" className="w-4 h-4 mr-2" />
                     Create Schedule
                   </Button>
                 </div>
@@ -495,7 +479,7 @@ export default function SchedulerPage() {
                       <div className="flex items-start justify-between">
                         <div className="flex items-start gap-4">
                           <div className={`p-3 rounded-xl ${job.is_active ? 'bg-purple-100' : 'bg-slate-100'}`}>
-                            <Calendar className={`w-5 h-5 ${job.is_active ? 'text-purple-600' : 'text-slate-400'}`} />
+                            <Calendar weight="light" className={`w-5 h-5 ${job.is_active ? 'text-purple-600' : 'text-slate-400'}`} />
                           </div>
                           <div>
                             <div className="flex items-center gap-2">
@@ -516,7 +500,7 @@ export default function SchedulerPage() {
                             <div className="flex items-center gap-4 mt-3 text-xs text-slate-400">
                               {job.schedule_cron && cronParsed && (
                                 <span className="flex items-center gap-1">
-                                  <Clock className="w-3 h-3" />
+                                  <Clock weight="light" className="w-3 h-3" />
                                   {cronParsed.description}
                                 </span>
                               )}
@@ -540,7 +524,7 @@ export default function SchedulerPage() {
                             size="sm"
                             onClick={() => runJobNow(job)}
                           >
-                            <Play className="w-4 h-4 mr-1" />
+                            <Play weight="light" className="w-4 h-4 mr-1" />
                             Run Now
                           </Button>
                           <Button
@@ -549,9 +533,9 @@ export default function SchedulerPage() {
                             onClick={() => toggleActive(job)}
                           >
                             {job.is_active ? (
-                              <Pause className="w-4 h-4" />
+                              <Pause weight="light" className="w-4 h-4" />
                             ) : (
-                              <Play className="w-4 h-4" />
+                              <Play weight="light" className="w-4 h-4" />
                             )}
                           </Button>
                           <Button
@@ -559,7 +543,7 @@ export default function SchedulerPage() {
                             size="sm"
                             onClick={() => openEditModal(job)}
                           >
-                            <Pencil className="w-4 h-4" />
+                            <PencilSimple weight="light" className="w-4 h-4" />
                           </Button>
                         </div>
                       </div>
@@ -576,13 +560,13 @@ export default function SchedulerPage() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <Button variant="ghost" size="sm" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}>
-                    <ChevronLeft className="w-4 h-4" />
+                    <CaretLeft weight="light" className="w-4 h-4" />
                   </Button>
                   <h2 className="text-lg font-semibold">
                     {format(currentMonth, 'MMMM yyyy')}
                   </h2>
                   <Button variant="ghost" size="sm" onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}>
-                    <ChevronRight className="w-4 h-4" />
+                    <CaretRight weight="light" className="w-4 h-4" />
                   </Button>
                 </div>
                 <Button variant="outline" size="sm" onClick={() => setCurrentMonth(new Date())}>
@@ -694,7 +678,7 @@ export default function SchedulerPage() {
 
       {/* Create/Edit Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>
               {editingJob ? 'Edit Schedule' : 'New Schedule'}
@@ -775,7 +759,7 @@ export default function SchedulerPage() {
               {cronInfo && formData.schedule_cron && (
                 <div className="mt-2 p-3 bg-slate-50 rounded-lg">
                   <div className="flex items-center gap-2 text-sm">
-                    <Info className="w-4 h-4 text-blue-500" />
+                    <Info weight="light" className="w-4 h-4 text-blue-500" />
                     <span className="font-medium text-slate-700">{cronInfo.description}</span>
                   </div>
                   {cronInfo.nextRuns.length > 0 && (
@@ -849,7 +833,7 @@ export default function SchedulerPage() {
                   className="text-red-600 hover:text-red-700 hover:bg-red-50"
                   onClick={() => handleDelete(editingJob.id)}
                 >
-                  <Trash2 className="w-4 h-4 mr-1" />
+                  <Trash weight="light" className="w-4 h-4 mr-1" />
                   Delete
                 </Button>
               )}
@@ -859,7 +843,7 @@ export default function SchedulerPage() {
                 Cancel
               </Button>
               <Button onClick={handleSave} disabled={saving}>
-                {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                {saving && <CircleNotch weight="light" className="w-4 h-4 mr-2 animate-spin" />}
                 {editingJob ? 'Update' : 'Create'}
               </Button>
             </div>

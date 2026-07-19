@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, Input, Label, Button, Textarea } from '@crm-eco/ui';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@crm-eco/ui';
-import { MessageSquare, Send, Loader2, CheckCircle } from 'lucide-react';
+import { ChatCircle, PaperPlaneTilt, CircleNotch, CheckCircle } from '@phosphor-icons/react';
 import { createMemberTicket } from '@/app/support/actions';
 
 const CATEGORIES = [
@@ -73,7 +73,7 @@ export function SupportTicketForm({ onTicketCreated }: SupportTicketFormProps) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
-          <MessageSquare className="w-5 h-5 text-blue-600" />
+          <ChatCircle weight="light" className="w-5 h-5 text-[var(--mp-teal)]" />
           Contact Support
         </CardTitle>
       </CardHeader>
@@ -85,7 +85,7 @@ export function SupportTicketForm({ onTicketCreated }: SupportTicketFormProps) {
 
         {success && (
           <div className="mb-6 p-4 rounded-lg bg-green-50 border border-green-200 flex items-start gap-3">
-            <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+            <CheckCircle weight="light" className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
             <div>
               <p className="text-green-900 font-medium">Message Sent!</p>
               <p className="text-sm text-green-700">
@@ -157,12 +157,12 @@ export function SupportTicketForm({ onTicketCreated }: SupportTicketFormProps) {
             >
               {loading ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <CircleNotch weight="light" className="w-4 h-4 animate-spin" />
                   Sending...
                 </>
               ) : (
                 <>
-                  <Send className="w-4 h-4" />
+                  <PaperPlaneTilt weight="light" className="w-4 h-4" />
                   Submit Ticket
                 </>
               )}
@@ -173,4 +173,3 @@ export function SupportTicketForm({ onTicketCreated }: SupportTicketFormProps) {
     </Card>
   );
 }
-

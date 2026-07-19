@@ -2,6 +2,7 @@ import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { getMemberForUser } from '@crm-eco/lib';
 import { redirect } from 'next/navigation';
 import { ServicesSearch } from '@/components/services/ServicesSearch';
+import { PageHeader } from '@/components/PageHeader';
 
 export default async function ServicesPage() {
   const supabase = await createServerSupabaseClient();
@@ -16,12 +17,11 @@ export default async function ServicesPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Find Healthcare Services</h1>
-        <p className="text-slate-500">
-          Enter your ZIP code to discover available healthcare services near you.
-        </p>
-      </div>
+      <PageHeader
+        title="Find Healthcare Services"
+        description="Enter your ZIP code to discover available healthcare services near you."
+        kicker="Services"
+      />
       <ServicesSearch memberZip={(member as any).zip || ''} />
     </div>
   );

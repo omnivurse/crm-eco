@@ -1,5 +1,5 @@
+import { ClipboardText, Tray } from '@phosphor-icons/react/dist/ssr';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Badge } from '@crm-eco/ui';
-import { ClipboardCheck, Inbox } from 'lucide-react';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { getActiveTenant } from '@/lib/tenant';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -100,8 +100,8 @@ export default async function ChangesReviewPage() {
       <PageHeader
         title="Pending Changes"
         description="Review and decide on member change requests awaiting approval"
-        icon={<ClipboardCheck className="w-6 h-6" />}
-        gradient="from-[#0891b2] to-[#06b6d4]"
+        icon={<ClipboardText weight="light" className="w-6 h-6" />}
+        
       />
 
       <Card>
@@ -117,7 +117,7 @@ export default async function ChangesReviewPage() {
           {requests.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <div className="rounded-full bg-slate-100 p-4">
-                <Inbox className="w-8 h-8 text-slate-400" />
+                <Tray weight="light" className="w-8 h-8 text-slate-400" />
               </div>
               <p className="mt-4 text-sm font-medium text-slate-900">All caught up</p>
               <p className="mt-1 text-sm text-slate-500">

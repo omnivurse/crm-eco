@@ -1,5 +1,6 @@
 'use client';
 
+import { Calendar, CaretRight, CheckCircle, Circle, CircleNotch, Clock, ListChecks, PencilSimple, Plus, Trash, WarningCircle } from '@phosphor-icons/react';
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import {
@@ -22,19 +23,6 @@ import {
   Badge,
   Textarea,
 } from '@crm-eco/ui';
-import {
-  CheckCircle2,
-  Circle,
-  Plus,
-  Clock,
-  AlertCircle,
-  ChevronRight,
-  Loader2,
-  Pencil,
-  Trash2,
-  ListTodo,
-  Calendar,
-} from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
 import { toast } from 'sonner';
 import Link from 'next/link';
@@ -68,8 +56,8 @@ const priorityColors = {
 const statusIcons = {
   pending: Circle,
   in_progress: Clock,
-  cancelled: AlertCircle,
-  completed: CheckCircle2,
+  cancelled: WarningCircle,
+  completed: CheckCircle,
 };
 
 export function TodoListWidget({ profileId, organizationId }: TodoListWidgetProps) {
@@ -254,7 +242,7 @@ export function TodoListWidget({ profileId, organizationId }: TodoListWidgetProp
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2.5 rounded-xl bg-gradient-to-br from-amber-500 to-orange-400">
-                <ListTodo className="w-5 h-5 text-white" />
+                <ListChecks weight="light" className="w-5 h-5 text-white" />
               </div>
               <div>
                 <CardTitle className="text-lg">To Do List</CardTitle>
@@ -265,13 +253,13 @@ export function TodoListWidget({ profileId, organizationId }: TodoListWidgetProp
             </div>
             <div className="flex items-center gap-2">
               <Button size="sm" variant="outline" onClick={openCreateModal}>
-                <Plus className="w-4 h-4 mr-1" />
+                <Plus weight="light" className="w-4 h-4 mr-1" />
                 Add
               </Button>
               <Link href="/ops/jobs">
                 <Button size="sm" variant="ghost">
                   View all
-                  <ChevronRight className="w-4 h-4 ml-1" />
+                  <CaretRight weight="light" className="w-4 h-4 ml-1" />
                 </Button>
               </Link>
             </div>
@@ -281,12 +269,12 @@ export function TodoListWidget({ profileId, organizationId }: TodoListWidgetProp
         <CardContent>
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+              <CircleNotch weight="light" className="w-6 h-6 animate-spin text-slate-400" />
             </div>
           ) : tasks.length === 0 ? (
             <div className="text-center py-8">
               <div className="w-16 h-16 mx-auto mb-3 bg-slate-100 rounded-2xl flex items-center justify-center">
-                <CheckCircle2 className="w-8 h-8 text-slate-300" />
+                <CheckCircle weight="light" className="w-8 h-8 text-slate-300" />
               </div>
               <p className="font-medium text-slate-600 mb-1">All caught up!</p>
               <p className="text-sm text-slate-400">No pending tasks</p>
@@ -331,7 +319,7 @@ export function TodoListWidget({ profileId, organizationId }: TodoListWidgetProp
                         <p className={`text-xs flex items-center gap-1 ${
                           overdue ? 'text-red-500' : 'text-slate-400'
                         }`}>
-                          <Calendar className="w-3 h-3" />
+                          <Calendar weight="light" className="w-3 h-3" />
                           {overdue ? 'Overdue: ' : 'Due: '}
                           {formatDistanceToNow(new Date(task.due_date), { addSuffix: true })}
                         </p>
@@ -342,7 +330,7 @@ export function TodoListWidget({ profileId, organizationId }: TodoListWidgetProp
                       {task.priority}
                     </Badge>
 
-                    <Pencil className="w-4 h-4 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <PencilSimple weight="light" className="w-4 h-4 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
                 );
               })}
@@ -422,7 +410,7 @@ export function TodoListWidget({ profileId, organizationId }: TodoListWidgetProp
                   className="text-red-600 hover:text-red-700 hover:bg-red-50"
                   onClick={() => handleDelete(editingTask.id)}
                 >
-                  <Trash2 className="w-4 h-4 mr-1" />
+                  <Trash weight="light" className="w-4 h-4 mr-1" />
                   Delete
                 </Button>
               )}
@@ -432,7 +420,7 @@ export function TodoListWidget({ profileId, organizationId }: TodoListWidgetProp
                 Cancel
               </Button>
               <Button onClick={handleSave} disabled={saving}>
-                {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                {saving && <CircleNotch weight="light" className="w-4 h-4 mr-2 animate-spin" />}
                 {editingTask ? 'Update' : 'Create'}
               </Button>
             </div>

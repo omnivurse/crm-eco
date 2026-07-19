@@ -1,17 +1,7 @@
 'use client';
 
+import { Buildings, Cigarette, FileMagnifyingGlass, Heart, ShieldCheck, UserMinus, Users, Warning } from '@phosphor-icons/react';
 import { useEffect, useState } from 'react';
-import {
-  Users,
-  Heart,
-  Shield,
-  AlertTriangle,
-  Cigarette,
-  Building2,
-  UserX,
-  FileSearch,
-} from 'lucide-react';
-
 interface DashboardStats {
   total_records: number;
   total_individual: number;
@@ -86,7 +76,7 @@ export function CrmKpiCards({ orgId }: { orgId: string }) {
     {
       label: 'Traditional Insurance',
       value: stats.traditional_insurance,
-      icon: Shield,
+      icon: ShieldCheck,
       color: 'text-blue-700 bg-blue-50',
     },
     {
@@ -99,7 +89,7 @@ export function CrmKpiCards({ orgId }: { orgId: string }) {
     {
       label: 'Needs Review',
       value: stats.needs_review,
-      icon: FileSearch,
+      icon: FileMagnifyingGlass,
       color: stats.needs_review > 0
         ? 'text-orange-700 bg-orange-50'
         : 'text-slate-500 bg-slate-50',
@@ -107,7 +97,7 @@ export function CrmKpiCards({ orgId }: { orgId: string }) {
     {
       label: 'Needs Classification',
       value: stats.needs_classification,
-      icon: AlertTriangle,
+      icon: Warning,
       color: stats.needs_classification > 0
         ? 'text-amber-700 bg-amber-50'
         : 'text-slate-500 bg-slate-50',
@@ -115,13 +105,13 @@ export function CrmKpiCards({ orgId }: { orgId: string }) {
     {
       label: 'Missing Carrier',
       value: stats.missing_carrier,
-      icon: Building2,
+      icon: Buildings,
       color: 'text-slate-600 bg-slate-50',
     },
     {
       label: 'Unassigned Advisor',
       value: stats.unassigned_advisor,
-      icon: UserX,
+      icon: UserMinus,
       color: stats.unassigned_advisor > 0
         ? 'text-red-700 bg-red-50'
         : 'text-slate-500 bg-slate-50',
@@ -132,7 +122,7 @@ export function CrmKpiCards({ orgId }: { orgId: string }) {
     <div>
       <div className="flex items-center gap-3 mb-4">
         <div className="p-2.5 rounded-xl bg-teal-700">
-          <Users className="w-5 h-5 text-white" />
+          <Users weight="light" className="w-5 h-5 text-white" />
         </div>
         <div>
           <h3 className="text-lg font-bold text-slate-900">CRM Member Overview</h3>

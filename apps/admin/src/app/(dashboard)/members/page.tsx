@@ -1,5 +1,5 @@
+import { CaretLeft, CaretRight, Plus, UploadSimple, Users } from '@phosphor-icons/react/dist/ssr';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button } from '@crm-eco/ui';
-import { Plus, Upload, Users, ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { getActiveTenant } from '@/lib/tenant';
@@ -100,19 +100,18 @@ export default async function MembersPage({ searchParams }: PageProps) {
       <PageHeader
         title="Members"
         description="Manage member accounts and information"
-        icon={<Users className="w-6 h-6" />}
-        gradient="from-[#0891b2] to-[#06b6d4]"
+        icon={<Users weight="light" className="w-6 h-6" />}
         actions={
           <div className="flex items-center gap-2">
             <Link href="/members/import">
               <Button variant="outline">
-                <Upload className="h-4 w-4 mr-2" />
+                <UploadSimple weight="light" className="h-4 w-4 mr-2" />
                 Import
               </Button>
             </Link>
             <Link href="/members/new">
               <Button>
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus weight="light" className="h-4 w-4 mr-2" />
                 Add Member
               </Button>
             </Link>
@@ -144,10 +143,10 @@ export default async function MembersPage({ searchParams }: PageProps) {
             <Button variant="outline" size="sm" disabled={page <= 1} asChild={page > 1}>
               {page > 1 ? (
                 <Link href={buildPageUrl(page - 1)}>
-                  <ChevronLeft className="w-4 h-4 mr-1" /> Previous
+                  <CaretLeft weight="light" className="w-4 h-4 mr-1" /> Previous
                 </Link>
               ) : (
-                <span><ChevronLeft className="w-4 h-4 mr-1" /> Previous</span>
+                <span><CaretLeft weight="light" className="w-4 h-4 mr-1" /> Previous</span>
               )}
             </Button>
             <span className="text-sm text-muted-foreground px-2">
@@ -156,10 +155,10 @@ export default async function MembersPage({ searchParams }: PageProps) {
             <Button variant="outline" size="sm" disabled={page >= totalPages} asChild={page < totalPages}>
               {page < totalPages ? (
                 <Link href={buildPageUrl(page + 1)}>
-                  Next <ChevronRight className="w-4 h-4 ml-1" />
+                  Next <CaretRight weight="light" className="w-4 h-4 ml-1" />
                 </Link>
               ) : (
-                <span>Next <ChevronRight className="w-4 h-4 ml-1" /></span>
+                <span>Next <CaretRight weight="light" className="w-4 h-4 ml-1" /></span>
               )}
             </Button>
           </div>

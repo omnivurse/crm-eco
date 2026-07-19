@@ -1,10 +1,9 @@
 'use client';
 
+import { Bell, CheckCircle, FileText, Info, Warning } from '@phosphor-icons/react';
 import { useEffect } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { toast } from 'sonner';
-import { FileText, Bell, CheckCircle, AlertTriangle, Info } from 'lucide-react';
-
 interface Notification {
   id: string;
   title: string;
@@ -21,18 +20,18 @@ interface AdminNotificationListenerProps {
 
 function getNotificationIcon(type?: string, icon?: string) {
   if (type === 'enrollment') {
-    return <FileText className="w-4 h-4 text-blue-500" />;
+    return <FileText weight="light" className="w-4 h-4 text-blue-500" />;
   }
   if (type === 'success') {
-    return <CheckCircle className="w-4 h-4 text-green-500" />;
+    return <CheckCircle weight="light" className="w-4 h-4 text-green-500" />;
   }
   if (type === 'warning') {
-    return <AlertTriangle className="w-4 h-4 text-amber-500" />;
+    return <Warning weight="light" className="w-4 h-4 text-amber-500" />;
   }
   if (icon === 'file-text') {
-    return <FileText className="w-4 h-4 text-blue-500" />;
+    return <FileText weight="light" className="w-4 h-4 text-blue-500" />;
   }
-  return <Bell className="w-4 h-4 text-slate-500" />;
+  return <Bell weight="light" className="w-4 h-4 text-slate-500" />;
 }
 
 export function AdminNotificationListener({ userId }: AdminNotificationListenerProps) {

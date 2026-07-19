@@ -1,6 +1,6 @@
+import { ArrowLeft } from '@phosphor-icons/react/dist/ssr';
 import Link from 'next/link';
 import { Button } from '@crm-eco/ui';
-import { ArrowLeft } from 'lucide-react';
 import { VendorForm } from '@/components/vendors/VendorForm';
 
 export default function NewVendorPage() {
@@ -10,7 +10,7 @@ export default function NewVendorPage() {
       <div className="flex items-center gap-4">
         <Link href="/vendors">
           <Button variant="ghost" size="icon" className="rounded-full">
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft weight="light" className="w-5 h-5" />
           </Button>
         </Link>
         <div>

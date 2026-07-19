@@ -8,7 +8,7 @@ import {
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@crm-eco/ui';
-import { ChevronLeft } from 'lucide-react';
+import { PageHeader } from '@/components/PageHeader';
 import {
   NeedStatusCard,
   NeedAmountsCard,
@@ -77,26 +77,16 @@ export default async function NeedDetailPage({ params }: { params: Promise<{ id:
   ]);
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
-      {/* Back link */}
-      <Link href="/needs" className="inline-flex items-center text-sm text-blue-600 hover:underline">
-        <ChevronLeft className="w-4 h-4 mr-1" /> Back to Needs
-      </Link>
+    <div className="mx-auto max-w-5xl space-y-6 px-4 py-8">
+      <PageHeader
+        title={need.need_type}
+        description={`Need ID: ${need.id.substring(0, 8)}`}
+        backHref="/needs"
+        backLabel="Back to Needs"
+      />
 
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-slate-900">
-          {need.need_type}
-        </h1>
-        <p className="text-slate-600 mt-1">
-          Need ID: {need.id.substring(0, 8)}
-        </p>
-      </div>
-
-      {/* Status Card */}
       <NeedStatusCard need={need} />
 
-      {/* Amounts & Reimbursement Card */}
       <NeedAmountsCard need={need} />
 
       <NeedAttachmentsCard
@@ -114,9 +104,7 @@ export default async function NeedDetailPage({ params }: { params: Promise<{ id:
         canEdit={!INVOICE_LOCKED_STATUSES.has(need.status)}
       />
 
-      {/* Activity Timeline Card */}
       <NeedTimelineCard events={events} />
     </div>
   );
 }
-

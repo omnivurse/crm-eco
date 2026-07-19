@@ -123,27 +123,29 @@ export function CrmLoginClient({
   };
 
   const heroSubtitle = tenantLabel
-    ? `Building stronger communities with ${tenantLabel}.`
-    : 'Building stronger communities through shared health and compassionate care.';
+    ? `Pipelines and workqueues for ${tenantLabel} — purpose-built for benefits.`
+    : 'Pipelines, modules, and automations purpose-built for benefits advisors.';
 
   const formSubtitle = tenantLabel
     ? `Sign in to the ${tenantLabel} CRM workspace`
-    : 'Sign in to access your CRM dashboard';
+    : 'Sign in to your pipeline, modules, and workqueue.';
 
   return (
     <AuthSplitLayout
+      variant="crm"
       hero={
         <AuthHeroPanel
+          variant="crm"
           headline={
             <>
-              <span className="block">Empowering</span>
-              <span className="block bg-gradient-to-r from-[#67e8f9] to-[#a5f3fc] bg-clip-text text-transparent">
-                Healthier Lives
+              <span className="block">Your book,</span>
+              <span className="block bg-gradient-to-r from-cyan-300 to-emerald-300 bg-clip-text text-transparent">
+                one workspace
               </span>
             </>
           }
           subtitle={heroSubtitle}
-          badge={tenantLabel ? `${tenantLabel} CRM` : 'CRM'}
+          badge={tenantLabel ? `${tenantLabel} · CRM Core` : 'CRM Core'}
         />
       }
     >
@@ -261,7 +263,7 @@ export function CrmLoginClient({
 
           <button
             type="button"
-            className="w-full h-14 border border-slate-600 bg-slate-800/30 text-slate-200 hover:bg-slate-800/50 hover:border-slate-500 rounded-xl transition-all"
+            className={authForm.secondaryBtn}
             onClick={() => {
               window.location.href = 'mailto:support@doublehelixhub.com';
             }}

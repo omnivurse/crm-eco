@@ -1,5 +1,6 @@
 'use client';
 
+import { ArrowsDownUp, ArrowSquareOut, MagnifyingGlass, Users } from '@phosphor-icons/react';
 import { useState, useMemo } from 'react';
 import {
   Card,
@@ -22,7 +23,6 @@ import {
   TableHeader,
   TableRow,
 } from '@crm-eco/ui';
-import { Search, Users, ArrowUpDown, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 import { format } from 'date-fns';
 
@@ -71,7 +71,7 @@ export function DownlineSearch({ agents, parentAgentId }: DownlineSearchProps) {
   const filteredAndSorted = useMemo(() => {
     let result = [...agents];
 
-    // Search filter
+    // MagnifyingGlass filter
     if (search.trim()) {
       const q = search.toLowerCase();
       result = result.filter((a) => {
@@ -130,7 +130,7 @@ export function DownlineSearch({ agents, parentAgentId }: DownlineSearchProps) {
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
+              <Users weight="light" className="h-5 w-5" />
               Downline Agents
             </CardTitle>
             <CardDescription>
@@ -143,12 +143,12 @@ export function DownlineSearch({ agents, parentAgentId }: DownlineSearchProps) {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Search and Filters */}
+        {/* MagnifyingGlass and Filters */}
         <div className="flex items-center gap-3">
           <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <MagnifyingGlass weight="light" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <Input
-              placeholder="Search by name, code, email, phone..."
+              placeholder="MagnifyingGlass by name, code, email, phone..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9 h-9"
@@ -188,7 +188,7 @@ export function DownlineSearch({ agents, parentAgentId }: DownlineSearchProps) {
                       className="flex items-center gap-1 hover:text-slate-900"
                     >
                       Name
-                      <ArrowUpDown className="h-3 w-3" />
+                      <ArrowsDownUp weight="light" className="h-3 w-3" />
                     </button>
                   </TableHead>
                   <TableHead>Code</TableHead>
@@ -200,7 +200,7 @@ export function DownlineSearch({ agents, parentAgentId }: DownlineSearchProps) {
                       className="flex items-center gap-1 hover:text-slate-900"
                     >
                       Type
-                      <ArrowUpDown className="h-3 w-3" />
+                      <ArrowsDownUp weight="light" className="h-3 w-3" />
                     </button>
                   </TableHead>
                   <TableHead>
@@ -209,7 +209,7 @@ export function DownlineSearch({ agents, parentAgentId }: DownlineSearchProps) {
                       className="flex items-center gap-1 hover:text-slate-900"
                     >
                       Status
-                      <ArrowUpDown className="h-3 w-3" />
+                      <ArrowsDownUp weight="light" className="h-3 w-3" />
                     </button>
                   </TableHead>
                   <TableHead>
@@ -218,7 +218,7 @@ export function DownlineSearch({ agents, parentAgentId }: DownlineSearchProps) {
                       className="flex items-center gap-1 hover:text-slate-900"
                     >
                       Joined
-                      <ArrowUpDown className="h-3 w-3" />
+                      <ArrowsDownUp weight="light" className="h-3 w-3" />
                     </button>
                   </TableHead>
                   <TableHead className="w-10"></TableHead>
@@ -258,7 +258,7 @@ export function DownlineSearch({ agents, parentAgentId }: DownlineSearchProps) {
                     <TableCell>
                       <Link href={`/agents/${agent.id}`}>
                         <Button variant="ghost" size="icon" className="h-7 w-7">
-                          <ExternalLink className="h-3.5 w-3.5" />
+                          <ArrowSquareOut weight="light" className="h-3.5 w-3.5" />
                         </Button>
                       </Link>
                     </TableCell>

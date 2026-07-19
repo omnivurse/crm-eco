@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Download, X } from 'lucide-react';
+import { DownloadSimple, X } from '@phosphor-icons/react';
 
 const DISMISS_KEY = 'dhh.pwa.install.dismissed_at';
 const DISMISS_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
@@ -56,29 +56,29 @@ export function InstallPrompt() {
 
   return (
     <div
-      className="fixed left-3 right-3 bottom-3 z-50 rounded-2xl border border-slate-200 bg-white p-4 shadow-xl md:left-auto md:right-6 md:bottom-6 md:max-w-sm"
+      className="fixed bottom-3 left-3 right-3 z-50 rounded-[1.5rem] border border-[rgba(11,109,133,0.1)] bg-white p-4 shadow-[var(--mp-shadow-soft)] md:bottom-6 md:left-auto md:right-6 md:max-w-sm"
       role="dialog"
       aria-label="Install app"
     >
       <div className="flex items-start gap-3">
-        <div className="rounded-lg bg-slate-100 p-2 text-slate-700">
-          <Download className="h-5 w-5" />
+        <div className="rounded-xl bg-[rgba(11,109,133,0.08)] p-2 text-[var(--mp-teal)]">
+          <DownloadSimple weight="light" className="h-5 w-5" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-slate-900">Install Member Portal</p>
+          <p className="text-sm font-semibold text-[var(--mp-ink)]">Install Member Portal</p>
           <p className="mt-0.5 text-sm text-slate-600">
             Add to your home screen for fast access and offline support.
           </p>
           <div className="mt-3 flex items-center gap-2">
             <button
               onClick={install}
-              className="rounded-lg bg-slate-900 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-slate-800"
+              className="rounded-full bg-[var(--mp-teal)] px-3 py-1.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
             >
               Install
             </button>
             <button
               onClick={dismiss}
-              className="rounded-lg px-3 py-1.5 text-sm text-slate-600 transition hover:bg-slate-100"
+              className="rounded-full px-3 py-1.5 text-sm text-slate-600 transition-colors hover:bg-[rgba(11,109,133,0.06)]"
             >
               Not now
             </button>
@@ -89,7 +89,7 @@ export function InstallPrompt() {
           aria-label="Dismiss"
           className="-mr-1 -mt-1 rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
         >
-          <X className="h-4 w-4" />
+          <X weight="light" className="h-4 w-4" />
         </button>
       </div>
     </div>

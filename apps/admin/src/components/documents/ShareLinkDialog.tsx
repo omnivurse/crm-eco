@@ -1,7 +1,7 @@
 'use client';
 
+import { Check, Copy } from '@phosphor-icons/react';
 import { useState } from 'react';
-import { Copy, Check } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@crm-eco/ui/components/dialog';
 import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
@@ -65,7 +65,7 @@ export function ShareLinkDialog({ open, onOpenChange, onCreateLink }: ShareLinkD
             <div className="flex items-center gap-2">
               <Input value={shareUrl} readOnly className="text-sm" />
               <Button variant="outline" size="sm" onClick={handleCopy}>
-                {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                {copied ? <Check weight="light" className="w-4 h-4" /> : <Copy weight="light" className="w-4 h-4" />}
               </Button>
             </div>
             <p className="text-xs text-gray-500">Share this link with anyone to let them download the file.</p>

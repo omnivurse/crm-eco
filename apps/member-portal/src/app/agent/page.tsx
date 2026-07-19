@@ -1,17 +1,14 @@
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { 
-  Users, 
-  FileText, 
-  DollarSign, 
-  TrendingUp,
-  ArrowUpRight,
-  ArrowDownRight,
+import {
+  Users,
+  FileText,
+  CurrencyDollar,
+  TrendUp,
   Clock,
   CheckCircle,
-  AlertCircle,
-} from 'lucide-react';
+} from '@phosphor-icons/react/dist/ssr';
 import { Card, CardContent, CardHeader, CardTitle } from '@crm-eco/ui/components/card';
 import { Button } from '@crm-eco/ui/components/button';
 
@@ -142,7 +139,7 @@ export default async function AgentDashboardPage() {
         </div>
         <Link href={`/enroll/${agent.enrollment_code}`} target="_blank">
           <Button className="gap-2">
-            <FileText className="h-4 w-4" />
+            <FileText weight="light" className="h-4 w-4" />
             New Enrollment
           </Button>
         </Link>
@@ -155,12 +152,12 @@ export default async function AgentDashboardPage() {
             <CardTitle className="text-sm font-medium text-slate-600">
               Total Members
             </CardTitle>
-            <Users className="h-4 w-4 text-slate-400" />
+            <Users weight="light" className="h-4 w-4 text-slate-400" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{data.totalMembers}</div>
             <p className="text-xs text-slate-500 flex items-center gap-1 mt-1">
-              <TrendingUp className="h-3 w-3 text-green-500" />
+              <TrendUp weight="light" className="h-3 w-3 text-green-500" />
               <span className="text-green-600">+{data.newMembersThisMonth}</span> this month
             </p>
           </CardContent>
@@ -171,7 +168,7 @@ export default async function AgentDashboardPage() {
             <CardTitle className="text-sm font-medium text-slate-600">
               Active Enrollments
             </CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-500" />
+            <CheckCircle weight="light" className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{data.enrollmentCounts.active}</div>
@@ -186,7 +183,7 @@ export default async function AgentDashboardPage() {
             <CardTitle className="text-sm font-medium text-slate-600">
               Pending Enrollments
             </CardTitle>
-            <Clock className="h-4 w-4 text-amber-500" />
+            <Clock weight="light" className="h-4 w-4 text-amber-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{data.enrollmentCounts.pending}</div>
@@ -201,7 +198,7 @@ export default async function AgentDashboardPage() {
             <CardTitle className="text-sm font-medium text-slate-600">
               Total Commissions
             </CardTitle>
-            <DollarSign className="h-4 w-4 text-slate-400" />
+            <CurrencyDollar weight="light" className="h-4 w-4 text-slate-400" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -227,7 +224,7 @@ export default async function AgentDashboardPage() {
         <CardContent>
           {data.recentEnrollments.length === 0 ? (
             <div className="text-center py-8 text-slate-500">
-              <FileText className="h-12 w-12 mx-auto mb-3 text-slate-300" />
+              <FileText weight="light" className="h-12 w-12 mx-auto mb-3 text-slate-300" />
               <p>No enrollments yet</p>
               <p className="text-sm mt-1">Share your enrollment link to get started!</p>
             </div>
@@ -239,8 +236,8 @@ export default async function AgentDashboardPage() {
                   className="flex items-center justify-between p-4 bg-slate-50 rounded-lg"
                 >
                   <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                      <Users className="h-5 w-5 text-blue-600" />
+                    <div className="w-10 h-10 rounded-full bg-[rgba(11,109,133,0.1)] flex items-center justify-center">
+                      <Users weight="light" className="h-5 w-5 text-[var(--mp-teal)]" />
                     </div>
                     <div>
                       <p className="font-medium text-slate-900">
@@ -277,8 +274,8 @@ export default async function AgentDashboardPage() {
         <Card className="hover:shadow-md transition-shadow cursor-pointer">
           <Link href="/agent/members">
             <CardContent className="flex items-center gap-4 p-6">
-              <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center">
-                <Users className="h-6 w-6 text-blue-600" />
+              <div className="w-12 h-12 rounded-lg bg-[rgba(11,109,133,0.1)] flex items-center justify-center">
+                <Users weight="light" className="h-6 w-6 text-[var(--mp-teal)]" />
               </div>
               <div>
                 <h3 className="font-semibold text-slate-900">View Members</h3>
@@ -292,7 +289,7 @@ export default async function AgentDashboardPage() {
           <Link href="/agent/commissions">
             <CardContent className="flex items-center gap-4 p-6">
               <div className="w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center">
-                <DollarSign className="h-6 w-6 text-green-600" />
+                <CurrencyDollar weight="light" className="h-6 w-6 text-green-600" />
               </div>
               <div>
                 <h3 className="font-semibold text-slate-900">Commissions</h3>
@@ -305,8 +302,8 @@ export default async function AgentDashboardPage() {
         <Card className="hover:shadow-md transition-shadow cursor-pointer">
           <Link href="/agent/links">
             <CardContent className="flex items-center gap-4 p-6">
-              <div className="w-12 h-12 rounded-lg bg-purple-100 flex items-center justify-center">
-                <TrendingUp className="h-6 w-6 text-purple-600" />
+              <div className="w-12 h-12 rounded-lg bg-[rgba(11,109,133,0.1)] flex items-center justify-center">
+                <TrendUp weight="light" className="h-6 w-6 text-[var(--mp-teal)]" />
               </div>
               <div>
                 <h3 className="font-semibold text-slate-900">Enrollment Links</h3>

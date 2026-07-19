@@ -3,7 +3,8 @@ import { getMemberForUser, getMemberNeeds } from '@crm-eco/lib';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@crm-eco/ui';
-import { ChevronLeft, PlusCircle } from 'lucide-react';
+import { PlusCircle } from '@phosphor-icons/react/dist/ssr';
+import { PageHeader } from '@/components/PageHeader';
 import {
   NeedsSummaryStrip,
   NeedsListCard,
@@ -101,41 +102,31 @@ export default async function NeedsPage() {
   const { openCount, approvedCount, paidCount } = computeSummaryCounts(needs);
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
-      {/* Back link */}
-      <Link href="/" className="inline-flex items-center text-sm text-blue-600 hover:underline">
-        <ChevronLeft className="w-4 h-4 mr-1" /> Back to Dashboard
-      </Link>
-
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">Needs & Sharing</h1>
-          <p className="text-slate-600 mt-1">
-            View the status of your submitted Needs and sharing activity.
-          </p>
-        </div>
-        <Link href="/needs/new">
-          <Button>
-            <PlusCircle className="w-4 h-4 mr-2" />
-            Submit a Need
+    <div className="mx-auto max-w-5xl space-y-6 px-4 py-8">
+      <PageHeader
+        title="Needs & Sharing"
+        description="View the status of your submitted Needs and sharing activity."
+        backHref="/"
+        backLabel="Back to Dashboard"
+        actions={
+          <Button asChild>
+            <Link href="/needs/new">
+              <PlusCircle weight="light" className="mr-2 h-4 w-4" aria-hidden />
+              Submit a Need
+            </Link>
           </Button>
-        </Link>
-      </div>
+        }
+      />
 
-      {/* SLA Legend */}
       <SLALegend />
 
-      {/* Summary Strip */}
       <NeedsSummaryStrip
         openCount={openCount}
         approvedCount={approvedCount}
         paidCount={paidCount}
       />
 
-      {/* Needs List */}
       <NeedsListCard needs={needs} />
     </div>
   );
 }
-

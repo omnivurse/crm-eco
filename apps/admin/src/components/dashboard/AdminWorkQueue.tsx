@@ -2,12 +2,12 @@ import Link from 'next/link';
 import {
   CreditCard,
   Cpu,
-  FileCheck,
-  DollarSign,
+  ClipboardText,
+  CurrencyDollar,
   Clock,
-  ChevronRight,
-  Inbox,
-} from 'lucide-react';
+  CaretRight,
+  Tray,
+} from '@phosphor-icons/react/dist/ssr';
 import type { AdminWorkQueueItem } from '@/lib/admin-console-queries';
 
 /** Map work queue item type to visual config */
@@ -24,17 +24,17 @@ const typeConfig: Record<
   failed_job: {
     icon: Cpu,
     label: 'System',
-    badgeClass: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20',
+    badgeClass: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20',
     href: '/settings/automation',
   },
   enrollment_review: {
-    icon: FileCheck,
+    icon: ClipboardText,
     label: 'Enrollment',
     badgeClass: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
     href: '/enrollments',
   },
   commission_payout: {
-    icon: DollarSign,
+    icon: CurrencyDollar,
     label: 'Commission',
     badgeClass: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
     href: '/commissions',
@@ -75,74 +75,76 @@ interface AdminWorkQueueProps {
  */
 export function AdminWorkQueue({ items }: AdminWorkQueueProps) {
   return (
-    <div className="rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-700/50 overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.05),0_20px_25px_-5px_rgba(0,0,0,0.05)]">
-      {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-800">
-        <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800">
-            <Inbox className="w-4 h-4 text-slate-600 dark:text-slate-300" />
-          </div>
-          <div>
-            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-              Action Items
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              {items.length} item{items.length !== 1 ? 's' : ''} requiring attention
-            </p>
+    <div className="adm-bezel h-full">
+      <div className="adm-bezel-inner flex h-full flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-[var(--adm-hairline)] px-5 py-4">
+          <div className="flex items-center gap-2.5">
+            <div className="rounded-lg bg-[rgba(11,109,133,0.06)] p-2 dark:bg-white/5">
+              <Tray weight="light" className="h-4 w-4 text-[var(--adm-muted)]" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-[var(--adm-ink)]">
+                Action Items
+              </h3>
+              <p className="text-xs text-[var(--adm-muted)]">
+                {items.length} item{items.length !== 1 ? 's' : ''} requiring attention
+              </p>
+            </div>
           </div>
         </div>
+
+        {/* Queue items */}
+        {items.length > 0 ? (
+          <div className="flex-1 divide-y divide-[var(--adm-hairline)]">
+            {items.map((item) => {
+              const config = typeConfig[item.type];
+              const Icon = config.icon;
+
+              return (
+                <Link
+                  key={item.id}
+                  href={config.href}
+                  className="group flex items-center gap-4 px-5 py-3.5 transition-colors hover:bg-[rgba(11,109,133,0.05)] dark:hover:bg-white/5"
+                >
+                  {/* Priority dot */}
+                  <div className={`h-2 w-2 shrink-0 rounded-full ${priorityDot[item.priority] || 'bg-slate-400'}`} />
+
+                  {/* Type badge */}
+                  <div className={`flex shrink-0 items-center gap-1.5 rounded border px-2 py-1 text-[10px] font-semibold uppercase tracking-wider ${config.badgeClass}`}>
+                    <Icon weight="light" className="h-3 w-3" />
+                    {config.label}
+                  </div>
+
+                  {/* Content */}
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-[var(--adm-ink)]">
+                      {item.title}
+                    </p>
+                    <p className="truncate text-xs text-[var(--adm-muted)]">
+                      {item.subtitle}
+                    </p>
+                  </div>
+
+                  {/* Time */}
+                  <span className="shrink-0 whitespace-nowrap text-xs text-[var(--adm-muted)]">
+                    {timeAgo(item.createdAt)}
+                  </span>
+
+                  {/* Arrow */}
+                  <CaretRight weight="light" className="h-4 w-4 shrink-0 text-[var(--adm-muted)] transition-all group-hover:translate-x-0.5 group-hover:text-[var(--adm-ink)]" />
+                </Link>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="flex flex-1 flex-col items-center justify-center py-12 text-[var(--adm-muted)]">
+            <Tray weight="light" className="mb-2 h-8 w-8 opacity-50" />
+            <p className="text-sm font-medium">All clear</p>
+            <p className="text-xs">No action items requiring attention</p>
+          </div>
+        )}
       </div>
-
-      {/* Queue items */}
-      {items.length > 0 ? (
-        <div className="divide-y divide-slate-100 dark:divide-slate-800">
-          {items.map((item) => {
-            const config = typeConfig[item.type];
-            const Icon = config.icon;
-
-            return (
-              <Link
-                key={item.id}
-                href={config.href}
-                className="flex items-center gap-4 px-5 py-3.5 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group"
-              >
-                {/* Priority dot */}
-                <div className={`w-2 h-2 rounded-full shrink-0 ${priorityDot[item.priority] || 'bg-slate-400'}`} />
-
-                {/* Type badge */}
-                <div className={`flex items-center gap-1.5 px-2 py-1 rounded text-[10px] font-semibold uppercase tracking-wider border shrink-0 ${config.badgeClass}`}>
-                  <Icon className="w-3 h-3" />
-                  {config.label}
-                </div>
-
-                {/* Content */}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-700 dark:text-slate-200 truncate">
-                    {item.title}
-                  </p>
-                  <p className="text-xs text-slate-400 dark:text-slate-500 truncate">
-                    {item.subtitle}
-                  </p>
-                </div>
-
-                {/* Time */}
-                <span className="text-xs text-slate-400 dark:text-slate-500 whitespace-nowrap shrink-0">
-                  {timeAgo(item.createdAt)}
-                </span>
-
-                {/* Arrow */}
-                <ChevronRight className="w-4 h-4 text-slate-300 dark:text-slate-600 group-hover:text-slate-500 dark:group-hover:text-slate-400 group-hover:translate-x-0.5 transition-all shrink-0" />
-              </Link>
-            );
-          })}
-        </div>
-      ) : (
-        <div className="flex flex-col items-center justify-center py-12 text-slate-400 dark:text-slate-500">
-          <Inbox className="w-8 h-8 mb-2 opacity-50" />
-          <p className="text-sm font-medium">All clear</p>
-          <p className="text-xs">No action items requiring attention</p>
-        </div>
-      )}
     </div>
   );
 }

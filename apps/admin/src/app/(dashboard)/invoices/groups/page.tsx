@@ -1,5 +1,6 @@
 'use client';
 
+import { ArrowClockwise, ArrowLeft, Calendar, CheckCircle, Eye, MagnifyingGlass, PencilSimple, Plus, Trash, UserMinus, UserPlus, Users, XCircle } from '@phosphor-icons/react';
 import { useState, useEffect } from 'react';
 import {
   Card,
@@ -19,21 +20,6 @@ import {
   DialogTitle,
   Textarea,
 } from '@crm-eco/ui';
-import {
-  Users,
-  Plus,
-  Edit,
-  Trash2,
-  RefreshCw,
-  ArrowLeft,
-  Calendar,
-  Eye,
-  UserPlus,
-  UserMinus,
-  Search,
-  CheckCircle,
-  XCircle,
-} from 'lucide-react';
 import Link from 'next/link';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
@@ -386,7 +372,7 @@ export default function InvoiceGroupsPage() {
         <div className="flex items-center gap-4">
           <Link href="/invoices">
             <Button variant="ghost" size="icon">
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft weight="light" className="h-4 w-4" />
             </Button>
           </Link>
           <div>
@@ -395,7 +381,7 @@ export default function InvoiceGroupsPage() {
           </div>
         </div>
         <Button onClick={openCreateModal}>
-          <Plus className="h-4 w-4 mr-2" />
+          <Plus weight="light" className="h-4 w-4 mr-2" />
           New Group
         </Button>
       </div>
@@ -421,13 +407,13 @@ export default function InvoiceGroupsPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="text-center py-12">
-              <Users className="h-12 w-12 text-slate-200 mx-auto mb-4" />
+              <Users weight="light" className="h-12 w-12 text-slate-200 mx-auto mb-4" />
               <p className="text-lg font-medium">No Invoice Groups</p>
               <p className="text-sm text-muted-foreground mb-4">
                 Create groups to generate invoices for multiple members at once
               </p>
               <Button onClick={openCreateModal}>
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus weight="light" className="h-4 w-4 mr-2" />
                 Create Your First Group
               </Button>
             </div>
@@ -445,7 +431,7 @@ export default function InvoiceGroupsPage() {
                         group.is_active ? 'bg-teal-100 text-teal-600' : 'bg-slate-100 text-slate-400'
                       }`}
                     >
-                      <Users className="h-6 w-6" />
+                      <Users weight="light" className="h-6 w-6" />
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
@@ -467,7 +453,7 @@ export default function InvoiceGroupsPage() {
                       </div>
                       {group.last_generated_at && (
                         <p className="text-xs text-muted-foreground mt-2">
-                          <Calendar className="h-3 w-3 inline mr-1" />
+                          <Calendar weight="light" className="h-3 w-3 inline mr-1" />
                           Last generated: {format(new Date(group.last_generated_at), 'MMM d, yyyy')}
                         </p>
                       )}
@@ -475,7 +461,7 @@ export default function InvoiceGroupsPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Button variant="outline" size="sm" onClick={() => openMembersModal(group)}>
-                      <Users className="h-4 w-4 mr-1" />
+                      <Users weight="light" className="h-4 w-4 mr-1" />
                       Members
                     </Button>
                     <Link href={`/invoices/generate/group?groupId=${group.id}`}>
@@ -484,13 +470,13 @@ export default function InvoiceGroupsPage() {
                       </Button>
                     </Link>
                     <Button variant="ghost" size="icon" onClick={() => openEditModal(group)}>
-                      <Edit className="h-4 w-4" />
+                      <PencilSimple weight="light" className="h-4 w-4" />
                     </Button>
                     <Button variant="ghost" size="icon" onClick={() => toggleActive(group)}>
                       {group.is_active ? (
-                        <XCircle className="h-4 w-4 text-amber-500" />
+                        <XCircle weight="light" className="h-4 w-4 text-amber-500" />
                       ) : (
-                        <CheckCircle className="h-4 w-4 text-emerald-500" />
+                        <CheckCircle weight="light" className="h-4 w-4 text-emerald-500" />
                       )}
                     </Button>
                     <Button
@@ -499,7 +485,7 @@ export default function InvoiceGroupsPage() {
                       className="text-red-500"
                       onClick={() => handleDelete(group)}
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash weight="light" className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
@@ -509,11 +495,11 @@ export default function InvoiceGroupsPage() {
         </div>
       )}
 
-      {/* Create/Edit Modal */}
+      {/* Create/PencilSimple Modal */}
       <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{editingGroup ? 'Edit Invoice Group' : 'Create Invoice Group'}</DialogTitle>
+            <DialogTitle>{editingGroup ? 'PencilSimple Invoice Group' : 'Create Invoice Group'}</DialogTitle>
             <DialogDescription>Configure the invoice group settings</DialogDescription>
           </DialogHeader>
 
@@ -633,7 +619,7 @@ export default function InvoiceGroupsPage() {
             <Button onClick={handleSave} disabled={saving}>
               {saving ? (
                 <>
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  <ArrowClockwise weight="light" className="h-4 w-4 mr-2 animate-spin" />
                   Saving...
                 </>
               ) : editingGroup ? (
@@ -648,7 +634,7 @@ export default function InvoiceGroupsPage() {
 
       {/* Members Modal */}
       <Dialog open={showMembersModal} onOpenChange={setShowMembersModal}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>{selectedGroup?.name} - Members</DialogTitle>
             <DialogDescription>Manage members in this invoice group</DialogDescription>
@@ -657,18 +643,18 @@ export default function InvoiceGroupsPage() {
           <div className="py-4">
             <div className="flex justify-end mb-4">
               <Button size="sm" onClick={() => setShowAddMemberModal(true)}>
-                <UserPlus className="h-4 w-4 mr-1" />
+                <UserPlus weight="light" className="h-4 w-4 mr-1" />
                 Add Member
               </Button>
             </div>
 
             {loadingMembers ? (
               <div className="flex justify-center py-8">
-                <RefreshCw className="h-6 w-6 animate-spin text-slate-400" />
+                <ArrowClockwise weight="light" className="h-6 w-6 animate-spin text-slate-400" />
               </div>
             ) : groupMembers.length === 0 ? (
               <div className="text-center py-8">
-                <Users className="h-10 w-10 text-slate-200 mx-auto mb-2" />
+                <Users weight="light" className="h-10 w-10 text-slate-200 mx-auto mb-2" />
                 <p className="text-muted-foreground">No members in this group</p>
               </div>
             ) : (
@@ -687,7 +673,7 @@ export default function InvoiceGroupsPage() {
                       className="text-red-500"
                       onClick={() => removeMemberFromGroup(gm.id)}
                     >
-                      <UserMinus className="h-4 w-4" />
+                      <UserMinus weight="light" className="h-4 w-4" />
                     </Button>
                   </div>
                 ))}
@@ -712,9 +698,9 @@ export default function InvoiceGroupsPage() {
 
           <div className="py-4">
             <div className="relative mb-4">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <MagnifyingGlass weight="light" className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search members..."
+                placeholder="MagnifyingGlass members..."
                 value={memberSearchQuery}
                 onChange={(e) => setMemberSearchQuery(e.target.value)}
                 className="pl-9"
@@ -739,7 +725,7 @@ export default function InvoiceGroupsPage() {
                       </p>
                       <p className="text-sm text-muted-foreground">{member.email}</p>
                     </div>
-                    <Plus className="h-4 w-4 text-teal-500" />
+                    <Plus weight="light" className="h-4 w-4 text-teal-500" />
                   </div>
                 ))
               )}

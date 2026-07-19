@@ -1,6 +1,6 @@
 'use client';
 
-import { Download } from 'lucide-react';
+import { Download } from '@phosphor-icons/react';
 import { Button } from '@crm-eco/ui/components/button';
 import { toast } from 'sonner';
 import type { IdCardData } from '@/app/documents/actions';
@@ -35,15 +35,15 @@ export function IdCardDownloadButton({ idCard }: { idCard: IdCardData }) {
   * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
   body { margin: 0; padding: 32px; background: #f1f5f9; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .card { width: 600px; max-width: 100%; margin: 0 auto; border-radius: 16px; color: #fff;
-    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 55%, #4338ca 100%); padding: 28px 32px; }
+    background: linear-gradient(145deg, #0b6d85 0%, #0e8c9a 55%, #12a065 120%); padding: 28px 32px; }
   .head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 28px; }
-  .eyebrow { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: #bfdbfe; margin: 0 0 4px; }
+  .eyebrow { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: rgba(255,255,255,.65); margin: 0 0 4px; }
   .org { font-size: 22px; font-weight: 700; margin: 0; }
   .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 24px; }
-  .label { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: #bfdbfe; margin: 0 0 2px; }
+  .label { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: rgba(255,255,255,.65); margin: 0 0 2px; }
   .value { font-size: 16px; font-weight: 600; margin: 0; }
   .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
-  .foot { border-top: 1px solid rgba(255,255,255,.3); padding-top: 14px; font-size: 12px; color: #dbeafe; }
+  .foot { border-top: 1px solid rgba(255,255,255,.3); padding-top: 14px; font-size: 12px; color: rgba(255,255,255,.8); }
   @media print { body { padding: 0; background: #fff; } .noprint { display: none; } }
   .noprint { text-align: center; margin-top: 20px; }
   button { padding: 8px 16px; border-radius: 8px; border: 1px solid #cbd5e1; background: #fff; cursor: pointer; }
@@ -76,7 +76,7 @@ export function IdCardDownloadButton({ idCard }: { idCard: IdCardData }) {
       className="btn-hero-outline gap-2"
       onClick={handleDownload}
     >
-      <Download className="h-4 w-4 mr-2" />
+      <Download weight="light" className="h-4 w-4 mr-2" />
       Download Card
     </Button>
   );

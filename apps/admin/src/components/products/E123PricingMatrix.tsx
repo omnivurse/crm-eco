@@ -1,5 +1,6 @@
 'use client';
 
+import { CircleNotch, CurrencyDollar, Info, PencilSimple, Plus, Trash, Warning } from '@phosphor-icons/react';
 import { useState, useCallback, useEffect } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
 import {
@@ -19,7 +20,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@crm-eco/ui';
-import { Plus, Trash2, Edit, Loader2, DollarSign, Info, AlertTriangle } from 'lucide-react';
 import { buildMatrixPreview } from '@crm-eco/rates';
 import type {
   RateConfig,
@@ -84,7 +84,7 @@ export function E123PricingMatrix({ productId, productCode, organizationId }: E1
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+        <CircleNotch weight="light" className="w-8 h-8 animate-spin text-slate-400" />
       </div>
     );
   }
@@ -93,7 +93,7 @@ export function E123PricingMatrix({ productId, productCode, organizationId }: E1
     <div className="space-y-6">
       {error && (
         <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm flex items-start gap-2">
-          <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+          <Warning weight="light" className="w-4 h-4 mt-0.5 flex-shrink-0" />
           <div>
             {error}
             <button onClick={() => setError(null)} className="ml-2 underline">
@@ -133,7 +133,7 @@ export function E123PricingMatrix({ productId, productCode, organizationId }: E1
       {/* 2026 Notice */}
       {activeRateSet === 'rates_2026' && (
         <div className="p-3 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 text-sm flex items-center gap-2">
-          <Info className="w-4 h-4 flex-shrink-0" />
+          <Info weight="light" className="w-4 h-4 flex-shrink-0" />
           Rates effective January 1, 2026
         </div>
       )}
@@ -143,7 +143,7 @@ export function E123PricingMatrix({ productId, productCode, organizationId }: E1
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <DollarSign className="h-5 w-5" />
+              <CurrencyDollar weight="light" className="h-5 w-5" />
               Pricing Matrix — {preview.displayName}
             </CardTitle>
             <CardDescription>

@@ -1,5 +1,6 @@
 'use client';
 
+import { Baby, CaretLeft, CircleNotch, Eye, Heart, List, MagnifyingGlass, PencilSimple, Pill, Plus, Pulse, ShieldCheck, Smiley, Sparkle, Trash } from '@phosphor-icons/react';
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
@@ -21,23 +22,6 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@crm-eco/ui';
-import {
-  Plus,
-  Trash2,
-  Edit2,
-  Loader2,
-  Search,
-  ChevronLeft,
-  Sparkles,
-  List,
-  Heart,
-  Pill,
-  Shield,
-  Eye,
-  Smile,
-  Baby,
-  Activity,
-} from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 
@@ -56,12 +40,12 @@ const FEATURE_CATEGORIES = [
   { value: 'general', label: 'General', icon: List },
   { value: 'medical', label: 'Medical', icon: Heart },
   { value: 'prescription', label: 'Prescription', icon: Pill },
-  { value: 'preventive', label: 'Preventive', icon: Shield },
-  { value: 'emergency', label: 'Emergency', icon: Activity },
-  { value: 'mental_health', label: 'Mental Health', icon: Smile },
+  { value: 'preventive', label: 'Preventive', icon: ShieldCheck },
+  { value: 'emergency', label: 'Emergency', icon: Pulse },
+  { value: 'mental_health', label: 'Mental Health', icon: Smiley },
   { value: 'maternity', label: 'Maternity', icon: Baby },
   { value: 'vision', label: 'Vision', icon: Eye },
-  { value: 'wellness', label: 'Wellness', icon: Sparkles },
+  { value: 'wellness', label: 'Wellness', icon: Sparkle },
 ];
 
 export default function FeaturesLibraryPage() {
@@ -226,7 +210,7 @@ export default function FeaturesLibraryPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <CircleNotch weight="light" className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -237,7 +221,7 @@ export default function FeaturesLibraryPage() {
       <div className="flex items-center gap-4">
         <Link href="/products">
           <Button variant="ghost" size="icon">
-            <ChevronLeft className="h-5 w-5" />
+            <CaretLeft weight="light" className="h-5 w-5" />
           </Button>
         </Link>
         <div className="flex-1">
@@ -245,7 +229,7 @@ export default function FeaturesLibraryPage() {
           <p className="text-slate-500">Manage the features catalog for your products</p>
         </div>
         <Button onClick={() => setShowNewFeature(true)}>
-          <Plus className="h-4 w-4 mr-2" />
+          <Plus weight="light" className="h-4 w-4 mr-2" />
           New Feature
         </Button>
       </div>
@@ -256,7 +240,7 @@ export default function FeaturesLibraryPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
-                <List className="h-5 w-5 text-blue-600" />
+                <List weight="light" className="h-5 w-5 text-blue-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{features.length}</p>
@@ -269,7 +253,7 @@ export default function FeaturesLibraryPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center">
-                <Sparkles className="h-5 w-5 text-amber-600" />
+                <Sparkle weight="light" className="h-5 w-5 text-amber-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{features.filter(f => f.is_highlighted).length}</p>
@@ -282,7 +266,7 @@ export default function FeaturesLibraryPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center">
-                <Activity className="h-5 w-5 text-purple-600" />
+                <Pulse weight="light" className="h-5 w-5 text-purple-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{Object.keys(groupedFeatures).length}</p>
@@ -305,9 +289,9 @@ export default function FeaturesLibraryPage() {
             </div>
             <div className="flex items-center gap-2">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <MagnifyingGlass weight="light" className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search features..."
+                  placeholder="MagnifyingGlass features..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-9 w-64"
@@ -329,11 +313,11 @@ export default function FeaturesLibraryPage() {
         <CardContent>
           {Object.keys(groupedFeatures).length === 0 ? (
             <div className="text-center py-12 text-slate-500">
-              <List className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <List weight="light" className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p className="text-lg font-medium">No features found</p>
               <p className="text-sm mb-4">Create your first feature to get started</p>
               <Button onClick={() => setShowNewFeature(true)}>
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus weight="light" className="h-4 w-4 mr-2" />
                 Create Feature
               </Button>
             </div>
@@ -359,7 +343,7 @@ export default function FeaturesLibraryPage() {
                               <div className="flex items-center gap-2">
                                 <span className="font-medium">{feature.name}</span>
                                 {feature.is_highlighted && (
-                                  <Sparkles className="h-4 w-4 text-amber-500" />
+                                  <Sparkle weight="light" className="h-4 w-4 text-amber-500" />
                                 )}
                               </div>
                               {feature.description && (
@@ -374,7 +358,7 @@ export default function FeaturesLibraryPage() {
                                 size="icon"
                                 onClick={() => setEditingFeature(feature)}
                               >
-                                <Edit2 className="h-4 w-4" />
+                                <PencilSimple weight="light" className="h-4 w-4" />
                               </Button>
                               {!feature.is_system && (
                                 <Button
@@ -383,7 +367,7 @@ export default function FeaturesLibraryPage() {
                                   onClick={() => handleDeleteFeature(feature.id)}
                                   className="text-red-500 hover:text-red-600"
                                 >
-                                  <Trash2 className="h-4 w-4" />
+                                  <Trash weight="light" className="h-4 w-4" />
                                 </Button>
                               )}
                             </div>
@@ -445,7 +429,7 @@ export default function FeaturesLibraryPage() {
                 onCheckedChange={(checked) => setNewFeature({ ...newFeature, is_highlighted: checked === true })}
               />
               <Label htmlFor="highlighted" className="flex items-center gap-1">
-                <Sparkles className="h-4 w-4 text-amber-500" />
+                <Sparkle weight="light" className="h-4 w-4 text-amber-500" />
                 Highlight this feature
               </Label>
             </div>
@@ -455,7 +439,7 @@ export default function FeaturesLibraryPage() {
               Cancel
             </Button>
             <Button onClick={handleCreateFeature} disabled={isSaving || !newFeature.name}>
-              {isSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {isSaving && <CircleNotch weight="light" className="h-4 w-4 mr-2 animate-spin" />}
               Create Feature
             </Button>
           </DialogFooter>
@@ -504,7 +488,7 @@ export default function FeaturesLibraryPage() {
                   onCheckedChange={(checked) => setEditingFeature({ ...editingFeature, is_highlighted: checked === true })}
                 />
                 <Label htmlFor="edit-highlighted" className="flex items-center gap-1">
-                  <Sparkles className="h-4 w-4 text-amber-500" />
+                  <Sparkle weight="light" className="h-4 w-4 text-amber-500" />
                   Highlight this feature
                 </Label>
               </div>
@@ -515,7 +499,7 @@ export default function FeaturesLibraryPage() {
               Cancel
             </Button>
             <Button onClick={handleUpdateFeature} disabled={isSaving}>
-              {isSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {isSaving && <CircleNotch weight="light" className="h-4 w-4 mr-2 animate-spin" />}
               Save Changes
             </Button>
           </DialogFooter>

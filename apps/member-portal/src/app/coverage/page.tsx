@@ -6,14 +6,15 @@ import {
   Shield,
   CheckCircle,
   Clock,
-  AlertCircle,
+  WarningCircle,
   ArrowRight,
-} from 'lucide-react';
+} from '@phosphor-icons/react/dist/ssr';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@crm-eco/ui/components/card';
 import { Button } from '@crm-eco/ui/components/button';
 import { Badge } from '@crm-eco/ui/components/badge';
 import { PlanCoverageCard } from '@/components/plan/PlanCoverageCard';
 import { enrichWithInsurance, type PlanOverview } from '@/lib/data/member';
+import { PageHeader } from '@/components/PageHeader';
 
 export default async function CoveragePage() {
   const supabase = await createServerSupabaseClient();
@@ -136,9 +137,9 @@ export default async function CoveragePage() {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'active': return <CheckCircle className="h-5 w-5 text-green-500" aria-hidden />;
-      case 'pending': return <Clock className="h-5 w-5 text-amber-500" aria-hidden />;
-      default: return <AlertCircle className="h-5 w-5 text-slate-400" aria-hidden />;
+      case 'active': return <CheckCircle weight="light" className="h-5 w-5 text-green-500" aria-hidden />;
+      case 'pending': return <Clock weight="light" className="h-5 w-5 text-amber-500" aria-hidden />;
+      default: return <WarningCircle weight="light" className="h-5 w-5 text-slate-400" aria-hidden />;
     }
   };
 
@@ -154,10 +155,10 @@ export default async function CoveragePage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">My Coverage</h1>
-        <p className="text-slate-500">View your health sharing membership details</p>
-      </div>
+      <PageHeader
+        title="My Coverage"
+        description="View your health sharing membership details"
+      />
 
       {activeMembership ? (
         <>
@@ -186,7 +187,7 @@ export default async function CoveragePage() {
                     key={index}
                     className="flex items-start gap-3 p-3 rounded-lg bg-slate-50"
                   >
-                    <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 shrink-0" aria-hidden />
+                    <CheckCircle weight="light" className="h-5 w-5 text-green-500 mt-0.5 shrink-0" aria-hidden />
                     <div>
                       <p className="font-medium text-slate-900">{benefit.name}</p>
                       <p className="text-sm text-slate-500">{benefit.description}</p>
@@ -203,9 +204,9 @@ export default async function CoveragePage() {
               <CardTitle>Important Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
-                <h4 className="font-medium text-blue-900 mb-2">Initial Unshared Amount (IUA)</h4>
-                <p className="text-sm text-blue-700">
+              <div className="rounded-lg border border-[rgba(11,109,133,0.12)] bg-[rgba(11,109,133,0.06)] p-4">
+                <h4 className="mb-2 font-medium text-[var(--mp-ink)]">Initial Unshared Amount (IUA)</h4>
+                <p className="text-sm text-slate-600">
                   Your IUA is the amount you pay before the community begins sharing your eligible medical expenses. 
                   Once you've paid your IUA for the membership year, eligible expenses above that amount may be shared.
                 </p>
@@ -223,7 +224,7 @@ export default async function CoveragePage() {
       ) : (
         <Card className="text-center py-12">
           <CardContent>
-            <Shield className="h-16 w-16 mx-auto mb-4 text-slate-300" aria-hidden />
+            <Shield weight="light" className="h-16 w-16 mx-auto mb-4 text-slate-300" aria-hidden />
             <h2 className="text-xl font-semibold text-slate-900 mb-2">No Active Coverage</h2>
             <p className="text-slate-500 mb-6 max-w-md mx-auto">
               You don't have an active health sharing membership. 
@@ -232,7 +233,7 @@ export default async function CoveragePage() {
             <Link href="/enroll">
               <Button className="gap-2">
                 Start Enrollment
-                <ArrowRight className="h-4 w-4" aria-hidden />
+                <ArrowRight weight="light" className="h-4 w-4" aria-hidden />
               </Button>
             </Link>
           </CardContent>

@@ -1,20 +1,11 @@
 'use client';
 
+import { Calendar, CheckCircle, CircleNotch, Clock, CreditCard, CurrencyDollar, Plus, XCircle } from '@phosphor-icons/react';
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, Button, Badge } from '@crm-eco/ui';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import { format, formatDistanceToNow } from 'date-fns';
-import {
-  CreditCard,
-  Plus,
-  Loader2,
-  CheckCircle,
-  XCircle,
-  Clock,
-  DollarSign,
-  Calendar,
-} from 'lucide-react';
 import { toast } from 'sonner';
 import { PaymentProfileCard } from './PaymentProfileCard';
 
@@ -193,11 +184,11 @@ export function MemberBillingTab({ memberId }: MemberBillingTabProps) {
   function getStatusIcon(status: string) {
     switch (status) {
       case 'success':
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
+        return <CheckCircle weight="light" className="h-4 w-4 text-green-500" />;
       case 'failed':
-        return <XCircle className="h-4 w-4 text-red-500" />;
+        return <XCircle weight="light" className="h-4 w-4 text-red-500" />;
       default:
-        return <Clock className="h-4 w-4 text-yellow-500" />;
+        return <Clock weight="light" className="h-4 w-4 text-yellow-500" />;
     }
   }
 
@@ -217,7 +208,7 @@ export function MemberBillingTab({ memberId }: MemberBillingTabProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-48">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <CircleNotch weight="light" className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -228,11 +219,11 @@ export function MemberBillingTab({ memberId }: MemberBillingTabProps) {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="flex items-center gap-2">
-            <CreditCard className="h-5 w-5" />
+            <CreditCard weight="light" className="h-5 w-5" />
             Payment Methods
           </CardTitle>
           <Button size="sm" disabled>
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus weight="light" className="h-4 w-4 mr-2" />
             Add Payment Method
           </Button>
         </CardHeader>
@@ -251,7 +242,7 @@ export function MemberBillingTab({ memberId }: MemberBillingTabProps) {
             </div>
           ) : (
             <div className="text-center py-8 text-slate-500">
-              <CreditCard className="h-8 w-8 mx-auto mb-2 text-slate-300" />
+              <CreditCard weight="light" className="h-8 w-8 mx-auto mb-2 text-slate-300" />
               No payment methods on file
             </div>
           )}
@@ -262,7 +253,7 @@ export function MemberBillingTab({ memberId }: MemberBillingTabProps) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
+            <Calendar weight="light" className="h-5 w-5" />
             Billing Schedules
           </CardTitle>
         </CardHeader>
@@ -304,7 +295,7 @@ export function MemberBillingTab({ memberId }: MemberBillingTabProps) {
             </div>
           ) : (
             <div className="text-center py-8 text-slate-500">
-              <Calendar className="h-8 w-8 mx-auto mb-2 text-slate-300" />
+              <Calendar weight="light" className="h-8 w-8 mx-auto mb-2 text-slate-300" />
               No billing schedules
             </div>
           )}
@@ -315,7 +306,7 @@ export function MemberBillingTab({ memberId }: MemberBillingTabProps) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <DollarSign className="h-5 w-5" />
+            <CurrencyDollar weight="light" className="h-5 w-5" />
             Recent Transactions
           </CardTitle>
         </CardHeader>
@@ -350,7 +341,7 @@ export function MemberBillingTab({ memberId }: MemberBillingTabProps) {
             </div>
           ) : (
             <div className="text-center py-8 text-slate-500">
-              <DollarSign className="h-8 w-8 mx-auto mb-2 text-slate-300" />
+              <CurrencyDollar weight="light" className="h-8 w-8 mx-auto mb-2 text-slate-300" />
               No transactions yet
             </div>
           )}

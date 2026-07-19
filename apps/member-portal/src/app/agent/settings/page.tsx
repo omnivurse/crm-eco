@@ -4,20 +4,18 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import {
-  Settings,
+  Gear,
   Bell,
   Lock,
   Shield,
-  Mail,
   Eye,
-  EyeOff,
-  Save,
-  Smartphone,
+  EyeSlash,
+  FloppyDisk,
+  DeviceMobile,
   Copy,
   Check,
-  Loader2,
-  X,
-} from 'lucide-react';
+  CircleNotch,
+} from '@phosphor-icons/react';
 import {
   Dialog,
   DialogContent,
@@ -233,20 +231,20 @@ export default function AgentSettingsPage() {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <Settings className="h-12 w-12 animate-pulse text-slate-400" />
+        <Gear weight="light" className="h-12 w-12 animate-pulse text-slate-400" />
       </div>
     );
   }
 
   return (
     <div className="space-y-6 max-w-3xl">
-      <h1 className="text-2xl font-bold text-slate-900">Settings</h1>
+      <h1 className="text-2xl font-bold text-slate-900">Gear</h1>
 
       {/* Notification Preferences */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Bell className="h-5 w-5" />
+            <Bell weight="light" className="h-5 w-5" />
             Notification Preferences
           </CardTitle>
           <CardDescription>
@@ -305,7 +303,7 @@ export default function AgentSettingsPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Lock className="h-5 w-5" />
+            <Lock weight="light" className="h-5 w-5" />
             Change Password
           </CardTitle>
           <CardDescription>
@@ -328,7 +326,7 @@ export default function AgentSettingsPage() {
                 onClick={() => setShowNewPassword(!showNewPassword)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
               >
-                {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                {showNewPassword ? <EyeSlash weight="light" className="h-4 w-4" /> : <Eye weight="light" className="h-4 w-4" />}
               </button>
             </div>
           </div>
@@ -347,7 +345,7 @@ export default function AgentSettingsPage() {
             disabled={saving || !newPassword || !confirmPassword}
             className="gap-2"
           >
-            <Save className="h-4 w-4" />
+            <FloppyDisk weight="light" className="h-4 w-4" />
             {saving ? 'Updating...' : 'Update Password'}
           </Button>
         </CardContent>
@@ -357,7 +355,7 @@ export default function AgentSettingsPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5" />
+            <Shield weight="light" className="h-5 w-5" />
             Security
           </CardTitle>
         </CardHeader>
@@ -366,7 +364,7 @@ export default function AgentSettingsPage() {
             <div className="flex items-start justify-between">
               <div>
                 <h4 className="font-medium text-slate-900 mb-2 flex items-center gap-2">
-                  <Smartphone className="h-4 w-4" />
+                  <DeviceMobile weight="light" className="h-4 w-4" />
                   Two-Factor Authentication
                 </h4>
                 <p className="text-sm text-slate-500 mb-4">
@@ -377,7 +375,7 @@ export default function AgentSettingsPage() {
               </div>
               {mfaEnabled && (
                 <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-full flex items-center gap-1">
-                  <Check className="h-3 w-3" />
+                  <Check weight="light" className="h-3 w-3" />
                   Enabled
                 </span>
               )}
@@ -389,7 +387,7 @@ export default function AgentSettingsPage() {
                 disabled={mfaLoading}
                 className="text-red-600 hover:text-red-700 hover:bg-red-50"
               >
-                {mfaLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                {mfaLoading ? <CircleNotch weight="light" className="h-4 w-4 animate-spin mr-2" /> : null}
                 Disable 2FA
               </Button>
             ) : (
@@ -398,7 +396,7 @@ export default function AgentSettingsPage() {
                 onClick={handleEnableMfa}
                 disabled={mfaLoading}
               >
-                {mfaLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                {mfaLoading ? <CircleNotch weight="light" className="h-4 w-4 animate-spin mr-2" /> : null}
                 Enable 2FA
               </Button>
             )}
@@ -423,7 +421,7 @@ export default function AgentSettingsPage() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Smartphone className="h-5 w-5" />
+              <DeviceMobile weight="light" className="h-5 w-5" />
               Set Up Two-Factor Authentication
             </DialogTitle>
             <DialogDescription>
@@ -453,7 +451,7 @@ export default function AgentSettingsPage() {
                     {mfaSecret}
                   </code>
                   <Button variant="outline" size="icon" onClick={copySecret}>
-                    {secretCopied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                    {secretCopied ? <Check weight="light" className="h-4 w-4 text-green-500" /> : <Copy weight="light" className="h-4 w-4" />}
                   </Button>
                 </div>
               </div>
@@ -484,7 +482,7 @@ export default function AgentSettingsPage() {
               onClick={handleVerifyMfa}
               disabled={mfaLoading || mfaVerifyCode.length !== 6}
             >
-              {mfaLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              {mfaLoading ? <CircleNotch weight="light" className="h-4 w-4 animate-spin mr-2" /> : null}
               Verify & Enable
             </Button>
           </DialogFooter>

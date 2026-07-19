@@ -1,7 +1,7 @@
 'use client';
 
+import { ArrowSquareOut, Check, Minus } from '@phosphor-icons/react';
 import { Card, CardContent, CardHeader, CardTitle, Badge } from '@crm-eco/ui';
-import { Check, Minus, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 import { format } from 'date-fns';
 
@@ -39,12 +39,12 @@ function BoolField({ value, label }: { value: boolean | null; label?: string }) 
   if (value) {
     return (
       <span className="flex items-center gap-1.5 text-green-600">
-        <Check className="h-4 w-4" />
+        <Check weight="light" className="h-4 w-4" />
         {label && <span className="text-sm">{label}</span>}
       </span>
     );
   }
-  return <span className="text-slate-400"><Minus className="h-4 w-4" /></span>;
+  return <span className="text-slate-400"><Minus weight="light" className="h-4 w-4" /></span>;
 }
 
 function InfoRow({ label, children }: { label: string; children: React.ReactNode }) {
@@ -135,7 +135,7 @@ export function ProducerInfoCard({ agent }: ProducerInfoCardProps) {
                   className="text-blue-600 hover:underline inline-flex items-center gap-1"
                 >
                   {agent.master_click_funnel}
-                  <ExternalLink className="h-3 w-3" />
+                  <ArrowSquareOut weight="light" className="h-3 w-3" />
                 </a>
               ) : (
                 <span className="text-slate-400">—</span>
@@ -220,7 +220,7 @@ export function ProducerInfoCard({ agent }: ProducerInfoCardProps) {
                   className="text-blue-600 hover:underline inline-flex items-center gap-1"
                 >
                   {agent.website_url}
-                  <ExternalLink className="h-3 w-3" />
+                  <ArrowSquareOut weight="light" className="h-3 w-3" />
                 </a>
               ) : (
                 <span className="text-slate-400">—</span>

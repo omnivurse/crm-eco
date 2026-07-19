@@ -4,18 +4,19 @@ import { useEffect, useState } from 'react';
 import {
   FileText,
   Download,
-  FileCheck,
   Shield,
-  Loader2,
+  CircleNotch,
   Calendar,
   CheckCircle,
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@crm-eco/ui/components/card';
 import { Button } from '@crm-eco/ui/components/button';
 import { Badge } from '@crm-eco/ui/components/badge';
 import { toast } from 'sonner';
 import { getMemberDocumentsData, type IdCardData, type MemberDoc } from './actions';
 import { IdCardDownloadButton } from '@/components/documents/IdCardDownloadButton';
+import { PageHeader } from '@/components/PageHeader';
+import { Bezel } from '@/components/ui/Bezel';
 
 export default function DocumentsPage() {
   const [documents, setDocuments] = useState<MemberDoc[]>([]);
@@ -52,18 +53,18 @@ export default function DocumentsPage() {
 
   const getDocumentIcon = (type: string) => {
     switch (type) {
-      case 'contract': return <FileCheck className="h-5 w-5 text-blue-600" aria-hidden />;
-      case 'guidelines': return <Shield className="h-5 w-5 text-green-600" aria-hidden />;
-      case 'guide': return <FileText className="h-5 w-5 text-purple-600" aria-hidden />;
-      case 'legal': return <FileText className="h-5 w-5 text-slate-600" aria-hidden />;
-      default: return <FileText className="h-5 w-5 text-slate-600" aria-hidden />;
+      case 'contract': return <CheckCircle weight="light" className="h-5 w-5 text-[var(--mp-teal)]" aria-hidden />;
+      case 'guidelines': return <Shield weight="light" className="h-5 w-5 text-green-600" aria-hidden />;
+      case 'guide': return <FileText weight="light" className="h-5 w-5 text-slate-600" aria-hidden />;
+      case 'legal': return <FileText weight="light" className="h-5 w-5 text-slate-600" aria-hidden />;
+      default: return <FileText weight="light" className="h-5 w-5 text-slate-600" aria-hidden />;
     }
   };
 
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <CircleNotch weight="light" className="h-8 w-8 animate-spin text-[var(--mp-teal)]" />
       </div>
     );
   }
@@ -71,7 +72,7 @@ export default function DocumentsPage() {
   if (error) {
     return (
       <div className="text-center py-12">
-        <FileText className="h-12 w-12 mx-auto mb-4 text-slate-300" aria-hidden />
+        <FileText weight="light" className="h-12 w-12 mx-auto mb-4 text-slate-300" aria-hidden />
         <p className="text-slate-600 mb-1">We couldn&apos;t load your documents.</p>
         <p className="text-sm text-slate-400 mb-4">Please check your connection and try again.</p>
         <Button variant="outline" onClick={() => window.location.reload()}>Retry</Button>
@@ -81,56 +82,56 @@ export default function DocumentsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Documents</h1>
-        <p className="text-slate-500">Access your membership documents and ID card</p>
-      </div>
+      <PageHeader
+        title="Documents"
+        description="Access your membership documents and ID card"
+      />
 
       {/* Member ID Card */}
       {idCard && (
-        <Card className="bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-700 text-white overflow-hidden">
-          <CardContent className="p-6">
-            <div className="flex items-start justify-between mb-6">
+        <Bezel variant="hero">
+          <div className="p-6 md:p-7">
+            <div className="mb-6 flex items-start justify-between">
               <div>
-                <p className="text-blue-200 text-xs uppercase tracking-wider mb-1">
+                <p className="mp-kicker mp-kicker-light mb-1">
                   Health Sharing Member ID Card
                 </p>
-                <h2 className="text-xl font-bold">{idCard.orgName}</h2>
+                <h2 className="text-xl font-bold tracking-[-0.03em]">{idCard.orgName}</h2>
               </div>
               <div className="text-right">
-                <Shield className="h-10 w-10 text-blue-300" aria-hidden />
+                <Shield weight="light" className="h-10 w-10 text-white/50" aria-hidden />
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-6 mb-6">
+            <div className="mb-6 grid grid-cols-2 gap-6">
               <div>
-                <p className="text-blue-200 text-xs uppercase tracking-wider">Member Name</p>
-                <p className="font-semibold text-lg">{idCard.memberName}</p>
+                <p className="text-xs uppercase tracking-wider text-white/65">Member Name</p>
+                <p className="text-lg font-semibold">{idCard.memberName}</p>
               </div>
               <div>
-                <p className="text-blue-200 text-xs uppercase tracking-wider">Member ID</p>
-                <p className="font-mono font-semibold text-lg">{idCard.memberNumber}</p>
+                <p className="text-xs uppercase tracking-wider text-white/65">Member ID</p>
+                <p className="font-mono text-lg font-semibold">{idCard.memberNumber}</p>
               </div>
               <div>
-                <p className="text-blue-200 text-xs uppercase tracking-wider">Plan</p>
+                <p className="text-xs uppercase tracking-wider text-white/65">Plan</p>
                 <p className="font-medium">{idCard.planName}</p>
               </div>
               <div>
-                <p className="text-blue-200 text-xs uppercase tracking-wider">Effective Date</p>
+                <p className="text-xs uppercase tracking-wider text-white/65">Effective Date</p>
                 <p className="font-medium">
                   {idCard.effectiveDate ? new Date(idCard.effectiveDate).toLocaleDateString() : '—'}
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center justify-between pt-4 border-t border-blue-500/30">
+            <div className="flex items-center justify-between border-t border-white/20 pt-4">
               <div>
-                <p className="text-blue-200 text-xs">Group #: {idCard.groupNumber}</p>
+                <p className="text-xs text-white/65">Group #: {idCard.groupNumber}</p>
               </div>
               <IdCardDownloadButton idCard={idCard} />
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </Bezel>
       )}
 
       {/* Documents List */}
@@ -144,7 +145,7 @@ export default function DocumentsPage() {
         <CardContent>
           {documents.length === 0 && (
             <div className="text-center py-8">
-              <FileText className="h-12 w-12 mx-auto mb-4 text-slate-300" aria-hidden />
+              <FileText weight="light" className="h-12 w-12 mx-auto mb-4 text-slate-300" aria-hidden />
               <p className="text-slate-500 mb-2">No documents available yet</p>
               <p className="text-sm text-slate-400">
                 Your contracts, guides, and legal documents will appear here
@@ -158,7 +159,7 @@ export default function DocumentsPage() {
                 className="flex items-center justify-between p-4 border rounded-lg hover:bg-slate-50 transition-colors"
               >
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-lg bg-[rgba(11,109,133,0.06)] flex items-center justify-center">
                     {getDocumentIcon(doc.type)}
                   </div>
                   <div>
@@ -173,7 +174,7 @@ export default function DocumentsPage() {
                 <div className="flex items-center gap-3">
                   {doc.status === 'signed' && (
                     <Badge variant="outline" className="text-green-600 border-green-200">
-                      <CheckCircle className="h-3 w-3 mr-1" aria-hidden />
+                      <CheckCircle weight="light" className="h-3 w-3 mr-1" aria-hidden />
                       Signed
                     </Badge>
                   )}
@@ -182,7 +183,7 @@ export default function DocumentsPage() {
                     size="sm"
                     onClick={() => handleDownload(doc)}
                   >
-                    <Download className="h-4 w-4 mr-2" aria-hidden />
+                    <Download weight="light" className="h-4 w-4 mr-2" aria-hidden />
                     Download
                   </Button>
                 </div>
@@ -202,7 +203,7 @@ export default function DocumentsPage() {
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
-            <Calendar className="h-12 w-12 mx-auto mb-4 text-slate-300" aria-hidden />
+            <Calendar weight="light" className="h-12 w-12 mx-auto mb-4 text-slate-300" aria-hidden />
             <p className="text-slate-500 mb-2">No tax documents available yet</p>
             <p className="text-sm text-slate-400">
               Annual contribution statements will appear here after year-end

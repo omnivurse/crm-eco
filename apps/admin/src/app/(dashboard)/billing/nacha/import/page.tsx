@@ -1,5 +1,6 @@
 'use client';
 
+import { ArrowClockwise, ArrowLeft, CheckCircle, CircleNotch, DownloadSimple, Eye, FileText, UploadSimple, Warning, XCircle } from '@phosphor-icons/react';
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import {
@@ -23,19 +24,6 @@ import {
   TableRow,
   Progress,
 } from '@crm-eco/ui';
-import {
-  Upload,
-  FileText,
-  CheckCircle2,
-  XCircle,
-  AlertTriangle,
-  Loader2,
-  RefreshCw,
-  ArrowLeft,
-  FileWarning,
-  Eye,
-  Download,
-} from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 import Link from 'next/link';
@@ -340,7 +328,7 @@ export default function NachaImportPage() {
         <div className="flex items-center gap-4">
           <Link href="/billing">
             <Button variant="ghost" size="icon">
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft weight="light" className="w-4 h-4" />
             </Button>
           </Link>
           <div>
@@ -353,7 +341,7 @@ export default function NachaImportPage() {
             <Button variant="outline">Go to Export</Button>
           </Link>
           <Button onClick={() => setShowImportModal(true)}>
-            <Upload className="w-4 h-4 mr-2" />
+            <UploadSimple weight="light" className="w-4 h-4 mr-2" />
             Import Return File
           </Button>
         </div>
@@ -365,7 +353,7 @@ export default function NachaImportPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-blue-100 rounded-lg">
-                <FileText className="h-5 w-5 text-blue-600" />
+                <FileText weight="light" className="h-5 w-5 text-blue-600" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total Imports</p>
@@ -379,7 +367,7 @@ export default function NachaImportPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-amber-100 rounded-lg">
-                <FileWarning className="h-5 w-5 text-amber-600" />
+                <Warning weight="light" className="h-5 w-5 text-amber-600" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total Returns</p>
@@ -393,7 +381,7 @@ export default function NachaImportPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-red-100 rounded-lg">
-                <AlertTriangle className="h-5 w-5 text-red-600" />
+                <Warning weight="light" className="h-5 w-5 text-red-600" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Returns Today</p>
@@ -407,7 +395,7 @@ export default function NachaImportPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-emerald-100 rounded-lg">
-                <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                <CheckCircle weight="light" className="h-5 w-5 text-emerald-600" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Success Rate</p>
@@ -455,7 +443,7 @@ export default function NachaImportPage() {
               <CardDescription>Previously processed return files</CardDescription>
             </div>
             <Button variant="outline" size="sm" onClick={fetchImportHistory}>
-              <RefreshCw className="h-4 w-4 mr-2" />
+              <ArrowClockwise weight="light" className="h-4 w-4 mr-2" />
               Refresh
             </Button>
           </div>
@@ -463,17 +451,17 @@ export default function NachaImportPage() {
         <CardContent>
           {loading ? (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+              <CircleNotch weight="light" className="w-8 h-8 animate-spin text-slate-400" />
             </div>
           ) : importHistory.length === 0 ? (
             <div className="text-center py-12">
-              <Upload className="w-12 h-12 text-slate-200 mx-auto mb-3" />
+              <UploadSimple weight="light" className="w-12 h-12 text-slate-200 mx-auto mb-3" />
               <p className="text-lg font-medium text-slate-500">No imports yet</p>
               <p className="text-sm text-slate-400 mb-4">
-                Upload a NACHA return file to process bank returns
+                UploadSimple a NACHA return file to process bank returns
               </p>
               <Button onClick={() => setShowImportModal(true)}>
-                <Upload className="w-4 h-4 mr-2" />
+                <UploadSimple weight="light" className="w-4 h-4 mr-2" />
                 Import Return File
               </Button>
             </div>
@@ -495,7 +483,7 @@ export default function NachaImportPage() {
                   <TableRow key={job.id}>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <FileText className="w-4 h-4 text-slate-400" />
+                        <FileText weight="light" className="w-4 h-4 text-slate-400" />
                         <span className="font-mono text-sm">{job.job_name}</span>
                       </div>
                     </TableCell>
@@ -510,9 +498,9 @@ export default function NachaImportPage() {
                               : 'bg-amber-100 text-amber-700'
                         }
                       >
-                        {job.status === 'completed' && <CheckCircle2 className="w-3 h-3 mr-1" />}
-                        {job.status === 'failed' && <XCircle className="w-3 h-3 mr-1" />}
-                        {job.status === 'processing' && <Loader2 className="w-3 h-3 mr-1 animate-spin" />}
+                        {job.status === 'completed' && <CheckCircle weight="light" className="w-3 h-3 mr-1" />}
+                        {job.status === 'failed' && <XCircle weight="light" className="w-3 h-3 mr-1" />}
+                        {job.status === 'processing' && <CircleNotch weight="light" className="w-3 h-3 mr-1 animate-spin" />}
                         {job.status}
                       </Badge>
                     </TableCell>
@@ -526,7 +514,7 @@ export default function NachaImportPage() {
                     </TableCell>
                     <TableCell>
                       <Button variant="ghost" size="sm" onClick={() => viewJobDetails(job)}>
-                        <Eye className="w-4 h-4 mr-1" />
+                        <Eye weight="light" className="w-4 h-4 mr-1" />
                         Details
                       </Button>
                     </TableCell>
@@ -556,13 +544,13 @@ export default function NachaImportPage() {
               <label htmlFor="nacha-import" className="cursor-pointer">
                 {importFile ? (
                   <div>
-                    <FileText className="w-12 h-12 text-emerald-500 mx-auto mb-2" />
+                    <FileText weight="light" className="w-12 h-12 text-emerald-500 mx-auto mb-2" />
                     <p className="font-medium text-slate-700">{importFile.name}</p>
                     <p className="text-sm text-slate-500">{(importFile.size / 1024).toFixed(1)} KB</p>
                   </div>
                 ) : (
                   <div>
-                    <Upload className="w-12 h-12 text-slate-400 mx-auto mb-2" />
+                    <UploadSimple weight="light" className="w-12 h-12 text-slate-400 mx-auto mb-2" />
                     <p className="font-medium text-slate-700">Click to upload or drag and drop</p>
                     <p className="text-sm text-slate-500">.txt, .ach, or .nacha files</p>
                   </div>
@@ -625,12 +613,12 @@ export default function NachaImportPage() {
             <Button onClick={handleImport} disabled={importing || !importFile}>
               {importing ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  <CircleNotch weight="light" className="w-4 h-4 mr-2 animate-spin" />
                   Processing...
                 </>
               ) : (
                 <>
-                  <Upload className="w-4 h-4 mr-2" />
+                  <UploadSimple weight="light" className="w-4 h-4 mr-2" />
                   Process Returns
                 </>
               )}
@@ -641,7 +629,7 @@ export default function NachaImportPage() {
 
       {/* Job Details Modal */}
       <Dialog open={showDetailsModal} onOpenChange={setShowDetailsModal}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Import Details</DialogTitle>
           </DialogHeader>
@@ -704,7 +692,7 @@ export default function NachaImportPage() {
               {selectedJob.error_message && (
                 <div className="p-3 bg-red-50 rounded-lg">
                   <p className="text-sm text-red-600">
-                    <AlertTriangle className="h-4 w-4 inline mr-1" />
+                    <Warning weight="light" className="h-4 w-4 inline mr-1" />
                     {selectedJob.error_message}
                   </p>
                 </div>

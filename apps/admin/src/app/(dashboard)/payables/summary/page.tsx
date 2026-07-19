@@ -1,5 +1,6 @@
 'use client';
 
+import { ArrowClockwise, ArrowRight, Buildings, Calendar, ChartBar, CheckCircle, Clock, CurrencyDollar, DownloadSimple, TrendUp, User, Warning } from '@phosphor-icons/react';
 import { useState, useEffect } from 'react';
 import {
   Card,
@@ -10,20 +11,6 @@ import {
   Button,
   Badge,
 } from '@crm-eco/ui';
-import {
-  DollarSign,
-  TrendingUp,
-  Clock,
-  CheckCircle,
-  AlertTriangle,
-  Calendar,
-  RefreshCw,
-  Download,
-  ArrowRight,
-  Building2,
-  User,
-  BarChart3,
-} from 'lucide-react';
 import Link from 'next/link';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
@@ -303,11 +290,11 @@ export default function PayablesSummaryPage() {
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" onClick={exportSummary}>
-            <Download className="h-4 w-4 mr-2" />
+            <DownloadSimple weight="light" className="h-4 w-4 mr-2" />
             Export Report
           </Button>
           <Button variant="outline" onClick={fetchSummary}>
-            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            <ArrowClockwise weight="light" className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
         </div>
@@ -324,7 +311,7 @@ export default function PayablesSummaryPage() {
                 <p className="text-xs text-muted-foreground">{stats.countPending} payables</p>
               </div>
               <div className="p-3 bg-amber-100 rounded-full">
-                <Clock className="h-6 w-6 text-amber-600" />
+                <Clock weight="light" className="h-6 w-6 text-amber-600" />
               </div>
             </div>
           </CardContent>
@@ -339,7 +326,7 @@ export default function PayablesSummaryPage() {
                 <p className="text-xs text-muted-foreground">{stats.countApproved} payables</p>
               </div>
               <div className="p-3 bg-blue-100 rounded-full">
-                <CheckCircle className="h-6 w-6 text-blue-600" />
+                <CheckCircle weight="light" className="h-6 w-6 text-blue-600" />
               </div>
             </div>
           </CardContent>
@@ -354,7 +341,7 @@ export default function PayablesSummaryPage() {
                 <p className="text-xs text-muted-foreground">{stats.countPaid} payables</p>
               </div>
               <div className="p-3 bg-emerald-100 rounded-full">
-                <DollarSign className="h-6 w-6 text-emerald-600" />
+                <CurrencyDollar weight="light" className="h-6 w-6 text-emerald-600" />
               </div>
             </div>
           </CardContent>
@@ -369,7 +356,7 @@ export default function PayablesSummaryPage() {
                 <p className="text-xs text-muted-foreground">{stats.countOverdue} payables</p>
               </div>
               <div className="p-3 bg-red-100 rounded-full">
-                <AlertTriangle className="h-6 w-6 text-red-600" />
+                <Warning weight="light" className="h-6 w-6 text-red-600" />
               </div>
             </div>
           </CardContent>
@@ -382,7 +369,7 @@ export default function PayablesSummaryPage() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <Calendar className="h-5 w-5 text-amber-600" />
+                <Calendar weight="light" className="h-5 w-5 text-amber-600" />
                 <div>
                   <p className="font-medium text-amber-900">Upcoming Due (Next 7 Days)</p>
                   <p className="text-sm text-amber-700">
@@ -393,7 +380,7 @@ export default function PayablesSummaryPage() {
               <Link href="/payables?status=approved">
                 <Button variant="outline" size="sm">
                   View
-                  <ArrowRight className="h-4 w-4 ml-1" />
+                  <ArrowRight weight="light" className="h-4 w-4 ml-1" />
                 </Button>
               </Link>
             </div>
@@ -453,7 +440,7 @@ export default function PayablesSummaryPage() {
               <Link href="/payables">
                 <Button variant="ghost" size="sm">
                   View All
-                  <ArrowRight className="h-4 w-4 ml-1" />
+                  <ArrowRight weight="light" className="h-4 w-4 ml-1" />
                 </Button>
               </Link>
             </div>
@@ -489,9 +476,9 @@ export default function PayablesSummaryPage() {
                         <p className="font-medium">{payee.name}</p>
                         <div className="flex items-center gap-1">
                           {payee.type === 'agent' ? (
-                            <User className="h-3 w-3 text-muted-foreground" />
+                            <User weight="light" className="h-3 w-3 text-muted-foreground" />
                           ) : (
-                            <Building2 className="h-3 w-3 text-muted-foreground" />
+                            <Buildings weight="light" className="h-3 w-3 text-muted-foreground" />
                           )}
                           <span className="text-xs text-muted-foreground">{payee.count} payables</span>
                         </div>
@@ -564,19 +551,19 @@ export default function PayablesSummaryPage() {
           <div className="flex flex-wrap gap-4">
             <Link href="/payables">
               <Button variant="outline">
-                <DollarSign className="h-4 w-4 mr-2" />
+                <CurrencyDollar weight="light" className="h-4 w-4 mr-2" />
                 View All Payables
               </Button>
             </Link>
             <Link href="/payables?status=approved">
               <Button variant="outline">
-                <CheckCircle className="h-4 w-4 mr-2" />
+                <CheckCircle weight="light" className="h-4 w-4 mr-2" />
                 Ready to Pay
               </Button>
             </Link>
             <Link href="/payables?status=pending">
               <Button variant="outline">
-                <Clock className="h-4 w-4 mr-2" />
+                <Clock weight="light" className="h-4 w-4 mr-2" />
                 Pending Approval
               </Button>
             </Link>

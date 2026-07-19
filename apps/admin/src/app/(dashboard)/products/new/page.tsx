@@ -1,5 +1,5 @@
+import { ArrowLeft } from '@phosphor-icons/react/dist/ssr';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@crm-eco/ui';
-import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { ProductForm } from '@/components/products/ProductForm';
 
@@ -10,7 +10,7 @@ export default function NewProductPage() {
       <div className="flex items-center gap-4">
         <Link href="/products">
           <button className="p-2 rounded-lg hover:bg-slate-100">
-            <ArrowLeft className="h-5 w-5" />
+            <ArrowLeft weight="light" className="h-5 w-5" />
           </button>
         </Link>
         <div>

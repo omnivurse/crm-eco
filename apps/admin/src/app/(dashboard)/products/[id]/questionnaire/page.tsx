@@ -1,5 +1,5 @@
+import { ArrowLeft } from '@phosphor-icons/react/dist/ssr';
 import { Badge, Button } from '@crm-eco/ui';
-import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
@@ -41,7 +41,7 @@ export default async function ProductQuestionnairePage({
       <div className="flex items-center gap-4">
         <Link href={`/products/${product.id}`}>
           <Button variant="ghost" size="icon">
-            <ArrowLeft className="h-5 w-5" />
+            <ArrowLeft weight="light" className="h-5 w-5" />
           </Button>
         </Link>
         <div>

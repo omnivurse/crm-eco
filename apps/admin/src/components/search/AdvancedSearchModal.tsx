@@ -1,5 +1,6 @@
 'use client';
 
+import { Calendar, FloppyDisk, Funnel, MagnifyingGlass, Plus, Trash, X } from '@phosphor-icons/react';
 import { useState, useEffect } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import {
@@ -18,15 +19,6 @@ import {
   Label,
   Badge,
 } from '@crm-eco/ui';
-import {
-  Search,
-  Plus,
-  X,
-  Save,
-  Trash2,
-  Calendar,
-  Filter,
-} from 'lucide-react';
 import { toast } from 'sonner';
 
 type EntityType = 'member' | 'agent';
@@ -224,7 +216,7 @@ export function AdvancedSearchModal({
 
     setSaveSearchName('');
     setShowSaveInput(false);
-    toast.success('Search saved');
+    toast.success('MagnifyingGlass saved');
   };
 
   const loadSavedSearch = (search: SavedSearch) => {
@@ -235,7 +227,7 @@ export function AdvancedSearchModal({
     const updated = savedSearches.filter(s => s.id !== id);
     setSavedSearches(updated);
     localStorage.setItem(`saved_searches_${entityType}`, JSON.stringify(updated));
-    toast.success('Search deleted');
+    toast.success('MagnifyingGlass deleted');
   };
 
   const getFieldType = (fieldName: string): string => {
@@ -251,8 +243,8 @@ export function AdvancedSearchModal({
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Filter className="w-5 h-5" />
-            Advanced Search - {entityType === 'member' ? 'Members' : 'Agents'}
+            <Funnel weight="light" className="w-5 h-5" />
+            Advanced MagnifyingGlass - {entityType === 'member' ? 'Members' : 'Agents'}
           </DialogTitle>
         </DialogHeader>
 
@@ -275,7 +267,7 @@ export function AdvancedSearchModal({
                       onClick={() => deleteSavedSearch(search.id)}
                       className="text-slate-400 hover:text-red-500"
                     >
-                      <X className="w-3 h-3" />
+                      <X weight="light" className="w-3 h-3" />
                     </button>
                   </div>
                 ))}
@@ -392,31 +384,31 @@ export function AdvancedSearchModal({
                     disabled={filters.length === 1}
                     className="shrink-0"
                   >
-                    <X className="w-4 h-4" />
+                    <X weight="light" className="w-4 h-4" />
                   </Button>
                 </div>
               );
             })}
           </div>
 
-          {/* Add Filter Button */}
+          {/* Add Funnel Button */}
           <Button variant="outline" size="sm" onClick={addFilter}>
-            <Plus className="w-4 h-4 mr-1" />
-            Add Filter
+            <Plus weight="light" className="w-4 h-4 mr-1" />
+            Add Funnel
           </Button>
 
-          {/* Save Search */}
+          {/* FloppyDisk MagnifyingGlass */}
           {showSaveInput ? (
             <div className="flex items-center gap-2 pt-2">
               <Input
                 value={saveSearchName}
                 onChange={(e) => setSaveSearchName(e.target.value)}
-                placeholder="Search name..."
+                placeholder="MagnifyingGlass name..."
                 className="flex-1"
                 onKeyDown={(e) => e.key === 'Enter' && handleSaveSearch()}
               />
               <Button size="sm" onClick={handleSaveSearch}>
-                Save
+                FloppyDisk
               </Button>
               <Button size="sm" variant="ghost" onClick={() => setShowSaveInput(false)}>
                 Cancel
@@ -429,8 +421,8 @@ export function AdvancedSearchModal({
               onClick={() => setShowSaveInput(true)}
               className="text-slate-500"
             >
-              <Save className="w-4 h-4 mr-1" />
-              Save this search
+              <FloppyDisk weight="light" className="w-4 h-4 mr-1" />
+              FloppyDisk this search
             </Button>
           )}
         </div>
@@ -444,8 +436,8 @@ export function AdvancedSearchModal({
               Cancel
             </Button>
             <Button onClick={handleSearch}>
-              <Search className="w-4 h-4 mr-2" />
-              Search
+              <MagnifyingGlass weight="light" className="w-4 h-4 mr-2" />
+              MagnifyingGlass
             </Button>
           </div>
         </DialogFooter>

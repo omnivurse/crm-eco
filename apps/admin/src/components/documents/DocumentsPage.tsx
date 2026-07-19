@@ -1,7 +1,7 @@
 'use client';
 
+import { CaretRight, ClipboardText, FileText, Star, Trash } from '@phosphor-icons/react';
 import { useState, useCallback, useMemo } from 'react';
-import { ChevronRight, FileText, Star, Trash2, ClipboardList } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAdminAuth } from './useAdminAuth';
 import { supabase } from './useAdminAuth';
@@ -238,8 +238,8 @@ export function DocumentsPage() {
   const tabs = [
     { key: 'files' as const, label: 'Files', icon: FileText },
     { key: 'favorites' as const, label: 'Favorites', icon: Star },
-    { key: 'trash' as const, label: 'Trash', icon: Trash2 },
-    { key: 'audit' as const, label: 'Activity', icon: ClipboardList },
+    { key: 'trash' as const, label: 'Trash', icon: Trash },
+    { key: 'audit' as const, label: 'Activity', icon: ClipboardText },
   ];
 
   if (authLoading) {
@@ -256,7 +256,7 @@ export function DocumentsPage() {
             <nav className="flex items-center gap-1 text-sm text-gray-500 mt-0.5">
               {breadcrumbs.map((crumb, i) => (
                 <span key={crumb.id ?? 'root'} className="flex items-center gap-1">
-                  {i > 0 && <ChevronRight className="w-3 h-3" />}
+                  {i > 0 && <CaretRight weight="light" className="w-3 h-3" />}
                   <button
                     onClick={() => setCurrentFolderId(crumb.id)}
                     className={`hover:text-blue-600 ${i === breadcrumbs.length - 1 ? 'text-gray-900 font-medium' : ''}`}

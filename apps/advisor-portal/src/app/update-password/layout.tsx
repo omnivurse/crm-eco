@@ -12,7 +12,7 @@ export default function AdvisorUpdatePasswordLayout({
           headline={
             <>
               <span className="block">Grow your practice with</span>
-              <span className="block bg-gradient-to-r from-cyan-300 via-blue-300 to-purple-300 bg-clip-text text-transparent">
+              <span className="block bg-gradient-to-r from-[#5eead4] via-[#67e8f9] to-[#a7f3d0] bg-clip-text text-transparent">
                 Double Helix Hub
               </span>
             </>

@@ -1,5 +1,6 @@
 'use client';
 
+import { ArrowRight, CircleNotch } from '@phosphor-icons/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { SelfServeEnrollmentWizard } from '@crm-eco/enrollment';
 import type {
@@ -14,7 +15,6 @@ import type {
   PaymentData,
 } from '@crm-eco/enrollment';
 import { Button, Input, Label, Card, CardContent } from '@crm-eco/ui';
-import { Loader2, ArrowRight } from 'lucide-react';
 import { getRecaptchaToken } from '@/lib/recaptcha-client';
 
 const PORTAL_URL = process.env.NEXT_PUBLIC_PORTAL_URL || 'https://members.doublehelixhub.com';
@@ -362,13 +362,13 @@ function LeadCaptureGate({ slug, member, onChange, onStarted }: LeadCaptureGateP
             <Button type="submit" disabled={submitting} className="gap-2">
               {submitting ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <CircleNotch weight="light" className="w-4 h-4 animate-spin" />
                   Starting...
                 </>
               ) : (
                 <>
                   Continue
-                  <ArrowRight className="w-4 h-4" />
+                  <ArrowRight weight="light" className="w-4 h-4" />
                 </>
               )}
             </Button>

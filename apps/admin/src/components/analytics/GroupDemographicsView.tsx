@@ -1,5 +1,6 @@
 'use client';
 
+import { CaretDown, CaretUp, FileText, Heart, Pulse, ShieldCheck, TrendUp, UserCheck, Users, Warning } from '@phosphor-icons/react';
 import { useState } from 'react';
 import {
   BarChart,
@@ -15,19 +16,6 @@ import {
   LineChart,
   Line,
 } from 'recharts';
-import {
-  Users,
-  UserCheck,
-  Activity,
-  Shield,
-  TrendingUp,
-  FileText,
-  Heart,
-  AlertTriangle,
-  ChevronDown,
-  ChevronUp,
-} from 'lucide-react';
-
 // ============================================================================
 // Types
 // ============================================================================
@@ -186,9 +174,9 @@ function SectionHeader({
       </div>
       <h3 className="text-lg font-bold text-slate-900 flex-1 text-left">{title}</h3>
       {expanded ? (
-        <ChevronUp className="w-5 h-5 text-slate-400 group-hover:text-slate-600 transition-colors" />
+        <CaretUp weight="light" className="w-5 h-5 text-slate-400 group-hover:text-slate-600 transition-colors" />
       ) : (
-        <ChevronDown className="w-5 h-5 text-slate-400 group-hover:text-slate-600 transition-colors" />
+        <CaretDown weight="light" className="w-5 h-5 text-slate-400 group-hover:text-slate-600 transition-colors" />
       )}
     </button>
   );
@@ -239,8 +227,8 @@ function MemberSection({ data }: { data: MemberDemographics }) {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard label="Total Members" value={data.total.toLocaleString()} icon={Users} color="bg-sky-600" />
         <StatCard label="Active Members" value={data.active.toLocaleString()} icon={UserCheck} color="bg-emerald-600" />
-        <StatCard label="Average Age" value={data.avgAge || 'N/A'} icon={Activity} color="bg-violet-600" />
-        <StatCard label="Top State" value={topState?.label ?? 'N/A'} icon={TrendingUp} color="bg-amber-600" sub={topState ? `${displayCount(topState.count)} members` : undefined} />
+        <StatCard label="Average Age" value={data.avgAge || 'N/A'} icon={Pulse} color="bg-violet-600" />
+        <StatCard label="Top State" value={topState?.label ?? 'N/A'} icon={TrendUp} color="bg-amber-600" sub={topState ? `${displayCount(topState.count)} members` : undefined} />
       </div>
 
       {/* Charts row 1 */}
@@ -357,11 +345,11 @@ function EnrollmentSection({ data }: { data: EnrollmentDemographics }) {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard label="Total Enrollments" value={data.total.toLocaleString()} icon={FileText} color="bg-sky-600" />
         <StatCard label="Approved" value={data.approved.toLocaleString()} icon={UserCheck} color="bg-emerald-600" />
-        <StatCard label="Approval Rate" value={`${data.approvalRate}%`} icon={TrendingUp} color="bg-violet-600" />
+        <StatCard label="Approval Rate" value={`${data.approvalRate}%`} icon={TrendUp} color="bg-violet-600" />
         <StatCard
           label="Warnings"
           value={data.age65WarningCount + data.mandateWarningCount}
-          icon={AlertTriangle}
+          icon={Warning}
           color="bg-amber-600"
           sub={`Age 65: ${data.age65WarningCount} | Mandate: ${data.mandateWarningCount}`}
         />
@@ -375,7 +363,7 @@ function EnrollmentSection({ data }: { data: EnrollmentDemographics }) {
               <XAxis dataKey="name" tick={{ fontSize: 12 }} />
               <YAxis tick={{ fontSize: 12 }} />
               <Tooltip />
-              <Line type="monotone" dataKey="value" stroke="#0ea5e9" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+              <Line type="monotone" dataKey="value" stroke="#0ea5e9" dot={{ r: 4 }} activeDot={{ r: 6 }} />
             </LineChart>
           </ResponsiveContainer>
         </ChartCard>
@@ -443,7 +431,7 @@ function HealthSection({ data }: { data: HealthUtilization }) {
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         <StatCard label="Total Needs" value={data.totalNeeds.toLocaleString()} icon={Heart} color="bg-rose-600" />
         <StatCard label="Approval Rate" value={`${data.approvalRate}%`} icon={UserCheck} color="bg-emerald-600" />
-        <StatCard label="Pre-Existing Rate" value={`${data.preExistingConditionRate}%`} icon={Shield} color="bg-amber-600" />
+        <StatCard label="Pre-Existing Rate" value={`${data.preExistingConditionRate}%`} icon={ShieldCheck} color="bg-amber-600" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
@@ -496,8 +484,8 @@ function AgentSection({ data }: { data: AgentDemographics }) {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard label="Total Agents" value={data.total.toLocaleString()} icon={Users} color="bg-sky-600" />
         <StatCard label="Active Agents" value={data.active.toLocaleString()} icon={UserCheck} color="bg-emerald-600" />
-        <StatCard label="MPB Certified" value={`${data.mpbCertifiedRate}%`} icon={Shield} color="bg-violet-600" />
-        <StatCard label="With Downline" value={data.withDownline.toLocaleString()} icon={TrendingUp} color="bg-amber-600" sub={`${data.independent} independent`} />
+        <StatCard label="MPB Certified" value={`${data.mpbCertifiedRate}%`} icon={ShieldCheck} color="bg-violet-600" />
+        <StatCard label="With Downline" value={data.withDownline.toLocaleString()} icon={TrendUp} color="bg-amber-600" sub={`${data.independent} independent`} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
@@ -593,7 +581,7 @@ export function GroupDemographicsView({ data }: { data: DemographicsData }) {
 
       {/* De-identification badge */}
       <div className="flex items-center gap-2 px-4 py-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-sm text-emerald-800">
-        <Shield className="w-4 h-4 flex-shrink-0" />
+        <ShieldCheck weight="light" className="w-4 h-4 flex-shrink-0" />
         <span>
           <strong>Privacy:</strong> All data is aggregated at the group level. Buckets with fewer than 5 records are suppressed to prevent re-identification.
         </span>

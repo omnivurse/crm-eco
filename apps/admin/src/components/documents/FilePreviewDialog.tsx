@@ -1,7 +1,7 @@
 'use client';
 
+import { DownloadSimple } from '@phosphor-icons/react';
 import { useState, useEffect } from 'react';
-import { Download } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@crm-eco/ui/components/dialog';
 import { Button } from '@crm-eco/ui/components/button';
 
@@ -65,7 +65,7 @@ export function FilePreviewDialog({
           <DialogTitle className="flex items-center justify-between">
             <span className="truncate">{documentName}</span>
             <Button variant="outline" size="sm" onClick={onDownload} className="gap-1.5 shrink-0 ml-2">
-              <Download className="w-3.5 h-3.5" /> Download
+              <DownloadSimple weight="light" className="w-3.5 h-3.5" /> DownloadSimple
             </Button>
           </DialogTitle>
         </DialogHeader>

@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PIFH Website — Hero Redesign Artifact</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --navy: #003A5C;
+      --navy-ink: #0A2233;
+      --navy-800: #06283D;
+      --teal: #0E8C9A;
+      --teal-700: #0B5D66;
+      --green: #12A065;
+      --gold: #F4B400;
+      --mist: #F2F8F9;
+      --canvas: #F7FBFC;
+      --white: #FFFFFF;
+      --ease: cubic-bezier(0.32, 0.72, 0, 1);
+      --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+      color: var(--navy-ink);
+      background: var(--canvas);
+      min-height: 100dvh;
+      overflow-x: hidden;
+    }
+
+    /* ── Artifact chrome ── */
+    .artifact-bar {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.75rem 1.25rem;
+      background: rgba(10, 34, 51, 0.92);
+      backdrop-filter: blur(20px);
+      color: white;
+      font-size: 0.75rem;
+      letter-spacing: 0.04em;
+    }
+    .artifact-bar strong { font-weight: 600; letter-spacing: 0.02em; }
+    .artifact-meta { opacity: 0.65; }
+    .toggle {
+      display: inline-flex;
+      padding: 3px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+    }
+    .toggle button {
+      border: 0;
+      background: transparent;
+      color: rgba(255,255,255,0.55);
+      font: inherit;
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      padding: 0.45rem 0.9rem;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: all 500ms var(--ease);
+    }
+    .toggle button.active {
+      background: white;
+      color: var(--navy-ink);
+    }
+
+    /* ── Views ── */
+    .view { display: none; padding-top: 52px; }
+    .view.active { display: block; }
+
+    /* ════════════ BEFORE (current) ════════════ */
+    .before-hero {
+      position: relative;
+      border-bottom: 1px solid #D5E5EF;
+      background: #fff;
+      overflow: hidden;
+    }
+    .before-hero .bg {
+      position: absolute; inset: 0;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.82), rgba(255,255,255,0.9)),
+        radial-gradient(ellipse at 30% 40%, rgba(14,140,154,0.12), transparent 50%),
+        radial-gradient(ellipse at 70% 60%, rgba(18,160,101,0.1), transparent 45%),
+        #F2F8F9;
+    }
+    .before-sticky {
+      position: sticky; top: 52px; z-index: 40;
+      width: 100%;
+      background: rgba(255,255,255,0.92);
+      border-bottom: 1px solid #D5E5EF;
+      backdrop-filter: blur(8px);
+    }
+    .before-nav-inner {
+      max-width: 80rem; margin: 0 auto;
+      padding: 0.85rem 1.25rem;
+      display: flex; align-items: center; justify-content: space-between;
+      font-family: Inter, "Plus Jakarta Sans", sans-serif;
+    }
+    .before-nav-links { display: flex; gap: 1.5rem; font-size: 0.875rem; color: #475569; }
+    .before-nav-links span { cursor: default; }
+    .before-cta {
+      background: linear-gradient(135deg, #0E8C9A, #12A065);
+      color: white; border: 0; border-radius: 0.75rem;
+      padding: 0.5rem 1rem; font-size: 0.875rem; font-weight: 600;
+    }
+    .before-content {
+      position: relative; z-index: 10;
+      max-width: 80rem; margin: 0 auto;
+      padding: 3.5rem 1.25rem 4rem;
+    }
+    @media (min-width: 1024px) {
+      .before-content { padding: 7rem 3rem; min-height: 88vh; display: flex; flex-direction: column; justify-content: center; }
+    }
+    .before-badge {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      border: 1px solid #C2EAED; background: #E6F6F7;
+      border-radius: 999px; padding: 0.35rem 0.9rem;
+      font-size: 0.75rem; font-weight: 600; color: #0C4A52;
+      margin-bottom: 1.5rem;
+    }
+    .before-badge i { width: 8px; height: 8px; border-radius: 50%; background: #12A065; }
+    .before-h1 {
+      font-family: Fraunces, Georgia, serif;
+      font-size: clamp(38px, 5.2vw, 66px);
+      font-weight: 600; line-height: 1.06; letter-spacing: -0.015em;
+      color: #06283D; max-width: 40rem; margin-bottom: 1.5rem;
+    }
+    .before-h1 .grad {
+      background: linear-gradient(135deg, #003A5C, #0E8C9A 52%, #12A065);
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
+    .before-lede {
+      font-family: Inter, "Plus Jakarta Sans", sans-serif;
+      font-size: 1.125rem; line-height: 1.7; color: #475569;
+      max-width: 36rem; margin-bottom: 2.25rem;
+    }
+    .before-btns { display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 2.25rem; }
+    .before-btn-primary {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      background: linear-gradient(135deg, #0E8C9A, #12A065);
+      color: white; border: 0; border-radius: 0.75rem;
+      padding: 0.85rem 2rem; font-size: 1rem; font-weight: 600;
+      box-shadow: 0 4px 14px rgba(0,58,92,0.15);
+    }
+    .before-btn-outline {
+      background: rgba(255,255,255,0.9); color: #06283D;
+      border: 1px solid #ADCBDE; border-radius: 0.75rem;
+      padding: 0.85rem 2rem; font-size: 1rem; font-weight: 600;
+    }
+    .before-promises {
+      display: flex; flex-wrap: wrap; gap: 1.5rem; margin-bottom: 2.5rem;
+      font-size: 0.875rem; font-weight: 500; color: #475569;
+    }
+    .before-promises span { display: inline-flex; align-items: center; gap: 0.5rem; }
+    .before-promises svg { color: #0B8453; stroke-width: 2.25; }
+    .before-stats { display: flex; flex-wrap: wrap; gap: 1rem; }
+    .before-stat {
+      display: flex; align-items: center; gap: 0.75rem;
+      border: 1px solid rgba(213,229,239,0.9); background: rgba(255,255,255,0.9);
+      border-radius: 1rem; padding: 0.75rem 1rem;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    .before-stat-icon {
+      width: 2.75rem; height: 2.75rem; border-radius: 0.75rem;
+      background: linear-gradient(135deg, #0E8C9A, #12A065);
+      display: grid; place-items: center; color: white;
+    }
+    .before-stat strong {
+      font-family: Fraunces, Georgia, serif;
+      font-size: 1.5rem; color: #06283D; display: block; line-height: 1;
+    }
+    .before-stat small { font-size: 0.75rem; color: #64748b; }
+
+    /* ════════════ AFTER (redesign) ════════════ */
+    .after {
+      position: relative;
+      min-height: 100dvh;
+      background:
+        radial-gradient(ellipse 80% 60% at 12% 18%, rgba(14,140,154,0.09), transparent 55%),
+        radial-gradient(ellipse 70% 50% at 88% 72%, rgba(18,160,101,0.08), transparent 50%),
+        radial-gradient(ellipse 50% 40% at 50% 100%, rgba(244,180,0,0.05), transparent 60%),
+        var(--canvas);
+    }
+
+    /* Fixed grain — not on scroll content */
+    .grain {
+      position: fixed; inset: 0; z-index: 50; pointer-events: none; opacity: 0.035;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+
+    /* Floating island nav */
+    .island-nav-wrap {
+      position: sticky; top: 68px; z-index: 40;
+      display: flex; justify-content: center;
+      padding: 0 1rem;
+      pointer-events: none;
+    }
+    .island-nav {
+      pointer-events: auto;
+      display: flex; align-items: center; gap: 0.35rem;
+      padding: 0.4rem 0.4rem 0.4rem 1.1rem;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.72);
+      border: 1px solid rgba(0,58,92,0.08);
+      box-shadow:
+        0 1px 2px rgba(0,58,92,0.04),
+        0 8px 24px rgba(0,58,92,0.06),
+        inset 0 1px 0 rgba(255,255,255,0.8);
+      backdrop-filter: blur(20px);
+      animation: fadeUp 900ms var(--ease-out) both;
+    }
+    .island-brand {
+      font-family: Fraunces, Georgia, serif;
+      font-size: 0.95rem; font-weight: 600; color: var(--navy-800);
+      margin-right: 0.75rem; white-space: nowrap;
+    }
+    .island-links {
+      display: none; gap: 0.15rem;
+    }
+    @media (min-width: 768px) {
+      .island-links { display: flex; }
+    }
+    .island-links a {
+      text-decoration: none; color: #475569;
+      font-size: 0.8rem; font-weight: 500;
+      padding: 0.45rem 0.75rem; border-radius: 999px;
+      transition: all 500ms var(--ease);
+    }
+    .island-links a:hover { background: rgba(0,58,92,0.05); color: var(--navy); }
+    .island-cta {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      margin-left: 0.35rem;
+      padding: 0.4rem 0.4rem 0.4rem 1rem;
+      border-radius: 999px; border: 0; cursor: pointer;
+      background: var(--navy-ink); color: white;
+      font-size: 0.8rem; font-weight: 600;
+      transition: all 600ms var(--ease);
+    }
+    .island-cta:hover { transform: scale(0.98); }
+    .island-cta .ico {
+      width: 1.75rem; height: 1.75rem; border-radius: 999px;
+      background: rgba(255,255,255,0.12);
+      display: grid; place-items: center;
+      transition: transform 600ms var(--ease);
+    }
+    .island-cta:hover .ico { transform: translate(2px, -1px) scale(1.05); }
+
+    /* Hero layout — Z-axis cascade */
+    .after-hero {
+      max-width: 78rem;
+      margin: 0 auto;
+      padding: 5rem 1rem 6rem;
+      display: grid;
+      gap: 3rem;
+    }
+    @media (min-width: 960px) {
+      .after-hero {
+        grid-template-columns: 1.1fr 0.9fr;
+        align-items: center;
+        padding: 6.5rem 2rem 8rem;
+        gap: 4rem;
+        min-height: calc(100dvh - 120px);
+      }
+    }
+
+    .reveal {
+      opacity: 0; transform: translateY(2.5rem); filter: blur(6px);
+      animation: fadeUp 900ms var(--ease-out) both;
+    }
+    .reveal:nth-child(1) { animation-delay: 80ms; }
+    .reveal:nth-child(2) { animation-delay: 160ms; }
+    .reveal:nth-child(3) { animation-delay: 240ms; }
+    .reveal:nth-child(4) { animation-delay: 320ms; }
+    .reveal:nth-child(5) { animation-delay: 400ms; }
+
+    @keyframes fadeUp {
+      to { opacity: 1; transform: translateY(0); filter: blur(0); }
+    }
+
+    .eyebrow {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      border-radius: 999px;
+      padding: 0.3rem 0.85rem;
+      font-size: 10px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.2em;
+      color: var(--teal-700);
+      background: rgba(14,140,154,0.08);
+      border: 1px solid rgba(14,140,154,0.12);
+      margin-bottom: 1.75rem;
+    }
+    .eyebrow .dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 0 3px rgba(18,160,101,0.18);
+    }
+
+    .after-h1 {
+      font-family: Fraunces, Georgia, serif;
+      font-size: clamp(2.75rem, 6vw, 4.75rem);
+      font-weight: 500; line-height: 1.02; letter-spacing: -0.03em;
+      color: var(--navy-800);
+      margin-bottom: 1.5rem;
+      max-width: 14ch;
+    }
+    .after-h1 em {
+      font-style: italic; font-weight: 400;
+      color: var(--teal-700);
+    }
+
+    .after-lede {
+      font-size: 1.125rem; line-height: 1.7; color: #4a6270;
+      max-width: 34rem; margin-bottom: 2.5rem;
+      font-weight: 400;
+    }
+    .after-lede strong {
+      color: var(--navy-ink); font-weight: 600;
+      border-bottom: 2px solid rgba(244,180,0,0.55);
+    }
+
+    .after-actions {
+      display: flex; flex-wrap: wrap; gap: 0.85rem;
+      margin-bottom: 2.75rem;
+    }
+
+    /* Button-in-button */
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 0.65rem;
+      padding: 0.55rem 0.55rem 0.55rem 1.4rem;
+      border-radius: 999px; border: 0; cursor: pointer;
+      background: linear-gradient(135deg, var(--teal), var(--green));
+      color: white; font-size: 0.95rem; font-weight: 600;
+      box-shadow:
+        0 1px 2px rgba(14,140,154,0.15),
+        0 8px 24px rgba(14,140,154,0.2);
+      transition: all 600ms var(--ease);
+    }
+    .btn-primary:hover { transform: scale(0.98); }
+    .btn-primary:active { transform: scale(0.96); }
+    .btn-primary .ico {
+      width: 2.1rem; height: 2.1rem; border-radius: 999px;
+      background: rgba(255,255,255,0.18);
+      display: grid; place-items: center;
+      transition: transform 600ms var(--ease);
+    }
+    .btn-primary:hover .ico { transform: translate(3px, -1px) scale(1.06); }
+
+    .btn-ghost {
+      display: inline-flex; align-items: center;
+      padding: 0.9rem 1.5rem;
+      border-radius: 999px; cursor: pointer;
+      background: transparent;
+      border: 1px solid rgba(0,58,92,0.12);
+      color: var(--navy-800); font-size: 0.95rem; font-weight: 600;
+      transition: all 600ms var(--ease);
+    }
+    .btn-ghost:hover {
+      background: rgba(0,58,92,0.04);
+      border-color: rgba(14,140,154,0.35);
+    }
+
+    .promises {
+      display: flex; flex-wrap: wrap; gap: 1.25rem 1.75rem;
+    }
+    .promises li {
+      list-style: none;
+      display: inline-flex; align-items: center; gap: 0.55rem;
+      font-size: 0.875rem; font-weight: 500; color: #4a6270;
+    }
+    .promises svg { color: var(--green); flex-shrink: 0; }
+
+    /* Right cascade stack */
+    .cascade {
+      position: relative;
+      min-height: 420px;
+      padding: 1rem 0 2rem;
+    }
+    @media (min-width: 960px) {
+      .cascade { min-height: 520px; }
+    }
+
+    /* Double-bezel */
+    .bezel {
+      background: rgba(0,58,92,0.04);
+      border: 1px solid rgba(0,58,92,0.06);
+      border-radius: 2rem;
+      padding: 0.375rem;
+      transition: transform 700ms var(--ease), box-shadow 700ms var(--ease);
+    }
+    .bezel-inner {
+      background: var(--white);
+      border-radius: calc(2rem - 0.375rem);
+      box-shadow: inset 0 1px 1px rgba(255,255,255,0.9);
+      overflow: hidden;
+    }
+
+    .card-main {
+      position: relative; z-index: 3;
+      transform: rotate(-1.5deg);
+      animation: fadeUp 1s var(--ease-out) 280ms both;
+    }
+    @media (max-width: 767px) {
+      .card-main { transform: none; }
+    }
+    .card-main:hover { transform: rotate(-1.5deg) translateY(-4px); }
+    @media (max-width: 767px) {
+      .card-main:hover { transform: translateY(-4px); }
+    }
+
+    .card-main .bezel-inner { padding: 1.75rem 1.75rem 1.5rem; }
+    .card-kicker {
+      font-size: 10px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.18em; color: var(--teal-700); margin-bottom: 0.75rem;
+    }
+    .card-value {
+      font-family: Fraunces, Georgia, serif;
+      font-size: clamp(2.5rem, 5vw, 3.25rem);
+      font-weight: 500; letter-spacing: -0.03em;
+      color: var(--navy-800); line-height: 1;
+      margin-bottom: 0.35rem;
+    }
+    .card-label { font-size: 0.875rem; color: #64748b; margin-bottom: 1.5rem; }
+    .card-bar {
+      height: 4px; border-radius: 999px;
+      background: rgba(14,140,154,0.1); overflow: hidden; margin-bottom: 1.25rem;
+    }
+    .card-bar span {
+      display: block; height: 100%; width: 72%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--teal), var(--green));
+      animation: barFill 1.4s var(--ease-out) 600ms both;
+      transform-origin: left;
+    }
+    @keyframes barFill {
+      from { transform: scaleX(0); }
+      to { transform: scaleX(1); }
+    }
+    .card-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding-top: 1rem;
+      border-top: 1px solid rgba(0,58,92,0.06);
+      font-size: 0.8rem; color: #64748b;
+    }
+    .card-row strong { color: var(--navy-800); font-weight: 600; }
+
+    .card-float-a {
+      position: absolute; z-index: 4;
+      top: -0.5rem; right: -0.25rem;
+      width: min(200px, 48%);
+      transform: rotate(3deg);
+      animation: fadeUp 1s var(--ease-out) 420ms both;
+    }
+    @media (max-width: 767px) {
+      .card-float-a {
+        position: relative; top: auto; right: auto;
+        width: 100%; transform: none; margin-top: 1rem;
+      }
+    }
+    .card-float-a .bezel-inner {
+      padding: 1.1rem 1.2rem;
+      background: linear-gradient(160deg, #04202F 0%, #003A5C 55%, #0B5D66 100%);
+      color: white;
+    }
+    .card-float-a .card-kicker { color: rgba(244,180,0,0.9); }
+    .card-float-a .card-value { color: white; font-size: 1.75rem; }
+    .card-float-a .card-label { color: rgba(255,255,255,0.65); margin: 0; }
+
+    .card-float-b {
+      position: absolute; z-index: 2;
+      bottom: 0.5rem; left: -0.5rem;
+      width: min(220px, 52%);
+      transform: rotate(-2.5deg);
+      animation: fadeUp 1s var(--ease-out) 520ms both;
+    }
+    @media (max-width: 767px) {
+      .card-float-b {
+        position: relative; bottom: auto; left: auto;
+        width: 100%; transform: none; margin-top: 1rem;
+      }
+    }
+    .card-float-b .bezel-inner { padding: 1.15rem 1.25rem; }
+    .promise-mini {
+      display: flex; flex-direction: column; gap: 0.65rem;
+    }
+    .promise-mini div {
+      display: flex; align-items: center; gap: 0.6rem;
+      font-size: 0.8rem; font-weight: 500; color: var(--navy-ink);
+    }
+    .promise-mini .chip {
+      width: 1.75rem; height: 1.75rem; border-radius: 0.55rem;
+      background: rgba(14,140,154,0.08);
+      display: grid; place-items: center; color: var(--teal-700);
+    }
+
+    /* Spec panel */
+    .spec {
+      max-width: 78rem;
+      margin: 0 auto;
+      padding: 0 1rem 5rem;
+    }
+    .spec-shell {
+      background: rgba(0,58,92,0.035);
+      border: 1px solid rgba(0,58,92,0.06);
+      border-radius: 2rem;
+      padding: 0.375rem;
+    }
+    .spec-inner {
+      background: white;
+      border-radius: calc(2rem - 0.375rem);
+      padding: 2rem 1.5rem;
+      box-shadow: inset 0 1px 1px rgba(255,255,255,0.9);
+    }
+    @media (min-width: 768px) {
+      .spec-inner { padding: 2.5rem 2.75rem; }
+    }
+    .spec h2 {
+      font-family: Fraunces, Georgia, serif;
+      font-size: 1.5rem; font-weight: 500; color: var(--navy-800);
+      margin-bottom: 0.5rem;
+    }
+    .spec > .spec-shell > .spec-inner > p.lede {
+      color: #64748b; font-size: 0.95rem; margin-bottom: 2rem; max-width: 40rem;
+    }
+    .spec-grid {
+      display: grid; gap: 1rem;
+    }
+    @media (min-width: 768px) {
+      .spec-grid { grid-template-columns: repeat(3, 1fr); gap: 1.25rem; }
+    }
+    .spec-item {
+      padding: 1.25rem;
+      border-radius: 1.25rem;
+      background: var(--mist);
+      border: 1px solid rgba(0,58,92,0.05);
+    }
+    .spec-item h3 {
+      font-size: 0.7rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.16em;
+      color: var(--teal-700); margin-bottom: 0.5rem;
+    }
+    .spec-item p { font-size: 0.875rem; line-height: 1.55; color: #4a6270; }
+    .spec-item ul {
+      margin-top: 0.65rem; padding-left: 1rem;
+      font-size: 0.8rem; color: #4a6270; line-height: 1.6;
+    }
+
+    .footnote {
+      margin-top: 2rem; padding-top: 1.5rem;
+      border-top: 1px solid rgba(0,58,92,0.06);
+      font-size: 0.75rem; color: #94a3b8; line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <div class="artifact-bar">
+    <div>
+      <strong>App 1 · Website (PIFH)</strong>
+      <span class="artifact-meta"> · Soft Structuralism · Z-Axis Cascade</span>
+    </div>
+    <div class="toggle" role="group" aria-label="Before or after">
+      <button type="button" id="btn-before">Before</button>
+      <button type="button" id="btn-after" class="active">After</button>
+    </div>
+  </div>
+
+  <!-- ════ BEFORE ════ -->
+  <div class="view" id="view-before">
+    <header class="before-sticky">
+      <div class="before-nav-inner">
+        <strong style="color:#003A5C;font-size:0.95rem">Pay It Forward Health</strong>
+        <nav class="before-nav-links">
+          <span>Plans</span><span>How it works</span><span>About</span><span>FAQ</span>
+        </nav>
+        <button class="before-cta" type="button">Become a Member</button>
+      </div>
+    </header>
+    <section class="before-hero">
+      <div class="bg" aria-hidden="true"></div>
+      <div class="before-content">
+        <div class="before-badge"><i></i> Community health sharing · welcoming to all</div>
+        <h1 class="before-h1">The caring alternative to <span class="grad">health insurance</span></h1>
+        <p class="before-lede">
+          At Pay It Forward Health, members share one another’s medical costs in a community built on generosity. Keep your own doctors, skip the networks, and pay a fraction of what traditional insurance costs — and when you’re well, you help pay it forward.
+        </p>
+        <div class="before-btns">
+          <button class="before-btn-primary" type="button">
+            Become a Member
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </button>
+          <button class="before-btn-outline" type="button">See How It Works</button>
+        </div>
+        <div class="before-promises">
+          <span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            Not insurance
+          </span>
+          <span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+            Join any time
+          </span>
+          <span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21.2l7.8-7.8 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>
+            No networks
+          </span>
+        </div>
+        <div class="before-stats">
+          <div class="before-stat">
+            <div class="before-stat-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21.2l7.8-7.8 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>
+            </div>
+            <div>
+              <strong>$2.4M+</strong>
+              <small>shared by members</small>
+            </div>
+          </div>
+          <div class="before-stat">
+            <div class="before-stat-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            <div>
+              <strong>1,200+</strong>
+              <small>active members</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ════ AFTER ════ -->
+  <div class="view active" id="view-after">
+    <div class="grain" aria-hidden="true"></div>
+    <div class="after">
+      <div class="island-nav-wrap">
+        <nav class="island-nav" aria-label="Primary">
+          <span class="island-brand">Pay It Forward</span>
+          <div class="island-links">
+            <a href="#">Plans</a>
+            <a href="#">How it works</a>
+            <a href="#">About</a>
+            <a href="#">FAQ</a>
+          </div>
+          <button class="island-cta" type="button">
+            Join
+            <span class="ico" aria-hidden="true">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 17L17 7M9 7h8v8"/></svg>
+            </span>
+          </button>
+        </nav>
+      </div>
+
+      <section class="after-hero">
+        <div>
+          <div class="reveal">
+            <span class="eyebrow"><span class="dot"></span> Community health sharing</span>
+          </div>
+          <h1 class="after-h1 reveal">
+            Care that <em>moves</em> forward together
+          </h1>
+          <p class="after-lede reveal">
+            Members share medical costs in a community built on generosity.
+            Keep your doctors. Skip the networks. And when you’re well,
+            you help <strong>pay it forward</strong>.
+          </p>
+          <div class="after-actions reveal">
+            <button class="btn-primary" type="button">
+              Become a Member
+              <span class="ico" aria-hidden="true">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 17L17 7M9 7h8v8"/></svg>
+              </span>
+            </button>
+            <button class="btn-ghost" type="button">See how it works</button>
+          </div>
+          <ul class="promises reveal">
+            <li>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/><path d="M9.5 12l1.8 1.8L15 10"/></svg>
+              Not insurance
+            </li>
+            <li>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M8 3v4M16 3v4M3.5 10h17"/></svg>
+              Join any time
+            </li>
+            <li>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25"><circle cx="12" cy="12" r="8.5"/><path d="M8 12h8M12 8v8"/></svg>
+              No networks
+            </li>
+          </ul>
+        </div>
+
+        <div class="cascade">
+          <div class="bezel card-main">
+            <div class="bezel-inner">
+              <p class="card-kicker">Shared this year</p>
+              <p class="card-value">$2.4M+</p>
+              <p class="card-label">Medical costs covered by the community</p>
+              <div class="card-bar"><span></span></div>
+              <div class="card-row">
+                <span>Member contributions</span>
+                <strong>On track</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="bezel card-float-a">
+            <div class="bezel-inner">
+              <p class="card-kicker">Active members</p>
+              <p class="card-value">1,200+</p>
+              <p class="card-label">Families caring for families</p>
+            </div>
+          </div>
+
+          <div class="bezel card-float-b">
+            <div class="bezel-inner">
+              <div class="promise-mini">
+                <div>
+                  <span class="chip">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25"><path d="M12 21s-7-4.5-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 11c0 5.5-7 10-7 10z"/></svg>
+                  </span>
+                  Keep your doctors
+                </div>
+                <div>
+                  <span class="chip">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25"><path d="M4 12h16M12 4v16"/></svg>
+                  </span>
+                  Transparent sharing
+                </div>
+                <div>
+                  <span class="chip">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l2.5 1.5"/></svg>
+                  </span>
+                  Join in minutes
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="spec">
+        <div class="spec-shell">
+          <div class="spec-inner">
+            <h2>App 1 upgrade brief</h2>
+            <p class="lede">
+              What this artifact proposes for <code style="font-size:0.85em;background:#F2F8F9;padding:0.1em 0.4em;border-radius:4px">apps/website</code> —
+              Soft Structuralism + Z-Axis Cascade, keeping PIFH brand colors.
+            </p>
+            <div class="spec-grid">
+              <div class="spec-item">
+                <h3>Replace</h3>
+                <p>Template tells that read as generic SaaS.</p>
+                <ul>
+                  <li>Inter body → Plus Jakarta Sans</li>
+                  <li>Lucide thick strokes → 1.25px line icons</li>
+                  <li>Sticky edge-to-edge nav → floating island</li>
+                  <li>Flat bordered cards → double-bezel + cascade</li>
+                  <li><code>ease-in-out</code> → custom cubic-bezier</li>
+                </ul>
+              </div>
+              <div class="spec-item">
+                <h3>Keep</h3>
+                <p>Brand equity that already works.</p>
+                <ul>
+                  <li>Navy / Teal / Green / Gold palette</li>
+                  <li>Fraunces for display (warm trust)</li>
+                  <li>Mission voice &amp; “not insurance” clarity</li>
+                  <li>Live plan data wiring</li>
+                  <li>Framer Motion reveal infrastructure</li>
+                </ul>
+              </div>
+              <div class="spec-item">
+                <h3>Ship order</h3>
+                <p>Highest visual ROI first.</p>
+                <ul>
+                  <li>1. Hero + island nav (this artifact)</li>
+                  <li>2. Plans page card system</li>
+                  <li>3. About community gallery</li>
+                  <li>4. Global icon + type tokens</li>
+                  <li>5. Footer + secondary pages</li>
+                </ul>
+              </div>
+            </div>
+            <p class="footnote">
+              Artifact only — no production code changed. Open this file in a browser.
+              Toggle Before / After in the top bar. Approve App 1 implementation, or say “next app” for App 2.
+            </p>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const beforeBtn = document.getElementById('btn-before');
+    const afterBtn = document.getElementById('btn-after');
+    const beforeView = document.getElementById('view-before');
+    const afterView = document.getElementById('view-after');
+
+    function show(which) {
+      const isAfter = which === 'after';
+      afterBtn.classList.toggle('active', isAfter);
+      beforeBtn.classList.toggle('active', !isAfter);
+      afterView.classList.toggle('active', isAfter);
+      beforeView.classList.toggle('active', !isAfter);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    beforeBtn.addEventListener('click', () => show('before'));
+    afterBtn.addEventListener('click', () => show('after'));
+  </script>
+</body>
+</html>

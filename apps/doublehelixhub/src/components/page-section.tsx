@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
-import { ArrowRight } from 'lucide-react';
+import { ArrowUpRight } from '@phosphor-icons/react/dist/ssr';
 
 export function PageSection({
   eyebrow,
@@ -16,21 +16,19 @@ export function PageSection({
   cta?: { href: string; label: string };
 }) {
   return (
-    <main className="container-page py-20">
-      {eyebrow && (
-        <p className="text-sm font-semibold uppercase tracking-wider text-primary">{eyebrow}</p>
-      )}
-      <h1 className="mt-2 text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl">
+    <main className="container-page py-20 md:py-28">
+      {eyebrow && <span className="dh-eyebrow">{eyebrow}</span>}
+      <h1 className="mt-5 max-w-3xl font-heading text-[clamp(2.25rem,5vw,3.5rem)] font-bold tracking-[-0.04em] text-white">
         {title}
       </h1>
-      {lede && <p className="mt-4 max-w-2xl text-lg text-muted-foreground">{lede}</p>}
-      {children && <div className="mt-10">{children}</div>}
+      {lede && <p className="mt-5 max-w-2xl text-lg leading-relaxed text-white/50">{lede}</p>}
+      {children && <div className="mt-12">{children}</div>}
       {cta && (
-        <Link
-          href={cta.href}
-          className="mt-12 inline-flex h-11 items-center justify-center rounded-md gradient-helix px-6 text-sm font-semibold text-white shadow-sm transition hover:opacity-95"
-        >
-          {cta.label} <ArrowRight className="ml-2 h-4 w-4" />
+        <Link href={cta.href} className="group mt-14 inline-flex dh-btn-island dh-btn-white">
+          {cta.label}
+          <span className="dh-btn-ico">
+            <ArrowUpRight weight="light" className="h-3.5 w-3.5" />
+          </span>
         </Link>
       )}
     </main>

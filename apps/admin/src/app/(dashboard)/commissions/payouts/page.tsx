@@ -1,5 +1,6 @@
 'use client';
 
+import { CheckCircle, CircleNotch, CurrencyDollar, DotsThreeVertical, FileText, Play, Plus, Users } from '@phosphor-icons/react';
 import { useState, useEffect } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { toast } from 'sonner';
@@ -21,7 +22,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@crm-eco/ui';
-import { Loader2, MoreVertical, CheckCircle, Play, FileText, DollarSign, Plus, Users } from 'lucide-react';
 import { format } from 'date-fns';
 // Commission payout type (tables may not be in generated types yet)
 interface CommissionPayout {
@@ -292,7 +292,7 @@ export default function CommissionPayoutsPage() {
   if (loading && payouts.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+        <CircleNotch weight="light" className="h-8 w-8 animate-spin text-blue-500" />
         <p className="ml-3 text-slate-500">Loading payouts...</p>
       </div>
     );
@@ -310,9 +310,9 @@ export default function CommissionPayoutsPage() {
         </div>
         <Button onClick={generatePayouts} disabled={generating}>
           {generating ? (
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            <CircleNotch weight="light" className="h-4 w-4 mr-2 animate-spin" />
           ) : (
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus weight="light" className="h-4 w-4 mr-2" />
           )}
           Generate Payouts
         </Button>
@@ -327,7 +327,7 @@ export default function CommissionPayoutsPage() {
                 <p className="text-sm text-slate-500">Draft Payouts</p>
                 <p className="text-2xl font-bold">{draftCount}</p>
               </div>
-              <FileText className="h-8 w-8 text-slate-300" />
+              <FileText weight="light" className="h-8 w-8 text-slate-300" />
             </div>
           </CardContent>
         </Card>
@@ -340,7 +340,7 @@ export default function CommissionPayoutsPage() {
                   ${approvedTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                 </p>
               </div>
-              <DollarSign className="h-8 w-8 text-green-300" />
+              <CurrencyDollar weight="light" className="h-8 w-8 text-green-300" />
             </div>
           </CardContent>
         </Card>
@@ -351,7 +351,7 @@ export default function CommissionPayoutsPage() {
                 <p className="text-sm text-slate-500">Total Payouts</p>
                 <p className="text-2xl font-bold">{payouts.length}</p>
               </div>
-              <Users className="h-8 w-8 text-slate-300" />
+              <Users weight="light" className="h-8 w-8 text-slate-300" />
             </div>
           </CardContent>
         </Card>
@@ -386,7 +386,7 @@ export default function CommissionPayoutsPage() {
         <CardContent>
           {payouts.length === 0 ? (
             <div className="text-center py-12 text-slate-500">
-              <DollarSign className="h-12 w-12 mx-auto mb-4 text-slate-300" />
+              <CurrencyDollar weight="light" className="h-12 w-12 mx-auto mb-4 text-slate-300" />
               <p className="text-lg font-medium">No payouts found</p>
               <p className="text-sm">Generate payouts from approved commission transactions.</p>
             </div>
@@ -440,28 +440,28 @@ export default function CommissionPayoutsPage() {
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon" disabled={processingId === payout.id}>
                               {processingId === payout.id ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
+                                <CircleNotch weight="light" className="h-4 w-4 animate-spin" />
                               ) : (
-                                <MoreVertical className="h-4 w-4" />
+                                <DotsThreeVertical weight="light" className="h-4 w-4" />
                               )}
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             {payout.status === 'draft' && (
                               <DropdownMenuItem onClick={() => updatePayoutStatus(payout.id, 'pending')}>
-                                <Play className="mr-2 h-4 w-4" />
+                                <Play weight="light" className="mr-2 h-4 w-4" />
                                 Submit for Approval
                               </DropdownMenuItem>
                             )}
                             {payout.status === 'pending' && (
                               <DropdownMenuItem onClick={() => updatePayoutStatus(payout.id, 'approved')}>
-                                <CheckCircle className="mr-2 h-4 w-4 text-green-600" />
+                                <CheckCircle weight="light" className="mr-2 h-4 w-4 text-green-600" />
                                 Approve
                               </DropdownMenuItem>
                             )}
                             {payout.status === 'approved' && (
                               <DropdownMenuItem onClick={() => updatePayoutStatus(payout.id, 'paid')}>
-                                <DollarSign className="mr-2 h-4 w-4 text-green-600" />
+                                <CurrencyDollar weight="light" className="mr-2 h-4 w-4 text-green-600" />
                                 Mark as Paid
                               </DropdownMenuItem>
                             )}

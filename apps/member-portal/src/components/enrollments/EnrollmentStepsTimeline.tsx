@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@crm-eco/ui';
-import { Check, Circle, User, Users, Heart, FileCheck, CreditCard, CheckCircle } from 'lucide-react';
+import { Check, User, Users, Heart, Checks, CreditCard, CheckCircle } from '@phosphor-icons/react/dist/ssr';
 import { format } from 'date-fns';
 
 // Step configuration with display info
@@ -11,32 +11,32 @@ const stepConfig: Record<string, {
   intake: {
     label: 'Your Information',
     description: 'Contact details and address',
-    icon: <User className="w-4 h-4" />,
+    icon: <User weight="light" className="h-4 w-4" />,
   },
   household: {
     label: 'Household',
     description: 'Family members to include',
-    icon: <Users className="w-4 h-4" />,
+    icon: <Users weight="light" className="h-4 w-4" />,
   },
   plan_selection: {
     label: 'Plan Selection',
     description: 'Choose your coverage plan',
-    icon: <Heart className="w-4 h-4" />,
+    icon: <Heart weight="light" className="h-4 w-4" />,
   },
   compliance: {
     label: 'Acknowledgments',
     description: 'Review and sign agreements',
-    icon: <FileCheck className="w-4 h-4" />,
+    icon: <Checks weight="light" className="h-4 w-4" />,
   },
   payment: {
     label: 'Payment Setup',
     description: 'Billing preferences',
-    icon: <CreditCard className="w-4 h-4" />,
+    icon: <CreditCard weight="light" className="h-4 w-4" />,
   },
   confirmation: {
     label: 'Confirmation',
     description: 'Review and submit',
-    icon: <CheckCircle className="w-4 h-4" />,
+    icon: <CheckCircle weight="light" className="h-4 w-4" />,
   },
 };
 
@@ -62,14 +62,13 @@ export function EnrollmentStepsTimeline({ steps }: EnrollmentStepsTimelineProps)
     <Card className="h-full">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-lg">
-          <CheckCircle className="w-5 h-5 text-blue-600" />
+          <CheckCircle weight="light" className="h-5 w-5 text-[var(--mp-teal)]" />
           Progress
         </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="relative">
-          {/* Vertical line connecting steps */}
-          <div className="absolute left-4 top-3 bottom-3 w-0.5 bg-slate-200" />
+          <div className="absolute bottom-3 left-4 top-3 w-0.5 bg-slate-200" />
 
           <div className="space-y-4">
             {STEP_ORDER.map((stepKey, index) => {
@@ -80,22 +79,20 @@ export function EnrollmentStepsTimeline({ steps }: EnrollmentStepsTimelineProps)
 
               return (
                 <div key={stepKey} className="relative flex gap-4">
-                  {/* Step indicator */}
                   <div
-                    className={`relative z-10 flex items-center justify-center w-8 h-8 rounded-full border-2 ${
+                    className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-full border-2 ${
                       isCompleted
-                        ? 'bg-green-600 border-green-600 text-white'
-                        : 'bg-white border-slate-300 text-slate-400'
+                        ? 'border-[var(--mp-teal)] bg-[var(--mp-teal)] text-white'
+                        : 'border-slate-300 bg-white text-slate-400'
                     }`}
                   >
                     {isCompleted ? (
-                      <Check className="w-4 h-4" />
+                      <Check weight="light" className="h-4 w-4" />
                     ) : (
                       <span className="text-xs font-medium">{index + 1}</span>
                     )}
                   </div>
 
-                  {/* Step content */}
                   <div className={`flex-1 pb-4 ${isLast ? 'pb-0' : ''}`}>
                     <div className="flex items-center gap-2">
                       <span className={`${isCompleted ? 'text-slate-400' : 'text-slate-600'}`}>
@@ -105,16 +102,16 @@ export function EnrollmentStepsTimeline({ steps }: EnrollmentStepsTimelineProps)
                         {config.label}
                       </h4>
                     </div>
-                    <p className="text-sm text-slate-500 mt-0.5">
+                    <p className="mt-0.5 text-sm text-slate-500">
                       {config.description}
                     </p>
                     {isCompleted && stepData?.completed_at && (
-                      <p className="text-xs text-green-600 mt-1">
+                      <p className="mt-1 text-xs text-[var(--mp-teal)]">
                         Completed {format(new Date(stepData.completed_at), 'MMM d, yyyy')}
                       </p>
                     )}
                     {!isCompleted && (
-                      <p className="text-xs text-slate-400 mt-1">
+                      <p className="mt-1 text-xs text-slate-400">
                         Pending
                       </p>
                     )}
@@ -128,4 +125,3 @@ export function EnrollmentStepsTimeline({ steps }: EnrollmentStepsTimelineProps)
     </Card>
   );
 }
-

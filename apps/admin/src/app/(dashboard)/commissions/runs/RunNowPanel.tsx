@@ -1,8 +1,8 @@
 'use client';
 
+import { CircleNotch, Flask, Play } from '@phosphor-icons/react';
 import { useState } from 'react';
 import { Button, Badge } from '@crm-eco/ui';
-import { Play, Loader2, FlaskConical } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 
@@ -65,7 +65,7 @@ export function RunNowPanel({ organizationId, currentMonth, currentPeriod }: Run
           <div className="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform peer-checked:translate-x-4" />
         </div>
         <span className="text-sm text-slate-600 flex items-center gap-1">
-          <FlaskConical className="h-3.5 w-3.5" />
+          <Flask weight="light" className="h-3.5 w-3.5" />
           Dry run
         </span>
       </label>
@@ -80,9 +80,9 @@ export function RunNowPanel({ organizationId, currentMonth, currentPeriod }: Run
         size="sm"
       >
         {running ? (
-          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          <CircleNotch weight="light" className="h-4 w-4 mr-2 animate-spin" />
         ) : (
-          <Play className="h-4 w-4 mr-2" />
+          <Play weight="light" className="h-4 w-4 mr-2" />
         )}
         Run now for {currentMonth}
       </Button>

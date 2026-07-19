@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { AlertTriangle, XCircle, Clock, FileCheck, DollarSign, Cpu } from 'lucide-react';
+import { XCircle, Clock, ClipboardText, CurrencyDollar, Cpu } from '@phosphor-icons/react/dist/ssr';
 import type { AdminConsoleStats } from '@/lib/admin-console-queries';
 
 type AlertSeverity = 'critical' | 'warning' | 'info';
@@ -7,30 +7,28 @@ type AlertSeverity = 'critical' | 'warning' | 'info';
 interface AlertItem {
   id: string;
   severity: AlertSeverity;
-  icon: typeof AlertTriangle;
+  icon: typeof XCircle;
   message: string;
   count: number;
   href: string;
 }
 
-const severityStyles: Record<AlertSeverity, { bg: string; border: string; text: string; icon: string }> = {
+/** Soft glass tinting per severity -- hand-tuned per theme, matches --adm-rose/amber/cyan in both light + dark. */
+const severityStyles: Record<AlertSeverity, { bg: string; border: string; text: string }> = {
   critical: {
-    bg: 'bg-red-50 dark:bg-red-950/50',
-    border: 'border-red-200 dark:border-red-800/50',
-    text: 'text-red-700 dark:text-red-300',
-    icon: 'text-red-500 dark:text-red-400',
+    bg: 'bg-[rgba(225,29,72,0.07)] dark:bg-[rgba(251,113,133,0.10)]',
+    border: 'border-[rgba(225,29,72,0.22)] dark:border-[rgba(251,113,133,0.25)]',
+    text: 'text-[var(--adm-rose)]',
   },
   warning: {
-    bg: 'bg-amber-50 dark:bg-amber-950/50',
-    border: 'border-amber-200 dark:border-amber-800/50',
-    text: 'text-amber-700 dark:text-amber-300',
-    icon: 'text-amber-500 dark:text-amber-400',
+    bg: 'bg-[rgba(217,119,6,0.07)] dark:bg-[rgba(251,191,36,0.10)]',
+    border: 'border-[rgba(217,119,6,0.22)] dark:border-[rgba(251,191,36,0.25)]',
+    text: 'text-[var(--adm-amber)]',
   },
   info: {
-    bg: 'bg-blue-50 dark:bg-blue-950/50',
-    border: 'border-blue-200 dark:border-blue-800/50',
-    text: 'text-blue-700 dark:text-blue-300',
-    icon: 'text-blue-500 dark:text-blue-400',
+    bg: 'bg-[rgba(8,145,178,0.07)] dark:bg-[rgba(34,211,238,0.10)]',
+    border: 'border-[rgba(8,145,178,0.22)] dark:border-[rgba(34,211,238,0.25)]',
+    text: 'text-[var(--adm-cyan)]',
   },
 };
 
@@ -67,7 +65,7 @@ function deriveAlerts(stats: AdminConsoleStats): AlertItem[] {
     alerts.push({
       id: 'pending-reviews',
       severity: 'warning',
-      icon: FileCheck,
+      icon: ClipboardText,
       message: `${stats.enrollmentStats.pendingReview} Enrollment${stats.enrollmentStats.pendingReview > 1 ? 's' : ''} Pending Review`,
       count: stats.enrollmentStats.pendingReview,
       href: '/enrollments?status=submitted',
@@ -78,7 +76,7 @@ function deriveAlerts(stats: AdminConsoleStats): AlertItem[] {
     alerts.push({
       id: 'pending-commissions',
       severity: 'warning',
-      icon: DollarSign,
+      icon: CurrencyDollar,
       message: `$${stats.commissionStats.pendingAmount.toLocaleString('en-US', { minimumFractionDigits: 0 })} Commissions Pending`,
       count: stats.commissionStats.pendingPayouts,
       href: '/commissions/transactions?status=pending',
@@ -123,13 +121,13 @@ export function AdminAlertsStrip({ stats }: AdminAlertsStripProps) {
             key={alert.id}
             href={alert.href}
             className={`
-              flex items-center gap-2 px-3 py-2 rounded-lg
-              ${styles.bg} border ${styles.border}
-              hover:brightness-95 dark:hover:brightness-125 transition-all duration-200
+              flex items-center gap-2 px-3 py-2 rounded-full border backdrop-blur-sm
+              ${styles.bg} ${styles.border}
+              transition-all duration-200 hover:-translate-y-0.5
               whitespace-nowrap shrink-0
             `}
           >
-            <Icon className={`w-3.5 h-3.5 ${styles.icon}`} />
+            <Icon weight="light" className={`h-3.5 w-3.5 ${styles.text}`} />
             <span className={`text-xs font-medium ${styles.text}`}>
               {alert.message}
             </span>

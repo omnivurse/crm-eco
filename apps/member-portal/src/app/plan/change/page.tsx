@@ -1,10 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ChevronLeft } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@crm-eco/ui';
+import { PageHeader } from '@/components/PageHeader';
 
 const REQUEST_TYPES = [
   { value: 'add_dependent', label: 'Add a dependent' },
@@ -51,16 +50,12 @@ export default function PlanChangePage() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-6 px-4 py-8">
-      <Link href="/plan" className="inline-flex items-center text-sm text-blue-600 hover:underline">
-        <ChevronLeft className="mr-1 h-4 w-4" /> Back to Plan
-      </Link>
-
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Request a plan change</h1>
-        <p className="mt-1 text-sm text-slate-600">
-          Submit a request and your advisor will follow up within one business day.
-        </p>
-      </div>
+      <PageHeader
+        title="Request a plan change"
+        description="Submit a request and your advisor will follow up within one business day."
+        backHref="/plan"
+        backLabel="Back to Plan"
+      />
 
       <Card>
         <CardHeader>
@@ -80,7 +75,7 @@ export default function PlanChangePage() {
                 <select
                   value={requestType}
                   onChange={(e) => setRequestType(e.target.value as typeof requestType)}
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-[var(--mp-teal)] focus:outline-none focus:ring-1 focus:ring-[var(--mp-teal)]"
                 >
                   {REQUEST_TYPES.map((opt) => (
                     <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -98,7 +93,7 @@ export default function PlanChangePage() {
                   rows={5}
                   required
                   placeholder="Describe what you'd like to change..."
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-[var(--mp-teal)] focus:outline-none focus:ring-1 focus:ring-[var(--mp-teal)]"
                 />
               </div>
 

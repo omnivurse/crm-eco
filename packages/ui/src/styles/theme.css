@@ -90,11 +90,11 @@
   --glass-shadow: 0 8px 32px rgba(15, 23, 42, 0.1);
   --glass-blur: 16px;
 
-  /* Auth + shell — CRM landing palette */
-  --auth-bg: #030712;
-  --auth-panel: #0a1628;
+  /* Auth + shell — Ethereal Glass (void / cyan-emerald) */
+  --auth-bg: #050505;
+  --auth-panel: #0a0a0a;
   --auth-accent: #06b6d4;
-  --auth-highlight: #3dd6ff;
+  --auth-highlight: #22d3ee;
 
   /* Sidebar - Premium Dark Theme (aligned to landing) */
   --sidebar-bg: #030712;

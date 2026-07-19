@@ -201,7 +201,7 @@ export function CreateNeedDialog() {
           Create Need
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <HeartPulse className="w-5 h-5 text-purple-500" />

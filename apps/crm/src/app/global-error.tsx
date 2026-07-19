@@ -27,7 +27,9 @@ export default function GlobalError({
             Something went wrong
           </h2>
           <p className="text-slate-600 mb-6">
-            An unexpected error occurred. Please try again.
+            {error?.message?.trim()
+              ? error.message
+              : 'An unexpected error occurred. Please try again.'}
           </p>
           {error.digest && (
             <p className="text-xs text-slate-400 mb-4 font-mono">

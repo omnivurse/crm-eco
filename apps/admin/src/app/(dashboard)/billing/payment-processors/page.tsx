@@ -1,5 +1,6 @@
 'use client';
 
+import { ArrowClockwise, Buildings, CheckCircle, CreditCard, Eye, EyeSlash, GearSix, PencilSimple, Plus, ShieldCheck, Star, Trash, Warning, XCircle } from '@phosphor-icons/react';
 import { useState, useEffect } from 'react';
 import {
   Card,
@@ -19,22 +20,6 @@ import {
   DialogTitle,
   Switch,
 } from '@crm-eco/ui';
-import {
-  CreditCard,
-  Plus,
-  Edit,
-  Trash2,
-  Building2,
-  CheckCircle,
-  XCircle,
-  AlertTriangle,
-  RefreshCw,
-  Shield,
-  Eye,
-  EyeOff,
-  Settings,
-  Star,
-} from 'lucide-react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { toast } from 'sonner';
 
@@ -347,13 +332,13 @@ export default function PaymentProcessorsPage() {
   const getProcessorIcon = (type: string) => {
     switch (type) {
       case 'authorize_net':
-        return <CreditCard className="h-5 w-5" />;
+        return <CreditCard weight="light" className="h-5 w-5" />;
       case 'stripe':
-        return <CreditCard className="h-5 w-5" />;
+        return <CreditCard weight="light" className="h-5 w-5" />;
       case 'nmi':
-        return <Building2 className="h-5 w-5" />;
+        return <Buildings weight="light" className="h-5 w-5" />;
       default:
-        return <CreditCard className="h-5 w-5" />;
+        return <CreditCard weight="light" className="h-5 w-5" />;
     }
   };
 
@@ -375,7 +360,7 @@ export default function PaymentProcessorsPage() {
           <p className="text-muted-foreground">Configure payment gateway integrations</p>
         </div>
         <Button onClick={openCreateModal}>
-          <Plus className="h-4 w-4 mr-2" />
+          <Plus weight="light" className="h-4 w-4 mr-2" />
           Add Processor
         </Button>
       </div>
@@ -401,13 +386,13 @@ export default function PaymentProcessorsPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="text-center py-12">
-              <CreditCard className="h-12 w-12 text-slate-300 mx-auto mb-4" />
+              <CreditCard weight="light" className="h-12 w-12 text-slate-300 mx-auto mb-4" />
               <p className="text-lg font-medium">No Payment Processors</p>
               <p className="text-sm text-muted-foreground mb-4">
                 Add a payment processor to start accepting payments
               </p>
               <Button onClick={openCreateModal}>
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus weight="light" className="h-4 w-4 mr-2" />
                 Add Your First Processor
               </Button>
             </div>
@@ -432,7 +417,7 @@ export default function PaymentProcessorsPage() {
                         <h3 className="font-semibold text-lg">{processor.name}</h3>
                         {processor.is_default && (
                           <Badge className="bg-teal-100 text-teal-700">
-                            <Star className="h-3 w-3 mr-1" />
+                            <Star weight="light" className="h-3 w-3 mr-1" />
                             Default
                           </Badge>
                         )}
@@ -443,12 +428,12 @@ export default function PaymentProcessorsPage() {
                         )}
                         {processor.is_active ? (
                           <Badge variant="default" className="bg-emerald-100 text-emerald-700">
-                            <CheckCircle className="h-3 w-3 mr-1" />
+                            <CheckCircle weight="light" className="h-3 w-3 mr-1" />
                             Active
                           </Badge>
                         ) : (
                           <Badge variant="secondary">
-                            <XCircle className="h-3 w-3 mr-1" />
+                            <XCircle weight="light" className="h-3 w-3 mr-1" />
                             Inactive
                           </Badge>
                         )}
@@ -481,7 +466,7 @@ export default function PaymentProcessorsPage() {
                   <div className="flex items-center gap-2">
                     {!processor.is_default && processor.is_active && (
                       <Button variant="outline" size="sm" onClick={() => setAsDefault(processor)}>
-                        <Star className="h-4 w-4 mr-1" />
+                        <Star weight="light" className="h-4 w-4 mr-1" />
                         Set Default
                       </Button>
                     )}
@@ -489,7 +474,7 @@ export default function PaymentProcessorsPage() {
                       {processor.is_active ? 'Deactivate' : 'Activate'}
                     </Button>
                     <Button variant="ghost" size="icon" onClick={() => openEditModal(processor)}>
-                      <Edit className="h-4 w-4" />
+                      <PencilSimple weight="light" className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="ghost"
@@ -498,7 +483,7 @@ export default function PaymentProcessorsPage() {
                       onClick={() => openDeleteModal(processor)}
                       disabled={processor.is_default}
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash weight="light" className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
@@ -512,7 +497,7 @@ export default function PaymentProcessorsPage() {
       <Card className="bg-blue-50 border-blue-200">
         <CardContent className="pt-6">
           <div className="flex items-start gap-3">
-            <Shield className="h-5 w-5 text-blue-600 mt-0.5" />
+            <ShieldCheck weight="light" className="h-5 w-5 text-blue-600 mt-0.5" />
             <div>
               <p className="font-medium text-blue-900">Security Information</p>
               <p className="text-sm text-blue-700 mt-1">
@@ -524,11 +509,11 @@ export default function PaymentProcessorsPage() {
         </CardContent>
       </Card>
 
-      {/* Create/Edit Modal */}
+      {/* Create/PencilSimple Modal */}
       <Dialog open={showModal} onOpenChange={setShowModal}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{editingProcessor ? 'Edit Payment Processor' : 'Add Payment Processor'}</DialogTitle>
+            <DialogTitle>{editingProcessor ? 'PencilSimple Payment Processor' : 'Add Payment Processor'}</DialogTitle>
             <DialogDescription>
               Configure your payment gateway credentials. All sensitive data is encrypted.
             </DialogDescription>
@@ -578,7 +563,7 @@ export default function PaymentProcessorsPage() {
                   className="absolute right-1 top-1/2 -translate-y-1/2"
                   onClick={() => setShowApiKey(!showApiKey)}
                 >
-                  {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showApiKey ? <EyeSlash weight="light" className="h-4 w-4" /> : <Eye weight="light" className="h-4 w-4" />}
                 </Button>
               </div>
             </div>
@@ -602,7 +587,7 @@ export default function PaymentProcessorsPage() {
                   className="absolute right-1 top-1/2 -translate-y-1/2"
                   onClick={() => setShowTransactionKey(!showTransactionKey)}
                 >
-                  {showTransactionKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showTransactionKey ? <EyeSlash weight="light" className="h-4 w-4" /> : <Eye weight="light" className="h-4 w-4" />}
                 </Button>
               </div>
             </div>
@@ -667,7 +652,7 @@ export default function PaymentProcessorsPage() {
             <Button onClick={handleSave} disabled={saving}>
               {saving ? (
                 <>
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  <ArrowClockwise weight="light" className="h-4 w-4 mr-2 animate-spin" />
                   Saving...
                 </>
               ) : (
@@ -692,7 +677,7 @@ export default function PaymentProcessorsPage() {
             <div className="py-4">
               <div className="p-4 bg-red-50 rounded-lg">
                 <div className="flex items-center gap-3">
-                  <AlertTriangle className="h-5 w-5 text-red-600" />
+                  <Warning weight="light" className="h-5 w-5 text-red-600" />
                   <div>
                     <p className="font-medium text-red-900">{editingProcessor.name}</p>
                     <p className="text-sm text-red-700">
@@ -703,7 +688,7 @@ export default function PaymentProcessorsPage() {
               </div>
               {editingProcessor.is_default && (
                 <p className="text-sm text-amber-600 mt-3">
-                  <AlertTriangle className="h-4 w-4 inline mr-1" />
+                  <Warning weight="light" className="h-4 w-4 inline mr-1" />
                   This is the default processor and cannot be deleted. Please set another processor as default first.
                 </p>
               )}
@@ -721,12 +706,12 @@ export default function PaymentProcessorsPage() {
             >
               {deleting ? (
                 <>
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  <ArrowClockwise weight="light" className="h-4 w-4 mr-2 animate-spin" />
                   Deleting...
                 </>
               ) : (
                 <>
-                  <Trash2 className="h-4 w-4 mr-2" />
+                  <Trash weight="light" className="h-4 w-4 mr-2" />
                   Delete Processor
                 </>
               )}

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Input, Label, Badge } from '@crm-eco/ui';
-import { Calculator, ArrowLeft } from 'lucide-react';
+import { Calculator, ArrowLeft } from '@phosphor-icons/react';
 import Link from 'next/link';
 import { quote, getPlanOptions, buildMatrixPreview } from '@crm-eco/rates';
 import type {
@@ -75,21 +75,21 @@ export default function RatePlaygroundPage() {
       <div className="flex items-center gap-4">
         <Link href="/">
           <Button variant="ghost" size="icon">
-            <ArrowLeft className="h-5 w-5" />
+            <ArrowLeft weight="light" className="h-5 w-5" />
           </Button>
         </Link>
         <div>
-          <h1 className="text-2xl font-bold">Rate Engine Playground</h1>
+          <h1 className="text-2xl font-bold tracking-[-0.03em] text-[var(--mp-ink)]">Rate Engine Playground</h1>
           <p className="text-slate-500">Test the E123 rate engine interactively</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         {/* Input Form */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Calculator className="h-5 w-5" />
+              <Calculator weight="light" className="h-5 w-5 text-[var(--mp-teal)]" />
               Quote Input
             </CardTitle>
           </CardHeader>

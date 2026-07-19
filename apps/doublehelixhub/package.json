@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@crm-eco/ui": "*",
+    "@phosphor-icons/react": "^2.1.10",
     "@radix-ui/react-slot": "^1.0.2",
     "@supabase/supabase-js": "^2.81.1",
     "class-variance-authority": "^0.7.0",

@@ -5,13 +5,13 @@ import { createClient } from '@crm-eco/lib/supabase/client';
 import {
   Bell,
   Lock,
-  Mail,
-  Smartphone,
+  Envelope,
+  DeviceMobile,
   Globe,
-  Loader2,
+  CircleNotch,
   CheckCircle,
   Shield,
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@crm-eco/ui/components/card';
 import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
@@ -26,6 +26,7 @@ import {
 } from '@crm-eco/ui/components/select';
 import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import { toast } from 'sonner';
+import { PageHeader } from '@/components/PageHeader';
 import {
   getMemberSettings,
   saveNotificationPreferences,
@@ -166,24 +167,24 @@ export default function SettingsPage() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+      <div className="flex h-64 items-center justify-center">
+        <CircleNotch weight="light" className="h-8 w-8 animate-spin text-[var(--mp-teal)]" />
       </div>
     );
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Settings</h1>
-        <p className="text-slate-500">Manage your account preferences</p>
-      </div>
+    <div className="mx-auto max-w-3xl space-y-6">
+      <PageHeader
+        title="Settings"
+        description="Manage your account preferences"
+      />
 
       {/* Notification Preferences */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Bell className="h-5 w-5" aria-hidden />
+            <Bell weight="light" className="h-5 w-5" aria-hidden />
             Notification Preferences
           </CardTitle>
           <CardDescription>
@@ -194,7 +195,7 @@ export default function SettingsPage() {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <Mail className="h-5 w-5 text-slate-500" aria-hidden />
+                <Envelope weight="light" className="h-5 w-5 text-slate-500" aria-hidden />
                 <div>
                   <p className="font-medium text-slate-900">Email Notifications</p>
                   <p className="text-sm text-slate-500">Receive updates via email</p>
@@ -208,7 +209,7 @@ export default function SettingsPage() {
 
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <Smartphone className="h-5 w-5 text-slate-500" aria-hidden />
+                <DeviceMobile weight="light" className="h-5 w-5 text-slate-500" aria-hidden />
                 <div>
                   <p className="font-medium text-slate-900">SMS Notifications</p>
                   <p className="text-sm text-slate-500">Receive text message alerts</p>
@@ -262,9 +263,9 @@ export default function SettingsPage() {
           <div className="flex justify-end pt-4">
             <Button onClick={handleSaveNotifications} disabled={savingNotifications}>
               {savingNotifications ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" aria-hidden />
+                <CircleNotch weight="light" className="mr-2 h-4 w-4 animate-spin" aria-hidden />
               ) : (
-                <CheckCircle className="h-4 w-4 mr-2" aria-hidden />
+                <CheckCircle weight="light" className="mr-2 h-4 w-4" aria-hidden />
               )}
               Save Preferences
             </Button>
@@ -276,7 +277,7 @@ export default function SettingsPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Lock className="h-5 w-5" aria-hidden />
+            <Lock weight="light" className="h-5 w-5" aria-hidden />
             Security
           </CardTitle>
           <CardDescription>
@@ -311,9 +312,9 @@ export default function SettingsPage() {
             <div className="flex justify-end">
               <Button type="submit" disabled={savingPassword || !newPassword}>
                 {savingPassword ? (
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" aria-hidden />
+                  <CircleNotch weight="light" className="mr-2 h-4 w-4 animate-spin" aria-hidden />
                 ) : (
-                  <Shield className="h-4 w-4 mr-2" aria-hidden />
+                  <Shield weight="light" className="mr-2 h-4 w-4" aria-hidden />
                 )}
                 Update Password
               </Button>
@@ -326,7 +327,7 @@ export default function SettingsPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Globe className="h-5 w-5" aria-hidden />
+            <Globe weight="light" className="h-5 w-5" aria-hidden />
             Language & Region
           </CardTitle>
           <CardDescription>
@@ -368,9 +369,9 @@ export default function SettingsPage() {
           <div className="flex justify-end pt-2">
             <Button onClick={handleSaveLocale} disabled={savingLocale}>
               {savingLocale ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" aria-hidden />
+                <CircleNotch weight="light" className="mr-2 h-4 w-4 animate-spin" aria-hidden />
               ) : (
-                <CheckCircle className="h-4 w-4 mr-2" aria-hidden />
+                <CheckCircle weight="light" className="mr-2 h-4 w-4" aria-hidden />
               )}
               Save Language &amp; Region
             </Button>
@@ -382,7 +383,7 @@ export default function SettingsPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5" aria-hidden />
+            <Shield weight="light" className="h-5 w-5" aria-hidden />
             Data & Privacy
           </CardTitle>
           <CardDescription>
@@ -405,7 +406,7 @@ export default function SettingsPage() {
                 disabled={privacyPending !== null}
               >
                 {privacyPending === 'export' ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <CircleNotch weight="light" className="h-4 w-4 animate-spin" />
                 ) : (
                   'Request Download'
                 )}
@@ -428,7 +429,7 @@ export default function SettingsPage() {
                 disabled={privacyPending !== null}
               >
                 {privacyPending === 'deletion' ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <CircleNotch weight="light" className="h-4 w-4 animate-spin" />
                 ) : (
                   'Delete Account'
                 )}

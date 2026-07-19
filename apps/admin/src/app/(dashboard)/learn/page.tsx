@@ -1,38 +1,17 @@
 'use client';
 
+import { ArrowRight, BookOpen, CaretRight, ChatCircle, CheckCircle, Clock, CreditCard, EnvelopeSimple, FileText, GearSix, MagnifyingGlass, PlayCircle, Question, Rocket, Sparkle, Stack, TerminalWindow, UserCircleGear, Users } from '@phosphor-icons/react';
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { Input } from '@crm-eco/ui/components/input';
 import { Button } from '@crm-eco/ui/components/button';
 import { cn } from '@crm-eco/ui';
-import {
-  Search,
-  BookOpen,
-  Rocket,
-  Users,
-  UserCog,
-  CreditCard,
-  Mail,
-  Layers,
-  FileText,
-  Terminal,
-  Settings,
-  HelpCircle,
-  PlayCircle,
-  ChevronRight,
-  Sparkles,
-  MessageCircle,
-  Clock,
-  CheckCircle,
-  ArrowRight,
-} from 'lucide-react';
-
 const CATEGORIES = [
   {
     id: 'getting-started',
     title: 'Getting Started',
     description: 'Learn the basics and set up your workspace',
-    icon: <Rocket className="w-6 h-6" />,
+    icon: <Rocket weight="light" className="w-6 h-6" />,
     color: 'teal',
     articles: [
       { title: 'Quick Start Guide', href: '/learn/getting-started', time: '5 min' },
@@ -45,20 +24,20 @@ const CATEGORIES = [
     id: 'members',
     title: 'Member Management',
     description: 'Create, edit, and manage member profiles',
-    icon: <Users className="w-6 h-6" />,
+    icon: <Users weight="light" className="w-6 h-6" />,
     color: 'blue',
     articles: [
       { title: 'Creating Members', href: '/learn/members', time: '4 min' },
       { title: 'Managing Dependents', href: '/learn/members#dependents', time: '3 min' },
       { title: 'Importing Member Data', href: '/learn/members#import', time: '5 min' },
-      { title: 'Member Search & Filters', href: '/learn/members#search', time: '3 min' },
+      { title: 'Member MagnifyingGlass & Filters', href: '/learn/members#search', time: '3 min' },
     ],
   },
   {
     id: 'agents',
     title: 'Agent Management',
     description: 'Manage advisors, licensing, and branding',
-    icon: <UserCog className="w-6 h-6" />,
+    icon: <UserCircleGear weight="light" className="w-6 h-6" />,
     color: 'violet',
     articles: [
       { title: 'Agent Overview', href: '/learn/agents', time: '4 min' },
@@ -71,7 +50,7 @@ const CATEGORIES = [
     id: 'enrollments',
     title: 'Enrollment Processing',
     description: 'Handle enrollments from application to activation',
-    icon: <FileText className="w-6 h-6" />,
+    icon: <FileText weight="light" className="w-6 h-6" />,
     color: 'emerald',
     articles: [
       { title: 'Enrollment Workflow', href: '/learn/enrollments', time: '5 min' },
@@ -84,7 +63,7 @@ const CATEGORIES = [
     id: 'billing',
     title: 'Billing & Payments',
     description: 'Payment processing, invoices, and billing',
-    icon: <CreditCard className="w-6 h-6" />,
+    icon: <CreditCard weight="light" className="w-6 h-6" />,
     color: 'amber',
     articles: [
       { title: 'Billing Overview', href: '/learn/billing', time: '4 min' },
@@ -97,7 +76,7 @@ const CATEGORIES = [
     id: 'commissions',
     title: 'Commissions',
     description: 'Commission tiers, tracking, and payouts',
-    icon: <Layers className="w-6 h-6" />,
+    icon: <Stack weight="light" className="w-6 h-6" />,
     color: 'rose',
     articles: [
       { title: 'Commission Engine Overview', href: '/learn/agents#commissions', time: '5 min' },
@@ -109,7 +88,7 @@ const CATEGORIES = [
     id: 'communications',
     title: 'Communications',
     description: 'Email templates and sending',
-    icon: <Mail className="w-6 h-6" />,
+    icon: <EnvelopeSimple weight="light" className="w-6 h-6" />,
     color: 'blue',
     articles: [
       { title: 'Email Templates', href: '/learn/enrollments#links', time: '4 min' },
@@ -119,12 +98,12 @@ const CATEGORIES = [
   },
   {
     id: 'settings',
-    title: 'Settings & Security',
+    title: 'GearSix & Security',
     description: 'Configure system, security, and automations',
-    icon: <Settings className="w-6 h-6" />,
+    icon: <GearSix weight="light" className="w-6 h-6" />,
     color: 'slate',
     articles: [
-      { title: 'General Settings', href: '/learn/getting-started#settings', time: '3 min' },
+      { title: 'General GearSix', href: '/learn/getting-started#settings', time: '3 min' },
       { title: 'Security & Roles', href: '/learn/getting-started#security', time: '4 min' },
       { title: 'Audit Logs', href: '/learn/getting-started#audit', time: '3 min' },
     ],
@@ -133,11 +112,11 @@ const CATEGORIES = [
     id: 'terminal',
     title: 'Command Center',
     description: 'Power-user terminal and keyboard shortcuts',
-    icon: <Terminal className="w-6 h-6" />,
+    icon: <TerminalWindow weight="light" className="w-6 h-6" />,
     color: 'slate',
     articles: [
       { title: 'Command Center Basics', href: '/learn/terminal', time: '4 min' },
-      { title: 'Search Commands', href: '/learn/terminal#search', time: '5 min' },
+      { title: 'MagnifyingGlass Commands', href: '/learn/terminal#search', time: '5 min' },
       { title: 'Navigation Commands', href: '/learn/terminal#navigation', time: '3 min' },
       { title: 'Keyboard Shortcuts', href: '/learn/terminal#shortcuts', time: '2 min' },
     ],
@@ -145,10 +124,10 @@ const CATEGORIES = [
 ];
 
 const QUICK_LINKS = [
-  { title: 'Getting Started', icon: <PlayCircle className="w-5 h-5" />, href: '/learn/getting-started' },
-  { title: 'FAQs', icon: <HelpCircle className="w-5 h-5" />, href: '/learn/faq' },
-  { title: 'What\'s New', icon: <Sparkles className="w-5 h-5" />, href: '/learn/changelog' },
-  { title: 'Contact Support', icon: <MessageCircle className="w-5 h-5" />, href: 'mailto:support@doublehelixhub.com'},
+  { title: 'Getting Started', icon: <PlayCircle weight="light" className="w-5 h-5" />, href: '/learn/getting-started' },
+  { title: 'FAQs', icon: <Question weight="light" className="w-5 h-5" />, href: '/learn/faq' },
+  { title: 'What\'s New', icon: <Sparkle weight="light" className="w-5 h-5" />, href: '/learn/changelog' },
+  { title: 'Contact Support', icon: <ChatCircle weight="light" className="w-5 h-5" />, href: 'mailto:support@doublehelixhub.com'},
 ];
 
 export default function LearnPage() {
@@ -176,7 +155,7 @@ export default function LearnPage() {
 
         <div className="relative z-10">
           <div className="flex items-center gap-2 mb-4">
-            <BookOpen className="w-8 h-8 text-white" />
+            <BookOpen weight="light" className="w-8 h-8 text-white" />
             <span className="text-white/80 font-medium">Learning Center</span>
           </div>
           <h1 className="text-3xl md:text-4xl font-bold text-white mb-4">
@@ -187,9 +166,9 @@ export default function LearnPage() {
           </p>
 
           <div className="relative max-w-xl">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+            <MagnifyingGlass weight="light" className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
             <Input
-              placeholder="Search tutorials, guides, and features..."
+              placeholder="MagnifyingGlass tutorials, guides, and features..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-12 h-14 text-lg bg-white/95 border-0 shadow-xl"
@@ -219,7 +198,7 @@ export default function LearnPage() {
       {/* Getting Started Banner */}
       <div className="bg-gradient-to-r from-[#0891b2]/10 to-[#059669]/10 border border-[#0891b2]/20 rounded-2xl p-6 flex flex-col md:flex-row items-center gap-6">
         <div className="flex-shrink-0 p-4 rounded-2xl bg-gradient-to-br from-[#0891b2] to-[#059669]">
-          <Rocket className="w-10 h-10 text-white" />
+          <Rocket weight="light" className="w-10 h-10 text-white" />
         </div>
         <div className="flex-1 text-center md:text-left">
           <h2 className="text-xl font-bold text-slate-900 mb-2">
@@ -229,10 +208,10 @@ export default function LearnPage() {
             Start with our 5-minute quick start guide and learn the essentials to get up and running.
           </p>
         </div>
-        <Button size="lg" className="gap-2 bg-[#0891b2] hover:bg-[#0e7490]" asChild>
+        <Button size="lg" className="gap-2" asChild>
           <Link href="/learn/getting-started">
             Get Started
-            <ArrowRight className="w-4 h-4" />
+            <ArrowRight weight="light" className="w-4 h-4" />
           </Link>
         </Button>
       </div>
@@ -319,15 +298,15 @@ export default function LearnPage() {
                   className="flex items-center justify-between p-4 rounded-xl hover:bg-slate-50 transition-colors group"
                 >
                   <div className="flex items-center gap-3">
-                    <CheckCircle className="w-5 h-5 text-slate-300 group-hover:text-[#0891b2] transition-colors" />
+                    <CheckCircle weight="light" className="w-5 h-5 text-slate-300 group-hover:text-[#0891b2] transition-colors" />
                     <span className="font-medium text-slate-900 group-hover:text-[#0891b2] transition-colors">
                       {article.title}
                     </span>
                   </div>
                   <div className="flex items-center gap-2 text-sm text-slate-500">
-                    <Clock className="w-4 h-4" />
+                    <Clock weight="light" className="w-4 h-4" />
                     {article.time}
-                    <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <CaretRight weight="light" className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
                 </Link>
               ))}
@@ -348,21 +327,21 @@ export default function LearnPage() {
               category: 'Getting Started',
               time: '5 min',
               href: '/learn/getting-started',
-              icon: <Rocket className="w-5 h-5" />,
+              icon: <Rocket weight="light" className="w-5 h-5" />,
             },
             {
               title: 'Processing Enrollments',
               category: 'Enrollments',
               time: '4 min',
               href: '/learn/enrollments',
-              icon: <FileText className="w-5 h-5" />,
+              icon: <FileText weight="light" className="w-5 h-5" />,
             },
             {
               title: 'Using the Command Center',
-              category: 'Terminal',
+              category: 'TerminalWindow',
               time: '4 min',
               href: '/learn/terminal',
-              icon: <Terminal className="w-5 h-5" />,
+              icon: <TerminalWindow weight="light" className="w-5 h-5" />,
             },
           ].map((article) => (
             <Link
@@ -382,7 +361,7 @@ export default function LearnPage() {
                 {article.title}
               </h3>
               <div className="flex items-center gap-1 text-sm text-slate-500">
-                <Clock className="w-4 h-4" />
+                <Clock weight="light" className="w-4 h-4" />
                 {article.time} read
               </div>
             </Link>
@@ -401,13 +380,13 @@ export default function LearnPage() {
         <div className="flex items-center justify-center gap-4">
           <a href="mailto:support@doublehelixhub.com">
             <Button variant="outline" className="border-slate-600 text-white hover:bg-slate-800">
-              <Mail className="w-4 h-4 mr-2" />
+              <EnvelopeSimple weight="light" className="w-4 h-4 mr-2" />
               Email Support
             </Button>
           </a>
-          <Button className="bg-[#0891b2] hover:bg-[#0e7490]" asChild>
+          <Button  asChild>
             <Link href="/learn/faq">
-              <HelpCircle className="w-4 h-4 mr-2" />
+              <Question weight="light" className="w-4 h-4 mr-2" />
               Browse FAQs
             </Link>
           </Button>

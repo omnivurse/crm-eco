@@ -4,15 +4,15 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { 
-  FileText, 
-  Search, 
-  Filter,
+  FileText,
+  MagnifyingGlass,
+  Funnel,
   Eye,
   Calendar,
-  DollarSign,
-  ChevronLeft,
-  ChevronRight,
-} from 'lucide-react';
+  CurrencyDollar,
+  CaretLeft,
+  CaretRight,
+} from '@phosphor-icons/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@crm-eco/ui/components/card';
 import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
@@ -152,7 +152,7 @@ export default function AgentEnrollmentsPage() {
       'active': 'bg-green-100 text-green-700',
       'Pending': 'bg-amber-100 text-amber-700',
       'pending': 'bg-amber-100 text-amber-700',
-      'Future Active': 'bg-blue-100 text-blue-700',
+      'Future Active': 'bg-[rgba(11,109,133,0.1)] text-[var(--mp-teal)]',
       'Inactive': 'bg-slate-100 text-slate-700',
       'inactive': 'bg-slate-100 text-slate-700',
       'Cancelled': 'bg-red-100 text-red-700',
@@ -178,7 +178,7 @@ export default function AgentEnrollmentsPage() {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <FileText className="h-12 w-12 animate-pulse text-slate-400" />
+        <FileText weight="light" className="h-12 w-12 animate-pulse text-slate-400" />
       </div>
     );
   }
@@ -198,7 +198,7 @@ export default function AgentEnrollmentsPage() {
                 <p className="text-sm text-slate-500">Total Enrollments</p>
                 <p className="text-2xl font-bold">{stats.total}</p>
               </div>
-              <FileText className="h-8 w-8 text-slate-300" />
+              <FileText weight="light" className="h-8 w-8 text-slate-300" />
             </div>
           </CardContent>
         </Card>
@@ -210,7 +210,7 @@ export default function AgentEnrollmentsPage() {
                 <p className="text-2xl font-bold text-green-600">{stats.active}</p>
               </div>
               <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
-                <FileText className="h-4 w-4 text-green-600" />
+                <FileText weight="light" className="h-4 w-4 text-green-600" />
               </div>
             </div>
           </CardContent>
@@ -223,7 +223,7 @@ export default function AgentEnrollmentsPage() {
                 <p className="text-2xl font-bold text-amber-600">{stats.pending}</p>
               </div>
               <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center">
-                <FileText className="h-4 w-4 text-amber-600" />
+                <FileText weight="light" className="h-4 w-4 text-amber-600" />
               </div>
             </div>
           </CardContent>
@@ -233,11 +233,11 @@ export default function AgentEnrollmentsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-slate-500">Monthly Revenue</p>
-                <p className="text-2xl font-bold text-blue-600">
+                <p className="text-2xl font-bold text-[var(--mp-teal)]">
                   ${stats.monthlyRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </p>
               </div>
-              <DollarSign className="h-8 w-8 text-blue-300" />
+              <CurrencyDollar weight="light" className="h-8 w-8 text-[rgba(11,109,133,0.45)]" />
             </div>
           </CardContent>
         </Card>
@@ -247,7 +247,7 @@ export default function AgentEnrollmentsPage() {
         <CardHeader>
           <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
             <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <MagnifyingGlass weight="light" className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input
                 placeholder="Search by member or plan..."
                 value={searchTerm}
@@ -257,7 +257,7 @@ export default function AgentEnrollmentsPage() {
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-[180px]">
-                <Filter className="h-4 w-4 mr-2" />
+                <Funnel weight="light" className="h-4 w-4 mr-2" />
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
               <SelectContent>
@@ -274,7 +274,7 @@ export default function AgentEnrollmentsPage() {
         <CardContent>
           {paginatedEnrollments.length === 0 ? (
             <div className="text-center py-12">
-              <FileText className="h-12 w-12 mx-auto mb-4 text-slate-300" />
+              <FileText weight="light" className="h-12 w-12 mx-auto mb-4 text-slate-300" />
               <h3 className="text-lg font-medium text-slate-900 mb-2">No enrollments found</h3>
               <p className="text-slate-500">
                 {searchTerm || statusFilter !== 'all'
@@ -302,14 +302,14 @@ export default function AgentEnrollmentsPage() {
                       <tr key={enrollment.id} className="hover:bg-slate-50">
                         <td className="py-4">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium">
+                            <div className="w-10 h-10 rounded-full bg-[rgba(11,109,133,0.1)] flex items-center justify-center text-[var(--mp-teal)] font-medium">
                               {enrollment.primary_member?.first_name?.charAt(0) || '?'}
                               {enrollment.primary_member?.last_name?.charAt(0) || ''}
                             </div>
                             <div>
                               <Link 
                                 href={`/agent/members/${enrollment.primary_member?.id}`}
-                                className="font-medium text-slate-900 hover:text-blue-600"
+                                className="font-medium text-slate-900 hover:text-[var(--mp-teal)]"
                               >
                                 {enrollment.primary_member?.first_name} {enrollment.primary_member?.last_name}
                               </Link>
@@ -339,7 +339,7 @@ export default function AgentEnrollmentsPage() {
                         <td className="py-4">
                           <Link href={`/agent/enrollments/${enrollment.id}`}>
                             <Button variant="ghost" size="sm">
-                              <Eye className="h-4 w-4" />
+                              <Eye weight="light" className="h-4 w-4" />
                             </Button>
                           </Link>
                         </td>
@@ -361,7 +361,7 @@ export default function AgentEnrollmentsPage() {
                       onClick={() => setPage(p => Math.max(1, p - 1))}
                       disabled={page === 1}
                     >
-                      <ChevronLeft className="h-4 w-4" />
+                      <CaretLeft weight="light" className="h-4 w-4" />
                     </Button>
                     <span className="text-sm text-slate-600">
                       Page {page} of {totalPages}
@@ -372,7 +372,7 @@ export default function AgentEnrollmentsPage() {
                       onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                       disabled={page === totalPages}
                     >
-                      <ChevronRight className="h-4 w-4" />
+                      <CaretRight weight="light" className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>

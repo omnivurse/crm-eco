@@ -1,5 +1,6 @@
 'use client';
 
+import { CircleNotch } from '@phosphor-icons/react';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
@@ -14,8 +15,6 @@ import {
   SelectValue,
   Checkbox,
 } from '@crm-eco/ui';
-import { Loader2 } from 'lucide-react';
-
 interface ProductFormProps {
   initialData?: {
     id: string;
@@ -473,7 +472,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
         <Button type="submit" disabled={loading}>
           {loading ? (
             <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              <CircleNotch weight="light" className="h-4 w-4 mr-2 animate-spin" />
               {isEditing ? 'Saving...' : 'Creating...'}
             </>
           ) : isEditing ? (

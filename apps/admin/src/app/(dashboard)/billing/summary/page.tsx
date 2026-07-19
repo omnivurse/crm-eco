@@ -1,5 +1,6 @@
 'use client';
 
+import { ArrowClockwise, ArrowRight, Buildings, Calendar, CheckCircle, CreditCard, CurrencyDollar, DownloadSimple, TrendDown, TrendUp, Warning, XCircle } from '@phosphor-icons/react';
 import { useState, useEffect, useMemo } from 'react';
 import {
   Card,
@@ -10,20 +11,6 @@ import {
   Button,
   Badge,
 } from '@crm-eco/ui';
-import {
-  DollarSign,
-  TrendingUp,
-  TrendingDown,
-  CreditCard,
-  Building2,
-  AlertTriangle,
-  CheckCircle,
-  XCircle,
-  RefreshCw,
-  Calendar,
-  Download,
-  ArrowRight,
-} from 'lucide-react';
 import Link from 'next/link';
 import { createClient } from '@crm-eco/lib/supabase/client';
 
@@ -250,13 +237,13 @@ export default function BillingSummaryPage() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed':
-        return <CheckCircle className="h-4 w-4 text-emerald-500" />;
+        return <CheckCircle weight="light" className="h-4 w-4 text-emerald-500" />;
       case 'failed':
-        return <XCircle className="h-4 w-4 text-red-500" />;
+        return <XCircle weight="light" className="h-4 w-4 text-red-500" />;
       case 'pending':
-        return <RefreshCw className="h-4 w-4 text-amber-500" />;
+        return <ArrowClockwise weight="light" className="h-4 w-4 text-amber-500" />;
       case 'refunded':
-        return <AlertTriangle className="h-4 w-4 text-blue-500" />;
+        return <Warning weight="light" className="h-4 w-4 text-blue-500" />;
       default:
         return null;
     }
@@ -266,12 +253,12 @@ export default function BillingSummaryPage() {
     switch (method.toLowerCase()) {
       case 'card':
       case 'credit_card':
-        return <CreditCard className="h-4 w-4" />;
+        return <CreditCard weight="light" className="h-4 w-4" />;
       case 'ach':
       case 'bank':
-        return <Building2 className="h-4 w-4" />;
+        return <Buildings weight="light" className="h-4 w-4" />;
       default:
-        return <DollarSign className="h-4 w-4" />;
+        return <CurrencyDollar weight="light" className="h-4 w-4" />;
     }
   };
 
@@ -320,11 +307,11 @@ export default function BillingSummaryPage() {
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" onClick={exportSummary}>
-            <Download className="h-4 w-4 mr-2" />
+            <DownloadSimple weight="light" className="h-4 w-4 mr-2" />
             Export Report
           </Button>
           <Button variant="outline" onClick={fetchSummary}>
-            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            <ArrowClockwise weight="light" className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
         </div>
@@ -334,7 +321,7 @@ export default function BillingSummaryPage() {
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <Calendar weight="light" className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm font-medium">Date Range</span>
           </div>
         </CardHeader>
@@ -364,7 +351,7 @@ export default function BillingSummaryPage() {
                 <p className="text-2xl font-bold text-emerald-600">{formatCurrency(stats.totalCollected)}</p>
               </div>
               <div className="p-3 bg-emerald-100 rounded-full">
-                <TrendingUp className="h-6 w-6 text-emerald-600" />
+                <TrendUp weight="light" className="h-6 w-6 text-emerald-600" />
               </div>
             </div>
           </CardContent>
@@ -378,7 +365,7 @@ export default function BillingSummaryPage() {
                 <p className="text-2xl font-bold text-red-600">{formatCurrency(stats.totalFailed)}</p>
               </div>
               <div className="p-3 bg-red-100 rounded-full">
-                <TrendingDown className="h-6 w-6 text-red-600" />
+                <TrendDown weight="light" className="h-6 w-6 text-red-600" />
               </div>
             </div>
           </CardContent>
@@ -392,7 +379,7 @@ export default function BillingSummaryPage() {
                 <p className="text-2xl font-bold">{stats.successRate.toFixed(1)}%</p>
               </div>
               <div className="p-3 bg-blue-100 rounded-full">
-                <CheckCircle className="h-6 w-6 text-blue-600" />
+                <CheckCircle weight="light" className="h-6 w-6 text-blue-600" />
               </div>
             </div>
           </CardContent>
@@ -406,7 +393,7 @@ export default function BillingSummaryPage() {
                 <p className="text-2xl font-bold">{stats.transactionCount.toLocaleString()}</p>
               </div>
               <div className="p-3 bg-slate-100 rounded-full">
-                <DollarSign className="h-6 w-6 text-slate-600" />
+                <CurrencyDollar weight="light" className="h-6 w-6 text-slate-600" />
               </div>
             </div>
           </CardContent>
@@ -422,7 +409,7 @@ export default function BillingSummaryPage() {
                 <p className="text-sm text-muted-foreground">Total Refunded</p>
                 <p className="text-xl font-semibold text-blue-600">{formatCurrency(stats.totalRefunded)}</p>
               </div>
-              <AlertTriangle className="h-5 w-5 text-blue-500" />
+              <Warning weight="light" className="h-5 w-5 text-blue-500" />
             </div>
           </CardContent>
         </Card>
@@ -434,7 +421,7 @@ export default function BillingSummaryPage() {
                 <p className="text-sm text-muted-foreground">Total Pending</p>
                 <p className="text-xl font-semibold text-amber-600">{formatCurrency(stats.totalPending)}</p>
               </div>
-              <RefreshCw className="h-5 w-5 text-amber-500" />
+              <ArrowClockwise weight="light" className="h-5 w-5 text-amber-500" />
             </div>
           </CardContent>
         </Card>
@@ -446,7 +433,7 @@ export default function BillingSummaryPage() {
                 <p className="text-sm text-muted-foreground">Avg Transaction</p>
                 <p className="text-xl font-semibold">{formatCurrency(stats.avgTransactionAmount)}</p>
               </div>
-              <DollarSign className="h-5 w-5 text-slate-500" />
+              <CurrencyDollar weight="light" className="h-5 w-5 text-slate-500" />
             </div>
           </CardContent>
         </Card>
@@ -533,7 +520,7 @@ export default function BillingSummaryPage() {
               <Link href="/billing/declined/today">
                 <Button variant="ghost" size="sm">
                   View All
-                  <ArrowRight className="h-4 w-4 ml-1" />
+                  <ArrowRight weight="light" className="h-4 w-4 ml-1" />
                 </Button>
               </Link>
             </div>
@@ -630,25 +617,25 @@ export default function BillingSummaryPage() {
           <div className="flex flex-wrap gap-4">
             <Link href="/billing/list">
               <Button variant="outline">
-                <DollarSign className="h-4 w-4 mr-2" />
+                <CurrencyDollar weight="light" className="h-4 w-4 mr-2" />
                 View All Transactions
               </Button>
             </Link>
             <Link href="/billing/declined/today">
               <Button variant="outline">
-                <XCircle className="h-4 w-4 mr-2" />
+                <XCircle weight="light" className="h-4 w-4 mr-2" />
                 Today's Declines
               </Button>
             </Link>
             <Link href="/billing/nacha/export">
               <Button variant="outline">
-                <Download className="h-4 w-4 mr-2" />
+                <DownloadSimple weight="light" className="h-4 w-4 mr-2" />
                 NACHA Export
               </Button>
             </Link>
             <Link href="/billing/payment-processors">
               <Button variant="outline">
-                <CreditCard className="h-4 w-4 mr-2" />
+                <CreditCard weight="light" className="h-4 w-4 mr-2" />
                 Payment Processors
               </Button>
             </Link>

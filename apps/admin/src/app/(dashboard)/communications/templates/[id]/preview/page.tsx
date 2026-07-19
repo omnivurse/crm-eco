@@ -1,6 +1,6 @@
+import { ArrowLeft, EnvelopeSimple, PencilSimple } from '@phosphor-icons/react/dist/ssr';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
-import { ArrowLeft, Edit, Mail } from 'lucide-react';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { Button } from '@crm-eco/ui/components/button';
 import { Badge } from '@crm-eco/ui/components/badge';
@@ -47,7 +47,7 @@ export default async function PreviewTemplatePage({ params }: PageProps) {
             href="/communications/templates"
             className="inline-flex items-center text-sm text-slate-500 hover:text-slate-700"
           >
-            <ArrowLeft className="w-4 h-4 mr-1" />
+            <ArrowLeft weight="light" className="w-4 h-4 mr-1" />
             Back to Templates
           </Link>
           <div className="flex items-center gap-2">
@@ -65,8 +65,8 @@ export default async function PreviewTemplatePage({ params }: PageProps) {
         </div>
         <Link href={`/communications/templates/${id}`}>
           <Button variant="outline">
-            <Edit className="w-4 h-4 mr-2" />
-            Edit
+            <PencilSimple weight="light" className="w-4 h-4 mr-2" />
+            PencilSimple
           </Button>
         </Link>
       </div>
@@ -75,7 +75,7 @@ export default async function PreviewTemplatePage({ params }: PageProps) {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
-            <Mail className="w-4 h-4 text-slate-500" />
+            <EnvelopeSimple weight="light" className="w-4 h-4 text-slate-500" />
             Email Preview
           </CardTitle>
         </CardHeader>

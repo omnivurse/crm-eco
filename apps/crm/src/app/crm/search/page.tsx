@@ -190,7 +190,7 @@ export default async function SearchPage({ searchParams }: PageProps) {
   const moduleFilter = resolvedSearchParams.module;
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="w-full">
       {/* Header */}
       <div className="mb-6">
         <Link

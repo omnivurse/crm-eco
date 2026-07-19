@@ -2,17 +2,13 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
-import { 
-  User, 
-  Mail, 
-  Phone, 
-  MapPin, 
-  Building,
-  Globe,
+import {
+  User,
+  MapPin,
+  Buildings,
   Palette,
-  Save,
-  Upload,
-} from 'lucide-react';
+  FloppyDisk,
+} from '@phosphor-icons/react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@crm-eco/ui/components/card';
 import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
@@ -120,7 +116,7 @@ export default function AgentProfilePage() {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <User className="h-12 w-12 animate-pulse text-slate-400" />
+        <User weight="light" className="h-12 w-12 animate-pulse text-slate-400" />
       </div>
     );
   }
@@ -138,7 +134,7 @@ export default function AgentProfilePage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-slate-900">My Profile</h1>
         <Button onClick={handleSave} disabled={saving} className="gap-2">
-          <Save className="h-4 w-4" />
+          <FloppyDisk weight="light" className="h-4 w-4" />
           {saving ? 'Saving...' : 'Save Changes'}
         </Button>
       </div>
@@ -147,7 +143,7 @@ export default function AgentProfilePage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <User className="h-5 w-5" />
+            <User weight="light" className="h-5 w-5" />
             Personal Information
           </CardTitle>
         </CardHeader>
@@ -198,7 +194,7 @@ export default function AgentProfilePage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Building className="h-5 w-5" />
+            <Buildings weight="light" className="h-5 w-5" />
             Company Information
           </CardTitle>
           <CardDescription>
@@ -241,7 +237,7 @@ export default function AgentProfilePage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Palette className="h-5 w-5" />
+            <Palette weight="light" className="h-5 w-5" />
             Branding
           </CardTitle>
           <CardDescription>
@@ -305,7 +301,7 @@ export default function AgentProfilePage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <MapPin className="h-5 w-5" />
+            <MapPin weight="light" className="h-5 w-5" />
             Address
           </CardTitle>
         </CardHeader>

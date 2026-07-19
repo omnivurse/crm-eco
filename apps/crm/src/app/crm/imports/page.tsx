@@ -449,7 +449,7 @@ function ImportsPageContent() {
           <Button
             onClick={handleImport}
             disabled={!file || !selectedModule || uploading}
-            className="w-full bg-gradient-to-r from-teal-500 to-emerald-500"
+            className="w-full"
             size="lg"
           >
             {uploading ? (

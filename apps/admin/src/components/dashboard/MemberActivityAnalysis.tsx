@@ -1,6 +1,6 @@
 'use client';
 
-import { Activity, TrendingUp, TrendingDown, Users, UserMinus, BarChart3, ArrowRight } from 'lucide-react';
+import { ArrowRight, ChartBar, Pulse, TrendDown, TrendUp, UserMinus, Users } from '@phosphor-icons/react';
 import Link from 'next/link';
 import { cn } from '@crm-eco/ui';
 
@@ -44,10 +44,10 @@ export function MemberActivityAnalysis({ data }: MemberActivityAnalysisProps) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-slate-700">
-              <Activity className="w-5 h-5 text-white" />
+              <Pulse weight="light" className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-slate-900">Member Activity</h3>
+              <h3 className="text-lg font-bold text-slate-900">Member Pulse</h3>
               <p className="text-sm text-slate-500">Monthly analysis</p>
             </div>
           </div>
@@ -56,7 +56,7 @@ export function MemberActivityAnalysis({ data }: MemberActivityAnalysisProps) {
             className="flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
           >
             Full report
-            <ArrowRight className="w-4 h-4" />
+            <ArrowRight weight="light" className="w-4 h-4" />
           </Link>
         </div>
       </div>
@@ -68,7 +68,7 @@ export function MemberActivityAnalysis({ data }: MemberActivityAnalysisProps) {
           <div className="p-4 rounded-xl bg-emerald-50/50 border border-emerald-100">
             <div className="flex items-center gap-2 mb-3">
               <div className="p-1.5 rounded-lg bg-emerald-100">
-                <Users className="w-4 h-4 text-emerald-600" />
+                <Users weight="light" className="w-4 h-4 text-emerald-600" />
               </div>
               <span className="text-xs font-semibold text-emerald-700">New Enrollments</span>
             </div>
@@ -81,7 +81,7 @@ export function MemberActivityAnalysis({ data }: MemberActivityAnalysisProps) {
                     ? 'bg-emerald-100 text-emerald-700'
                     : 'bg-red-100 text-red-700'
                 )}>
-                  {enrollmentChange > 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                  {enrollmentChange > 0 ? <TrendUp weight="light" className="w-3 h-3" /> : <TrendDown weight="light" className="w-3 h-3" />}
                   {enrollmentChange > 0 ? '+' : ''}{enrollmentChange}%
                 </span>
               )}
@@ -93,7 +93,7 @@ export function MemberActivityAnalysis({ data }: MemberActivityAnalysisProps) {
           <div className="p-4 rounded-xl bg-red-50/50 border border-red-100">
             <div className="flex items-center gap-2 mb-3">
               <div className="p-1.5 rounded-lg bg-red-100">
-                <UserMinus className="w-4 h-4 text-red-600" />
+                <UserMinus weight="light" className="w-4 h-4 text-red-600" />
               </div>
               <span className="text-xs font-semibold text-red-700">Inactive Members</span>
             </div>
@@ -106,7 +106,7 @@ export function MemberActivityAnalysis({ data }: MemberActivityAnalysisProps) {
                     ? 'bg-emerald-100 text-emerald-700'
                     : 'bg-red-100 text-red-700'
                 )}>
-                  {inactiveChange < 0 ? <TrendingDown className="w-3 h-3" /> : <TrendingUp className="w-3 h-3" />}
+                  {inactiveChange < 0 ? <TrendDown weight="light" className="w-3 h-3" /> : <TrendUp weight="light" className="w-3 h-3" />}
                   {inactiveChange > 0 ? '+' : ''}{inactiveChange}%
                 </span>
               )}
@@ -125,7 +125,7 @@ export function MemberActivityAnalysis({ data }: MemberActivityAnalysisProps) {
               : 'bg-red-50/50 border-red-200'
           )}>
             <div className="flex items-center gap-2 mb-2">
-              <BarChart3 className={cn('w-4 h-4', netGrowth >= 0 ? 'text-emerald-600' : 'text-red-600')} />
+              <ChartBar weight="light" className={cn('w-4 h-4', netGrowth >= 0 ? 'text-emerald-600' : 'text-red-600')} />
               <span className="text-xs font-semibold text-slate-600">Net Growth</span>
             </div>
             <div className="flex items-center gap-2">
@@ -136,9 +136,9 @@ export function MemberActivityAnalysis({ data }: MemberActivityAnalysisProps) {
                 {netGrowth >= 0 ? '+' : ''}{netGrowth}
               </p>
               {netGrowth >= 0 ? (
-                <TrendingUp className="w-5 h-5 text-emerald-500" />
+                <TrendUp weight="light" className="w-5 h-5 text-emerald-500" />
               ) : (
-                <TrendingDown className="w-5 h-5 text-red-500" />
+                <TrendDown weight="light" className="w-5 h-5 text-red-500" />
               )}
             </div>
             <p className="text-[10px] text-slate-500 mt-1">New - Inactive</p>
@@ -154,7 +154,7 @@ export function MemberActivityAnalysis({ data }: MemberActivityAnalysisProps) {
                 : 'bg-red-50/50 border-red-200'
           )}>
             <div className="flex items-center gap-2 mb-2">
-              <Activity className={cn(
+              <Pulse weight="light" className={cn(
                 'w-4 h-4',
                 retentionRate >= 90 ? 'text-emerald-600' : retentionRate >= 75 ? 'text-amber-600' : 'text-red-600'
               )} />

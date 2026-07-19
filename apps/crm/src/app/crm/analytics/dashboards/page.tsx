@@ -14,7 +14,7 @@ export default function AnalyticsDashboardsPage() {
                         Build and customize your analytics dashboards
                     </p>
                 </div>
-                <Button className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400">
+                <Button>
                     <Plus className="w-4 h-4 mr-2" />
                     New Dashboard
                 </Button>

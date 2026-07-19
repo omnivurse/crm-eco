@@ -60,17 +60,26 @@ const config: Config = {
       },
       fontFamily: {
         heading: ['var(--font-heading)', 'Fraunces', 'Georgia', 'serif'],
-        body: ['var(--font-body)', 'Inter', 'system-ui', 'sans-serif'],
+        body: ['var(--font-body)', 'Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+        sans: ['var(--font-body)', 'Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+      },
+      transitionTimingFunction: {
+        'pif': 'cubic-bezier(0.32, 0.72, 0, 1)',
+        'pif-out': 'cubic-bezier(0.22, 1, 0.36, 1)',
+      },
+      boxShadow: {
+        'pif-soft': 'var(--pif-shadow-soft)',
+        'pif-float': 'var(--pif-shadow-float)',
       },
       animation: {
-        'blob-1': 'blob-drift-1 12s ease-in-out infinite',
-        'blob-2': 'blob-drift-2 15s ease-in-out infinite',
-        'blob-3': 'blob-drift-3 10s ease-in-out infinite',
-        'blob-4': 'blob-drift-4 18s ease-in-out infinite',
-        'blob-5': 'blob-drift-5 14s ease-in-out infinite',
-        'hero-float-slow': 'hero-float 8s ease-in-out infinite',
-        'hero-float-mid': 'hero-float 6s ease-in-out infinite',
-        'hero-float-fast': 'hero-float 4.5s ease-in-out infinite',
+        'blob-1': 'blob-drift-1 14s cubic-bezier(0.32, 0.72, 0, 1) infinite',
+        'blob-2': 'blob-drift-2 17s cubic-bezier(0.32, 0.72, 0, 1) infinite',
+        'blob-3': 'blob-drift-3 12s cubic-bezier(0.32, 0.72, 0, 1) infinite',
+        'blob-4': 'blob-drift-4 20s cubic-bezier(0.32, 0.72, 0, 1) infinite',
+        'blob-5': 'blob-drift-5 16s cubic-bezier(0.32, 0.72, 0, 1) infinite',
+        'hero-float-slow': 'hero-float 8s cubic-bezier(0.32, 0.72, 0, 1) infinite',
+        'hero-float-mid': 'hero-float 6s cubic-bezier(0.32, 0.72, 0, 1) infinite',
+        'hero-float-fast': 'hero-float 4.5s cubic-bezier(0.32, 0.72, 0, 1) infinite',
       },
       keyframes: {
         'hero-float': {

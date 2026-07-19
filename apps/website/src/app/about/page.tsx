@@ -1,12 +1,12 @@
 import type { Metadata } from 'next';
 import {
   Heart,
-  HeartHandshake,
+  Handshake,
   Users,
   ShieldCheck,
   Leaf,
-  Sparkles,
-} from 'lucide-react';
+  Sparkle,
+} from '@phosphor-icons/react/dist/ssr';
 import { Reveal } from '@/components/sections/Reveal';
 import {
   Container,
@@ -70,7 +70,7 @@ export default function AboutPage() {
           <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-20">
             <Reveal>
               <div className="inline-flex items-center gap-2 rounded-full bg-pif-teal-50 px-4 py-1.5 ring-1 ring-pif-teal-100">
-                <Sparkles className="h-4 w-4 text-pif-teal-600" />
+                <Sparkle weight="light" className="h-4 w-4 text-pif-teal-600" />
                 <span className="text-sm font-semibold text-pif-teal-700">Our Mission</span>
               </div>
               <h1 className="mt-6 font-heading text-[clamp(2.25rem,5.5vw,3.75rem)] font-semibold leading-[1.08] text-pif-navy-800 text-balance">
@@ -212,8 +212,8 @@ export default function AboutPage() {
         </Container>
       </section>
 
-      {/* Image-rich community section */}
-      <section className="hub-section-muted py-20 md:py-28">
+      {/* Image-rich community section — Z-axis cascade */}
+      <section className="hub-section-muted py-24 md:py-32">
         <Container>
           <Reveal>
             <SectionHeading
@@ -222,28 +222,30 @@ export default function AboutPage() {
               subtitle="Behind every shared need is a real family, a real clinician, and a real moment of care. This is what paying it forward looks like."
             />
           </Reveal>
-          <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-16 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             <Reveal className="sm:col-span-2 lg:col-span-2">
-              <BrandImage image={IMAGES.familyOutdoor} aspect="aspect-[16/10]" width={1400} />
+              <BrandImage image={IMAGES.familyOutdoor} aspect="aspect-[16/10]" width={1400} tilt="left" />
             </Reveal>
             <Reveal delay={0.08}>
-              <BrandImage image={IMAGES.clinicianSmiling} aspect="aspect-[16/10]" />
+              <BrandImage image={IMAGES.clinicianSmiling} aspect="aspect-[16/10]" tilt="right" />
             </Reveal>
             <Reveal delay={0.04}>
-              <BrandImage image={IMAGES.parentChild} aspect="aspect-[16/10]" />
+              <BrandImage image={IMAGES.parentChild} aspect="aspect-[16/10]" tilt="right" />
             </Reveal>
             <Reveal className="sm:col-span-2 lg:col-span-2" delay={0.08}>
-              <BrandImage image={IMAGES.teamMeeting} aspect="aspect-[16/10]" width={1400} />
+              <BrandImage image={IMAGES.teamMeeting} aspect="aspect-[16/10]" width={1400} tilt="left" />
             </Reveal>
           </div>
           <Reveal delay={0.1}>
-            <div className="mx-auto mt-12 flex max-w-2xl items-center gap-4 rounded-2xl border border-pif-navy-100 bg-white p-6 shadow-sm ring-1 ring-pif-navy/5">
-              <IconChip icon={HeartHandshake} variant="gold" />
-              <p className="leading-relaxed text-slate-700">
-                When a member is hurting, the whole community leans in. That&apos;s the
-                promise we make to each other — and the one we&apos;d love for you to be
-                part of.
-              </p>
+            <div className="pif-bezel mx-auto mt-14 max-w-2xl">
+              <div className="pif-bezel-inner flex items-center gap-4 p-6">
+                <IconChip icon={Handshake} variant="gold" />
+                <p className="leading-relaxed text-slate-700">
+                  When a member is hurting, the whole community leans in. That&apos;s the
+                  promise we make to each other — and the one we&apos;d love for you to be
+                  part of.
+                </p>
+              </div>
             </div>
           </Reveal>
         </Container>

@@ -2,7 +2,7 @@
 
 import { Button, Card, CardContent, Badge } from '@crm-eco/ui';
 import { 
-  Loader2, 
+  CircleNotch, 
   Check, 
   Heart, 
   User, 
@@ -10,9 +10,9 @@ import {
   CreditCard, 
   FileText, 
   Calendar,
-  CheckCircle2,
+  CheckCircle,
   ArrowRight
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 import Link from 'next/link';
 import type { WizardSnapshot, WizardPlan } from '@crm-eco/enrollment';
 import { format } from 'date-fns';
@@ -36,7 +36,7 @@ export function SelfServeConfirmationStep({
     return (
       <div className="text-center py-8">
         <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-green-100 flex items-center justify-center">
-          <CheckCircle2 className="w-10 h-10 text-green-600" />
+          <CheckCircle weight="light" className="h-10 w-10 text-green-600" />
         </div>
         
         <h2 className="text-2xl font-bold text-slate-900 mb-4">
@@ -48,10 +48,10 @@ export function SelfServeConfirmationStep({
           and is now being reviewed by our team.
         </p>
 
-        <Card className="bg-blue-50 border-blue-200 max-w-md mx-auto">
+        <Card className="bg-[rgba(11,109,133,0.06)] border-[rgba(11,109,133,0.15)] max-w-md mx-auto">
           <CardContent className="pt-6">
-            <h4 className="font-medium text-blue-900 mb-2">What happens next?</h4>
-            <ol className="text-sm text-blue-800 text-left space-y-2">
+            <h4 className="font-medium text-[var(--mp-ink)] mb-2">What happens next?</h4>
+            <ol className="text-sm text-[var(--mp-ink)] text-left space-y-2">
               <li className="flex gap-2">
                 <span className="font-medium">1.</span>
                 Our team will review your enrollment within 1-2 business days
@@ -72,7 +72,7 @@ export function SelfServeConfirmationStep({
           <Link href="/">
             <Button className="gap-2">
               Return to Dashboard
-              <ArrowRight className="w-4 h-4" />
+              <ArrowRight weight="light" className="w-4 h-4" />
             </Button>
           </Link>
         </div>
@@ -97,8 +97,8 @@ export function SelfServeConfirmationStep({
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                <User className="w-5 h-5 text-blue-600" />
+              <div className="w-10 h-10 rounded-full bg-[rgba(11,109,133,0.1)] flex items-center justify-center">
+                <User weight="light" className="w-5 h-5 text-[var(--mp-teal)]" />
               </div>
               <div className="flex-1">
                 <h4 className="font-medium text-slate-900">Contact Information</h4>
@@ -114,7 +114,7 @@ export function SelfServeConfirmationStep({
                   </p>
                 </div>
               </div>
-              <Check className="w-5 h-5 text-green-600" />
+              <Check weight="light" className="w-5 h-5 text-green-600" />
             </div>
           </CardContent>
         </Card>
@@ -123,8 +123,8 @@ export function SelfServeConfirmationStep({
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                <Users className="w-5 h-5 text-blue-600" />
+              <div className="w-10 h-10 rounded-full bg-[rgba(11,109,133,0.1)] flex items-center justify-center">
+                <Users weight="light" className="w-5 h-5 text-[var(--mp-teal)]" />
               </div>
               <div className="flex-1">
                 <h4 className="font-medium text-slate-900">Household Members</h4>
@@ -142,7 +142,7 @@ export function SelfServeConfirmationStep({
                   )}
                 </div>
               </div>
-              <Check className="w-5 h-5 text-green-600" />
+              <Check weight="light" className="w-5 h-5 text-green-600" />
             </div>
           </CardContent>
         </Card>
@@ -151,8 +151,8 @@ export function SelfServeConfirmationStep({
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                <Heart className="w-5 h-5 text-blue-600" />
+              <div className="w-10 h-10 rounded-full bg-[rgba(11,109,133,0.1)] flex items-center justify-center">
+                <Heart weight="light" className="w-5 h-5 text-[var(--mp-teal)]" />
               </div>
               <div className="flex-1">
                 <h4 className="font-medium text-slate-900">Selected Plan</h4>
@@ -172,7 +172,7 @@ export function SelfServeConfirmationStep({
                   )}
                   {snapshot.plan_selection?.requested_effective_date && (
                     <p className="flex items-center gap-1">
-                      <Calendar className="w-4 h-4" />
+                      <Calendar weight="light" className="w-4 h-4" />
                       Effective: {format(
                         new Date(snapshot.plan_selection.requested_effective_date),
                         'MMMM d, yyyy'
@@ -181,7 +181,7 @@ export function SelfServeConfirmationStep({
                   )}
                 </div>
               </div>
-              <Check className="w-5 h-5 text-green-600" />
+              <Check weight="light" className="w-5 h-5 text-green-600" />
             </div>
           </CardContent>
         </Card>
@@ -190,8 +190,8 @@ export function SelfServeConfirmationStep({
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                <FileText className="w-5 h-5 text-blue-600" />
+              <div className="w-10 h-10 rounded-full bg-[rgba(11,109,133,0.1)] flex items-center justify-center">
+                <FileText weight="light" className="w-5 h-5 text-[var(--mp-teal)]" />
               </div>
               <div className="flex-1">
                 <h4 className="font-medium text-slate-900">Acknowledgments</h4>
@@ -202,7 +202,7 @@ export function SelfServeConfirmationStep({
                   </p>
                 </div>
               </div>
-              <Check className="w-5 h-5 text-green-600" />
+              <Check weight="light" className="w-5 h-5 text-green-600" />
             </div>
           </CardContent>
         </Card>
@@ -211,8 +211,8 @@ export function SelfServeConfirmationStep({
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                <CreditCard className="w-5 h-5 text-blue-600" />
+              <div className="w-10 h-10 rounded-full bg-[rgba(11,109,133,0.1)] flex items-center justify-center">
+                <CreditCard weight="light" className="w-5 h-5 text-[var(--mp-teal)]" />
               </div>
               <div className="flex-1">
                 <h4 className="font-medium text-slate-900">Payment Setup</h4>
@@ -225,7 +225,7 @@ export function SelfServeConfirmationStep({
                   <p>Billing day: {snapshot.payment?.billing_day}st of each month</p>
                 </div>
               </div>
-              <Check className="w-5 h-5 text-green-600" />
+              <Check weight="light" className="w-5 h-5 text-green-600" />
             </div>
           </CardContent>
         </Card>
@@ -253,12 +253,12 @@ export function SelfServeConfirmationStep({
         >
           {loading ? (
             <>
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <CircleNotch weight="light" className="w-4 h-4 animate-spin" />
               Submitting...
             </>
           ) : (
             <>
-              <Check className="w-4 h-4" />
+              <Check weight="light" className="w-4 h-4" />
               Submit Enrollment
             </>
           )}

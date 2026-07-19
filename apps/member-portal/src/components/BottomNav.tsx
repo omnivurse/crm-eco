@@ -3,22 +3,22 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  LayoutDashboard,
-  Shield,
+  House,
+  ShieldCheck,
   Heart,
-  MessageSquare,
+  ChatCircle,
   Stethoscope,
   CreditCard,
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 import { cn } from '@crm-eco/ui/lib/utils';
 
 const navItems = [
-  { label: 'Home', href: '/', icon: LayoutDashboard },
-  { label: 'Coverage', href: '/coverage', icon: Shield },
+  { label: 'Home', href: '/', icon: House },
+  { label: 'Coverage', href: '/coverage', icon: ShieldCheck },
   { label: 'Services', href: '/services', icon: Stethoscope },
   { label: 'Billing', href: '/billing', icon: CreditCard },
   { label: 'Needs', href: '/needs', icon: Heart },
-  { label: 'Support', href: '/support', icon: MessageSquare },
+  { label: 'Support', href: '/support', icon: ChatCircle },
 ];
 
 const excludedPrefixes = [
@@ -37,56 +37,38 @@ export function BottomNav() {
   const pathname = usePathname();
 
   const shouldHide = excludedPrefixes.some(
-    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
   );
   if (shouldHide) return null;
 
   return (
-    <nav
-      className={cn(
-        'fixed bottom-0 left-0 right-0 z-50 md:hidden',
-        'bg-white/95 backdrop-blur-sm border-t border-slate-200',
-        'pb-[max(0.5rem,env(safe-area-inset-bottom))]'
-      )}
-    >
-      <div className="flex items-center justify-around h-14">
-        {navItems.map((item) => {
-          const isActive =
-            item.href === '/'
-              ? pathname === '/'
-              : pathname.startsWith(item.href);
+    <nav className="mp-dock md:hidden" aria-label="Mobile">
+      {navItems.map((item) => {
+        const isActive =
+          item.href === '/'
+            ? pathname === '/'
+            : pathname.startsWith(item.href);
+        const Icon = item.icon;
 
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              aria-current={isActive ? 'page' : undefined}
-              className={cn(
-                'relative flex flex-col items-center justify-center gap-0.5 flex-1 py-1.5',
-                'text-xs font-medium transition-colors',
-                isActive
-                  ? 'text-primary'
-                  : 'text-slate-500 active:text-slate-700'
-              )}
-            >
-              {isActive && (
-                <span
-                  aria-hidden
-                  className="absolute top-0 h-0.5 w-8 rounded-full bg-primary"
-                />
-              )}
-              <item.icon
-                aria-hidden
-                className={cn(
-                  'w-5 h-5',
-                  isActive ? 'text-primary' : 'text-slate-500'
-                )}
-              />
-              <span>{item.label}</span>
-            </Link>
-          );
-        })}
-      </div>
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            aria-current={isActive ? 'page' : undefined}
+            className={cn(
+              'flex flex-col items-center gap-0.5 px-1.5 py-0.5 text-[0.6rem] font-semibold transition-colors duration-400',
+              isActive ? 'text-[var(--mp-teal)]' : 'text-slate-500',
+            )}
+          >
+            <Icon
+              weight="light"
+              aria-hidden
+              className={cn('h-5 w-5', isActive ? 'text-[var(--mp-teal)]' : 'text-slate-500')}
+            />
+            <span>{item.label}</span>
+          </Link>
+        );
+      })}
     </nav>
   );
 }

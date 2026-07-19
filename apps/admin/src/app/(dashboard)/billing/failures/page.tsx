@@ -1,19 +1,11 @@
 'use client';
 
+import { ArrowClockwise, ArrowLeft, CheckCircle, CircleNotch, EnvelopeSimple, Warning, XCircle } from '@phosphor-icons/react';
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, Button, Badge } from '@crm-eco/ui';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { format, formatDistanceToNow } from 'date-fns';
 import Link from 'next/link';
-import {
-  ArrowLeft,
-  AlertTriangle,
-  CheckCircle,
-  RefreshCw,
-  XCircle,
-  Loader2,
-  Mail,
-} from 'lucide-react';
 import { toast } from 'sonner';
 import { retryFailedPayment, sendFailureNotification } from '../actions';
 
@@ -165,7 +157,7 @@ export default function FailedPaymentsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <CircleNotch weight="light" className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -177,7 +169,7 @@ export default function FailedPaymentsPage() {
         <div className="flex items-center gap-4">
           <Button variant="outline" size="sm" asChild>
             <Link href="/billing">
-              <ArrowLeft className="h-4 w-4 mr-2" />
+              <ArrowLeft weight="light" className="h-4 w-4 mr-2" />
               Back
             </Link>
           </Button>
@@ -189,7 +181,7 @@ export default function FailedPaymentsPage() {
           </div>
         </div>
         <Button variant="outline" size="sm" onClick={loadFailures}>
-          <RefreshCw className="h-4 w-4 mr-2" />
+          <ArrowClockwise weight="light" className="h-4 w-4 mr-2" />
           Refresh
         </Button>
       </div>
@@ -203,7 +195,7 @@ export default function FailedPaymentsPage() {
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-red-100 rounded-full">
-                      <AlertTriangle className="h-5 w-5 text-red-600" />
+                      <Warning weight="light" className="h-5 w-5 text-red-600" />
                     </div>
                     <div>
                       <CardTitle className="text-lg">
@@ -254,9 +246,9 @@ export default function FailedPaymentsPage() {
                     <p className="text-xs text-slate-500 uppercase tracking-wide">Member Notified</p>
                     <div className="flex items-center gap-2">
                       {failure.member_notified ? (
-                        <CheckCircle className="h-4 w-4 text-green-500" />
+                        <CheckCircle weight="light" className="h-4 w-4 text-green-500" />
                       ) : (
-                        <XCircle className="h-4 w-4 text-slate-400" />
+                        <XCircle weight="light" className="h-4 w-4 text-slate-400" />
                       )}
                       <span className="text-sm">
                         {failure.member_notified
@@ -275,9 +267,9 @@ export default function FailedPaymentsPage() {
                     disabled={processingId === failure.id}
                   >
                     {processingId === failure.id ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      <CircleNotch weight="light" className="h-4 w-4 mr-2 animate-spin" />
                     ) : (
-                      <RefreshCw className="h-4 w-4 mr-2" />
+                      <ArrowClockwise weight="light" className="h-4 w-4 mr-2" />
                     )}
                     Retry Payment
                   </Button>
@@ -287,7 +279,7 @@ export default function FailedPaymentsPage() {
                     onClick={() => sendNotification(failure)}
                     disabled={processingId === failure.id}
                   >
-                    <Mail className="h-4 w-4 mr-2" />
+                    <EnvelopeSimple weight="light" className="h-4 w-4 mr-2" />
                     Notify Member
                   </Button>
                   <Button
@@ -296,7 +288,7 @@ export default function FailedPaymentsPage() {
                     onClick={() => markResolved(failure.id, 'manually_resolved')}
                     disabled={processingId === failure.id}
                   >
-                    <CheckCircle className="h-4 w-4 mr-2" />
+                    <CheckCircle weight="light" className="h-4 w-4 mr-2" />
                     Mark Resolved
                   </Button>
                   <Button
@@ -320,7 +312,7 @@ export default function FailedPaymentsPage() {
       ) : (
         <Card>
           <CardContent className="py-12 text-center">
-            <CheckCircle className="h-12 w-12 mx-auto mb-4 text-green-500" />
+            <CheckCircle weight="light" className="h-12 w-12 mx-auto mb-4 text-green-500" />
             <h3 className="text-lg font-semibold text-slate-900 mb-2">All Caught Up!</h3>
             <p className="text-slate-500">
               There are no unresolved payment failures at this time.

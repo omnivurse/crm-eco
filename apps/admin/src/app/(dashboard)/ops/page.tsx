@@ -1,27 +1,9 @@
 'use client';
 
+import { ArrowClockwise, Buildings, Calendar, CaretRight, CheckCircle, CircleNotch, Clock, Database, FileText, HardDrives, Lightning, Play, Pulse, ShieldCheck, Users, Warning, XCircle } from '@phosphor-icons/react';
 import { useState, useEffect } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle, Badge, Button } from '@crm-eco/ui';
-import {
-  Zap,
-  Clock,
-  CheckCircle2,
-  XCircle,
-  AlertTriangle,
-  Play,
-  Calendar,
-  ChevronRight,
-  Activity,
-  Server,
-  Database,
-  RefreshCw,
-  Shield,
-  FileText,
-  Users,
-  Building2,
-  Loader2,
-} from 'lucide-react';
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -41,17 +23,17 @@ interface OpsStats {
 
 const statusConfig: Record<string, { icon: any; color: string }> = {
   pending: { icon: Clock, color: 'bg-slate-100 text-slate-600' },
-  running: { icon: RefreshCw, color: 'bg-blue-100 text-blue-600' },
-  completed: { icon: CheckCircle2, color: 'bg-emerald-100 text-emerald-600' },
+  running: { icon: ArrowClockwise, color: 'bg-blue-100 text-blue-600' },
+  completed: { icon: CheckCircle, color: 'bg-emerald-100 text-emerald-600' },
   failed: { icon: XCircle, color: 'bg-red-100 text-red-600' },
-  cancelled: { icon: AlertTriangle, color: 'bg-amber-100 text-amber-600' },
+  cancelled: { icon: Warning, color: 'bg-amber-100 text-amber-600' },
 };
 
 const vendorInfo: Record<string, { name: string; icon: any; color: string }> = {
-  arm: { name: 'ARM', icon: Shield, color: 'bg-blue-100 text-blue-600' },
+  arm: { name: 'ARM', icon: ShieldCheck, color: 'bg-blue-100 text-blue-600' },
   sedera: { name: 'Sedera', icon: Users, color: 'bg-purple-100 text-purple-600' },
-  zion: { name: 'Zion', icon: Building2, color: 'bg-emerald-100 text-emerald-600' },
-  mphc: { name: 'MPHC', icon: Shield, color: 'bg-amber-100 text-amber-600' },
+  zion: { name: 'Zion', icon: Buildings, color: 'bg-emerald-100 text-emerald-600' },
+  mphc: { name: 'MPHC', icon: ShieldCheck, color: 'bg-amber-100 text-amber-600' },
   altrua: { name: 'Altrua', icon: Users, color: 'bg-pink-100 text-pink-600' },
 };
 
@@ -153,7 +135,7 @@ export default function OpsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+        <CircleNotch weight="light" className="w-8 h-8 animate-spin text-slate-400" />
       </div>
     );
   }
@@ -169,13 +151,13 @@ export default function OpsPage() {
         <div className="flex items-center gap-2">
           <Link href="/ops/scheduler">
             <Button variant="outline">
-              <Calendar className="w-4 h-4 mr-2" />
+              <Calendar weight="light" className="w-4 h-4 mr-2" />
               Scheduler
             </Button>
           </Link>
           <Link href="/ops/jobs">
             <Button>
-              <Clock className="w-4 h-4 mr-2" />
+              <Clock weight="light" className="w-4 h-4 mr-2" />
               View Jobs
             </Button>
           </Link>
@@ -188,7 +170,7 @@ export default function OpsPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-xl bg-purple-100">
-                <Zap className="w-6 h-6 text-purple-600" />
+                <Lightning weight="light" className="w-6 h-6 text-purple-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold text-slate-900">{stats?.totalJobs ?? 0}</p>
@@ -202,7 +184,7 @@ export default function OpsPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-xl bg-blue-100">
-                <Activity className={`w-6 h-6 text-blue-600 ${stats?.runningJobs ? 'animate-pulse' : ''}`} />
+                <Pulse weight="light" className={`w-6 h-6 text-blue-600 ${stats?.runningJobs ? 'animate-pulse' : ''}`} />
               </div>
               <div>
                 <p className="text-2xl font-bold text-slate-900">{stats?.runningJobs ?? 0}</p>
@@ -216,7 +198,7 @@ export default function OpsPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-xl bg-red-100">
-                <XCircle className="w-6 h-6 text-red-600" />
+                <XCircle weight="light" className="w-6 h-6 text-red-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold text-slate-900">{stats?.failedJobs24h ?? 0}</p>
@@ -230,7 +212,7 @@ export default function OpsPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-xl bg-emerald-100">
-                <Server className="w-6 h-6 text-emerald-600" />
+                <HardDrives weight="light" className="w-6 h-6 text-emerald-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold text-emerald-600">Healthy</p>
@@ -302,7 +284,7 @@ export default function OpsPage() {
                   href="/ops/jobs"
                   className="text-sm text-[#0891b2] hover:underline flex items-center gap-1"
                 >
-                  View all <ChevronRight className="w-4 h-4" />
+                  View all <CaretRight weight="light" className="w-4 h-4" />
                 </Link>
               </div>
             </CardHeader>
@@ -343,7 +325,7 @@ export default function OpsPage() {
                 </div>
               ) : (
                 <div className="text-center py-8">
-                  <Clock className="w-12 h-12 text-slate-200 mx-auto mb-3" />
+                  <Clock weight="light" className="w-12 h-12 text-slate-200 mx-auto mb-3" />
                   <p className="text-slate-500">No job runs yet</p>
                 </div>
               )}
@@ -370,7 +352,7 @@ export default function OpsPage() {
                   <p className="font-medium text-slate-700">{link.name}</p>
                   <p className="text-xs text-slate-400">{link.description}</p>
                 </div>
-                <ChevronRight className="w-4 h-4 text-slate-300 ml-auto" />
+                <CaretRight weight="light" className="w-4 h-4 text-slate-300 ml-auto" />
               </Link>
             ))}
           </CardContent>

@@ -1,5 +1,5 @@
+import { Percent, Plus, Stack, Users } from '@phosphor-icons/react/dist/ssr';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Badge } from '@crm-eco/ui';
-import { Plus, Layers, Users, Percent } from 'lucide-react';
 import Link from 'next/link';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { getActiveTenant } from '@/lib/tenant';
@@ -71,7 +71,7 @@ export default async function CommissionTiersPage() {
         </div>
         <Link href="/commissions/tiers/new">
           <Button>
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus weight="light" className="h-4 w-4 mr-2" />
             Add Tier
           </Button>
         </Link>
@@ -81,14 +81,14 @@ export default async function CommissionTiersPage() {
       {tiers.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
-            <Layers className="h-12 w-12 mx-auto mb-4 text-slate-300" />
+            <Stack weight="light" className="h-12 w-12 mx-auto mb-4 text-slate-300" />
             <h3 className="text-lg font-semibold text-slate-900 mb-2">No Commission Tiers</h3>
             <p className="text-slate-500 mb-4">
               Create commission tiers to define how agents earn commissions.
             </p>
             <Link href="/commissions/tiers/new">
               <Button>
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus weight="light" className="h-4 w-4 mr-2" />
                 Create First Tier
               </Button>
             </Link>
@@ -151,7 +151,7 @@ export default async function CommissionTiersPage() {
                   {/* Agent Count */}
                   <div className="pt-3 border-t flex items-center justify-between">
                     <div className="flex items-center gap-2 text-slate-500">
-                      <Users className="h-4 w-4" />
+                      <Users weight="light" className="h-4 w-4" />
                       <span className="text-sm">{tierAgentCounts[tier.id]} agents</span>
                     </div>
                   </div>

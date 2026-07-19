@@ -212,7 +212,7 @@ export default function AssetLibraryPage() {
   };
 
   return (
-    <div className="container max-w-7xl py-8 space-y-6">
+    <div className="w-full py-8 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

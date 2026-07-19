@@ -192,7 +192,7 @@ export function StageTransitionModal({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-lg bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10">
+      <DialogContent className="sm:max-w-xl bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3 text-lg font-semibold text-slate-900 dark:text-white">
             {/* Stage transition visualization */}
@@ -303,7 +303,6 @@ export function StageTransitionModal({
             <Button
               onClick={handleSubmit}
               disabled={!canSubmit || submitting}
-              className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white"
             >
               {submitting ? (
                 <>

@@ -5,14 +5,14 @@ import {
   ArrowLeft,
   FileText,
   User,
-  Mail,
+  Envelope,
   Phone,
   Calendar,
-  DollarSign,
+  CurrencyDollar,
   Hash,
-  ClipboardList,
+  ClipboardText,
   CreditCard,
-} from 'lucide-react';
+} from '@phosphor-icons/react/dist/ssr';
 import { Card, CardContent, CardHeader, CardTitle } from '@crm-eco/ui/components/card';
 import { Button } from '@crm-eco/ui/components/button';
 import { Badge } from '@crm-eco/ui/components/badge';
@@ -93,7 +93,7 @@ export default async function AgentEnrollmentDetailPage({ params }: PageProps) {
   const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
       case 'active': return 'bg-green-100 text-green-700';
-      case 'future active': return 'bg-blue-100 text-blue-700';
+      case 'future active': return 'bg-[rgba(11,109,133,0.1)] text-[var(--mp-teal)]';
       case 'pending': return 'bg-amber-100 text-amber-700';
       case 'inactive': return 'bg-slate-100 text-slate-700';
       case 'cancelled': return 'bg-red-100 text-red-700';
@@ -115,7 +115,7 @@ export default async function AgentEnrollmentDetailPage({ params }: PageProps) {
       <div className="flex items-center gap-4">
         <Link href="/agent/enrollments">
           <Button variant="ghost" size="icon">
-            <ArrowLeft className="h-5 w-5" />
+            <ArrowLeft weight="light" className="h-5 w-5" />
           </Button>
         </Link>
         <div className="flex-1">
@@ -138,7 +138,7 @@ export default async function AgentEnrollmentDetailPage({ params }: PageProps) {
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <ClipboardList className="h-5 w-5" />
+              <ClipboardText weight="light" className="h-5 w-5" />
               Enrollment Details
             </CardTitle>
           </CardHeader>
@@ -176,28 +176,28 @@ export default async function AgentEnrollmentDetailPage({ params }: PageProps) {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex items-start gap-3">
-                <Calendar className="h-5 w-5 text-slate-400 mt-0.5" />
+                <Calendar weight="light" className="h-5 w-5 text-slate-400 mt-0.5" />
                 <div>
                   <label className="text-sm font-medium text-slate-500">Effective Date</label>
                   <p className="text-slate-900">{formatDate(enrollment.effective_date)}</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <Calendar className="h-5 w-5 text-slate-400 mt-0.5" />
+                <Calendar weight="light" className="h-5 w-5 text-slate-400 mt-0.5" />
                 <div>
                   <label className="text-sm font-medium text-slate-500">Enrollment Date</label>
                   <p className="text-slate-900">{formatDate(enrollment.enrollment_date)}</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <Calendar className="h-5 w-5 text-slate-400 mt-0.5" />
+                <Calendar weight="light" className="h-5 w-5 text-slate-400 mt-0.5" />
                 <div>
                   <label className="text-sm font-medium text-slate-500">End Date</label>
                   <p className="text-slate-900">{formatDate(enrollment.end_date)}</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <Calendar className="h-5 w-5 text-slate-400 mt-0.5" />
+                <Calendar weight="light" className="h-5 w-5 text-slate-400 mt-0.5" />
                 <div>
                   <label className="text-sm font-medium text-slate-500">Next Billing Date</label>
                   <p className="text-slate-900">{formatDate(enrollment.next_billing_date)}</p>
@@ -209,7 +209,7 @@ export default async function AgentEnrollmentDetailPage({ params }: PageProps) {
               <>
                 <hr />
                 <div className="flex items-start gap-3">
-                  <FileText className="h-5 w-5 text-slate-400 mt-0.5" />
+                  <FileText weight="light" className="h-5 w-5 text-slate-400 mt-0.5" />
                   <div>
                     <label className="text-sm font-medium text-slate-500">Notes</label>
                     <p className="text-slate-900 whitespace-pre-wrap">{enrollment.notes}</p>
@@ -225,7 +225,7 @@ export default async function AgentEnrollmentDetailPage({ params }: PageProps) {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <User className="h-5 w-5" />
+                <User weight="light" className="h-5 w-5" />
                 Member
               </CardTitle>
             </CardHeader>
@@ -234,19 +234,19 @@ export default async function AgentEnrollmentDetailPage({ params }: PageProps) {
                 <div className="space-y-3">
                   <Link
                     href={`/agent/members/${member.id}`}
-                    className="font-medium text-slate-900 hover:text-blue-600"
+                    className="font-medium text-slate-900 hover:text-[var(--mp-teal)]"
                   >
                     {member.first_name} {member.last_name}
                   </Link>
                   {member.email && (
                     <div className="flex items-center gap-2 text-sm text-slate-600">
-                      <Mail className="h-4 w-4 text-slate-400" />
+                      <Envelope weight="light" className="h-4 w-4 text-slate-400" />
                       {member.email}
                     </div>
                   )}
                   {member.phone && (
                     <div className="flex items-center gap-2 text-sm text-slate-600">
-                      <Phone className="h-4 w-4 text-slate-400" />
+                      <Phone weight="light" className="h-4 w-4 text-slate-400" />
                       {member.phone}
                     </div>
                   )}
@@ -260,7 +260,7 @@ export default async function AgentEnrollmentDetailPage({ params }: PageProps) {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <DollarSign className="h-5 w-5" />
+                <CurrencyDollar weight="light" className="h-5 w-5" />
                 Pricing
               </CardTitle>
             </CardHeader>
@@ -289,7 +289,7 @@ export default async function AgentEnrollmentDetailPage({ params }: PageProps) {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <CreditCard className="h-5 w-5" />
+                <CreditCard weight="light" className="h-5 w-5" />
                 Payment Status
               </CardTitle>
             </CardHeader>
@@ -312,7 +312,7 @@ export default async function AgentEnrollmentDetailPage({ params }: PageProps) {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Hash className="h-5 w-5" />
+                <Hash weight="light" className="h-5 w-5" />
                 References
               </CardTitle>
             </CardHeader>
@@ -336,7 +336,7 @@ export default async function AgentEnrollmentDetailPage({ params }: PageProps) {
           {member.email && (
             <Button variant="outline" className="gap-2" asChild>
               <a href={`mailto:${member.email}`}>
-                <Mail className="h-4 w-4" />
+                <Envelope weight="light" className="h-4 w-4" />
                 Send Email
               </a>
             </Button>
@@ -344,7 +344,7 @@ export default async function AgentEnrollmentDetailPage({ params }: PageProps) {
           {member.phone && (
             <Button variant="outline" className="gap-2" asChild>
               <a href={`tel:${member.phone}`}>
-                <Phone className="h-4 w-4" />
+                <Phone weight="light" className="h-4 w-4" />
                 Call Member
               </a>
             </Button>

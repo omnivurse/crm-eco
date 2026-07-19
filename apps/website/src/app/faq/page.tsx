@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { Button, Input } from '@crm-eco/ui';
-import { Search, ChevronDown, HelpCircle, Phone, Mail, MessageCircle } from 'lucide-react';
+import { MagnifyingGlass, CaretDown, Question, Phone, EnvelopeSimple, ChatCircle } from '@phosphor-icons/react';
 import { Reveal } from '@/components/sections/Reveal';
 import {
   Container,
@@ -167,7 +167,7 @@ export default function FAQPage() {
         <Container className="relative py-20 md:py-28">
           <div className="mx-auto max-w-3xl text-center">
             <Reveal>
-              <IconChip icon={HelpCircle} variant="brand" className="mx-auto mb-6" />
+              <IconChip icon={Question} variant="brand" className="mx-auto mb-6" />
               <Eyebrow className="mb-4">Frequently asked questions</Eyebrow>
               <h1 className="font-heading text-[clamp(2.25rem,5vw,3.75rem)] font-semibold leading-[1.08] text-pif-navy-800 text-balance">
                 Have questions?{' '}
@@ -183,23 +183,23 @@ export default function FAQPage() {
         </Container>
       </section>
 
-      {/* Search, filters & accordion */}
+      {/* MagnifyingGlass, filters & accordion */}
       <section className="bg-white pb-20 pt-4 md:pb-28">
         <Container>
           <div className="mx-auto max-w-3xl">
-            {/* Search */}
+            {/* MagnifyingGlass */}
             <Reveal>
               <div className="relative">
-                <Search
+                <MagnifyingGlass
                   className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-pif-teal-500"
                   aria-hidden="true"
                 />
                 <Input
                   type="search"
-                  placeholder="Search questions and answers…"
+                  placeholder="MagnifyingGlass questions and answers…"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  aria-label="Search frequently asked questions"
+                  aria-label="MagnifyingGlass frequently asked questions"
                   className="h-14 rounded-2xl border-pif-navy-100 bg-pif-mist pl-12 text-base shadow-sm ring-1 ring-pif-navy/5 focus-visible:ring-pif-teal-400"
                 />
               </div>
@@ -245,7 +245,7 @@ export default function FAQPage() {
             <div className="mt-6 space-y-3">
               {filteredFaqs.length === 0 ? (
                 <div className="rounded-2xl border border-dashed border-pif-navy-200 bg-pif-mist px-6 py-16 text-center">
-                  <IconChip icon={Search} variant="soft" className="mx-auto mb-4" />
+                  <IconChip icon={MagnifyingGlass} variant="soft" className="mx-auto mb-4" />
                   <p className="font-heading text-lg font-semibold text-pif-navy-800">
                     No questions match your search.
                   </p>
@@ -282,7 +282,7 @@ export default function FAQPage() {
                               : 'bg-pif-teal-50 text-pif-teal-700'
                           }`}
                         >
-                          <ChevronDown className="h-5 w-5" aria-hidden="true" />
+                          <CaretDown className="h-5 w-5" aria-hidden="true" />
                         </span>
                       </button>
                       <div
@@ -312,7 +312,7 @@ export default function FAQPage() {
             {/* Still have questions? Contact note */}
             <Reveal delay={0.05}>
               <div className="mt-12 rounded-3xl border border-pif-navy-100 bg-pif-mist p-8 text-center ring-1 ring-pif-navy/5 sm:p-10">
-                <IconChip icon={MessageCircle} variant="gold" className="mx-auto mb-5" />
+                <IconChip icon={ChatCircle} variant="gold" className="mx-auto mb-5" />
                 <h2 className="font-heading text-2xl font-semibold text-pif-navy-800">
                   Still have questions?
                 </h2>
@@ -323,7 +323,7 @@ export default function FAQPage() {
                 <div className="mt-7 flex flex-col items-center justify-center gap-4 sm:flex-row">
                   <Link href="/contact">
                     <Button size="lg" className="hub-btn-gradient w-full gap-2 sm:w-auto">
-                      <MessageCircle className="h-5 w-5" />
+                      <ChatCircle className="h-5 w-5" />
                       Contact us
                     </Button>
                   </Link>
@@ -338,7 +338,7 @@ export default function FAQPage() {
                     href={`mailto:${EMAIL.support}`}
                     className="inline-flex items-center gap-2 font-semibold text-pif-teal-700 transition-colors hover:text-pif-green-600"
                   >
-                    <Mail className="h-4 w-4" />
+                    <EnvelopeSimple className="h-4 w-4" />
                     {EMAIL.support}
                   </a>
                 </div>

@@ -1,7 +1,7 @@
+import { ArrowLeft } from '@phosphor-icons/react/dist/ssr';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@crm-eco/ui';
-import { ArrowLeft } from 'lucide-react';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { VendorForm } from '@/components/vendors/VendorForm';
 import { getActiveTenant } from '@/lib/tenant';
@@ -39,7 +39,7 @@ export default async function EditVendorPage({
       <div className="flex items-center gap-4">
         <Link href={`/vendors/${vendor.id}`}>
           <Button variant="ghost" size="icon" className="rounded-full">
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft weight="light" className="w-5 h-5" />
           </Button>
         </Link>
         <div>

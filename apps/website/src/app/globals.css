@@ -1,4 +1,4 @@
-/* Pay It Forward Health — marketing site styles (a DoubleHelixHub tenant brand).
+/* Pay It Forward Health — Soft Structuralism marketing system.
    Brand palette is applied LOCALLY here + in tailwind.config.ts so it never
    leaks into the shared @crm-eco/ui tokens used by CRM/admin/portal. */
 @import '@crm-eco/ui/styles/theme.css';
@@ -32,12 +32,25 @@
     --pif-gold: #f4b400;
     --pif-ink: #0a2233;
     --pif-mist: #f2f8f9;
+    --pif-canvas: #f7fbfc;
 
     /* Brand gradients — echo the logo's teal->green spiral */
     --pif-grad-brand: linear-gradient(135deg, #003a5c 0%, #0e8c9a 52%, #12a065 100%);
     --pif-grad-care: linear-gradient(135deg, #0e8c9a 0%, #12a065 100%);
     --pif-grad-deep: linear-gradient(160deg, #04202f 0%, #003a5c 55%, #0b5d66 100%);
     --pif-grad-gold: linear-gradient(135deg, #f4b400 0%, #f59e0b 100%);
+
+    /* Soft Structuralism elevation */
+    --pif-shadow-soft:
+      0 1px 2px rgba(0, 58, 92, 0.03),
+      0 4px 12px rgba(0, 58, 92, 0.04),
+      0 16px 32px rgba(0, 58, 92, 0.05);
+    --pif-shadow-float:
+      0 2px 4px rgba(0, 58, 92, 0.04),
+      0 12px 28px rgba(0, 58, 92, 0.08),
+      0 28px 56px rgba(0, 58, 92, 0.06);
+    --pif-ease: cubic-bezier(0.32, 0.72, 0, 1);
+    --pif-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 
     /* Legacy hub-* tokens repointed to PIFH so existing markup re-skins */
     --hub-ink: #06283d;
@@ -47,16 +60,26 @@
     --hub-muted: #f2f8f9;
   }
   body {
-    @apply bg-white;
+    background: var(--pif-canvas);
     color: var(--pif-ink);
-    font-family: var(--font-body), 'Inter', system-ui, sans-serif;
+    font-family: var(--font-body), 'Plus Jakarta Sans', system-ui, sans-serif;
     overflow-x: hidden;
     overscroll-behavior-x: none;
   }
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-heading), 'Fraunces', Georgia, 'Times New Roman', serif;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.02em;
   }
+}
+
+/* Fixed film grain — pointer-events none, not on scrolling containers */
+.pif-grain {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  opacity: 0.028;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 /* ============================================================
@@ -67,7 +90,6 @@
 .pif-grad-deep  { background: var(--pif-grad-deep); }
 .pif-grad-gold  { background: var(--pif-grad-gold); }
 
-/* Brand gradient clipped onto text — use sparingly, one phrase at a time */
 .gradient-text {
   background: var(--pif-grad-brand);
   -webkit-background-clip: text;
@@ -76,7 +98,6 @@
   color: transparent;
 }
 
-/* Gold underline accent for a single emphasized word */
 .pif-underline {
   background-image: var(--pif-grad-gold);
   background-repeat: no-repeat;
@@ -86,44 +107,106 @@
 }
 
 /* ============================================================
-   Marketing sections (class names retained; recolored to PIFH)
+   Double-bezel (Doppelrand) card architecture
+   ============================================================ */
+.pif-bezel {
+  background: rgba(0, 58, 92, 0.04);
+  border: 1px solid rgba(0, 58, 92, 0.06);
+  border-radius: 2rem;
+  padding: 0.375rem;
+  transition: transform 700ms var(--pif-ease), box-shadow 700ms var(--pif-ease);
+}
+.pif-bezel-inner {
+  background: #fff;
+  border-radius: calc(2rem - 0.375rem);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.9);
+  overflow: hidden;
+}
+.pif-bezel-deep .pif-bezel-inner {
+  background: var(--pif-grad-deep);
+  color: #fff;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.12);
+}
+.pif-bezel:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--pif-shadow-float);
+}
+
+/* Nested CTA — button-in-button trailing icon */
+.pif-btn-island {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.55rem 0.55rem 0.55rem 1.35rem;
+  border-radius: 9999px;
+  font-weight: 600;
+  transition: transform 600ms var(--pif-ease), box-shadow 600ms var(--pif-ease);
+}
+.pif-btn-island:active { transform: scale(0.98); }
+.pif-btn-island .pif-btn-ico {
+  display: inline-grid;
+  place-items: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.18);
+  transition: transform 600ms var(--pif-ease);
+}
+.pif-btn-island:hover .pif-btn-ico {
+  transform: translate(3px, -1px) scale(1.06);
+}
+.pif-btn-care {
+  background: var(--pif-grad-care) !important;
+  color: #fff !important;
+  border: none;
+  box-shadow:
+    0 1px 2px rgba(14, 140, 154, 0.15),
+    0 8px 24px rgba(14, 140, 154, 0.22);
+}
+.pif-btn-ghost {
+  background: transparent;
+  border: 1px solid rgba(0, 58, 92, 0.12);
+  color: var(--pif-navy-deep);
+  border-radius: 9999px;
+  padding: 0.9rem 1.5rem;
+  font-weight: 600;
+  transition: background 600ms var(--pif-ease), border-color 600ms var(--pif-ease);
+}
+.pif-btn-ghost:hover {
+  background: rgba(0, 58, 92, 0.04);
+  border-color: rgba(14, 140, 154, 0.35);
+}
+
+/* ============================================================
+   Marketing sections
    ============================================================ */
 .hub-page-hero {
   position: relative;
   overflow: hidden;
-  background: #ffffff;
-}
-.hub-page-hero::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
   background:
-    radial-gradient(ellipse 70% 55% at 85% 12%, rgba(14, 140, 154, 0.08), transparent 60%),
-    radial-gradient(ellipse 55% 45% at 8% 88%, rgba(18, 160, 101, 0.07), transparent 55%),
-    radial-gradient(ellipse 45% 40% at 55% 50%, rgba(244, 180, 0, 0.05), transparent 50%);
+    radial-gradient(ellipse 80% 60% at 12% 18%, rgba(14, 140, 154, 0.09), transparent 55%),
+    radial-gradient(ellipse 70% 50% at 88% 72%, rgba(18, 160, 101, 0.08), transparent 50%),
+    radial-gradient(ellipse 50% 40% at 50% 100%, rgba(244, 180, 0, 0.05), transparent 60%),
+    var(--pif-canvas);
 }
+.hub-page-hero::before,
 .hub-page-hero::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  background-image:
-    linear-gradient(rgba(0, 58, 92, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 58, 92, 0.04) 1px, transparent 1px);
-  background-size: 64px 64px;
-  mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, black, transparent);
-  -webkit-mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, black, transparent);
+  display: none;
 }
 
 .hub-eyebrow {
-  font-size: 0.8125rem;
-  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 10px;
+  font-weight: 600;
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--pif-teal-deep);
+  background: rgba(14, 140, 154, 0.08);
+  border: 1px solid rgba(14, 140, 154, 0.12);
+  border-radius: 9999px;
+  padding: 0.3rem 0.85rem;
 }
 
 .hub-section-dark {
@@ -137,9 +220,7 @@
 }
 .hub-card-popular {
   background: var(--pif-grad-deep);
-  box-shadow:
-    0 24px 48px rgba(4, 32, 47, 0.28),
-    0 0 0 1px rgba(14, 140, 154, 0.25);
+  box-shadow: var(--pif-shadow-float);
 }
 .hub-icon-chip {
   background: rgba(14, 140, 154, 0.10);
@@ -154,7 +235,7 @@
 .hub-link {
   color: var(--pif-teal-deep);
   font-weight: 600;
-  transition: color 0.2s ease;
+  transition: color 500ms var(--pif-ease);
 }
 .hub-link:hover { color: var(--pif-green); }
 
@@ -162,22 +243,26 @@
   background: var(--pif-grad-care) !important;
   color: #fff !important;
   border: none;
-  box-shadow: 0 6px 22px rgba(14, 140, 154, 0.28);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow:
+    0 1px 2px rgba(14, 140, 154, 0.15),
+    0 8px 24px rgba(14, 140, 154, 0.22);
+  transition: transform 600ms var(--pif-ease), box-shadow 600ms var(--pif-ease);
 }
 .hub-btn-gradient:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 10px 30px rgba(18, 160, 101, 0.34);
+  transform: scale(0.98);
+  box-shadow:
+    0 2px 4px rgba(18, 160, 101, 0.18),
+    0 12px 28px rgba(18, 160, 101, 0.28);
 }
 
 .hub-inner-page-hero {
   position: relative;
   overflow: hidden;
-  background: #ffffff;
-  background-image:
+  background:
     radial-gradient(ellipse 80% 60% at 50% -10%, rgba(14, 140, 154, 0.09), transparent),
     radial-gradient(ellipse 50% 40% at 100% 50%, rgba(18, 160, 101, 0.07), transparent),
-    radial-gradient(ellipse 40% 35% at 0% 30%, rgba(244, 180, 0, 0.05), transparent);
+    radial-gradient(ellipse 40% 35% at 0% 30%, rgba(244, 180, 0, 0.05), transparent),
+    var(--pif-canvas);
 }
 .hub-gradient-icon {
   background: var(--pif-grad-brand);
@@ -186,12 +271,36 @@
 
 @layer utilities {
   .text-balance { text-wrap: balance; }
-  .section-padding { @apply py-16 md:py-24; }
-  .section-padding-sm { @apply py-12 md:py-16; }
+  .section-padding { @apply py-24 md:py-32; }
+  .section-padding-sm { @apply py-16 md:py-24; }
+  .pif-ease { transition-timing-function: var(--pif-ease); }
+  .pif-shadow-soft { box-shadow: var(--pif-shadow-soft); }
+  .pif-shadow-float { box-shadow: var(--pif-shadow-float); }
 }
 
 /* ============================================================
-   HERO — animated mesh & effects (recolored via component usage)
+   Island nav (floating glass pill)
+   ============================================================ */
+.pif-island {
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(0, 58, 92, 0.08);
+  box-shadow:
+    0 1px 2px rgba(0, 58, 92, 0.04),
+    0 8px 24px rgba(0, 58, 92, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+.pif-island-scrolled {
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow:
+    0 2px 4px rgba(0, 58, 92, 0.05),
+    0 12px 32px rgba(0, 58, 92, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+/* ============================================================
+   Legacy hero mesh (kept for any remaining usage)
    ============================================================ */
 .hero-blob {
   position: absolute;
@@ -252,16 +361,29 @@
   inset: 0;
   background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.18) 50%, transparent 100%);
   background-size: 200% 100%;
-  animation: cta-shimmer 3s ease-in-out infinite;
+  animation: cta-shimmer 3.5s var(--pif-ease-out) infinite;
   pointer-events: none;
   border-radius: inherit;
+}
+
+@keyframes pif-bar-fill {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+.pif-bar-fill {
+  transform-origin: left;
+  animation: pif-bar-fill 1.4s var(--pif-ease-out) 0.5s both;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .hero-blob { animation: none !important; filter: blur(80px); }
   .hero-network-line { animation: none !important; }
   .hero-cta-shimmer::after { animation: none !important; }
+  .pif-bar-fill { animation: none !important; transform: scaleX(1); }
+  .pif-bezel { transition: none; }
+  .pif-btn-island, .pif-btn-island .pif-btn-ico { transition: none; }
 }
 @media (max-width: 768px) {
   .hero-blob { filter: blur(60px); opacity: 0.35; }
+  .pif-bezel:hover { transform: none; }
 }

@@ -1,5 +1,6 @@
 'use client';
 
+import { MagnifyingGlass, SlidersHorizontal, X } from '@phosphor-icons/react';
 import { useState, useCallback, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Badge, Button, Input } from '@crm-eco/ui';
@@ -11,7 +12,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@crm-eco/ui/components/select';
-import { Search, X, SlidersHorizontal } from 'lucide-react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { SavedViewsMenu } from './SavedViewsMenu';
 
@@ -124,7 +124,7 @@ export function MemberFilters({ orgId }: MemberFiltersProps) {
   // Build active filter chips
   const activeFilters: ActiveFilter[] = [];
   if (search) {
-    activeFilters.push({ key: 'search', label: 'Search', value: search, displayValue: `"${search}"` });
+    activeFilters.push({ key: 'search', label: 'MagnifyingGlass', value: search, displayValue: `"${search}"` });
   }
   if (advisorId) {
     const adv = advisors.find((a) => a.id === advisorId);
@@ -189,9 +189,9 @@ export function MemberFilters({ orgId }: MemberFiltersProps) {
         </div>
 
         <form onSubmit={handleSearchSubmit} className="relative flex-1 min-w-[200px] max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <MagnifyingGlass weight="light" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <Input
-            placeholder="Search members..."
+            placeholder="MagnifyingGlass members..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9 h-9"
@@ -204,7 +204,7 @@ export function MemberFilters({ orgId }: MemberFiltersProps) {
             value={advisorId}
             onValueChange={handleAdvisorChange}
             placeholder="Filter by Advisor"
-            searchPlaceholder="Search advisors..."
+            searchPlaceholder="MagnifyingGlass advisors..."
             emptyText="No advisors found."
             disabled={loading}
             clearable
@@ -234,7 +234,7 @@ export function MemberFilters({ orgId }: MemberFiltersProps) {
       {/* Filter chips */}
       {activeFilters.length > 0 && (
         <div className="flex items-center gap-2 flex-wrap">
-          <SlidersHorizontal className="w-3.5 h-3.5 text-slate-400" />
+          <SlidersHorizontal weight="light" className="w-3.5 h-3.5 text-slate-400" />
           {activeFilters.map((f) => (
             <Badge
               key={f.key}
@@ -247,7 +247,7 @@ export function MemberFilters({ orgId }: MemberFiltersProps) {
                 onClick={() => clearFilter(f.key)}
                 className="ml-0.5 rounded-full p-0.5 hover:bg-slate-300/50"
               >
-                <X className="w-3 h-3" />
+                <X weight="light" className="w-3 h-3" />
               </button>
             </Badge>
           ))}

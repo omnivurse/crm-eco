@@ -1,6 +1,6 @@
 'use client';
 
-import { Download } from 'lucide-react';
+import { Download } from '@phosphor-icons/react';
 import { Button } from '@crm-eco/ui/components/button';
 import { toast } from 'sonner';
 
@@ -71,7 +71,7 @@ export function ReceiptDownloadButton({ receipt }: { receipt: ReceiptData }) {
 
   return (
     <Button variant="ghost" size="icon" className="h-11 w-11" title="Download Receipt" onClick={handleDownload}>
-      <Download className="h-4 w-4" />
+      <Download weight="light" className="h-4 w-4" />
     </Button>
   );
 }

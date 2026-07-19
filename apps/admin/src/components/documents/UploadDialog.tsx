@@ -1,7 +1,7 @@
 'use client';
 
+import { File, UploadSimple, X } from '@phosphor-icons/react';
 import { useState, useRef, useCallback } from 'react';
-import { Upload, X, FileIcon } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@crm-eco/ui/components/dialog';
 import { Button } from '@crm-eco/ui/components/button';
 import { Progress } from '@crm-eco/ui/components/progress';
@@ -47,7 +47,7 @@ export function UploadDialog({ open, onOpenChange, onUpload }: UploadDialogProps
       setProgress(0);
       onOpenChange(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Upload failed');
+      setError(err instanceof Error ? err.message : 'UploadSimple failed');
     } finally {
       setUploading(false);
     }
@@ -61,7 +61,7 @@ export function UploadDialog({ open, onOpenChange, onUpload }: UploadDialogProps
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Upload Files</DialogTitle>
+          <DialogTitle>UploadSimple Files</DialogTitle>
         </DialogHeader>
 
         <div
@@ -73,7 +73,7 @@ export function UploadDialog({ open, onOpenChange, onUpload }: UploadDialogProps
             dragOver ? 'border-blue-400 bg-blue-50' : 'border-gray-300 hover:border-gray-400'
           }`}
         >
-          <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+          <UploadSimple weight="light" className="w-8 h-8 mx-auto mb-2 text-gray-400" />
           <p className="text-sm text-gray-600">Drag & drop files here, or click to browse</p>
           <p className="text-xs text-gray-400 mt-1">Max 50 MB per file</p>
           <input
@@ -89,12 +89,12 @@ export function UploadDialog({ open, onOpenChange, onUpload }: UploadDialogProps
           <div className="space-y-2 max-h-48 overflow-y-auto">
             {files.map((file, i) => (
               <div key={i} className="flex items-center gap-2 p-2 bg-gray-50 rounded text-sm">
-                <FileIcon className="w-4 h-4 text-gray-400 shrink-0" />
+                <File weight="light" className="w-4 h-4 text-gray-400 shrink-0" />
                 <span className="truncate flex-1">{file.name}</span>
                 <span className="text-gray-400 text-xs">{formatFileSize(file.size)}</span>
                 {!uploading && (
                   <button onClick={() => removeFile(i)} className="p-0.5 hover:bg-gray-200 rounded">
-                    <X className="w-3.5 h-3.5" />
+                    <X weight="light" className="w-3.5 h-3.5" />
                   </button>
                 )}
               </div>
@@ -110,7 +110,7 @@ export function UploadDialog({ open, onOpenChange, onUpload }: UploadDialogProps
             Cancel
           </Button>
           <Button onClick={handleUpload} disabled={files.length === 0 || uploading}>
-            {uploading ? `Uploading... ${progress}%` : `Upload ${files.length} file${files.length !== 1 ? 's' : ''}`}
+            {uploading ? `Uploading... ${progress}%` : `UploadSimple ${files.length} file${files.length !== 1 ? 's' : ''}`}
           </Button>
         </div>
       </DialogContent>

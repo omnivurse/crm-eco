@@ -1,5 +1,6 @@
 'use client';
 
+import { ArrowLeft, Code, Eye, FileText, FloppyDisk, MathOperations, Trash } from '@phosphor-icons/react';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@crm-eco/lib/supabase/client';
@@ -7,15 +8,6 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Link from 'next/link';
-import {
-  ArrowLeft,
-  Save,
-  Trash2,
-  Eye,
-  Code,
-  FileText,
-  Variable,
-} from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
 import { Label } from '@crm-eco/ui/components/label';
@@ -300,7 +292,7 @@ export function EmailTemplateForm({ template }: EmailTemplateFormProps) {
         <div className="flex items-center gap-4">
           <Link href="/communications/templates">
             <Button type="button" variant="ghost" size="icon">
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft weight="light" className="w-4 h-4" />
             </Button>
           </Link>
           <div>
@@ -318,7 +310,7 @@ export function EmailTemplateForm({ template }: EmailTemplateFormProps) {
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button type="button" variant="outline" className="text-red-600">
-                  <Trash2 className="w-4 h-4 mr-2" />
+                  <Trash weight="light" className="w-4 h-4 mr-2" />
                   Delete
                 </Button>
               </AlertDialogTrigger>
@@ -340,8 +332,8 @@ export function EmailTemplateForm({ template }: EmailTemplateFormProps) {
           )}
 
           <Button type="submit" disabled={saving}>
-            <Save className="w-4 h-4 mr-2" />
-            {saving ? 'Saving...' : 'Save Template'}
+            <FloppyDisk weight="light" className="w-4 h-4 mr-2" />
+            {saving ? 'Saving...' : 'FloppyDisk Template'}
           </Button>
         </div>
       </div>
@@ -451,15 +443,15 @@ export function EmailTemplateForm({ template }: EmailTemplateFormProps) {
               <Tabs defaultValue="html">
                 <TabsList>
                   <TabsTrigger value="html">
-                    <Code className="w-4 h-4 mr-2" />
+                    <Code weight="light" className="w-4 h-4 mr-2" />
                     HTML
                   </TabsTrigger>
                   <TabsTrigger value="text">
-                    <FileText className="w-4 h-4 mr-2" />
+                    <FileText weight="light" className="w-4 h-4 mr-2" />
                     Plain Text
                   </TabsTrigger>
                   <TabsTrigger value="preview">
-                    <Eye className="w-4 h-4 mr-2" />
+                    <Eye weight="light" className="w-4 h-4 mr-2" />
                     Preview
                   </TabsTrigger>
                 </TabsList>
@@ -504,7 +496,7 @@ export function EmailTemplateForm({ template }: EmailTemplateFormProps) {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Variable className="w-5 h-5" />
+                <MathOperations weight="light" className="w-5 h-5" />
                 Variables
               </CardTitle>
               <CardDescription>

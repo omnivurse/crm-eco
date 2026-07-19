@@ -3,7 +3,7 @@ import { getMemberForUser } from '@crm-eco/lib';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@crm-eco/ui';
-import { ChevronLeft } from 'lucide-react';
+import { PageHeader } from '@/components/PageHeader';
 import { SubmitNeedWizard } from '../../../components/needs';
 
 export default async function SubmitNeedPage() {
@@ -51,23 +51,15 @@ export default async function SubmitNeedPage() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-8">
-      {/* Back link */}
-      <Link href="/needs" className="inline-flex items-center text-sm text-blue-600 hover:underline mb-6">
-        <ChevronLeft className="w-4 h-4 mr-1" /> Back to Needs
-      </Link>
+    <div className="mx-auto max-w-3xl px-4 py-8">
+      <PageHeader
+        title="Sharing Request"
+        description="Complete the form below to submit your request for sharing."
+        backHref="/needs"
+        backLabel="Back to Needs"
+      />
 
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-900">Sharing Request</h1>
-        <p className="text-slate-600 mt-2">
-          Complete the form below to submit your request for sharing.
-        </p>
-      </div>
-
-      {/* Wizard */}
       <SubmitNeedWizard memberPrefill={memberPrefill} />
     </div>
   );
 }
-

@@ -28,7 +28,7 @@ interface PageProps {
 
 async function ModuleSelectionView({ modules }: { modules: { key: string; name: string; icon: string }[] }) {
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="w-full space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
         <Link
@@ -109,7 +109,7 @@ async function RecordFormView({
   }
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="w-full space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
         <Link
@@ -212,7 +212,7 @@ export default function NewRecordPage(props: PageProps) {
 
 function NewRecordSkeleton() {
   return (
-    <div className="max-w-7xl mx-auto space-y-6 animate-pulse">
+    <div className="w-full space-y-6 animate-pulse">
       <div className="flex items-center gap-4">
         <div className="w-10 h-10 bg-slate-200 dark:bg-slate-800 rounded-lg" />
         <div className="space-y-2">

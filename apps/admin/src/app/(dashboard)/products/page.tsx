@@ -1,5 +1,5 @@
+import { CurrencyDollar, Package, Plus, Pulse, Sparkle, Tag } from '@phosphor-icons/react/dist/ssr';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Badge } from '@crm-eco/ui';
-import { Plus, Package, DollarSign, Tag, Activity, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { ProductsClient } from '@/components/products/ProductsClient';
@@ -51,19 +51,19 @@ export default async function ProductsPage() {
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <Link href="/products/rate-settings" className="flex-1 sm:flex-none">
             <Button variant="outline" className="w-full sm:w-auto">
-              <DollarSign className="h-4 w-4 mr-2" />
+              <CurrencyDollar weight="light" className="h-4 w-4 mr-2" />
               <span className="hidden xs:inline">Rate Settings</span>
             </Button>
           </Link>
           <Link href="/products/features" className="flex-1 sm:flex-none">
             <Button variant="outline" className="w-full sm:w-auto">
-              <Sparkles className="h-4 w-4 mr-2" />
+              <Sparkle weight="light" className="h-4 w-4 mr-2" />
               <span className="hidden xs:inline">Features</span>
             </Button>
           </Link>
           <Link href="/products/new" className="flex-1 sm:flex-none">
             <Button className="w-full sm:w-auto">
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus weight="light" className="h-4 w-4 mr-2" />
               Add Product
             </Button>
           </Link>
@@ -76,7 +76,7 @@ export default async function ProductsPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
-                <Package className="h-5 w-5 text-blue-600" />
+                <Package weight="light" className="h-5 w-5 text-blue-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{products.length}</p>
@@ -89,7 +89,7 @@ export default async function ProductsPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center">
-                <Activity className="h-5 w-5 text-green-600" />
+                <Pulse weight="light" className="h-5 w-5 text-green-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{activeProducts.length}</p>
@@ -102,7 +102,7 @@ export default async function ProductsPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center">
-                <Tag className="h-5 w-5 text-purple-600" />
+                <Tag weight="light" className="h-5 w-5 text-purple-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{categories.length}</p>
@@ -115,7 +115,7 @@ export default async function ProductsPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-teal-50 flex items-center justify-center">
-                <DollarSign className="h-5 w-5 text-teal-600" />
+                <CurrencyDollar weight="light" className="h-5 w-5 text-teal-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold">

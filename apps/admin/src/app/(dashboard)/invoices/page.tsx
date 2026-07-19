@@ -1,5 +1,6 @@
 'use client';
 
+import { ArrowClockwise, Calendar, CaretLeft, CaretRight, CheckCircle, Clock, CurrencyDollar, DownloadSimple, EnvelopeSimple, Eye, FileText, MagnifyingGlass, PaperPlaneTilt, Plus, User, Users, Warning } from '@phosphor-icons/react';
 import { useState, useEffect } from 'react';
 import {
   Card,
@@ -18,25 +19,6 @@ import {
   DialogTitle,
 } from '@crm-eco/ui';
 import { StatusBadge } from '@crm-eco/ui/components/status-badge';
-import {
-  FileText,
-  Search,
-  Download,
-  RefreshCw,
-  Plus,
-  Eye,
-  Send,
-  CheckCircle,
-  Clock,
-  AlertTriangle,
-  ChevronLeft,
-  ChevronRight,
-  Users,
-  User,
-  Calendar,
-  DollarSign,
-  Mail,
-} from 'lucide-react';
 import Link from 'next/link';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { toast } from 'sonner';
@@ -293,23 +275,23 @@ export default function InvoicesPage() {
         <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
           <Link href="/invoices/groups">
             <Button variant="outline" size="sm">
-              <Users className="h-4 w-4 sm:mr-2" />
+              <Users weight="light" className="h-4 w-4 sm:mr-2" />
               <span className="hidden sm:inline">Groups</span>
             </Button>
           </Link>
           <Button variant="outline" size="sm" onClick={exportInvoices}>
-            <Download className="h-4 w-4 sm:mr-2" />
+            <DownloadSimple weight="light" className="h-4 w-4 sm:mr-2" />
             <span className="hidden sm:inline">Export</span>
           </Button>
           <Link href="/invoices/generate/group">
             <Button variant="outline" size="sm">
-              <Users className="h-4 w-4 sm:mr-2" />
+              <Users weight="light" className="h-4 w-4 sm:mr-2" />
               <span className="hidden sm:inline">Gen Group</span>
             </Button>
           </Link>
           <Link href="/invoices/generate/individual">
             <Button size="sm">
-              <Plus className="h-4 w-4 sm:mr-2" />
+              <Plus weight="light" className="h-4 w-4 sm:mr-2" />
               <span className="hidden sm:inline">Generate</span>
             </Button>
           </Link>
@@ -322,7 +304,7 @@ export default function InvoicesPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-slate-100 rounded-lg">
-                <FileText className="h-5 w-5 text-slate-600" />
+                <FileText weight="light" className="h-5 w-5 text-slate-600" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total Invoiced</p>
@@ -336,7 +318,7 @@ export default function InvoicesPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-emerald-100 rounded-lg">
-                <CheckCircle className="h-5 w-5 text-emerald-600" />
+                <CheckCircle weight="light" className="h-5 w-5 text-emerald-600" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Collected</p>
@@ -350,7 +332,7 @@ export default function InvoicesPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-amber-100 rounded-lg">
-                <Clock className="h-5 w-5 text-amber-600" />
+                <Clock weight="light" className="h-5 w-5 text-amber-600" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Outstanding</p>
@@ -364,7 +346,7 @@ export default function InvoicesPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-red-100 rounded-lg">
-                <AlertTriangle className="h-5 w-5 text-red-600" />
+                <Warning weight="light" className="h-5 w-5 text-red-600" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Overdue</p>
@@ -380,9 +362,9 @@ export default function InvoicesPage() {
         <CardContent className="pt-6">
           <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <MagnifyingGlass weight="light" className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search invoices..."
+                placeholder="MagnifyingGlass invoices..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9"
@@ -411,7 +393,7 @@ export default function InvoicesPage() {
                 Retro only
               </label>
               <Button variant="outline" size="sm" onClick={fetchInvoices}>
-                <RefreshCw className="h-4 w-4" />
+                <ArrowClockwise weight="light" className="h-4 w-4" />
               </Button>
             </div>
           </div>
@@ -423,16 +405,16 @@ export default function InvoicesPage() {
         <CardContent className="p-0">
           {loading ? (
             <div className="flex items-center justify-center py-16">
-              <RefreshCw className="h-8 w-8 animate-spin text-slate-400" />
+              <ArrowClockwise weight="light" className="h-8 w-8 animate-spin text-slate-400" />
             </div>
           ) : paginatedInvoices.length === 0 ? (
             <div className="text-center py-16">
-              <FileText className="h-12 w-12 text-slate-200 mx-auto mb-4" />
+              <FileText weight="light" className="h-12 w-12 text-slate-200 mx-auto mb-4" />
               <p className="text-lg font-medium">No invoices found</p>
               <p className="text-sm text-muted-foreground mb-4">Generate your first invoice to get started</p>
               <Link href="/invoices/generate/individual">
                 <Button>
-                  <Plus className="h-4 w-4 mr-2" />
+                  <Plus weight="light" className="h-4 w-4 mr-2" />
                   Generate Invoice
                 </Button>
               </Link>
@@ -486,7 +468,7 @@ export default function InvoicesPage() {
                       <td className="py-3 px-4">
                         {invoice.due_date ? (
                           <div className="flex items-center gap-1">
-                            <Calendar className="h-4 w-4 text-muted-foreground" />
+                            <Calendar weight="light" className="h-4 w-4 text-muted-foreground" />
                             <span className="text-sm">{format(new Date(invoice.due_date), 'MMM d, yyyy')}</span>
                           </div>
                         ) : (
@@ -503,16 +485,16 @@ export default function InvoicesPage() {
                               setShowDetailModal(true);
                             }}
                           >
-                            <Eye className="h-4 w-4" />
+                            <Eye weight="light" className="h-4 w-4" />
                           </Button>
                           {invoice.status === 'draft' && (
                             <Button variant="ghost" size="sm" onClick={() => handleSendInvoice(invoice)}>
-                              <Send className="h-4 w-4 text-blue-500" />
+                              <PaperPlaneTilt weight="light" className="h-4 w-4 text-blue-500" />
                             </Button>
                           )}
                           {invoice.status !== 'paid' && (invoice.balance_due ?? 0) > 0 && (
                             <Button variant="ghost" size="sm" onClick={() => handleMarkPaid(invoice)}>
-                              <CheckCircle className="h-4 w-4 text-emerald-500" />
+                              <CheckCircle weight="light" className="h-4 w-4 text-emerald-500" />
                             </Button>
                           )}
                         </div>
@@ -539,7 +521,7 @@ export default function InvoicesPage() {
                 onClick={() => setCurrentPage(currentPage - 1)}
                 disabled={currentPage === 1}
               >
-                <ChevronLeft className="h-4 w-4" />
+                <CaretLeft weight="light" className="h-4 w-4" />
               </Button>
               <span className="text-sm">
                 Page {currentPage} of {totalPages}
@@ -550,7 +532,7 @@ export default function InvoicesPage() {
                 onClick={() => setCurrentPage(currentPage + 1)}
                 disabled={currentPage === totalPages}
               >
-                <ChevronRight className="h-4 w-4" />
+                <CaretRight weight="light" className="h-4 w-4" />
               </Button>
             </div>
           </div>
@@ -559,7 +541,7 @@ export default function InvoicesPage() {
 
       {/* Detail Modal */}
       <Dialog open={showDetailModal} onOpenChange={setShowDetailModal}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Invoice Details</DialogTitle>
           </DialogHeader>
@@ -580,7 +562,7 @@ export default function InvoicesPage() {
 
               {selectedInvoice.contact && (
                 <div className="flex items-center gap-3 p-3 border rounded-lg">
-                  <User className="h-5 w-5 text-muted-foreground" />
+                  <User weight="light" className="h-5 w-5 text-muted-foreground" />
                   <div>
                     <p className="font-medium">
                       {selectedInvoice.contact.title || '—'}
@@ -661,8 +643,8 @@ export default function InvoicesPage() {
                   setShowDetailModal(false);
                 }}
               >
-                <Send className="h-4 w-4 mr-2" />
-                Send Invoice
+                <PaperPlaneTilt weight="light" className="h-4 w-4 mr-2" />
+                PaperPlaneTilt Invoice
               </Button>
             )}
             {selectedInvoice?.status !== 'paid' && selectedInvoice?.balance_due && selectedInvoice.balance_due > 0 && (
@@ -672,7 +654,7 @@ export default function InvoicesPage() {
                   setShowDetailModal(false);
                 }}
               >
-                <CheckCircle className="h-4 w-4 mr-2" />
+                <CheckCircle weight="light" className="h-4 w-4 mr-2" />
                 Mark Paid
               </Button>
             )}

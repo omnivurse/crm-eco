@@ -18,15 +18,13 @@ interface AdminShellProps {
     organizationId: string;
   };
   userId: string;
-  /** Tenant memberships for the OrganizationSwitcher (server-resolved). */
   tenants?: SwitcherTenant[];
-  /** Currently active tenant id (server-resolved). */
   activeTenantId?: string;
 }
 
 /**
- * Client-side shell component that manages mobile navigation state.
- * Wraps the sidebar, top nav, and main content area.
+ * Ethereal Glass shell — floating rail + command island.
+ * Light mode is default; dark OLED via ThemeToggle.
  */
 export function AdminShell({
   children,
@@ -39,7 +37,6 @@ export function AdminShell({
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const pathname = usePathname();
 
-  // Hydrate sidebar collapsed state from localStorage
   useEffect(() => {
     const stored = localStorage.getItem('admin-sidebar-main-collapsed');
     if (stored === 'true') {
@@ -47,17 +44,14 @@ export function AdminShell({
     }
   }, []);
 
-  // Persist sidebar collapsed state
   useEffect(() => {
     localStorage.setItem('admin-sidebar-main-collapsed', String(sidebarCollapsed));
   }, [sidebarCollapsed]);
 
-  // Close mobile menu on route change
   useEffect(() => {
     queueMicrotask(() => setMobileMenuOpen(false));
   }, [pathname]);
 
-  // Prevent body scroll when mobile menu is open
   useEffect(() => {
     if (mobileMenuOpen) {
       document.body.style.overflow = 'hidden';
@@ -70,10 +64,10 @@ export function AdminShell({
   }, [mobileMenuOpen]);
 
   return (
-    <div className="relative flex flex-col h-screen overflow-hidden bg-slate-50 dark:bg-slate-950">
-      {/* Content Container */}
-      <div className="relative flex flex-col w-full h-full">
-        {/* Top Bar */}
+    <div className="adm-atmosphere relative flex h-[100dvh] flex-col overflow-hidden">
+      <div className="adm-grain" aria-hidden="true" />
+
+      <div className="relative z-10 mx-auto flex h-full w-full max-w-[92rem] flex-col gap-3 px-3 pb-3 pt-3 sm:px-4 lg:px-6">
         <AdminTopNav
           profile={profile}
           userId={userId}
@@ -83,17 +77,15 @@ export function AdminShell({
           activeTenantId={activeTenantId}
         />
 
-        {/* Mobile Menu Overlay */}
         {mobileMenuOpen && (
           <div
-            className="fixed inset-0 bg-black/50 z-30 lg:hidden"
+            className="fixed inset-0 z-30 bg-[rgba(11,18,32,0.35)] backdrop-blur-sm lg:hidden dark:bg-black/60"
             onClick={() => setMobileMenuOpen(false)}
             aria-hidden="true"
           />
         )}
 
-        {/* Main Content Area */}
-        <div className="flex-1 flex min-h-0">
+        <div className="flex min-h-0 flex-1 gap-4">
           <AdminSidebar
             mobileMenuOpen={mobileMenuOpen}
             onMobileClose={() => setMobileMenuOpen(false)}
@@ -101,15 +93,14 @@ export function AdminShell({
             onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
           />
 
-          <main className="flex-1 overflow-auto p-3 sm:p-4 lg:p-6 xl:p-8 2xl:p-10 scrollbar-thin">
-            <div className="w-full pb-16">
+          <main className="min-w-0 flex-1 overflow-auto scrollbar-thin [scrollbar-gutter:stable]">
+            <div className="mx-auto w-full max-w-[1920px] pb-16">
               <Breadcrumbs />
               {children}
             </div>
           </main>
         </div>
 
-        {/* Footer - hidden on mobile */}
         <div className="hidden lg:block">
           <AdminFooter />
         </div>

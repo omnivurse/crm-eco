@@ -1,18 +1,9 @@
 'use client';
 
+import { ArrowLeft, ChartBar, CircleNotch, FloppyDisk, GearSix, Play, Table, WarningCircle } from '@phosphor-icons/react';
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import {
-  ArrowLeft,
-  Play,
-  Save,
-  Settings,
-  BarChart3,
-  Table,
-  Loader2,
-  AlertCircle,
-} from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
 import { Label } from '@crm-eco/ui/components/label';
@@ -54,14 +45,14 @@ export default function AdminTemplateDetailPage() {
   if (!template) {
     return (
       <div className="text-center py-16">
-        <AlertCircle className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+        <WarningCircle weight="light" className="w-16 h-16 text-slate-300 mx-auto mb-4" />
         <h1 className="text-xl font-bold text-slate-900 mb-2">Template Not Found</h1>
         <p className="text-slate-500 mb-4">
           The template you're looking for doesn't exist.
         </p>
         <Link href="/reports/templates">
           <Button variant="outline">
-            <ArrowLeft className="w-4 h-4 mr-2" />
+            <ArrowLeft weight="light" className="w-4 h-4 mr-2" />
             Back to Templates
           </Button>
         </Link>
@@ -181,7 +172,7 @@ export default function AdminTemplateDetailPage() {
             href="/reports/templates"
             className="flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 mb-2"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft weight="light" className="w-4 h-4" />
             Back to Templates
           </Link>
           <h1 className="text-2xl font-bold text-slate-900">{template.name}</h1>
@@ -200,23 +191,22 @@ export default function AdminTemplateDetailPage() {
           <Button
             onClick={handleRunReport}
             disabled={isRunning}
-            className="bg-[#0891b2] hover:bg-[#0e7490] text-white"
           >
             {isRunning ? (
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              <CircleNotch weight="light" className="w-4 h-4 mr-2 animate-spin" />
             ) : (
-              <Play className="w-4 h-4 mr-2" />
+              <Play weight="light" className="w-4 h-4 mr-2" />
             )}
             {isRunning ? 'Running...' : 'Run Report'}
           </Button>
           <ExportButton onExport={handleExport} disabled={results.length === 0} />
           <Button variant="outline" onClick={handleSaveReport} disabled={isSaving}>
             {isSaving ? (
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              <CircleNotch weight="light" className="w-4 h-4 mr-2 animate-spin" />
             ) : (
-              <Save className="w-4 h-4 mr-2" />
+              <FloppyDisk weight="light" className="w-4 h-4 mr-2" />
             )}
-            Save Report
+            FloppyDisk Report
           </Button>
         </div>
       </div>
@@ -224,7 +214,7 @@ export default function AdminTemplateDetailPage() {
       {/* Error Alert */}
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+          <WarningCircle weight="light" className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
           <div>
             <p className="font-medium text-red-800">Error</p>
             <p className="text-sm text-red-600">{error}</p>
@@ -238,7 +228,7 @@ export default function AdminTemplateDetailPage() {
         <div className="lg:col-span-1 space-y-4">
           <div className="bg-white rounded-xl p-4 border border-slate-200">
             <div className="flex items-center gap-2 mb-4">
-              <Settings className="w-4 h-4 text-slate-500" />
+              <GearSix weight="light" className="w-4 h-4 text-slate-500" />
               <h2 className="font-semibold text-slate-900">Configuration</h2>
             </div>
 
@@ -288,11 +278,11 @@ export default function AdminTemplateDetailPage() {
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList>
               <TabsTrigger value="preview" className="flex items-center gap-2">
-                <BarChart3 className="w-4 h-4" />
+                <ChartBar weight="light" className="w-4 h-4" />
                 Preview
               </TabsTrigger>
               <TabsTrigger value="results" className="flex items-center gap-2">
-                <Table className="w-4 h-4" />
+                <Table weight="light" className="w-4 h-4" />
                 Results
                 {results.length > 0 && (
                   <span className="ml-1 text-xs bg-[#0891b2]/10 text-[#0891b2] px-1.5 py-0.5 rounded">
@@ -304,7 +294,7 @@ export default function AdminTemplateDetailPage() {
 
             <TabsContent value="preview" className="mt-4">
               <div className="bg-white rounded-xl p-6 border border-slate-200 text-center">
-                <BarChart3 className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                <ChartBar weight="light" className="w-12 h-12 text-slate-300 mx-auto mb-3" />
                 <h3 className="font-semibold text-slate-900 mb-1">Ready to Run</h3>
                 <p className="text-sm text-slate-500 mb-4">
                   Click "Run Report" to execute this template and see the results
@@ -312,12 +302,11 @@ export default function AdminTemplateDetailPage() {
                 <Button
                   onClick={handleRunReport}
                   disabled={isRunning}
-                  className="bg-[#0891b2] hover:bg-[#0e7490] text-white"
                 >
                   {isRunning ? (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    <CircleNotch weight="light" className="w-4 h-4 mr-2 animate-spin" />
                   ) : (
-                    <Play className="w-4 h-4 mr-2" />
+                    <Play weight="light" className="w-4 h-4 mr-2" />
                   )}
                   Run Report
                 </Button>
@@ -359,7 +348,7 @@ export default function AdminTemplateDetailPage() {
                 </div>
               ) : (
                 <div className="bg-white rounded-xl p-8 border border-slate-200 text-center">
-                  <Table className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                  <Table weight="light" className="w-12 h-12 text-slate-300 mx-auto mb-3" />
                   <h3 className="font-semibold text-slate-900 mb-1">No Results Yet</h3>
                   <p className="text-sm text-slate-500">Run the report to see results here</p>
                 </div>

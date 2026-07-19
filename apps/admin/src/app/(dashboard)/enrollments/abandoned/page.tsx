@@ -1,5 +1,5 @@
+import { ArrowLeft, Eye, Hourglass } from '@phosphor-icons/react/dist/ssr';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Badge } from '@crm-eco/ui';
-import { Hourglass, Eye, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { format } from 'date-fns';
@@ -252,7 +252,7 @@ export default async function AbandonedEnrollmentsPage({
       <PageHeader
         title="Abandoned Enrollments"
         description={`Not-yet-submitted applications with no activity in ${staleDays}+ days`}
-        icon={<Hourglass className="w-6 h-6" />}
+        icon={<Hourglass weight="light" className="w-6 h-6" />}
         gradient="from-amber-600 to-amber-400"
       />
 
@@ -273,7 +273,7 @@ export default async function AbandonedEnrollmentsPage({
         </div>
         <Link href="/enrollments" prefetch={false}>
           <Button variant="ghost" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-1" />
+            <ArrowLeft weight="light" className="h-4 w-4 mr-1" />
             All Enrollments
           </Button>
         </Link>
@@ -290,7 +290,7 @@ export default async function AbandonedEnrollmentsPage({
         <CardContent>
           {rows.length === 0 ? (
             <div className="text-center py-12">
-              <Hourglass className="h-12 w-12 mx-auto text-slate-300 mb-4" />
+              <Hourglass weight="light" className="h-12 w-12 mx-auto text-slate-300 mb-4" />
               <p className="text-slate-500">
                 No abandoned enrollments in the last {staleDays} days. Nice.
               </p>
@@ -367,7 +367,7 @@ export default async function AbandonedEnrollmentsPage({
                         <td className="py-3">
                           <Link href={`/enrollments/${row.id}`} prefetch={false}>
                             <Button variant="ghost" size="sm">
-                              <Eye className="h-4 w-4" />
+                              <Eye weight="light" className="h-4 w-4" />
                             </Button>
                           </Link>
                         </td>

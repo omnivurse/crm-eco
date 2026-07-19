@@ -6,31 +6,31 @@ import { usePathname, useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 import { cn, BrandLogo } from '@crm-eco/ui';
 import {
-  LayoutDashboard,
+  SquaresFour,
   Users,
-  UserCog,
+  UserCircleGear,
   Package,
   FileText,
-  Settings,
+  GearSix,
   CreditCard,
-  BarChart3,
-  Layers,
+  ChartBar,
+  Stack,
   Link as LinkIcon,
-  Mail,
-  Shield,
-  Sparkles,
-  Building2,
-  Terminal,
-  Zap,
+  EnvelopeSimple,
+  ShieldCheck,
+  Sparkle,
+  Buildings,
+  TerminalWindow,
+  Lightning,
   X,
-  ChevronDown,
-  ChevronRight,
-  ChevronLeft,
-  PieChart,
-  Activity,
-  Filter,
-  LogOut,
-} from 'lucide-react';
+  CaretDown,
+  CaretRight,
+  CaretLeft,
+  ChartPie,
+  Pulse,
+  Funnel,
+  SignOut,
+} from '@phosphor-icons/react';
 import { useTerminal } from '@/components/terminal';
 
 interface NavChild {
@@ -52,99 +52,92 @@ interface NavSection {
   collapsible?: boolean;
 }
 
-// Navigation ordered by admin operational workflow priority
+const icon = (node: React.ReactNode) => node;
+
 const navSections: NavSection[] = [
-  // ── Core: always visible, never collapsed ──
   {
     title: 'Main',
     items: [
-      { label: 'Dashboard', href: '/dashboard', icon: <LayoutDashboard className="h-5 w-5" /> },
-      { label: 'Members', href: '/members', icon: <Users className="h-5 w-5" /> },
-      { label: 'Agents', href: '/agents', icon: <UserCog className="h-5 w-5" /> },
+      { label: 'Dashboard', href: '/dashboard', icon: icon(<SquaresFour weight="light" className="h-5 w-5" />) },
+      { label: 'Members', href: '/members', icon: icon(<Users weight="light" className="h-5 w-5" />) },
+      { label: 'Agents', href: '/agents', icon: icon(<UserCircleGear weight="light" className="h-5 w-5" />) },
     ],
   },
-  // ── Products & Carriers: what members are on ──
   {
     title: 'Products',
     collapsible: true,
     items: [
-      { label: 'Products', href: '/products', icon: <Package className="h-5 w-5" /> },
-      { label: 'Carriers', href: '/carriers', icon: <Shield className="h-5 w-5" /> },
+      { label: 'Products', href: '/products', icon: icon(<Package weight="light" className="h-5 w-5" />) },
+      { label: 'Carriers', href: '/carriers', icon: icon(<ShieldCheck weight="light" className="h-5 w-5" />) },
     ],
   },
-  // ── Enrollment: onboarding funnel ──
   {
     title: 'Enrollment',
     collapsible: true,
     items: [
-      { label: 'Enrollments', href: '/enrollments', icon: <FileText className="h-5 w-5" /> },
-      { label: 'Landing Pages', href: '/enrollment-links', icon: <LinkIcon className="h-5 w-5" /> },
-      { label: 'Agent Links', href: '/enrollment-links/agents', icon: <UserCog className="h-5 w-5" /> },
+      { label: 'Enrollments', href: '/enrollments', icon: icon(<FileText weight="light" className="h-5 w-5" />) },
+      { label: 'Landing Pages', href: '/enrollment-links', icon: icon(<LinkIcon weight="light" className="h-5 w-5" />) },
+      { label: 'Agent Links', href: '/enrollment-links/agents', icon: icon(<UserCircleGear weight="light" className="h-5 w-5" />) },
     ],
   },
-  // ── Money: billing + commissions ──
   {
     title: 'Billing',
     collapsible: true,
     items: [
-      { label: 'Overview', href: '/billing', icon: <CreditCard className="h-5 w-5" /> },
-      { label: 'Transactions', href: '/billing/transactions', icon: <FileText className="h-5 w-5" /> },
-      { label: 'Failed Payments', href: '/billing/failures', icon: <Shield className="h-5 w-5" /> },
+      { label: 'Overview', href: '/billing', icon: icon(<CreditCard weight="light" className="h-5 w-5" />) },
+      { label: 'Transactions', href: '/billing/transactions', icon: icon(<FileText weight="light" className="h-5 w-5" />) },
+      { label: 'Failed Payments', href: '/billing/failures', icon: icon(<ShieldCheck weight="light" className="h-5 w-5" />) },
     ],
   },
   {
     title: 'Commissions',
     collapsible: true,
     items: [
-      { label: 'Overview', href: '/commissions', icon: <Layers className="h-5 w-5" /> },
-      { label: 'Tiers', href: '/commissions/tiers', icon: <BarChart3 className="h-5 w-5" /> },
-      { label: 'Transactions', href: '/commissions/transactions', icon: <FileText className="h-5 w-5" /> },
-      { label: 'Payouts', href: '/commissions/payouts', icon: <CreditCard className="h-5 w-5" /> },
+      { label: 'Overview', href: '/commissions', icon: icon(<Stack weight="light" className="h-5 w-5" />) },
+      { label: 'Tiers', href: '/commissions/tiers', icon: icon(<ChartBar weight="light" className="h-5 w-5" />) },
+      { label: 'Transactions', href: '/commissions/transactions', icon: icon(<FileText weight="light" className="h-5 w-5" />) },
+      { label: 'Payouts', href: '/commissions/payouts', icon: icon(<CreditCard weight="light" className="h-5 w-5" />) },
     ],
   },
-  // ── Ops: back-office tasks ──
   {
     title: 'Operations',
     collapsible: true,
     items: [
-      { label: 'Ops Dashboard', href: '/ops', icon: <Zap className="h-5 w-5" /> },
-      { label: 'Eligibility', href: '/ops/eligibility', icon: <Shield className="h-5 w-5" /> },
-      { label: 'Job History', href: '/ops/jobs', icon: <BarChart3 className="h-5 w-5" /> },
-      { label: 'Scheduler', href: '/ops/scheduler', icon: <Settings className="h-5 w-5" /> },
-      { label: 'Vendors', href: '/vendors', icon: <Building2 className="h-5 w-5" /> },
-      { label: 'Documents', href: '/documents', icon: <FileText className="h-5 w-5" /> },
+      { label: 'Ops Dashboard', href: '/ops', icon: icon(<Lightning weight="light" className="h-5 w-5" />) },
+      { label: 'Eligibility', href: '/ops/eligibility', icon: icon(<ShieldCheck weight="light" className="h-5 w-5" />) },
+      { label: 'Job History', href: '/ops/jobs', icon: icon(<ChartBar weight="light" className="h-5 w-5" />) },
+      { label: 'Scheduler', href: '/ops/scheduler', icon: icon(<GearSix weight="light" className="h-5 w-5" />) },
+      { label: 'Vendors', href: '/vendors', icon: icon(<Buildings weight="light" className="h-5 w-5" />) },
+      { label: 'Documents', href: '/documents', icon: icon(<FileText weight="light" className="h-5 w-5" />) },
     ],
   },
-  // ── Communications ──
   {
     title: 'Communications',
     collapsible: true,
     items: [
-      { label: 'Compose', href: '/communications/compose', icon: <Mail className="h-5 w-5" /> },
-      { label: 'Templates', href: '/communications/templates', icon: <FileText className="h-5 w-5" /> },
-      { label: 'History', href: '/communications/history', icon: <BarChart3 className="h-5 w-5" /> },
+      { label: 'Compose', href: '/communications/compose', icon: icon(<EnvelopeSimple weight="light" className="h-5 w-5" />) },
+      { label: 'Templates', href: '/communications/templates', icon: icon(<FileText weight="light" className="h-5 w-5" />) },
+      { label: 'History', href: '/communications/history', icon: icon(<ChartBar weight="light" className="h-5 w-5" />) },
     ],
   },
-  // ── Analytics ──
   {
     title: 'Analytics',
     collapsible: true,
     items: [
-      { label: 'Reports', href: '/reports', icon: <BarChart3 className="h-5 w-5" /> },
-      { label: 'Enrollment Funnel', href: '/analytics/funnel', icon: <Filter className="h-5 w-5" /> },
-      { label: 'Demographics', href: '/analytics/demographics', icon: <PieChart className="h-5 w-5" /> },
-      { label: 'Actuarial Data', href: '/analytics/actuarial', icon: <Activity className="h-5 w-5" /> },
+      { label: 'Reports', href: '/reports', icon: icon(<ChartBar weight="light" className="h-5 w-5" />) },
+      { label: 'Enrollment Funnel', href: '/analytics/funnel', icon: icon(<Funnel weight="light" className="h-5 w-5" />) },
+      { label: 'Demographics', href: '/analytics/demographics', icon: icon(<ChartPie weight="light" className="h-5 w-5" />) },
+      { label: 'Actuarial Data', href: '/analytics/actuarial', icon: icon(<Pulse weight="light" className="h-5 w-5" />) },
     ],
   },
-  // ── Settings: collapsed by default ──
   {
     title: 'Settings',
     collapsible: true,
     items: [
-      { label: 'General', href: '/settings', icon: <Settings className="h-5 w-5" /> },
-      { label: 'User Security', href: '/settings/security', icon: <Shield className="h-5 w-5" /> },
-      { label: 'Automations', href: '/settings/automations', icon: <Zap className="h-5 w-5" /> },
-      { label: 'Audit Logs', href: '/settings/audit-logs', icon: <FileText className="h-5 w-5" /> },
+      { label: 'General', href: '/settings', icon: icon(<GearSix weight="light" className="h-5 w-5" />) },
+      { label: 'User Security', href: '/settings/security', icon: icon(<ShieldCheck weight="light" className="h-5 w-5" />) },
+      { label: 'Automations', href: '/settings/automations', icon: icon(<Lightning weight="light" className="h-5 w-5" />) },
+      { label: 'Audit Logs', href: '/settings/audit-logs', icon: icon(<FileText weight="light" className="h-5 w-5" />) },
     ],
   },
 ];
@@ -169,7 +162,7 @@ export function AdminSidebar({
   const handleSignOut = async () => {
     const supabase = createBrowserClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     );
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -188,12 +181,9 @@ export function AdminSidebar({
     router.refresh();
   };
 
-  // State for collapsed sections - always start with empty set on server,
-  // then hydrate from localStorage on mount to avoid hydration mismatch
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
   const [sidebarReady, setSidebarReady] = useState(false);
 
-  // Hydrate from localStorage on mount
   useEffect(() => {
     const stored = localStorage.getItem('admin-sidebar-collapsed');
     queueMicrotask(() => {
@@ -201,26 +191,24 @@ export function AdminSidebar({
         try {
           setCollapsedSections(new Set(JSON.parse(stored)));
         } catch {
-          // Ignore parse errors
+          /* ignore */
         }
       }
       setSidebarReady(true);
     });
   }, []);
 
-  // Persist collapsed state to localStorage (only after initial hydration)
   useEffect(() => {
     if (sidebarReady) {
       localStorage.setItem('admin-sidebar-collapsed', JSON.stringify(Array.from(collapsedSections)));
     }
   }, [collapsedSections, sidebarReady]);
 
-  // Auto-expand section when navigating to a page within it
   useEffect(() => {
     navSections.forEach((section) => {
       if (section.collapsible) {
         const isActiveSection = section.items.some(
-          (item) => pathname === item.href || pathname.startsWith(`${item.href}/`)
+          (item) => pathname === item.href || pathname.startsWith(`${item.href}/`),
         );
         if (isActiveSection && collapsedSections.has(section.title)) {
           setCollapsedSections((prev) => {
@@ -236,141 +224,129 @@ export function AdminSidebar({
   const toggleSection = (sectionTitle: string) => {
     setCollapsedSections((prev) => {
       const next = new Set(prev);
-      if (next.has(sectionTitle)) {
-        next.delete(sectionTitle);
-      } else {
-        next.add(sectionTitle);
-      }
+      if (next.has(sectionTitle)) next.delete(sectionTitle);
+      else next.add(sectionTitle);
       return next;
     });
   };
 
-  // Handle link click on mobile - close the menu
   const handleLinkClick = () => {
-    if (onMobileClose) {
-      onMobileClose();
-    }
+    onMobileClose?.();
   };
 
   const sidebarContent = (forMobile: boolean = false) => (
-    <div className="flex flex-col h-full">
-      {/* Logo area */}
+    <div className="flex h-full flex-col">
       {(forMobile || !isCollapsed) && (
-        <div className="px-4 py-3 border-b border-slate-200 dark:border-white/5">
+        <div className="border-b border-[var(--adm-hairline)] px-4 py-3">
           <div className="flex items-center justify-between">
-            <Link href="/dashboard" prefetch={false} className="flex flex-col group flex-1 min-w-0" onClick={handleLinkClick}>
+            <Link
+              href="/dashboard"
+              prefetch={false}
+              className="group flex min-w-0 flex-1 flex-col"
+              onClick={handleLinkClick}
+            >
               <BrandLogo variant="full" size="md" priority />
-              <span className="mt-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-600 dark:text-cyan-400">
-              MMS · Benefits Enrollment & Member Management
+              <span className="mt-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--adm-cyan)]">
+                MMS · Admin
               </span>
             </Link>
             {forMobile && (
               <button
+                type="button"
                 onClick={onMobileClose}
-                className="p-2 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
+                className="rounded-full p-2 text-[var(--adm-muted)] transition-colors hover:bg-[rgba(11,109,133,0.08)] hover:text-[var(--adm-ink)]"
                 aria-label="Close menu"
               >
-                <X className="w-5 h-5" />
+                <X weight="light" className="h-5 w-5" />
               </button>
             )}
           </div>
         </div>
       )}
 
-      {/* Collapsed logo */}
       {!forMobile && isCollapsed && (
-        <div className="flex justify-center py-3 border-b border-slate-200 dark:border-white/5">
+        <div className="flex justify-center border-b border-[var(--adm-hairline)] py-3">
           <Link href="/dashboard" prefetch={false} className="flex items-center" onClick={handleLinkClick}>
             <BrandLogo variant="icon" size="xs" priority />
           </Link>
         </div>
       )}
 
-      {/* Navigation */}
-      <nav className={cn(
-        "flex-1 py-3 overflow-y-auto scrollbar-thin transition-all duration-300",
-        !forMobile && isCollapsed ? "px-2" : "px-2"
-      )}>
+      <nav
+        className={cn(
+          'flex-1 overflow-y-auto py-3 scrollbar-thin transition-all duration-500 ease-[var(--adm-ease)]',
+          'px-2',
+        )}
+      >
         {navSections.map((section) => {
           const isSectionCollapsed = section.collapsible && collapsedSections.has(section.title);
           const isActiveSection = section.items.some(
-            (item) => pathname === item.href || pathname.startsWith(`${item.href}/`)
+            (item) => pathname === item.href || pathname.startsWith(`${item.href}/`),
           );
 
           return (
-            <div key={section.title} className="mb-3">
-              {/* Section Header */}
-              {(!forMobile && isCollapsed) ? (
+            <div key={section.title} className="mb-2">
+              {!forMobile && isCollapsed ? (
                 section.title !== 'Main' && (
-                  <div className="h-px bg-slate-200 dark:bg-white/10 my-3 mx-1" />
+                  <div className="mx-1 my-3 h-px bg-[var(--adm-hairline)]" />
                 )
               ) : section.collapsible ? (
                 <button
+                  type="button"
                   onClick={() => toggleSection(section.title)}
                   className={cn(
-                    'w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all',
+                    'flex w-full items-center justify-between rounded-full px-3 py-2 text-[0.65rem] font-semibold uppercase tracking-wider transition-all duration-500 ease-[var(--adm-ease)]',
                     isActiveSection
-                      ? 'text-teal-600 dark:text-teal-400 bg-teal-50/50 dark:bg-teal-500/5'
-                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5'
+                      ? 'bg-[rgba(11,109,133,0.08)] text-[var(--adm-cyan)]'
+                      : 'text-[var(--adm-muted)] hover:bg-[rgba(11,109,133,0.05)] hover:text-[var(--adm-ink)]',
                   )}
                 >
                   <span>{section.title}</span>
                   {isSectionCollapsed ? (
-                    <ChevronRight className="w-4 h-4" />
+                    <CaretRight weight="light" className="h-4 w-4" />
                   ) : (
-                    <ChevronDown className="w-4 h-4" />
+                    <CaretDown weight="light" className="h-4 w-4" />
                   )}
                 </button>
               ) : (
                 section.title !== 'Main' && (
-                  <div className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                  <div className="px-3 py-2 text-[0.65rem] font-semibold uppercase tracking-wider text-[var(--adm-muted)]">
                     {section.title}
                   </div>
                 )
               )}
 
-              {/* Section Items */}
               <div
                 className={cn(
-                  'space-y-1 overflow-hidden transition-all duration-300',
-                  (!forMobile && isCollapsed) ? 'max-h-[500px] opacity-100' : (
-                    isSectionCollapsed ? 'max-h-0 opacity-0' : 'max-h-[500px] opacity-100'
-                  ),
-                  section.title !== 'Main' && !section.collapsible && 'mt-1'
+                  'space-y-0.5 overflow-hidden transition-all duration-500 ease-[var(--adm-ease)]',
+                  !forMobile && isCollapsed
+                    ? 'max-h-[500px] opacity-100'
+                    : isSectionCollapsed
+                      ? 'max-h-0 opacity-0'
+                      : 'max-h-[500px] opacity-100',
                 )}
               >
                 {section.items.map((item) => {
                   const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
-
                   return (
                     <Link
                       key={item.href}
                       href={item.href}
                       prefetch={false}
                       onClick={handleLinkClick}
-                      title={(!forMobile && isCollapsed) ? item.label : undefined}
+                      title={!forMobile && isCollapsed ? item.label : undefined}
                       className={cn(
-                        'flex items-center rounded-lg text-sm font-medium transition-all duration-200 group relative',
-                        !forMobile && isCollapsed
-                          ? 'justify-center p-2.5'
-                          : 'gap-3 px-3 py-2',
-                        isActive
-                          ? 'bg-teal-50 dark:bg-teal-500/10 text-teal-700 dark:text-teal-400 border-l-2 border-teal-500'
-                          : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white'
+                        'adm-nav-link group relative',
+                        !forMobile && isCollapsed && 'justify-center px-0 py-2.5',
+                        isActive && 'adm-nav-link-active',
                       )}
                     >
-                      <span className={cn(
-                        'transition-colors flex-shrink-0',
-                        isActive ? 'text-teal-600 dark:text-teal-400' : 'text-slate-400 dark:text-slate-500'
-                      )}>
-                        {item.icon}
-                      </span>
+                      <span className="flex-shrink-0">{item.icon}</span>
                       {(forMobile || !isCollapsed) && (
                         <span className="truncate">{item.label}</span>
                       )}
-                      {/* Tooltip on hover when collapsed */}
                       {!forMobile && isCollapsed && (
-                        <div className="absolute left-full ml-2 px-2 py-1 bg-slate-800 dark:bg-slate-900 text-slate-900 dark:text-white text-sm rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-lg">
+                        <div className="pointer-events-none absolute left-full z-50 ml-2 whitespace-nowrap rounded-full bg-[var(--adm-ink)] px-2.5 py-1 text-xs text-[var(--adm-void)] opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
                           {item.label}
                         </div>
                       )}
@@ -383,73 +359,63 @@ export function AdminSidebar({
         })}
       </nav>
 
-      {/* Sign Out Button */}
-      <div className={cn("pb-2 transition-all duration-300", !forMobile && isCollapsed ? "px-2" : "px-2")}>
+      <div className={cn('space-y-1 pb-2', !forMobile && isCollapsed ? 'px-2' : 'px-2')}>
         <button
+          type="button"
           onClick={() => {
             handleSignOut();
             handleLinkClick();
           }}
           className={cn(
-            "w-full flex items-center rounded-lg text-sm font-medium transition-all duration-200 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-700 dark:hover:text-red-300 group relative",
-            !forMobile && isCollapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2.5"
+            'adm-nav-link w-full text-red-600 hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-500/10',
+            !forMobile && isCollapsed && 'justify-center px-0 py-2.5',
           )}
           title="Sign out"
         >
-          <LogOut className="w-5 h-5 flex-shrink-0" />
+          <SignOut weight="light" className="h-5 w-5 flex-shrink-0" />
           {(forMobile || !isCollapsed) && <span>Sign out</span>}
-          {!forMobile && isCollapsed && (
-            <div className="absolute left-full ml-2 px-2 py-1 bg-slate-800 dark:bg-slate-900 text-white text-sm rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-lg">
-              Sign out
-            </div>
-          )}
         </button>
-      </div>
 
-      {/* Command Center Button */}
-      <div className={cn("pb-2 transition-all duration-300", !forMobile && isCollapsed ? "px-2" : "px-2")}>
         <button
+          type="button"
           onClick={() => {
             toggleTerminal();
             handleLinkClick();
           }}
           className={cn(
-            "w-full flex items-center rounded-lg text-sm font-medium transition-all duration-200 text-teal-600 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-500/10 hover:text-teal-700 dark:hover:text-teal-300 group relative",
-            !forMobile && isCollapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2.5"
+            'adm-nav-link w-full text-[var(--adm-teal)]',
+            !forMobile && isCollapsed && 'justify-center px-0 py-2.5',
           )}
           title="Command Center (Ctrl+K)"
         >
-          <Terminal className="w-5 h-5 flex-shrink-0" />
+          <TerminalWindow weight="light" className="h-5 w-5 flex-shrink-0" />
           {(forMobile || !isCollapsed) && (
             <>
               <span>Command Center</span>
-              <kbd className="ml-auto text-[10px] bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded hidden sm:inline">^K</kbd>
+              <kbd className="ml-auto hidden rounded-md bg-[rgba(11,109,133,0.08)] px-1.5 py-0.5 text-[10px] text-[var(--adm-muted)] sm:inline">
+                ^K
+              </kbd>
             </>
-          )}
-          {!forMobile && isCollapsed && (
-            <div className="absolute left-full ml-2 px-2 py-1 bg-slate-800 dark:bg-slate-900 text-slate-900 dark:text-white text-sm rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-lg">
-              Command Center
-            </div>
           )}
         </button>
       </div>
 
-      {/* Footer */}
-      <div className={cn(
-        "border-t border-slate-200 dark:border-white/5 transition-all duration-300",
-        !forMobile && isCollapsed ? "p-2" : "p-3"
-      )}>
-        {(!forMobile && isCollapsed) ? (
+      <div className={cn('border-t border-[var(--adm-hairline)]', !forMobile && isCollapsed ? 'p-2' : 'p-3')}>
+        {!forMobile && isCollapsed ? (
           <div className="flex justify-center">
-            <Sparkles className="w-5 h-5 text-teal-500" />
+            <Sparkle weight="light" className="h-5 w-5 text-[var(--adm-cyan)]" />
           </div>
         ) : (
-          <div className="px-3 py-3 bg-slate-50 dark:bg-white/5 rounded-xl border border-slate-200 dark:border-white/5">
-            <div className="flex items-center gap-2 mb-1">
-              <Sparkles className="w-3.5 h-3.5 text-teal-500" />
-              <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">System</p>
+          <div className="rounded-2xl border border-[var(--adm-hairline)] bg-[rgba(11,109,133,0.04)] px-3 py-3 dark:bg-white/5">
+            <div className="mb-1 flex items-center gap-2">
+              <Sparkle weight="light" className="h-3.5 w-3.5 text-[var(--adm-cyan)]" />
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--adm-muted)]">
+                System
+              </p>
             </div>
-            <p className="text-sm font-bold text-slate-900 dark:text-white">Admin <span className="text-teal-600 dark:text-teal-400">· v1.0.0</span></p>
+            <p className="text-sm font-bold text-[var(--adm-ink)]">
+              Admin <span className="text-[var(--adm-cyan)]">· v1.0.0</span>
+            </p>
           </div>
         )}
       </div>
@@ -458,41 +424,45 @@ export function AdminSidebar({
 
   return (
     <>
-      {/* Desktop Sidebar */}
       <aside
         className={cn(
-          'relative hidden lg:flex flex-col border-r border-slate-200 dark:border-white/5',
-          'bg-white/80 dark:bg-slate-900/50 backdrop-blur-sm transition-all duration-200',
-          isCollapsed ? 'w-[72px]' : 'w-64'
+          'relative hidden self-stretch lg:block',
+          'transition-all duration-500 ease-[var(--adm-ease)]',
+          isCollapsed ? 'w-[4.75rem]' : 'w-[15.5rem]',
         )}
       >
-        {sidebarContent(false)}
+        <div className="adm-rail sticky top-0 h-full">
+          <div className="adm-rail-inner flex h-full min-h-[calc(100dvh-8rem)] flex-col">
+            {sidebarContent(false)}
+          </div>
+        </div>
 
-        {/* Floating Toggle Button - CRM style */}
         {onToggleCollapse && (
           <button
+            type="button"
             onClick={onToggleCollapse}
-            className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-white shadow-sm z-10"
+            className="absolute -right-3 top-1/2 z-10 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-full border border-[var(--adm-hairline)] bg-[var(--adm-panel)] text-[var(--adm-muted)] shadow-sm transition-colors hover:text-[var(--adm-ink)]"
+            aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
             {isCollapsed ? (
-              <ChevronRight className="w-4 h-4" />
+              <CaretRight weight="light" className="h-4 w-4" />
             ) : (
-              <ChevronLeft className="w-4 h-4" />
+              <CaretLeft weight="light" className="h-4 w-4" />
             )}
           </button>
         )}
       </aside>
 
-      {/* Mobile Sidebar - slide-in drawer (positioned below top bar) */}
       <aside
         className={cn(
-          'fixed top-14 left-0 bottom-0 w-72 z-40 lg:hidden',
-          'flex flex-col bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-white/10',
-          'transform transition-transform duration-300 ease-in-out',
-          mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+          'fixed bottom-3 left-3 top-[4.5rem] z-40 w-72 lg:hidden',
+          'transform transition-transform duration-500 ease-[var(--adm-ease)]',
+          mobileMenuOpen ? 'translate-x-0' : '-translate-x-[120%]',
         )}
       >
-        {sidebarContent(true)}
+        <div className="adm-rail h-full">
+          <div className="adm-rail-inner flex h-full flex-col">{sidebarContent(true)}</div>
+        </div>
       </aside>
     </>
   );

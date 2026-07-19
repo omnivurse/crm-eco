@@ -1,9 +1,9 @@
 'use client';
 
+import { CaretRight, EnvelopeSimple, Eye, MapPin, Phone, Users } from '@phosphor-icons/react';
 import { useState, useCallback } from 'react';
 import { Badge, Button, Checkbox } from '@crm-eco/ui';
 import { StatusBadge } from '@crm-eco/ui/components/status-badge';
-import { Eye, Users, Mail, Phone, MapPin, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
@@ -101,23 +101,23 @@ function MemberCard({
             </h3>
             <StatusBadge status={member.status} label={getStatusLabel(member.status)} className="mt-1" />
           </div>
-          <ChevronRight className="w-5 h-5 text-slate-400 flex-shrink-0" />
+          <CaretRight weight="light" className="w-5 h-5 text-slate-400 flex-shrink-0" />
         </div>
 
         <div className="space-y-2 text-sm">
           <div className="flex items-center gap-2 text-slate-600">
-            <Mail className="w-4 h-4 flex-shrink-0 text-slate-400" />
+            <EnvelopeSimple weight="light" className="w-4 h-4 flex-shrink-0 text-slate-400" />
             <span className="truncate">{member.email}</span>
           </div>
           {member.phone && (
             <div className="flex items-center gap-2 text-slate-600">
-              <Phone className="w-4 h-4 flex-shrink-0 text-slate-400" />
+              <Phone weight="light" className="w-4 h-4 flex-shrink-0 text-slate-400" />
               <span>{member.phone}</span>
             </div>
           )}
           {member.state && (
             <div className="flex items-center gap-2 text-slate-600">
-              <MapPin className="w-4 h-4 flex-shrink-0 text-slate-400" />
+              <MapPin weight="light" className="w-4 h-4 flex-shrink-0 text-slate-400" />
               <span>{member.state}</span>
             </div>
           )}
@@ -189,7 +189,7 @@ export function MemberTable({ members, orgId }: MemberTableProps) {
   if (members.length === 0) {
     return (
       <div className="text-center py-12">
-        <Users className="h-12 w-12 mx-auto text-slate-300 mb-4" />
+        <Users weight="light" className="h-12 w-12 mx-auto text-slate-300 mb-4" />
         <p className="text-slate-500">No members found</p>
         <Link href="/members/new" className="text-blue-600 text-sm hover:underline mt-2 inline-block">
           Add your first member
@@ -303,7 +303,7 @@ export function MemberTable({ members, orgId }: MemberTableProps) {
                 <td className="py-3">
                   <Link href={`/members/${member.id}`}>
                     <Button variant="ghost" size="sm">
-                      <Eye className="h-4 w-4" />
+                      <Eye weight="light" className="h-4 w-4" />
                     </Button>
                   </Link>
                 </td>

@@ -1,5 +1,6 @@
 'use client';
 
+import { ArrowClockwise, CircleNotch, Package, Plus, XCircle } from '@phosphor-icons/react';
 /**
  * MemberProductsPanel — staff management of a member's plan/product.
  * Reads memberships (the source of truth) and writes via admin plan actions
@@ -9,7 +10,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Package, Plus, RefreshCw, XCircle, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@crm-eco/ui/components/card';
 import { Button } from '@crm-eco/ui/components/button';
 import { Badge } from '@crm-eco/ui/components/badge';
@@ -145,7 +145,7 @@ export function MemberProductsPanel({ memberId, memberships, availablePlans }: P
       <CardHeader className="flex flex-row items-start justify-between gap-3">
         <div>
           <CardTitle className="flex items-center gap-2">
-            <Package className="h-5 w-5" />
+            <Package weight="light" className="h-5 w-5" />
             Plan &amp; Products
           </CardTitle>
           <CardDescription>
@@ -154,7 +154,7 @@ export function MemberProductsPanel({ memberId, memberships, availablePlans }: P
         </div>
         {!active && (
           <Button size="sm" onClick={() => setMode('assign')} className="gap-2 shrink-0">
-            <Plus className="h-4 w-4" />
+            <Plus weight="light" className="h-4 w-4" />
             Assign plan
           </Button>
         )}
@@ -180,11 +180,11 @@ export function MemberProductsPanel({ memberId, memberships, availablePlans }: P
             </div>
             <div className="mt-3 flex gap-2">
               <Button size="sm" variant="outline" className="gap-2" onClick={() => { setPlanId(''); setMode('change'); }}>
-                <RefreshCw className="h-4 w-4" />
+                <ArrowClockwise weight="light" className="h-4 w-4" />
                 Change plan
               </Button>
               <Button size="sm" variant="outline" className="gap-2 text-red-600" onClick={() => setMode('end')}>
-                <XCircle className="h-4 w-4" />
+                <XCircle weight="light" className="h-4 w-4" />
                 End plan
               </Button>
             </div>
@@ -259,7 +259,7 @@ export function MemberProductsPanel({ memberId, memberships, availablePlans }: P
           <DialogFooter>
             <Button variant="outline" onClick={close} disabled={saving}>Cancel</Button>
             <Button onClick={mode === 'assign' ? onAssign : onChange} disabled={saving || !planId}>
-              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {saving && <CircleNotch weight="light" className="mr-2 h-4 w-4 animate-spin" />}
               {mode === 'assign' ? 'Assign' : 'Change'}
             </Button>
           </DialogFooter>
@@ -288,7 +288,7 @@ export function MemberProductsPanel({ memberId, memberships, availablePlans }: P
           <DialogFooter>
             <Button variant="outline" onClick={close} disabled={saving}>Cancel</Button>
             <Button variant="destructive" onClick={onEnd} disabled={saving}>
-              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {saving && <CircleNotch weight="light" className="mr-2 h-4 w-4 animate-spin" />}
               End plan
             </Button>
           </DialogFooter>

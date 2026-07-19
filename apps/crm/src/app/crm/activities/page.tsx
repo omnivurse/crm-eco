@@ -331,7 +331,7 @@ function ActivitiesPageContent() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="w-full space-y-6">
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
@@ -349,7 +349,6 @@ function ActivitiesPageContent() {
         <div className="flex items-center gap-2">
           <Button
             onClick={() => setShowModal(true)}
-            className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white transition-all"
           >
             <Plus className="w-4 h-4 mr-2" />
             New Activity
@@ -439,7 +438,6 @@ function ActivitiesPageContent() {
             </p>
             <Button
               onClick={() => setShowModal(true)}
-              className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white"
             >
               <Plus className="w-4 h-4 mr-2" />
               New Activity
@@ -668,7 +666,7 @@ function ActivitiesPageContent() {
 
 function ActivitiesSkeleton() {
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="w-full space-y-6">
       <div className="flex items-center gap-4">
         <div className="w-14 h-14 bg-slate-200 dark:bg-slate-800/50 rounded-xl animate-pulse" />
         <div className="space-y-2">

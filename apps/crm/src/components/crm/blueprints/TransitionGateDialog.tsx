@@ -191,7 +191,7 @@ export function TransitionGateDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] glass-card border-white/10">
+      <DialogContent className="sm:max-w-xl glass-card border-white/10">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-white">
             <FileCheck className="w-5 h-5 text-teal-400" />

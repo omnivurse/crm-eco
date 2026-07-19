@@ -195,7 +195,6 @@ export function PipelineToolbar({ stages, canEditStages }: PipelineToolbarProps)
         </Button>
 
         <Button
-          className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white shadow-sm hover:shadow-md"
           asChild
         >
           <Link href="/crm/modules/deals/new">

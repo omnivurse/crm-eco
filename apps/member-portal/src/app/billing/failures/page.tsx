@@ -1,7 +1,8 @@
 import Link from 'next/link';
-import { AlertTriangle, ChevronLeft, RefreshCcw, MessageCircle } from 'lucide-react';
+import { Warning, ArrowsClockwise, ChatCircle } from '@phosphor-icons/react/dist/ssr';
 import { Card, CardContent, CardHeader, CardTitle } from '@crm-eco/ui';
 import { listOpenFailures } from '@/lib/data/billing';
+import { PageHeader } from '@/components/PageHeader';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,16 +11,12 @@ export default async function BillingFailuresPage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 px-4 py-8">
-      <Link href="/billing" className="inline-flex items-center text-sm text-blue-600 hover:underline">
-        <ChevronLeft className="mr-1 h-4 w-4" /> Back to Billing
-      </Link>
-
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Payment Failures</h1>
-        <p className="mt-1 text-sm text-slate-600">
-          Resolve unsuccessful charges to keep your membership active.
-        </p>
-      </div>
+      <PageHeader
+        title="Payment Failures"
+        description="Resolve unsuccessful charges to keep your membership active."
+        backHref="/billing"
+        backLabel="Back to Billing"
+      />
 
       {failures.length === 0 ? (
         <Card>
@@ -33,7 +30,7 @@ export default async function BillingFailuresPage() {
             <Card key={f.id} className="border-red-200">
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-base text-red-900">
-                  <AlertTriangle className="h-5 w-5" />
+                  <Warning weight="light" className="h-5 w-5" />
                   ${Number(f.amount).toFixed(2)} — {f.failure_reason}
                 </CardTitle>
               </CardHeader>
@@ -66,14 +63,14 @@ export default async function BillingFailuresPage() {
                     href="/billing"
                     className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-800"
                   >
-                    <RefreshCcw className="h-3.5 w-3.5" />
+                    <ArrowsClockwise weight="light" className="h-3.5 w-3.5" />
                     Update payment method
                   </Link>
                   <Link
                     href="/support?topic=billing-failure"
                     className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
                   >
-                    <MessageCircle className="h-3.5 w-3.5" />
+                    <ChatCircle weight="light" className="h-3.5 w-3.5" />
                     Contact support
                   </Link>
                 </div>

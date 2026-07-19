@@ -2,17 +2,16 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
-import { 
-  Link as LinkIcon, 
-  Copy, 
+import {
+  Link as LinkIcon,
+  Copy,
   Check,
-  ExternalLink,
+  ArrowSquareOut,
   QrCode,
-  TrendingUp,
+  TrendUp,
   Users,
-  MousePointer,
-  ArrowUpRight,
-} from 'lucide-react';
+  Cursor,
+} from '@phosphor-icons/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@crm-eco/ui/components/card';
 import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
@@ -109,7 +108,7 @@ export default function AgentLinksPage() {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <LinkIcon className="h-12 w-12 animate-pulse text-slate-400" />
+        <LinkIcon weight="light" className="h-12 w-12 animate-pulse text-slate-400" />
       </div>
     );
   }
@@ -124,7 +123,7 @@ export default function AgentLinksPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <LinkIcon className="h-5 w-5" />
+            <LinkIcon weight="light" className="h-5 w-5" />
             Your Enrollment Link
           </CardTitle>
         </CardHeader>
@@ -138,12 +137,12 @@ export default function AgentLinksPage() {
             <Button onClick={copyLink} className="gap-2 shrink-0">
               {copied ? (
                 <>
-                  <Check className="h-4 w-4" />
+                  <Check weight="light" className="h-4 w-4" />
                   Copied
                 </>
               ) : (
                 <>
-                  <Copy className="h-4 w-4" />
+                  <Copy weight="light" className="h-4 w-4" />
                   Copy
                 </>
               )}
@@ -152,17 +151,17 @@ export default function AgentLinksPage() {
           
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => window.open(enrollmentLink, '_blank')} className="gap-2">
-              <ExternalLink className="h-4 w-4" />
+              <ArrowSquareOut weight="light" className="h-4 w-4" />
               Preview Page
             </Button>
             <Button variant="outline" onClick={generateQRCode} className="gap-2">
-              <QrCode className="h-4 w-4" />
+              <QrCode weight="light" className="h-4 w-4" />
               Generate QR Code
             </Button>
           </div>
 
-          <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
-            <p className="text-sm text-blue-800">
+          <div className="p-4 bg-[rgba(11,109,133,0.06)] rounded-lg border border-[rgba(11,109,133,0.12)]">
+            <p className="text-sm text-[#0a5568]">
               <strong>Tip:</strong> Share this link with potential members. When they enroll through your link, 
               they'll be automatically assigned to you and you'll earn commissions on their enrollment.
             </p>
@@ -179,8 +178,8 @@ export default function AgentLinksPage() {
                 <p className="text-sm text-slate-500">Total Visits</p>
                 <p className="text-2xl font-bold">{stats.totalVisits}</p>
               </div>
-              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                <MousePointer className="h-5 w-5 text-blue-600" />
+              <div className="w-10 h-10 rounded-full bg-[rgba(11,109,133,0.1)] flex items-center justify-center">
+                <Cursor weight="light" className="h-5 w-5 text-[var(--mp-teal)]" />
               </div>
             </div>
           </CardContent>
@@ -193,7 +192,7 @@ export default function AgentLinksPage() {
                 <p className="text-2xl font-bold text-green-600">{stats.totalConversions}</p>
               </div>
               <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-                <Users className="h-5 w-5 text-green-600" />
+                <Users weight="light" className="h-5 w-5 text-green-600" />
               </div>
             </div>
           </CardContent>
@@ -203,12 +202,12 @@ export default function AgentLinksPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-slate-500">Conversion Rate</p>
-                <p className="text-2xl font-bold text-purple-600">
+                <p className="text-2xl font-bold text-[var(--mp-teal)]">
                   {stats.conversionRate.toFixed(1)}%
                 </p>
               </div>
-              <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
-                <TrendingUp className="h-5 w-5 text-purple-600" />
+              <div className="w-10 h-10 rounded-full bg-[rgba(11,109,133,0.1)] flex items-center justify-center">
+                <TrendUp weight="light" className="h-5 w-5 text-[var(--mp-teal)]" />
               </div>
             </div>
           </CardContent>

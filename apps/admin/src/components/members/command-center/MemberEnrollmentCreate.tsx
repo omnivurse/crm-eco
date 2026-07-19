@@ -1,5 +1,6 @@
 'use client';
 
+import { CircleNotch, FilePlus } from '@phosphor-icons/react';
 /**
  * MemberEnrollmentCreate — admin "create manual enrollment" control.
  * For back-office / edge situations where staff must enroll a member by hand.
@@ -10,7 +11,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { FilePlus2, Loader2 } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
 import {
@@ -75,7 +75,7 @@ export function MemberEnrollmentCreate({
     <>
       <div className="flex justify-end">
         <Button size="sm" className="gap-2" onClick={() => setOpen(true)}>
-          <FilePlus2 className="h-4 w-4" />
+          <FilePlus weight="light" className="h-4 w-4" />
           Create enrollment
         </Button>
       </div>
@@ -118,7 +118,7 @@ export function MemberEnrollmentCreate({
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)} disabled={saving}>Cancel</Button>
             <Button onClick={onCreate} disabled={saving || !planId}>
-              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {saving && <CircleNotch weight="light" className="mr-2 h-4 w-4 animate-spin" />}
               Create
             </Button>
           </DialogFooter>

@@ -9,7 +9,7 @@ import {
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Button, Card, CardContent } from '@crm-eco/ui';
-import { ArrowLeft, FileQuestion } from 'lucide-react';
+import { ArrowLeft, FileDashed } from '@phosphor-icons/react/dist/ssr';
 import {
   EnrollmentStatusCard,
   EnrollmentStepsTimeline,
@@ -18,6 +18,7 @@ import {
   MoreInfoPanel,
 } from '@/components/enrollments';
 import { getApplicantReviews } from '@/lib/data/moreInfo';
+import { PageHeader } from '@/components/PageHeader';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -58,19 +59,19 @@ export default async function EnrollmentDetailPage({ params }: PageProps) {
   // If not found or doesn't belong to this member
   if (!enrollment) {
     return (
-      <div className="max-w-2xl mx-auto text-center py-12">
-        <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-slate-100 flex items-center justify-center">
-          <FileQuestion className="w-8 h-8 text-slate-400" />
+      <div className="mx-auto max-w-2xl py-12 text-center">
+        <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-[rgba(11,109,133,0.08)]">
+          <FileDashed weight="light" className="h-8 w-8 text-slate-400" />
         </div>
-        <h1 className="text-2xl font-bold text-slate-900 mb-4">
+        <h1 className="mb-4 text-2xl font-bold tracking-[-0.03em] text-[var(--mp-ink)]">
           Enrollment Not Found
         </h1>
-        <p className="text-slate-600 mb-8">
+        <p className="mb-8 text-slate-600">
           This enrollment doesn&apos;t exist or you don&apos;t have access to view it.
         </p>
         <Link href="/">
-          <Button className="gap-2">
-            <ArrowLeft className="w-4 h-4" />
+          <Button className="gap-2 bg-[var(--mp-teal)] hover:bg-[var(--mp-teal-soft)]">
+            <ArrowLeft weight="light" className="h-4 w-4" />
             Return to Dashboard
           </Button>
         </Link>
@@ -104,19 +105,15 @@ export default async function EnrollmentDetailPage({ params }: PageProps) {
       : [];
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
-      {/* Back Link */}
-      <div>
-        <Link 
-          href="/" 
-          className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Dashboard
-        </Link>
-      </div>
+    <div className="mx-auto max-w-6xl space-y-6">
+      <PageHeader
+        title="Enrollment"
+        description={enrollment.enrollment_number ? `#${enrollment.enrollment_number}` : undefined}
+        kicker="Membership"
+        backHref="/"
+        backLabel="Back to Dashboard"
+      />
 
-      {/* Status Card - Full Width */}
       <EnrollmentStatusCard
         enrollment={{
           id: enrollment.id,
@@ -132,17 +129,13 @@ export default async function EnrollmentDetailPage({ params }: PageProps) {
         membership={membership}
       />
 
-      {/* More-info responder — only when our team has asked for more information */}
       {needsMoreInfoPanel && (
         <MoreInfoPanel enrollmentId={enrollment.id} reviews={applicantReviews} />
       )}
 
-      {/* Two Column Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-        {/* Left Column - Steps Timeline */}
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
         <EnrollmentStepsTimeline steps={steps} />
 
-        {/* Right Column - Details */}
         <EnrollmentDetailsCard
           enrollment={{
             snapshot: enrollment.snapshot as any,
@@ -160,22 +153,20 @@ export default async function EnrollmentDetailPage({ params }: PageProps) {
         />
       </div>
 
-      {/* Activity History - Full Width */}
       <EnrollmentActivityCard auditLog={auditLog} />
 
-      {/* Resume Enrollment CTA (if draft/in_progress) */}
       {(enrollment.status === 'draft' || enrollment.status === 'in_progress') && (
-        <Card className="border-blue-200 bg-blue-50">
+        <Card className="border-[rgba(11,109,133,0.15)] bg-[rgba(11,109,133,0.06)]">
           <CardContent className="pt-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
               <div>
-                <h4 className="font-medium text-blue-900">Continue Your Enrollment</h4>
-                <p className="text-sm text-blue-700">
+                <h4 className="font-medium text-[var(--mp-ink)]">Continue Your Enrollment</h4>
+                <p className="text-sm text-[var(--mp-teal)]">
                   Pick up where you left off and complete your application.
                 </p>
               </div>
               <Link href={`/enroll?resume=${enrollment.id}`}>
-                <Button>Resume Enrollment</Button>
+                <Button className="bg-[var(--mp-teal)] hover:bg-[var(--mp-teal-soft)]">Resume Enrollment</Button>
               </Link>
             </div>
           </CardContent>
@@ -184,4 +175,3 @@ export default async function EnrollmentDetailPage({ params }: PageProps) {
     </div>
   );
 }
-

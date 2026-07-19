@@ -1,5 +1,6 @@
 import Image from 'next/image';
-import { ExternalLink } from 'lucide-react';
+import { ArrowSquareOut } from '@phosphor-icons/react/dist/ssr';
+import { Bezel } from '@/components/ui/Bezel';
 
 export interface ServiceProvider {
   id: string;
@@ -28,7 +29,7 @@ export function ServiceProviderGrid({
 }: ServiceProviderGridProps) {
   if (providers.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center text-sm text-slate-500">
+      <div className="rounded-[2rem] border border-dashed border-[rgba(11,109,133,0.15)] bg-[rgba(11,109,133,0.03)] p-8 text-center text-sm text-slate-500">
         {emptyMessage}
       </div>
     );
@@ -37,54 +38,53 @@ export function ServiceProviderGrid({
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {providers.map((p) => (
-        <article
-          key={p.id}
-          className="flex flex-col rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow"
-        >
-          {p.logo_url ? (
-            <div className="mb-3 h-12 w-12 overflow-hidden rounded-lg">
-              <Image
-                src={p.logo_url}
-                alt={p.name}
-                width={48}
-                height={48}
-                className="h-full w-full object-contain"
-                unoptimized
-              />
-            </div>
-          ) : (
-            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-lg bg-slate-100 text-lg font-semibold text-slate-700">
-              {p.name[0]}
-            </div>
-          )}
-          <h3 className="font-semibold text-slate-900">{p.name}</h3>
-          {p.description && (
-            <p className="mt-1 line-clamp-3 text-sm text-slate-600">{p.description}</p>
-          )}
-          <div className="mt-4">
-            {ssoEnabled && p.sso_kind && p.sso_kind !== 'none' ? (
-              <form action={`/api/member/services/${p.id}/sso`} method="post">
-                <button
-                  type="submit"
-                  className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800"
-                >
-                  Launch
-                  <ExternalLink className="h-3.5 w-3.5" aria-hidden />
-                </button>
-              </form>
+        <Bezel key={p.id}>
+          <article className="flex h-full flex-col p-5">
+            {p.logo_url ? (
+              <div className="mb-3 h-12 w-12 overflow-hidden rounded-xl">
+                <Image
+                  src={p.logo_url}
+                  alt={p.name}
+                  width={48}
+                  height={48}
+                  className="h-full w-full object-contain"
+                  unoptimized
+                />
+              </div>
             ) : (
-              <a
-                href={p.external_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-              >
-                Visit
-                <ExternalLink className="h-3.5 w-3.5" aria-hidden />
-              </a>
+              <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-[rgba(11,109,133,0.08)] text-lg font-semibold text-[var(--mp-teal)]">
+                {p.name[0]}
+              </div>
             )}
-          </div>
-        </article>
+            <h3 className="font-semibold text-[var(--mp-ink)]">{p.name}</h3>
+            {p.description && (
+              <p className="mt-1 line-clamp-3 text-sm text-slate-600">{p.description}</p>
+            )}
+            <div className="mt-4">
+              {ssoEnabled && p.sso_kind && p.sso_kind !== 'none' ? (
+                <form action={`/api/member/services/${p.id}/sso`} method="post">
+                  <button
+                    type="submit"
+                    className="inline-flex w-full items-center justify-center gap-1.5 rounded-full bg-[var(--mp-ink)] px-3 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
+                  >
+                    Launch
+                    <ArrowSquareOut weight="light" className="h-3.5 w-3.5" aria-hidden />
+                  </button>
+                </form>
+              ) : (
+                <a
+                  href={p.external_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex w-full items-center justify-center gap-1.5 rounded-full border border-[rgba(11,109,133,0.12)] px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-[rgba(11,109,133,0.04)]"
+                >
+                  Visit
+                  <ArrowSquareOut weight="light" className="h-3.5 w-3.5" aria-hidden />
+                </a>
+              )}
+            </div>
+          </article>
+        </Bezel>
       ))}
     </div>
   );

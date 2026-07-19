@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Input, Label, Button, Card, CardContent, Badge } from '@crm-eco/ui';
-import { Loader2, ArrowRight, Plus, Trash2, Pill, Sparkles, Check } from 'lucide-react';
+import { CircleNotch, ArrowRight, Plus, Trash, Pill, Sparkle, Check } from '@phosphor-icons/react';
 import type { WizardPlan } from '@crm-eco/enrollment';
 import type { MedicationInput, RxPricingResult } from '@crm-eco/lib';
 
@@ -138,8 +138,8 @@ export function SelfServePlanSelectionStep({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <p className="text-sm text-blue-800">
+      <div className="bg-[rgba(11,109,133,0.06)] border border-[rgba(11,109,133,0.15)] rounded-lg p-4">
+        <p className="text-sm text-[var(--mp-ink)]">
           <strong>Choose your coverage.</strong> Select a health sharing plan that fits
           your needs and budget. All plans include access to our member sharing network 
           and wellness resources.
@@ -160,8 +160,8 @@ export function SelfServePlanSelectionStep({
               key={plan.id}
               className={`cursor-pointer transition-all ${
                 selectedPlan === plan.id
-                  ? 'ring-2 ring-blue-500 border-blue-500'
-                  : 'hover:border-blue-300'
+                  ? 'ring-2 ring-[var(--mp-teal)] border-[var(--mp-teal)]'
+                  : 'hover:border-[rgba(11,109,133,0.35)]'
               }`}
               onClick={() => setSelectedPlan(plan.id)}
             >
@@ -184,8 +184,8 @@ export function SelfServePlanSelectionStep({
                   </div>
                 </div>
                 {selectedPlan === plan.id && (
-                  <div className="mt-4 pt-4 border-t flex items-center gap-2 text-blue-600">
-                    <Check className="w-4 h-4" />
+                  <div className="mt-4 pt-4 border-t flex items-center gap-2 text-[var(--mp-teal)]">
+                    <Check weight="light" className="w-4 h-4" />
                     <span className="text-sm font-medium">Selected</span>
                   </div>
                 )}
@@ -219,7 +219,7 @@ export function SelfServePlanSelectionStep({
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Pill className="w-5 h-5 text-slate-400" />
+            <Pill weight="light" className="w-5 h-5 text-slate-400" />
             <Label className="text-base font-medium">Prescription Medications</Label>
           </div>
           {!showMedications && (
@@ -254,7 +254,7 @@ export function SelfServePlanSelectionStep({
                     onClick={() => removeMedication(index)}
                     className="absolute top-2 right-2 text-red-600 hover:text-red-700 hover:bg-red-50"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash weight="light" className="w-4 h-4" />
                   </Button>
 
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4 pr-8">
@@ -315,7 +315,7 @@ export function SelfServePlanSelectionStep({
                 onClick={addMedication}
                 className="gap-2"
               >
-                <Plus className="w-4 h-4" />
+                <Plus weight="light" className="w-4 h-4" />
                 Add Another
               </Button>
 
@@ -327,9 +327,9 @@ export function SelfServePlanSelectionStep({
                 className="gap-2"
               >
                 {rxLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <CircleNotch weight="light" className="w-4 h-4 animate-spin" />
                 ) : (
-                  <Sparkles className="w-4 h-4" />
+                  <Sparkle weight="light" className="w-4 h-4" />
                 )}
                 Check Estimated Rx Options
               </Button>
@@ -346,10 +346,10 @@ export function SelfServePlanSelectionStep({
           <Card className="bg-green-50 border-green-200">
             <CardContent className="pt-6">
               <div className="flex items-center gap-2 mb-4">
-                <Sparkles className="w-5 h-5 text-green-600" />
+                <Sparkle weight="light" className="w-5 h-5 text-green-600" />
                 <h4 className="font-medium text-green-900">Estimated Rx Pricing</h4>
                 {rxPricing.options[0]?.source === 'ai' && (
-                  <Badge className="bg-purple-100 text-purple-800">AI-Powered</Badge>
+                  <Badge className="bg-[rgba(11,109,133,0.1)] text-[var(--mp-teal)]">AI-Powered</Badge>
                 )}
               </div>
 
@@ -382,17 +382,17 @@ export function SelfServePlanSelectionStep({
 
       {/* Selected Plan Summary */}
       {selectedPlanData && (
-        <Card className="bg-blue-50 border-blue-200">
+        <Card className="bg-[rgba(11,109,133,0.06)] border-[rgba(11,109,133,0.15)]">
           <CardContent className="pt-6">
             <div className="flex justify-between items-center">
               <div>
-                <p className="text-sm text-blue-600 font-medium">Your Selection</p>
-                <p className="text-lg font-semibold text-blue-900">
+                <p className="text-sm text-[var(--mp-teal)] font-medium">Your Selection</p>
+                <p className="text-lg font-semibold text-[var(--mp-ink)]">
                   {selectedPlanData.name}
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-2xl font-bold text-blue-900">
+                <p className="text-2xl font-bold text-[var(--mp-ink)]">
                   ${selectedPlanData.monthly_share}/mo
                 </p>
               </div>
@@ -406,13 +406,13 @@ export function SelfServePlanSelectionStep({
         <Button type="submit" disabled={loading} className="gap-2">
           {loading ? (
             <>
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <CircleNotch weight="light" className="w-4 h-4 animate-spin" />
               Saving...
             </>
           ) : (
             <>
               Continue
-              <ArrowRight className="w-4 h-4" />
+              <ArrowRight weight="light" className="w-4 h-4" />
             </>
           )}
         </Button>

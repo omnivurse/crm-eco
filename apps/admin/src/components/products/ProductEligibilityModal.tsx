@@ -1,5 +1,6 @@
 'use client';
 
+import { Calendar, Check, CircleNotch, Clock, FileDashed, MapPin, PencilSimple, Plus, ShieldCheck, Trash, Users, Warning, X } from '@phosphor-icons/react';
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
@@ -16,21 +17,6 @@ import {
   Badge,
   Switch,
 } from '@crm-eco/ui';
-import {
-  Plus,
-  Trash2,
-  Edit2,
-  Loader2,
-  Shield,
-  AlertTriangle,
-  Calendar,
-  MapPin,
-  Users,
-  Clock,
-  FileQuestion,
-  Check,
-  X,
-} from 'lucide-react';
 import { toast } from 'sonner';
 
 interface EligibilityRule {
@@ -58,8 +44,8 @@ const RULE_TYPES = [
   { value: 'state', label: 'State Restriction', icon: MapPin, description: 'Include or exclude specific states' },
   { value: 'household', label: 'Household Size', icon: Users, description: 'Limit household/family size' },
   { value: 'waiting_period', label: 'Waiting Period', icon: Clock, description: 'Define waiting periods for coverage' },
-  { value: 'pre_existing', label: 'Pre-existing Conditions', icon: AlertTriangle, description: 'Pre-existing condition limitations' },
-  { value: 'custom', label: 'Custom Rule', icon: FileQuestion, description: 'Define a custom eligibility rule' },
+  { value: 'pre_existing', label: 'Pre-existing Conditions', icon: Warning, description: 'Pre-existing condition limitations' },
+  { value: 'custom', label: 'Custom Rule', icon: FileDashed, description: 'Define a custom eligibility rule' },
 ];
 
 const US_STATES = [
@@ -310,7 +296,7 @@ export function ProductEligibilityModal({
 
   const getRuleIcon = (type: string) => {
     const ruleType = RULE_TYPES.find(r => r.value === type);
-    return ruleType?.icon || Shield;
+    return ruleType?.icon || ShieldCheck;
   };
 
   const getRuleDescription = (rule: EligibilityRule): string => {
@@ -339,7 +325,7 @@ export function ProductEligibilityModal({
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5" />
+            <ShieldCheck weight="light" className="h-5 w-5" />
             Eligibility Rules
           </DialogTitle>
           <DialogDescription>
@@ -349,13 +335,13 @@ export function ProductEligibilityModal({
 
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <CircleNotch weight="light" className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
         ) : (
           <div className="flex-1 overflow-hidden flex flex-col gap-4">
             {/* Info Banner */}
             <div className="flex items-start gap-3 p-3 bg-amber-50 rounded-lg border border-amber-200">
-              <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5" />
+              <Warning weight="light" className="h-5 w-5 text-amber-600 mt-0.5" />
               <div className="text-sm">
                 <p className="font-medium text-amber-900">How Eligibility Rules Work</p>
                 <p className="text-amber-700">
@@ -368,7 +354,7 @@ export function ProductEligibilityModal({
             {/* Add Rule Button */}
             <div className="flex justify-end">
               <Button onClick={() => { resetForm(); setShowNewRule(true); }} size="sm">
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus weight="light" className="h-4 w-4 mr-2" />
                 Add Rule
               </Button>
             </div>
@@ -377,7 +363,7 @@ export function ProductEligibilityModal({
             <div className="flex-1 overflow-y-auto border rounded-lg">
               {rules.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-slate-500">
-                  <Shield className="h-12 w-12 mb-4 opacity-50" />
+                  <ShieldCheck weight="light" className="h-12 w-12 mb-4 opacity-50" />
                   <p className="font-medium">No eligibility rules configured</p>
                   <p className="text-sm">Add rules to control who can enroll in this product</p>
                 </div>
@@ -432,7 +418,7 @@ export function ProductEligibilityModal({
                               setShowNewRule(true);
                             }}
                           >
-                            <Edit2 className="h-4 w-4" />
+                            <PencilSimple weight="light" className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="ghost"
@@ -440,7 +426,7 @@ export function ProductEligibilityModal({
                             onClick={() => handleDeleteRule(rule.id)}
                             className="text-red-500 hover:text-red-600"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash weight="light" className="h-4 w-4" />
                           </Button>
                         </div>
                       </div>
@@ -699,7 +685,7 @@ export function ProductEligibilityModal({
                 Cancel
               </Button>
               <Button onClick={handleSaveRule} disabled={isSaving || !ruleForm.rule_name}>
-                {isSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                {isSaving && <CircleNotch weight="light" className="h-4 w-4 mr-2 animate-spin" />}
                 {editingRule ? 'Update Rule' : 'Add Rule'}
               </Button>
             </DialogFooter>

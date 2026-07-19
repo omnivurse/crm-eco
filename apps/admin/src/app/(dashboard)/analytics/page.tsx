@@ -1,19 +1,5 @@
+import { ArrowDownRight, ArrowUpRight, Calendar, ChartBar, ChartPie, CheckCircle, Clock, CurrencyDollar, FileText, Target, TrendUp, Users, XCircle } from '@phosphor-icons/react/dist/ssr';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Badge } from '@crm-eco/ui';
-import {
-  TrendingUp,
-  Users,
-  FileText,
-  DollarSign,
-  Clock,
-  CheckCircle,
-  XCircle,
-  ArrowUpRight,
-  ArrowDownRight,
-  Calendar,
-  BarChart3,
-  PieChart,
-  Target,
-} from 'lucide-react';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import Link from 'next/link';
 import { format, subDays, startOfMonth, endOfMonth } from 'date-fns';
@@ -268,7 +254,7 @@ export default async function AnalyticsPage() {
         <div className="flex items-center gap-2">
           <Link href="/analytics/enrollments">
             <Badge variant="outline" className="cursor-pointer hover:bg-slate-100">
-              <BarChart3 className="w-3 h-3 mr-1" />
+              <ChartBar weight="light" className="w-3 h-3 mr-1" />
               Detailed Reports
             </Badge>
           </Link>
@@ -280,7 +266,7 @@ export default async function AnalyticsPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-slate-500">Total Enrollments</CardTitle>
-            <FileText className="w-4 h-4 text-slate-400" />
+            <FileText weight="light" className="w-4 h-4 text-slate-400" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{enrollmentStats?.total ?? 0}</div>
@@ -295,7 +281,7 @@ export default async function AnalyticsPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-slate-500">Conversion Rate</CardTitle>
-            <Target className="w-4 h-4 text-slate-400" />
+            <Target weight="light" className="w-4 h-4 text-slate-400" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
@@ -310,15 +296,15 @@ export default async function AnalyticsPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-slate-500">Revenue This Month</CardTitle>
-            <DollarSign className="w-4 h-4 text-slate-400" />
+            <CurrencyDollar weight="light" className="w-4 h-4 text-slate-400" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatCurrency(revenueStats?.thisMonth ?? 0)}</div>
             <div className="flex items-center gap-1 mt-1">
               {revenueTrend.trend === 'up' ? (
-                <ArrowUpRight className="w-4 h-4 text-green-500" />
+                <ArrowUpRight weight="light" className="w-4 h-4 text-green-500" />
               ) : revenueTrend.trend === 'down' ? (
-                <ArrowDownRight className="w-4 h-4 text-red-500" />
+                <ArrowDownRight weight="light" className="w-4 h-4 text-red-500" />
               ) : null}
               <span className={`text-xs ${revenueTrend.trend === 'up' ? 'text-green-600' : revenueTrend.trend === 'down' ? 'text-red-600' : 'text-slate-500'}`}>
                 {revenueTrend.percent.toFixed(1)}% vs last month
@@ -330,7 +316,7 @@ export default async function AnalyticsPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-slate-500">Avg Processing Time</CardTitle>
-            <Clock className="w-4 h-4 text-slate-400" />
+            <Clock weight="light" className="w-4 h-4 text-slate-400" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -347,7 +333,7 @@ export default async function AnalyticsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="w-5 h-5" />
+              <TrendUp weight="light" className="w-5 h-5" />
               Monthly Enrollment Trend
             </CardTitle>
             <CardDescription>Enrollments over the last 6 months</CardDescription>
@@ -404,7 +390,7 @@ export default async function AnalyticsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <PieChart className="w-5 h-5" />
+              <ChartPie weight="light" className="w-5 h-5" />
               Enrollment Status
             </CardTitle>
             <CardDescription>Current status breakdown</CardDescription>
@@ -413,7 +399,7 @@ export default async function AnalyticsPage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-yellow-500" />
+                  <Clock weight="light" className="w-4 h-4 text-yellow-500" />
                   <span>Pending Review</span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -428,7 +414,7 @@ export default async function AnalyticsPage() {
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  <CheckCircle weight="light" className="w-4 h-4 text-green-500" />
                   <span>Approved</span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -443,7 +429,7 @@ export default async function AnalyticsPage() {
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <XCircle className="w-4 h-4 text-red-500" />
+                  <XCircle weight="light" className="w-4 h-4 text-red-500" />
                   <span>Rejected</span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -458,7 +444,7 @@ export default async function AnalyticsPage() {
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <XCircle className="w-4 h-4 text-slate-400" />
+                  <XCircle weight="light" className="w-4 h-4 text-slate-400" />
                   <span>Cancelled</span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -537,7 +523,7 @@ export default async function AnalyticsPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <DollarSign className="w-5 h-5" />
+            <CurrencyDollar weight="light" className="w-5 h-5" />
             Revenue Summary
           </CardTitle>
           <CardDescription>Payment collection overview</CardDescription>

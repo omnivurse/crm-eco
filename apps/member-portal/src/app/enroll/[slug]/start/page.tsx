@@ -65,7 +65,7 @@ export default function EnrollStartPage() {
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
               required
-              className="w-full rounded-lg border px-3 py-2 focus:border-blue-500 focus:outline-none"
+              className="w-full rounded-lg border px-3 py-2 focus:border-[var(--mp-teal)] focus:outline-none"
             />
           </div>
           <div>
@@ -75,7 +75,7 @@ export default function EnrollStartPage() {
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
               required
-              className="w-full rounded-lg border px-3 py-2 focus:border-blue-500 focus:outline-none"
+              className="w-full rounded-lg border px-3 py-2 focus:border-[var(--mp-teal)] focus:outline-none"
             />
           </div>
         </div>
@@ -87,7 +87,7 @@ export default function EnrollStartPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="w-full rounded-lg border px-3 py-2 focus:border-blue-500 focus:outline-none"
+            className="w-full rounded-lg border px-3 py-2 focus:border-[var(--mp-teal)] focus:outline-none"
           />
         </div>
 
@@ -97,7 +97,7 @@ export default function EnrollStartPage() {
             type="tel"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            className="w-full rounded-lg border px-3 py-2 focus:border-blue-500 focus:outline-none"
+            className="w-full rounded-lg border px-3 py-2 focus:border-[var(--mp-teal)] focus:outline-none"
           />
         </div>
 
@@ -107,7 +107,7 @@ export default function EnrollStartPage() {
           <button
             type="submit"
             disabled={submitting}
-            className="flex-1 rounded-lg bg-blue-600 px-6 py-3 font-semibold text-white shadow transition hover:bg-blue-700 disabled:opacity-50"
+            className="flex-1 rounded-lg bg-[var(--mp-teal)] px-6 py-3 font-semibold text-white shadow transition hover:bg-[#0e8c9a] disabled:opacity-50"
           >
             {submitting ? 'Starting...' : 'Continue'}
           </button>

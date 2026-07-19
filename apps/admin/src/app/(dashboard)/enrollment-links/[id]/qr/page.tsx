@@ -1,17 +1,11 @@
 'use client';
 
+import { ArrowLeft, ArrowSquareOut, Copy, DownloadSimple, Palette } from '@phosphor-icons/react';
 import { useEffect, useState, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { QRCodeSVG } from 'qrcode.react';
-import {
-  ArrowLeft,
-  Download,
-  Copy,
-  ExternalLink,
-  Palette,
-} from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
 import { Label } from '@crm-eco/ui/components/label';
@@ -86,7 +80,7 @@ export default function QRCodePage() {
     if (!svg) return;
 
     if (format === 'svg') {
-      // Download as SVG
+      // DownloadSimple as SVG
       const svgData = new XMLSerializer().serializeToString(svg);
       const blob = new Blob([svgData], { type: 'image/svg+xml' });
       const url = URL.createObjectURL(blob);
@@ -96,7 +90,7 @@ export default function QRCodePage() {
       link.click();
       URL.revokeObjectURL(url);
     } else {
-      // Download as PNG
+      // DownloadSimple as PNG
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
@@ -149,7 +143,7 @@ export default function QRCodePage() {
       <div className="flex items-center gap-4">
         <Link href={`/enrollment-links/${id}`}>
           <Button variant="ghost" size="icon">
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft weight="light" className="w-4 h-4" />
           </Button>
         </Link>
         <div>
@@ -188,11 +182,11 @@ export default function QRCodePage() {
                 className="flex-1 bg-slate-50"
               />
               <Button variant="outline" size="icon" onClick={copyLink}>
-                <Copy className="w-4 h-4" />
+                <Copy weight="light" className="w-4 h-4" />
               </Button>
               <Button variant="outline" size="icon" asChild>
                 <a href={getEnrollmentUrl()} target="_blank" rel="noopener noreferrer">
-                  <ExternalLink className="w-4 h-4" />
+                  <ArrowSquareOut weight="light" className="w-4 h-4" />
                 </a>
               </Button>
             </div>
@@ -203,15 +197,15 @@ export default function QRCodePage() {
                 className="flex-1 gap-2"
                 onClick={() => downloadQR('svg')}
               >
-                <Download className="w-4 h-4" />
-                Download SVG
+                <DownloadSimple weight="light" className="w-4 h-4" />
+                DownloadSimple SVG
               </Button>
               <Button 
                 className="flex-1 gap-2"
                 onClick={() => downloadQR('png')}
               >
-                <Download className="w-4 h-4" />
-                Download PNG
+                <DownloadSimple weight="light" className="w-4 h-4" />
+                DownloadSimple PNG
               </Button>
             </div>
           </CardContent>
@@ -221,7 +215,7 @@ export default function QRCodePage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Palette className="w-5 h-5" />
+              <Palette weight="light" className="w-5 h-5" />
               Customize
             </CardTitle>
             <CardDescription>Adjust the appearance of your QR code</CardDescription>

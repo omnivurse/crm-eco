@@ -1,48 +1,5 @@
+import { ArrowRight, Bell, BookOpen, Buildings, Calendar, CaretRight, ChartBar, ChartPie, ChatCircle, CheckCircle, ClipboardText, Clock, CreditCard, CurrencyDollar, EnvelopeSimple, File, FileText, GearSix, GraduationCap, Heart, Lightbulb, Lightning, Link as LinkIcon, ListChecks, Lock, MagnifyingGlass, Package, PlayCircle, Pulse, QrCode, Question, Receipt, Scroll, ShieldCheck, Sparkle, Stack, TerminalWindow, TrendUp, UserCircleGear, UserPlus, Users, Wallet } from '@phosphor-icons/react/dist/ssr';
 import Link from 'next/link';
-import {
-  Users,
-  UserCog,
-  FileText,
-  Package,
-  CreditCard,
-  Layers,
-  Mail,
-  Building2,
-  BarChart3,
-  Settings,
-  Shield,
-  Terminal,
-  BookOpen,
-  GraduationCap,
-  CheckCircle2,
-  ChevronRight,
-  Sparkles,
-  ArrowRight,
-  Link as LinkIcon,
-  QrCode,
-  Receipt,
-  Wallet,
-  TrendingUp,
-  Activity,
-  Clock,
-  Search,
-  Bell,
-  Lock,
-  ScrollText,
-  Zap,
-  Heart,
-  UserPlus,
-  ClipboardList,
-  FileCheck,
-  DollarSign,
-  PieChart,
-  Calendar,
-  HelpCircle,
-  PlayCircle,
-  Lightbulb,
-  ListChecks,
-  MessageCircle,
-} from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import { Badge } from '@crm-eco/ui/components/badge';
 
@@ -71,7 +28,7 @@ function FeatureCard({ icon, title, description, features, href, isNew }: Featur
       <ul className="space-y-2 mb-4">
         {features.map((feature, index) => (
           <li key={index} className="flex items-center gap-2 text-sm text-slate-600">
-            <CheckCircle2 className="w-4 h-4 text-[#0891b2] flex-shrink-0" />
+            <CheckCircle weight="light" className="w-4 h-4 text-[#0891b2] flex-shrink-0" />
             {feature}
           </li>
         ))}
@@ -79,7 +36,7 @@ function FeatureCard({ icon, title, description, features, href, isNew }: Featur
       {href && (
         <Button variant="ghost" size="sm" className="gap-1 text-[#0891b2] hover:text-[#0e7490] p-0" asChild>
           <Link href={href}>
-            Explore <ChevronRight className="w-4 h-4" />
+            Explore <CaretRight weight="light" className="w-4 h-4" />
           </Link>
         </Button>
       )}
@@ -114,11 +71,11 @@ function FeatureSection({ title, subtitle, children, gradient = 'from-[#0891b2] 
 
 export default function FeaturesPage() {
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="w-full">
       {/* Hero Section */}
       <div className="text-center py-12 px-4">
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-[#0891b2]/10 to-[#059669]/10 border border-[#0891b2]/20 mb-6">
-          <Sparkles className="w-4 h-4 text-[#0891b2]" />
+          <Sparkle weight="light" className="w-4 h-4 text-[#0891b2]" />
           <span className="text-sm font-medium text-[#0891b2]">
             Admin Portal Feature Suite
           </span>
@@ -136,12 +93,12 @@ export default function FeaturesPage() {
         <div className="flex flex-wrap justify-center gap-4">
           <Button size="lg" className="gap-2 bg-gradient-to-r from-[#0891b2] to-[#059669] hover:from-[#0e7490] hover:to-[#047857]" asChild>
             <Link href="/dashboard">
-              Go to Dashboard <ArrowRight className="w-4 h-4" />
+              Go to Dashboard <ArrowRight weight="light" className="w-4 h-4" />
             </Link>
           </Button>
           <Button size="lg" variant="outline" className="gap-2" asChild>
             <Link href="/learn">
-              <GraduationCap className="w-4 h-4" /> Learning Center
+              <GraduationCap weight="light" className="w-4 h-4" /> Learning Center
             </Link>
           </Button>
         </div>
@@ -152,7 +109,7 @@ export default function FeaturesPage() {
         {[
           { label: 'Core Modules', value: '12+' },
           { label: 'Total Features', value: '60+' },
-          { label: 'Search Commands', value: '30+' },
+          { label: 'MagnifyingGlass Commands', value: '30+' },
           { label: 'Learn Articles', value: '25+' },
         ].map((stat, index) => (
           <div key={index} className="text-center p-6 rounded-xl bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200">
@@ -170,7 +127,7 @@ export default function FeaturesPage() {
         subtitle="Comprehensive member profiles, dependent tracking, and household management"
       >
         <FeatureCard
-          icon={<Users className="w-6 h-6" />}
+          icon={<Users weight="light" className="w-6 h-6" />}
           title="Member Profiles"
           description="Complete member database with rich profiles and contact information"
           features={[
@@ -182,7 +139,7 @@ export default function FeaturesPage() {
           href="/members"
         />
         <FeatureCard
-          icon={<Heart className="w-6 h-6" />}
+          icon={<Heart weight="light" className="w-6 h-6" />}
           title="Dependent Management"
           description="Track household members and coverage dependents"
           features={[
@@ -194,7 +151,7 @@ export default function FeaturesPage() {
           href="/members"
         />
         <FeatureCard
-          icon={<UserPlus className="w-6 h-6" />}
+          icon={<UserPlus weight="light" className="w-6 h-6" />}
           title="Member Import & Export"
           description="Bulk import and export member data efficiently"
           features={[
@@ -214,7 +171,7 @@ export default function FeaturesPage() {
         gradient="from-blue-500 to-indigo-500"
       >
         <FeatureCard
-          icon={<UserCog className="w-6 h-6" />}
+          icon={<UserCircleGear weight="light" className="w-6 h-6" />}
           title="Agent Profiles"
           description="Comprehensive advisor profiles with licensing and compliance data"
           features={[
@@ -226,7 +183,7 @@ export default function FeaturesPage() {
           href="/agents"
         />
         <FeatureCard
-          icon={<Sparkles className="w-6 h-6" />}
+          icon={<Sparkle weight="light" className="w-6 h-6" />}
           title="Agent Branding"
           description="Custom branding for agent enrollment pages and materials"
           features={[
@@ -239,7 +196,7 @@ export default function FeaturesPage() {
           isNew
         />
         <FeatureCard
-          icon={<TrendingUp className="w-6 h-6" />}
+          icon={<TrendUp weight="light" className="w-6 h-6" />}
           title="Performance Tracking"
           description="Monitor agent enrollment and revenue performance"
           features={[
@@ -259,7 +216,7 @@ export default function FeaturesPage() {
         gradient="from-emerald-500 to-green-500"
       >
         <FeatureCard
-          icon={<ClipboardList className="w-6 h-6" />}
+          icon={<ClipboardText weight="light" className="w-6 h-6" />}
           title="Enrollment Workflows"
           description="End-to-end enrollment processing with status tracking"
           features={[
@@ -271,7 +228,7 @@ export default function FeaturesPage() {
           href="/enrollments"
         />
         <FeatureCard
-          icon={<FileCheck className="w-6 h-6" />}
+          icon={<File weight="light" className="w-6 h-6" />}
           title="Approval Process"
           description="Multi-step approval workflows for enrollment review"
           features={[
@@ -283,7 +240,7 @@ export default function FeaturesPage() {
           href="/enrollments"
         />
         <FeatureCard
-          icon={<LinkIcon className="w-6 h-6" />}
+          icon={<LinkIcon weight="light" className="w-6 h-6" />}
           title="Enrollment Links & QR Codes"
           description="Agent-branded enrollment landing pages with QR generation"
           features={[
@@ -304,7 +261,7 @@ export default function FeaturesPage() {
         gradient="from-purple-500 to-pink-500"
       >
         <FeatureCard
-          icon={<Package className="w-6 h-6" />}
+          icon={<Package weight="light" className="w-6 h-6" />}
           title="Plan Configuration"
           description="Create and manage health sharing plan offerings"
           features={[
@@ -316,7 +273,7 @@ export default function FeaturesPage() {
           href="/products"
         />
         <FeatureCard
-          icon={<DollarSign className="w-6 h-6" />}
+          icon={<CurrencyDollar weight="light" className="w-6 h-6" />}
           title="Pricing Matrix"
           description="Flexible pricing by age bands and household tiers"
           features={[
@@ -328,7 +285,7 @@ export default function FeaturesPage() {
           href="/products"
         />
         <FeatureCard
-          icon={<Building2 className="w-6 h-6" />}
+          icon={<Buildings weight="light" className="w-6 h-6" />}
           title="Vendor Assignment"
           description="Assign plans to vendor/carrier organizations"
           features={[
@@ -348,7 +305,7 @@ export default function FeaturesPage() {
         gradient="from-amber-500 to-orange-500"
       >
         <FeatureCard
-          icon={<CreditCard className="w-6 h-6" />}
+          icon={<CreditCard weight="light" className="w-6 h-6" />}
           title="Payment Processing"
           description="Authorize.Net integration for credit card and ACH payments"
           features={[
@@ -361,7 +318,7 @@ export default function FeaturesPage() {
           isNew
         />
         <FeatureCard
-          icon={<Receipt className="w-6 h-6" />}
+          icon={<Receipt weight="light" className="w-6 h-6" />}
           title="Invoicing"
           description="Automated invoice generation and tracking"
           features={[
@@ -373,7 +330,7 @@ export default function FeaturesPage() {
           href="/invoices"
         />
         <FeatureCard
-          icon={<Calendar className="w-6 h-6" />}
+          icon={<Calendar weight="light" className="w-6 h-6" />}
           title="Billing Schedules"
           description="Recurring billing automation for member contributions"
           features={[
@@ -393,7 +350,7 @@ export default function FeaturesPage() {
         gradient="from-rose-500 to-red-500"
       >
         <FeatureCard
-          icon={<Layers className="w-6 h-6" />}
+          icon={<Stack weight="light" className="w-6 h-6" />}
           title="Commission Tiers"
           description="Configurable multi-tier commission structures"
           features={[
@@ -406,7 +363,7 @@ export default function FeaturesPage() {
           isNew
         />
         <FeatureCard
-          icon={<Wallet className="w-6 h-6" />}
+          icon={<Wallet weight="light" className="w-6 h-6" />}
           title="Transaction Tracking"
           description="Track every commission transaction with full audit trail"
           features={[
@@ -418,7 +375,7 @@ export default function FeaturesPage() {
           href="/commissions/transactions"
         />
         <FeatureCard
-          icon={<CreditCard className="w-6 h-6" />}
+          icon={<CreditCard weight="light" className="w-6 h-6" />}
           title="Payout Processing"
           description="Process agent commission payouts efficiently"
           features={[
@@ -438,7 +395,7 @@ export default function FeaturesPage() {
         gradient="from-cyan-500 to-blue-500"
       >
         <FeatureCard
-          icon={<Mail className="w-6 h-6" />}
+          icon={<EnvelopeSimple weight="light" className="w-6 h-6" />}
           title="Email Templates"
           description="Create and manage reusable email templates"
           features={[
@@ -451,7 +408,7 @@ export default function FeaturesPage() {
           isNew
         />
         <FeatureCard
-          icon={<MessageCircle className="w-6 h-6" />}
+          icon={<ChatCircle weight="light" className="w-6 h-6" />}
           title="Email Sending"
           description="Send targeted emails via Resend integration"
           features={[
@@ -463,7 +420,7 @@ export default function FeaturesPage() {
           href="/communications/compose"
         />
         <FeatureCard
-          icon={<Bell className="w-6 h-6" />}
+          icon={<Bell weight="light" className="w-6 h-6" />}
           title="Notification Preferences"
           description="Configure member and system notification settings"
           features={[
@@ -483,7 +440,7 @@ export default function FeaturesPage() {
         gradient="from-violet-500 to-purple-500"
       >
         <FeatureCard
-          icon={<Building2 className="w-6 h-6" />}
+          icon={<Buildings weight="light" className="w-6 h-6" />}
           title="Vendor Profiles"
           description="Complete vendor database with contact and contract info"
           features={[
@@ -495,7 +452,7 @@ export default function FeaturesPage() {
           href="/vendors"
         />
         <FeatureCard
-          icon={<FileText className="w-6 h-6" />}
+          icon={<FileText weight="light" className="w-6 h-6" />}
           title="Vendor Plans"
           description="Map products and plans to vendor organizations"
           features={[
@@ -507,7 +464,7 @@ export default function FeaturesPage() {
           href="/vendors"
         />
         <FeatureCard
-          icon={<QrCode className="w-6 h-6" />}
+          icon={<QrCode weight="light" className="w-6 h-6" />}
           title="Vendor Operations"
           description="Operational tools for vendor data management"
           features={[
@@ -527,7 +484,7 @@ export default function FeaturesPage() {
         gradient="from-indigo-500 to-blue-500"
       >
         <FeatureCard
-          icon={<BarChart3 className="w-6 h-6" />}
+          icon={<ChartBar weight="light" className="w-6 h-6" />}
           title="Dashboard Analytics"
           description="Real-time metrics and KPIs on your admin dashboard"
           features={[
@@ -539,8 +496,8 @@ export default function FeaturesPage() {
           href="/dashboard"
         />
         <FeatureCard
-          icon={<PieChart className="w-6 h-6" />}
-          title="Member Activity Analysis"
+          icon={<ChartPie weight="light" className="w-6 h-6" />}
+          title="Member Pulse Analysis"
           description="Understand enrollment trends and member retention"
           features={[
             'New enrollments per month',
@@ -551,7 +508,7 @@ export default function FeaturesPage() {
           href="/dashboard"
         />
         <FeatureCard
-          icon={<Activity className="w-6 h-6" />}
+          icon={<Pulse weight="light" className="w-6 h-6" />}
           title="Future Enrollments"
           description="Forecast upcoming enrollment activations"
           features={[
@@ -571,7 +528,7 @@ export default function FeaturesPage() {
         gradient="from-slate-600 to-slate-800"
       >
         <FeatureCard
-          icon={<ScrollText className="w-6 h-6" />}
+          icon={<Scroll weight="light" className="w-6 h-6" />}
           title="Audit Logs"
           description="Complete activity audit trail for compliance"
           features={[
@@ -583,7 +540,7 @@ export default function FeaturesPage() {
           href="/settings/audit-logs"
         />
         <FeatureCard
-          icon={<Shield className="w-6 h-6" />}
+          icon={<ShieldCheck weight="light" className="w-6 h-6" />}
           title="Security & Access Control"
           description="Role-based access with middleware enforcement"
           features={[
@@ -595,7 +552,7 @@ export default function FeaturesPage() {
           href="/settings/security"
         />
         <FeatureCard
-          icon={<Zap className="w-6 h-6" />}
+          icon={<Lightning weight="light" className="w-6 h-6" />}
           title="Automations"
           description="Automated workflows for operational tasks"
           features={[
@@ -607,8 +564,8 @@ export default function FeaturesPage() {
           href="/settings/automations"
         />
         <FeatureCard
-          icon={<Settings className="w-6 h-6" />}
-          title="System Settings"
+          icon={<GearSix weight="light" className="w-6 h-6" />}
+          title="System GearSix"
           description="Configure your admin portal to match your needs"
           features={[
             'Organization settings',
@@ -619,7 +576,7 @@ export default function FeaturesPage() {
           href="/settings"
         />
         <FeatureCard
-          icon={<Lock className="w-6 h-6" />}
+          icon={<Lock weight="light" className="w-6 h-6" />}
           title="Data Security"
           description="HIPAA-ready data protection and encryption"
           features={[
@@ -630,7 +587,7 @@ export default function FeaturesPage() {
           ]}
         />
         <FeatureCard
-          icon={<Clock className="w-6 h-6" />}
+          icon={<Clock weight="light" className="w-6 h-6" />}
           title="Operations Center"
           description="Monitor jobs, scheduler, and system health"
           features={[
@@ -650,7 +607,7 @@ export default function FeaturesPage() {
         gradient="from-teal-500 to-emerald-500"
       >
         <FeatureCard
-          icon={<Terminal className="w-6 h-6" />}
+          icon={<TerminalWindow weight="light" className="w-6 h-6" />}
           title="Command Center"
           description="Keyboard-driven terminal for power users with real-time search"
           features={[
@@ -662,8 +619,8 @@ export default function FeaturesPage() {
           isNew
         />
         <FeatureCard
-          icon={<Search className="w-6 h-6" />}
-          title="Global Search"
+          icon={<MagnifyingGlass weight="light" className="w-6 h-6" />}
+          title="Global MagnifyingGlass"
           description="Find any record instantly across the entire system"
           features={[
             'Member, agent, vendor search',
@@ -673,7 +630,7 @@ export default function FeaturesPage() {
           ]}
         />
         <FeatureCard
-          icon={<BookOpen className="w-6 h-6" />}
+          icon={<BookOpen weight="light" className="w-6 h-6" />}
           title="Learning Center"
           description="Comprehensive guides and documentation for staff"
           features={[
@@ -685,7 +642,7 @@ export default function FeaturesPage() {
           href="/learn"
         />
         <FeatureCard
-          icon={<PlayCircle className="w-6 h-6" />}
+          icon={<PlayCircle weight="light" className="w-6 h-6" />}
           title="Step-by-Step Guides"
           description="Detailed walkthroughs for every feature"
           features={[
@@ -697,7 +654,7 @@ export default function FeaturesPage() {
           href="/learn/getting-started"
         />
         <FeatureCard
-          icon={<Lightbulb className="w-6 h-6" />}
+          icon={<Lightbulb weight="light" className="w-6 h-6" />}
           title="Quick Tips"
           description="Contextual tips and best practices throughout the portal"
           features={[
@@ -709,7 +666,7 @@ export default function FeaturesPage() {
           href="/learn/faq"
         />
         <FeatureCard
-          icon={<ListChecks className="w-6 h-6" />}
+          icon={<ListChecks weight="light" className="w-6 h-6" />}
           title="FAQ & Changelog"
           description="Answers to common questions and release updates"
           features={[
@@ -724,20 +681,20 @@ export default function FeaturesPage() {
 
       {/* CTA Section */}
       <div className="py-12 text-center">
-        <div className="max-w-3xl mx-auto bg-gradient-to-r from-[#0891b2] to-[#059669] rounded-3xl p-12 text-white">
+        <div className="w-full bg-primary rounded-3xl p-12 text-primary-foreground">
           <h2 className="text-3xl font-bold mb-4">Ready to Get Started?</h2>
-          <p className="text-lg text-teal-100 mb-8">
+          <p className="text-lg text-primary-foreground/80 mb-8">
             Explore the full power of the Admin Portal and manage your organization more efficiently than ever.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
             <Button size="lg" variant="secondary" className="gap-2" asChild>
               <Link href="/dashboard">
-                Go to Dashboard <ArrowRight className="w-4 h-4" />
+                Go to Dashboard <ArrowRight weight="light" className="w-4 h-4" />
               </Link>
             </Button>
             <Button size="lg" variant="outline" className="gap-2 bg-transparent border-white text-white hover:bg-white/10" asChild>
               <Link href="/learn/getting-started">
-                <BookOpen className="w-4 h-4" /> Getting Started Guide
+                <BookOpen weight="light" className="w-4 h-4" /> Getting Started Guide
               </Link>
             </Button>
           </div>

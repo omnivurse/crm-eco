@@ -1,5 +1,6 @@
 'use client';
 
+import { CircleNotch, CurrencyDollar, FloppyDisk, TrendUp, Trophy, Users } from '@phosphor-icons/react';
 import { useState, useEffect } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { toast } from 'sonner';
@@ -18,7 +19,6 @@ import {
   SelectValue,
   Separator,
 } from '@crm-eco/ui';
-import { Loader2, TrendingUp, DollarSign, Users, Award, Save } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 interface AgentCommissionTabProps {
   agentId: string;
@@ -219,7 +219,7 @@ export function AgentCommissionTab({ agentId, organizationId }: AgentCommissionT
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+        <CircleNotch weight="light" className="h-8 w-8 animate-spin text-blue-500" />
         <p className="ml-3 text-slate-500">Loading commission data...</p>
       </div>
     );
@@ -236,7 +236,7 @@ export function AgentCommissionTab({ agentId, organizationId }: AgentCommissionT
                 <p className="text-sm text-slate-500">Personal Production</p>
                 <p className="text-xl font-bold">${(agentData?.personalProduction || 0).toLocaleString()}</p>
               </div>
-              <TrendingUp className="h-6 w-6 text-green-500" />
+              <TrendUp weight="light" className="h-6 w-6 text-green-500" />
             </div>
           </CardContent>
         </Card>
@@ -247,7 +247,7 @@ export function AgentCommissionTab({ agentId, organizationId }: AgentCommissionT
                 <p className="text-sm text-slate-500">Team Production</p>
                 <p className="text-xl font-bold">${(agentData?.teamProduction || 0).toLocaleString()}</p>
               </div>
-              <Users className="h-6 w-6 text-blue-500" />
+              <Users weight="light" className="h-6 w-6 text-blue-500" />
             </div>
           </CardContent>
         </Card>
@@ -258,7 +258,7 @@ export function AgentCommissionTab({ agentId, organizationId }: AgentCommissionT
                 <p className="text-sm text-slate-500">Total Earned</p>
                 <p className="text-xl font-bold text-green-600">${totalEarned.toLocaleString()}</p>
               </div>
-              <DollarSign className="h-6 w-6 text-green-500" />
+              <CurrencyDollar weight="light" className="h-6 w-6 text-green-500" />
             </div>
           </CardContent>
         </Card>
@@ -269,7 +269,7 @@ export function AgentCommissionTab({ agentId, organizationId }: AgentCommissionT
                 <p className="text-sm text-slate-500">Pending</p>
                 <p className="text-xl font-bold text-yellow-600">${pendingAmount.toLocaleString()}</p>
               </div>
-              <Award className="h-6 w-6 text-yellow-500" />
+              <Trophy weight="light" className="h-6 w-6 text-yellow-500" />
             </div>
           </CardContent>
         </Card>
@@ -303,9 +303,9 @@ export function AgentCommissionTab({ agentId, organizationId }: AgentCommissionT
               onClick={saveTierAssignment}
               disabled={saving || selectedTierId === agentData?.currentTierId}
             >
-              {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              <Save className="h-4 w-4 mr-2" />
-              Save
+              {saving && <CircleNotch weight="light" className="h-4 w-4 mr-2 animate-spin" />}
+              <FloppyDisk weight="light" className="h-4 w-4 mr-2" />
+              FloppyDisk
             </Button>
           </div>
 

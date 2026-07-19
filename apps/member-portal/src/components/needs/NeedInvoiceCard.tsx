@@ -10,7 +10,7 @@ import {
   Button,
   Input,
 } from '@crm-eco/ui';
-import { Plus, Trash2, Save, Printer, Loader2, ReceiptText } from 'lucide-react';
+import { Plus, Trash, FloppyDisk, Printer, CircleNotch, Receipt } from '@phosphor-icons/react';
 import {
   computeInvoiceTotals,
   lineItemAmount,
@@ -81,7 +81,7 @@ export function NeedInvoiceCard({ needId, invoice, canEdit = true }: NeedInvoice
     <Card className="print:shadow-none print:border-0" data-invoice-card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <ReceiptText className="w-5 h-5 text-blue-600" aria-hidden />
+          <Receipt weight="light" className="w-5 h-5 text-[var(--mp-teal)]" aria-hidden />
           Itemized Invoice
         </CardTitle>
         <CardDescription>
@@ -184,7 +184,7 @@ export function NeedInvoiceCard({ needId, invoice, canEdit = true }: NeedInvoice
                         className="text-slate-400 hover:text-red-500"
                         aria-label="Remove line item"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash weight="light" className="w-4 h-4" />
                       </button>
                     </td>
                   )}
@@ -196,7 +196,7 @@ export function NeedInvoiceCard({ needId, invoice, canEdit = true }: NeedInvoice
 
         {canEdit && (
           <Button type="button" variant="outline" size="sm" onClick={addLine} className="print:hidden">
-            <Plus className="w-4 h-4 mr-1" aria-hidden /> Add line item
+            <Plus weight="light" className="w-4 h-4 mr-1" aria-hidden /> Add line item
           </Button>
         )}
 
@@ -238,12 +238,12 @@ export function NeedInvoiceCard({ needId, invoice, canEdit = true }: NeedInvoice
         <div className="flex flex-wrap gap-3 pt-1 print:hidden">
           {canEdit && (
             <Button onClick={handleSave} disabled={saving}>
-              {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" aria-hidden /> : <Save className="w-4 h-4 mr-2" aria-hidden />}
+              {saving ? <CircleNotch weight="light" className="w-4 h-4 mr-2 animate-spin" aria-hidden /> : <FloppyDisk weight="light" className="w-4 h-4 mr-2" aria-hidden />}
               Save Invoice
             </Button>
           )}
           <Button variant="outline" onClick={() => window.print()}>
-            <Printer className="w-4 h-4 mr-2" aria-hidden /> Print / Save PDF
+            <Printer weight="light" className="w-4 h-4 mr-2" aria-hidden /> Print / Save PDF
           </Button>
         </div>
       </CardContent>

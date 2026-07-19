@@ -1,13 +1,6 @@
+import { CalendarBlank, ChartBar, CheckCircle, PaperPlaneTilt, Stack, TrendUp } from '@phosphor-icons/react/dist/ssr';
 import { Suspense } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Badge } from '@crm-eco/ui';
-import {
-  BarChart3,
-  Send,
-  CheckCircle,
-  Layers,
-  CalendarRange,
-  TrendingUp,
-} from 'lucide-react';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { getActiveTenant } from '@/lib/tenant';
 
@@ -182,7 +175,7 @@ async function EnrollmentsContent() {
           </p>
         </div>
         <Badge variant="outline" className="whitespace-nowrap">
-          <CalendarRange className="w-3 h-3 mr-1" />
+          <CalendarBlank weight="light" className="w-3 h-3 mr-1" />
           Last {MONTHS} months
         </Badge>
       </div>
@@ -202,7 +195,7 @@ async function EnrollmentsContent() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-slate-500">Total Enrollments</CardTitle>
-            <Layers className="w-4 h-4 text-slate-400" />
+            <Stack weight="light" className="w-4 h-4 text-slate-400" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{data?.total ?? 0}</div>
@@ -212,7 +205,7 @@ async function EnrollmentsContent() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-slate-500">Submit Rate</CardTitle>
-            <Send className="w-4 h-4 text-blue-400" />
+            <PaperPlaneTilt weight="light" className="w-4 h-4 text-blue-400" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">{asPercentLabel(data?.submitRate ?? null)}</div>
@@ -222,7 +215,7 @@ async function EnrollmentsContent() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-slate-500">Approval Rate</CardTitle>
-            <CheckCircle className="w-4 h-4 text-green-400" />
+            <CheckCircle weight="light" className="w-4 h-4 text-green-400" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">{asPercentLabel(data?.approvalRate ?? null)}</div>
@@ -232,7 +225,7 @@ async function EnrollmentsContent() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-slate-500">Monthly Premium</CardTitle>
-            <TrendingUp className="w-4 h-4 text-slate-400" />
+            <TrendUp weight="light" className="w-4 h-4 text-slate-400" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{asCurrency(data?.premiumMonthly ?? 0)}</div>
@@ -245,7 +238,7 @@ async function EnrollmentsContent() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <BarChart3 className="w-5 h-5" />
+            <ChartBar weight="light" className="w-5 h-5" />
             Enrollments by Month
           </CardTitle>
           <CardDescription>Volume of enrollments created each month over the trailing {MONTHS}-month window.</CardDescription>
@@ -281,7 +274,7 @@ async function EnrollmentsContent() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Layers className="w-5 h-5" />
+            <Stack weight="light" className="w-5 h-5" />
             Status Breakdown
           </CardTitle>
           <CardDescription>Current status distribution of the cohort.</CardDescription>

@@ -1,5 +1,6 @@
 'use client';
 
+import { CircleNotch, UserCheck, X } from '@phosphor-icons/react';
 import { useState, useEffect, useCallback } from 'react';
 import { Button, Combobox, type ComboboxOption } from '@crm-eco/ui';
 import {
@@ -12,8 +13,6 @@ import {
 } from '@crm-eco/ui';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { toast } from 'sonner';
-import { UserCheck, X, Loader2 } from 'lucide-react';
-
 interface BulkAssignBarProps {
   selectedIds: string[];
   onClearSelection: () => void;
@@ -121,11 +120,11 @@ export function BulkAssignBar({
 
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={onClearSelection}>
-              <X className="h-4 w-4 mr-1" />
+              <X weight="light" className="h-4 w-4 mr-1" />
               Clear
             </Button>
             <Button size="sm" onClick={() => setDialogOpen(true)}>
-              <UserCheck className="h-4 w-4 mr-1" />
+              <UserCheck weight="light" className="h-4 w-4 mr-1" />
               Assign Advisor
             </Button>
           </div>
@@ -146,7 +145,7 @@ export function BulkAssignBar({
           <div className="py-4">
             {fetching ? (
               <div className="flex items-center justify-center py-8 text-sm text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                <CircleNotch weight="light" className="h-4 w-4 animate-spin mr-2" />
                 Loading advisors...
               </div>
             ) : (
@@ -167,7 +166,7 @@ export function BulkAssignBar({
               Cancel
             </Button>
             <Button onClick={handleApply} disabled={!selectedAdvisor || loading}>
-              {loading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+              {loading && <CircleNotch weight="light" className="h-4 w-4 animate-spin mr-2" />}
               Apply
             </Button>
           </DialogFooter>

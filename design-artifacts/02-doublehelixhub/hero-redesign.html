@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Double Helix Hub — Homepage Redesign Artifact</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --void: #050505;
+      --panel: #0a0a0a;
+      --cyan: #06b6d4;
+      --cyan-deep: #0891b2;
+      --emerald: #059669;
+      --mist: rgba(255,255,255,0.06);
+      --hairline: rgba(255,255,255,0.10);
+      --text: #f4f4f5;
+      --muted: rgba(244,244,245,0.55);
+      --ease: cubic-bezier(0.32, 0.72, 0, 1);
+      --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: "Geist", "Plus Jakarta Sans", system-ui, sans-serif;
+      background: var(--void);
+      color: var(--text);
+      min-height: 100dvh;
+      overflow-x: hidden;
+    }
+
+    /* ── Artifact chrome ── */
+    .artifact-bar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+      padding: 0.75rem 1.25rem;
+      background: rgba(5,5,5,0.88);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--hairline);
+      font-size: 0.75rem;
+    }
+    .artifact-meta { opacity: 0.55; }
+    .toggle {
+      display: inline-flex; padding: 3px; border-radius: 999px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--hairline);
+    }
+    .toggle button {
+      border: 0; background: transparent; color: rgba(255,255,255,0.45);
+      font: inherit; font-size: 0.7rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.14em;
+      padding: 0.45rem 0.9rem; border-radius: 999px; cursor: pointer;
+      transition: all 500ms var(--ease);
+    }
+    .toggle button.active { background: #fff; color: #050505; }
+
+    .view { display: none; padding-top: 52px; }
+    .view.active { display: block; }
+
+    /* ════════════ BEFORE ════════════ */
+    .before {
+      background: #fff;
+      color: #0f172a;
+      min-height: calc(100dvh - 52px);
+      font-family: Inter, "Plus Jakarta Sans", system-ui, sans-serif;
+    }
+    .before-nav {
+      position: sticky; top: 52px; z-index: 40;
+      border-bottom: 1px solid #e2e8f0;
+      background: rgba(255,255,255,0.8);
+      backdrop-filter: blur(8px);
+    }
+    .before-nav-inner {
+      max-width: 72rem; margin: 0 auto;
+      padding: 0 1.5rem; height: 4rem;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .before-brand { font-weight: 700; font-size: 0.95rem; color: #0f172a; }
+    .before-links { display: none; gap: 1.75rem; font-size: 0.875rem; color: #475569; }
+    @media (min-width: 768px) { .before-links { display: flex; } }
+    .before-cta {
+      background: linear-gradient(135deg, #06b6d4, #059669);
+      color: #fff; border: 0; border-radius: 0.375rem;
+      padding: 0.5rem 1rem; font-size: 0.875rem; font-weight: 600;
+    }
+    .before-hero {
+      text-align: center;
+      padding: 4rem 1.5rem 6rem;
+      background: linear-gradient(to bottom, #fff, #f8fafc);
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .before-badge {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      border: 1px solid #e2e8f0; background: #fff;
+      border-radius: 999px; padding: 0.25rem 0.75rem;
+      font-size: 0.75rem; color: #64748b;
+    }
+    .before-badge i { width: 6px; height: 6px; border-radius: 50%; background: #10b981; }
+    .before-h1 {
+      margin: 1.5rem auto 0; max-width: 20ch;
+      font-family: "Plus Jakarta Sans", sans-serif;
+      font-size: clamp(2.25rem, 5vw, 3.75rem); font-weight: 800;
+      letter-spacing: -0.025em; line-height: 1.1;
+    }
+    .before-h1 .grad {
+      background: linear-gradient(135deg, #06b6d4, #059669);
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
+    .before-lede {
+      margin: 1.5rem auto 0; max-width: 36rem;
+      font-size: 1.125rem; color: #64748b; line-height: 1.6;
+    }
+    .before-btns {
+      margin-top: 2.5rem; display: flex; flex-wrap: wrap;
+      gap: 0.75rem; justify-content: center;
+    }
+    .before-btn-primary {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      height: 3rem; padding: 0 1.75rem; border: 0; border-radius: 0.375rem;
+      background: linear-gradient(135deg, #06b6d4, #059669);
+      color: #fff; font-weight: 600; font-size: 0.875rem;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .before-btn-outline {
+      height: 3rem; padding: 0 1.75rem;
+      border: 1px solid #e2e8f0; border-radius: 0.375rem;
+      background: #fff; font-weight: 600; font-size: 0.875rem; color: #0f172a;
+    }
+    .before-products {
+      max-width: 72rem; margin: 0 auto; padding: 5rem 1.5rem;
+    }
+    .before-products h2 {
+      font-family: "Plus Jakarta Sans", sans-serif;
+      font-size: 1.875rem; font-weight: 700; letter-spacing: -0.025em;
+    }
+    .before-products > p { margin-top: 1rem; color: #64748b; max-width: 36rem; }
+    .before-grid {
+      margin-top: 2.5rem; display: grid; gap: 1.5rem;
+    }
+    @media (min-width: 1024px) { .before-grid { grid-template-columns: 1fr 1fr; } }
+    .before-card {
+      border: 1px solid #e2e8f0; border-radius: 1rem;
+      background: #fff; padding: 2rem;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    .before-card h3 { font-size: 1.5rem; font-weight: 700; }
+    .before-card .tag { margin-top: 0.25rem; font-size: 0.875rem; font-weight: 500; color: #0e7c86; }
+    .before-card .body { margin-top: 1rem; color: #64748b; font-size: 0.95rem; line-height: 1.55; }
+
+    /* ════════════ AFTER — Ethereal Glass ════════════ */
+    .after {
+      position: relative;
+      min-height: calc(100dvh - 52px);
+      background: var(--void);
+    }
+
+    /* Mesh orbs — brand cyan/emerald, not purple */
+    .mesh {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background:
+        radial-gradient(ellipse 50% 40% at 15% 20%, rgba(6,182,212,0.18), transparent 60%),
+        radial-gradient(ellipse 45% 35% at 85% 70%, rgba(5,150,105,0.14), transparent 55%),
+        radial-gradient(ellipse 40% 30% at 60% 10%, rgba(8,145,178,0.08), transparent 50%),
+        var(--void);
+    }
+
+    .grain {
+      position: fixed; inset: 0; z-index: 50; pointer-events: none; opacity: 0.04;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+
+    /* Floating island nav */
+    .island-wrap {
+      position: sticky; top: 68px; z-index: 40;
+      display: flex; justify-content: center; padding: 0 1rem;
+      pointer-events: none;
+    }
+    .island {
+      pointer-events: auto;
+      display: flex; align-items: center; gap: 0.35rem;
+      padding: 0.4rem 0.4rem 0.4rem 1.15rem;
+      border-radius: 999px;
+      background: rgba(10,10,10,0.72);
+      border: 1px solid var(--hairline);
+      box-shadow:
+        0 1px 2px rgba(0,0,0,0.4),
+        0 12px 40px rgba(0,0,0,0.35),
+        inset 0 1px 0 rgba(255,255,255,0.06);
+      backdrop-filter: blur(24px);
+      animation: fadeUp 900ms var(--ease-out) both;
+    }
+    .island-brand {
+      font-family: "Plus Jakarta Sans", sans-serif;
+      font-size: 0.85rem; font-weight: 700; letter-spacing: -0.02em;
+      margin-right: 0.5rem; white-space: nowrap;
+    }
+    .island-links { display: none; gap: 0.1rem; }
+    @media (min-width: 768px) { .island-links { display: flex; } }
+    .island-links a {
+      text-decoration: none; color: var(--muted);
+      font-size: 0.78rem; font-weight: 500;
+      padding: 0.45rem 0.7rem; border-radius: 999px;
+      transition: all 500ms var(--ease);
+    }
+    .island-links a:hover { background: rgba(255,255,255,0.06); color: #fff; }
+    .island-cta {
+      display: inline-flex; align-items: center; gap: 0.45rem;
+      margin-left: 0.25rem;
+      padding: 0.35rem 0.35rem 0.35rem 0.95rem;
+      border-radius: 999px; border: 0; cursor: pointer;
+      background: #fff; color: #050505;
+      font-size: 0.78rem; font-weight: 600;
+      transition: all 600ms var(--ease);
+    }
+    .island-cta:hover { transform: scale(0.98); }
+    .island-cta .ico {
+      width: 1.65rem; height: 1.65rem; border-radius: 999px;
+      background: rgba(0,0,0,0.08);
+      display: grid; place-items: center;
+      transition: transform 600ms var(--ease);
+    }
+    .island-cta:hover .ico { transform: translate(2px, -1px) scale(1.05); }
+
+    /* Editorial Split hero */
+    .hero {
+      position: relative; z-index: 1;
+      max-width: 78rem; margin: 0 auto;
+      padding: 4.5rem 1rem 5rem;
+      display: grid; gap: 3rem;
+    }
+    @media (min-width: 960px) {
+      .hero {
+        grid-template-columns: 1fr 1fr;
+        align-items: center;
+        gap: 3.5rem;
+        padding: 5.5rem 2rem 7rem;
+        min-height: calc(100dvh - 140px);
+      }
+    }
+
+    .reveal {
+      opacity: 0; transform: translateY(2.5rem); filter: blur(6px);
+      animation: fadeUp 900ms var(--ease-out) both;
+    }
+    .reveal:nth-child(1) { animation-delay: 60ms; }
+    .reveal:nth-child(2) { animation-delay: 140ms; }
+    .reveal:nth-child(3) { animation-delay: 220ms; }
+    .reveal:nth-child(4) { animation-delay: 300ms; }
+    .reveal:nth-child(5) { animation-delay: 380ms; }
+
+    @keyframes fadeUp {
+      to { opacity: 1; transform: translateY(0); filter: blur(0); }
+    }
+
+    .eyebrow {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      border-radius: 999px; padding: 0.3rem 0.85rem;
+      font-size: 10px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.2em;
+      color: rgba(6,182,212,0.95);
+      background: rgba(6,182,212,0.08);
+      border: 1px solid rgba(6,182,212,0.18);
+      margin-bottom: 1.75rem;
+    }
+    .eyebrow .dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--cyan);
+      box-shadow: 0 0 0 3px rgba(6,182,212,0.2);
+    }
+
+    .after-h1 {
+      font-family: "Plus Jakarta Sans", sans-serif;
+      font-size: clamp(2.85rem, 6.5vw, 5rem);
+      font-weight: 700; line-height: 0.98; letter-spacing: -0.04em;
+      max-width: 11ch; margin-bottom: 1.5rem;
+    }
+    .after-h1 em {
+      font-style: normal;
+      background: linear-gradient(135deg, #22d3ee 0%, #34d399 100%);
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
+
+    .after-lede {
+      font-size: 1.05rem; line-height: 1.7; color: var(--muted);
+      max-width: 32rem; margin-bottom: 2.25rem; font-weight: 400;
+    }
+
+    .after-actions {
+      display: flex; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 2.5rem;
+    }
+
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 0.6rem;
+      padding: 0.5rem 0.5rem 0.5rem 1.35rem;
+      border-radius: 999px; border: 0; cursor: pointer;
+      background: #fff; color: #050505;
+      font-size: 0.9rem; font-weight: 600;
+      transition: all 600ms var(--ease);
+    }
+    .btn-primary:hover { transform: scale(0.98); }
+    .btn-primary:active { transform: scale(0.96); }
+    .btn-primary .ico {
+      width: 2rem; height: 2rem; border-radius: 999px;
+      background: rgba(0,0,0,0.07);
+      display: grid; place-items: center;
+      transition: transform 600ms var(--ease);
+    }
+    .btn-primary:hover .ico { transform: translate(3px, -1px) scale(1.06); }
+
+    .btn-ghost {
+      display: inline-flex; align-items: center;
+      padding: 0.85rem 1.4rem;
+      border-radius: 999px; cursor: pointer;
+      background: transparent;
+      border: 1px solid var(--hairline);
+      color: var(--text); font-size: 0.9rem; font-weight: 500;
+      transition: all 600ms var(--ease);
+    }
+    .btn-ghost:hover {
+      background: rgba(255,255,255,0.05);
+      border-color: rgba(255,255,255,0.2);
+    }
+
+    .trust {
+      display: flex; flex-wrap: wrap; gap: 1.25rem 1.75rem;
+      font-size: 0.8rem; color: var(--muted); font-weight: 500;
+    }
+    .trust li {
+      list-style: none; display: inline-flex; align-items: center; gap: 0.45rem;
+    }
+    .trust svg { color: var(--cyan); }
+
+    /* Right: stacked product pills / cards — Editorial Split interactive */
+    .stack {
+      display: flex; flex-direction: column; gap: 1rem;
+      perspective: 1200px;
+    }
+
+    .bezel {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--hairline);
+      border-radius: 2rem;
+      padding: 0.375rem;
+      transition: transform 700ms var(--ease), border-color 700ms var(--ease), box-shadow 700ms var(--ease);
+    }
+    .bezel:hover {
+      transform: translateY(-4px);
+      border-color: rgba(6,182,212,0.35);
+      box-shadow: 0 20px 50px rgba(0,0,0,0.45), 0 0 40px rgba(6,182,212,0.08);
+    }
+    .bezel-inner {
+      background: rgba(10,10,10,0.85);
+      border-radius: calc(2rem - 0.375rem);
+      box-shadow: inset 0 1px 1px rgba(255,255,255,0.08);
+      overflow: hidden;
+      backdrop-filter: blur(20px);
+    }
+
+    .product-card {
+      padding: 1.5rem 1.6rem 1.4rem;
+      animation: fadeUp 1s var(--ease-out) both;
+    }
+    .product-card:nth-child(1) { animation-delay: 280ms; }
+    .stack .bezel:nth-child(2) .product-card { animation-delay: 400ms; }
+    .stack .bezel:nth-child(3) .product-card { animation-delay: 520ms; }
+
+    .product-kicker {
+      font-size: 10px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.18em; color: rgba(6,182,212,0.9); margin-bottom: 0.6rem;
+    }
+    .product-title {
+      font-family: "Plus Jakarta Sans", sans-serif;
+      font-size: 1.35rem; font-weight: 700; letter-spacing: -0.03em;
+      margin-bottom: 0.35rem;
+    }
+    .product-body {
+      font-size: 0.875rem; line-height: 1.55; color: var(--muted);
+      margin-bottom: 1.1rem;
+    }
+    .product-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.06);
+    }
+    .product-chips { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+    .chip {
+      font-size: 0.65rem; font-weight: 600; letter-spacing: 0.04em;
+      text-transform: uppercase; color: rgba(255,255,255,0.55);
+      padding: 0.25rem 0.55rem; border-radius: 999px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .product-link {
+      display: inline-flex; align-items: center; gap: 0.35rem;
+      font-size: 0.8rem; font-weight: 600; color: #fff; text-decoration: none;
+      transition: gap 500ms var(--ease);
+    }
+    .product-link:hover { gap: 0.55rem; }
+
+    .suite-card .bezel-inner {
+      background: linear-gradient(160deg, rgba(6,182,212,0.12) 0%, rgba(5,150,105,0.08) 50%, rgba(10,10,10,0.95) 100%);
+    }
+
+    /* Spec */
+    .spec {
+      position: relative; z-index: 1;
+      max-width: 78rem; margin: 0 auto;
+      padding: 0 1rem 5rem;
+    }
+    .spec-shell {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--hairline);
+      border-radius: 2rem; padding: 0.375rem;
+    }
+    .spec-inner {
+      background: rgba(10,10,10,0.9);
+      border-radius: calc(2rem - 0.375rem);
+      padding: 2rem 1.5rem;
+      box-shadow: inset 0 1px 1px rgba(255,255,255,0.06);
+    }
+    @media (min-width: 768px) { .spec-inner { padding: 2.5rem 2.75rem; } }
+    .spec h2 {
+      font-family: "Plus Jakarta Sans", sans-serif;
+      font-size: 1.4rem; font-weight: 700; letter-spacing: -0.02em;
+      margin-bottom: 0.5rem;
+    }
+    .spec .lede {
+      color: var(--muted); font-size: 0.95rem; margin-bottom: 2rem; max-width: 40rem;
+    }
+    .spec-grid { display: grid; gap: 1rem; }
+    @media (min-width: 768px) { .spec-grid { grid-template-columns: repeat(3, 1fr); gap: 1.25rem; } }
+    .spec-item {
+      padding: 1.25rem; border-radius: 1.25rem;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .spec-item h3 {
+      font-size: 0.7rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.16em;
+      color: var(--cyan); margin-bottom: 0.5rem;
+    }
+    .spec-item p { font-size: 0.875rem; line-height: 1.55; color: var(--muted); }
+    .spec-item ul {
+      margin-top: 0.65rem; padding-left: 1rem;
+      font-size: 0.8rem; color: var(--muted); line-height: 1.65;
+    }
+    .footnote {
+      margin-top: 2rem; padding-top: 1.5rem;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      font-size: 0.75rem; color: rgba(255,255,255,0.35); line-height: 1.5;
+    }
+    code {
+      font-size: 0.85em; background: rgba(255,255,255,0.06);
+      padding: 0.1em 0.4em; border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="artifact-bar">
+    <div>
+      <strong>App 2 · Double Helix Hub</strong>
+      <span class="artifact-meta"> · Ethereal Glass · Editorial Split</span>
+    </div>
+    <div class="toggle" role="group" aria-label="Before or after">
+      <button type="button" id="btn-before">Before</button>
+      <button type="button" id="btn-after" class="active">After</button>
+    </div>
+  </div>
+
+  <!-- BEFORE -->
+  <div class="view" id="view-before">
+    <div class="before">
+      <header class="before-nav">
+        <div class="before-nav-inner">
+          <span class="before-brand">Double Helix</span>
+          <nav class="before-links">
+            <span>CRM Core</span><span>Admin</span><span>Pricing</span><span>About</span>
+          </nav>
+          <button class="before-cta" type="button">Request access</button>
+        </div>
+      </header>
+      <section class="before-hero">
+        <span class="before-badge"><i></i> Licensed multi-tenant SaaS</span>
+        <h1 class="before-h1">The operating system for <span class="grad">health benefits.</span></h1>
+        <p class="before-lede">
+          Double Helix Software is a CRM and enrollment platform purpose-built for benefits advisors, agencies, and TPAs. One backbone for contacts, deals, enrollments, plans, billing, and commissions.
+        </p>
+        <div class="before-btns">
+          <button class="before-btn-primary" type="button">
+            Request access
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </button>
+          <button class="before-btn-outline" type="button">See the products</button>
+        </div>
+      </section>
+      <section class="before-products">
+        <h2>Two products. One platform.</h2>
+        <p>Subscribe to either CRM Core or Admin Enrollment — or both — and let the same data backbone run your operation.</p>
+        <div class="before-grid">
+          <article class="before-card">
+            <h3>CRM Core</h3>
+            <p class="tag">The CRM built for health benefits.</p>
+            <p class="body">Pipelines, modules, automations, and document workflows tuned for advisors selling Medicare, ACA, group health, and healthshare.</p>
+          </article>
+          <article class="before-card">
+            <h3>Admin Enrollment</h3>
+            <p class="tag">Member management end to end.</p>
+            <p class="body">Run plans, members, billing, commissions, payouts, and ops from one place. Multi-tenant by design.</p>
+          </article>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- AFTER -->
+  <div class="view active" id="view-after">
+    <div class="mesh" aria-hidden="true"></div>
+    <div class="grain" aria-hidden="true"></div>
+    <div class="after">
+      <div class="island-wrap">
+        <nav class="island" aria-label="Primary">
+          <span class="island-brand">Double Helix</span>
+          <div class="island-links">
+            <a href="#">CRM Core</a>
+            <a href="#">Admin</a>
+            <a href="#">Pricing</a>
+            <a href="#">About</a>
+          </div>
+          <button class="island-cta" type="button">
+            Access
+            <span class="ico" aria-hidden="true">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 17L17 7M9 7h8v8"/></svg>
+            </span>
+          </button>
+        </nav>
+      </div>
+
+      <section class="hero">
+        <div>
+          <div class="reveal">
+            <span class="eyebrow"><span class="dot"></span> Multi-tenant SaaS</span>
+          </div>
+          <h1 class="after-h1 reveal">
+            The OS for <em>health benefits</em>
+          </h1>
+          <p class="after-lede reveal">
+            CRM and enrollment for advisors, agencies, and TPAs — one backbone for contacts,
+            deals, plans, billing, and commissions. Licensed. Isolated. Built to scale.
+          </p>
+          <div class="after-actions reveal">
+            <button class="btn-primary" type="button">
+              Request access
+              <span class="ico" aria-hidden="true">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 17L17 7M9 7h8v8"/></svg>
+              </span>
+            </button>
+            <button class="btn-ghost" type="button">See the products</button>
+          </div>
+          <ul class="trust reveal">
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/><path d="M9.5 12l1.8 1.8L15 10"/></svg>
+              Org-level isolation
+            </li>
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25"><circle cx="12" cy="12" r="8.5"/><path d="M8 12h8"/></svg>
+              CRM + Admin suite
+            </li>
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25"><path d="M4 12h16M12 4v16"/></svg>
+              Early access pricing
+            </li>
+          </ul>
+        </div>
+
+        <div class="stack">
+          <div class="bezel">
+            <div class="bezel-inner">
+              <div class="product-card">
+                <p class="product-kicker">Product 01</p>
+                <h3 class="product-title">CRM Core</h3>
+                <p class="product-body">Pipelines, modules, and automations purpose-built for Medicare, ACA, group, and healthshare advisors.</p>
+                <div class="product-row">
+                  <div class="product-chips">
+                    <span class="chip">Leads</span>
+                    <span class="chip">Deals</span>
+                    <span class="chip">Sequences</span>
+                  </div>
+                  <a class="product-link" href="#">
+                    Explore
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 17L17 7M9 7h8v8"/></svg>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="bezel">
+            <div class="bezel-inner">
+              <div class="product-card">
+                <p class="product-kicker">Product 02</p>
+                <h3 class="product-title">Admin Enrollment</h3>
+                <p class="product-body">Plans, members, billing, commissions, and ops — multi-tenant isolation for every agency and TPA.</p>
+                <div class="product-row">
+                  <div class="product-chips">
+                    <span class="chip">Billing</span>
+                    <span class="chip">Commissions</span>
+                    <span class="chip">Portal</span>
+                  </div>
+                  <a class="product-link" href="#">
+                    Explore
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 17L17 7M9 7h8v8"/></svg>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="bezel suite-card">
+            <div class="bezel-inner">
+              <div class="product-card">
+                <p class="product-kicker">Suite</p>
+                <h3 class="product-title">Run the whole stack</h3>
+                <p class="product-body">One identity layer. One data backbone. Subscribe to either product — or both.</p>
+                <div class="product-row">
+                  <div class="product-chips">
+                    <span class="chip">Shared core</span>
+                  </div>
+                  <a class="product-link" href="#">
+                    Pricing
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 17L17 7M9 7h8v8"/></svg>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="spec">
+        <div class="spec-shell">
+          <div class="spec-inner">
+            <h2>App 2 upgrade brief</h2>
+            <p class="lede">
+              Proposed direction for <code>apps/doublehelixhub</code> —
+              Ethereal Glass + Editorial Split. Cyan/emerald mesh (brand-true), no purple.
+            </p>
+            <div class="spec-grid">
+              <div class="spec-item">
+                <h3>Replace</h3>
+                <p>Generic light SaaS landing patterns.</p>
+                <ul>
+                  <li>Inter → Geist / Plus Jakarta display</li>
+                  <li>Lucide → Phosphor Light</li>
+                  <li>Sticky edge nav → floating dark island</li>
+                  <li>Centered hero → editorial 50/50 split</li>
+                  <li>Flat white cards → vantablack double-bezel</li>
+                  <li>Gradient CTAs everywhere → solid white primary</li>
+                </ul>
+              </div>
+              <div class="spec-item">
+                <h3>Keep</h3>
+                <p>Platform equity that already works.</p>
+                <ul>
+                  <li>Cyan → emerald brand signature</li>
+                  <li>Two-product story (CRM + Admin)</li>
+                  <li>Lead / request-access funnel</li>
+                  <li>Multi-tenant positioning</li>
+                  <li>Logo lockup</li>
+                </ul>
+              </div>
+              <div class="spec-item">
+                <h3>Ship order</h3>
+                <p>Highest conversion surface first.</p>
+                <ul>
+                  <li>1. Homepage hero + island nav</li>
+                  <li>2. Product detail pages</li>
+                  <li>3. Pricing comparison</li>
+                  <li>4. Contact / lead form</li>
+                  <li>5. Footer + secondary pages</li>
+                </ul>
+              </div>
+            </div>
+            <p class="footnote">
+              Artifact only — no production code changed. Toggle Before / After above.
+              Reply <strong>implement app 2</strong> to wire this into <code>apps/doublehelixhub</code>,
+              or request tweaks first.
+            </p>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const beforeBtn = document.getElementById('btn-before');
+    const afterBtn = document.getElementById('btn-after');
+    const beforeView = document.getElementById('view-before');
+    const afterView = document.getElementById('view-after');
+
+    function show(which) {
+      const isAfter = which === 'after';
+      afterBtn.classList.toggle('active', isAfter);
+      beforeBtn.classList.toggle('active', !isAfter);
+      afterView.classList.toggle('active', isAfter);
+      beforeView.classList.toggle('active', !isAfter);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    beforeBtn.addEventListener('click', () => show('before'));
+    afterBtn.addEventListener('click', () => show('after'));
+  </script>
+</body>
+</html>

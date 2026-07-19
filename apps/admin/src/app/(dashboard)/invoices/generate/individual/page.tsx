@@ -1,5 +1,6 @@
 'use client';
 
+import { ArrowClockwise, ArrowLeft, Calendar, CheckCircle, CurrencyDollar, FileText, MagnifyingGlass, Plus, Trash, User, Warning } from '@phosphor-icons/react';
 import { useState, useEffect } from 'react';
 import {
   Card,
@@ -13,19 +14,6 @@ import {
   Label,
   Textarea,
 } from '@crm-eco/ui';
-import {
-  User,
-  Calendar,
-  DollarSign,
-  RefreshCw,
-  ArrowLeft,
-  FileText,
-  Plus,
-  Trash2,
-  Search,
-  CheckCircle,
-  AlertTriangle,
-} from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@crm-eco/lib/supabase/client';
@@ -57,7 +45,7 @@ export default function GenerateIndividualInvoicePage() {
   const [organizationId, setOrganizationId] = useState<string | null>(null);
   const [profileId, setProfileId] = useState<string | null>(null);
 
-  // Search
+  // MagnifyingGlass
   const [searchQuery, setSearchQuery] = useState('');
   const [showMemberList, setShowMemberList] = useState(false);
 
@@ -312,7 +300,7 @@ export default function GenerateIndividualInvoicePage() {
       <div className="flex items-center gap-4">
         <Link href="/invoices">
           <Button variant="ghost" size="icon">
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft weight="light" className="h-4 w-4" />
           </Button>
         </Link>
         <div>
@@ -325,7 +313,7 @@ export default function GenerateIndividualInvoicePage() {
         <Card className="border-emerald-200 bg-emerald-50">
           <CardContent className="pt-6">
             <div className="text-center py-8">
-              <CheckCircle className="h-16 w-16 text-emerald-600 mx-auto mb-4" />
+              <CheckCircle weight="light" className="h-16 w-16 text-emerald-600 mx-auto mb-4" />
               <h2 className="text-xl font-bold text-emerald-900 mb-2">Invoice Generated</h2>
               <p className="text-emerald-700 mb-1">
                 Invoice #{generatedInvoice.invoice_number}
@@ -368,7 +356,7 @@ export default function GenerateIndividualInvoicePage() {
                   <div className="flex items-center justify-between p-4 bg-teal-50 border border-teal-200 rounded-lg">
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-teal-100 rounded-full">
-                        <User className="h-5 w-5 text-teal-600" />
+                        <User weight="light" className="h-5 w-5 text-teal-600" />
                       </div>
                       <div>
                         <p className="font-medium">
@@ -389,9 +377,9 @@ export default function GenerateIndividualInvoicePage() {
                 ) : (
                   <div className="relative">
                     <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <MagnifyingGlass weight="light" className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
-                        placeholder="Search members by name or email..."
+                        placeholder="MagnifyingGlass members by name or email..."
                         value={searchQuery}
                         onChange={(e) => {
                           setSearchQuery(e.target.value);
@@ -406,7 +394,7 @@ export default function GenerateIndividualInvoicePage() {
                       <div className="absolute z-10 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-64 overflow-y-auto">
                         {loading ? (
                           <div className="p-4 text-center">
-                            <RefreshCw className="h-5 w-5 animate-spin mx-auto" />
+                            <ArrowClockwise weight="light" className="h-5 w-5 animate-spin mx-auto" />
                           </div>
                         ) : filteredMembers.length === 0 ? (
                           <div className="p-4 text-center text-muted-foreground">No members found</div>
@@ -467,7 +455,7 @@ export default function GenerateIndividualInvoicePage() {
                     <CardDescription>Add items to the invoice</CardDescription>
                   </div>
                   <Button variant="outline" size="sm" onClick={addLineItem}>
-                    <Plus className="h-4 w-4 mr-1" />
+                    <Plus weight="light" className="h-4 w-4 mr-1" />
                     Add Item
                   </Button>
                 </div>
@@ -507,7 +495,7 @@ export default function GenerateIndividualInvoicePage() {
                         onClick={() => removeLineItem(item.id)}
                         disabled={lineItems.length === 1}
                       >
-                        <Trash2 className="h-4 w-4 text-red-500" />
+                        <Trash weight="light" className="h-4 w-4 text-red-500" />
                       </Button>
                     </div>
                   ))}
@@ -605,7 +593,7 @@ export default function GenerateIndividualInvoicePage() {
 
                 {isRetro && (
                   <Badge variant="outline" className="w-full justify-center">
-                    <AlertTriangle className="h-3 w-3 mr-1" />
+                    <Warning weight="light" className="h-3 w-3 mr-1" />
                     Retroactive Invoice
                   </Badge>
                 )}
@@ -620,12 +608,12 @@ export default function GenerateIndividualInvoicePage() {
             >
               {generating ? (
                 <>
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  <ArrowClockwise weight="light" className="h-4 w-4 mr-2 animate-spin" />
                   Generating...
                 </>
               ) : (
                 <>
-                  <FileText className="h-4 w-4 mr-2" />
+                  <FileText weight="light" className="h-4 w-4 mr-2" />
                   Generate Invoice
                 </>
               )}

@@ -1,7 +1,7 @@
 'use client';
 
+import { CaretRight } from '@phosphor-icons/react';
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { ChevronRight } from 'lucide-react';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { useTerminal } from './terminal-provider';
 
@@ -132,7 +132,7 @@ export function CommandInput() {
 
       {/* Input row */}
       <form onSubmit={handleSubmit} className="flex items-center gap-2">
-        <ChevronRight className="w-4 h-4 text-primary shrink-0" />
+        <CaretRight weight="light" className="w-4 h-4 text-primary shrink-0" />
         <input
           ref={inputRef}
           type="text"

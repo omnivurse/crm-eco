@@ -1,5 +1,6 @@
 'use client';
 
+import { Buildings, CaretLeft, ChartBar, CircleNotch, CurrencyDollar, MagnifyingGlass, MapPin, PencilSimple, Plus, Trash, UserPlus, Users, X } from '@phosphor-icons/react';
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import {
@@ -20,21 +21,6 @@ import {
   DialogFooter,
   Checkbox,
 } from '@crm-eco/ui';
-import {
-  Users,
-  Plus,
-  Search,
-  Edit2,
-  Trash2,
-  ChevronLeft,
-  Loader2,
-  Building2,
-  DollarSign,
-  BarChart3,
-  MapPin,
-  UserPlus,
-  X,
-} from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -76,9 +62,9 @@ interface Agent {
 }
 
 const GROUP_TYPES = [
-  { value: 'commission', label: 'Commission Group', icon: DollarSign, description: 'Group for commission calculations' },
-  { value: 'billing', label: 'Billing Group', icon: Building2, description: 'Group for billing purposes' },
-  { value: 'reporting', label: 'Reporting Group', icon: BarChart3, description: 'Group for reporting and analytics' },
+  { value: 'commission', label: 'Commission Group', icon: CurrencyDollar, description: 'Group for commission calculations' },
+  { value: 'billing', label: 'Billing Group', icon: Buildings, description: 'Group for billing purposes' },
+  { value: 'reporting', label: 'Reporting Group', icon: ChartBar, description: 'Group for reporting and analytics' },
   { value: 'territory', label: 'Territory', icon: MapPin, description: 'Geographic or sales territory' },
   { value: 'team', label: 'Team', icon: Users, description: 'General team grouping' },
 ];
@@ -366,7 +352,7 @@ export default function BillGroupsPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <CircleNotch weight="light" className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -377,7 +363,7 @@ export default function BillGroupsPage() {
       <div className="flex items-center gap-4">
         <Link href="/agents">
           <Button variant="ghost" size="icon">
-            <ChevronLeft className="h-5 w-5" />
+            <CaretLeft weight="light" className="h-5 w-5" />
           </Button>
         </Link>
         <div className="flex-1">
@@ -385,7 +371,7 @@ export default function BillGroupsPage() {
           <p className="text-slate-500">Organize agents into groups for billing, commissions, and reporting</p>
         </div>
         <Button onClick={handleNewGroup}>
-          <Plus className="h-4 w-4 mr-2" />
+          <Plus weight="light" className="h-4 w-4 mr-2" />
           New Group
         </Button>
       </div>
@@ -396,7 +382,7 @@ export default function BillGroupsPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center">
-                <Users className="h-5 w-5 text-purple-600" />
+                <Users weight="light" className="h-5 w-5 text-purple-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{groups.length}</p>
@@ -409,7 +395,7 @@ export default function BillGroupsPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center">
-                <DollarSign className="h-5 w-5 text-green-600" />
+                <CurrencyDollar weight="light" className="h-5 w-5 text-green-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{groups.filter(g => g.group_type === 'commission').length}</p>
@@ -422,7 +408,7 @@ export default function BillGroupsPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
-                <MapPin className="h-5 w-5 text-blue-600" />
+                <MapPin weight="light" className="h-5 w-5 text-blue-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{groups.filter(g => g.group_type === 'territory').length}</p>
@@ -435,7 +421,7 @@ export default function BillGroupsPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-orange-50 flex items-center justify-center">
-                <Users className="h-5 w-5 text-orange-600" />
+                <Users weight="light" className="h-5 w-5 text-orange-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{groups.reduce((sum, g) => sum + (g.member_count || 0), 0)}</p>
@@ -455,9 +441,9 @@ export default function BillGroupsPage() {
               <CardDescription>Manage agent bill groups and memberships</CardDescription>
             </div>
             <div className="relative w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <MagnifyingGlass weight="light" className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search groups..."
+                placeholder="MagnifyingGlass groups..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9"
@@ -468,11 +454,11 @@ export default function BillGroupsPage() {
         <CardContent>
           {filteredGroups.length === 0 ? (
             <div className="text-center py-12 text-slate-500">
-              <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <Users weight="light" className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p className="text-lg font-medium">No bill groups yet</p>
               <p className="text-sm mb-4">Create your first group to organize agents</p>
               <Button onClick={handleNewGroup}>
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus weight="light" className="h-4 w-4 mr-2" />
                 Create Group
               </Button>
             </div>
@@ -508,7 +494,7 @@ export default function BillGroupsPage() {
                       )}
                       <div className="flex items-center justify-between text-sm text-slate-500 mb-3">
                         <span className="flex items-center gap-1">
-                          <Users className="h-4 w-4" />
+                          <Users weight="light" className="h-4 w-4" />
                           {group.member_count || 0} member(s)
                         </span>
                         <Badge variant="outline" className="text-xs capitalize">
@@ -522,14 +508,14 @@ export default function BillGroupsPage() {
                       )}
                       <div className="flex gap-2">
                         <Button variant="outline" size="sm" className="flex-1" onClick={() => handleManageMembers(group)}>
-                          <UserPlus className="h-4 w-4 mr-1" />
+                          <UserPlus weight="light" className="h-4 w-4 mr-1" />
                           Members
                         </Button>
                         <Button variant="ghost" size="sm" onClick={() => handleEditGroup(group)}>
-                          <Edit2 className="h-4 w-4" />
+                          <PencilSimple weight="light" className="h-4 w-4" />
                         </Button>
                         <Button variant="ghost" size="sm" onClick={() => { setSelectedGroup(group); setIsDeleteModalOpen(true); }}>
-                          <Trash2 className="h-4 w-4 text-red-500" />
+                          <Trash weight="light" className="h-4 w-4 text-red-500" />
                         </Button>
                       </div>
                     </CardContent>
@@ -543,7 +529,7 @@ export default function BillGroupsPage() {
 
       {/* Edit/Create Group Modal */}
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>{selectedGroup ? 'Edit Group' : 'New Group'}</DialogTitle>
             <DialogDescription>Configure the bill group settings</DialogDescription>
@@ -629,7 +615,7 @@ export default function BillGroupsPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>Cancel</Button>
             <Button onClick={handleSaveGroup} disabled={isSaving || !formData.name}>
-              {isSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {isSaving && <CircleNotch weight="light" className="h-4 w-4 mr-2 animate-spin" />}
               {selectedGroup ? 'Update' : 'Create'} Group
             </Button>
           </DialogFooter>
@@ -662,7 +648,7 @@ export default function BillGroupsPage() {
                         <p className="text-xs text-slate-500">{agent.email}</p>
                       </div>
                       <Button size="sm" onClick={() => handleAddMember(agent.id)}>
-                        <Plus className="h-4 w-4" />
+                        <Plus weight="light" className="h-4 w-4" />
                       </Button>
                     </div>
                   ))
@@ -706,7 +692,7 @@ export default function BillGroupsPage() {
                           <option value="manager">Manager</option>
                         </select>
                         <Button variant="ghost" size="sm" onClick={() => handleRemoveMember(member.id)}>
-                          <X className="h-4 w-4 text-red-500" />
+                          <X weight="light" className="h-4 w-4 text-red-500" />
                         </Button>
                       </div>
                     </div>
@@ -734,7 +720,7 @@ export default function BillGroupsPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDeleteModalOpen(false)}>Cancel</Button>
             <Button variant="destructive" onClick={handleDeleteGroup} disabled={isSaving}>
-              {isSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {isSaving && <CircleNotch weight="light" className="h-4 w-4 mr-2 animate-spin" />}
               Delete
             </Button>
           </DialogFooter>

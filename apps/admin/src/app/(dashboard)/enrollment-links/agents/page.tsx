@@ -1,18 +1,9 @@
 'use client';
 
+import { ArrowSquareOut, Copy, Eye, Link as LinkIcon, MagnifyingGlass, QrCode, TrendUp, Users } from '@phosphor-icons/react';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@crm-eco/lib/supabase/client';
-import {
-  Users,
-  Link as LinkIcon,
-  Copy,
-  ExternalLink,
-  QrCode,
-  Eye,
-  TrendingUp,
-  Search,
-} from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@crm-eco/ui/components/card';
@@ -205,7 +196,7 @@ export default function AgentLinksPage() {
                 <p className="text-2xl font-bold">{agents.length}</p>
               </div>
               <div className="p-3 bg-blue-100 rounded-lg">
-                <Users className="w-5 h-5 text-blue-600" />
+                <Users weight="light" className="w-5 h-5 text-blue-600" />
               </div>
             </div>
           </CardContent>
@@ -221,7 +212,7 @@ export default function AgentLinksPage() {
                 </p>
               </div>
               <div className="p-3 bg-emerald-100 rounded-lg">
-                <LinkIcon className="w-5 h-5 text-emerald-600" />
+                <LinkIcon weight="light" className="w-5 h-5 text-emerald-600" />
               </div>
             </div>
           </CardContent>
@@ -237,18 +228,18 @@ export default function AgentLinksPage() {
                 </p>
               </div>
               <div className="p-3 bg-amber-100 rounded-lg">
-                <TrendingUp className="w-5 h-5 text-amber-600" />
+                <TrendUp weight="light" className="w-5 h-5 text-amber-600" />
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Search */}
+      {/* MagnifyingGlass */}
       <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+        <MagnifyingGlass weight="light" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
         <Input
-          placeholder="Search agents..."
+          placeholder="MagnifyingGlass agents..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="pl-10"
@@ -322,7 +313,7 @@ export default function AgentLinksPage() {
                               onClick={() => copyLink(agent.enrollment_code!)}
                               title="Copy enrollment link"
                             >
-                              <Copy className="w-4 h-4" />
+                              <Copy weight="light" className="w-4 h-4" />
                             </Button>
                             <Button
                               variant="ghost"
@@ -335,7 +326,7 @@ export default function AgentLinksPage() {
                                 target="_blank"
                                 rel="noopener noreferrer"
                               >
-                                <ExternalLink className="w-4 h-4" />
+                                <ArrowSquareOut weight="light" className="w-4 h-4" />
                               </a>
                             </Button>
                             <Button
@@ -345,7 +336,7 @@ export default function AgentLinksPage() {
                               title="Generate QR code"
                             >
                               <Link href={`/agents/${agent.id}?tab=enrollment`}>
-                                <QrCode className="w-4 h-4" />
+                                <QrCode weight="light" className="w-4 h-4" />
                               </Link>
                             </Button>
                           </>

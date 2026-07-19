@@ -1,6 +1,6 @@
+import { Eye, FileText, Tray } from '@phosphor-icons/react/dist/ssr';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button } from '@crm-eco/ui';
 import { StatusBadge } from '@crm-eco/ui/components/status-badge';
-import { FileText, Eye, Inbox } from 'lucide-react';
 import Link from 'next/link';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { format } from 'date-fns';
@@ -61,12 +61,11 @@ export default async function EnrollmentsPage() {
       <PageHeader
         title="Enrollments"
         description="Manage enrollment applications"
-        icon={<FileText className="w-6 h-6" />}
-        gradient="from-purple-600 to-purple-400"
+        icon={<FileText weight="light" className="w-6 h-6" />}
         actions={
           <Link href="/enrollments/queue" prefetch={false}>
             <Button variant="outline" size="sm">
-              <Inbox className="h-4 w-4 mr-2" />
+              <Tray weight="light" className="h-4 w-4 mr-2" />
               Review Queue
             </Button>
           </Link>
@@ -82,7 +81,7 @@ export default async function EnrollmentsPage() {
         <CardContent>
           {enrollments.length === 0 ? (
             <div className="text-center py-12">
-              <FileText className="h-12 w-12 mx-auto text-slate-300 mb-4" />
+              <FileText weight="light" className="h-12 w-12 mx-auto text-slate-300 mb-4" />
               <p className="text-slate-500">No enrollments found</p>
             </div>
           ) : (
@@ -148,7 +147,7 @@ export default async function EnrollmentsPage() {
                       <td className="py-3">
                         <Link href={`/enrollments/${enrollment.id}`} prefetch={false}>
                           <Button variant="ghost" size="sm">
-                            <Eye className="h-4 w-4" />
+                            <Eye weight="light" className="h-4 w-4" />
                           </Button>
                         </Link>
                       </td>

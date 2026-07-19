@@ -1,5 +1,6 @@
 'use client';
 
+import { Calendar, CaretLeft, CaretRight, Chat, CheckCircle, CircleNotch, Clock, EnvelopeSimple, GitBranch, Lightning, ListChecks, MagnifyingGlass, Pause, PencilSimple, Play, Plus, Trash, WarningCircle, WebhooksLogo, XCircle } from '@phosphor-icons/react';
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import {
@@ -20,28 +21,6 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@crm-eco/ui';
-import {
-  Zap,
-  Plus,
-  Search,
-  Edit2,
-  Trash2,
-  Play,
-  Pause,
-  ChevronLeft,
-  ChevronRight,
-  Clock,
-  CheckCircle2,
-  XCircle,
-  AlertCircle,
-  Loader2,
-  Mail,
-  MessageSquare,
-  ListTodo,
-  Webhook,
-  Calendar,
-  GitBranch,
-} from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 
@@ -96,7 +75,7 @@ interface RuleRun {
 const TRIGGER_TYPES = [
   { value: 'event', label: 'Event Trigger', icon: GitBranch, description: 'Trigger when a record changes' },
   { value: 'schedule', label: 'Schedule', icon: Calendar, description: 'Run on a schedule (cron)' },
-  { value: 'webhook', label: 'Webhook', icon: Webhook, description: 'Trigger via external webhook' },
+  { value: 'webhook', label: 'WebhooksLogo', icon: WebhooksLogo, description: 'Trigger via external webhook' },
 ];
 
 const EVENT_TYPES = [
@@ -120,12 +99,12 @@ const EVENT_TYPES = [
 ];
 
 const ACTION_TYPES = [
-  { value: 'send_email', label: 'Send Email', icon: Mail },
-  { value: 'send_sms', label: 'Send SMS', icon: MessageSquare },
-  { value: 'create_task', label: 'Create Task', icon: ListTodo },
-  { value: 'update_record', label: 'Update Record', icon: Edit2 },
-  { value: 'webhook_call', label: 'Call Webhook', icon: Webhook },
-  { value: 'slack_message', label: 'Send Slack Message', icon: MessageSquare },
+  { value: 'send_email', label: 'Send Email', icon: EnvelopeSimple },
+  { value: 'send_sms', label: 'Send SMS', icon: Chat },
+  { value: 'create_task', label: 'Create Task', icon: ListChecks },
+  { value: 'update_record', label: 'Update Record', icon: PencilSimple },
+  { value: 'webhook_call', label: 'Call WebhooksLogo', icon: WebhooksLogo },
+  { value: 'slack_message', label: 'Send Slack Message', icon: Chat },
 ];
 
 const OPERATORS = [
@@ -373,20 +352,20 @@ export default function AutomationsPage() {
   const getStatusIcon = (status: string | null) => {
     switch (status) {
       case 'completed':
-        return <CheckCircle2 className="h-4 w-4 text-green-500" />;
+        return <CheckCircle weight="light" className="h-4 w-4 text-green-500" />;
       case 'failed':
-        return <XCircle className="h-4 w-4 text-red-500" />;
+        return <XCircle weight="light" className="h-4 w-4 text-red-500" />;
       case 'running':
-        return <Loader2 className="h-4 w-4 text-blue-500 animate-spin" />;
+        return <CircleNotch weight="light" className="h-4 w-4 text-blue-500 animate-spin" />;
       default:
-        return <Clock className="h-4 w-4 text-slate-400" />;
+        return <Clock weight="light" className="h-4 w-4 text-slate-400" />;
     }
   };
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <CircleNotch weight="light" className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -397,7 +376,7 @@ export default function AutomationsPage() {
       <div className="flex items-center gap-4">
         <Link href="/settings">
           <Button variant="ghost" size="icon">
-            <ChevronLeft className="h-5 w-5" />
+            <CaretLeft weight="light" className="h-5 w-5" />
           </Button>
         </Link>
         <div className="flex-1">
@@ -405,7 +384,7 @@ export default function AutomationsPage() {
           <p className="text-slate-500">Create workflow automations triggered by events or schedules</p>
         </div>
         <Button onClick={handleNewRule}>
-          <Plus className="h-4 w-4 mr-2" />
+          <Plus weight="light" className="h-4 w-4 mr-2" />
           New Automation
         </Button>
       </div>
@@ -416,7 +395,7 @@ export default function AutomationsPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center">
-                <Zap className="h-5 w-5 text-purple-600" />
+                <Lightning weight="light" className="h-5 w-5 text-purple-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{rules.length}</p>
@@ -429,7 +408,7 @@ export default function AutomationsPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center">
-                <Play className="h-5 w-5 text-green-600" />
+                <Play weight="light" className="h-5 w-5 text-green-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{rules.filter(r => r.is_active).length}</p>
@@ -442,7 +421,7 @@ export default function AutomationsPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
-                <CheckCircle2 className="h-5 w-5 text-blue-600" />
+                <CheckCircle weight="light" className="h-5 w-5 text-blue-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{rules.reduce((sum, r) => sum + r.run_count, 0)}</p>
@@ -455,7 +434,7 @@ export default function AutomationsPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center">
-                <AlertCircle className="h-5 w-5 text-red-600" />
+                <WarningCircle weight="light" className="h-5 w-5 text-red-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{rules.reduce((sum, r) => sum + r.error_count, 0)}</p>
@@ -475,9 +454,9 @@ export default function AutomationsPage() {
               <CardDescription>Manage your automation workflows</CardDescription>
             </div>
             <div className="relative w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <MagnifyingGlass weight="light" className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search rules..."
+                placeholder="MagnifyingGlass rules..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9"
@@ -488,11 +467,11 @@ export default function AutomationsPage() {
         <CardContent>
           {filteredRules.length === 0 ? (
             <div className="text-center py-12 text-slate-500">
-              <Zap className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <Lightning weight="light" className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p className="text-lg font-medium">No automation rules yet</p>
               <p className="text-sm mb-4">Create your first automation to get started</p>
               <Button onClick={handleNewRule}>
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus weight="light" className="h-4 w-4 mr-2" />
                 Create Rule
               </Button>
             </div>
@@ -508,7 +487,7 @@ export default function AutomationsPage() {
                       <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
                         rule.is_active ? 'bg-teal-50' : 'bg-slate-100'
                       }`}>
-                        <Zap className={`h-5 w-5 ${rule.is_active ? 'text-teal-600' : 'text-slate-400'}`} />
+                        <Lightning weight="light" className={`h-5 w-5 ${rule.is_active ? 'text-teal-600' : 'text-slate-400'}`} />
                       </div>
                       <div>
                         <h3 className="font-medium text-slate-900">{rule.name}</h3>
@@ -519,7 +498,7 @@ export default function AutomationsPage() {
                           <Badge variant="outline" className="text-xs">
                             {rule.trigger_type === 'event' && (rule.trigger_config.event_type || 'Event')}
                             {rule.trigger_type === 'schedule' && (rule.trigger_config.cron || 'Schedule')}
-                            {rule.trigger_type === 'webhook' && 'Webhook'}
+                            {rule.trigger_type === 'webhook' && 'WebhooksLogo'}
                           </Badge>
                           <span className="text-xs text-slate-400">
                             {rule.actions.length} action{rule.actions.length !== 1 ? 's' : ''}
@@ -551,10 +530,10 @@ export default function AutomationsPage() {
                           setIsHistoryModalOpen(true);
                         }}
                       >
-                        <Clock className="h-4 w-4" />
+                        <Clock weight="light" className="h-4 w-4" />
                       </Button>
                       <Button variant="ghost" size="sm" onClick={() => handleEditRule(rule)}>
-                        <Edit2 className="h-4 w-4" />
+                        <PencilSimple weight="light" className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="ghost"
@@ -564,7 +543,7 @@ export default function AutomationsPage() {
                           setIsDeleteModalOpen(true);
                         }}
                       >
-                        <Trash2 className="h-4 w-4 text-red-500" />
+                        <Trash weight="light" className="h-4 w-4 text-red-500" />
                       </Button>
                     </div>
                   </div>
@@ -752,7 +731,7 @@ export default function AutomationsPage() {
 
               {formData.trigger_type === 'webhook' && (
                 <div className="space-y-2 mt-4">
-                  <Label>Webhook Path</Label>
+                  <Label>WebhooksLogo Path</Label>
                   <Input
                     value={(formData.trigger_config as { path?: string }).path || ''}
                     onChange={(e) => setFormData({
@@ -836,13 +815,13 @@ export default function AutomationsPage() {
                     size="sm"
                     onClick={() => removeCondition(index)}
                   >
-                    <Trash2 className="h-4 w-4 text-red-500" />
+                    <Trash weight="light" className="h-4 w-4 text-red-500" />
                   </Button>
                 </div>
               ))}
 
               <Button variant="outline" onClick={addCondition}>
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus weight="light" className="h-4 w-4 mr-2" />
                 Add Condition
               </Button>
             </div>
@@ -855,7 +834,7 @@ export default function AutomationsPage() {
 
               {formData.actions.map((action, index) => {
                 const actionType = ACTION_TYPES.find(a => a.value === action.type);
-                const Icon = actionType?.icon || Zap;
+                const Icon = actionType?.icon || Lightning;
                 return (
                   <div key={index} className="border rounded-lg p-4">
                     <div className="flex items-center justify-between mb-3">
@@ -864,7 +843,7 @@ export default function AutomationsPage() {
                         <span className="font-medium">{actionType?.label || action.type}</span>
                       </div>
                       <Button variant="ghost" size="sm" onClick={() => removeAction(index)}>
-                        <Trash2 className="h-4 w-4 text-red-500" />
+                        <Trash weight="light" className="h-4 w-4 text-red-500" />
                       </Button>
                     </div>
 
@@ -899,7 +878,7 @@ export default function AutomationsPage() {
                     {action.type === 'webhook_call' && (
                       <div className="space-y-2">
                         <Input
-                          placeholder="Webhook URL"
+                          placeholder="WebhooksLogo URL"
                           value={String(action.config.url || '')}
                           onChange={(e) => {
                             const newActions = [...formData.actions];
@@ -937,7 +916,7 @@ export default function AutomationsPage() {
             <div>
               {editStep > 1 && (
                 <Button variant="outline" onClick={() => setEditStep(editStep - 1)}>
-                  <ChevronLeft className="h-4 w-4 mr-2" />
+                  <CaretLeft weight="light" className="h-4 w-4 mr-2" />
                   Back
                 </Button>
               )}
@@ -949,11 +928,11 @@ export default function AutomationsPage() {
               {editStep < 4 ? (
                 <Button onClick={() => setEditStep(editStep + 1)} disabled={!formData.name && editStep === 1}>
                   Next
-                  <ChevronRight className="h-4 w-4 ml-2" />
+                  <CaretRight weight="light" className="h-4 w-4 ml-2" />
                 </Button>
               ) : (
                 <Button onClick={handleSaveRule} disabled={isSaving || formData.actions.length === 0}>
-                  {isSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  {isSaving && <CircleNotch weight="light" className="h-4 w-4 mr-2 animate-spin" />}
                   Save Rule
                 </Button>
               )}
@@ -976,7 +955,7 @@ export default function AutomationsPage() {
               Cancel
             </Button>
             <Button variant="destructive" onClick={handleDeleteRule} disabled={isSaving}>
-              {isSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {isSaving && <CircleNotch weight="light" className="h-4 w-4 mr-2 animate-spin" />}
               Delete
             </Button>
           </DialogFooter>

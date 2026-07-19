@@ -1,6 +1,6 @@
 'use client';
 
-import { CalendarClock, Users, ArrowRight, Calendar, Clock } from 'lucide-react';
+import { ArrowRight, Calendar, CalendarBlank, Clock, Users } from '@phosphor-icons/react';
 import Link from 'next/link';
 import { differenceInDays, format } from 'date-fns';
 
@@ -36,7 +36,7 @@ export function FutureEnrollmentsCard({ data }: FutureEnrollmentsCardProps) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-slate-700">
-              <CalendarClock className="w-5 h-5 text-white" />
+              <CalendarBlank weight="light" className="w-5 h-5 text-white" />
             </div>
             <div>
               <h3 className="text-lg font-bold text-slate-900">Future Enrollments</h3>
@@ -48,7 +48,7 @@ export function FutureEnrollmentsCard({ data }: FutureEnrollmentsCardProps) {
             className="flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
           >
             View all
-            <ArrowRight className="w-4 h-4" />
+            <ArrowRight weight="light" className="w-4 h-4" />
           </Link>
         </div>
       </div>
@@ -58,7 +58,7 @@ export function FutureEnrollmentsCard({ data }: FutureEnrollmentsCardProps) {
         <div className="grid grid-cols-3 gap-4 mb-6">
           <div className="text-center p-4 rounded-xl bg-slate-50 border border-slate-200">
             <div className="flex items-center justify-center gap-2 mb-2">
-              <Users className="w-4 h-4 text-slate-600" />
+              <Users weight="light" className="w-4 h-4 text-slate-600" />
             </div>
             <p className="text-2xl font-bold text-slate-700">{totalFutureActive}</p>
             <p className="text-xs text-slate-500 font-medium">Total Future Active</p>
@@ -66,7 +66,7 @@ export function FutureEnrollmentsCard({ data }: FutureEnrollmentsCardProps) {
 
           <div className="text-center p-4 rounded-xl bg-slate-50 border border-slate-200">
             <div className="flex items-center justify-center gap-2 mb-2">
-              <Calendar className="w-4 h-4 text-slate-600" />
+              <Calendar weight="light" className="w-4 h-4 text-slate-600" />
             </div>
             <p className="text-2xl font-bold text-slate-700">{startingThisMonth}</p>
             <p className="text-xs text-slate-500 font-medium">Starting This Month</p>
@@ -74,7 +74,7 @@ export function FutureEnrollmentsCard({ data }: FutureEnrollmentsCardProps) {
 
           <div className="text-center p-4 rounded-xl bg-slate-50 border border-slate-200">
             <div className="flex items-center justify-center gap-2 mb-2">
-              <Clock className="w-4 h-4 text-slate-600" />
+              <Clock weight="light" className="w-4 h-4 text-slate-600" />
             </div>
             <p className="text-2xl font-bold text-slate-700">
               {daysUntilNext !== null ? daysUntilNext : '—'}
@@ -97,7 +97,7 @@ export function FutureEnrollmentsCard({ data }: FutureEnrollmentsCardProps) {
               </div>
               <div className="text-right">
                 <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-700 text-white text-sm font-semibold">
-                  <Clock className="w-3.5 h-3.5" />
+                  <Clock weight="light" className="w-3.5 h-3.5" />
                   {daysUntilNext === 0 
                     ? 'Today!' 
                     : daysUntilNext === 1 
@@ -146,7 +146,7 @@ export function FutureEnrollmentsCard({ data }: FutureEnrollmentsCardProps) {
         ) : (
           <div className="text-center py-8">
             <div className="w-16 h-16 mx-auto mb-4 bg-slate-100 rounded-2xl flex items-center justify-center">
-              <CalendarClock className="w-8 h-8 text-slate-300" />
+              <CalendarBlank weight="light" className="w-8 h-8 text-slate-300" />
             </div>
             <p className="font-medium text-slate-600 mb-1">No upcoming activations</p>
             <p className="text-sm text-slate-400">Future enrollments will appear here</p>

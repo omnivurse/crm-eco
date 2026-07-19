@@ -1,5 +1,6 @@
 'use client';
 
+import { Baby, Check, CircleNotch, DotsSixVertical, Eye, Heart, List, MagnifyingGlass, PencilSimple, Pill, Plus, Pulse, ShieldCheck, Smiley, Sparkle, Trash, X } from '@phosphor-icons/react';
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
@@ -16,25 +17,6 @@ import {
   Badge,
   Checkbox,
 } from '@crm-eco/ui';
-import {
-  Plus,
-  Trash2,
-  Edit2,
-  Loader2,
-  Search,
-  GripVertical,
-  Check,
-  X,
-  Sparkles,
-  List,
-  Heart,
-  Pill,
-  Shield,
-  Eye,
-  Smile,
-  Baby,
-  Activity,
-} from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Feature {
@@ -69,12 +51,12 @@ const FEATURE_CATEGORIES = [
   { value: 'general', label: 'General', icon: List },
   { value: 'medical', label: 'Medical', icon: Heart },
   { value: 'prescription', label: 'Prescription', icon: Pill },
-  { value: 'preventive', label: 'Preventive', icon: Shield },
-  { value: 'emergency', label: 'Emergency', icon: Activity },
-  { value: 'mental_health', label: 'Mental Health', icon: Smile },
+  { value: 'preventive', label: 'Preventive', icon: ShieldCheck },
+  { value: 'emergency', label: 'Emergency', icon: Pulse },
+  { value: 'mental_health', label: 'Mental Health', icon: Smiley },
   { value: 'maternity', label: 'Maternity', icon: Baby },
   { value: 'vision', label: 'Vision', icon: Eye },
-  { value: 'wellness', label: 'Wellness', icon: Sparkles },
+  { value: 'wellness', label: 'Wellness', icon: Sparkle },
 ];
 
 export function ProductFeaturesModal({
@@ -310,16 +292,16 @@ export function ProductFeaturesModal({
 
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <CircleNotch weight="light" className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
         ) : (
           <div className="flex-1 overflow-hidden flex flex-col gap-4">
             {/* Toolbar */}
             <div className="flex items-center gap-2">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <MagnifyingGlass weight="light" className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search features..."
+                  placeholder="MagnifyingGlass features..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-9"
@@ -336,14 +318,14 @@ export function ProductFeaturesModal({
                 ))}
               </select>
               <Button onClick={() => setShowNewFeature(true)} size="sm">
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus weight="light" className="h-4 w-4 mr-2" />
                 New Feature
               </Button>
             </div>
 
             {/* Assigned Features Summary */}
             <div className="flex items-center gap-2 p-3 bg-teal-50 rounded-lg border border-teal-200">
-              <Check className="h-5 w-5 text-teal-600" />
+              <Check weight="light" className="h-5 w-5 text-teal-600" />
               <span className="text-sm font-medium text-teal-900">
                 {mappings.length} feature{mappings.length !== 1 ? 's' : ''} assigned to this product
               </span>
@@ -353,7 +335,7 @@ export function ProductFeaturesModal({
             <div className="flex-1 overflow-y-auto border rounded-lg">
               {Object.keys(groupedFeatures).length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-slate-500">
-                  <List className="h-12 w-12 mb-4 opacity-50" />
+                  <List weight="light" className="h-12 w-12 mb-4 opacity-50" />
                   <p>No features found</p>
                   <p className="text-sm">Create your first feature to get started</p>
                 </div>
@@ -393,7 +375,7 @@ export function ProductFeaturesModal({
                                   <div className="flex items-center gap-2">
                                     <span className="font-medium">{feature.name}</span>
                                     {feature.is_highlighted && (
-                                      <Sparkles className="h-4 w-4 text-amber-500" />
+                                      <Sparkle weight="light" className="h-4 w-4 text-amber-500" />
                                     )}
                                   </div>
                                   {feature.description && (
@@ -421,7 +403,7 @@ export function ProductFeaturesModal({
                                     size="icon"
                                     onClick={() => setEditingFeature(feature)}
                                   >
-                                    <Edit2 className="h-4 w-4" />
+                                    <PencilSimple weight="light" className="h-4 w-4" />
                                   </Button>
                                   <Button
                                     variant="ghost"
@@ -429,7 +411,7 @@ export function ProductFeaturesModal({
                                     onClick={() => handleDeleteFeature(feature.id)}
                                     className="text-red-500 hover:text-red-600"
                                   >
-                                    <Trash2 className="h-4 w-4" />
+                                    <Trash weight="light" className="h-4 w-4" />
                                   </Button>
                                 </div>
                               </div>
@@ -497,7 +479,7 @@ export function ProductFeaturesModal({
                   onCheckedChange={(checked) => setNewFeature({ ...newFeature, is_highlighted: checked === true })}
                 />
                 <Label htmlFor="highlighted" className="flex items-center gap-1">
-                  <Sparkles className="h-4 w-4 text-amber-500" />
+                  <Sparkle weight="light" className="h-4 w-4 text-amber-500" />
                   Highlight this feature
                 </Label>
               </div>
@@ -507,7 +489,7 @@ export function ProductFeaturesModal({
                 Cancel
               </Button>
               <Button onClick={handleCreateFeature} disabled={isSaving || !newFeature.name}>
-                {isSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                {isSaving && <CircleNotch weight="light" className="h-4 w-4 mr-2 animate-spin" />}
                 Create Feature
               </Button>
             </DialogFooter>
@@ -556,7 +538,7 @@ export function ProductFeaturesModal({
                     onCheckedChange={(checked) => setEditingFeature({ ...editingFeature, is_highlighted: checked === true })}
                   />
                   <Label htmlFor="edit-highlighted" className="flex items-center gap-1">
-                    <Sparkles className="h-4 w-4 text-amber-500" />
+                    <Sparkle weight="light" className="h-4 w-4 text-amber-500" />
                     Highlight this feature
                   </Label>
                 </div>
@@ -567,7 +549,7 @@ export function ProductFeaturesModal({
                 Cancel
               </Button>
               <Button onClick={handleUpdateFeature} disabled={isSaving}>
-                {isSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                {isSaving && <CircleNotch weight="light" className="h-4 w-4 mr-2 animate-spin" />}
                 Save Changes
               </Button>
             </DialogFooter>

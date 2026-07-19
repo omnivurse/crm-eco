@@ -786,7 +786,7 @@ export function ImportWizard({ modules, organizationId, preselectedModule, smart
               </Button>
               <Button
                 onClick={() => setStep('preview')}
-                className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white"
+                
                 disabled={mappedFieldsCount === 0}
               >
                 Preview Import
@@ -983,7 +983,6 @@ export function ImportWizard({ modules, organizationId, preselectedModule, smart
                 Import More
               </Button>
               <Button
-                className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white"
                 asChild
               >
                 <Link href={`/crm/modules/${selectedModule?.key}`}>

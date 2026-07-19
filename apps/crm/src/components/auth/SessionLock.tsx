@@ -144,7 +144,7 @@ export function SessionLock({
                     <Button
                         onClick={handleUnlock}
                         disabled={isLoading || !password}
-                        className="w-full bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400"
+                        className="w-full"
                     >
                         {isLoading ? 'Unlocking...' : 'Unlock Session'}
                     </Button>

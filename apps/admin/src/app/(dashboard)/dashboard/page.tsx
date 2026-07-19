@@ -3,16 +3,16 @@ import {
   UserCheck,
   FileText,
   Clock,
-  Activity,
+  Pulse,
   User,
   Package,
-  Settings,
-  DollarSign,
-  Zap,
-  BarChart3,
-  ChevronRight,
+  GearSix,
+  CurrencyDollar,
+  Lightning,
+  ChartBar,
+  CaretRight,
   CreditCard,
-} from 'lucide-react';
+} from '@phosphor-icons/react/dist/ssr';
 import { Suspense } from 'react';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { getActiveTenant } from '@/lib/tenant';
@@ -216,12 +216,12 @@ async function getRecentActivity(orgId: string): Promise<ActivityLogEntry[]> {
 
 function getEntityIcon(entityType: string) {
   switch (entityType) {
-    case 'member': return <User className="h-4 w-4" />;
-    case 'advisor': return <UserCheck className="h-4 w-4" />;
-    case 'enrollment': return <FileText className="h-4 w-4" />;
-    case 'product': case 'plan': return <Package className="h-4 w-4" />;
-    case 'settings': return <Settings className="h-4 w-4" />;
-    default: return <Activity className="h-4 w-4" />;
+    case 'member': return <User weight="light" className="h-4 w-4" />;
+    case 'advisor': return <UserCheck weight="light" className="h-4 w-4" />;
+    case 'enrollment': return <FileText weight="light" className="h-4 w-4" />;
+    case 'product': case 'plan': return <Package weight="light" className="h-4 w-4" />;
+    case 'settings': return <GearSix weight="light" className="h-4 w-4" />;
+    default: return <Pulse weight="light" className="h-4 w-4" />;
   }
 }
 
@@ -233,7 +233,7 @@ function getActionColor(action: string) {
     case 'approve': case 'process_enrollment': return 'text-emerald-600 bg-emerald-500/10';
     case 'reject': return 'text-orange-600 bg-orange-500/10';
     case 'cancel': return 'text-slate-600 bg-slate-500/10';
-    case 'charge': case 'refund': case 'generate_payouts': return 'text-purple-600 bg-purple-500/10';
+    case 'charge': case 'refund': case 'generate_payouts': return 'text-[var(--adm-teal)] bg-[rgba(11,109,133,0.10)]';
     default: return 'text-slate-600 bg-slate-500/10';
   }
 }
@@ -298,17 +298,25 @@ async function DashboardContent() {
 
           <AdminAlertsStrip stats={consoleStats} />
 
-          <AdminOperationalTiles stats={consoleStats} />
-
-          <AdminWorkQueue items={consoleStats.workQueue} />
-
-          <AdminMemberFunnel stats={consoleStats} />
+          <div className="adm-bento">
+            <div className="adm-span-12">
+              <AdminOperationalTiles stats={consoleStats} />
+            </div>
+            <div className="adm-span-8">
+              <AdminWorkQueue items={consoleStats.workQueue} />
+            </div>
+            <div className="adm-span-4">
+              <AdminMemberFunnel stats={consoleStats} />
+            </div>
+          </div>
         </>
       )}
 
       {/* ── CRM Member KPI Overview ── */}
-      <div className="relative overflow-hidden rounded-2xl bg-white border border-slate-200/60 shadow-[0_1px_3px_rgba(0,0,0,0.05),0_20px_25px_-5px_rgba(0,0,0,0.05)] p-6">
-        <CrmKpiCards orgId={orgId} />
+      <div className="adm-bezel">
+        <div className="adm-bezel-inner p-6">
+          <CrmKpiCards orgId={orgId} />
+        </div>
       </div>
 
       {/* ── Commission Stats (preserved) ── */}
@@ -317,14 +325,14 @@ async function DashboardContent() {
           title="Pending Commissions"
           value={`$${commissions.pending.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
           subtitle="Awaiting approval and processing"
-          icon={<Clock className="w-6 h-6 text-slate-600" />}
+          icon={<Clock weight="light" className="h-6 w-6" />}
           href="/commissions/transactions?status=pending"
         />
         <CommissionCard
           title="Commissions Paid This Month"
           value={`$${commissions.paidThisMonth.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
           subtitle="Successfully disbursed to advisors"
-          icon={<DollarSign className="w-6 h-6 text-slate-600" />}
+          icon={<CurrencyDollar weight="light" className="h-6 w-6" />}
           href="/commissions"
         />
       </div>
@@ -346,88 +354,90 @@ async function DashboardContent() {
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         {/* Recent Activity - 3 columns */}
         <div className="lg:col-span-3">
-          <div className="relative overflow-hidden rounded-2xl bg-white border border-slate-200/60 shadow-[0_1px_3px_rgba(0,0,0,0.05),0_20px_25px_-5px_rgba(0,0,0,0.05)]">
-            <div className="absolute top-0 left-0 right-0 h-1 bg-slate-200" />
-            <div className="p-6 border-b border-slate-100">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-xl bg-slate-700">
-                    <Activity className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-slate-900">Recent Activity</h3>
-                    <p className="text-sm text-slate-500">Latest actions in the system</p>
-                  </div>
-                </div>
-                <Link href="/settings/audit-logs" className="flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">
-                  View all <ChevronRight className="w-4 h-4" />
-                </Link>
-              </div>
-            </div>
-            <div className="p-4">
-              {recentActivity.length > 0 ? (
-                <div className="space-y-2">
-                  {recentActivity.map((activity, index) => (
-                    <div key={activity.id} className="group flex items-center gap-4 p-4 rounded-xl hover:bg-slate-50 transition-all duration-200" style={{ animationDelay: `${index * 50}ms` }}>
-                      <div className={`p-2.5 rounded-xl ${getActionColor(activity.action)}`}>
-                        {getEntityIcon(activity.entity_type)}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-slate-700 truncate">{formatActivity(activity)}</p>
-                        <p className="text-xs text-slate-400">{formatDistanceToNow(new Date(activity.created_at), { addSuffix: true })}</p>
-                      </div>
-                      <span className={`px-3 py-1.5 text-xs font-semibold rounded-full capitalize ${getActionColor(activity.action)}`}>{activity.action}</span>
+          <div className="adm-bezel h-full">
+            <div className="adm-bezel-inner flex h-full flex-col">
+              <div className="border-b border-[var(--adm-hairline)] p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="rounded-xl bg-gradient-to-br from-[var(--adm-cyan)] to-[var(--adm-teal)] p-2.5">
+                      <Pulse weight="light" className="h-5 w-5 text-white" />
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-16">
-                  <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-slate-100 to-slate-50 rounded-2xl flex items-center justify-center">
-                    <Clock className="w-10 h-10 text-slate-300" />
+                    <div>
+                      <h3 className="text-lg font-bold text-[var(--adm-ink)]">Recent Activity</h3>
+                      <p className="text-sm text-[var(--adm-muted)]">Latest actions in the system</p>
+                    </div>
                   </div>
-                  <p className="font-semibold text-slate-700 mb-1">No recent activity</p>
-                  <p className="text-sm text-slate-400">Activities will appear here as you use the system</p>
+                  <Link href="/settings/audit-logs" className="flex items-center gap-1 text-sm font-medium text-[var(--adm-muted)] transition-colors hover:text-[var(--adm-ink)]">
+                    View all <CaretRight weight="light" className="h-4 w-4" />
+                  </Link>
                 </div>
-              )}
+              </div>
+              <div className="flex-1 p-4">
+                {recentActivity.length > 0 ? (
+                  <div className="space-y-2">
+                    {recentActivity.map((activity, index) => (
+                      <div key={activity.id} className="group flex items-center gap-4 rounded-xl p-4 transition-all duration-200 hover:bg-[rgba(11,109,133,0.05)] dark:hover:bg-white/5" style={{ animationDelay: `${index * 50}ms` }}>
+                        <div className={`rounded-xl p-2.5 ${getActionColor(activity.action)}`}>
+                          {getEntityIcon(activity.entity_type)}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium text-[var(--adm-ink)]">{formatActivity(activity)}</p>
+                          <p className="text-xs text-[var(--adm-muted)]">{formatDistanceToNow(new Date(activity.created_at), { addSuffix: true })}</p>
+                        </div>
+                        <span className={`rounded-full px-3 py-1.5 text-xs font-semibold capitalize ${getActionColor(activity.action)}`}>{activity.action}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="py-16 text-center">
+                    <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-[rgba(11,109,133,0.06)] dark:bg-white/5">
+                      <Clock weight="light" className="h-10 w-10 text-[var(--adm-muted)] opacity-50" />
+                    </div>
+                    <p className="mb-1 font-semibold text-[var(--adm-ink)]">No recent activity</p>
+                    <p className="text-sm text-[var(--adm-muted)]">Activities will appear here as you use the system</p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
 
         {/* Quick Actions - 2 columns */}
         <div className="lg:col-span-2">
-          <div className="relative overflow-hidden rounded-2xl bg-white border border-slate-200/60 shadow-[0_1px_3px_rgba(0,0,0,0.05),0_20px_25px_-5px_rgba(0,0,0,0.05)] h-full">
-            <div className="absolute top-0 left-0 right-0 h-1 bg-slate-200" />
-            <div className="p-6 border-b border-slate-100">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-xl bg-slate-700">
-                  <Zap className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-slate-900">Quick Actions</h3>
-                  <p className="text-sm text-slate-500">Common administrative tasks</p>
+          <div className="adm-bezel h-full">
+            <div className="adm-bezel-inner flex h-full flex-col">
+              <div className="border-b border-[var(--adm-hairline)] p-6">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-xl bg-gradient-to-br from-[var(--adm-cyan)] to-[var(--adm-teal)] p-2.5">
+                    <Lightning weight="light" className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-[var(--adm-ink)]">Quick Actions</h3>
+                    <p className="text-sm text-[var(--adm-muted)]">Common administrative tasks</p>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="p-4 space-y-2">
-              {[
-                { href: '/members/new', icon: Users, title: 'Add New Member', sub: 'Register a new member' },
-                { href: '/agents/new', icon: UserCheck, title: 'Add New Advisor', sub: 'Register a new advisor' },
-                { href: '/enrollments', icon: FileText, title: 'View Enrollments', sub: 'Manage applications' },
-                { href: '/commissions', icon: CreditCard, title: 'Process Commissions', sub: 'Review payouts' },
-                { href: '/reports', icon: BarChart3, title: 'View Reports', sub: 'Analytics & insights' },
-                { href: '/settings', icon: Settings, title: 'System Settings', sub: 'Configure portal' },
-              ].map(({ href, icon: Icon, title, sub }) => (
-                <Link key={href} href={href} className="group flex items-center gap-4 p-4 rounded-xl border border-transparent hover:border-slate-200 hover:bg-slate-50 transition-all">
-                  <div className="p-3 rounded-xl bg-slate-100 group-hover:bg-slate-700 transition-colors">
-                    <Icon className="w-5 h-5 text-slate-600 group-hover:text-white transition-colors" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-semibold text-sm text-slate-700">{title}</p>
-                    <p className="text-xs text-slate-400">{sub}</p>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-slate-600 group-hover:translate-x-1 transition-all" />
-                </Link>
-              ))}
+              <div className="flex-1 space-y-2 p-4">
+                {[
+                  { href: '/members/new', icon: Users, title: 'Add New Member', sub: 'Register a new member' },
+                  { href: '/agents/new', icon: UserCheck, title: 'Add New Advisor', sub: 'Register a new advisor' },
+                  { href: '/enrollments', icon: FileText, title: 'View Enrollments', sub: 'Manage applications' },
+                  { href: '/commissions', icon: CreditCard, title: 'Process Commissions', sub: 'Review payouts' },
+                  { href: '/reports', icon: ChartBar, title: 'View Reports', sub: 'Analytics & insights' },
+                  { href: '/settings', icon: GearSix, title: 'System Settings', sub: 'Configure portal' },
+                ].map(({ href, icon: Icon, title, sub }) => (
+                  <Link key={href} href={href} className="group flex items-center gap-4 rounded-xl border border-transparent p-4 transition-all hover:border-[var(--adm-hairline)] hover:bg-[rgba(11,109,133,0.05)] dark:hover:bg-white/5">
+                    <div className="rounded-xl bg-[rgba(11,109,133,0.06)] p-3 transition-colors group-hover:bg-gradient-to-br group-hover:from-[var(--adm-cyan)] group-hover:to-[var(--adm-teal)] dark:bg-white/5">
+                      <Icon weight="light" className="h-5 w-5 text-[var(--adm-muted)] transition-colors group-hover:text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-[var(--adm-ink)]">{title}</p>
+                      <p className="text-xs text-[var(--adm-muted)]">{sub}</p>
+                    </div>
+                    <CaretRight weight="light" className="h-5 w-5 text-[var(--adm-muted)] transition-all group-hover:translate-x-1 group-hover:text-[var(--adm-ink)]" />
+                  </Link>
+                ))}
+              </div>
             </div>
           </div>
         </div>

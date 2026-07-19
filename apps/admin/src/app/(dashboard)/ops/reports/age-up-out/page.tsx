@@ -1,5 +1,6 @@
 'use client';
 
+import { ArrowClockwise, ArrowDown, ArrowLeft, ArrowUp, Calendar, CaretLeft, CaretRight, CheckCircle, CircleNotch, Clock, DownloadSimple, FileText, MagnifyingGlass, Play, TrendUp, User, Users, Warning, WarningCircle, XCircle } from '@phosphor-icons/react';
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import {
@@ -34,28 +35,6 @@ import {
   Textarea,
   Label,
 } from '@crm-eco/ui';
-import {
-  Search,
-  Clock,
-  CheckCircle2,
-  XCircle,
-  AlertTriangle,
-  Loader2,
-  RefreshCw,
-  ChevronLeft,
-  ChevronRight,
-  Play,
-  Calendar,
-  Download,
-  ArrowUp,
-  ArrowDown,
-  User,
-  Users,
-  TrendingUp,
-  AlertCircle,
-  FileText,
-  ArrowLeft,
-} from 'lucide-react';
 import { format, formatDistanceToNow, differenceInDays, addDays } from 'date-fns';
 import { toast } from 'sonner';
 import Link from 'next/link';
@@ -98,8 +77,8 @@ interface RunHistory {
 const statusConfig: Record<string, { icon: any; color: string; label: string; bgColor: string }> = {
   aging_up: { icon: ArrowUp, color: 'text-amber-600', label: 'Aging Up', bgColor: 'bg-amber-100' },
   aging_out: { icon: ArrowDown, color: 'text-red-600', label: 'Aging Out', bgColor: 'bg-red-100' },
-  age_limit_reached: { icon: AlertTriangle, color: 'text-red-600', label: 'Age Limit Reached', bgColor: 'bg-red-100' },
-  ok: { icon: CheckCircle2, color: 'text-emerald-600', label: 'OK', bgColor: 'bg-emerald-100' },
+  age_limit_reached: { icon: Warning, color: 'text-red-600', label: 'Age Limit Reached', bgColor: 'bg-red-100' },
+  ok: { icon: CheckCircle, color: 'text-emerald-600', label: 'OK', bgColor: 'bg-emerald-100' },
 };
 
 const eventTypeLabels: Record<string, string> = {
@@ -352,7 +331,7 @@ export default function AgeUpOutPage() {
   if (loading && !results.length) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+        <CircleNotch weight="light" className="w-8 h-8 animate-spin text-slate-400" />
       </div>
     );
   }
@@ -364,7 +343,7 @@ export default function AgeUpOutPage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link href="/ops" className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
-              <ArrowLeft className="w-5 h-5 text-slate-500" />
+              <ArrowLeft weight="light" className="w-5 h-5 text-slate-500" />
             </Link>
             <div>
               <h1 className="text-2xl font-bold text-slate-900">Age Up/Out Report</h1>
@@ -373,11 +352,11 @@ export default function AgeUpOutPage() {
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" onClick={exportToCSV}>
-              <Download className="w-4 h-4 mr-2" />
+              <DownloadSimple weight="light" className="w-4 h-4 mr-2" />
               Export CSV
             </Button>
             <Button onClick={() => setIsRunModalOpen(true)}>
-              <Play className="w-4 h-4 mr-2" />
+              <Play weight="light" className="w-4 h-4 mr-2" />
               Run Report
             </Button>
           </div>
@@ -385,7 +364,7 @@ export default function AgeUpOutPage() {
 
         {/* Warning Banner */}
         <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+          <WarningCircle weight="light" className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
           <div>
             <p className="font-medium text-amber-800">Age Transition Guidelines</p>
             <p className="text-sm text-amber-700 mt-1">
@@ -401,7 +380,7 @@ export default function AgeUpOutPage() {
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
                 <div className="p-3 rounded-xl bg-slate-100">
-                  <Users className="w-6 h-6 text-slate-600" />
+                  <Users weight="light" className="w-6 h-6 text-slate-600" />
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-slate-900">{totalCount}</p>
@@ -415,7 +394,7 @@ export default function AgeUpOutPage() {
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
                 <div className="p-3 rounded-xl bg-amber-100">
-                  <ArrowUp className="w-6 h-6 text-amber-600" />
+                  <ArrowUp weight="light" className="w-6 h-6 text-amber-600" />
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-amber-600">{agingUpCount}</p>
@@ -429,7 +408,7 @@ export default function AgeUpOutPage() {
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
                 <div className="p-3 rounded-xl bg-red-100">
-                  <ArrowDown className="w-6 h-6 text-red-600" />
+                  <ArrowDown weight="light" className="w-6 h-6 text-red-600" />
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-red-600">{agingOutCount}</p>
@@ -443,7 +422,7 @@ export default function AgeUpOutPage() {
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
                 <div className="p-3 rounded-xl bg-purple-100">
-                  <AlertTriangle className="w-6 h-6 text-purple-600" />
+                  <Warning weight="light" className="w-6 h-6 text-purple-600" />
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-purple-600">{urgentCount}</p>
@@ -459,15 +438,15 @@ export default function AgeUpOutPage() {
           <div className="flex items-center justify-between">
             <TabsList>
               <TabsTrigger value="upcoming">
-                <Clock className="w-4 h-4 mr-2" />
+                <Clock weight="light" className="w-4 h-4 mr-2" />
                 Upcoming
               </TabsTrigger>
               <TabsTrigger value="resolved">
-                <CheckCircle2 className="w-4 h-4 mr-2" />
+                <CheckCircle weight="light" className="w-4 h-4 mr-2" />
                 Resolved
               </TabsTrigger>
               <TabsTrigger value="history">
-                <FileText className="w-4 h-4 mr-2" />
+                <FileText weight="light" className="w-4 h-4 mr-2" />
                 Run History
               </TabsTrigger>
             </TabsList>
@@ -485,9 +464,9 @@ export default function AgeUpOutPage() {
                 <div className="flex flex-wrap gap-4">
                   <div className="flex-1 min-w-[200px]">
                     <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <MagnifyingGlass weight="light" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                       <Input
-                        placeholder="Search by member name..."
+                        placeholder="MagnifyingGlass by member name..."
                         value={searchQuery}
                         onChange={(e) => { setSearchQuery(e.target.value); setPage(0); }}
                         className="pl-9"
@@ -534,14 +513,14 @@ export default function AgeUpOutPage() {
                   </Select>
 
                   <Button variant="outline" onClick={fetchData}>
-                    <RefreshCw className="w-4 h-4" />
+                    <ArrowClockwise weight="light" className="w-4 h-4" />
                   </Button>
                 </div>
               </CardHeader>
               <CardContent className="p-0">
                 {results.length === 0 ? (
                   <div className="text-center py-12">
-                    <CheckCircle2 className="w-12 h-12 text-emerald-200 mx-auto mb-3" />
+                    <CheckCircle weight="light" className="w-12 h-12 text-emerald-200 mx-auto mb-3" />
                     <p className="text-slate-500">No upcoming age events</p>
                     <p className="text-sm text-slate-400">Run a report to check for age transitions</p>
                   </div>
@@ -631,11 +610,11 @@ export default function AgeUpOutPage() {
                   </p>
                   <div className="flex items-center gap-2">
                     <Button variant="outline" size="sm" onClick={() => setPage(p => p - 1)} disabled={page === 0}>
-                      <ChevronLeft className="w-4 h-4" />
+                      <CaretLeft weight="light" className="w-4 h-4" />
                     </Button>
                     <span className="text-sm text-slate-500">Page {page + 1} of {totalPages}</span>
                     <Button variant="outline" size="sm" onClick={() => setPage(p => p + 1)} disabled={page >= totalPages - 1}>
-                      <ChevronRight className="w-4 h-4" />
+                      <CaretRight weight="light" className="w-4 h-4" />
                     </Button>
                   </div>
                 </div>
@@ -651,7 +630,7 @@ export default function AgeUpOutPage() {
               <CardContent className="p-0">
                 {results.length === 0 ? (
                   <div className="text-center py-12">
-                    <FileText className="w-12 h-12 text-slate-200 mx-auto mb-3" />
+                    <FileText weight="light" className="w-12 h-12 text-slate-200 mx-auto mb-3" />
                     <p className="text-slate-500">No resolved events yet</p>
                   </div>
                 ) : (
@@ -714,10 +693,10 @@ export default function AgeUpOutPage() {
               <CardContent className="p-0">
                 {runHistory.length === 0 ? (
                   <div className="text-center py-12">
-                    <Clock className="w-12 h-12 text-slate-200 mx-auto mb-3" />
+                    <Clock weight="light" className="w-12 h-12 text-slate-200 mx-auto mb-3" />
                     <p className="text-slate-500">No report runs yet</p>
                     <Button className="mt-4" onClick={() => setIsRunModalOpen(true)}>
-                      <Play className="w-4 h-4 mr-2" />
+                      <Play weight="light" className="w-4 h-4 mr-2" />
                       Run Report
                     </Button>
                   </div>
@@ -784,15 +763,15 @@ export default function AgeUpOutPage() {
             </p>
             <ul className="mt-3 space-y-2 text-sm text-slate-500">
               <li className="flex items-center gap-2">
-                <ArrowUp className="w-4 h-4 text-amber-500" />
+                <ArrowUp weight="light" className="w-4 h-4 text-amber-500" />
                 Age-up events (tier transitions based on age)
               </li>
               <li className="flex items-center gap-2">
-                <ArrowDown className="w-4 h-4 text-red-500" />
+                <ArrowDown weight="light" className="w-4 h-4 text-red-500" />
                 Age-out events (members exceeding plan age limits)
               </li>
               <li className="flex items-center gap-2">
-                <Users className="w-4 h-4 text-purple-500" />
+                <Users weight="light" className="w-4 h-4 text-purple-500" />
                 Dependent age-out events
               </li>
             </ul>
@@ -800,7 +779,7 @@ export default function AgeUpOutPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsRunModalOpen(false)}>Cancel</Button>
             <Button onClick={handleRunReport} disabled={running}>
-              {running ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Play className="w-4 h-4 mr-2" />}
+              {running ? <CircleNotch weight="light" className="w-4 h-4 mr-2 animate-spin" /> : <Play weight="light" className="w-4 h-4 mr-2" />}
               Run Report
             </Button>
           </DialogFooter>
@@ -847,7 +826,7 @@ export default function AgeUpOutPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsActionModalOpen(false)}>Cancel</Button>
             <Button onClick={handleBulkAction} disabled={saving || !actionForm.action_taken}>
-              {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              {saving && <CircleNotch weight="light" className="w-4 h-4 mr-2 animate-spin" />}
               Mark as Resolved
             </Button>
           </DialogFooter>

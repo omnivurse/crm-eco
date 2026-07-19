@@ -1,4 +1,4 @@
-/* Admin Portal Styles */
+/* Admin Portal — Ethereal Glass (light default + dark OLED) */
 @import '@crm-eco/ui/styles/theme.css';
 @import '@crm-eco/ui/styles/auth.css';
 
@@ -6,29 +6,270 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Light Ethereal (default) */
+:root {
+  --primary: 192 85% 28%;
+  --primary-foreground: 0 0% 100%;
+  --ring: 192 85% 34%;
+  --background: 192 33% 97%;
+  --adm-void: #f6fafb;
+  --adm-panel: #ffffff;
+  --adm-ink: #0b1220;
+  --adm-muted: #64748b;
+  --adm-cyan: #0891b2;
+  --adm-teal: #0b6d85;
+  --adm-emerald: #059669;
+  --adm-amber: #d97706;
+  --adm-rose: #e11d48;
+  --adm-hairline: rgba(11, 109, 133, 0.10);
+  --adm-mesh-1: rgba(11, 109, 133, 0.08);
+  --adm-mesh-2: rgba(8, 145, 178, 0.06);
+  --adm-mesh-3: rgba(5, 150, 105, 0.05);
+  --adm-glass: rgba(255, 255, 255, 0.78);
+  --adm-glass-inner: #ffffff;
+  --adm-ease: cubic-bezier(0.32, 0.72, 0, 1);
+  --adm-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --adm-shadow:
+    0 1px 2px rgba(11, 18, 32, 0.04),
+    0 12px 40px rgba(11, 109, 133, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+/* Dark Ethereal OLED */
+.dark {
+  --background: 0 0% 2%;
+  --adm-void: #050505;
+  --adm-panel: #0a0a0a;
+  --adm-ink: #f4f4f5;
+  --adm-muted: #a1a1aa;
+  --adm-cyan: #22d3ee;
+  --adm-teal: #0b6d85;
+  --adm-emerald: #34d399;
+  --adm-amber: #fbbf24;
+  --adm-rose: #fb7185;
+  --adm-hairline: rgba(255, 255, 255, 0.08);
+  --adm-mesh-1: rgba(34, 211, 238, 0.10);
+  --adm-mesh-2: rgba(11, 109, 133, 0.12);
+  --adm-mesh-3: rgba(52, 211, 153, 0.07);
+  --adm-glass: rgba(10, 10, 10, 0.72);
+  --adm-glass-inner: rgba(10, 10, 10, 0.85);
+  --adm-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.4),
+    0 16px 48px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
 @layer base {
   * {
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
-    font-family: var(--font-body), 'Inter', system-ui, sans-serif;
+    @apply text-foreground antialiased;
+    font-family: var(--font-body), 'Plus Jakarta Sans', system-ui, sans-serif;
+    background: var(--adm-void);
+    color: var(--adm-ink);
   }
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-heading), 'Plus Jakarta Sans', system-ui, sans-serif;
+    letter-spacing: -0.02em;
   }
 }
 
-/* ============================================================
-   LOGIN HERO - Gradient Mesh Animations
-   ============================================================ */
+.adm-atmosphere {
+  position: relative;
+  min-height: 100dvh;
+  background:
+    radial-gradient(ellipse 50% 40% at 0% 20%, var(--adm-mesh-1), transparent 55%),
+    radial-gradient(ellipse 40% 35% at 100% 0%, var(--adm-mesh-2), transparent 50%),
+    radial-gradient(ellipse 45% 30% at 70% 100%, var(--adm-mesh-3), transparent 55%),
+    var(--adm-void);
+}
 
+.adm-grain {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.dark .adm-grain {
+  opacity: 0.04;
+}
+
+/* Floating glass rail */
+.adm-rail {
+  background: rgba(11, 109, 133, 0.04);
+  border: 1px solid var(--adm-hairline);
+  border-radius: 2rem;
+  padding: 0.35rem;
+  box-shadow: var(--adm-shadow);
+}
+
+.dark .adm-rail {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.adm-rail-inner {
+  background: var(--adm-glass);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-radius: calc(2rem - 0.35rem);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  overflow: hidden;
+}
+
+.dark .adm-rail-inner {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* Command island */
+.adm-cmd {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.4rem 0.45rem 0.4rem 1rem;
+  border-radius: 999px;
+  background: var(--adm-glass);
+  border: 1px solid var(--adm-hairline);
+  box-shadow: var(--adm-shadow);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+/* Double-bezel cards */
+.adm-bezel {
+  background: rgba(11, 109, 133, 0.04);
+  border: 1px solid var(--adm-hairline);
+  border-radius: 1.75rem;
+  padding: 0.35rem;
+  transition: transform 700ms var(--adm-ease), box-shadow 700ms var(--adm-ease);
+}
+
+.dark .adm-bezel {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.adm-bezel:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--adm-shadow);
+}
+
+.adm-bezel-inner {
+  background: var(--adm-glass-inner);
+  border-radius: calc(1.75rem - 0.35rem);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.85);
+  overflow: hidden;
+  height: 100%;
+}
+
+.dark .adm-bezel-inner {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+/* Island CTA */
+.adm-btn-island {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.4rem 0.4rem 0.4rem 1rem;
+  border-radius: 999px;
+  border: 0;
+  background: var(--adm-ink);
+  color: var(--adm-void);
+  font-size: 0.75rem;
+  font-weight: 650;
+  transition: transform 600ms var(--adm-ease);
+}
+
+.dark .adm-btn-island {
+  background: #fff;
+  color: #050505;
+}
+
+.adm-btn-island:hover {
+  transform: scale(0.98);
+}
+
+.adm-btn-island .adm-btn-ico {
+  width: 1.65rem;
+  height: 1.65rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.15);
+  display: grid;
+  place-items: center;
+  transition: transform 600ms var(--adm-ease);
+}
+
+.dark .adm-btn-island .adm-btn-ico {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.adm-btn-island:hover .adm-btn-ico {
+  transform: translate(2px, -1px) scale(1.05);
+}
+
+/* Nav pill */
+.adm-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  border-radius: 999px;
+  padding: 0.65rem 0.85rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--adm-muted);
+  transition: all 500ms var(--adm-ease);
+}
+
+.adm-nav-link:hover {
+  color: var(--adm-ink);
+  background: rgba(11, 109, 133, 0.06);
+}
+
+.dark .adm-nav-link:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.adm-nav-link-active {
+  color: var(--adm-cyan);
+  background: rgba(11, 109, 133, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(11, 109, 133, 0.18);
+}
+
+.dark .adm-nav-link-active {
+  background: rgba(34, 211, 238, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(34, 211, 238, 0.2);
+}
+
+/* Asymmetrical bento helpers */
+.adm-bento {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 768px) {
+  .adm-bento {
+    grid-template-columns: repeat(12, 1fr);
+    gap: 1.1rem;
+  }
+  .adm-span-3 { grid-column: span 3; }
+  .adm-span-4 { grid-column: span 4; }
+  .adm-span-5 { grid-column: span 5; }
+  .adm-span-6 { grid-column: span 6; }
+  .adm-span-7 { grid-column: span 7; }
+  .adm-span-8 { grid-column: span 8; }
+  .adm-span-12 { grid-column: span 12; }
+}
+
+/* Login mesh (kept, retinted) */
 .login-blob {
   position: absolute;
   border-radius: 50%;
   filter: blur(80px);
-  opacity: 0.6;
-  mix-blend-mode: normal;
+  opacity: 0.55;
   will-change: transform;
 }
 
@@ -38,20 +279,17 @@
   50%      { transform: translate(-30px, 50px) scale(0.95); }
   75%      { transform: translate(40px, 20px) scale(1.04); }
 }
-
 @keyframes login-blob-drift-2 {
   0%, 100% { transform: translate(0, 0) scale(1); }
   25%      { transform: translate(-50px, 30px) scale(1.05); }
   50%      { transform: translate(40px, -60px) scale(0.97); }
   75%      { transform: translate(-20px, -30px) scale(1.02); }
 }
-
 @keyframes login-blob-drift-3 {
   0%, 100% { transform: translate(0, 0) scale(1); }
   33%      { transform: translate(70px, 40px) scale(1.06); }
   66%      { transform: translate(-60px, -20px) scale(0.94); }
 }
-
 @keyframes login-blob-drift-4 {
   0%, 100% { transform: translate(0, 0) scale(1); }
   20%      { transform: translate(-40px, -50px) scale(1.03); }
@@ -66,7 +304,6 @@
 .login-blob-drift-4 { animation: login-blob-drift-4 20s ease-in-out infinite; }
 
 @media (prefers-reduced-motion: reduce) {
-  .login-blob {
-    animation: none !important;
-  }
+  .login-blob { animation: none !important; }
+  .adm-bezel { transition: none; }
 }

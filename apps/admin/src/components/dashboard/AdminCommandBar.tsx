@@ -1,4 +1,4 @@
-import { Shield, Clock, AlertTriangle, FileCheck, CreditCard, DollarSign } from 'lucide-react';
+import { Shield, Warning, ClipboardText, CreditCard, CurrencyDollar } from '@phosphor-icons/react/dist/ssr';
 import type { AdminConsoleStats } from '@/lib/admin-console-queries';
 
 interface AdminCommandBarProps {
@@ -25,16 +25,10 @@ function getPaymentRecency(lastAt: string | null): { label: string; severity: Se
   return { label: `${daysAgo}d ago`, severity: 'critical' };
 }
 
-const severityDot: Record<Severity, string> = {
-  healthy: 'bg-emerald-400',
-  warning: 'bg-amber-400',
-  critical: 'bg-red-400',
-};
-
-const severityText: Record<Severity, string> = {
-  healthy: 'text-emerald-300',
-  warning: 'text-amber-300',
-  critical: 'text-red-300',
+const severityColor: Record<Severity, string> = {
+  healthy: 'var(--adm-emerald)',
+  warning: 'var(--adm-amber)',
+  critical: 'var(--adm-rose)',
 };
 
 function StatusPill({
@@ -43,17 +37,18 @@ function StatusPill({
   value,
   severity,
 }: {
-  icon: typeof Clock;
+  icon: typeof Shield;
   label: string;
   value: string | number;
   severity: Severity;
 }) {
+  const color = severityColor[severity];
   return (
-    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/[0.07] backdrop-blur-sm border border-white/[0.10]">
-      <div className={`w-1.5 h-1.5 rounded-full ${severityDot[severity]}`} />
-      <Icon className={`w-3.5 h-3.5 ${severityText[severity]}`} />
-      <span className="text-xs text-white/50">{label}</span>
-      <span className={`text-xs font-semibold ${severityText[severity]}`}>{value}</span>
+    <div className="flex items-center gap-2 rounded-full border border-[var(--adm-hairline)] bg-[rgba(11,109,133,0.04)] px-3 py-1.5 dark:bg-white/5">
+      <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: color }} />
+      <Icon weight="light" className="h-3.5 w-3.5" style={{ color }} />
+      <span className="text-xs text-[var(--adm-muted)]">{label}</span>
+      <span className="text-xs font-semibold" style={{ color }}>{value}</span>
     </div>
   );
 }
@@ -76,20 +71,23 @@ export function AdminCommandBar({ adminName, orgName, stats }: AdminCommandBarPr
   const commissionSeverity = getSeverity(commissionStats.pendingPayouts, 1, 5);
 
   return (
-    <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-[#0f172a] via-[#004a7c] to-[#0891b2] px-5 py-4 shadow-lg shadow-[#0f172a]/20 ring-1 ring-white/10">
-      <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+    <div className="adm-bezel">
+      <div className="adm-bezel-inner flex flex-col gap-4 px-5 py-4 sm:px-6 sm:py-5 lg:flex-row lg:items-center lg:justify-between">
         {/* Left: Identity */}
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-bold text-white tracking-tight">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[var(--adm-cyan)] to-[var(--adm-teal)] shadow-sm">
+            <Shield weight="light" className="h-5 w-5 text-white" />
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm font-bold tracking-tight text-[var(--adm-ink)]">
               {orgName}
             </span>
-            <span className="text-white/30">|</span>
-            <span className="text-sm text-white/80">
+            <span className="text-[var(--adm-muted)]">·</span>
+            <span className="text-sm text-[var(--adm-muted)]">
               {adminName}
             </span>
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider bg-[#f59e0b]/20 text-[#f59e0b] border border-[#f59e0b]/30">
-              <Shield className="w-2.5 h-2.5" />
+            <span className="inline-flex items-center gap-1 rounded-full border border-[var(--adm-hairline)] bg-[rgba(217,119,6,0.10)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--adm-amber)]">
+              <Shield weight="light" className="h-2.5 w-2.5" />
               Admin
             </span>
           </div>
@@ -104,19 +102,19 @@ export function AdminCommandBar({ adminName, orgName, stats }: AdminCommandBarPr
             severity={paymentRecency.severity}
           />
           <StatusPill
-            icon={AlertTriangle}
+            icon={Warning}
             label="Failures Today"
             value={billingStats.failedToday}
             severity={failureSeverity}
           />
           <StatusPill
-            icon={FileCheck}
+            icon={ClipboardText}
             label="Pending Reviews"
             value={enrollmentStats.pendingReview}
             severity={reviewSeverity}
           />
           <StatusPill
-            icon={DollarSign}
+            icon={CurrencyDollar}
             label="Pending Commissions"
             value={formatCurrency(commissionStats.pendingAmount)}
             severity={commissionSeverity}

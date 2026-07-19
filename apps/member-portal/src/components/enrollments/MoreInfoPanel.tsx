@@ -17,7 +17,7 @@
 import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, Button, Textarea, Badge } from '@crm-eco/ui';
-import { AlertTriangle, MessageSquare, Send, CheckCircle, Loader2 } from 'lucide-react';
+import { Warning, ChatCircle, PaperPlaneTilt, CheckCircle, CircleNotch } from '@phosphor-icons/react';
 import { format } from 'date-fns';
 import { respondMoreInfo } from '@/app/enroll/actions';
 import type { ApplicantReview } from '@/lib/data/moreInfo';
@@ -75,7 +75,7 @@ export function MoreInfoPanel({ enrollmentId, reviews }: MoreInfoPanelProps) {
     <Card className="border-amber-200 bg-amber-50/60">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-lg text-amber-900">
-          <AlertTriangle className="w-5 h-5 text-amber-600" />
+          <Warning weight="light" className="h-5 w-5 text-amber-600" />
           More Information Needed
         </CardTitle>
       </CardHeader>
@@ -131,7 +131,7 @@ export function MoreInfoPanel({ enrollmentId, reviews }: MoreInfoPanelProps) {
                 className="rounded-lg border border-slate-200 bg-white p-3"
               >
                 <p className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
-                  <MessageSquare className="w-3 h-3" />
+                  <ChatCircle weight="light" className="h-3 w-3" />
                   {r.created_at
                     ? format(new Date(r.created_at), 'MMM d, yyyy h:mm a')
                     : 'You'}
@@ -147,7 +147,7 @@ export function MoreInfoPanel({ enrollmentId, reviews }: MoreInfoPanelProps) {
         {/* Response form */}
         {success ? (
           <div className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 p-3">
-            <CheckCircle className="w-5 h-5 text-green-600" />
+            <CheckCircle weight="light" className="h-5 w-5 text-green-600" />
             <p className="text-sm text-green-800">
               Thanks — your response was submitted and your enrollment is back under
               review.
@@ -171,12 +171,12 @@ export function MoreInfoPanel({ enrollmentId, reviews }: MoreInfoPanelProps) {
               <Button onClick={submit} disabled={isPending || !response.trim()} className="gap-2">
                 {isPending ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <CircleNotch weight="light" className="h-4 w-4 animate-spin" />
                     Submitting…
                   </>
                 ) : (
                   <>
-                    <Send className="w-4 h-4" />
+                    <PaperPlaneTilt weight="light" className="h-4 w-4" />
                     Submit Response
                   </>
                 )}

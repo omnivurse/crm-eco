@@ -3,15 +3,14 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@crm-eco/lib/supabase/client';
-import { 
-  Network, 
-  Users, 
-  TrendingUp,
-  ChevronRight,
-  User,
-  Mail,
+import {
+  ShareNetwork,
+  Users,
+  TrendUp,
+  CaretRight,
+  Envelope,
   Phone,
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@crm-eco/ui/components/card';
 import { Button } from '@crm-eco/ui/components/button';
 import { Badge } from '@crm-eco/ui/components/badge';
@@ -113,7 +112,7 @@ export default function AgentDownlinePage() {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <Network className="h-12 w-12 animate-pulse text-slate-400" />
+        <ShareNetwork weight="light" className="h-12 w-12 animate-pulse text-slate-400" />
       </div>
     );
   }
@@ -133,8 +132,8 @@ export default function AgentDownlinePage() {
                 <p className="text-sm text-slate-500">Total Agents</p>
                 <p className="text-2xl font-bold">{stats.totalAgents}</p>
               </div>
-              <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
-                <Network className="h-5 w-5 text-purple-600" />
+              <div className="w-10 h-10 rounded-full bg-[rgba(11,109,133,0.1)] flex items-center justify-center">
+                <ShareNetwork weight="light" className="h-5 w-5 text-[var(--mp-teal)]" />
               </div>
             </div>
           </CardContent>
@@ -147,7 +146,7 @@ export default function AgentDownlinePage() {
                 <p className="text-2xl font-bold text-green-600">{stats.activeAgents}</p>
               </div>
               <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-                <Users className="h-5 w-5 text-green-600" />
+                <Users weight="light" className="h-5 w-5 text-green-600" />
               </div>
             </div>
           </CardContent>
@@ -157,10 +156,10 @@ export default function AgentDownlinePage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-slate-500">Total Members (Downline)</p>
-                <p className="text-2xl font-bold text-blue-600">{stats.totalMembers}</p>
+                <p className="text-2xl font-bold text-[var(--mp-teal)]">{stats.totalMembers}</p>
               </div>
-              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                <TrendingUp className="h-5 w-5 text-blue-600" />
+              <div className="w-10 h-10 rounded-full bg-[rgba(11,109,133,0.1)] flex items-center justify-center">
+                <TrendUp weight="light" className="h-5 w-5 text-[var(--mp-teal)]" />
               </div>
             </div>
           </CardContent>
@@ -175,7 +174,7 @@ export default function AgentDownlinePage() {
         <CardContent>
           {downlineAgents.length === 0 ? (
             <div className="text-center py-12">
-              <Network className="h-12 w-12 mx-auto mb-4 text-slate-300" />
+              <ShareNetwork weight="light" className="h-12 w-12 mx-auto mb-4 text-slate-300" />
               <h3 className="text-lg font-medium text-slate-900 mb-2">No downline agents yet</h3>
               <p className="text-slate-500">
                 Agents you recruit will appear here.
@@ -189,7 +188,7 @@ export default function AgentDownlinePage() {
                   className="flex items-center justify-between p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors"
                 >
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-medium">
+                    <div className="w-12 h-12 rounded-full bg-[rgba(11,109,133,0.1)] flex items-center justify-center text-[var(--mp-teal)] font-medium">
                       {agent.first_name.charAt(0)}{agent.last_name.charAt(0)}
                     </div>
                     <div>
@@ -201,12 +200,12 @@ export default function AgentDownlinePage() {
                       </div>
                       <div className="flex items-center gap-4 mt-1 text-sm text-slate-500">
                         <span className="flex items-center gap-1">
-                          <Mail className="h-3 w-3" />
+                          <Envelope weight="light" className="h-3 w-3" />
                           {agent.email}
                         </span>
                         {agent.phone && (
                           <span className="flex items-center gap-1">
-                            <Phone className="h-3 w-3" />
+                            <Phone weight="light" className="h-3 w-3" />
                             {agent.phone}
                           </span>
                         )}
@@ -220,7 +219,7 @@ export default function AgentDownlinePage() {
                     </div>
                     <Link href={`/agent/downline/${agent.id}`}>
                       <Button variant="ghost" size="icon">
-                        <ChevronRight className="h-5 w-5" />
+                        <CaretRight weight="light" className="h-5 w-5" />
                       </Button>
                     </Link>
                   </div>

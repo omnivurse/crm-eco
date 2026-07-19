@@ -1,8 +1,8 @@
+import { ArrowLeft, Calendar, Play, X } from '@phosphor-icons/react/dist/ssr';
 import { Card, CardContent, CardHeader, CardTitle, Badge, Button } from '@crm-eco/ui';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { format } from 'date-fns';
-import { ArrowLeft, Calendar, Play, X } from 'lucide-react';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { getActiveTenant } from '@/lib/tenant';
 
@@ -77,7 +77,7 @@ export default async function PriceChangeDetailPage({ params }: { params: Promis
         <div className="flex items-center gap-3">
           <Link href="/billing/price-changes">
             <Button variant="ghost" size="sm">
-              <ArrowLeft className="mr-2 h-4 w-4" />
+              <ArrowLeft weight="light" className="mr-2 h-4 w-4" />
               Back
             </Button>
           </Link>
@@ -91,13 +91,13 @@ export default async function PriceChangeDetailPage({ params }: { params: Promis
           <div className="flex gap-2">
             <form action={`/api/price-changes/${id}/execute`} method="POST">
               <Button type="submit" size="sm">
-                <Play className="mr-2 h-4 w-4" />
+                <Play weight="light" className="mr-2 h-4 w-4" />
                 Execute Now
               </Button>
             </form>
             <form action={`/api/price-changes/${id}/cancel`} method="POST">
               <Button type="submit" variant="outline" size="sm">
-                <X className="mr-2 h-4 w-4" />
+                <X weight="light" className="mr-2 h-4 w-4" />
                 Cancel
               </Button>
             </form>
@@ -188,7 +188,7 @@ export default async function PriceChangeDetailPage({ params }: { params: Promis
               {audit.map((row) => (
                 <div key={row.id} className="flex items-center justify-between rounded border p-2 text-sm">
                   <div className="flex items-center gap-2">
-                    <Calendar className="h-3 w-3 text-muted-foreground" />
+                    <Calendar weight="light" className="h-3 w-3 text-muted-foreground" />
                     <span className="text-muted-foreground">{format(new Date(row.applied_at), 'MMM d h:mm a')}</span>
                     <Link href={`/enrollments/${row.enrollment_id}`} className="font-mono text-xs text-blue-600 hover:underline">
                       {row.enrollment_id.slice(0, 8)}

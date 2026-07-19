@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { FileUp, Loader2, Paperclip, Trash2, AlertCircle } from 'lucide-react';
+import { UploadSimple, CircleNotch, Paperclip, Trash, WarningCircle } from '@phosphor-icons/react';
 import { Button } from '@crm-eco/ui';
 import {
   NEED_ATTACHMENT_ACCEPT,
@@ -125,7 +125,7 @@ export function NeedDocumentUpload({
           value={documentType}
           onChange={(e) => setDocumentType(e.target.value)}
           disabled={!canUpload}
-          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400 disabled:cursor-not-allowed disabled:opacity-60"
+          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-[var(--mp-teal)] focus:outline-none focus:ring-1 focus:ring-[var(--mp-teal)] disabled:cursor-not-allowed disabled:opacity-60"
         >
           {DOCUMENT_TYPES.map((t) => (
             <option key={t.value} value={t.value}>
@@ -165,13 +165,13 @@ export function NeedDocumentUpload({
         onDrop={canUpload ? handleDrop : undefined}
         className={`rounded-lg border-2 border-dashed p-6 text-center transition ${
           dragOver
-            ? 'border-blue-400 bg-blue-50'
+            ? 'border-[var(--mp-teal)] bg-[var(--mp-mist)]'
             : canUpload
               ? 'border-slate-300 bg-white hover:border-slate-400'
               : 'border-slate-200 bg-slate-50 opacity-60'
         }`}
       >
-        <FileUp className="mx-auto mb-2 h-8 w-8 text-slate-400" aria-hidden />
+        <UploadSimple weight="light" className="mx-auto mb-2 h-8 w-8 text-slate-400" aria-hidden />
         <p className="text-sm font-medium text-slate-900">
           {canUpload ? 'Drop files here or choose from your device' : 'Save step 1 first to upload documents'}
         </p>
@@ -186,7 +186,7 @@ export function NeedDocumentUpload({
           disabled={!canUpload}
           onClick={() => inputRef.current?.click()}
         >
-          <Paperclip className="mr-2 h-4 w-4" aria-hidden />
+          <Paperclip weight="light" className="mr-2 h-4 w-4" aria-hidden />
           Choose files
         </Button>
       </div>
@@ -195,7 +195,7 @@ export function NeedDocumentUpload({
         <ul className="divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white">
           {attachments.map((a) => (
             <li key={a.id} className="flex items-center gap-3 px-4 py-3 text-sm">
-              <Paperclip className="h-4 w-4 shrink-0 text-slate-400" aria-hidden />
+              <Paperclip weight="light" className="h-4 w-4 shrink-0 text-slate-400" aria-hidden />
               <div className="min-w-0 flex-1">
                 <p className="truncate font-medium text-slate-900">{a.file_name}</p>
                 {a.size_bytes != null && (
@@ -208,9 +208,9 @@ export function NeedDocumentUpload({
           {pending.map((p) => (
             <li key={p.key} className="flex items-center gap-3 px-4 py-3 text-sm">
               {p.status === 'uploading' ? (
-                <Loader2 className="h-4 w-4 shrink-0 animate-spin text-blue-600" aria-hidden />
+                <CircleNotch weight="light" className="h-4 w-4 shrink-0 animate-spin text-[var(--mp-teal)]" aria-hidden />
               ) : (
-                <AlertCircle className="h-4 w-4 shrink-0 text-red-500" aria-hidden />
+                <WarningCircle weight="light" className="h-4 w-4 shrink-0 text-red-500" aria-hidden />
               )}
               <div className="min-w-0 flex-1">
                 <p className="truncate font-medium text-slate-900">{p.file.name}</p>
@@ -225,7 +225,7 @@ export function NeedDocumentUpload({
                   aria-label={`Dismiss failed upload ${p.file.name}`}
                   onClick={() => dismissPending(p.key)}
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Trash weight="light" className="h-4 w-4" />
                 </button>
               )}
             </li>

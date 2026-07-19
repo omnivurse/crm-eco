@@ -1,5 +1,6 @@
 'use client';
 
+import { ArrowLeft, ClipboardText, CreditCard, FileText, Key, Package, Pulse, ShieldCheck, Users } from '@phosphor-icons/react';
 import { useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -17,17 +18,6 @@ import {
   TabsList,
   TabsTrigger,
 } from '@crm-eco/ui';
-import {
-  ArrowLeft,
-  CreditCard,
-  FileText,
-  KeyRound,
-  Shield,
-  Users,
-  Package,
-  Activity,
-  ClipboardList,
-} from 'lucide-react';
 import { MemberForm } from '@/components/members/MemberForm';
 import { MemberBillingTab } from '@/components/billing/MemberBillingTab';
 import { MergeMembersSection } from '@/components/members/command-center/MergeMembersSection';
@@ -125,7 +115,7 @@ export function MemberCommandCenter({
         <div className="flex items-center gap-4">
           <Link href="/members">
             <Button variant="ghost" size="icon" type="button">
-              <ArrowLeft className="h-5 w-5" />
+              <ArrowLeft weight="light" className="h-5 w-5" />
             </Button>
           </Link>
           <div>
@@ -275,7 +265,7 @@ export function MemberCommandCenter({
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
+                <Users weight="light" className="h-5 w-5" />
                 Household summary
               </CardTitle>
               <CardDescription>
@@ -367,7 +357,7 @@ export function MemberCommandCenter({
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
+                <FileText weight="light" className="h-5 w-5" />
                 Invoices
               </CardTitle>
               <CardDescription>Table: <code className="text-xs">invoices</code></CardDescription>
@@ -393,7 +383,7 @@ export function MemberCommandCenter({
           <Card className="mb-4">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <CreditCard className="h-5 w-5" />
+                <CreditCard weight="light" className="h-5 w-5" />
                 Payment profiles
               </CardTitle>
               <CardDescription>
@@ -450,7 +440,7 @@ export function MemberCommandCenter({
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Activity className="h-5 w-5" />
+                <Pulse weight="light" className="h-5 w-5" />
                 Admin activity
               </CardTitle>
               <CardDescription>Table: <code className="text-xs">admin_activity_log</code></CardDescription>
@@ -476,7 +466,7 @@ export function MemberCommandCenter({
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5" />
+                <ShieldCheck weight="light" className="h-5 w-5" />
                 Enrollment audit log
               </CardTitle>
               <CardDescription>
@@ -535,7 +525,7 @@ export function MemberCommandCenter({
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <ClipboardList className="h-5 w-5" />
+                <ClipboardText weight="light" className="h-5 w-5" />
                 Member change requests
               </CardTitle>
               <CardDescription>Table: <code className="text-xs">member_change_requests</code></CardDescription>
@@ -560,7 +550,7 @@ export function MemberCommandCenter({
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <KeyRound className="h-5 w-5" />
+                <Key weight="light" className="h-5 w-5" />
                 Merge members
               </CardTitle>
               <CardDescription>Merge a duplicate member into this one — atomic + recalc-correct</CardDescription>

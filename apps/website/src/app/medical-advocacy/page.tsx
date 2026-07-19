@@ -2,21 +2,21 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Button } from '@crm-eco/ui';
 import {
-  ArrowRight,
-  Scale,
-  FileSearch,
+  ArrowUpRight,
+  Scales,
+  FileMagnifyingGlass,
   Gavel,
-  BadgeDollarSign,
+  CurrencyDollar,
   ShieldCheck,
   PhoneCall,
-  ClipboardCheck,
+  ClipboardText,
   Receipt,
-  TrendingDown,
-  HeartHandshake,
+  TrendDown,
+  Handshake,
   UserCheck,
   Clock,
-  Sparkles,
-} from 'lucide-react';
+  Sparkle,
+} from '@phosphor-icons/react/dist/ssr';
 import { Reveal } from '@/components/sections/Reveal';
 import {
   Container,
@@ -39,7 +39,7 @@ export const metadata: Metadata = {
 
 const WHAT_WE_DO = [
   {
-    icon: FileSearch,
+    icon: FileMagnifyingGlass,
     title: 'Review every line',
     body: 'We read large bills line by line to catch duplicate charges, upcoding, services you never received, and the simple mistakes that quietly inflate what you are asked to pay.',
   },
@@ -49,7 +49,7 @@ const WHAT_WE_DO = [
     body: 'Our advocates speak the language of billing departments. We push back on inflated charges and work directly with providers to bring large bills down to a fair number.',
   },
   {
-    icon: BadgeDollarSign,
+    icon: CurrencyDollar,
     title: 'Secure fair cash pricing',
     body: 'Hospitals and clinics often have a far lower cash price than the sticker amount. We surface it and arrange that pricing before a need is ever shared by the community.',
   },
@@ -64,7 +64,7 @@ const WHAT_WE_DO = [
     body: 'No more hold music or being transferred in circles. Your advocate makes the calls, asks the right questions, and keeps a record of every conversation for you.',
   },
   {
-    icon: ClipboardCheck,
+    icon: ClipboardText,
     title: 'Explain what you owe',
     body: 'When the dust settles, we walk you through exactly what the community shared, what was reduced, and what remains — in plain language, with no jargon.',
   },
@@ -74,11 +74,11 @@ const PROCESS = [
   {
     icon: Receipt,
     step: '01',
-    title: 'Send us the bill',
+    title: 'PaperPlaneTilt us the bill',
     body: 'When a large bill arrives, forward it through your member portal or call us. There is nothing to fight on your own — your advocate takes it from there.',
   },
   {
-    icon: FileSearch,
+    icon: FileMagnifyingGlass,
     step: '02',
     title: 'We audit the charges',
     body: 'We compare the bill against fair market and cash pricing, flag errors, and identify every charge that deserves a second look before anyone pays a dollar.',
@@ -90,7 +90,7 @@ const PROCESS = [
     body: 'Your advocate contacts the provider, disputes inflated charges, and works toward a fair, agreed price — keeping you informed at each step.',
   },
   {
-    icon: TrendingDown,
+    icon: TrendDown,
     step: '04',
     title: 'Costs come down',
     body: 'Once a fair price is settled, the eligible amount is shared by the community and you see exactly what you saved — often a fraction of the original total.',
@@ -99,14 +99,14 @@ const PROCESS = [
 
 const EXAMPLE_SAVINGS = [
   {
-    icon: Scale,
+    icon: Scales,
     label: 'Emergency room visit',
     billed: '$9,200',
     settled: '$3,100',
     note: 'After duplicate charges were removed and a fair cash price was arranged with the hospital.',
   },
   {
-    icon: ClipboardCheck,
+    icon: ClipboardText,
     label: 'Outpatient surgery',
     billed: '$26,500',
     settled: '$11,400',
@@ -156,7 +156,7 @@ export default function MedicalAdvocacyPage() {
                     className="w-full gap-2 bg-white font-semibold text-pif-navy-800 shadow-lg hover:bg-pif-mist sm:w-auto"
                   >
                     Become a Member
-                    <ArrowRight className="h-4 w-4" />
+                    <ArrowUpRight className="h-4 w-4" />
                   </Button>
                 </Link>
                 <Link href={`tel:${PHONE.tel}`}>
@@ -281,7 +281,7 @@ export default function MedicalAdvocacyPage() {
 
           <Reveal delay={0.15}>
             <p className="mx-auto mt-8 flex max-w-2xl items-start justify-center gap-2 text-center text-sm text-slate-500">
-              <Sparkles className="mt-0.5 h-4 w-4 flex-shrink-0 text-pif-gold-500" aria-hidden="true" />
+              <Sparkle className="mt-0.5 h-4 w-4 flex-shrink-0 text-pif-gold-500" aria-hidden="true" />
               <span>
                 Figures above are illustrative examples only — not guarantees, quotes, or typical
                 results. Actual savings vary by provider, procedure, and circumstance.
@@ -328,7 +328,7 @@ export default function MedicalAdvocacyPage() {
           <div className="mx-auto grid max-w-5xl gap-6 md:grid-cols-3">
             {[
               {
-                icon: HeartHandshake,
+                icon: Handshake,
                 title: 'Included with membership',
                 body: 'Advocacy comes standard with your membership. There is no separate fee to have a trained advocate review and negotiate your large bills.',
               },
@@ -340,7 +340,7 @@ export default function MedicalAdvocacyPage() {
               {
                 icon: Clock,
                 title: 'We act early',
-                body: 'The sooner we see a large bill, the more we can do. Send it our way as soon as it arrives, and we will get to work before charges become collections.',
+                body: 'The sooner we see a large bill, the more we can do. PaperPlaneTilt it our way as soon as it arrives, and we will get to work before charges become collections.',
               },
             ].map((c, i) => (
               <Reveal key={c.title} delay={i * 0.08}>

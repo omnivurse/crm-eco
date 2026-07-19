@@ -9,12 +9,9 @@ import {
   Shield,
   CheckCircle,
   ArrowRight,
-  Loader2,
-  Phone,
-  Mail,
-  MapPin,
+  CircleNotch,
   Star,
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
 import { Label } from '@crm-eco/ui/components/label';
@@ -111,11 +108,11 @@ export function PublicEnrollmentPage({ landingPage, plans }: PublicEnrollmentPag
 
   if (submitted) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-cyan-50 to-blue-50 p-4">
-        <Card className="max-w-md w-full">
+      <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(ellipse_60%_40%_at_10%_0%,rgba(11,109,133,0.08),transparent_55%),radial-gradient(ellipse_50%_35%_at_90%_20%,rgba(14,140,154,0.06),transparent_50%),var(--mp-canvas,#f6fafb)] p-4">
+        <Card className="w-full max-w-md">
           <CardContent className="pt-8 text-center">
-            <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <CheckCircle className="w-8 h-8 text-emerald-600" />
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[rgba(11,109,133,0.1)]">
+              <CheckCircle weight="light" className="h-8 w-8 text-[var(--mp-teal)]" />
             </div>
             <h2 className="text-2xl font-bold text-gray-900 mb-2">
               Thank You for Enrolling!
@@ -134,7 +131,7 @@ export function PublicEnrollmentPage({ landingPage, plans }: PublicEnrollmentPag
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-cyan-50">
+    <div className="min-h-screen bg-[radial-gradient(ellipse_60%_40%_at_10%_0%,rgba(11,109,133,0.07),transparent_55%),radial-gradient(ellipse_50%_35%_at_90%_20%,rgba(14,140,154,0.05),transparent_50%),var(--mp-canvas,#f6fafb)]">
       {/* Hero Section */}
       <div
         className="relative py-20 px-4"
@@ -171,15 +168,15 @@ export function PublicEnrollmentPage({ landingPage, plans }: PublicEnrollmentPag
           {/* Trust Badges */}
           <div className="flex items-center justify-center gap-8 text-white/80">
             <div className="flex items-center gap-2">
-              <Shield className="w-5 h-5" />
+              <Shield weight="light" className="h-5 w-5" />
               <span className="text-sm">Secure & Private</span>
             </div>
             <div className="flex items-center gap-2">
-              <Users className="w-5 h-5" />
+              <Users weight="light" className="h-5 w-5" />
               <span className="text-sm">10,000+ Members</span>
             </div>
             <div className="flex items-center gap-2">
-              <Heart className="w-5 h-5" />
+              <Heart weight="light" className="h-5 w-5" />
               <span className="text-sm">Caring Community</span>
             </div>
           </div>
@@ -224,7 +221,8 @@ export function PublicEnrollmentPage({ landingPage, plans }: PublicEnrollmentPag
                     style={{ backgroundColor: `${landingPage.primary_color}20` }}
                   >
                     <benefit.icon
-                      className="w-6 h-6"
+                      weight="light"
+                      className="h-6 w-6"
                       style={{ color: landingPage.primary_color }}
                     />
                   </div>
@@ -244,7 +242,7 @@ export function PublicEnrollmentPage({ landingPage, plans }: PublicEnrollmentPag
                   {plans.slice(0, 3).map((plan) => (
                     <div
                       key={plan.id}
-                      className="p-4 rounded-lg border border-gray-200 bg-white hover:border-cyan-300 transition-colors"
+                      className="rounded-lg border border-gray-200 bg-white p-4 transition-colors hover:border-[rgba(11,109,133,0.35)]"
                     >
                       <div className="flex items-center justify-between">
                         <div>
@@ -378,13 +376,13 @@ export function PublicEnrollmentPage({ landingPage, plans }: PublicEnrollmentPag
                   >
                     {loading ? (
                       <>
-                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                        <CircleNotch weight="light" className="mr-2 h-5 w-5 animate-spin" />
                         Processing...
                       </>
                     ) : (
                       <>
                         Start Enrollment
-                        <ArrowRight className="w-5 h-5 ml-2" />
+                        <ArrowRight weight="light" className="ml-2 h-5 w-5" />
                       </>
                     )}
                   </Button>

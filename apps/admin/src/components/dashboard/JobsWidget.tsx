@@ -1,5 +1,6 @@
 'use client';
 
+import { ArrowClockwise, Calendar, CaretRight, CheckCircle, CircleNotch, Clock, FileText, Lightning, Play, Warning, XCircle } from '@phosphor-icons/react';
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import {
@@ -15,19 +16,6 @@ import {
   DialogTitle,
   ScrollArea,
 } from '@crm-eco/ui';
-import {
-  Play,
-  CheckCircle2,
-  XCircle,
-  Clock,
-  Loader2,
-  ChevronRight,
-  Zap,
-  Calendar,
-  FileText,
-  RefreshCw,
-  AlertTriangle,
-} from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
 import Link from 'next/link';
 
@@ -57,10 +45,10 @@ interface JobsWidgetProps {
 
 const statusConfig = {
   pending: { icon: Clock, color: 'bg-slate-100 text-slate-600', label: 'Pending' },
-  running: { icon: Loader2, color: 'bg-blue-100 text-blue-600', label: 'Running' },
-  completed: { icon: CheckCircle2, color: 'bg-emerald-100 text-emerald-600', label: 'Completed' },
+  running: { icon: CircleNotch, color: 'bg-blue-100 text-blue-600', label: 'Running' },
+  completed: { icon: CheckCircle, color: 'bg-emerald-100 text-emerald-600', label: 'Completed' },
   failed: { icon: XCircle, color: 'bg-red-100 text-red-600', label: 'Failed' },
-  cancelled: { icon: AlertTriangle, color: 'bg-amber-100 text-amber-600', label: 'Cancelled' },
+  cancelled: { icon: Warning, color: 'bg-amber-100 text-amber-600', label: 'Cancelled' },
 };
 
 const jobTypeLabels: Record<string, string> = {
@@ -158,14 +146,14 @@ export function JobsWidget({ organizationId }: JobsWidgetProps) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2.5 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-500">
-                <Zap className="w-5 h-5 text-white" />
+                <Lightning weight="light" className="w-5 h-5 text-white" />
               </div>
               <div>
                 <CardTitle className="text-lg">Job Runs</CardTitle>
                 <div className="flex items-center gap-2 text-sm text-slate-500">
                   {runningCount > 0 && (
                     <span className="flex items-center gap-1 text-blue-600">
-                      <Loader2 className="w-3 h-3 animate-spin" />
+                      <CircleNotch weight="light" className="w-3 h-3 animate-spin" />
                       {runningCount} running
                     </span>
                   )}
@@ -180,12 +168,12 @@ export function JobsWidget({ organizationId }: JobsWidgetProps) {
             </div>
             <div className="flex items-center gap-2">
               <Button size="sm" variant="ghost" onClick={fetchJobs}>
-                <RefreshCw className="w-4 h-4" />
+                <ArrowClockwise weight="light" className="w-4 h-4" />
               </Button>
               <Link href="/ops/jobs">
                 <Button size="sm" variant="ghost">
                   View all
-                  <ChevronRight className="w-4 h-4 ml-1" />
+                  <CaretRight weight="light" className="w-4 h-4 ml-1" />
                 </Button>
               </Link>
             </div>
@@ -195,12 +183,12 @@ export function JobsWidget({ organizationId }: JobsWidgetProps) {
         <CardContent>
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+              <CircleNotch weight="light" className="w-6 h-6 animate-spin text-slate-400" />
             </div>
           ) : jobs.length === 0 ? (
             <div className="text-center py-8">
               <div className="w-16 h-16 mx-auto mb-3 bg-slate-100 rounded-2xl flex items-center justify-center">
-                <FileText className="w-8 h-8 text-slate-300" />
+                <FileText weight="light" className="w-8 h-8 text-slate-300" />
               </div>
               <p className="font-medium text-slate-600 mb-1">No recent jobs</p>
               <p className="text-sm text-slate-400">Jobs will appear here when run</p>

@@ -1,5 +1,6 @@
 'use client';
 
+import { ArrowLeft, ArrowsOut, Buildings, CaretDown, CaretRight, CircleNotch, EnvelopeSimple, MagnifyingGlass, MagnifyingGlassMinus, MagnifyingGlassPlus, Phone, User, Users } from '@phosphor-icons/react';
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import {
@@ -11,21 +12,6 @@ import {
   Input,
   Badge,
 } from '@crm-eco/ui';
-import {
-  ChevronRight,
-  ChevronDown,
-  User,
-  Users,
-  Search,
-  Loader2,
-  Building2,
-  Phone,
-  Mail,
-  ArrowLeft,
-  ZoomIn,
-  ZoomOut,
-  Maximize2,
-} from 'lucide-react';
 import Link from 'next/link';
 
 interface Agent {
@@ -77,9 +63,9 @@ function AgentNode({ agent, level, onToggle, expandedIds, selectedId, onSelect }
           disabled={!hasChildren}
         >
           {isExpanded ? (
-            <ChevronDown className="w-4 h-4 text-slate-500" />
+            <CaretDown weight="light" className="w-4 h-4 text-slate-500" />
           ) : (
-            <ChevronRight className="w-4 h-4 text-slate-500" />
+            <CaretRight weight="light" className="w-4 h-4 text-slate-500" />
           )}
         </button>
 
@@ -109,7 +95,7 @@ function AgentNode({ agent, level, onToggle, expandedIds, selectedId, onSelect }
             <span>{agent.email}</span>
             {hasChildren && (
               <span className="flex items-center gap-1">
-                <Users className="w-3 h-3" />
+                <Users weight="light" className="w-3 h-3" />
                 {agent.childCount ?? agent.children?.length ?? 0} downline
               </span>
             )}
@@ -122,7 +108,7 @@ function AgentNode({ agent, level, onToggle, expandedIds, selectedId, onSelect }
           onClick={(e) => e.stopPropagation()}
           className="p-2 rounded-lg hover:bg-slate-200 text-slate-400 hover:text-slate-700"
         >
-          <ChevronRight className="w-4 h-4" />
+          <CaretRight weight="light" className="w-4 h-4" />
         </Link>
       </div>
 
@@ -306,7 +292,7 @@ export default function AgentTreePage() {
         <div className="flex items-center gap-4">
           <Link href="/agents">
             <Button variant="ghost" size="icon">
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft weight="light" className="w-4 h-4" />
             </Button>
           </Link>
           <div>
@@ -328,19 +314,19 @@ export default function AgentTreePage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Button variant="ghost" size="sm" onClick={expandAll}>
-                    <ZoomIn className="w-4 h-4 mr-1" />
+                    <MagnifyingGlassPlus weight="light" className="w-4 h-4 mr-1" />
                     Expand All
                   </Button>
                   <Button variant="ghost" size="sm" onClick={collapseAll}>
-                    <ZoomOut className="w-4 h-4 mr-1" />
+                    <MagnifyingGlassMinus weight="light" className="w-4 h-4 mr-1" />
                     Collapse All
                   </Button>
                 </div>
               </div>
               <div className="relative mt-4">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <MagnifyingGlass weight="light" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <Input
-                  placeholder="Search agents..."
+                  placeholder="MagnifyingGlass agents..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-9"
@@ -350,11 +336,11 @@ export default function AgentTreePage() {
             <CardContent>
               {loading ? (
                 <div className="flex items-center justify-center py-12">
-                  <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+                  <CircleNotch weight="light" className="w-8 h-8 animate-spin text-slate-400" />
                 </div>
               ) : agents.length === 0 ? (
                 <div className="text-center py-12">
-                  <Users className="w-12 h-12 text-slate-200 mx-auto mb-3" />
+                  <Users weight="light" className="w-12 h-12 text-slate-200 mx-auto mb-3" />
                   <p className="text-slate-500">No agents found</p>
                 </div>
               ) : (
@@ -405,14 +391,14 @@ export default function AgentTreePage() {
                   {/* Contact Info */}
                   <div className="space-y-2 text-sm">
                     <div className="flex items-center gap-2 text-slate-600">
-                      <Mail className="w-4 h-4 text-slate-400" />
+                      <EnvelopeSimple weight="light" className="w-4 h-4 text-slate-400" />
                       <a href={`mailto:${selectedAgent.email}`} className="hover:text-[#0891b2]">
                         {selectedAgent.email}
                       </a>
                     </div>
                     {selectedAgent.phone && (
                       <div className="flex items-center gap-2 text-slate-600">
-                        <Phone className="w-4 h-4 text-slate-400" />
+                        <Phone weight="light" className="w-4 h-4 text-slate-400" />
                         <a href={`tel:${selectedAgent.phone}`} className="hover:text-[#0891b2]">
                           {selectedAgent.phone}
                         </a>
@@ -420,7 +406,7 @@ export default function AgentTreePage() {
                     )}
                     {selectedAgent.agency_name && (
                       <div className="flex items-center gap-2 text-slate-600">
-                        <Building2 className="w-4 h-4 text-slate-400" />
+                        <Buildings weight="light" className="w-4 h-4 text-slate-400" />
                         {selectedAgent.agency_name}
                       </div>
                     )}
@@ -453,7 +439,7 @@ export default function AgentTreePage() {
                 </div>
               ) : (
                 <div className="text-center py-8 text-slate-400">
-                  <User className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                  <User weight="light" className="w-12 h-12 mx-auto mb-3 opacity-50" />
                   <p>Select an agent to view details</p>
                 </div>
               )}

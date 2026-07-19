@@ -67,14 +67,14 @@ export function EmptyState({
                     actionHref ? (
                         <Button
                             asChild
-                            className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white font-medium"
+                            className="font-medium"
                         >
                             <a href={actionHref}>{actionLabel}</a>
                         </Button>
                     ) : (
                         <Button
                             onClick={onAction}
-                            className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white font-medium"
+                            className="font-medium"
                         >
                             {actionLabel}
                         </Button>

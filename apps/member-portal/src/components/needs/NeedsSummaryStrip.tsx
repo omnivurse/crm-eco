@@ -1,5 +1,5 @@
 import { Card, CardContent } from '@crm-eco/ui';
-import { Clock, CheckCircle, DollarSign } from 'lucide-react';
+import { Clock, CheckCircle, CurrencyDollar } from '@phosphor-icons/react/dist/ssr';
 
 interface NeedsSummaryStripProps {
   openCount: number;
@@ -12,21 +12,21 @@ export function NeedsSummaryStrip({ openCount, approvedCount, paidCount }: Needs
     {
       label: 'Open Needs',
       value: openCount,
-      icon: <Clock className="w-5 h-5 text-blue-600" aria-hidden />,
-      bgClass: 'bg-blue-50',
-      textClass: 'text-blue-900',
+      icon: <Clock weight="light" className="w-5 h-5 text-[var(--mp-teal)]" aria-hidden />,
+      bgClass: 'bg-[var(--mp-mist)]',
+      textClass: 'text-[var(--mp-ink)]',
     },
     {
       label: 'Approved',
       value: approvedCount,
-      icon: <CheckCircle className="w-5 h-5 text-green-600" aria-hidden />,
+      icon: <CheckCircle weight="light" className="w-5 h-5 text-green-600" aria-hidden />,
       bgClass: 'bg-green-50',
       textClass: 'text-green-900',
     },
     {
       label: 'Paid / Shared',
       value: paidCount,
-      icon: <DollarSign className="w-5 h-5 text-emerald-600" aria-hidden />,
+      icon: <CurrencyDollar weight="light" className="w-5 h-5 text-emerald-600" aria-hidden />,
       bgClass: 'bg-emerald-50',
       textClass: 'text-emerald-900',
     },
@@ -56,4 +56,3 @@ export function NeedsSummaryStrip({ openCount, approvedCount, paidCount }: Needs
     </div>
   );
 }
-

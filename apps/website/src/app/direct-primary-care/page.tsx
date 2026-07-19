@@ -2,21 +2,21 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Button } from '@crm-eco/ui';
 import {
-  ArrowRight,
+  ArrowUpRight,
   Stethoscope,
-  CalendarClock,
-  MessageCircle,
+  CalendarBlank,
+  ChatCircle,
   Wallet,
   Clock,
-  HeartHandshake,
+  Handshake,
   ShieldCheck,
   Pill,
   Microscope,
   UserPlus,
-  Search,
+  MagnifyingGlass,
   PhoneCall,
-  Layers,
-} from 'lucide-react';
+  Stack,
+} from '@phosphor-icons/react/dist/ssr';
 import { Reveal } from '@/components/sections/Reveal';
 import {
   Container,
@@ -45,12 +45,12 @@ const WHAT_IS_DPC = [
     body: 'You pay your doctor a simple, predictable membership fee each month. No copays, no per-visit charges, and no surprise bills for the everyday care you already use.',
   },
   {
-    icon: CalendarClock,
+    icon: CalendarBlank,
     title: 'Same-day, unhurried visits',
     body: 'DPC doctors keep small patient panels, so you get same- or next-day appointments and real time to talk — not a rushed seven minutes and a referral.',
   },
   {
-    icon: MessageCircle,
+    icon: ChatCircle,
     title: 'Your doctor on call',
     body: 'Text, call, or video your physician directly between visits. Many small questions get answered in minutes, without ever leaving home.',
   },
@@ -78,7 +78,7 @@ const BENEFITS = [
     body: 'Many doctors dispense common prescriptions at near-cost or point you to the lowest price, so routine refills stay affordable.',
   },
   {
-    icon: HeartHandshake,
+    icon: Handshake,
     title: 'A real relationship',
     body: 'You see the same physician who knows your history, your family, and your goals — care that feels personal again, the way it should.',
   },
@@ -105,7 +105,7 @@ const FIND_STEPS = [
     body: 'Choose the sharing program that fits your household and enroll online in minutes. There is no health questionnaire to get a quote and no season to wait for.',
   },
   {
-    icon: Search,
+    icon: MagnifyingGlass,
     step: '02',
     title: 'Find a DPC doctor near you',
     body: 'Tell us where you live and what you need. Our team helps you locate a trusted Direct Primary Care practice in your area — or confirm one you already love.',
@@ -144,7 +144,7 @@ export default function DirectPrimaryCarePage() {
                     className="w-full gap-2 pif-grad-care font-semibold text-white shadow-lg shadow-pif-teal/25 hover:opacity-95 sm:w-auto"
                   >
                     Become a Member
-                    <ArrowRight className="h-4 w-4" />
+                    <ArrowUpRight className="h-4 w-4" />
                   </Button>
                 </Link>
                 <Link href="/contact">
@@ -255,7 +255,7 @@ export default function DirectPrimaryCarePage() {
 
             <Reveal delay={0.1}>
               <div className="flex h-full flex-col rounded-3xl border border-pif-green-100 bg-pif-green-50/50 p-8 shadow-sm ring-1 ring-pif-green-100 md:p-10">
-                <IconChip icon={HeartHandshake} variant="gold" className="mb-6" />
+                <IconChip icon={Handshake} variant="gold" className="mb-6" />
                 <h3 className="font-heading text-2xl font-semibold text-pif-navy-800">
                   {BRAND.shortName} Sharing
                 </h3>
@@ -353,7 +353,7 @@ export default function DirectPrimaryCarePage() {
               className="inline-flex items-center gap-2 font-semibold text-pif-teal-700 transition-colors hover:text-pif-green-600"
             >
               Ask us to help find a DPC doctor near you
-              <ArrowRight className="h-4 w-4" />
+              <ArrowUpRight className="h-4 w-4" />
             </Link>
           </div>
         </Container>
@@ -378,7 +378,7 @@ export default function DirectPrimaryCarePage() {
                 className="mt-4 inline-flex items-center gap-2 font-semibold text-pif-teal-700 transition-colors hover:text-pif-green-600"
               >
                 See how sharing works
-                <ArrowRight className="h-4 w-4" />
+                <ArrowUpRight className="h-4 w-4" />
               </Link>
             </div>
           </Reveal>
@@ -400,7 +400,7 @@ export default function DirectPrimaryCarePage() {
                 subtitle="With DPC, your physician has the time and the relationship to truly care for you — and your sharing community has your back for the moments that matter most."
               />
               <div className="mt-8 flex items-center gap-3 rounded-2xl border border-pif-navy-100 bg-pif-mist p-5 ring-1 ring-pif-navy/5">
-                <IconChip icon={Layers} variant="brand" />
+                <IconChip icon={Stack} variant="brand" />
                 <p className="text-slate-700">
                   Everyday care from your DPC doctor, big-event protection from your
                   community — one simple, affordable approach to staying well.

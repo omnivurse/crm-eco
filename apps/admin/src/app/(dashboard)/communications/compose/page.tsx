@@ -1,16 +1,10 @@
 'use client';
 
+import { ArrowLeft, FileText, MagnifyingGlass, PaperPlaneTilt, Users } from '@phosphor-icons/react';
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import Link from 'next/link';
-import {
-  ArrowLeft,
-  Send,
-  FileText,
-  Users,
-  Search,
-} from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
 import { Label } from '@crm-eco/ui/components/label';
@@ -181,7 +175,7 @@ export default function ComposeEmailPage() {
       toast.success('Email sent successfully');
       router.push('/communications/history');
     } catch (error) {
-      console.error('Send error:', error);
+      console.error('PaperPlaneTilt error:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to send email');
     } finally {
       setSending(false);
@@ -204,12 +198,12 @@ export default function ComposeEmailPage() {
       <div className="flex items-center gap-4">
         <Link href="/communications">
           <Button variant="ghost" size="icon">
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft weight="light" className="w-4 h-4" />
           </Button>
         </Link>
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Compose Email</h1>
-          <p className="text-slate-600">Send an email to a member or contact</p>
+          <p className="text-slate-600">PaperPlaneTilt an email to a member or contact</p>
         </div>
       </div>
 
@@ -276,11 +270,11 @@ export default function ComposeEmailPage() {
               <Tabs value={mode} onValueChange={(v) => setMode(v as any)}>
                 <TabsList className="mb-4">
                   <TabsTrigger value="template">
-                    <FileText className="w-4 h-4 mr-2" />
+                    <FileText weight="light" className="w-4 h-4 mr-2" />
                     Use Template
                   </TabsTrigger>
                   <TabsTrigger value="custom">
-                    <Send className="w-4 h-4 mr-2" />
+                    <PaperPlaneTilt weight="light" className="w-4 h-4 mr-2" />
                     Custom Message
                   </TabsTrigger>
                 </TabsList>
@@ -378,7 +372,7 @@ export default function ComposeEmailPage() {
 
         {/* Sidebar */}
         <div className="space-y-6">
-          {/* Send Button */}
+          {/* PaperPlaneTilt Button */}
           <Card>
             <CardContent className="pt-6">
               <Button
@@ -387,8 +381,8 @@ export default function ComposeEmailPage() {
                 onClick={handleSend}
                 disabled={sending}
               >
-                <Send className="w-4 h-4 mr-2" />
-                {sending ? 'Sending...' : 'Send Email'}
+                <PaperPlaneTilt weight="light" className="w-4 h-4 mr-2" />
+                {sending ? 'Sending...' : 'PaperPlaneTilt Email'}
               </Button>
             </CardContent>
           </Card>
@@ -397,7 +391,7 @@ export default function ComposeEmailPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Users className="w-5 h-5" />
+                <Users weight="light" className="w-5 h-5" />
                 Quick Select
               </CardTitle>
               <CardDescription>
@@ -406,9 +400,9 @@ export default function ComposeEmailPage() {
             </CardHeader>
             <CardContent>
               <div className="relative mb-3">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <MagnifyingGlass weight="light" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <Input
-                  placeholder="Search members..."
+                  placeholder="MagnifyingGlass members..."
                   value={memberSearch}
                   onChange={(e) => setMemberSearch(e.target.value)}
                   className="pl-10"

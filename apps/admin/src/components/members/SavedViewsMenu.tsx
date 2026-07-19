@@ -1,5 +1,6 @@
 'use client';
 
+import { Bookmark, CircleNotch, Plus, Star, Trash } from '@phosphor-icons/react';
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Input, Checkbox } from '@crm-eco/ui';
@@ -19,7 +20,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel,
 } from '@crm-eco/ui/components/dropdown-menu';
-import { Bookmark, Star, Trash2, Plus, Loader2 } from 'lucide-react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { toast } from 'sonner';
 
@@ -178,7 +178,7 @@ export function SavedViewsMenu({ orgId, currentFilters }: SavedViewsMenuProps) {
       <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
         <DropdownMenuTrigger asChild>
           <Button variant="outline" size="sm" className="h-9 gap-1.5">
-            <Bookmark className="w-4 h-4" />
+            <Bookmark weight="light" className="w-4 h-4" />
             <span className="hidden sm:inline">Saved Views</span>
             {views.length > 0 && (
               <span className="ml-0.5 rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-600">
@@ -191,7 +191,7 @@ export function SavedViewsMenu({ orgId, currentFilters }: SavedViewsMenuProps) {
         <DropdownMenuContent align="end" className="w-64">
           {loading ? (
             <div className="flex items-center justify-center py-4">
-              <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
+              <CircleNotch weight="light" className="w-4 h-4 animate-spin text-slate-400" />
               <span className="ml-2 text-sm text-slate-500">Loading views...</span>
             </div>
           ) : views.length === 0 ? (
@@ -209,7 +209,7 @@ export function SavedViewsMenu({ orgId, currentFilters }: SavedViewsMenuProps) {
                 >
                   <div className="flex items-center gap-2 min-w-0">
                     {view.is_default && (
-                      <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500 shrink-0" />
+                      <Star weight="light" className="w-3.5 h-3.5 text-amber-500 fill-amber-500 shrink-0" />
                     )}
                     <span className="truncate">{view.name}</span>
                   </div>
@@ -220,9 +220,9 @@ export function SavedViewsMenu({ orgId, currentFilters }: SavedViewsMenuProps) {
                     aria-label={`Delete view "${view.name}"`}
                   >
                     {deleting === view.id ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <CircleNotch weight="light" className="w-3.5 h-3.5 animate-spin" />
                     ) : (
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash weight="light" className="w-3.5 h-3.5" />
                     )}
                   </button>
                 </DropdownMenuItem>
@@ -241,7 +241,7 @@ export function SavedViewsMenu({ orgId, currentFilters }: SavedViewsMenuProps) {
             }}
             className="gap-2 cursor-pointer"
           >
-            <Plus className="w-4 h-4" />
+            <Plus weight="light" className="w-4 h-4" />
             Save Current View
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -322,7 +322,7 @@ export function SavedViewsMenu({ orgId, currentFilters }: SavedViewsMenuProps) {
             <Button onClick={saveView} disabled={saving || !viewName.trim()}>
               {saving ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  <CircleNotch weight="light" className="w-4 h-4 mr-2 animate-spin" />
                   Saving...
                 </>
               ) : (

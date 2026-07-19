@@ -1,6 +1,6 @@
 'use client';
 
-import { Folder, Star, MoreHorizontal, Download, Pencil, Trash2, Share2, History, Eye, FolderInput } from 'lucide-react';
+import { ClockCounterClockwise, DotsThree, DownloadSimple, Eye, Folder, FolderSimple, PencilSimple, ShareNetwork, Star, Trash } from '@phosphor-icons/react';
 import { Checkbox } from '@crm-eco/ui/components/checkbox';
 import {
   DropdownMenu,
@@ -63,42 +63,42 @@ export function FileCard({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="p-1 rounded hover:bg-gray-100 opacity-0 group-hover:opacity-100 transition-opacity">
-              <MoreHorizontal className="w-4 h-4" />
+              <DotsThree weight="light" className="w-4 h-4" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             {isDoc && onPreview && isPreviewable(doc!.mime_type) && (
               <DropdownMenuItem onClick={() => onPreview(item.id)}>
-                <Eye className="w-4 h-4 mr-2" /> Preview
+                <Eye weight="light" className="w-4 h-4 mr-2" /> Preview
               </DropdownMenuItem>
             )}
             {isDoc && onDownload && (
               <DropdownMenuItem onClick={() => onDownload(item.id)}>
-                <Download className="w-4 h-4 mr-2" /> Download
+                <DownloadSimple weight="light" className="w-4 h-4 mr-2" /> DownloadSimple
               </DropdownMenuItem>
             )}
             <DropdownMenuItem onClick={() => onRename(item.id, type)}>
-              <Pencil className="w-4 h-4 mr-2" /> Rename
+              <PencilSimple weight="light" className="w-4 h-4 mr-2" /> Rename
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => onMove(item.id, type)}>
-              <FolderInput className="w-4 h-4 mr-2" /> Move
+              <FolderSimple weight="light" className="w-4 h-4 mr-2" /> Move
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => onFavorite(item.id, type, !!item.is_favorite)}>
-              <Star className="w-4 h-4 mr-2" /> {item.is_favorite ? 'Unfavorite' : 'Favorite'}
+              <Star weight="light" className="w-4 h-4 mr-2" /> {item.is_favorite ? 'Unfavorite' : 'Favorite'}
             </DropdownMenuItem>
             {isDoc && onShare && (
               <DropdownMenuItem onClick={() => onShare(item.id)}>
-                <Share2 className="w-4 h-4 mr-2" /> Share Link
+                <ShareNetwork weight="light" className="w-4 h-4 mr-2" /> Share Link
               </DropdownMenuItem>
             )}
             {isDoc && onVersions && (
               <DropdownMenuItem onClick={() => onVersions(item.id)}>
-                <History className="w-4 h-4 mr-2" /> Versions
+                <ClockCounterClockwise weight="light" className="w-4 h-4 mr-2" /> Versions
               </DropdownMenuItem>
             )}
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => onTrash(item.id, type)} className="text-red-600">
-              <Trash2 className="w-4 h-4 mr-2" /> Move to Trash
+              <Trash weight="light" className="w-4 h-4 mr-2" /> Move to Trash
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -108,14 +108,14 @@ export function FileCard({
         {isDoc ? (
           <FileIcon mimeType={doc!.mime_type} className="w-10 h-10 mb-2 text-gray-400" />
         ) : (
-          <Folder className="w-10 h-10 mb-2 text-blue-400" />
+          <Folder weight="light" className="w-10 h-10 mb-2 text-blue-400" />
         )}
         <span className="text-sm font-medium text-center truncate w-full">{item.name}</span>
         <div className="flex items-center gap-1 mt-1 text-xs text-gray-500">
           {isDoc && <span>{formatFileSize(doc!.size_bytes)}</span>}
           {isDoc && <span>·</span>}
           <span>{formatDate(item.updated_at)}</span>
-          {item.is_favorite && <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />}
+          {item.is_favorite && <Star weight="light" className="w-3 h-3 text-yellow-500 fill-yellow-500" />}
         </div>
       </div>
     </div>

@@ -184,7 +184,7 @@ function FeatureSection({ title, subtitle, children, gradient = 'from-teal-500 t
 
 export default function FeaturesPage() {
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="w-full">
       {/* Hero Section */}
       <div className="text-center py-16 px-4">
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-teal-500/10 to-emerald-500/10 border border-teal-500/20 mb-6">

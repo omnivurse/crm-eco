@@ -1,5 +1,6 @@
 'use client';
 
+import { ArrowClockwise, ArrowLeft, ArrowRight, CaretDown, CaretUp, Check, CheckCircle, CircleNotch, DownloadSimple, FileXls, Trash, UploadSimple, WarningCircle, X } from '@phosphor-icons/react';
 import { useState, useCallback } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import {
@@ -26,22 +27,6 @@ import {
   Switch,
   Label,
 } from '@crm-eco/ui';
-import {
-  Upload,
-  FileSpreadsheet,
-  ArrowRight,
-  ArrowLeft,
-  Check,
-  X,
-  AlertCircle,
-  Loader2,
-  Download,
-  Trash2,
-  ChevronDown,
-  ChevronUp,
-  RefreshCw,
-  CheckCircle2,
-} from 'lucide-react';
 import { toast } from 'sonner';
 
 type ImportType = 'member' | 'agent';
@@ -399,7 +384,7 @@ export function ImportWizard({
   };
 
   const steps = [
-    { key: 'upload', label: 'Upload File' },
+    { key: 'upload', label: 'UploadSimple File' },
     { key: 'mapping', label: 'Map Fields' },
     { key: 'validation', label: 'Validate' },
     { key: 'processing', label: 'Import' },
@@ -421,7 +406,7 @@ export function ImportWizard({
                 ? 'bg-[#0891b2] text-white'
                 : 'bg-slate-200 text-slate-500'
             }`}>
-              {i < currentStepIndex ? <Check className="w-4 h-4" /> : i + 1}
+              {i < currentStepIndex ? <Check weight="light" className="w-4 h-4" /> : i + 1}
             </div>
             <span className={`ml-2 text-sm ${
               i <= currentStepIndex ? 'text-slate-700 font-medium' : 'text-slate-400'
@@ -440,14 +425,14 @@ export function ImportWizard({
       {/* Step Content */}
       <Card>
         <CardContent className="p-6">
-          {/* Upload Step */}
+          {/* UploadSimple Step */}
           {step === 'upload' && (
             <div className="space-y-6">
               <div className="text-center">
                 <h2 className="text-xl font-semibold text-slate-900 mb-2">
-                  Upload {importType === 'member' ? 'Members' : 'Agents'} File
+                  UploadSimple {importType === 'member' ? 'Members' : 'Agents'} File
                 </h2>
-                <p className="text-slate-500">Upload a CSV file with your data</p>
+                <p className="text-slate-500">UploadSimple a CSV file with your data</p>
               </div>
 
               <div className="border-2 border-dashed border-slate-200 rounded-xl p-8 text-center hover:border-[#0891b2] transition-colors">
@@ -460,11 +445,11 @@ export function ImportWizard({
                 />
                 <label htmlFor="file-upload" className="cursor-pointer">
                   {loading ? (
-                    <Loader2 className="w-12 h-12 text-slate-400 mx-auto mb-4 animate-spin" />
+                    <CircleNotch weight="light" className="w-12 h-12 text-slate-400 mx-auto mb-4 animate-spin" />
                   ) : file ? (
-                    <FileSpreadsheet className="w-12 h-12 text-emerald-500 mx-auto mb-4" />
+                    <FileXls weight="light" className="w-12 h-12 text-emerald-500 mx-auto mb-4" />
                   ) : (
-                    <Upload className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+                    <UploadSimple weight="light" className="w-12 h-12 text-slate-400 mx-auto mb-4" />
                   )}
                   {file ? (
                     <div>
@@ -527,7 +512,7 @@ export function ImportWizard({
                         {field.required && <span className="text-red-500 ml-1">*</span>}
                       </span>
                     </div>
-                    <ArrowLeft className="w-4 h-4 text-slate-400" />
+                    <ArrowLeft weight="light" className="w-4 h-4 text-slate-400" />
                     <Select
                       value={Object.entries(fieldMapping).find(([_, target]) => target === field.field)?.[0] || '__unmapped__'}
                       onValueChange={(sourceCol) => {
@@ -595,7 +580,7 @@ export function ImportWizard({
                     <Card>
                       <CardContent className="pt-6">
                         <div className="flex items-center gap-3">
-                          <CheckCircle2 className="w-8 h-8 text-emerald-500" />
+                          <CheckCircle weight="light" className="w-8 h-8 text-emerald-500" />
                           <div>
                             <p className="text-2xl font-bold text-slate-900">{validationResults.valid}</p>
                             <p className="text-sm text-slate-500">Valid rows</p>
@@ -606,7 +591,7 @@ export function ImportWizard({
                     <Card>
                       <CardContent className="pt-6">
                         <div className="flex items-center gap-3">
-                          <AlertCircle className="w-8 h-8 text-red-500" />
+                          <WarningCircle weight="light" className="w-8 h-8 text-red-500" />
                           <div>
                             <p className="text-2xl font-bold text-slate-900">{validationResults.invalid}</p>
                             <p className="text-sm text-slate-500">Invalid rows</p>
@@ -617,7 +602,7 @@ export function ImportWizard({
                     <Card>
                       <CardContent className="pt-6">
                         <div className="flex items-center gap-3">
-                          <FileSpreadsheet className="w-8 h-8 text-slate-500" />
+                          <FileXls weight="light" className="w-8 h-8 text-slate-500" />
                           <div>
                             <p className="text-2xl font-bold text-slate-900">{parsedData.length}</p>
                             <p className="text-sm text-slate-500">Total rows</p>
@@ -679,7 +664,7 @@ export function ImportWizard({
               </div>
 
               {processingStatus === 'processing' && (
-                <Loader2 className="w-8 h-8 animate-spin text-[#0891b2] mx-auto" />
+                <CircleNotch weight="light" className="w-8 h-8 animate-spin text-[#0891b2] mx-auto" />
               )}
             </div>
           )}
@@ -688,7 +673,7 @@ export function ImportWizard({
           {step === 'complete' && results && (
             <div className="space-y-6 text-center py-8">
               <div>
-                <CheckCircle2 className="w-16 h-16 text-emerald-500 mx-auto mb-4" />
+                <CheckCircle weight="light" className="w-16 h-16 text-emerald-500 mx-auto mb-4" />
                 <h2 className="text-xl font-semibold text-slate-900 mb-2">Import Complete</h2>
               </div>
 
@@ -727,13 +712,13 @@ export function ImportWizard({
         <div className="flex gap-2">
           {step === 'mapping' && (
             <Button variant="outline" onClick={() => setStep('upload')}>
-              <ArrowLeft className="w-4 h-4 mr-2" />
+              <ArrowLeft weight="light" className="w-4 h-4 mr-2" />
               Back
             </Button>
           )}
           {step === 'validation' && (
             <Button variant="outline" onClick={() => setStep('mapping')}>
-              <ArrowLeft className="w-4 h-4 mr-2" />
+              <ArrowLeft weight="light" className="w-4 h-4 mr-2" />
               Back
             </Button>
           )}
@@ -741,7 +726,7 @@ export function ImportWizard({
           {step === 'upload' && parsedData.length > 0 && (
             <Button onClick={() => setStep('mapping')}>
               Continue
-              <ArrowRight className="w-4 h-4 ml-2" />
+              <ArrowRight weight="light" className="w-4 h-4 ml-2" />
             </Button>
           )}
           {step === 'mapping' && (
@@ -750,7 +735,7 @@ export function ImportWizard({
               setStep('validation');
             }}>
               Validate
-              <ArrowRight className="w-4 h-4 ml-2" />
+              <ArrowRight weight="light" className="w-4 h-4 ml-2" />
             </Button>
           )}
           {step === 'validation' && validationResults && (
@@ -762,7 +747,7 @@ export function ImportWizard({
               disabled={validationResults.valid === 0}
             >
               Import {validationResults.valid} Rows
-              <ArrowRight className="w-4 h-4 ml-2" />
+              <ArrowRight weight="light" className="w-4 h-4 ml-2" />
             </Button>
           )}
           {step === 'complete' && (

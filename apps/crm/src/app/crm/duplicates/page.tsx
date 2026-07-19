@@ -62,7 +62,7 @@ async function DuplicatesPageContent() {
 
 function DuplicatesSkeleton() {
   return (
-    <div className="space-y-6 max-w-6xl mx-auto">
+    <div className="space-y-6 w-full">
       <div className="flex items-center justify-between">
         <div className="space-y-2">
           <div className="w-64 h-7 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />

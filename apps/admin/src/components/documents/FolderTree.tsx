@@ -1,6 +1,6 @@
 'use client';
 
-import { FolderRoot } from 'lucide-react';
+import { FolderSimple } from '@phosphor-icons/react';
 import { Button } from '@crm-eco/ui/components/button';
 import type { DocFolder } from './types';
 import { FolderTreeItem } from './FolderTreeItem';
@@ -29,7 +29,7 @@ export function FolderTree({ folders, currentFolderId, onSelectFolder, onNewFold
             currentFolderId === null ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'
           }`}
         >
-          <FolderRoot className="w-4 h-4 shrink-0" />
+          <FolderSimple weight="light" className="w-4 h-4 shrink-0" />
           <span>All Documents</span>
         </button>
         {rootFolders.map(folder => (

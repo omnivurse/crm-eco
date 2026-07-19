@@ -1,15 +1,6 @@
+import { ArrowDownRight, CheckCircle, Clock, Funnel, Hourglass, PaperPlaneTilt, Prohibit, XCircle } from '@phosphor-icons/react/dist/ssr';
 import { Suspense } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Badge } from '@crm-eco/ui';
-import {
-  Filter,
-  ArrowDownRight,
-  Clock,
-  CheckCircle,
-  XCircle,
-  Send,
-  Hourglass,
-  Ban,
-} from 'lucide-react';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { getActiveTenant } from '@/lib/tenant';
 
@@ -76,10 +67,10 @@ const STAGES: {
   icon: React.ReactNode;
   barClass: string;
 }[] = [
-  { key: 'started', label: 'Started', description: 'Enrollments created in the cohort window', icon: <Filter className="h-4 w-4 text-slate-400" />, barClass: 'bg-slate-400' },
-  { key: 'submitted', label: 'Submitted', description: 'Reached submission (submitted_at set)', icon: <Send className="h-4 w-4 text-blue-500" />, barClass: 'bg-blue-500' },
-  { key: 'pending_review', label: 'In Review', description: 'submitted / pending_review / more_info', icon: <Hourglass className="h-4 w-4 text-amber-500" />, barClass: 'bg-amber-500' },
-  { key: 'approved', label: 'Approved', description: 'approved_at set, or active', icon: <CheckCircle className="h-4 w-4 text-green-500" />, barClass: 'bg-green-500' },
+  { key: 'started', label: 'Started', description: 'Enrollments created in the cohort window', icon: <Funnel weight="light" className="h-4 w-4 text-slate-400" />, barClass: 'bg-slate-400' },
+  { key: 'submitted', label: 'Submitted', description: 'Reached submission (submitted_at set)', icon: <PaperPlaneTilt weight="light" className="h-4 w-4 text-blue-500" />, barClass: 'bg-blue-500' },
+  { key: 'pending_review', label: 'In Review', description: 'submitted / pending_review / more_info', icon: <Hourglass weight="light" className="h-4 w-4 text-amber-500" />, barClass: 'bg-amber-500' },
+  { key: 'approved', label: 'Approved', description: 'approved_at set, or active', icon: <CheckCircle weight="light" className="h-4 w-4 text-green-500" />, barClass: 'bg-green-500' },
 ];
 
 async function getFunnel(): Promise<{ data: FunnelData | null; error: boolean; unauthorized: boolean }> {
@@ -134,7 +125,7 @@ async function FunnelContent() {
           </p>
         </div>
         <Badge variant="outline" className="whitespace-nowrap">
-          <Filter className="w-3 h-3 mr-1" />
+          <Funnel weight="light" className="w-3 h-3 mr-1" />
           Last {months} months
         </Badge>
       </div>
@@ -155,7 +146,7 @@ async function FunnelContent() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-slate-500">Cohort Size</CardTitle>
-            <Filter className="w-4 h-4 text-slate-400" />
+            <Funnel weight="light" className="w-4 h-4 text-slate-400" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{data?.cohort_total ?? 0}</div>
@@ -165,7 +156,7 @@ async function FunnelContent() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-slate-500">Submit Rate</CardTitle>
-            <Send className="w-4 h-4 text-blue-400" />
+            <PaperPlaneTilt weight="light" className="w-4 h-4 text-blue-400" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">{asPercentLabel(data?.conversion.submit_rate ?? null)}</div>
@@ -175,7 +166,7 @@ async function FunnelContent() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-slate-500">Approval Rate</CardTitle>
-            <CheckCircle className="w-4 h-4 text-green-400" />
+            <CheckCircle weight="light" className="w-4 h-4 text-green-400" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">{asPercentLabel(data?.conversion.approval_rate ?? null)}</div>
@@ -185,7 +176,7 @@ async function FunnelContent() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-slate-500">Avg Time to Decision</CardTitle>
-            <Clock className="w-4 h-4 text-slate-400" />
+            <Clock weight="light" className="w-4 h-4 text-slate-400" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{asDays(data?.time_in_stage_days.submitted_to_decision.avg ?? null)}</div>
@@ -198,7 +189,7 @@ async function FunnelContent() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Filter className="w-5 h-5" />
+            <Funnel weight="light" className="w-5 h-5" />
             Stage Progression
           </CardTitle>
           <CardDescription>Each bar is scaled to the cohort size; drop-off is measured against the prior stage.</CardDescription>
@@ -224,7 +215,7 @@ async function FunnelContent() {
                         <span className="text-slate-400 text-xs">{widthPercent.toFixed(1)}% of cohort</span>
                         {idx > 0 && (
                           <span className="flex items-center gap-0.5 text-xs text-red-500">
-                            <ArrowDownRight className="w-3 h-3" />
+                            <ArrowDownRight weight="light" className="w-3 h-3" />
                             {dropOff.toFixed(1)}% drop
                           </span>
                         )}
@@ -242,13 +233,13 @@ async function FunnelContent() {
               <div className="grid grid-cols-2 gap-4 pt-2 border-t border-slate-100">
                 <div className="flex items-center justify-between">
                   <span className="flex items-center gap-2 text-sm text-slate-600">
-                    <XCircle className="w-4 h-4 text-red-500" /> Rejected
+                    <XCircle weight="light" className="w-4 h-4 text-red-500" /> Rejected
                   </span>
                   <span className="font-semibold text-slate-900">{data!.stage_reached.rejected}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="flex items-center gap-2 text-sm text-slate-600">
-                    <Ban className="w-4 h-4 text-slate-400" /> Cancelled
+                    <Prohibit weight="light" className="w-4 h-4 text-slate-400" /> Cancelled
                   </span>
                   <span className="font-semibold text-slate-900">{data!.stage_reached.cancelled}</span>
                 </div>
@@ -265,7 +256,7 @@ async function FunnelContent() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Clock className="w-5 h-5" />
+              <Clock weight="light" className="w-5 h-5" />
               Time in Stage
             </CardTitle>
             <CardDescription>Average and median days between stage transitions (rows with both timestamps).</CardDescription>
@@ -293,7 +284,7 @@ async function FunnelContent() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Hourglass className="w-5 h-5" />
+              <Hourglass weight="light" className="w-5 h-5" />
               Current Status
             </CardTitle>
             <CardDescription>Live status breakdown of the cohort.</CardDescription>

@@ -1,8 +1,8 @@
 import Link from 'next/link';
-import { ChevronLeft } from 'lucide-react';
 import { getAcceptJsConfig, isAcceptJsConfigured } from '@/lib/billing/accept-config';
 import { AddPaymentMethodForm } from '@/components/billing/AddPaymentMethodForm';
 import { Card, CardContent, CardHeader, CardTitle } from '@crm-eco/ui';
+import { PageHeader } from '@/components/PageHeader';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,16 +11,12 @@ export default function AddPaymentMethodPage() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-6 px-4 py-8">
-      <Link href="/billing" className="inline-flex items-center text-sm text-blue-600 hover:underline">
-        <ChevronLeft className="mr-1 h-4 w-4" /> Back to Billing
-      </Link>
-
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Add a payment method</h1>
-        <p className="mt-1 text-sm text-slate-600">
-          Your card is tokenized by Authorize.Net — we never see or store your full card number.
-        </p>
-      </div>
+      <PageHeader
+        title="Add a payment method"
+        description="Your card is tokenized by Authorize.Net — we never see or store your full card number."
+        backHref="/billing"
+        backLabel="Back to Billing"
+      />
 
       {config ? (
         <AddPaymentMethodForm config={config} />

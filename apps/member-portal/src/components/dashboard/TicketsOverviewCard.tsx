@@ -1,8 +1,6 @@
 import Link from 'next/link';
-import { Card, CardContent, CardHeader, CardTitle, Button } from '@crm-eco/ui';
-import { MessageSquare, ArrowRight, HelpCircle, Plus } from 'lucide-react';
-import { format } from 'date-fns';
-import { StatusBadge } from './StatusBadge';
+import { ArrowUpRight } from '@phosphor-icons/react/dist/ssr';
+import { Bezel } from '@/components/ui/Bezel';
 
 interface TicketSummary {
   id: string;
@@ -18,84 +16,37 @@ interface TicketsOverviewCardProps {
 }
 
 export function TicketsOverviewCard({ tickets }: TicketsOverviewCardProps) {
-  if (!tickets || tickets.length === 0) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <MessageSquare className="w-5 h-5 text-slate-400" aria-hidden />
-            Support & Messages
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-6">
-            <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-slate-100 flex items-center justify-center">
-              <HelpCircle className="w-7 h-7 text-slate-400" aria-hidden />
-            </div>
-            <p className="text-slate-600 mb-2">No support tickets yet.</p>
-            <p className="text-sm text-slate-500 mb-4">
-              Have a question? We&apos;re here to help.
-            </p>
-            <Link href="/support/new">
-              <Button variant="outline" className="gap-2">
-                <Plus className="w-4 h-4" aria-hidden />
-                Contact Support
-              </Button>
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
+  const openCount = (tickets ?? []).filter(
+    (t) => t.status === 'open' || t.status === 'in_progress' || t.status === 'waiting',
+  ).length;
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <MessageSquare className="w-5 h-5 text-blue-600" aria-hidden />
-          Support & Messages
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-3">
-          {tickets.slice(0, 4).map((ticket) => (
-            <Link
-              key={ticket.id}
-              href={`/support/${ticket.id}`}
-              className="block p-3 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors"
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-slate-900 truncate mb-1">
-                    {ticket.subject}
-                  </p>
-                  <p className="text-xs text-slate-500">
-                    {format(new Date(ticket.created_at), 'MMM d, yyyy')}
-                  </p>
-                </div>
-                <StatusBadge status={ticket.status} showIcon={false} />
-              </div>
-            </Link>
-          ))}
-        </div>
-
-        <div className="mt-4 pt-3 border-t flex items-center justify-between">
-          <Link 
-            href="/support" 
-            className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+    <Bezel>
+      <div className="flex h-full flex-col p-6 md:p-7">
+        <p className="mp-kicker mp-kicker-teal">Support</p>
+        <p className="mt-1 text-[1.75rem] font-bold leading-none tracking-[-0.03em] text-[var(--mp-ink)]">
+          {openCount}
+        </p>
+        <p className="mt-1 text-[0.8rem] text-slate-500">
+          {openCount === 1 ? 'Open ticket' : 'Open tickets'}
+        </p>
+        {(tickets ?? []).slice(0, 2).map((ticket) => (
+          <Link
+            key={ticket.id}
+            href={`/support/${ticket.id}`}
+            className="mt-3 block truncate border-t border-[rgba(11,109,133,0.06)] pt-3 text-[0.8rem] font-medium text-[var(--mp-ink)] hover:text-[var(--mp-teal)]"
           >
-            View all tickets
-            <ArrowRight className="w-3 h-3" aria-hidden />
+            {ticket.subject}
           </Link>
-          <Link href="/support/new">
-            <Button variant="outline" size="sm" className="gap-1">
-              <Plus className="w-3 h-3" aria-hidden />
-              New Ticket
-            </Button>
-          </Link>
-        </div>
-      </CardContent>
-    </Card>
+        ))}
+        <Link
+          href={openCount > 0 ? '/support' : '/support/new'}
+          className="mt-auto inline-flex items-center gap-1 pt-4 text-[0.8rem] font-semibold text-[var(--mp-teal)] transition-[gap] duration-500 hover:gap-1.5"
+        >
+          {openCount > 0 ? 'View tickets' : 'Get help'}
+          <ArrowUpRight weight="light" className="h-3.5 w-3.5" aria-hidden />
+        </Link>
+      </div>
+    </Bezel>
   );
 }
-

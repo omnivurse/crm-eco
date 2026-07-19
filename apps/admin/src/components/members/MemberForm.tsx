@@ -1,5 +1,6 @@
 'use client';
 
+import { CircleNotch } from '@phosphor-icons/react';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
@@ -14,7 +15,6 @@ import {
   SelectValue,
   Checkbox,
 } from '@crm-eco/ui';
-import { Loader2 } from 'lucide-react';
 import { AdvisorCombobox } from './AdvisorCombobox';
 import { guaranteedUpdateWithVersion } from '@crm-eco/lib';
 import { useFormAutosave } from '@/hooks/useFormAutosave';
@@ -518,7 +518,7 @@ export function MemberForm({ agents, initialData }: MemberFormProps) {
         >
           {loading ? (
             <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              <CircleNotch weight="light" className="h-4 w-4 mr-2 animate-spin" />
               {isEditing ? 'Saving...' : 'Creating...'}
             </>
           ) : isEditing ? (

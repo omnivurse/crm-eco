@@ -30,15 +30,14 @@ export function PortalAppShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="mp-atmosphere flex min-h-screen flex-col">
+      <div className="mp-grain" aria-hidden="true" />
       <PortalHeader />
-      <main className="flex-1 w-full min-w-0 px-3 sm:px-4 lg:px-6 xl:px-8 2xl:px-10 py-6 lg:py-8 pb-20 md:pb-6">
-        <div className="mx-auto w-full max-w-[1536px]">
-          {children}
-        </div>
+      <main className="w-full min-w-0 flex-1 px-3 pb-28 pt-4 sm:px-4 md:pb-8 lg:px-6 lg:pt-6 xl:px-8 2xl:px-10">
+        <div className="mx-auto w-full max-w-[72rem]">{children}</div>
       </main>
-      <footer className="border-t bg-white py-6 mt-auto">
-        <div className="mx-auto w-full max-w-[1536px] px-3 sm:px-4 lg:px-6 xl:px-8 2xl:px-10 text-center text-sm text-slate-500">
+      <footer className="mt-auto border-t border-[rgba(11,109,133,0.06)] bg-white/70 py-6 backdrop-blur-sm">
+        <div className="mx-auto w-full max-w-[72rem] px-3 text-center text-sm text-slate-500 sm:px-4 lg:px-6 xl:px-8 2xl:px-10">
           <p>&copy; {new Date().getFullYear()} Double Helix Hub. All rights reserved.</p>
           <p className="mt-1">
             This is not insurance. Health sharing programs facilitate member-to-member sharing of medical expenses.

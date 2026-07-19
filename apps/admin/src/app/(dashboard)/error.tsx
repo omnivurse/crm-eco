@@ -1,7 +1,7 @@
 'use client';
 
+import { ArrowClockwise, House, Warning } from '@phosphor-icons/react';
 import { useEffect } from 'react';
-import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
 import { Button } from '@crm-eco/ui';
 import Link from 'next/link';
 
@@ -21,7 +21,7 @@ export default function Error({
     <div className="min-h-[60vh] flex items-center justify-center p-8">
       <div className="text-center max-w-md">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 dark:bg-red-500/20 mb-6">
-          <AlertTriangle className="w-8 h-8 text-red-600 dark:text-red-400" />
+          <Warning weight="light" className="w-8 h-8 text-red-600 dark:text-red-400" />
         </div>
         <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-3">
           Something went wrong
@@ -31,12 +31,12 @@ export default function Error({
         </p>
         <div className="flex items-center justify-center gap-3">
           <Button onClick={reset} variant="outline" className="gap-2">
-            <RefreshCw className="w-4 h-4" />
+            <ArrowClockwise weight="light" className="w-4 h-4" />
             Try Again
           </Button>
           <Link href="/dashboard">
             <Button className="gap-2 bg-purple-500 hover:bg-purple-600">
-              <Home className="w-4 h-4" />
+              <House weight="light" className="w-4 h-4" />
               Go to Dashboard
             </Button>
           </Link>

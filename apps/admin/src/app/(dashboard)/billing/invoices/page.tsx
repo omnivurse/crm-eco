@@ -1,5 +1,6 @@
 'use client';
 
+import { ArrowClockwise, ArrowLeft, CircleNotch, DownloadSimple, Eye, FileText, PaperPlaneTilt, Plus } from '@phosphor-icons/react';
 import { useState, useEffect } from 'react';
 import {
   Card,
@@ -25,16 +26,6 @@ import {
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { format, addDays } from 'date-fns';
 import Link from 'next/link';
-import {
-  ArrowLeft,
-  FileText,
-  Download,
-  Send,
-  RefreshCw,
-  Loader2,
-  Plus,
-  Eye,
-} from 'lucide-react';
 import { toast } from 'sonner';
 
 /** Invoice row with optional joined contact for the billing view */
@@ -282,7 +273,7 @@ export default function InvoicesPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <CircleNotch weight="light" className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -302,7 +293,7 @@ export default function InvoicesPage() {
         <div className="flex items-center gap-4">
           <Button variant="outline" size="sm" asChild>
             <Link href="/billing">
-              <ArrowLeft className="h-4 w-4 mr-2" />
+              <ArrowLeft weight="light" className="h-4 w-4 mr-2" />
               Back
             </Link>
           </Button>
@@ -313,11 +304,11 @@ export default function InvoicesPage() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={loadInvoices}>
-            <RefreshCw className="h-4 w-4 mr-2" />
+            <ArrowClockwise weight="light" className="h-4 w-4 mr-2" />
             Refresh
           </Button>
           <Button size="sm" onClick={() => setShowNewInvoice(true)}>
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus weight="light" className="h-4 w-4 mr-2" />
             New Invoice
           </Button>
         </div>
@@ -359,7 +350,7 @@ export default function InvoicesPage() {
 
       {/* New Invoice Dialog */}
       <Dialog open={showNewInvoice} onOpenChange={setShowNewInvoice}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>Create New Invoice</DialogTitle>
             <DialogDescription>
@@ -423,7 +414,7 @@ export default function InvoicesPage() {
             <Button onClick={createInvoice} disabled={creatingInvoice}>
               {creatingInvoice ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <CircleNotch weight="light" className="h-4 w-4 mr-2 animate-spin" />
                   Creating...
                 </>
               ) : (
@@ -466,7 +457,7 @@ export default function InvoicesPage() {
                     <tr key={invoice.id} className="border-b last:border-b-0 hover:bg-slate-50">
                       <td className="py-3 text-sm">
                         <div className="flex items-center gap-2">
-                          <FileText className="h-4 w-4 text-slate-400" />
+                          <FileText weight="light" className="h-4 w-4 text-slate-400" />
                           <span className="font-mono font-medium">{invoice.invoice_number}</span>
                         </div>
                       </td>
@@ -511,7 +502,7 @@ export default function InvoicesPage() {
                               onClick={() => sendInvoice(invoice)}
                               disabled={processingId === invoice.id}
                             >
-                              <Send className="h-4 w-4" />
+                              <PaperPlaneTilt weight="light" className="h-4 w-4" />
                             </Button>
                           )}
                           {invoice.status !== null && ['sent', 'partial', 'overdue'].includes(invoice.status) && (
@@ -527,12 +518,12 @@ export default function InvoicesPage() {
                           {invoice.pdf_url && (
                             <Button size="sm" variant="ghost" asChild>
                               <a href={invoice.pdf_url} target="_blank" rel="noopener noreferrer">
-                                <Download className="h-4 w-4" />
+                                <DownloadSimple weight="light" className="h-4 w-4" />
                               </a>
                             </Button>
                           )}
                           <Button size="sm" variant="ghost">
-                            <Eye className="h-4 w-4" />
+                            <Eye weight="light" className="h-4 w-4" />
                           </Button>
                         </div>
                       </td>
@@ -541,7 +532,7 @@ export default function InvoicesPage() {
                 ) : (
                   <tr>
                     <td colSpan={7} className="py-8 text-center text-slate-500">
-                      <FileText className="h-8 w-8 mx-auto mb-2 text-slate-300" />
+                      <FileText weight="light" className="h-8 w-8 mx-auto mb-2 text-slate-300" />
                       No invoices found
                     </td>
                   </tr>

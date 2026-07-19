@@ -1,8 +1,9 @@
 'use client';
 
+import { CircleNotch, GitMerge, MagnifyingGlass, Warning } from '@phosphor-icons/react';
 /**
  * MergeMembersSection — staff merge of a duplicate member INTO the current
- * member (the keeper). Search → pick the duplicate → confirm. The actual merge
+ * member (the keeper). MagnifyingGlass → pick the duplicate → confirm. The actual merge
  * runs server-side via the atomic merge_members_tx RPC (adminMergeMembers):
  * repoints all child tables, terminates the duplicate's active plan/billing
  * (keeper authoritative, no double-bill), soft-merges, and recalcs the keeper.
@@ -10,7 +11,6 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Merge, Loader2, Search, AlertTriangle } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
 import {
@@ -86,7 +86,7 @@ export function MergeMembersSection({ member }: MergeMembersSectionProps) {
     try {
       const res = await adminMergeMembers({ keeper_id: member.id, secondary_id: selected.id });
       if (!res.success) {
-        toast.error(res.error ?? 'Merge failed');
+        toast.error(res.error ?? 'GitMerge failed');
         return;
       }
       toast.success(`Merged ${label(selected)} into ${keeperName}`);
@@ -103,14 +103,14 @@ export function MergeMembersSection({ member }: MergeMembersSectionProps) {
   return (
     <>
       <Button type="button" variant="outline" className="gap-2" onClick={() => setOpen(true)}>
-        <Merge className="h-4 w-4" />
-        Merge duplicate members
+        <GitMerge weight="light" className="h-4 w-4" />
+        GitMerge duplicate members
       </Button>
 
       <Dialog open={open} onOpenChange={(o) => (o ? setOpen(true) : reset())}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Merge a duplicate into {keeperName}</DialogTitle>
+            <DialogTitle>GitMerge a duplicate into {keeperName}</DialogTitle>
             <DialogDescription>
               Find the duplicate member to absorb. Their dependents, documents, invoices and history
               move to <strong>{keeperName}</strong>; their active plan &amp; billing are terminated
@@ -121,11 +121,11 @@ export function MergeMembersSection({ member }: MergeMembersSectionProps) {
           {!selected ? (
             <div className="space-y-3 py-2">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <MagnifyingGlass weight="light" className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <Input
                   autoFocus
                   className="pl-9"
-                  placeholder="Search by name, email, or member #"
+                  placeholder="MagnifyingGlass by name, email, or member #"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                 />
@@ -133,7 +133,7 @@ export function MergeMembersSection({ member }: MergeMembersSectionProps) {
               <div className="max-h-64 space-y-1 overflow-y-auto">
                 {searching ? (
                   <p className="py-4 text-center text-sm text-slate-400">
-                    <Loader2 className="mr-2 inline h-4 w-4 animate-spin" />
+                    <CircleNotch weight="light" className="mr-2 inline h-4 w-4 animate-spin" />
                     Searching…
                   </p>
                 ) : query.trim().length < 2 ? (
@@ -163,9 +163,9 @@ export function MergeMembersSection({ member }: MergeMembersSectionProps) {
           ) : (
             <div className="space-y-3 py-2">
               <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
-                <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+                <Warning weight="light" className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
                 <div className="text-sm text-amber-900">
-                  Merge <strong>{label(selected)}</strong>
+                  GitMerge <strong>{label(selected)}</strong>
                   {selected.member_number ? ` (#${selected.member_number})` : ''} into{' '}
                   <strong>{keeperName}</strong>? Their records move to {keeperName} and their active
                   plan/billing is terminated. This cannot be undone.
@@ -181,8 +181,8 @@ export function MergeMembersSection({ member }: MergeMembersSectionProps) {
                   Back
                 </Button>
                 <Button variant="destructive" onClick={confirmMerge} disabled={merging}>
-                  {merging && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Merge into {keeperName}
+                  {merging && <CircleNotch weight="light" className="mr-2 h-4 w-4 animate-spin" />}
+                  GitMerge into {keeperName}
                 </Button>
               </>
             ) : (

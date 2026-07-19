@@ -1,18 +1,9 @@
 'use client';
 
+import { CheckCircle, Clock, EnvelopeSimple, Eye, FileText, PaperPlaneTilt, TrendUp, WarningCircle } from '@phosphor-icons/react';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@crm-eco/lib/supabase/client';
-import {
-  Mail,
-  FileText,
-  Send,
-  CheckCircle,
-  AlertCircle,
-  TrendingUp,
-  Clock,
-  Eye,
-} from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@crm-eco/ui/components/card';
 
@@ -107,15 +98,15 @@ export default function CommunicationsPage() {
       case 'delivered':
       case 'opened':
       case 'clicked':
-        return <CheckCircle className="w-4 h-4 text-emerald-500" />;
+        return <CheckCircle weight="light" className="w-4 h-4 text-emerald-500" />;
       case 'failed':
       case 'bounced':
-        return <AlertCircle className="w-4 h-4 text-red-500" />;
+        return <WarningCircle weight="light" className="w-4 h-4 text-red-500" />;
       case 'pending':
       case 'queued':
-        return <Clock className="w-4 h-4 text-amber-500" />;
+        return <Clock weight="light" className="w-4 h-4 text-amber-500" />;
       default:
-        return <Send className="w-4 h-4 text-blue-500" />;
+        return <PaperPlaneTilt weight="light" className="w-4 h-4 text-blue-500" />;
     }
   }
 
@@ -152,13 +143,13 @@ export default function CommunicationsPage() {
         <div className="flex gap-2">
           <Link href="/communications/templates">
             <Button variant="outline">
-              <FileText className="w-4 h-4 mr-2" />
+              <FileText weight="light" className="w-4 h-4 mr-2" />
               Templates
             </Button>
           </Link>
           <Link href="/communications/compose">
             <Button>
-              <Mail className="w-4 h-4 mr-2" />
+              <EnvelopeSimple weight="light" className="w-4 h-4 mr-2" />
               Compose Email
             </Button>
           </Link>
@@ -175,7 +166,7 @@ export default function CommunicationsPage() {
                 <p className="text-2xl font-bold">{stats.totalSent}</p>
               </div>
               <div className="p-3 bg-blue-100 rounded-lg">
-                <Send className="w-5 h-5 text-blue-600" />
+                <PaperPlaneTilt weight="light" className="w-5 h-5 text-blue-600" />
               </div>
             </div>
           </CardContent>
@@ -189,7 +180,7 @@ export default function CommunicationsPage() {
                 <p className="text-2xl font-bold text-emerald-600">{stats.delivered}</p>
               </div>
               <div className="p-3 bg-emerald-100 rounded-lg">
-                <CheckCircle className="w-5 h-5 text-emerald-600" />
+                <CheckCircle weight="light" className="w-5 h-5 text-emerald-600" />
               </div>
             </div>
           </CardContent>
@@ -203,7 +194,7 @@ export default function CommunicationsPage() {
                 <p className="text-2xl font-bold text-purple-600">{getOpenRate()}</p>
               </div>
               <div className="p-3 bg-purple-100 rounded-lg">
-                <Eye className="w-5 h-5 text-purple-600" />
+                <Eye weight="light" className="w-5 h-5 text-purple-600" />
               </div>
             </div>
           </CardContent>
@@ -217,7 +208,7 @@ export default function CommunicationsPage() {
                 <p className="text-2xl font-bold text-red-600">{stats.failed}</p>
               </div>
               <div className="p-3 bg-red-100 rounded-lg">
-                <AlertCircle className="w-5 h-5 text-red-600" />
+                <WarningCircle weight="light" className="w-5 h-5 text-red-600" />
               </div>
             </div>
           </CardContent>
@@ -231,7 +222,7 @@ export default function CommunicationsPage() {
                 <p className="text-2xl font-bold text-amber-600">{stats.templatesCount}</p>
               </div>
               <div className="p-3 bg-amber-100 rounded-lg">
-                <FileText className="w-5 h-5 text-amber-600" />
+                <FileText weight="light" className="w-5 h-5 text-amber-600" />
               </div>
             </div>
           </CardContent>
@@ -244,7 +235,7 @@ export default function CommunicationsPage() {
           <Card className="cursor-pointer hover:shadow-md transition-shadow">
             <CardContent className="p-6 flex items-center gap-4">
               <div className="p-3 bg-blue-100 rounded-lg">
-                <FileText className="w-6 h-6 text-blue-600" />
+                <FileText weight="light" className="w-6 h-6 text-blue-600" />
               </div>
               <div>
                 <p className="font-semibold">Email Templates</p>
@@ -258,7 +249,7 @@ export default function CommunicationsPage() {
           <Card className="cursor-pointer hover:shadow-md transition-shadow">
             <CardContent className="p-6 flex items-center gap-4">
               <div className="p-3 bg-emerald-100 rounded-lg">
-                <Mail className="w-6 h-6 text-emerald-600" />
+                <EnvelopeSimple weight="light" className="w-6 h-6 text-emerald-600" />
               </div>
               <div>
                 <p className="font-semibold">Email History</p>
@@ -272,10 +263,10 @@ export default function CommunicationsPage() {
           <Card className="cursor-pointer hover:shadow-md transition-shadow">
             <CardContent className="p-6 flex items-center gap-4">
               <div className="p-3 bg-purple-100 rounded-lg">
-                <Send className="w-6 h-6 text-purple-600" />
+                <PaperPlaneTilt weight="light" className="w-6 h-6 text-purple-600" />
               </div>
               <div>
-                <p className="font-semibold">Send Email</p>
+                <p className="font-semibold">PaperPlaneTilt Email</p>
                 <p className="text-sm text-slate-500">Compose and send an email</p>
               </div>
             </CardContent>

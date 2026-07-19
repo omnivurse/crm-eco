@@ -154,7 +154,7 @@ export function MFAChallenge({ onSuccess, onCancel, email }: MFAChallengeProps) 
                     <Button
                         onClick={handleVerify}
                         disabled={isLoading || code.length !== 6}
-                        className="w-full bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white font-semibold"
+                        className="w-full font-semibold"
                     >
                         {isLoading ? (
                             <>

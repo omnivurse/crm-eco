@@ -1,5 +1,5 @@
+import { ArrowLeft, Calendar, ChartBar, CurrencyDollar, GearSix, List, PencilSimple, ShieldCheck, Sparkle, UploadSimple } from '@phosphor-icons/react/dist/ssr';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Badge } from '@crm-eco/ui';
-import { ArrowLeft, Edit, Calendar, DollarSign, List, Settings, Sparkles, Shield, Upload, BarChart3 } from 'lucide-react';
 import { ProductDetailActions } from '@/components/products/ProductDetailActions';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -109,7 +109,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
         <div className="flex items-center gap-4">
           <Link href="/products">
             <Button variant="ghost" size="icon">
-              <ArrowLeft className="h-5 w-5" />
+              <ArrowLeft weight="light" className="h-5 w-5" />
             </Button>
           </Link>
           <div>
@@ -131,20 +131,20 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
           />
           <Link href={`/products/${product.id}/pricing`}>
             <Button variant="outline">
-              <DollarSign className="h-4 w-4 mr-2" />
+              <CurrencyDollar weight="light" className="h-4 w-4 mr-2" />
               Pricing Matrix
             </Button>
           </Link>
           <Link href={`/products/${product.id}/questionnaire`}>
             <Button variant="outline">
-              <List className="h-4 w-4 mr-2" />
+              <List weight="light" className="h-4 w-4 mr-2" />
               Questionnaire
             </Button>
           </Link>
           <Link href={`/products/${product.id}/edit`}>
             <Button>
-              <Edit className="h-4 w-4 mr-2" />
-              Edit Product
+              <PencilSimple weight="light" className="h-4 w-4 mr-2" />
+              PencilSimple Product
             </Button>
           </Link>
         </div>
@@ -196,7 +196,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <DollarSign className="h-5 w-5" />
+                <CurrencyDollar weight="light" className="h-5 w-5" />
                 Pricing
               </CardTitle>
             </CardHeader>
@@ -288,7 +288,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <List className="h-5 w-5" />
+                <List weight="light" className="h-5 w-5" />
                 Product Benefits
               </CardTitle>
               <CardDescription>
@@ -325,7 +325,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
+                <Calendar weight="light" className="h-5 w-5" />
                 Effective Dates
               </CardTitle>
             </CardHeader>
@@ -349,12 +349,12 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
             </CardContent>
           </Card>
 
-          {/* Settings */}
+          {/* GearSix */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Settings className="h-5 w-5" />
-                Settings
+                <GearSix weight="light" className="h-5 w-5" />
+                GearSix
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -413,7 +413,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <BarChart3 className="h-5 w-5" />
+                    <ChartBar weight="light" className="h-5 w-5" />
                     Rate Preview
                   </CardTitle>
                   <CardDescription>
@@ -434,7 +434,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                   <div className="mt-3 pt-3 border-t">
                     <Link href={`/products/${product.id}/pricing`}>
                       <Button variant="outline" size="sm" className="w-full">
-                        <DollarSign className="h-4 w-4 mr-2" />
+                        <CurrencyDollar weight="light" className="h-4 w-4 mr-2" />
                         Full Pricing Matrix
                       </Button>
                     </Link>
@@ -451,7 +451,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
               <div className="flex items-center gap-2 text-slate-500">
-                <Calendar className="h-4 w-4" />
+                <Calendar weight="light" className="h-4 w-4" />
                 <span>
                   Created {format(new Date(product.created_at), 'MMM d, yyyy')}
                 </span>

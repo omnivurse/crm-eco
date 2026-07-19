@@ -1,5 +1,6 @@
 'use client';
 
+import { Archive, ArrowCounterClockwise, Buildings, DotsThree, EnvelopeSimple, Globe, Heart, MagnifyingGlass, PencilSimple, Phone, Plus, ShieldCheck } from '@phosphor-icons/react';
 import { useState, useCallback } from 'react';
 import { Badge, Button, Input } from '@crm-eco/ui';
 import {
@@ -22,10 +23,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@crm-eco/ui/components/dropdown-menu';
-import {
-  Plus, Search, MoreHorizontal, Pencil, Archive, RotateCcw,
-  Heart, Shield, Building2, Globe, Phone, Mail,
-} from 'lucide-react';
 import { toast } from 'sonner';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { cn } from '@crm-eco/ui/lib/utils';
@@ -45,10 +42,10 @@ interface Carrier {
 }
 
 const CARRIER_TYPES = [
-  { value: 'insurance', label: 'Insurance', icon: Shield, color: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-500/20 dark:text-blue-400 dark:border-blue-500/30' },
+  { value: 'insurance', label: 'Insurance', icon: ShieldCheck, color: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-500/20 dark:text-blue-400 dark:border-blue-500/30' },
   { value: 'healthshare', label: 'Health Sharing Ministry', icon: Heart, color: 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/30' },
-  { value: 'medicaid', label: 'Medicaid', icon: Building2, color: 'bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-500/20 dark:text-violet-400 dark:border-violet-500/30' },
-  { value: 'short_term', label: 'Short Term', icon: Shield, color: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-500/20 dark:text-amber-400 dark:border-amber-500/30' },
+  { value: 'medicaid', label: 'Medicaid', icon: Buildings, color: 'bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-500/20 dark:text-violet-400 dark:border-violet-500/30' },
+  { value: 'short_term', label: 'Short Term', icon: ShieldCheck, color: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-500/20 dark:text-amber-400 dark:border-amber-500/30' },
 ];
 
 const emptyForm = { carrier_name: '', naic_code: '', website: '', phone: '', email: '', carrier_type: 'insurance' };
@@ -139,8 +136,8 @@ export function CarrierManagement({ initialCarriers, orgId }: Props) {
       {/* Toolbar */}
       <div className="flex items-center gap-3 flex-wrap">
         <div className="relative flex-1 min-w-[200px] max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <Input placeholder="Search carriers..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-9" />
+          <MagnifyingGlass weight="light" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <Input placeholder="MagnifyingGlass carriers..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-9" />
         </div>
         <Select value={typeFilter} onValueChange={setTypeFilter}>
           <SelectTrigger className="w-40 h-9"><SelectValue placeholder="All Types" /></SelectTrigger>
@@ -150,10 +147,10 @@ export function CarrierManagement({ initialCarriers, orgId }: Props) {
           </SelectContent>
         </Select>
         <Button variant={showArchived ? 'default' : 'outline'} size="sm" onClick={() => setShowArchived(!showArchived)} className="h-9">
-          <Archive className="w-4 h-4 mr-1.5" />{showArchived ? 'Active' : 'Archived'}
+          <Archive weight="light" className="w-4 h-4 mr-1.5" />{showArchived ? 'Active' : 'Archived'}
         </Button>
         <Button size="sm" onClick={() => { setEditingCarrier(null); setForm(emptyForm); setDialogOpen(true); }}>
-          <Plus className="w-4 h-4 mr-1.5" />{typeFilter === 'healthshare' ? 'Add Ministry' : typeFilter === 'all' ? 'Add Carrier / Ministry' : 'Add Carrier'}
+          <Plus weight="light" className="w-4 h-4 mr-1.5" />{typeFilter === 'healthshare' ? 'Add Ministry' : typeFilter === 'all' ? 'Add Carrier / Ministry' : 'Add Carrier'}
         </Button>
       </div>
 
@@ -161,7 +158,7 @@ export function CarrierManagement({ initialCarriers, orgId }: Props) {
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         {filtered.length === 0 ? (
           <div className="p-12 text-center">
-            <Building2 className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+            <Buildings weight="light" className="w-10 h-10 text-slate-300 mx-auto mb-3" />
             <p className="text-sm text-slate-500">{showArchived ? 'No archived carriers' : 'No carriers found'}</p>
           </div>
         ) : (
@@ -181,20 +178,20 @@ export function CarrierManagement({ initialCarriers, orgId }: Props) {
                     </div>
                     <div className="flex items-center gap-3 text-xs text-slate-400 mt-0.5">
                       {carrier.naic_code && <span>NAIC: {carrier.naic_code}</span>}
-                      {carrier.website && <a href={carrier.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-blue-500"><Globe className="w-3 h-3" />Website</a>}
-                      {carrier.phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{carrier.phone}</span>}
-                      {carrier.email && <span className="flex items-center gap-1"><Mail className="w-3 h-3" />{carrier.email}</span>}
+                      {carrier.website && <a href={carrier.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-blue-500"><Globe weight="light" className="w-3 h-3" />Website</a>}
+                      {carrier.phone && <span className="flex items-center gap-1"><Phone weight="light" className="w-3 h-3" />{carrier.phone}</span>}
+                      {carrier.email && <span className="flex items-center gap-1"><EnvelopeSimple weight="light" className="w-3 h-3" />{carrier.email}</span>}
                     </div>
                   </div>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="w-4 h-4" /></Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8"><DotsThree weight="light" className="w-4 h-4" /></Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => openEdit(carrier)}><Pencil className="w-4 h-4 mr-2" />Edit</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => openEdit(carrier)}><PencilSimple weight="light" className="w-4 h-4 mr-2" />Edit</DropdownMenuItem>
                       {carrier.is_active
-                        ? <DropdownMenuItem onClick={() => handleArchive(carrier)} className="text-amber-600"><Archive className="w-4 h-4 mr-2" />Archive</DropdownMenuItem>
-                        : <DropdownMenuItem onClick={() => handleReactivate(carrier)} className="text-emerald-600"><RotateCcw className="w-4 h-4 mr-2" />Reactivate</DropdownMenuItem>
+                        ? <DropdownMenuItem onClick={() => handleArchive(carrier)} className="text-amber-600"><Archive weight="light" className="w-4 h-4 mr-2" />Archive</DropdownMenuItem>
+                        : <DropdownMenuItem onClick={() => handleReactivate(carrier)} className="text-emerald-600"><ArrowCounterClockwise weight="light" className="w-4 h-4 mr-2" />Reactivate</DropdownMenuItem>
                       }
                     </DropdownMenuContent>
                   </DropdownMenu>

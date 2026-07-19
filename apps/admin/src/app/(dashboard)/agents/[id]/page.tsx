@@ -1,5 +1,5 @@
+import { ArrowLeft, Calendar, CurrencyDollar, EnvelopeSimple, FileText, Link as LinkIcon, MapPin, Palette, PencilSimple, Phone, ShareNetwork, Users } from '@phosphor-icons/react/dist/ssr';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Badge, Tabs, TabsContent, TabsList, TabsTrigger } from '@crm-eco/ui';
-import { ArrowLeft, Edit, Mail, Phone, MapPin, Calendar, Users, Palette, DollarSign, Link as LinkIcon, FileText, Network } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
@@ -100,7 +100,7 @@ export default async function AgentDetailPage({ params }: PageProps) {
         <div className="flex items-center gap-4">
           <Link href="/agents">
             <Button variant="ghost" size="icon">
-              <ArrowLeft className="h-5 w-5" />
+              <ArrowLeft weight="light" className="h-5 w-5" />
             </Button>
           </Link>
           <div>
@@ -116,8 +116,8 @@ export default async function AgentDetailPage({ params }: PageProps) {
           </Badge>
           <Link href={`/agents/${agent.id}/edit`}>
             <Button>
-              <Edit className="h-4 w-4 mr-2" />
-              Edit Agent
+              <PencilSimple weight="light" className="h-4 w-4 mr-2" />
+              PencilSimple Agent
             </Button>
           </Link>
         </div>
@@ -127,27 +127,27 @@ export default async function AgentDetailPage({ params }: PageProps) {
       <Tabs defaultValue="producer" className="space-y-6">
         <TabsList>
           <TabsTrigger value="producer">
-            <FileText className="h-4 w-4 mr-2" />
+            <FileText weight="light" className="h-4 w-4 mr-2" />
             Producer Info
           </TabsTrigger>
           <TabsTrigger value="profile">
-            <Users className="h-4 w-4 mr-2" />
+            <Users weight="light" className="h-4 w-4 mr-2" />
             Profile
           </TabsTrigger>
           <TabsTrigger value="downline">
-            <Network className="h-4 w-4 mr-2" />
+            <ShareNetwork weight="light" className="h-4 w-4 mr-2" />
             Downline
           </TabsTrigger>
           <TabsTrigger value="licensing">
-            <FileText className="h-4 w-4 mr-2" />
+            <FileText weight="light" className="h-4 w-4 mr-2" />
             Licensing
           </TabsTrigger>
           <TabsTrigger value="enrollment">
-            <LinkIcon className="h-4 w-4 mr-2" />
+            <LinkIcon weight="light" className="h-4 w-4 mr-2" />
             Enrollment Links
           </TabsTrigger>
           <TabsTrigger value="commissions">
-            <DollarSign className="h-4 w-4 mr-2" />
+            <CurrencyDollar weight="light" className="h-4 w-4 mr-2" />
             Commissions
           </TabsTrigger>
         </TabsList>
@@ -227,18 +227,18 @@ export default async function AgentDetailPage({ params }: PageProps) {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="flex items-center gap-3">
-                    <Mail className="h-4 w-4 text-slate-400" />
+                    <EnvelopeSimple weight="light" className="h-4 w-4 text-slate-400" />
                     <span>{agent.email}</span>
                   </div>
                   {agent.phone && (
                     <div className="flex items-center gap-3">
-                      <Phone className="h-4 w-4 text-slate-400" />
+                      <Phone weight="light" className="h-4 w-4 text-slate-400" />
                       <span>{agent.phone}</span>
                     </div>
                   )}
                   {agent.street_address && (
                     <div className="flex items-start gap-3">
-                      <MapPin className="h-4 w-4 text-slate-400 mt-0.5" />
+                      <MapPin weight="light" className="h-4 w-4 text-slate-400 mt-0.5" />
                       <div>
                         <p>{agent.street_address}</p>
                         {agent.apartment && <p>{agent.apartment}</p>}
@@ -257,7 +257,7 @@ export default async function AgentDetailPage({ params }: PageProps) {
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <Palette className="h-5 w-5" />
+                      <Palette weight="light" className="h-5 w-5" />
                       Branding
                     </CardTitle>
                   </CardHeader>
@@ -309,7 +309,7 @@ export default async function AgentDetailPage({ params }: PageProps) {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Users className="h-5 w-5" />
+                    <Users weight="light" className="h-5 w-5" />
                     Assigned Members
                   </CardTitle>
                   <CardDescription>
@@ -408,7 +408,7 @@ export default async function AgentDetailPage({ params }: PageProps) {
                 </CardHeader>
                 <CardContent className="space-y-2 text-sm">
                   <div className="flex items-center gap-2 text-slate-500">
-                    <Calendar className="h-4 w-4" />
+                    <Calendar weight="light" className="h-4 w-4" />
                     <span>
                       Created {format(new Date(agent.created_at), 'MMM d, yyyy')}
                     </span>

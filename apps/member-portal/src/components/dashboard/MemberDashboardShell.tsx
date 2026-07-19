@@ -1,5 +1,4 @@
-import { Card, CardContent } from '@crm-eco/ui';
-import { AlertCircle } from 'lucide-react';
+import { WarningCircle } from '@phosphor-icons/react/dist/ssr';
 import { WelcomeCard } from './WelcomeCard';
 import { MembershipCard } from './MembershipCard';
 import { EnrollmentPanel } from './EnrollmentPanel';
@@ -8,8 +7,8 @@ import { TicketsOverviewCard } from './TicketsOverviewCard';
 import { NextBillingCard } from './NextBillingCard';
 import { FailureBanner } from './FailureBanner';
 import { AdvisorCard } from './AdvisorCard';
+import { Bezel } from '@/components/ui/Bezel';
 
-// Types matching the data from page.tsx
 interface MemberData {
   id: string;
   first_name: string;
@@ -22,9 +21,9 @@ interface MembershipWithPlan {
   status: 'pending' | 'active' | 'terminated' | 'paused';
   effective_date: string;
   billing_amount: number | null;
-  plans: { 
-    name: string; 
-    code: string; 
+  plans: {
+    name: string;
+    code: string;
     monthly_share: number;
   } | null;
 }
@@ -95,55 +94,89 @@ export function MemberDashboardShell({
   openFailureCount = 0,
   advisor = null,
 }: MemberDashboardShellProps) {
-  const hasActiveMembership = membership?.status === 'active' || membership?.status === 'pending';
-  const hasInProgressEnrollment = enrollment?.status === 'draft' || enrollment?.status === 'in_progress';
+  const hasActiveMembership =
+    membership?.status === 'active' || membership?.status === 'pending';
+  const hasInProgressEnrollment =
+    enrollment?.status === 'draft' || enrollment?.status === 'in_progress';
+  const showEnrollment =
+    !hasActiveMembership ||
+    hasInProgressEnrollment ||
+    enrollment?.status === 'submitted';
 
   return (
-    <div className="max-w-screen-xl mx-auto space-y-6">
-      {/* Welcome Card - Full Width */}
-      <WelcomeCard
-        firstName={member.first_name}
-        hasActiveMembership={hasActiveMembership}
-        hasInProgressEnrollment={hasInProgressEnrollment}
-        inProgressEnrollmentId={hasInProgressEnrollment ? enrollment?.id : undefined}
-      />
-
-      <FailureBanner count={openFailureCount} />
-
-      {/* Main Grid - 2 columns on desktop */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-        {/* Left Column */}
-        <div className="space-y-6">
-          <MembershipCard membership={membership} />
-          <NextBillingCard schedule={billingSchedule} />
-          <NeedsOverviewCard needs={needs} />
-        </div>
-
-        {/* Right Column */}
-        <div className="space-y-6">
-          <EnrollmentPanel enrollment={enrollment} />
-          <AdvisorCard advisor={advisor} />
-          <TicketsOverviewCard tickets={tickets} />
-        </div>
+    <div className="mp-bento">
+      <div className="mp-reveal mp-span-8 mp-row-2">
+        <WelcomeCard
+          firstName={member.first_name}
+          hasActiveMembership={hasActiveMembership}
+          hasInProgressEnrollment={hasInProgressEnrollment}
+          inProgressEnrollmentId={hasInProgressEnrollment ? enrollment?.id : undefined}
+        />
       </div>
 
-      {/* Important Notice - Full Width */}
-      <Card className="border-amber-200 bg-amber-50">
-        <CardContent className="pt-6">
-          <div className="flex gap-4">
-            <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" aria-hidden />
+      <div className="mp-reveal mp-span-4">
+        <MembershipCard membership={membership} />
+      </div>
+
+      <div className="mp-reveal mp-span-4">
+        <NextBillingCard schedule={billingSchedule} />
+      </div>
+
+      {openFailureCount > 0 && (
+        <div className="mp-reveal mp-span-12">
+          <FailureBanner count={openFailureCount} />
+        </div>
+      )}
+
+      <div className="mp-reveal mp-span-6">
+        <NeedsOverviewCard needs={needs} />
+      </div>
+
+      {showEnrollment ? (
+        <div className="mp-reveal mp-span-6">
+          <EnrollmentPanel enrollment={enrollment} />
+        </div>
+      ) : (
+        <>
+          <div className="mp-reveal mp-span-3">
+            <AdvisorCard advisor={advisor} />
+          </div>
+          <div className="mp-reveal mp-span-3">
+            <TicketsOverviewCard tickets={tickets} />
+          </div>
+        </>
+      )}
+
+      {showEnrollment && (
+        <>
+          <div className="mp-reveal mp-span-3">
+            <AdvisorCard advisor={advisor} />
+          </div>
+          <div className="mp-reveal mp-span-3">
+            <TicketsOverviewCard tickets={tickets} />
+          </div>
+        </>
+      )}
+
+      <div className="mp-reveal mp-span-12">
+        <Bezel>
+          <div className="flex items-start gap-4 p-6 md:p-7">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[rgba(245,158,11,0.12)] text-[#b45309]">
+              <WarningCircle weight="light" className="h-4 w-4" aria-hidden />
+            </span>
             <div>
-              <h3 className="font-medium text-amber-900 mb-1">Important Reminder</h3>
-              <p className="text-sm text-amber-700">
-                Double Helix Hub is a health sharing ministry, not insurance. Members share each other&apos;s 
-                medical expenses according to program guidelines. Sharing is voluntary and not guaranteed. 
-                Please review your membership guidelines for complete details.
+              <p className="mb-1 text-[0.85rem] font-bold text-[var(--mp-ink)]">
+                Important Reminder
+              </p>
+              <p className="max-w-3xl text-[0.8rem] leading-relaxed text-slate-500">
+                Double Helix Hub is a health sharing ministry, not insurance. Members share each
+                other&apos;s medical expenses according to program guidelines. Sharing is voluntary
+                and not guaranteed. Please review your membership guidelines for complete details.
               </p>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </Bezel>
+      </div>
     </div>
   );
 }
-

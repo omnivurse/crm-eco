@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Input, Label, Button, Card, CardContent, Badge } from '@crm-eco/ui';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@crm-eco/ui';
-import { Loader2, ArrowRight, Plus, Trash2, Users } from 'lucide-react';
+import { CircleNotch, ArrowRight, Plus, Trash, Users } from '@phosphor-icons/react';
 import type { HouseholdMember } from '@crm-eco/enrollment';
 
 interface SelfServeHouseholdStepProps {
@@ -102,8 +102,8 @@ export function SelfServeHouseholdStep({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <p className="text-sm text-blue-800">
+      <div className="bg-[rgba(11,109,133,0.06)] border border-[rgba(11,109,133,0.15)] rounded-lg p-4">
+        <p className="text-sm text-[var(--mp-ink)]">
           <strong>Adding family members?</strong> Include your spouse and any dependents 
           you&apos;d like to cover under your membership. If it&apos;s just you, you can skip 
           this step by clicking Continue.
@@ -112,7 +112,7 @@ export function SelfServeHouseholdStep({
 
       {/* Summary */}
       <div className="flex items-center gap-2 text-slate-600">
-        <Users className="w-5 h-5" />
+        <Users weight="light" className="w-5 h-5" />
         <span>
           {members.length === 0 
             ? 'No additional household members' 
@@ -137,7 +137,7 @@ export function SelfServeHouseholdStep({
                     onClick={() => removeMember(member.id)}
                     className="text-red-600 hover:text-red-700 hover:bg-red-50"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash weight="light" className="w-4 h-4" />
                   </Button>
                 </div>
 
@@ -211,7 +211,7 @@ export function SelfServeHouseholdStep({
         onClick={addMember}
         className="w-full gap-2"
       >
-        <Plus className="w-4 h-4" />
+        <Plus weight="light" className="w-4 h-4" />
         Add Household Member
       </Button>
 
@@ -229,13 +229,13 @@ export function SelfServeHouseholdStep({
         <Button type="submit" disabled={loading} className="gap-2">
           {loading ? (
             <>
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <CircleNotch weight="light" className="w-4 h-4 animate-spin" />
               Saving...
             </>
           ) : (
             <>
               Continue
-              <ArrowRight className="w-4 h-4" />
+              <ArrowRight weight="light" className="w-4 h-4" />
             </>
           )}
         </Button>

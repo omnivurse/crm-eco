@@ -324,7 +324,7 @@ export function FiltersPanel({ fields, moduleKey, isOpen, onToggle }: FiltersPan
                 onToggle();
               }
             }}
-            className="w-full bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white h-11 lg:h-10"
+            className="w-full h-11 lg:h-10"
           >
             Apply Filters
           </Button>

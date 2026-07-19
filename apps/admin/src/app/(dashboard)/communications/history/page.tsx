@@ -1,17 +1,8 @@
 'use client';
 
+import { ArrowClockwise, CheckCircle, Clock, EnvelopeSimple, Eye, MagnifyingGlass, PaperPlaneTilt, WarningCircle } from '@phosphor-icons/react';
 import { useEffect, useState } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
-import {
-  Mail,
-  Search,
-  CheckCircle,
-  AlertCircle,
-  Clock,
-  Eye,
-  Send,
-  RefreshCw,
-} from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@crm-eco/ui/components/card';
@@ -141,15 +132,15 @@ export default function EmailHistoryPage() {
       case 'delivered':
       case 'opened':
       case 'clicked':
-        return <CheckCircle className="w-4 h-4 text-emerald-500" />;
+        return <CheckCircle weight="light" className="w-4 h-4 text-emerald-500" />;
       case 'failed':
       case 'bounced':
-        return <AlertCircle className="w-4 h-4 text-red-500" />;
+        return <WarningCircle weight="light" className="w-4 h-4 text-red-500" />;
       case 'pending':
       case 'queued':
-        return <Clock className="w-4 h-4 text-amber-500" />;
+        return <Clock weight="light" className="w-4 h-4 text-amber-500" />;
       default:
-        return <Send className="w-4 h-4 text-blue-500" />;
+        return <PaperPlaneTilt weight="light" className="w-4 h-4 text-blue-500" />;
     }
   }
 
@@ -173,7 +164,7 @@ export default function EmailHistoryPage() {
           </p>
         </div>
         <Button variant="outline" onClick={loadEmails}>
-          <RefreshCw className="w-4 h-4 mr-2" />
+          <ArrowClockwise weight="light" className="w-4 h-4 mr-2" />
           Refresh
         </Button>
       </div>
@@ -181,9 +172,9 @@ export default function EmailHistoryPage() {
       {/* Filters */}
       <div className="flex gap-4">
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <MagnifyingGlass weight="light" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <Input
-            placeholder="Search by email or subject..."
+            placeholder="MagnifyingGlass by email or subject..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
@@ -220,7 +211,7 @@ export default function EmailHistoryPage() {
             </div>
           ) : filteredEmails.length === 0 ? (
             <div className="text-center py-16">
-              <Mail className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+              <EnvelopeSimple weight="light" className="w-12 h-12 text-slate-300 mx-auto mb-4" />
               <p className="text-slate-500">No emails found</p>
             </div>
           ) : (
@@ -277,7 +268,7 @@ export default function EmailHistoryPage() {
                           size="icon"
                           onClick={() => setSelectedEmail(email)}
                         >
-                          <Eye className="w-4 h-4" />
+                          <Eye weight="light" className="w-4 h-4" />
                         </Button>
                       </TableCell>
                     </TableRow>

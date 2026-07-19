@@ -4,17 +4,17 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { 
   CreditCard, 
-  DollarSign,
+  CurrencyDollar,
   Calendar,
   CheckCircle,
   XCircle,
   Clock,
   Plus,
-  Loader2,
-  AlertCircle,
+  CircleNotch,
+  WarningCircle,
   Receipt,
   Wallet,
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@crm-eco/ui/components/card';
 import { Button } from '@crm-eco/ui/components/button';
 import { Badge } from '@crm-eco/ui/components/badge';
@@ -31,6 +31,7 @@ import {
   formatCoverageReason,
 } from '@crm-eco/lib';
 import type { CoverageChangeSummary } from '@crm-eco/lib';
+import { PageHeader } from '@/components/PageHeader';
 
 interface BillingRecord {
   id: string;
@@ -157,10 +158,10 @@ export default function BillingPage() {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'Paid': return <CheckCircle className="h-4 w-4 text-green-500" aria-hidden />;
-      case 'Pending': return <Clock className="h-4 w-4 text-amber-500" aria-hidden />;
-      case 'Failed': return <XCircle className="h-4 w-4 text-red-500" aria-hidden />;
-      default: return <AlertCircle className="h-4 w-4 text-slate-400" aria-hidden />;
+      case 'Paid': return <CheckCircle weight="light" className="h-4 w-4 text-green-500" aria-hidden />;
+      case 'Pending': return <Clock weight="light" className="h-4 w-4 text-amber-500" aria-hidden />;
+      case 'Failed': return <XCircle weight="light" className="h-4 w-4 text-red-500" aria-hidden />;
+      default: return <WarningCircle weight="light" className="h-4 w-4 text-slate-400" aria-hidden />;
     }
   };
 
@@ -175,7 +176,7 @@ export default function BillingPage() {
   };
 
   const getCardIcon = (cardType: string | null) => {
-    return <CreditCard className="h-5 w-5" aria-hidden />;
+    return <CreditCard weight="light" className="h-5 w-5" aria-hidden />;
   };
 
   const totalPaid = billingHistory
@@ -189,25 +190,25 @@ export default function BillingPage() {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <CircleNotch weight="light" className="h-8 w-8 animate-spin text-[var(--mp-teal)]" />
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Billing & Payments</h1>
-        <p className="text-slate-500">View your billing history and manage payment methods</p>
-      </div>
+      <PageHeader
+        title="Billing & Payments"
+        description="View your billing history and manage payment methods"
+      />
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center">
-                <DollarSign className="h-6 w-6 text-green-600" aria-hidden />
+              <div className="w-12 h-12 rounded-xl bg-[rgba(11,109,133,0.06)] flex items-center justify-center">
+                <CurrencyDollar weight="light" className="h-6 w-6 text-[var(--mp-teal)]" aria-hidden />
               </div>
               <div>
                 <p className="text-sm text-slate-500">Total Paid</p>
@@ -222,8 +223,8 @@ export default function BillingPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center">
-                <Clock className="h-6 w-6 text-amber-600" aria-hidden />
+              <div className="w-12 h-12 rounded-xl bg-[rgba(11,109,133,0.06)] flex items-center justify-center">
+                <Clock weight="light" className="h-6 w-6 text-[var(--mp-teal)]" aria-hidden />
               </div>
               <div>
                 <p className="text-sm text-slate-500">Pending</p>
@@ -238,8 +239,8 @@ export default function BillingPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center">
-                <Calendar className="h-6 w-6 text-blue-600" aria-hidden />
+              <div className="w-12 h-12 rounded-xl bg-[rgba(11,109,133,0.06)] flex items-center justify-center">
+                <Calendar weight="light" className="h-6 w-6 text-[var(--mp-teal)]" aria-hidden />
               </div>
               <div>
                 <p className="text-sm text-slate-500">Next Payment</p>
@@ -302,11 +303,11 @@ export default function BillingPage() {
       <Tabs defaultValue="history" className="space-y-6">
         <TabsList>
           <TabsTrigger value="history" className="gap-2">
-            <Receipt className="h-4 w-4" aria-hidden />
+            <Receipt weight="light" className="h-4 w-4" aria-hidden />
             Payment History
           </TabsTrigger>
           <TabsTrigger value="methods" className="gap-2">
-            <Wallet className="h-4 w-4" aria-hidden />
+            <Wallet weight="light" className="h-4 w-4" aria-hidden />
             Payment Methods
           </TabsTrigger>
         </TabsList>
@@ -320,7 +321,7 @@ export default function BillingPage() {
             <CardContent>
               {billingHistory.length === 0 ? (
                 <div className="text-center py-8">
-                  <Receipt className="h-12 w-12 mx-auto mb-4 text-slate-300" aria-hidden />
+                  <Receipt weight="light" className="h-12 w-12 mx-auto mb-4 text-slate-300" aria-hidden />
                   <p className="text-slate-500">No billing history found</p>
                 </div>
               ) : (
@@ -385,7 +386,7 @@ export default function BillingPage() {
               </div>
               <Button className="gap-2" asChild>
                 <Link href="/billing/methods/new">
-                  <Plus className="h-4 w-4" aria-hidden />
+                  <Plus weight="light" className="h-4 w-4" aria-hidden />
                   Add Method
                 </Link>
               </Button>
@@ -393,11 +394,11 @@ export default function BillingPage() {
             <CardContent>
               {paymentProfiles.length === 0 ? (
                 <div className="text-center py-8">
-                  <CreditCard className="h-12 w-12 mx-auto mb-4 text-slate-300" aria-hidden />
+                  <CreditCard weight="light" className="h-12 w-12 mx-auto mb-4 text-slate-300" aria-hidden />
                   <p className="text-slate-500 mb-4">No payment methods on file</p>
                   <Button variant="outline" className="gap-2" asChild>
                     <Link href="/billing/methods/new">
-                      <Plus className="h-4 w-4" aria-hidden />
+                      <Plus weight="light" className="h-4 w-4" aria-hidden />
                       Add Payment Method
                     </Link>
                   </Button>
@@ -410,7 +411,7 @@ export default function BillingPage() {
                       className="flex items-center justify-between p-4 border rounded-lg"
                     >
                       <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center">
+                        <div className="w-12 h-12 rounded-lg bg-[rgba(11,109,133,0.06)] flex items-center justify-center text-[var(--mp-teal)]">
                           {getCardIcon(profile.card_type)}
                         </div>
                         <div>
@@ -449,7 +450,7 @@ export default function BillingPage() {
               {paymentProfiles.some((p) => p.is_default) ? (
                 <div className="flex items-center justify-between p-4 bg-green-50 border border-green-100 rounded-lg">
                   <div className="flex items-center gap-3">
-                    <CheckCircle className="h-5 w-5 text-green-600" aria-hidden />
+                    <CheckCircle weight="light" className="h-5 w-5 text-green-600" aria-hidden />
                     <div>
                       <p className="font-medium text-green-900">Auto-Pay is Enabled</p>
                       <p className="text-sm text-green-700">
@@ -464,7 +465,7 @@ export default function BillingPage() {
               ) : (
                 <div className="flex items-center justify-between p-4 bg-amber-50 border border-amber-100 rounded-lg">
                   <div className="flex items-center gap-3">
-                    <AlertCircle className="h-5 w-5 text-amber-600" aria-hidden />
+                    <WarningCircle weight="light" className="h-5 w-5 text-amber-600" aria-hidden />
                     <div>
                       <p className="font-medium text-amber-900">Auto-Pay is not set up</p>
                       <p className="text-sm text-amber-700">

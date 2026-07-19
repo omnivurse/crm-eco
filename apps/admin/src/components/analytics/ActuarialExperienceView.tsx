@@ -1,5 +1,6 @@
 'use client';
 
+import { CaretDown, CaretUp, CurrencyDollar, DownloadSimple, FileText, Heart, Pulse, ShieldCheck, TrendUp, Users, Warning } from '@phosphor-icons/react';
 import { useState, useCallback } from 'react';
 import {
   BarChart,
@@ -14,20 +15,6 @@ import {
   AreaChart,
   Area,
 } from 'recharts';
-import {
-  DollarSign,
-  Users,
-  TrendingUp,
-  Shield,
-  AlertTriangle,
-  Activity,
-  Download,
-  ChevronDown,
-  ChevronUp,
-  FileText,
-  Heart,
-} from 'lucide-react';
-
 // ============================================================================
 // Types
 // ============================================================================
@@ -237,9 +224,9 @@ function SectionHeader({
         </div>
         <h3 className="text-lg font-bold text-slate-900 text-left">{title}</h3>
         {expanded ? (
-          <ChevronUp className="w-5 h-5 text-slate-400 group-hover:text-slate-600" />
+          <CaretUp weight="light" className="w-5 h-5 text-slate-400 group-hover:text-slate-600" />
         ) : (
-          <ChevronDown className="w-5 h-5 text-slate-400 group-hover:text-slate-600" />
+          <CaretDown weight="light" className="w-5 h-5 text-slate-400 group-hover:text-slate-600" />
         )}
       </button>
       {onExport && (
@@ -247,7 +234,7 @@ function SectionHeader({
           onClick={onExport}
           className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
         >
-          <Download className="w-4 h-4" />
+          <DownloadSimple weight="light" className="w-4 h-4" />
           {exportLabel}
         </button>
       )}
@@ -339,7 +326,7 @@ function MonthlySection({
               <XAxis dataKey="name" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 12 }} unit="%" />
               <Tooltip formatter={(v: number) => `${v}%`} />
-              <Line type="monotone" dataKey="value" stroke="#ef4444" strokeWidth={2} dot={{ r: 3 }} />
+              <Line type="monotone" dataKey="value" stroke="#ef4444" dot={{ r: 3 }} />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -356,8 +343,8 @@ function MonthlySection({
               <XAxis dataKey="name" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 12 }} />
               <Tooltip formatter={(v: number) => fmtUsd(v)} />
-              <Area type="monotone" dataKey="contributions" fill="#10b981" fillOpacity={0.2} stroke="#10b981" strokeWidth={2} />
-              <Area type="monotone" dataKey="paid" fill="#ef4444" fillOpacity={0.2} stroke="#ef4444" strokeWidth={2} />
+              <Area type="monotone" dataKey="contributions" fill="#10b981" fillOpacity={0.2} stroke="#10b981" />
+              <Area type="monotone" dataKey="paid" fill="#ef4444" fillOpacity={0.2} stroke="#ef4444" />
             </AreaChart>
           </ResponsiveContainer>
         </div>
@@ -429,7 +416,7 @@ function ContributionSection({ data }: { data: ContributionMonth[] }) {
             <XAxis dataKey="name" tick={{ fontSize: 11 }} />
             <YAxis tick={{ fontSize: 12 }} unit="%" domain={[0, 110]} />
             <Tooltip formatter={(v: number) => `${v}%`} />
-            <Line type="monotone" dataKey="rate" stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} />
+            <Line type="monotone" dataKey="rate" stroke="#10b981" dot={{ r: 3 }} />
           </LineChart>
         </ResponsiveContainer>
       </div>
@@ -522,7 +509,7 @@ function ExposureSection({ data }: { data: ExposureDevelopment[] }) {
               <XAxis dataKey="name" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 12 }} />
               <Tooltip formatter={(v: number) => fmtUsd(v)} />
-              <Area type="monotone" dataKey="value" fill="#8b5cf6" fillOpacity={0.2} stroke="#8b5cf6" strokeWidth={2} />
+              <Area type="monotone" dataKey="value" fill="#8b5cf6" fillOpacity={0.2} stroke="#8b5cf6" />
             </AreaChart>
           </ResponsiveContainer>
         </div>
@@ -616,14 +603,14 @@ export function ActuarialExperienceView({ data }: { data: ActuarialData }) {
           onClick={exportAll}
           className="flex items-center gap-2 px-4 py-2.5 bg-slate-800 text-white text-sm font-semibold rounded-xl hover:bg-slate-700 transition-colors shadow-sm"
         >
-          <Download className="w-4 h-4" />
+          <DownloadSimple weight="light" className="w-4 h-4" />
           Export All CSVs
         </button>
       </div>
 
       {/* Privacy badge */}
       <div className="flex items-center gap-2 px-4 py-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-sm text-emerald-800">
-        <Shield className="w-4 h-4 flex-shrink-0" />
+        <ShieldCheck weight="light" className="w-4 h-4 flex-shrink-0" />
         <span>
           <strong>De-Identified:</strong> All data is aggregated at the population level. No individual member data is included.
           Small groups (&lt; 5 members) are suppressed. No BAA required for actuary submission.
@@ -633,17 +620,17 @@ export function ActuarialExperienceView({ data }: { data: ActuarialData }) {
       {/* Portfolio Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
         <StatCard label="Active Members" value={fmtInt(s.activeMembers)} icon={Users} color="bg-sky-600" sub={`${fmtInt(s.totalMembers)} total`} />
-        <StatCard label="Total Contributions" value={fmtUsd(s.totalContributionsCollected)} icon={DollarSign} color="bg-emerald-600" sub={`MRR: ${fmtUsd(s.currentMRR)}`} />
+        <StatCard label="Total Contributions" value={fmtUsd(s.totalContributionsCollected)} icon={CurrencyDollar} color="bg-emerald-600" sub={`MRR: ${fmtUsd(s.currentMRR)}`} />
         <StatCard label="Total Paid/Shared" value={fmtUsd(s.totalAmountPaid)} icon={Heart} color="bg-rose-600" sub={`${fmtInt(s.totalNeedsSubmitted)} needs`} />
-        <StatCard label="Loss Ratio" value={fmtPct(s.overallLossRatio)} icon={TrendingUp} color={s.overallLossRatio > 80 ? 'bg-red-600' : s.overallLossRatio > 60 ? 'bg-amber-600' : 'bg-emerald-600'} sub="paid / collected" />
-        <StatCard label="Catastrophic (>$25k)" value={fmtInt(s.catastrophicNeedsCount)} icon={AlertTriangle} color="bg-amber-600" sub={`Utilization: ${fmtPct(s.utilizationPer100)}`} />
+        <StatCard label="Loss Ratio" value={fmtPct(s.overallLossRatio)} icon={TrendUp} color={s.overallLossRatio > 80 ? 'bg-red-600' : s.overallLossRatio > 60 ? 'bg-amber-600' : 'bg-emerald-600'} sub="paid / collected" />
+        <StatCard label="Catastrophic (>$25k)" value={fmtInt(s.catastrophicNeedsCount)} icon={Warning} color="bg-amber-600" sub={`Utilization: ${fmtPct(s.utilizationPer100)}`} />
       </div>
 
       {/* Section 1: Monthly Experience */}
       <section>
         <SectionHeader
           title="Monthly Experience Summary"
-          icon={Activity}
+          icon={Pulse}
           expanded={expanded.monthly}
           onToggle={() => toggle('monthly')}
           onExport={exportMonthly}
@@ -675,7 +662,7 @@ export function ActuarialExperienceView({ data }: { data: ActuarialData }) {
       <section>
         <SectionHeader
           title="Contribution Adequacy"
-          icon={DollarSign}
+          icon={CurrencyDollar}
           expanded={expanded.contributions}
           onToggle={() => toggle('contributions')}
           onExport={exportContributions}
@@ -707,7 +694,7 @@ export function ActuarialExperienceView({ data }: { data: ActuarialData }) {
       <section>
         <SectionHeader
           title="Exposure & Claims Development"
-          icon={Shield}
+          icon={ShieldCheck}
           expanded={expanded.exposure}
           onToggle={() => toggle('exposure')}
           onExport={exportExposure}

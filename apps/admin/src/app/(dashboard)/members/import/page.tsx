@@ -1,11 +1,11 @@
 'use client';
 
+import { ArrowLeft } from '@phosphor-icons/react';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { ImportWizard } from '@/components/imports';
 import { Button } from '@crm-eco/ui';
-import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
 export default function MembersImportPage() {
@@ -54,7 +54,7 @@ export default function MembersImportPage() {
       <div className="flex items-center gap-4">
         <Link href="/members">
           <Button variant="ghost" size="icon">
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft weight="light" className="w-4 h-4" />
           </Button>
         </Link>
         <div>

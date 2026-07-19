@@ -1,10 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
-import { ChevronLeft, Lock, Mail, ShieldCheck } from 'lucide-react';
+import { Lock, Envelope } from '@phosphor-icons/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@crm-eco/ui';
 import { createClient } from '@crm-eco/lib/supabase/client';
+import { PageHeader } from '@/components/PageHeader';
 
 export default function SecurityPage() {
   const supabase = createClient();
@@ -59,22 +59,18 @@ export default function SecurityPage() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-6 px-4 py-8">
-      <Link href="/profile" className="inline-flex items-center text-sm text-blue-600 hover:underline">
-        <ChevronLeft className="mr-1 h-4 w-4" aria-hidden /> Back to Profile
-      </Link>
-
-      <div>
-        <h1 className="flex items-center gap-2 text-2xl font-bold text-slate-900">
-          <ShieldCheck className="h-6 w-6 text-emerald-600" aria-hidden />
-          Security
-        </h1>
-        <p className="mt-1 text-sm text-slate-600">Change your password or sign-in email.</p>
-      </div>
+      <PageHeader
+        title="Security"
+        description="Change your password or sign-in email."
+        backHref="/profile"
+        backLabel="Back to Profile"
+        kicker="Account"
+      />
 
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <Lock className="h-4 w-4" aria-hidden />
+            <Lock weight="light" className="h-4 w-4" aria-hidden />
             Change password
           </CardTitle>
         </CardHeader>
@@ -133,7 +129,7 @@ export default function SecurityPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <Mail className="h-4 w-4" aria-hidden />
+            <Envelope weight="light" className="h-4 w-4" aria-hidden />
             Change email
           </CardTitle>
         </CardHeader>

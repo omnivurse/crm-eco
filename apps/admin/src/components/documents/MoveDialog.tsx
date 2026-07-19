@@ -1,7 +1,7 @@
 'use client';
 
+import { Folder, FolderSimple } from '@phosphor-icons/react';
 import { useState } from 'react';
-import { Folder, FolderRoot } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@crm-eco/ui/components/dialog';
 import { Button } from '@crm-eco/ui/components/button';
 import type { DocFolder } from './types';
@@ -43,7 +43,7 @@ export function MoveDialog({ open, onOpenChange, allFolders, excludeIds, onMove 
           }`}
           style={{ paddingLeft: `${depth * 16 + 12}px` }}
         >
-          <Folder className="w-4 h-4 shrink-0" />
+          <Folder weight="light" className="w-4 h-4 shrink-0" />
           {folder.name}
         </button>
         {children.map(child => renderFolder(child, depth + 1))}
@@ -66,7 +66,7 @@ export function MoveDialog({ open, onOpenChange, allFolders, excludeIds, onMove 
               selected === null ? 'bg-blue-50 text-blue-700' : ''
             }`}
           >
-            <FolderRoot className="w-4 h-4 shrink-0" />
+            <FolderSimple weight="light" className="w-4 h-4 shrink-0" />
             Root (No Folder)
           </button>
           {rootFolders.map(f => renderFolder(f, 1))}

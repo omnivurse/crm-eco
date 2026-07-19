@@ -1,5 +1,5 @@
+import { Buildings, Check, Globe, Palette } from '@phosphor-icons/react/dist/ssr';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Badge } from '@crm-eco/ui';
-import { Building2, Check, Globe, Palette } from 'lucide-react';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { getActiveTenant } from '@/lib/tenant';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -68,8 +68,8 @@ export default async function OrganizationsPage() {
       <PageHeader
         title="Organizations"
         description="Organizations you have access to"
-        icon={<Building2 className="w-6 h-6" />}
-        gradient="from-[#0891b2] to-[#06b6d4]"
+        icon={<Buildings weight="light" className="w-6 h-6" />}
+        
       />
 
       <Card>
@@ -84,7 +84,7 @@ export default async function OrganizationsPage() {
           {organizations.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <div className="rounded-full bg-slate-100 p-4 mb-4">
-                <Building2 className="w-8 h-8 text-slate-400" />
+                <Buildings weight="light" className="w-8 h-8 text-slate-400" />
               </div>
               <h3 className="text-lg font-semibold text-slate-900">No organizations</h3>
               <p className="text-sm text-slate-500 mt-1 max-w-sm">
@@ -121,7 +121,7 @@ export default async function OrganizationsPage() {
                             <span className="font-medium text-slate-900">{org.name || 'Untitled'}</span>
                             {isActive && (
                               <Badge variant="default" className="gap-1">
-                                <Check className="w-3 h-3" />
+                                <Check weight="light" className="w-3 h-3" />
                                 Active
                               </Badge>
                             )}
@@ -135,7 +135,7 @@ export default async function OrganizationsPage() {
                         </td>
                         <td className="py-3 pr-4 text-slate-600">
                           <div className="flex items-center gap-1.5">
-                            {domainLabel !== '—' && <Globe className="w-3.5 h-3.5 text-slate-400" />}
+                            {domainLabel !== '—' && <Globe weight="light" className="w-3.5 h-3.5 text-slate-400" />}
                             <span>{domainLabel}</span>
                           </div>
                         </td>
@@ -150,7 +150,7 @@ export default async function OrganizationsPage() {
                         <td className="py-3 pr-4">
                           {hasBranding(org.branding) ? (
                             <Badge variant="secondary" className="gap-1">
-                              <Palette className="w-3 h-3" />
+                              <Palette weight="light" className="w-3 h-3" />
                               Customized
                             </Badge>
                           ) : (

@@ -1,5 +1,6 @@
 'use client';
 
+import { Buildings, Calendar, CheckCircle, CircleNotch, Clock, FileText, PencilSimple, Plus, Trash, UploadSimple, WarningCircle } from '@phosphor-icons/react';
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
@@ -20,19 +21,6 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@crm-eco/ui';
-import {
-  FileText,
-  Building2,
-  Plus,
-  Edit2,
-  Trash2,
-  Loader2,
-  AlertCircle,
-  CheckCircle2,
-  Clock,
-  Calendar,
-  Upload,
-} from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
@@ -463,21 +451,21 @@ export function AgentLicensingTab({ agentId, organizationId }: AgentLicensingTab
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'active':
-        return <CheckCircle2 className="h-4 w-4 text-green-500" />;
+        return <CheckCircle weight="light" className="h-4 w-4 text-green-500" />;
       case 'expired':
       case 'terminated':
-        return <AlertCircle className="h-4 w-4 text-red-500" />;
+        return <WarningCircle weight="light" className="h-4 w-4 text-red-500" />;
       case 'pending':
-        return <Clock className="h-4 w-4 text-yellow-500" />;
+        return <Clock weight="light" className="h-4 w-4 text-yellow-500" />;
       default:
-        return <AlertCircle className="h-4 w-4 text-slate-400" />;
+        return <WarningCircle weight="light" className="h-4 w-4 text-slate-400" />;
     }
   };
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <CircleNotch weight="light" className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -490,18 +478,18 @@ export function AgentLicensingTab({ agentId, organizationId }: AgentLicensingTab
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
+                <FileText weight="light" className="h-5 w-5" />
                 Licenses
               </CardTitle>
               <CardDescription>{licenses.length} license(s) on file</CardDescription>
             </div>
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => setIsImportModalOpen(true)}>
-                <Upload className="h-4 w-4 mr-2" />
+                <UploadSimple weight="light" className="h-4 w-4 mr-2" />
                 Import
               </Button>
               <Button onClick={handleAddLicense}>
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus weight="light" className="h-4 w-4 mr-2" />
                 Add License
               </Button>
             </div>
@@ -510,7 +498,7 @@ export function AgentLicensingTab({ agentId, organizationId }: AgentLicensingTab
         <CardContent>
           {licenses.length === 0 ? (
             <div className="text-center py-8 text-slate-500">
-              <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <FileText weight="light" className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p>No licenses on file</p>
               <Button variant="link" onClick={handleAddLicense}>
                 Add the first license
@@ -566,10 +554,10 @@ export function AgentLicensingTab({ agentId, organizationId }: AgentLicensingTab
                       </td>
                       <td className="px-4 py-3 text-right">
                         <Button variant="ghost" size="sm" onClick={() => handleEditLicense(license)}>
-                          <Edit2 className="h-4 w-4" />
+                          <PencilSimple weight="light" className="h-4 w-4" />
                         </Button>
                         <Button variant="ghost" size="sm" onClick={() => handleDeleteLicense(license)}>
-                          <Trash2 className="h-4 w-4 text-red-500" />
+                          <Trash weight="light" className="h-4 w-4 text-red-500" />
                         </Button>
                       </td>
                     </tr>
@@ -587,13 +575,13 @@ export function AgentLicensingTab({ agentId, organizationId }: AgentLicensingTab
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="flex items-center gap-2">
-                <Building2 className="h-5 w-5" />
+                <Buildings weight="light" className="h-5 w-5" />
                 Carrier Appointments
               </CardTitle>
               <CardDescription>{appointments.length} appointment(s) on file</CardDescription>
             </div>
             <Button onClick={handleAddAppointment}>
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus weight="light" className="h-4 w-4 mr-2" />
               Add Appointment
             </Button>
           </div>
@@ -601,7 +589,7 @@ export function AgentLicensingTab({ agentId, organizationId }: AgentLicensingTab
         <CardContent>
           {appointments.length === 0 ? (
             <div className="text-center py-8 text-slate-500">
-              <Building2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <Buildings weight="light" className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p>No carrier appointments on file</p>
               <Button variant="link" onClick={handleAddAppointment}>
                 Add the first appointment
@@ -662,10 +650,10 @@ export function AgentLicensingTab({ agentId, organizationId }: AgentLicensingTab
                       </td>
                       <td className="px-4 py-3 text-right">
                         <Button variant="ghost" size="sm" onClick={() => handleEditAppointment(appointment)}>
-                          <Edit2 className="h-4 w-4" />
+                          <PencilSimple weight="light" className="h-4 w-4" />
                         </Button>
                         <Button variant="ghost" size="sm" onClick={() => handleDeleteAppointment(appointment)}>
-                          <Trash2 className="h-4 w-4 text-red-500" />
+                          <Trash weight="light" className="h-4 w-4 text-red-500" />
                         </Button>
                       </td>
                     </tr>
@@ -679,7 +667,7 @@ export function AgentLicensingTab({ agentId, organizationId }: AgentLicensingTab
 
       {/* License Modal */}
       <Dialog open={isLicenseModalOpen} onOpenChange={setIsLicenseModalOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>{selectedLicense ? 'Edit License' : 'Add License'}</DialogTitle>
             <DialogDescription>Enter the license information</DialogDescription>
@@ -792,7 +780,7 @@ export function AgentLicensingTab({ agentId, organizationId }: AgentLicensingTab
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsLicenseModalOpen(false)}>Cancel</Button>
             <Button onClick={handleSaveLicense} disabled={isSaving || !licenseForm.state_code || !licenseForm.license_number}>
-              {isSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {isSaving && <CircleNotch weight="light" className="h-4 w-4 mr-2 animate-spin" />}
               {selectedLicense ? 'Update' : 'Add'} License
             </Button>
           </DialogFooter>
@@ -908,7 +896,7 @@ export function AgentLicensingTab({ agentId, organizationId }: AgentLicensingTab
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsAppointmentModalOpen(false)}>Cancel</Button>
             <Button onClick={handleSaveAppointment} disabled={isSaving || !appointmentForm.carrier_name}>
-              {isSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {isSaving && <CircleNotch weight="light" className="h-4 w-4 mr-2 animate-spin" />}
               {selectedAppointment ? 'Update' : 'Add'} Appointment
             </Button>
           </DialogFooter>
@@ -921,12 +909,12 @@ export function AgentLicensingTab({ agentId, organizationId }: AgentLicensingTab
           <DialogHeader>
             <DialogTitle>Import Licenses & Appointments</DialogTitle>
             <DialogDescription>
-              Upload a CSV file to bulk import license and appointment data
+              UploadSimple a CSV file to bulk import license and appointment data
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="border-2 border-dashed rounded-lg p-8 text-center">
-              <Upload className="h-10 w-10 mx-auto text-slate-400 mb-4" />
+              <UploadSimple weight="light" className="h-10 w-10 mx-auto text-slate-400 mb-4" />
               <p className="text-sm text-slate-600 mb-3">
                 Choose a CSV file of licenses to import
               </p>

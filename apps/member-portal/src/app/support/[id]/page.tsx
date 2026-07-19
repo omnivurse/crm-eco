@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { ChevronLeft } from 'lucide-react';
 import { Button, Badge } from '@crm-eco/ui';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { getMemberForUser } from '@crm-eco/lib';
@@ -10,6 +9,7 @@ import {
   SupportTicketReplyForm,
 } from '@/components/support/SupportTicketThread';
 import { StatusBadge } from '@/components/dashboard/StatusBadge';
+import { PageHeader } from '@/components/PageHeader';
 
 export const dynamic = 'force-dynamic';
 
@@ -62,23 +62,20 @@ export default async function SupportTicketDetailPage({ params }: PageProps) {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 px-4 py-8">
-      <Link href="/support" className="inline-flex items-center text-sm text-blue-600 hover:underline">
-        <ChevronLeft className="mr-1 h-4 w-4" aria-hidden />
-        Back to Support
-      </Link>
-
-      <div className="space-y-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <h1 className="text-2xl font-bold text-slate-900">{ticket.subject}</h1>
-          <Badge variant="secondary" className="text-xs">
-            {categoryLabels[ticket.category] ?? ticket.category}
-          </Badge>
-          <StatusBadge status={ticket.status} showIcon={false} />
-        </div>
-        <p className="text-sm text-slate-500">
-          Opened {new Date(ticket.created_at).toLocaleDateString()}
-        </p>
-      </div>
+      <PageHeader
+        title={ticket.subject}
+        description={`Opened ${new Date(ticket.created_at).toLocaleDateString()}`}
+        backHref="/support"
+        backLabel="Back to Support"
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="secondary" className="text-xs">
+              {categoryLabels[ticket.category] ?? ticket.category}
+            </Badge>
+            <StatusBadge status={ticket.status} showIcon={false} />
+          </div>
+        }
+      />
 
       <SupportTicketThread
         comments={comments}

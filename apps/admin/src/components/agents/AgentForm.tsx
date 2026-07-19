@@ -1,5 +1,6 @@
 'use client';
 
+import { CircleNotch } from '@phosphor-icons/react';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
@@ -14,7 +15,6 @@ import {
   SelectValue,
   Checkbox,
 } from '@crm-eco/ui';
-import { Loader2 } from 'lucide-react';
 import { Combobox, type ComboboxOption } from '@crm-eco/ui';
 
 interface ParentAgent {
@@ -526,7 +526,7 @@ export function AgentForm({ parentAgents, initialData }: AgentFormProps) {
         >
           {loading ? (
             <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              <CircleNotch weight="light" className="h-4 w-4 mr-2 animate-spin" />
               {isEditing ? 'Saving...' : 'Creating...'}
             </>
           ) : isEditing ? (

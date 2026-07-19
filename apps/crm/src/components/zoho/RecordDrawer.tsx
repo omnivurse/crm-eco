@@ -411,7 +411,7 @@ export function RecordDrawer() {
             {/* Footer */}
             <div className="p-4 border-t border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-800/50">
               <Button
-                className="w-full bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white"
+                className="w-full"
                 asChild
               >
                 <Link href={`/crm/r/${data.record.id}`}>

@@ -1,12 +1,5 @@
+import { Bell, CaretLeft, CaretRight, CheckCircle, FileText, Warning } from '@phosphor-icons/react/dist/ssr';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button } from '@crm-eco/ui';
-import {
-  Bell,
-  FileText,
-  CheckCircle,
-  AlertTriangle,
-  ChevronLeft,
-  ChevronRight,
-} from 'lucide-react';
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
@@ -64,15 +57,15 @@ async function getNotifications(page: number) {
 
 function NotificationIcon({ type }: { type: string | null }) {
   if (type === 'enrollment') {
-    return <FileText className="w-4 h-4 text-blue-500" />;
+    return <FileText weight="light" className="w-4 h-4 text-blue-500" />;
   }
   if (type === 'success') {
-    return <CheckCircle className="w-4 h-4 text-green-500" />;
+    return <CheckCircle weight="light" className="w-4 h-4 text-green-500" />;
   }
   if (type === 'warning') {
-    return <AlertTriangle className="w-4 h-4 text-amber-500" />;
+    return <Warning weight="light" className="w-4 h-4 text-amber-500" />;
   }
-  return <Bell className="w-4 h-4 text-slate-500" />;
+  return <Bell weight="light" className="w-4 h-4 text-slate-500" />;
 }
 
 interface PageProps {
@@ -93,8 +86,8 @@ export default async function NotificationsPage({ searchParams }: PageProps) {
       <PageHeader
         title="Notifications"
         description="All notifications and alerts for your account"
-        icon={<Bell className="w-6 h-6" />}
-        gradient="from-[#0891b2] to-[#06b6d4]"
+        icon={<Bell weight="light" className="w-6 h-6" />}
+        
       />
 
       {/* Notifications List */}
@@ -109,7 +102,7 @@ export default async function NotificationsPage({ searchParams }: PageProps) {
         <CardContent>
           {notifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-slate-400 dark:text-slate-500">
-              <Bell className="w-10 h-10 mb-3" />
+              <Bell weight="light" className="w-10 h-10 mb-3" />
               <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
                 No notifications yet
               </p>
@@ -175,11 +168,11 @@ export default async function NotificationsPage({ searchParams }: PageProps) {
             <Button variant="outline" size="sm" disabled={page <= 1} asChild={page > 1}>
               {page > 1 ? (
                 <Link href={buildPageUrl(page - 1)}>
-                  <ChevronLeft className="w-4 h-4 mr-1" /> Previous
+                  <CaretLeft weight="light" className="w-4 h-4 mr-1" /> Previous
                 </Link>
               ) : (
                 <span>
-                  <ChevronLeft className="w-4 h-4 mr-1" /> Previous
+                  <CaretLeft weight="light" className="w-4 h-4 mr-1" /> Previous
                 </span>
               )}
             </Button>
@@ -194,11 +187,11 @@ export default async function NotificationsPage({ searchParams }: PageProps) {
             >
               {page < totalPages ? (
                 <Link href={buildPageUrl(page + 1)}>
-                  Next <ChevronRight className="w-4 h-4 ml-1" />
+                  Next <CaretRight weight="light" className="w-4 h-4 ml-1" />
                 </Link>
               ) : (
                 <span>
-                  Next <ChevronRight className="w-4 h-4 ml-1" />
+                  Next <CaretRight weight="light" className="w-4 h-4 ml-1" />
                 </span>
               )}
             </Button>

@@ -1,5 +1,5 @@
+import { Clock, CreditCard, CurrencyDollar, FileText, Stack, TrendUp, Users } from '@phosphor-icons/react/dist/ssr';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Badge } from '@crm-eco/ui';
-import { DollarSign, Users, TrendingUp, Clock, Layers, FileText, CreditCard } from 'lucide-react';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
@@ -158,7 +158,7 @@ export default async function CommissionsPage() {
       title: 'Active Tiers',
       value: stats?.activeTiers ?? 0,
       description: 'Commission levels',
-      icon: Layers,
+      icon: Stack,
       color: 'text-purple-600',
       bg: 'bg-purple-100',
       href: '/commissions/tiers',
@@ -176,7 +176,7 @@ export default async function CommissionsPage() {
       title: 'Paid This Month',
       value: `$${(stats?.paidThisMonth ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
       description: 'Commissions disbursed',
-      icon: DollarSign,
+      icon: CurrencyDollar,
       color: 'text-green-600',
       bg: 'bg-green-100',
       href: '/commissions/transactions?status=paid',
@@ -198,7 +198,7 @@ export default async function CommissionsPage() {
       <PageHeader
         title="Commissions"
         description="Manage commission tiers, transactions, and payouts"
-        icon={<Layers className="w-6 h-6" />}
+        icon={<Stack weight="light" className="w-6 h-6" />}
         gradient="from-emerald-500 to-teal-400"
       />
 
@@ -239,7 +239,7 @@ export default async function CommissionsPage() {
                 {recentCommissions.map((commission) => (
                   <li key={commission.id} className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
-                      <TrendingUp className="h-5 w-5 text-slate-400 flex-shrink-0" />
+                      <TrendUp weight="light" className="h-5 w-5 text-slate-400 flex-shrink-0" />
                       <div>
                         <p className="text-sm font-medium">
                           {commission.advisor?.first_name} {commission.advisor?.last_name}
@@ -262,7 +262,7 @@ export default async function CommissionsPage() {
               </ul>
             ) : (
               <div className="text-sm text-slate-500 py-8 text-center">
-                <FileText className="h-8 w-8 mx-auto mb-2 text-slate-300" />
+                <FileText weight="light" className="h-8 w-8 mx-auto mb-2 text-slate-300" />
                 No recent commissions to display
               </div>
             )}
@@ -280,7 +280,7 @@ export default async function CommissionsPage() {
               className="block p-3 rounded-lg border hover:bg-slate-50 transition-colors"
             >
               <div className="flex items-center gap-3">
-                <Layers className="h-5 w-5 text-purple-600" />
+                <Stack weight="light" className="h-5 w-5 text-purple-600" />
                 <div>
                   <p className="font-medium text-sm">Manage Commission Tiers</p>
                   <p className="text-xs text-slate-500">Configure rates and thresholds</p>
@@ -292,7 +292,7 @@ export default async function CommissionsPage() {
               className="block p-3 rounded-lg border hover:bg-slate-50 transition-colors"
             >
               <div className="flex items-center gap-3">
-                <TrendingUp className="h-5 w-5 text-green-600" />
+                <TrendUp weight="light" className="h-5 w-5 text-green-600" />
                 <div>
                   <p className="font-medium text-sm">Review Transactions</p>
                   <p className="text-xs text-slate-500">Approve or hold commissions</p>
@@ -304,7 +304,7 @@ export default async function CommissionsPage() {
               className="block p-3 rounded-lg border hover:bg-slate-50 transition-colors"
             >
               <div className="flex items-center gap-3">
-                <CreditCard className="h-5 w-5 text-blue-600" />
+                <CreditCard weight="light" className="h-5 w-5 text-blue-600" />
                 <div>
                   <p className="font-medium text-sm">Process Payouts</p>
                   <p className="text-xs text-slate-500">Generate and approve agent payouts</p>
@@ -316,7 +316,7 @@ export default async function CommissionsPage() {
               className="block p-3 rounded-lg border hover:bg-slate-50 transition-colors"
             >
               <div className="flex items-center gap-3">
-                <Users className="h-5 w-5 text-indigo-600" />
+                <Users weight="light" className="h-5 w-5 text-indigo-600" />
                 <div>
                   <p className="font-medium text-sm">Agent Commission Assignments</p>
                   <p className="text-xs text-slate-500">Assign tiers and view production</p>

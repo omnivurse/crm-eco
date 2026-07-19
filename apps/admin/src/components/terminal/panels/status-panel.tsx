@@ -1,7 +1,7 @@
 'use client';
 
+import { Broadcast, CheckCircle, MinusCircle, XCircle } from '@phosphor-icons/react';
 import React from 'react';
-import { Satellite, CheckCircle2, MinusCircle, XCircle } from 'lucide-react';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { Badge } from '@crm-eco/ui/components/badge';
 
@@ -21,7 +21,7 @@ const services: ServiceInfo[] = [
 
 const statusConfig = {
   operational: {
-    icon: CheckCircle2,
+    icon: CheckCircle,
     label: 'Operational',
     badge: 'success' as const,
     dot: 'bg-emerald-500',
@@ -47,7 +47,7 @@ export function StatusPanel() {
     <div className="rounded-lg border bg-card overflow-hidden">
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-3 border-b bg-muted/30">
-        <Satellite className="w-4 h-4 text-primary" />
+        <Broadcast weight="light" className="w-4 h-4 text-primary" />
         <span className="text-sm font-semibold tracking-wide font-heading flex-1">
           System Status
         </span>

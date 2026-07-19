@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
+import { Warning, ArrowsClockwise, House } from '@phosphor-icons/react';
 import Link from 'next/link';
 
 export default function Error({
@@ -17,30 +17,30 @@ export default function Error({
   }, [error]);
 
   return (
-    <div className="min-h-[60vh] flex items-center justify-center p-8">
-      <div className="text-center max-w-md">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 dark:bg-red-500/20 mb-6">
-          <AlertTriangle className="w-8 h-8 text-red-600 dark:text-red-400" />
+    <div className="flex min-h-[60vh] items-center justify-center p-8">
+      <div className="max-w-md text-center">
+        <div className="mb-6 inline-flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
+          <Warning weight="light" className="h-8 w-8 text-red-600" />
         </div>
-        <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-3">
+        <h2 className="mb-3 text-2xl font-bold tracking-[-0.03em] text-[var(--mp-ink)]">
           Something went wrong
         </h2>
-        <p className="text-slate-600 dark:text-slate-400 mb-6">
+        <p className="mb-6 text-slate-600">
           An unexpected error occurred. Please try again or return to the home page.
         </p>
         <div className="flex items-center justify-center gap-3">
           <button
             onClick={reset}
-            className="inline-flex items-center gap-2 px-4 py-2 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50"
+            className="inline-flex items-center gap-2 rounded-full border border-[rgba(11,109,133,0.15)] px-4 py-2 text-slate-700 transition-colors hover:bg-[rgba(11,109,133,0.04)]"
           >
-            <RefreshCw className="w-4 h-4" />
+            <ArrowsClockwise weight="light" className="h-4 w-4" />
             Try Again
           </button>
           <Link
             href="/"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-primary hover:bg-cyan-600 text-white rounded-lg"
+            className="inline-flex items-center gap-2 rounded-full bg-[var(--mp-teal)] px-4 py-2 text-white transition-opacity hover:opacity-90"
           >
-            <Home className="w-4 h-4" />
+            <House weight="light" className="h-4 w-4" />
             Go Home
           </Link>
         </div>

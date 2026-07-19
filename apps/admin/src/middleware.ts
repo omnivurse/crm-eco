@@ -63,10 +63,28 @@ function extractSubdomain(host: string | null): string | null {
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
+  const pathname = request.nextUrl.pathname;
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  // Fail closed without throwing — missing env must not 500 every route.
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.error(
+      '[Admin Middleware] NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY are not set. ' +
+        'Add them to apps/admin/.env.local.',
+    );
+    const isPublic =
+      PUBLIC_ROUTES.some((r) => pathname === r || pathname.startsWith(`${r}/`)) ||
+      pathname === '/enroll' ||
+      pathname.startsWith('/enroll/');
+    if (isPublic) return NextResponse.next({ request });
+    return NextResponse.redirect(new URL('/login?error=config', request.url));
+  }
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseAnonKey,
     {
       cookies: {
         getAll() {
@@ -84,8 +102,6 @@ export async function middleware(request: NextRequest) {
       },
     },
   );
-
-  const pathname = request.nextUrl.pathname;
 
   // PUBLIC enrollment surface (anon prospects — NO login). Matched EXACTLY so it
   // never opens up the auth-gated dashboard pages `/enrollments` or

@@ -1,8 +1,8 @@
+import { ArrowLeft, Calendar, CheckCircle, CurrencyDollar, Play, Warning } from '@phosphor-icons/react/dist/ssr';
 import { Card, CardContent, CardHeader, CardTitle, Badge, Button } from '@crm-eco/ui';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { format } from 'date-fns';
-import { ArrowLeft, DollarSign, Calendar, Play, CheckCircle, AlertTriangle } from 'lucide-react';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { getActiveTenant } from '@/lib/tenant';
 
@@ -74,7 +74,7 @@ export default async function PayoutBatchDetailPage({ params }: { params: Promis
         <div className="flex items-center gap-3">
           <Link href="/commissions/payouts">
             <Button variant="ghost" size="sm">
-              <ArrowLeft className="mr-2 h-4 w-4" />
+              <ArrowLeft weight="light" className="mr-2 h-4 w-4" />
               Back
             </Button>
           </Link>
@@ -90,7 +90,7 @@ export default async function PayoutBatchDetailPage({ params }: { params: Promis
           {payout.status === 'approved' && (
             <form action={`/api/payouts/${batchId}/process`} method="POST">
               <Button type="submit" size="sm">
-                <Play className="mr-2 h-4 w-4" />
+                <Play weight="light" className="mr-2 h-4 w-4" />
                 Process Payment
               </Button>
             </form>
@@ -161,11 +161,11 @@ export default async function PayoutBatchDetailPage({ params }: { params: Promis
               {transactions.map((t) => (
                 <div key={t.id} className="flex items-center justify-between rounded border p-3 text-sm">
                   <div className="flex items-center gap-3">
-                    <DollarSign className="h-4 w-4 text-muted-foreground" />
+                    <CurrencyDollar weight="light" className="h-4 w-4 text-muted-foreground" />
                     <div>
                       <div className="font-mono text-xs">{t.id.slice(0, 8)}</div>
                       <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-                        <Calendar className="h-3 w-3" />
+                        <Calendar weight="light" className="h-3 w-3" />
                         {format(new Date(t.created_at), 'MMM d, yyyy')}
                         <Badge variant="outline" className="text-xs">{t.transaction_type}</Badge>
                       </div>

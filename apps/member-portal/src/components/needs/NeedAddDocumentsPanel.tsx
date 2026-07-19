@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@crm-eco/ui';
-import { FileUp } from 'lucide-react';
+import { UploadSimple } from '@phosphor-icons/react';
 import { NeedDocumentUpload } from './NeedDocumentUpload';
 import type { NeedAttachmentRecord } from '@/lib/needs/attachment-client';
 
@@ -29,7 +29,7 @@ export function NeedAddDocumentsPanel({ needId, status }: NeedAddDocumentsPanelP
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base">
-          <FileUp className="h-4 w-4 text-slate-500" aria-hidden />
+          <UploadSimple weight="light" className="h-4 w-4 text-slate-500" aria-hidden />
           Add supporting documents
         </CardTitle>
       </CardHeader>

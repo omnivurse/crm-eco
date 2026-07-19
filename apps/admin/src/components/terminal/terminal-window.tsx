@@ -1,5 +1,6 @@
 'use client';
 
+import { TerminalWindow as TerminalIcon } from '@phosphor-icons/react';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Dialog,
@@ -8,7 +9,6 @@ import {
 } from '@crm-eco/ui/components/dialog';
 import { VisuallyHidden } from '@crm-eco/ui';
 import { cn } from '@crm-eco/ui/lib/utils';
-import { Terminal as TerminalIcon } from 'lucide-react';
 import { useTerminal } from './terminal-provider';
 import { CommandInput } from './command-input';
 import { CommandOutput } from './command-output';
@@ -61,7 +61,7 @@ export function TerminalWindow() {
         <div className="flex items-center justify-between px-4 py-3 border-b bg-muted/30">
           <div className="flex items-center gap-2.5">
             <div className="flex items-center justify-center w-7 h-7 rounded-md bg-primary/10 text-primary">
-              <TerminalIcon className="w-4 h-4" />
+              <TerminalIcon weight="light" className="w-4 h-4" />
             </div>
             <span className="text-sm font-semibold tracking-wide text-foreground font-heading">
               Command Center

@@ -1,5 +1,6 @@
 'use client';
 
+import { Copy, CurrencyDollar, Eye, Funnel, MagnifyingGlass, PencilSimple, Trash, X } from '@phosphor-icons/react';
 import { useState, useMemo } from 'react';
 import {
   Card,
@@ -11,7 +12,6 @@ import {
   Input,
   Badge,
 } from '@crm-eco/ui';
-import { Search, Filter, X, DollarSign, Eye, Edit, Copy, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
@@ -51,7 +51,7 @@ export function ProductsClient({ products, organizationId, categories }: Product
 
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {
-      // Search filter
+      // MagnifyingGlass filter
       const matchesSearch =
         !searchQuery ||
         product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -140,9 +140,9 @@ export function ProductsClient({ products, organizationId, categories }: Product
           </div>
           <div className="flex items-center gap-2">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <MagnifyingGlass weight="light" className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search products..."
+                placeholder="MagnifyingGlass products..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9 w-64"
@@ -153,7 +153,7 @@ export function ProductsClient({ products, organizationId, categories }: Product
               onClick={() => setShowFilters(!showFilters)}
               className={showFilters ? 'bg-slate-100' : ''}
             >
-              <Filter className="h-4 w-4 mr-2" />
+              <Funnel weight="light" className="h-4 w-4 mr-2" />
               Filters
               {hasActiveFilters && (
                 <Badge variant="secondary" className="ml-2">
@@ -196,7 +196,7 @@ export function ProductsClient({ products, organizationId, categories }: Product
             </div>
             {hasActiveFilters && (
               <Button variant="ghost" size="sm" onClick={clearFilters}>
-                <X className="h-4 w-4 mr-1" />
+                <X weight="light" className="h-4 w-4 mr-1" />
                 Clear
               </Button>
             )}
@@ -276,17 +276,17 @@ export function ProductsClient({ products, organizationId, categories }: Product
                       <div className="flex items-center justify-end gap-1">
                         <Link href={`/products/${product.id}`}>
                           <Button variant="ghost" size="icon" title="View">
-                            <Eye className="h-4 w-4" />
+                            <Eye weight="light" className="h-4 w-4" />
                           </Button>
                         </Link>
                         <Link href={`/products/${product.id}/pricing`}>
                           <Button variant="ghost" size="icon" title="Pricing">
-                            <DollarSign className="h-4 w-4" />
+                            <CurrencyDollar weight="light" className="h-4 w-4" />
                           </Button>
                         </Link>
                         <Link href={`/products/${product.id}/edit`}>
-                          <Button variant="ghost" size="icon" title="Edit">
-                            <Edit className="h-4 w-4" />
+                          <Button variant="ghost" size="icon" title="PencilSimple">
+                            <PencilSimple weight="light" className="h-4 w-4" />
                           </Button>
                         </Link>
                         <Button
@@ -295,7 +295,7 @@ export function ProductsClient({ products, organizationId, categories }: Product
                           title="Duplicate"
                           onClick={() => handleDuplicate(product)}
                         >
-                          <Copy className="h-4 w-4" />
+                          <Copy weight="light" className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="ghost"
@@ -304,7 +304,7 @@ export function ProductsClient({ products, organizationId, categories }: Product
                           onClick={() => handleDelete(product.id, product.name)}
                           className="text-red-500 hover:text-red-600"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash weight="light" className="h-4 w-4" />
                         </Button>
                       </div>
                     </td>

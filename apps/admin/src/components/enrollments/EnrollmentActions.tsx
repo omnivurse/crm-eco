@@ -1,5 +1,6 @@
 'use client';
 
+import { Chat, CheckCircle, CircleNotch, Clock, DotsThreeVertical, XCircle } from '@phosphor-icons/react';
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
@@ -21,14 +22,6 @@ import {
   Textarea,
   Input,
 } from '@crm-eco/ui';
-import {
-  MoreVertical,
-  CheckCircle,
-  XCircle,
-  Clock,
-  Loader2,
-  MessageSquare,
-} from 'lucide-react';
 import {
   approveEnrollment,
   rejectEnrollment,
@@ -172,22 +165,22 @@ export function EnrollmentActions({ enrollmentId, currentStatus }: EnrollmentAct
         <DropdownMenuTrigger asChild>
           <Button variant="outline" size="icon" disabled={isPending}>
             {isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <CircleNotch weight="light" className="h-4 w-4 animate-spin" />
             ) : (
-              <MoreVertical className="h-4 w-4" />
+              <DotsThreeVertical weight="light" className="h-4 w-4" />
             )}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           {canApprove && (
             <DropdownMenuItem onClick={runApprove} className="text-green-600">
-              <CheckCircle className="h-4 w-4 mr-2" />
+              <CheckCircle weight="light" className="h-4 w-4 mr-2" />
               Approve Enrollment
             </DropdownMenuItem>
           )}
           {canRequestMoreInfo && (
             <DropdownMenuItem onClick={() => setMoreInfoOpen(true)}>
-              <MessageSquare className="h-4 w-4 mr-2" />
+              <Chat weight="light" className="h-4 w-4 mr-2" />
               Request More Info
             </DropdownMenuItem>
           )}
@@ -196,13 +189,13 @@ export function EnrollmentActions({ enrollmentId, currentStatus }: EnrollmentAct
               onClick={() => setRejectOpen(true)}
               className="text-red-600"
             >
-              <XCircle className="h-4 w-4 mr-2" />
+              <XCircle weight="light" className="h-4 w-4 mr-2" />
               Reject Enrollment
             </DropdownMenuItem>
           )}
           {canReopen && (
             <DropdownMenuItem onClick={() => runOperationalStatus('in_progress')}>
-              <Clock className="h-4 w-4 mr-2" />
+              <Clock weight="light" className="h-4 w-4 mr-2" />
               Reopen as In Progress
             </DropdownMenuItem>
           )}
@@ -214,7 +207,7 @@ export function EnrollmentActions({ enrollmentId, currentStatus }: EnrollmentAct
               onClick={() => runOperationalStatus('cancelled')}
               className="text-red-600"
             >
-              <XCircle className="h-4 w-4 mr-2" />
+              <XCircle weight="light" className="h-4 w-4 mr-2" />
               Cancel Enrollment
             </DropdownMenuItem>
           )}
@@ -250,7 +243,7 @@ export function EnrollmentActions({ enrollmentId, currentStatus }: EnrollmentAct
               onClick={submitReject}
               disabled={isPending || !rejectReason.trim()}
             >
-              {isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              {isPending ? <CircleNotch weight="light" className="h-4 w-4 animate-spin mr-2" /> : null}
               Reject
             </Button>
           </DialogFooter>
@@ -299,7 +292,7 @@ export function EnrollmentActions({ enrollmentId, currentStatus }: EnrollmentAct
               Cancel
             </Button>
             <Button onClick={submitMoreInfo} disabled={isPending || !moreInfoMessage.trim()}>
-              {isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              {isPending ? <CircleNotch weight="light" className="h-4 w-4 animate-spin mr-2" /> : null}
               Send Request
             </Button>
           </DialogFooter>

@@ -1,5 +1,5 @@
+import { ArrowClockwise, ArrowLeft, Calendar, DownloadSimple, Signature } from '@phosphor-icons/react/dist/ssr';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Badge } from '@crm-eco/ui';
-import { ArrowLeft, Download, FileSignature, RefreshCw, Calendar } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
@@ -94,7 +94,7 @@ export default async function AgreementsPage({ params }: { params: Promise<{ id:
         <div className="flex items-center gap-4">
           <Link href={`/enrollments/${id}`}>
             <Button variant="ghost" size="sm">
-              <ArrowLeft className="mr-2 h-4 w-4" />
+              <ArrowLeft weight="light" className="mr-2 h-4 w-4" />
               Back to Enrollment
             </Button>
           </Link>
@@ -107,7 +107,7 @@ export default async function AgreementsPage({ params }: { params: Promise<{ id:
         </div>
         <form action={`/api/enrollments/${id}/regenerate-contract`} method="POST">
           <Button type="submit" variant="outline" size="sm">
-            <RefreshCw className="mr-2 h-4 w-4" />
+            <ArrowClockwise weight="light" className="mr-2 h-4 w-4" />
             Regenerate Contract
           </Button>
         </form>
@@ -116,7 +116,7 @@ export default async function AgreementsPage({ params }: { params: Promise<{ id:
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <FileSignature className="h-5 w-5" />
+            <Signature weight="light" className="h-5 w-5" />
             Generated Contract
           </CardTitle>
           <CardDescription>Latest enrollment contract PDF</CardDescription>
@@ -125,7 +125,7 @@ export default async function AgreementsPage({ params }: { params: Promise<{ id:
           {contract ? (
             <div className="flex items-center justify-between rounded-lg border p-4">
               <div className="flex items-center gap-3">
-                <FileSignature className="h-8 w-8 text-blue-500" />
+                <Signature weight="light" className="h-8 w-8 text-blue-500" />
                 <div>
                   <div className="font-medium">{contract.contract_type ?? 'Enrollment Contract'} v{contract.contract_version ?? 1}</div>
                   <div className="text-xs text-muted-foreground">
@@ -136,8 +136,8 @@ export default async function AgreementsPage({ params }: { params: Promise<{ id:
               {contract.pdf_url && (
                 <a href={contract.pdf_url} target="_blank" rel="noopener noreferrer">
                   <Button size="sm">
-                    <Download className="mr-2 h-4 w-4" />
-                    Download PDF
+                    <DownloadSimple weight="light" className="mr-2 h-4 w-4" />
+                    DownloadSimple PDF
                   </Button>
                 </a>
               )}
@@ -153,7 +153,7 @@ export default async function AgreementsPage({ params }: { params: Promise<{ id:
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <FileSignature className="h-5 w-5" />
+            <Signature weight="light" className="h-5 w-5" />
             Signature Audit Trail
           </CardTitle>
           <CardDescription>{agreements.length} signature{agreements.length !== 1 ? 's' : ''} on file</CardDescription>
@@ -168,7 +168,7 @@ export default async function AgreementsPage({ params }: { params: Promise<{ id:
               {agreements.map((agreement) => (
                 <div key={agreement.id} className="flex items-center justify-between rounded-lg border p-4">
                   <div className="flex items-start gap-3">
-                    <FileSignature className="mt-1 h-5 w-5 text-green-600" />
+                    <Signature weight="light" className="mt-1 h-5 w-5 text-green-600" />
                     <div>
                       <div className="font-medium">
                         {agreement.legal_document?.document_name ?? agreement.agreement_type}
@@ -181,7 +181,7 @@ export default async function AgreementsPage({ params }: { params: Promise<{ id:
                       </div>
                       <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
                         <span className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
+                          <Calendar weight="light" className="h-3 w-3" />
                           {format(new Date(agreement.signed_at), 'MMM d, yyyy h:mm a')}
                         </span>
                         {agreement.signer_ip && <span>IP: {agreement.signer_ip}</span>}
@@ -195,8 +195,8 @@ export default async function AgreementsPage({ params }: { params: Promise<{ id:
                       rel="noopener noreferrer"
                     >
                       <Button size="sm" variant="outline">
-                        <Download className="mr-2 h-4 w-4" />
-                        Download
+                        <DownloadSimple weight="light" className="mr-2 h-4 w-4" />
+                        DownloadSimple
                       </Button>
                     </a>
                   )}

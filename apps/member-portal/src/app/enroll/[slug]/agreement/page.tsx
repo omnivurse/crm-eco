@@ -141,7 +141,7 @@ export default function AgreementPage() {
             type="checkbox"
             checked={agreed}
             onChange={(e) => setAgreed(e.target.checked)}
-            className="mt-0.5 h-4 w-4 rounded border-gray-300 text-blue-600"
+            className="mt-0.5 h-4 w-4 rounded border-gray-300 text-[var(--mp-teal)]"
           />
           <span className="text-sm text-gray-700">
             I have read and agree to the terms of the enrollment agreement. I understand that
@@ -158,7 +158,7 @@ export default function AgreementPage() {
         <button
           type="submit"
           disabled={!signature || !signerName || !agreed || submitting}
-          className="w-full rounded-lg bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+          className="w-full rounded-lg bg-[var(--mp-teal)] px-6 py-3 text-sm font-semibold text-white shadow transition hover:bg-[#0e8c9a] disabled:cursor-not-allowed disabled:opacity-50"
         >
           {submitting ? 'Processing...' : 'Sign & Continue'}
         </button>

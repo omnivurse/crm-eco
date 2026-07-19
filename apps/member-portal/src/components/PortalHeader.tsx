@@ -3,7 +3,17 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { User, LogOut, Menu, X, ChevronDown, FileText, Users, Settings } from 'lucide-react';
+import {
+  User,
+  SignOut,
+  List,
+  X,
+  CaretDown,
+  ArrowUpRight,
+  FileText,
+  Users,
+  Gear,
+} from '@phosphor-icons/react';
 import { Button, cn } from '@crm-eco/ui';
 import { useState, useEffect } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
@@ -23,10 +33,9 @@ const ENROLLMENT_URL =
   process.env.NEXT_PUBLIC_ENROLLMENT_URL || 'https://www.doublehelixhub.com/enroll';
 
 const navItems = [
-  { label: 'Dashboard', href: '/' },
+  { label: 'Home', href: '/' },
   { label: 'Coverage', href: '/coverage' },
   { label: 'Services', href: '/services' },
-  { label: 'Pricing', href: '/pricing' },
   { label: 'Billing', href: '/billing' },
   { label: 'Needs', href: '/needs' },
   { label: 'Support', href: '/support' },
@@ -43,6 +52,7 @@ const AUTH_ROUTE_PREFIXES = [
 
 export function PortalHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [memberName, setMemberName] = useState<string>('');
   const pathname = usePathname();
@@ -54,12 +64,25 @@ export function PortalHeader() {
   );
 
   useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 12);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  useEffect(() => {
+    document.body.style.overflow = mobileMenuOpen ? 'hidden' : '';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [mobileMenuOpen]);
+
+  useEffect(() => {
     const fetchUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
-      
+
       if (user) {
-        // Get member name
         const { data: profile } = await supabase
           .from('profiles')
           .select('member_id')
@@ -79,7 +102,7 @@ export function PortalHeader() {
         }
       }
     };
-    
+
     queueMicrotask(() => fetchUser());
   }, [supabase]);
 
@@ -102,136 +125,180 @@ export function PortalHeader() {
   }
 
   return (
-    <header className="bg-white border-b border-slate-200 shadow-sm sticky top-0 z-50">
-      <div className="mx-auto w-full max-w-[1536px] px-3 sm:px-4 lg:px-6 xl:px-8 2xl:px-10">
-        <div className="flex items-center justify-between h-16">
-          {/* Left side - Logo */}
-          <div className="flex items-center gap-3">
-            <Link href="/" className="flex items-center gap-2.5">
+    <>
+      <header className="pointer-events-none sticky top-0 z-40 w-full pt-3 sm:pt-4">
+        <div className="mx-auto flex w-full max-w-[72rem] justify-center px-3 sm:px-4">
+          <div
+            className={cn(
+              'pointer-events-auto mp-island',
+              scrolled && 'mp-island-scrolled',
+            )}
+          >
+            <Link href="/" className="mr-1 flex shrink-0 items-center gap-2 pl-0.5">
               <Image
                 src="/logo.png"
                 alt="Double Helix Hub"
-                width={180}
-                height={48}
-                className="h-10 w-auto object-contain"
+                width={140}
+                height={36}
+                className="h-7 w-auto object-contain sm:h-8"
                 priority
               />
-              <span className="hidden sm:inline text-xs text-[#E9B61F] font-semibold tracking-wide">Member Portal</span>
+              <span className="hidden text-[0.65rem] font-semibold uppercase tracking-[0.04em] text-[var(--mp-teal)] sm:inline">
+                Member
+              </span>
             </Link>
-          </div>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-1">
-            {navItems.map((item) => {
-              const isActive = pathname === item.href || 
-                (item.href !== '/' && pathname.startsWith(item.href));
-              
-              return (
-                <Link 
-                  key={item.href}
-                  href={item.href} 
-                  className={cn(
-                    'px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200',
-                    isActive
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-slate-600 hover:bg-slate-100 hover:text-dhh-ink'
-                  )}
-                >
-                  {item.label}
-                </Link>
-              );
-            })}
-          </nav>
-
-          {/* User Menu */}
-          <div className="hidden md:flex items-center gap-3">
-            {user ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="gap-2.5 hover:bg-slate-50 rounded-xl py-2 px-3">
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-cyan-600 to-blue-600 flex items-center justify-center text-white font-semibold text-sm ring-2 ring-cyan-500/20">
-                      {memberName ? getInitials(memberName) : <User className="w-4 h-4" aria-hidden />}
-                    </div>
-                    <div className="text-left">
-                      <span className="text-sm font-semibold text-dhh-ink block">{memberName || 'Account'}</span>
-                      <span className="text-xs text-primary">Member</span>
-                    </div>
-                    <ChevronDown className="h-4 w-4 text-slate-400" aria-hidden />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-64 rounded-xl shadow-lg border-slate-200">
-                  <DropdownMenuLabel className="px-4 py-3">
-                    <div className="flex flex-col">
-                      <span className="font-semibold text-dhh-ink">{memberName}</span>
-                      <span className="text-xs text-slate-500">{user.email}</span>
-                    </div>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => router.push('/profile')} className="px-4 py-2.5 cursor-pointer hover:bg-slate-50">
-                    <User className="mr-3 h-4 w-4 text-primary" aria-hidden />
-                    <span className="font-medium">My Profile</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => router.push('/dependents')} className="px-4 py-2.5 cursor-pointer hover:bg-slate-50">
-                    <Users className="mr-3 h-4 w-4 text-primary" aria-hidden />
-                    <span className="font-medium">Dependents</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => router.push('/documents')} className="px-4 py-2.5 cursor-pointer hover:bg-slate-50">
-                    <FileText className="mr-3 h-4 w-4 text-primary" aria-hidden />
-                    <span className="font-medium">Documents</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => router.push('/settings')} className="px-4 py-2.5 cursor-pointer hover:bg-slate-50">
-                    <Settings className="mr-3 h-4 w-4 text-primary" aria-hidden />
-                    <span className="font-medium">Settings</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleSignOut} className="px-4 py-2.5 cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50">
-                    <LogOut className="mr-3 h-4 w-4" aria-hidden />
-                    <span className="font-medium">Sign Out</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : (
-              <div className="flex items-center gap-2">
-                <Link href="/signin">
-                  <Button variant="ghost" size="sm" className="text-dhh-ink hover:bg-slate-100">Sign In</Button>
-                </Link>
-                <a href={ENROLLMENT_URL}>
-                  <Button size="sm" className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-lg shadow-md">Enroll Now</Button>
-                </a>
-              </div>
-            )}
-          </div>
-
-          {/* Mobile Menu Button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden hover:bg-slate-100 rounded-lg h-11 w-11"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
-            aria-expanded={mobileMenuOpen}
-          >
-            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </Button>
-        </div>
-
-        {/* Mobile Menu */}
-        {mobileMenuOpen && (
-          <div className="md:hidden py-4 border-t border-slate-200">
-            <nav className="flex flex-col gap-1">
+            <nav
+              className="ml-1 hidden flex-1 items-center justify-center gap-0.5 md:flex"
+              aria-label="Primary"
+            >
               {navItems.map((item) => {
-                const isActive = pathname === item.href || 
+                const isActive =
+                  pathname === item.href ||
                   (item.href !== '/' && pathname.startsWith(item.href));
-                
+
                 return (
-                  <Link 
+                  <Link
                     key={item.href}
-                    href={item.href} 
+                    href={item.href}
                     className={cn(
-                      'px-4 py-2.5 text-sm font-medium rounded-lg',
+                      'rounded-full px-2.5 py-1.5 text-[0.75rem] font-medium transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] lg:px-3',
                       isActive
-                        ? 'bg-primary/10 text-primary'
-                        : 'text-slate-600 hover:bg-slate-100'
+                        ? 'bg-[rgba(11,109,133,0.08)] text-[var(--mp-teal)]'
+                        : 'text-slate-500 hover:bg-[rgba(11,109,133,0.06)] hover:text-[var(--mp-teal)]',
+                    )}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </nav>
+
+            <div className="ml-auto hidden items-center gap-2 md:flex">
+              {user ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      className="gap-2 rounded-full px-1.5 py-1 hover:bg-[rgba(11,109,133,0.06)]"
+                    >
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[var(--mp-teal-soft)] to-[var(--mp-teal)] text-xs font-semibold text-white shadow-[0_2px_8px_rgba(11,109,133,0.25)]">
+                        {memberName ? getInitials(memberName) : (
+                          <User weight="light" className="h-4 w-4" aria-hidden />
+                        )}
+                      </div>
+                      <CaretDown weight="light" className="mr-1 h-3.5 w-3.5 text-slate-400" aria-hidden />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    align="end"
+                    className="w-64 rounded-2xl border-[rgba(11,109,133,0.08)] shadow-[var(--mp-shadow-soft)]"
+                  >
+                    <DropdownMenuLabel className="px-4 py-3">
+                      <div className="flex flex-col">
+                        <span className="font-semibold text-[var(--mp-ink)]">{memberName}</span>
+                        <span className="text-xs text-slate-500">{user.email}</span>
+                      </div>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() => router.push('/profile')}
+                      className="cursor-pointer px-4 py-2.5"
+                    >
+                      <User weight="light" className="mr-3 h-4 w-4 text-primary" aria-hidden />
+                      <span className="font-medium">My Profile</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => router.push('/dependents')}
+                      className="cursor-pointer px-4 py-2.5"
+                    >
+                      <Users weight="light" className="mr-3 h-4 w-4 text-primary" aria-hidden />
+                      <span className="font-medium">Dependents</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => router.push('/documents')}
+                      className="cursor-pointer px-4 py-2.5"
+                    >
+                      <FileText weight="light" className="mr-3 h-4 w-4 text-primary" aria-hidden />
+                      <span className="font-medium">Documents</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => router.push('/settings')}
+                      className="cursor-pointer px-4 py-2.5"
+                    >
+                      <Gear weight="light" className="mr-3 h-4 w-4 text-primary" aria-hidden />
+                      <span className="font-medium">Settings</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={handleSignOut}
+                      className="cursor-pointer px-4 py-2.5 text-red-600 focus:bg-red-50 focus:text-red-600"
+                    >
+                      <SignOut weight="light" className="mr-3 h-4 w-4" aria-hidden />
+                      <span className="font-medium">Sign Out</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <div className="flex items-center gap-2 pr-1">
+                  <Link
+                    href="/signin"
+                    className="rounded-full px-3 py-1.5 text-[0.75rem] font-medium text-slate-500 hover:text-[var(--mp-ink)]"
+                  >
+                    Sign In
+                  </Link>
+                  <a href={ENROLLMENT_URL} className="mp-btn-island text-[0.75rem]">
+                    Enroll
+                    <span className="mp-btn-ico" aria-hidden>
+                      <ArrowUpRight weight="light" className="h-3.5 w-3.5" />
+                    </span>
+                  </a>
+                </div>
+              )}
+            </div>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              className="ml-auto h-10 w-10 rounded-full hover:bg-[rgba(11,109,133,0.06)] md:hidden"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={mobileMenuOpen}
+            >
+              {mobileMenuOpen ? (
+                <X weight="light" className="h-5 w-5" />
+              ) : (
+                <List weight="light" className="h-5 w-5" />
+              )}
+            </Button>
+          </div>
+        </div>
+      </header>
+
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-30 md:hidden">
+          <button
+            type="button"
+            className="absolute inset-0 bg-[var(--mp-ink)]/20 backdrop-blur-sm"
+            aria-label="Close menu"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+          <div className="absolute inset-x-3 top-[4.5rem] max-h-[calc(100dvh-6rem)] overflow-y-auto rounded-[1.75rem] border border-[rgba(11,109,133,0.08)] bg-white/95 p-3 shadow-[var(--mp-shadow-soft)] backdrop-blur-xl">
+            <nav className="flex flex-col gap-0.5" aria-label="Mobile">
+              {navItems.map((item) => {
+                const isActive =
+                  pathname === item.href ||
+                  (item.href !== '/' && pathname.startsWith(item.href));
+
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={cn(
+                      'rounded-2xl px-4 py-3 text-sm font-medium',
+                      isActive
+                        ? 'bg-[rgba(11,109,133,0.08)] text-[var(--mp-teal)]'
+                        : 'text-slate-600 hover:bg-[var(--mp-mist)]',
                     )}
                     onClick={() => setMobileMenuOpen(false)}
                   >
@@ -239,64 +306,65 @@ export function PortalHeader() {
                   </Link>
                 );
               })}
-              
-              <hr className="my-2 border-slate-200" />
-              
-              <Link 
-                href="/profile" 
-                className="px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg flex items-center gap-3"
+
+              <hr className="my-2 border-[rgba(11,109,133,0.08)]" />
+
+              <Link
+                href="/profile"
+                className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium text-slate-600 hover:bg-[var(--mp-mist)]"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                <User className="w-4 h-4 text-primary" aria-hidden />
+                <User weight="light" className="h-4 w-4 text-primary" aria-hidden />
                 My Profile
               </Link>
-              <Link 
-                href="/dependents" 
-                className="px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg flex items-center gap-3"
+              <Link
+                href="/dependents"
+                className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium text-slate-600 hover:bg-[var(--mp-mist)]"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                <Users className="w-4 h-4 text-primary" aria-hidden />
+                <Users weight="light" className="h-4 w-4 text-primary" aria-hidden />
                 Dependents
               </Link>
-              <Link 
-                href="/documents" 
-                className="px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg flex items-center gap-3"
+              <Link
+                href="/documents"
+                className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium text-slate-600 hover:bg-[var(--mp-mist)]"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                <FileText className="w-4 h-4 text-primary" aria-hidden />
+                <FileText weight="light" className="h-4 w-4 text-primary" aria-hidden />
                 Documents
               </Link>
-              <Link 
-                href="/settings" 
-                className="px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg flex items-center gap-3"
+              <Link
+                href="/settings"
+                className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium text-slate-600 hover:bg-[var(--mp-mist)]"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                <Settings className="w-4 h-4 text-primary" aria-hidden />
+                <Gear weight="light" className="h-4 w-4 text-primary" aria-hidden />
                 Settings
               </Link>
-              
-              <hr className="my-2 border-slate-200" />
-              
+
+              <hr className="my-2 border-[rgba(11,109,133,0.08)]" />
+
               {user ? (
-                <button 
+                <button
+                  type="button"
                   onClick={handleSignOut}
-                  className="px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg text-left flex items-center gap-3"
+                  className="flex items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-medium text-red-600 hover:bg-red-50"
                 >
-                  <LogOut className="w-4 h-4" aria-hidden />
+                  <SignOut weight="light" className="h-4 w-4" aria-hidden />
                   Sign Out
                 </button>
               ) : (
                 <>
-                  <Link 
-                    href="/signin" 
-                    className="px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg"
+                  <Link
+                    href="/signin"
+                    className="rounded-2xl px-4 py-3 text-sm font-medium text-slate-600 hover:bg-[var(--mp-mist)]"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Sign In
                   </Link>
                   <a
                     href={ENROLLMENT_URL}
-                    className="px-4 py-2.5 text-sm font-medium bg-gradient-to-r from-cyan-600 to-blue-600 text-white hover:from-cyan-500 hover:to-blue-500 rounded-lg text-center"
+                    className="rounded-2xl bg-[var(--mp-teal)] px-4 py-3 text-center text-sm font-medium text-white"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Enroll Now
@@ -305,8 +373,8 @@ export function PortalHeader() {
               )}
             </nav>
           </div>
-        )}
-      </div>
-    </header>
+        </div>
+      )}
+    </>
   );
 }

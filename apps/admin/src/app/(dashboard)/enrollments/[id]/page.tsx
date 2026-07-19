@@ -1,5 +1,5 @@
+import { ArrowLeft, Calendar, Chat, CheckCircle, ClipboardText, Clock, CreditCard, CurrencyDollar, FileText, ShieldCheck, UserPlus, Users, Warning, XCircle } from '@phosphor-icons/react/dist/ssr';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Badge } from '@crm-eco/ui';
-import { ArrowLeft, Calendar, Users, FileText, CheckCircle, XCircle, Clock, ShieldCheck, MessageSquare, DollarSign, ClipboardList, CreditCard, AlertTriangle, UserPlus } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
@@ -293,7 +293,7 @@ export default async function EnrollmentDetailPage({ params }: { params: Promise
         <div className="flex items-center gap-4">
           <Link href="/enrollments" prefetch={false}>
             <Button variant="ghost" size="icon">
-              <ArrowLeft className="h-5 w-5" />
+              <ArrowLeft weight="light" className="h-5 w-5" />
             </Button>
           </Link>
           <div>
@@ -320,7 +320,7 @@ export default async function EnrollmentDetailPage({ params }: { params: Promise
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
+                <Users weight="light" className="h-5 w-5" />
                 Primary Member
               </CardTitle>
             </CardHeader>
@@ -383,7 +383,7 @@ export default async function EnrollmentDetailPage({ params }: { params: Promise
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
+                <FileText weight="light" className="h-5 w-5" />
                 Plan Details
               </CardTitle>
             </CardHeader>
@@ -429,7 +429,7 @@ export default async function EnrollmentDetailPage({ params }: { params: Promise
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <DollarSign className="h-5 w-5" />
+                <CurrencyDollar weight="light" className="h-5 w-5" />
                 Pricing &amp; Quote
               </CardTitle>
               <CardDescription>
@@ -571,7 +571,7 @@ export default async function EnrollmentDetailPage({ params }: { params: Promise
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <UserPlus className="h-5 w-5" />
+                <UserPlus weight="light" className="h-5 w-5" />
                 Dependents
               </CardTitle>
               <CardDescription>Household members covered under this enrollment</CardDescription>
@@ -644,7 +644,7 @@ export default async function EnrollmentDetailPage({ params }: { params: Promise
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <ClipboardList className="h-5 w-5" />
+                <ClipboardText weight="light" className="h-5 w-5" />
                 Questionnaire Answers
               </CardTitle>
               <CardDescription>Applicant responses captured during enrollment</CardDescription>
@@ -691,7 +691,7 @@ export default async function EnrollmentDetailPage({ params }: { params: Promise
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <CreditCard className="h-5 w-5" />
+                <CreditCard weight="light" className="h-5 w-5" />
                 Billing Schedule
               </CardTitle>
               <CardDescription>Recurring billing tied to this enrollment (read-only)</CardDescription>
@@ -733,7 +733,7 @@ export default async function EnrollmentDetailPage({ params }: { params: Promise
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <AlertTriangle className="h-5 w-5" />
+                    <Warning weight="light" className="h-5 w-5" />
                     Eligibility Findings
                   </CardTitle>
                   <CardDescription>Flags recorded on the enrollment</CardDescription>
@@ -748,7 +748,7 @@ export default async function EnrollmentDetailPage({ params }: { params: Promise
                           key={i}
                           className="flex items-start gap-2 p-2 bg-amber-50 border border-amber-200 rounded text-sm text-amber-700"
                         >
-                          <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+                          <Warning weight="light" className="h-4 w-4 mt-0.5 shrink-0" />
                           <span>{f}</span>
                         </div>
                       ))}
@@ -782,9 +782,9 @@ export default async function EnrollmentDetailPage({ params }: { params: Promise
                       className="flex items-center gap-3 p-3 rounded-lg border"
                     >
                       {step.is_completed ? (
-                        <CheckCircle className="h-5 w-5 text-green-600" />
+                        <CheckCircle weight="light" className="h-5 w-5 text-green-600" />
                       ) : (
-                        <Clock className="h-5 w-5 text-slate-300" />
+                        <Clock weight="light" className="h-5 w-5 text-slate-300" />
                       )}
                       <div className="flex-1">
                         <p className="font-medium capitalize">
@@ -842,7 +842,7 @@ export default async function EnrollmentDetailPage({ params }: { params: Promise
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <ShieldCheck className="h-5 w-5" />
+                  <ShieldCheck weight="light" className="h-5 w-5" />
                   Approval
                 </CardTitle>
                 <CardDescription>
@@ -895,7 +895,7 @@ export default async function EnrollmentDetailPage({ params }: { params: Promise
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <MessageSquare className="h-5 w-5" />
+                <Chat weight="light" className="h-5 w-5" />
                 Review Notes
               </CardTitle>
               <CardDescription>
@@ -946,11 +946,11 @@ export default async function EnrollmentDetailPage({ params }: { params: Promise
               <div className="flex items-center justify-center">
                 <div className="text-center">
                   {enrollment.status === 'approved' ? (
-                    <CheckCircle className="h-16 w-16 text-green-600 mx-auto mb-2" />
+                    <CheckCircle weight="light" className="h-16 w-16 text-green-600 mx-auto mb-2" />
                   ) : enrollment.status === 'rejected' || enrollment.status === 'cancelled' ? (
-                    <XCircle className="h-16 w-16 text-red-600 mx-auto mb-2" />
+                    <XCircle weight="light" className="h-16 w-16 text-red-600 mx-auto mb-2" />
                   ) : (
-                    <Clock className="h-16 w-16 text-amber-600 mx-auto mb-2" />
+                    <Clock weight="light" className="h-16 w-16 text-amber-600 mx-auto mb-2" />
                   )}
                   <Badge variant={getStatusBadgeVariant(enrollment.status)} className="text-lg px-4 py-1">
                     {getStatusLabel(enrollment.status)}
@@ -964,7 +964,7 @@ export default async function EnrollmentDetailPage({ params }: { params: Promise
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
+                <Calendar weight="light" className="h-5 w-5" />
                 Important Dates
               </CardTitle>
             </CardHeader>

@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { ChevronRight, Home } from 'lucide-react';
+import { CaretRight, House } from '@phosphor-icons/react';
 import { cn } from '@crm-eco/ui';
 
 interface BreadcrumbItem {
@@ -87,28 +87,28 @@ export function Breadcrumbs() {
           return (
             <li key={crumb.href} className="flex items-center">
               {index > 0 && (
-                <ChevronRight className="h-4 w-4 mx-1 flex-shrink-0 text-slate-400 dark:text-slate-500" />
+                <CaretRight weight="light" className="mx-1 h-4 w-4 flex-shrink-0 text-[var(--adm-muted)]" />
               )}
               {isLast ? (
                 <span
                   className={cn(
-                    'font-medium text-slate-900 dark:text-white',
+                    'font-medium text-[var(--adm-ink)]',
                     isFirst && 'flex items-center gap-1'
                   )}
                   aria-current="page"
                 >
-                  {isFirst && <Home className="h-4 w-4" />}
+                  {isFirst && <House weight="light" className="h-4 w-4" />}
                   {crumb.label}
                 </span>
               ) : (
                 <Link
                   href={crumb.href}
                   className={cn(
-                    'hover:text-slate-900 dark:hover:text-white transition-colors',
+                    'transition-colors hover:text-[var(--adm-ink)]',
                     isFirst && 'flex items-center gap-1'
                   )}
                 >
-                  {isFirst && <Home className="h-4 w-4" />}
+                  {isFirst && <House weight="light" className="h-4 w-4" />}
                   {crumb.label}
                 </Link>
               )}

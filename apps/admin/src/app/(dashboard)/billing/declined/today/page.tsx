@@ -1,5 +1,6 @@
 'use client';
 
+import { ArrowClockwise, Buildings, Calendar, CaretLeft, CaretRight, CheckCircle, CreditCard, CurrencyDollar, DownloadSimple, EnvelopeSimple, MagnifyingGlass, Phone, User, Warning, XCircle } from '@phosphor-icons/react';
 import { useState, useEffect } from 'react';
 import {
   Card,
@@ -17,23 +18,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@crm-eco/ui';
-import {
-  AlertTriangle,
-  RefreshCw,
-  Search,
-  XCircle,
-  CheckCircle,
-  Phone,
-  Mail,
-  User,
-  CreditCard,
-  Building2,
-  Calendar,
-  DollarSign,
-  Download,
-  ChevronLeft,
-  ChevronRight,
-} from 'lucide-react';
 import Link from 'next/link';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { toast } from 'sonner';
@@ -332,11 +316,11 @@ export default function DeclinedTodayPage() {
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" onClick={exportDeclines}>
-            <Download className="h-4 w-4 mr-2" />
+            <DownloadSimple weight="light" className="h-4 w-4 mr-2" />
             Export CSV
           </Button>
           <Button variant="outline" onClick={fetchDeclinedToday}>
-            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            <ArrowClockwise weight="light" className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
         </div>
@@ -347,7 +331,7 @@ export default function DeclinedTodayPage() {
         <Card>
           <CardContent className="pt-4">
             <div className="flex items-center gap-2">
-              <XCircle className="h-5 w-5 text-red-500" />
+              <XCircle weight="light" className="h-5 w-5 text-red-500" />
               <div>
                 <p className="text-xs text-muted-foreground">Total Declined</p>
                 <p className="text-lg font-bold">{filteredTransactions.length}</p>
@@ -376,9 +360,9 @@ export default function DeclinedTodayPage() {
           <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
             <div className="flex gap-3 flex-wrap">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <MagnifyingGlass weight="light" className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search by name, email, or ID..."
+                  placeholder="MagnifyingGlass by name, email, or ID..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-9 w-64"
@@ -400,9 +384,9 @@ export default function DeclinedTodayPage() {
               {selectedIds.size > 0 && (
                 <Button onClick={handleBulkRetry} disabled={bulkRetrying}>
                   {bulkRetrying ? (
-                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    <ArrowClockwise weight="light" className="h-4 w-4 mr-2 animate-spin" />
                   ) : (
-                    <RefreshCw className="h-4 w-4 mr-2" />
+                    <ArrowClockwise weight="light" className="h-4 w-4 mr-2" />
                   )}
                   Retry Selected ({selectedIds.size})
                 </Button>
@@ -423,7 +407,7 @@ export default function DeclinedTodayPage() {
             </div>
           ) : paginatedTransactions.length === 0 ? (
             <div className="text-center py-16">
-              <CheckCircle className="h-12 w-12 text-emerald-500 mx-auto mb-4" />
+              <CheckCircle weight="light" className="h-12 w-12 text-emerald-500 mx-auto mb-4" />
               <p className="text-lg font-medium">No declined payments today</p>
               <p className="text-sm text-muted-foreground">All payments are processing successfully</p>
             </div>
@@ -463,7 +447,7 @@ export default function DeclinedTodayPage() {
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-3">
                           <div className="p-2 bg-slate-100 rounded-full">
-                            <User className="h-4 w-4 text-slate-600" />
+                            <User weight="light" className="h-4 w-4 text-slate-600" />
                           </div>
                           <div>
                             <p className="font-medium">
@@ -476,9 +460,9 @@ export default function DeclinedTodayPage() {
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2">
                           {txn.payment_profile?.payment_type === 'card' ? (
-                            <CreditCard className="h-4 w-4 text-slate-500" />
+                            <CreditCard weight="light" className="h-4 w-4 text-slate-500" />
                           ) : (
-                            <Building2 className="h-4 w-4 text-slate-500" />
+                            <Buildings weight="light" className="h-4 w-4 text-slate-500" />
                           )}
                           <span className="text-sm">
                             {txn.payment_profile?.card_type || txn.payment_profile?.bank_name || 'Unknown'} ****
@@ -523,23 +507,23 @@ export default function DeclinedTodayPage() {
                             disabled={retryingId === txn.id}
                           >
                             {retryingId === txn.id ? (
-                              <RefreshCw className="h-4 w-4 animate-spin" />
+                              <ArrowClockwise weight="light" className="h-4 w-4 animate-spin" />
                             ) : (
-                              <RefreshCw className="h-4 w-4" />
+                              <ArrowClockwise weight="light" className="h-4 w-4" />
                             )}
                             <span className="ml-1">Retry</span>
                           </Button>
                           {txn.member?.phone && (
                             <Button variant="ghost" size="icon" asChild>
                               <a href={`tel:${txn.member.phone}`}>
-                                <Phone className="h-4 w-4" />
+                                <Phone weight="light" className="h-4 w-4" />
                               </a>
                             </Button>
                           )}
                           {txn.member?.email && (
                             <Button variant="ghost" size="icon" asChild>
                               <a href={`mailto:${txn.member.email}`}>
-                                <Mail className="h-4 w-4" />
+                                <EnvelopeSimple weight="light" className="h-4 w-4" />
                               </a>
                             </Button>
                           )}
@@ -567,7 +551,7 @@ export default function DeclinedTodayPage() {
                 onClick={() => setCurrentPage(currentPage - 1)}
                 disabled={currentPage === 1}
               >
-                <ChevronLeft className="h-4 w-4" />
+                <CaretLeft weight="light" className="h-4 w-4" />
               </Button>
               <span className="text-sm">
                 Page {currentPage} of {totalPages}
@@ -578,7 +562,7 @@ export default function DeclinedTodayPage() {
                 onClick={() => setCurrentPage(currentPage + 1)}
                 disabled={currentPage === totalPages}
               >
-                <ChevronRight className="h-4 w-4" />
+                <CaretRight weight="light" className="h-4 w-4" />
               </Button>
             </div>
           </div>
@@ -599,7 +583,7 @@ export default function DeclinedTodayPage() {
             <div className="space-y-4 py-4">
               <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-lg">
                 <div className="p-2 bg-white rounded-full">
-                  <User className="h-5 w-5 text-slate-600" />
+                  <User weight="light" className="h-5 w-5 text-slate-600" />
                 </div>
                 <div>
                   <p className="font-medium">
@@ -624,9 +608,9 @@ export default function DeclinedTodayPage() {
                 <p className="text-sm text-muted-foreground">Payment Method</p>
                 <div className="flex items-center gap-2 mt-1">
                   {selectedTransaction.payment_profile?.payment_type === 'card' ? (
-                    <CreditCard className="h-4 w-4" />
+                    <CreditCard weight="light" className="h-4 w-4" />
                   ) : (
-                    <Building2 className="h-4 w-4" />
+                    <Buildings weight="light" className="h-4 w-4" />
                   )}
                   <span>
                     {selectedTransaction.payment_profile?.card_type ||
@@ -640,7 +624,7 @@ export default function DeclinedTodayPage() {
               {selectedTransaction.error_message && (
                 <div className="p-3 bg-red-50 rounded-lg">
                   <p className="text-sm text-red-600">
-                    <AlertTriangle className="h-4 w-4 inline mr-1" />
+                    <Warning weight="light" className="h-4 w-4 inline mr-1" />
                     {selectedTransaction.error_message}
                   </p>
                 </div>
@@ -649,7 +633,7 @@ export default function DeclinedTodayPage() {
               {(selectedTransaction.retry_count || 0) >= 3 && (
                 <div className="p-3 bg-amber-50 rounded-lg">
                   <p className="text-sm text-amber-700">
-                    <AlertTriangle className="h-4 w-4 inline mr-1" />
+                    <Warning weight="light" className="h-4 w-4 inline mr-1" />
                     This payment has already been retried {selectedTransaction.retry_count} times. Consider contacting
                     the member to update their payment method.
                   </p>
@@ -668,12 +652,12 @@ export default function DeclinedTodayPage() {
             >
               {retryingId ? (
                 <>
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  <ArrowClockwise weight="light" className="h-4 w-4 mr-2 animate-spin" />
                   Retrying...
                 </>
               ) : (
                 <>
-                  <RefreshCw className="h-4 w-4 mr-2" />
+                  <ArrowClockwise weight="light" className="h-4 w-4 mr-2" />
                   Retry Payment
                 </>
               )}

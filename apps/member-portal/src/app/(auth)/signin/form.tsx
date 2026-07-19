@@ -5,16 +5,16 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import {
-  Mail,
+  Envelope,
   Lock,
   Eye,
-  EyeOff,
+  EyeSlash,
   ArrowRight,
-  Loader2,
+  CircleNotch,
   Shield,
-  CheckCircle2,
-  AlertCircle,
-} from 'lucide-react';
+  CheckCircle,
+  WarningCircle,
+} from '@phosphor-icons/react';
 import { AuthFormHeader, authForm } from '@crm-eco/ui';
 
 const LOCKOUT_THRESHOLD = 5;
@@ -149,7 +149,7 @@ export function SignInForm() {
   return (
     <div
       className={`space-y-8 transition-all duration-500 ${
-        mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+        mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
       }`}
     >
       <AuthFormHeader
@@ -160,14 +160,14 @@ export function SignInForm() {
       <form onSubmit={handleSignIn} className="space-y-6">
         {error && (
           <div className={`${authForm.error} flex items-start gap-3`}>
-            <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+            <WarningCircle weight="light" className="mt-0.5 h-4 w-4 flex-shrink-0 text-red-400" />
             <span>{error}</span>
           </div>
         )}
 
         {isLockedOut && (
-          <div className="flex items-center gap-3 p-3.5 text-sm bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-200">
-            <Lock className="w-4 h-4 flex-shrink-0" />
+          <div className="flex items-center gap-3 rounded-xl border border-amber-500/20 bg-amber-500/10 p-3.5 text-sm text-amber-200">
+            <Lock weight="light" className="h-4 w-4 flex-shrink-0" />
             <span>
               Account temporarily locked. Try again in{' '}
               <span className="font-semibold tabular-nums">{lockoutSeconds}s</span>
@@ -178,9 +178,9 @@ export function SignInForm() {
         <div className="space-y-4">
           <div className="space-y-2">
             <label htmlFor="signin-email" className={authForm.label}>Email address</label>
-            <div className="relative group">
+            <div className="group relative">
               <div className={authForm.inputGlow} />
-              <Mail className={authForm.inputIcon} />
+              <Envelope weight="light" className={authForm.inputIcon} />
               <input
                 id="signin-email"
                 type="email"
@@ -200,9 +200,9 @@ export function SignInForm() {
               <label htmlFor="signin-password" className={authForm.label}>Password</label>
               <Link href="/reset-password" className={authForm.link}>Forgot password?</Link>
             </div>
-            <div className="relative group">
+            <div className="group relative">
               <div className={authForm.inputGlow} />
-              <Lock className={authForm.inputIcon} />
+              <Lock weight="light" className={authForm.inputIcon} />
               <input
                 id="signin-password"
                 type={showPassword ? 'text' : 'password'}
@@ -217,10 +217,14 @@ export function SignInForm() {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 z-10"
+                className="absolute right-4 top-1/2 z-10 -translate-y-1/2 text-slate-500 hover:text-slate-300"
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
               >
-                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                {showPassword ? (
+                  <EyeSlash weight="light" className="h-5 w-5" />
+                ) : (
+                  <Eye weight="light" className="h-5 w-5" />
+                )}
               </button>
             </div>
           </div>
@@ -230,21 +234,21 @@ export function SignInForm() {
           <div className={authForm.submitShimmer} />
           {loading ? (
             <span className="flex items-center justify-center gap-2">
-              <Loader2 className="w-5 h-5 animate-spin" />
+              <CircleNotch weight="light" className="h-5 w-5 animate-spin" />
               Signing in...
             </span>
           ) : (
             <span className="flex items-center justify-center gap-2">
               Sign in
-              <ArrowRight className="w-4 h-4" />
+              <ArrowRight weight="light" className="h-4 w-4" />
             </span>
           )}
         </button>
 
-        <div className="pt-4 border-t border-slate-700 text-center">
-          <p className="text-slate-400 text-sm">
+        <div className="border-t border-slate-700 pt-4 text-center">
+          <p className="text-sm text-slate-400">
             Are you an agent?{' '}
-            <Link href="/signup" className="text-cyan-400 hover:text-cyan-300 font-medium transition-colors">
+            <Link href="/signup" className="font-medium text-[#5ec8d8] transition-colors hover:text-[#7dd3e0]">
               Register here
             </Link>
           </p>
@@ -252,27 +256,27 @@ export function SignInForm() {
       </form>
 
       <div className="space-y-3">
-        <div className="flex items-center justify-center gap-4 text-xs text-slate-500 flex-wrap">
+        <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-slate-500">
           <div className="flex items-center gap-1.5">
-            <CheckCircle2 className="w-3 h-3 text-cyan-400" />
+            <CheckCircle weight="light" className="h-3 w-3 text-[#5ec8d8]" />
             <span>SSL Secured</span>
           </div>
-          <div className="w-1 h-1 rounded-full bg-slate-600" />
+          <div className="h-1 w-1 rounded-full bg-slate-600" />
           <div className="flex items-center gap-1.5">
-            <Shield className="w-3 h-3 text-cyan-400" />
+            <Shield weight="light" className="h-3 w-3 text-[#5ec8d8]" />
             <span>HIPAA Compliant</span>
           </div>
-          <div className="w-1 h-1 rounded-full bg-slate-600" />
+          <div className="h-1 w-1 rounded-full bg-slate-600" />
           <div className="flex items-center gap-1.5">
-            <Lock className="w-3 h-3 text-cyan-400" />
+            <Lock weight="light" className="h-3 w-3 text-[#5ec8d8]" />
             <span>Encrypted</span>
           </div>
         </div>
         <p className="text-center text-xs text-slate-500">
           By signing in you agree to our{' '}
-          <a href={`${LEGAL_BASE}/legal/terms`} className="text-cyan-400 hover:underline" target="_blank" rel="noopener noreferrer">Terms</a>
+          <a href={`${LEGAL_BASE}/legal/terms`} className="text-[#5ec8d8] hover:underline" target="_blank" rel="noopener noreferrer">Terms</a>
           {' '}and{' '}
-          <a href={`${LEGAL_BASE}/legal/privacy`} className="text-cyan-400 hover:underline" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
+          <a href={`${LEGAL_BASE}/legal/privacy`} className="text-[#5ec8d8] hover:underline" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
         </p>
       </div>
     </div>

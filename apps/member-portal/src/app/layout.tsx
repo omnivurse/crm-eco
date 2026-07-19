@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter, Plus_Jakarta_Sans } from 'next/font/google';
+import { Plus_Jakarta_Sans } from 'next/font/google';
 import { brandingToCssText } from '@crm-eco/ui/lib/branding';
 import { LeadGenQuotePinGate } from '@crm-eco/ui/components/pin-lock-overlay';
 import { ConfirmDialogHost } from '@crm-eco/ui/components/confirm-dialog';
@@ -11,14 +11,14 @@ import { InstallPrompt } from '@/components/pwa/InstallPrompt';
 import { UpdateToast } from '@/components/pwa/UpdateToast';
 import { getPortalTenant } from '@/lib/tenant';
 
-const inter = Inter({
+const plusJakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
   variable: '--font-body',
   display: 'swap',
   preload: false,
 });
 
-const plusJakarta = Plus_Jakarta_Sans({
+const plusJakartaHeading = Plus_Jakarta_Sans({
   subsets: ['latin'],
   variable: '--font-heading',
   display: 'swap',
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
   manifest: '/manifest.webmanifest',
   appleWebApp: {
     capable: true,
-    statusBarStyle: 'black-translucent',
+    statusBarStyle: 'default',
     title: 'Double Helix Hub',
   },
   formatDetection: {
@@ -43,7 +43,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#030712',
+  themeColor: '#0b6d85',
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
@@ -69,12 +69,12 @@ export default async function RootLayout({
         <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-96x96.png" />
         <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-72x72.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         {css && (
           <style id="tenant-theme" dangerouslySetInnerHTML={{ __html: css }} />
         )}
       </head>
-      <body className={`${inter.variable} ${plusJakarta.variable} font-sans antialiased`}>
+      <body className={`${plusJakarta.variable} ${plusJakartaHeading.variable} font-sans antialiased`}>
         <LeadGenQuotePinGate />
         <ServiceWorkerRegistration />
         <PortalAppShell>{children}</PortalAppShell>

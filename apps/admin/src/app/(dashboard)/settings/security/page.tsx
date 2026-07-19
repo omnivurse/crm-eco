@@ -1,5 +1,6 @@
 'use client';
 
+import { CaretLeft, Check, CircleNotch, Key, Lock, MagnifyingGlass, PencilSimple, ShieldCheck, Trash, UserPlus, Users, X } from '@phosphor-icons/react';
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import {
@@ -19,20 +20,6 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@crm-eco/ui';
-import {
-  Shield,
-  Users,
-  UserPlus,
-  Search,
-  Edit2,
-  Trash2,
-  Check,
-  X,
-  Loader2,
-  ChevronLeft,
-  Key,
-  Lock,
-} from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { inviteStaffUser } from './actions';
@@ -236,7 +223,7 @@ export default function SecuritySettingsPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <CircleNotch weight="light" className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -247,7 +234,7 @@ export default function SecuritySettingsPage() {
       <div className="flex items-center gap-4">
         <Link href="/settings">
           <Button variant="ghost" size="icon">
-            <ChevronLeft className="h-5 w-5" />
+            <CaretLeft weight="light" className="h-5 w-5" />
           </Button>
         </Link>
         <div className="flex-1">
@@ -255,7 +242,7 @@ export default function SecuritySettingsPage() {
           <p className="text-slate-500">Manage users, roles, and permissions</p>
         </div>
         <Button onClick={() => setIsInviteModalOpen(true)}>
-          <UserPlus className="h-4 w-4 mr-2" />
+          <UserPlus weight="light" className="h-4 w-4 mr-2" />
           Invite User
         </Button>
       </div>
@@ -266,7 +253,7 @@ export default function SecuritySettingsPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
-                <Users className="h-5 w-5 text-blue-600" />
+                <Users weight="light" className="h-5 w-5 text-blue-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{users.length}</p>
@@ -279,7 +266,7 @@ export default function SecuritySettingsPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center">
-                <Check className="h-5 w-5 text-green-600" />
+                <Check weight="light" className="h-5 w-5 text-green-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{users.filter(u => u.is_active).length}</p>
@@ -292,7 +279,7 @@ export default function SecuritySettingsPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center">
-                <Shield className="h-5 w-5 text-purple-600" />
+                <ShieldCheck weight="light" className="h-5 w-5 text-purple-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{users.filter(u => u.role === 'admin' || u.role === 'super_admin').length}</p>
@@ -305,7 +292,7 @@ export default function SecuritySettingsPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-orange-50 flex items-center justify-center">
-                <Key className="h-5 w-5 text-orange-600" />
+                <Key weight="light" className="h-5 w-5 text-orange-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{roles.length || 4}</p>
@@ -325,9 +312,9 @@ export default function SecuritySettingsPage() {
               <CardDescription>Manage user access and role assignments</CardDescription>
             </div>
             <div className="relative w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <MagnifyingGlass weight="light" className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search users..."
+                placeholder="MagnifyingGlass users..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9"
@@ -389,7 +376,7 @@ export default function SecuritySettingsPage() {
                           size="sm"
                           onClick={() => handleEditUser(user)}
                         >
-                          <Edit2 className="h-4 w-4" />
+                          <PencilSimple weight="light" className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="ghost"
@@ -397,9 +384,9 @@ export default function SecuritySettingsPage() {
                           onClick={() => handleToggleUserActive(user)}
                         >
                           {user.is_active ? (
-                            <Lock className="h-4 w-4 text-red-500" />
+                            <Lock weight="light" className="h-4 w-4 text-red-500" />
                           ) : (
-                            <Check className="h-4 w-4 text-green-500" />
+                            <Check weight="light" className="h-4 w-4 text-green-500" />
                           )}
                         </Button>
                       </div>
@@ -449,27 +436,27 @@ export default function SecuritySettingsPage() {
                       </div>
                     </td>
                     <td className="px-4 py-3 text-center">
-                      <Check className="h-5 w-5 text-green-500 mx-auto" />
+                      <Check weight="light" className="h-5 w-5 text-green-500 mx-auto" />
                     </td>
                     <td className="px-4 py-3 text-center">
                       {['read', 'write', 'delete', 'manage_team', 'view_reports'].includes(perm.key) ? (
-                        <Check className="h-5 w-5 text-green-500 mx-auto" />
+                        <Check weight="light" className="h-5 w-5 text-green-500 mx-auto" />
                       ) : (
-                        <X className="h-5 w-5 text-slate-300 mx-auto" />
+                        <X weight="light" className="h-5 w-5 text-slate-300 mx-auto" />
                       )}
                     </td>
                     <td className="px-4 py-3 text-center">
                       {['read', 'write'].includes(perm.key) ? (
-                        <Check className="h-5 w-5 text-green-500 mx-auto" />
+                        <Check weight="light" className="h-5 w-5 text-green-500 mx-auto" />
                       ) : (
-                        <X className="h-5 w-5 text-slate-300 mx-auto" />
+                        <X weight="light" className="h-5 w-5 text-slate-300 mx-auto" />
                       )}
                     </td>
                     <td className="px-4 py-3 text-center">
                       {['read', 'view_audit', 'view_reports'].includes(perm.key) ? (
-                        <Check className="h-5 w-5 text-green-500 mx-auto" />
+                        <Check weight="light" className="h-5 w-5 text-green-500 mx-auto" />
                       ) : (
-                        <X className="h-5 w-5 text-slate-300 mx-auto" />
+                        <X weight="light" className="h-5 w-5 text-slate-300 mx-auto" />
                       )}
                     </td>
                   </tr>
@@ -531,7 +518,7 @@ export default function SecuritySettingsPage() {
               Cancel
             </Button>
             <Button onClick={handleSaveUserRole} disabled={isSaving}>
-              {isSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {isSaving && <CircleNotch weight="light" className="h-4 w-4 mr-2 animate-spin" />}
               Save Changes
             </Button>
           </DialogFooter>
@@ -578,7 +565,7 @@ export default function SecuritySettingsPage() {
               Cancel
             </Button>
             <Button onClick={handleInviteUser} disabled={isSaving || !inviteEmail}>
-              {isSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {isSaving && <CircleNotch weight="light" className="h-4 w-4 mr-2 animate-spin" />}
               Send Invitation
             </Button>
           </DialogFooter>

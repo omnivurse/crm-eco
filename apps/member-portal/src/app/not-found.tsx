@@ -1,21 +1,21 @@
 import Link from 'next/link';
-import { Compass, Home } from 'lucide-react';
+import { Compass, House } from '@phosphor-icons/react/dist/ssr';
 import { Button } from '@crm-eco/ui/components/button';
 
 export default function NotFound() {
   return (
-    <div className="min-h-[60vh] flex items-center justify-center p-8">
-      <div className="text-center max-w-md">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 mb-6">
-          <Compass className="w-8 h-8 text-slate-500" />
+    <div className="flex min-h-[60vh] items-center justify-center p-8">
+      <div className="max-w-md text-center">
+        <div className="mb-6 inline-flex h-16 w-16 items-center justify-center rounded-full bg-[rgba(11,109,133,0.08)]">
+          <Compass weight="light" className="h-8 w-8 text-[var(--mp-teal)]" />
         </div>
-        <h2 className="text-2xl font-bold text-slate-900 mb-3">Page not found</h2>
-        <p className="text-slate-600 mb-6">
+        <h2 className="mb-3 text-2xl font-bold tracking-[-0.03em] text-[var(--mp-ink)]">Page not found</h2>
+        <p className="mb-6 text-slate-600">
           The page you&apos;re looking for doesn&apos;t exist or may have moved.
         </p>
         <Link href="/">
-          <Button className="gap-2">
-            <Home className="w-4 h-4" />
+          <Button className="gap-2 rounded-full bg-[var(--mp-teal)] hover:bg-[var(--mp-teal-soft)]">
+            <House weight="light" className="h-4 w-4" />
             Back to Dashboard
           </Button>
         </Link>

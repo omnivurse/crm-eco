@@ -1,5 +1,6 @@
 'use client';
 
+import { ArrowClockwise, ArrowRight, Calendar, ChartBar, CheckCircle, Clock, CurrencyDollar, DownloadSimple, Gift, TrendDown, TrendUp, Users } from '@phosphor-icons/react';
 import { useState, useEffect } from 'react';
 import {
   Card,
@@ -10,20 +11,6 @@ import {
   Button,
   Badge,
 } from '@crm-eco/ui';
-import {
-  DollarSign,
-  TrendingUp,
-  TrendingDown,
-  Users,
-  Gift,
-  Calendar,
-  RefreshCw,
-  Download,
-  ArrowRight,
-  Clock,
-  CheckCircle,
-  BarChart3,
-} from 'lucide-react';
 import Link from 'next/link';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
@@ -348,11 +335,11 @@ export default function CommissionsSummaryPage() {
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" onClick={exportSummary}>
-            <Download className="h-4 w-4 mr-2" />
+            <DownloadSimple weight="light" className="h-4 w-4 mr-2" />
             Export Report
           </Button>
           <Button variant="outline" onClick={fetchSummary}>
-            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            <ArrowClockwise weight="light" className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
         </div>
@@ -362,7 +349,7 @@ export default function CommissionsSummaryPage() {
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <Calendar weight="light" className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm font-medium">Period</span>
           </div>
         </CardHeader>
@@ -411,7 +398,7 @@ export default function CommissionsSummaryPage() {
                 <p className="text-2xl font-bold">{formatCurrency(stats.totalEarned)}</p>
               </div>
               <div className="p-3 bg-slate-100 rounded-full">
-                <DollarSign className="h-6 w-6 text-slate-600" />
+                <CurrencyDollar weight="light" className="h-6 w-6 text-slate-600" />
               </div>
             </div>
           </CardContent>
@@ -425,7 +412,7 @@ export default function CommissionsSummaryPage() {
                 <p className="text-2xl font-bold text-emerald-600">{formatCurrency(stats.totalPaid)}</p>
               </div>
               <div className="p-3 bg-emerald-100 rounded-full">
-                <CheckCircle className="h-6 w-6 text-emerald-600" />
+                <CheckCircle weight="light" className="h-6 w-6 text-emerald-600" />
               </div>
             </div>
           </CardContent>
@@ -439,7 +426,7 @@ export default function CommissionsSummaryPage() {
                 <p className="text-2xl font-bold text-amber-600">{formatCurrency(stats.totalPending)}</p>
               </div>
               <div className="p-3 bg-amber-100 rounded-full">
-                <Clock className="h-6 w-6 text-amber-600" />
+                <Clock weight="light" className="h-6 w-6 text-amber-600" />
               </div>
             </div>
           </CardContent>
@@ -453,7 +440,7 @@ export default function CommissionsSummaryPage() {
                 <p className="text-2xl font-bold text-purple-600">{formatCurrency(stats.totalBonuses)}</p>
               </div>
               <div className="p-3 bg-purple-100 rounded-full">
-                <Gift className="h-6 w-6 text-purple-600" />
+                <Gift weight="light" className="h-6 w-6 text-purple-600" />
               </div>
             </div>
           </CardContent>
@@ -469,7 +456,7 @@ export default function CommissionsSummaryPage() {
                 <p className="text-sm text-muted-foreground">Transactions</p>
                 <p className="text-xl font-semibold">{stats.transactionCount.toLocaleString()}</p>
               </div>
-              <BarChart3 className="h-5 w-5 text-slate-400" />
+              <ChartBar weight="light" className="h-5 w-5 text-slate-400" />
             </div>
           </CardContent>
         </Card>
@@ -481,7 +468,7 @@ export default function CommissionsSummaryPage() {
                 <p className="text-sm text-muted-foreground">Avg Commission</p>
                 <p className="text-xl font-semibold">{formatCurrency(stats.avgCommission)}</p>
               </div>
-              <TrendingUp className="h-5 w-5 text-slate-400" />
+              <TrendUp weight="light" className="h-5 w-5 text-slate-400" />
             </div>
           </CardContent>
         </Card>
@@ -493,7 +480,7 @@ export default function CommissionsSummaryPage() {
                 <p className="text-sm text-muted-foreground">Top Agent Earnings</p>
                 <p className="text-xl font-semibold">{formatCurrency(stats.topAgentAmount)}</p>
               </div>
-              <Users className="h-5 w-5 text-slate-400" />
+              <Users weight="light" className="h-5 w-5 text-slate-400" />
             </div>
           </CardContent>
         </Card>
@@ -512,7 +499,7 @@ export default function CommissionsSummaryPage() {
               <Link href="/commissions/list">
                 <Button variant="ghost" size="sm">
                   View All
-                  <ArrowRight className="h-4 w-4 ml-1" />
+                  <ArrowRight weight="light" className="h-4 w-4 ml-1" />
                 </Button>
               </Link>
             </div>
@@ -665,19 +652,19 @@ export default function CommissionsSummaryPage() {
           <div className="flex flex-wrap gap-4">
             <Link href="/commissions/list">
               <Button variant="outline">
-                <DollarSign className="h-4 w-4 mr-2" />
+                <CurrencyDollar weight="light" className="h-4 w-4 mr-2" />
                 View All Commissions
               </Button>
             </Link>
             <Link href="/commissions/payouts">
               <Button variant="outline">
-                <CheckCircle className="h-4 w-4 mr-2" />
+                <CheckCircle weight="light" className="h-4 w-4 mr-2" />
                 Process Payouts
               </Button>
             </Link>
             <Link href="/commissions/tiers">
               <Button variant="outline">
-                <TrendingUp className="h-4 w-4 mr-2" />
+                <TrendUp weight="light" className="h-4 w-4 mr-2" />
                 Manage Tiers
               </Button>
             </Link>

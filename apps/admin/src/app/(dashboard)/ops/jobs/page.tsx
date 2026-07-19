@@ -1,5 +1,6 @@
 'use client';
 
+import { ArrowClockwise, ArrowCounterClockwise, Calendar, CaretLeft, CaretRight, CheckCircle, CircleNotch, Clock, DownloadSimple, Funnel, MagnifyingGlass, Play, StopCircle, Warning, XCircle } from '@phosphor-icons/react';
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import {
@@ -28,23 +29,6 @@ import {
   TableHeader,
   TableRow,
 } from '@crm-eco/ui';
-import {
-  Search,
-  Filter,
-  Clock,
-  CheckCircle2,
-  XCircle,
-  AlertTriangle,
-  Loader2,
-  RefreshCw,
-  ChevronLeft,
-  ChevronRight,
-  Play,
-  Calendar,
-  Download,
-  RotateCcw,
-  StopCircle,
-} from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 
@@ -76,10 +60,10 @@ interface JobRun {
 
 const statusConfig = {
   pending: { icon: Clock, color: 'bg-slate-100 text-slate-600', label: 'Pending' },
-  running: { icon: Loader2, color: 'bg-blue-100 text-blue-600', label: 'Running' },
-  completed: { icon: CheckCircle2, color: 'bg-emerald-100 text-emerald-600', label: 'Completed' },
+  running: { icon: CircleNotch, color: 'bg-blue-100 text-blue-600', label: 'Running' },
+  completed: { icon: CheckCircle, color: 'bg-emerald-100 text-emerald-600', label: 'Completed' },
   failed: { icon: XCircle, color: 'bg-red-100 text-red-600', label: 'Failed' },
-  cancelled: { icon: AlertTriangle, color: 'bg-amber-100 text-amber-600', label: 'Cancelled' },
+  cancelled: { icon: Warning, color: 'bg-amber-100 text-amber-600', label: 'Cancelled' },
 };
 
 const jobTypeLabels: Record<string, string> = {
@@ -326,7 +310,7 @@ export default function JobsPage() {
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" onClick={fetchJobs}>
-              <RefreshCw className="w-4 h-4 mr-2" />
+              <ArrowClockwise weight="light" className="w-4 h-4 mr-2" />
               Refresh
             </Button>
           </div>
@@ -338,9 +322,9 @@ export default function JobsPage() {
             <div className="flex flex-wrap gap-4">
               <div className="flex-1 min-w-[200px]">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <MagnifyingGlass weight="light" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <Input
-                    placeholder="Search jobs..."
+                    placeholder="MagnifyingGlass jobs..."
                     value={searchQuery}
                     onChange={(e) => {
                       setSearchQuery(e.target.value);
@@ -399,11 +383,11 @@ export default function JobsPage() {
           <CardContent className="p-0">
             {loading ? (
               <div className="flex items-center justify-center py-12">
-                <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+                <CircleNotch weight="light" className="w-8 h-8 animate-spin text-slate-400" />
               </div>
             ) : jobs.length === 0 ? (
               <div className="text-center py-12">
-                <Clock className="w-12 h-12 text-slate-200 mx-auto mb-3" />
+                <Clock weight="light" className="w-12 h-12 text-slate-200 mx-auto mb-3" />
                 <p className="text-slate-500">No jobs found</p>
                 <p className="text-sm text-slate-400">Jobs will appear here when they run</p>
               </div>
@@ -491,7 +475,7 @@ export default function JobsPage() {
                           )}
                         </TableCell>
                         <TableCell>
-                          <ChevronRight className="w-4 h-4 text-slate-300" />
+                          <CaretRight weight="light" className="w-4 h-4 text-slate-300" />
                         </TableCell>
                       </TableRow>
                     );
@@ -514,7 +498,7 @@ export default function JobsPage() {
                   onClick={() => setPage(p => p - 1)}
                   disabled={page === 0}
                 >
-                  <ChevronLeft className="w-4 h-4" />
+                  <CaretLeft weight="light" className="w-4 h-4" />
                 </Button>
                 <span className="text-sm text-slate-500">
                   Page {page + 1} of {totalPages}
@@ -525,7 +509,7 @@ export default function JobsPage() {
                   onClick={() => setPage(p => p + 1)}
                   disabled={page >= totalPages - 1}
                 >
-                  <ChevronRight className="w-4 h-4" />
+                  <CaretRight weight="light" className="w-4 h-4" />
                 </Button>
               </div>
             </div>
@@ -669,7 +653,7 @@ export default function JobsPage() {
                   <div className="flex items-center justify-between mb-2">
                     <p className="text-sm font-medium text-slate-700">Logs</p>
                     <Button variant="ghost" size="sm" onClick={() => exportLogs(selectedJob)}>
-                      <Download className="w-4 h-4 mr-1" />
+                      <DownloadSimple weight="light" className="w-4 h-4 mr-1" />
                       Export
                     </Button>
                   </div>
@@ -713,9 +697,9 @@ export default function JobsPage() {
                   disabled={retrying}
                 >
                   {retrying ? (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    <CircleNotch weight="light" className="w-4 h-4 mr-2 animate-spin" />
                   ) : (
-                    <RotateCcw className="w-4 h-4 mr-2" />
+                    <ArrowCounterClockwise weight="light" className="w-4 h-4 mr-2" />
                   )}
                   Retry Job
                 </Button>
@@ -728,9 +712,9 @@ export default function JobsPage() {
                   disabled={cancelling}
                 >
                   {cancelling ? (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    <CircleNotch weight="light" className="w-4 h-4 mr-2 animate-spin" />
                   ) : (
-                    <StopCircle className="w-4 h-4 mr-2" />
+                    <StopCircle weight="light" className="w-4 h-4 mr-2" />
                   )}
                   Cancel Job
                 </Button>

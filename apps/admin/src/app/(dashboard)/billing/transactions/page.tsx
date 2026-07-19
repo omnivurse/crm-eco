@@ -1,11 +1,11 @@
 'use client';
 
+import { ArrowClockwise, ArrowLeft, CheckCircle, CircleNotch, Clock, DownloadSimple, XCircle } from '@phosphor-icons/react';
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, Button } from '@crm-eco/ui';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { format } from 'date-fns';
 import Link from 'next/link';
-import { ArrowLeft, Download, CheckCircle, XCircle, Clock, RefreshCw, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Transaction {
@@ -39,16 +39,16 @@ interface Transaction {
 function getStatusIcon(status: string) {
   switch (status) {
     case 'success':
-      return <CheckCircle className="h-4 w-4 text-green-500" />;
+      return <CheckCircle weight="light" className="h-4 w-4 text-green-500" />;
     case 'failed':
-      return <XCircle className="h-4 w-4 text-red-500" />;
+      return <XCircle weight="light" className="h-4 w-4 text-red-500" />;
     case 'refunded':
-      return <RefreshCw className="h-4 w-4 text-blue-500" />;
+      return <ArrowClockwise weight="light" className="h-4 w-4 text-blue-500" />;
     case 'pending':
     case 'processing':
-      return <Clock className="h-4 w-4 text-yellow-500" />;
+      return <Clock weight="light" className="h-4 w-4 text-yellow-500" />;
     default:
-      return <Clock className="h-4 w-4 text-gray-400" />;
+      return <Clock weight="light" className="h-4 w-4 text-gray-400" />;
   }
 }
 
@@ -210,7 +210,7 @@ export default function TransactionsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <CircleNotch weight="light" className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -222,7 +222,7 @@ export default function TransactionsPage() {
         <div className="flex items-center gap-4">
           <Button variant="outline" size="sm" asChild>
             <Link href="/billing">
-              <ArrowLeft className="h-4 w-4 mr-2" />
+              <ArrowLeft weight="light" className="h-4 w-4 mr-2" />
               Back
             </Link>
           </Button>
@@ -233,9 +233,9 @@ export default function TransactionsPage() {
         </div>
         <Button variant="outline" size="sm" onClick={exportToCSV} disabled={exporting}>
           {exporting ? (
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            <CircleNotch weight="light" className="h-4 w-4 mr-2 animate-spin" />
           ) : (
-            <Download className="h-4 w-4 mr-2" />
+            <DownloadSimple weight="light" className="h-4 w-4 mr-2" />
           )}
           Export
         </Button>

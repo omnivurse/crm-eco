@@ -1,5 +1,6 @@
 'use client';
 
+import { Calculator, CaretDown, CaretUp, CircleNotch, Plus, X } from '@phosphor-icons/react';
 import { useState } from 'react';
 import {
   Card,
@@ -17,7 +18,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@crm-eco/ui';
-import { Calculator, Plus, X, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
 import { quote, getPlanOptions } from '@crm-eco/rates';
 import type {
   RateConfig,
@@ -99,7 +99,7 @@ export function RateQuoteCalculator({ defaultPlanId, rateSetOverride }: RateQuot
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Calculator className="h-5 w-5" />
+          <Calculator weight="light" className="h-5 w-5" />
           Rate Quote Calculator
         </CardTitle>
         <CardDescription>
@@ -180,7 +180,7 @@ export function RateQuoteCalculator({ defaultPlanId, rateSetOverride }: RateQuot
                 Dependent Ages
               </Label>
               <Button variant="ghost" size="sm" onClick={addDependent} className="h-7 text-xs">
-                <Plus className="w-3 h-3 mr-1" /> Add
+                <Plus weight="light" className="w-3 h-3 mr-1" /> Add
               </Button>
             </div>
             {dependentAges.map((age, i) => (
@@ -195,7 +195,7 @@ export function RateQuoteCalculator({ defaultPlanId, rateSetOverride }: RateQuot
                   className="flex-1"
                 />
                 <Button variant="ghost" size="icon" onClick={() => removeDependent(i)} className="h-8 w-8 text-red-500">
-                  <X className="w-3 h-3" />
+                  <X weight="light" className="w-3 h-3" />
                 </Button>
               </div>
             ))}
@@ -244,7 +244,7 @@ export function RateQuoteCalculator({ defaultPlanId, rateSetOverride }: RateQuot
 
         {/* Quote Button */}
         <Button onClick={handleQuote} className="w-full" disabled={loading}>
-          {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+          {loading && <CircleNotch weight="light" className="w-4 h-4 mr-2 animate-spin" />}
           Calculate Quote
         </Button>
 
@@ -301,7 +301,7 @@ export function RateQuoteCalculator({ defaultPlanId, rateSetOverride }: RateQuot
                   onClick={() => setShowBreakdown(!showBreakdown)}
                   className="flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
                 >
-                  {showBreakdown ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                  {showBreakdown ? <CaretUp weight="light" className="w-4 h-4" /> : <CaretDown weight="light" className="w-4 h-4" />}
                   Breakdown
                 </button>
 

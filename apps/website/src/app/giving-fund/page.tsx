@@ -2,20 +2,19 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Button } from '@crm-eco/ui';
 import {
-  ArrowRight,
+  ArrowUpRight,
   Gift,
   Heart,
-  HeartHandshake,
-  HelpingHand,
-  Sprout,
+  Handshake,
+  Plant,
   FileText,
-  Send,
+  PaperPlaneTilt,
   ShieldCheck,
   Coins,
   Users,
-  Quote,
-  Sparkles,
-} from 'lucide-react';
+  Quotes,
+  Sparkle,
+} from '@phosphor-icons/react/dist/ssr';
 import { Reveal } from '@/components/sections/Reveal';
 import {
   Container,
@@ -43,7 +42,7 @@ const WHAT_IT_IS = [
     body: 'Some needs do not fit neatly inside the sharing guidelines — yet the people behind them are still our neighbors. The Giving Fund is how the community chooses to help anyway.',
   },
   {
-    icon: HelpingHand,
+    icon: Handshake,
     title: 'Voluntary, never required',
     body: 'Giving is entirely optional and separate from your monthly share. No one is billed for it, and no one is ever turned away for not contributing.',
   },
@@ -75,7 +74,7 @@ const REQUEST_STEPS = [
     body: 'Our team reviews each request with care and discretion, confirming the need and gathering any documentation that helps tell the full picture.',
   },
   {
-    icon: HeartHandshake,
+    icon: Handshake,
     step: '03',
     title: 'The community responds',
     body: 'When a request is approved, a gift is sent from the fund to help carry the cost — quietly, and with dignity for the member receiving it.',
@@ -94,7 +93,7 @@ const GIVE_WAYS = [
     body: 'Set a small monthly amount to flow into the Giving Fund automatically — a steady act of paying it forward for someone you may never meet.',
   },
   {
-    icon: Sprout,
+    icon: Plant,
     title: 'Give in honor of someone',
     body: 'Mark a milestone, remember a loved one, or celebrate a recovery by making a gift in their name. Every contribution plants something good.',
   },
@@ -123,7 +122,7 @@ export default function GivingFundPage() {
                 <Link href={PORTAL_URL}>
                   <Button size="lg" className="w-full gap-2 hub-btn-gradient font-semibold text-white shadow-lg sm:w-auto">
                     Give to the fund
-                    <ArrowRight className="h-4 w-4" />
+                    <ArrowUpRight className="h-4 w-4" />
                   </Button>
                 </Link>
                 <Link href="/contact">
@@ -137,7 +136,7 @@ export default function GivingFundPage() {
                 </Link>
               </div>
               <p className="mt-6 flex items-center gap-2 text-sm text-slate-500">
-                <Sparkles className="h-4 w-4 text-pif-gold-500" aria-hidden="true" />
+                <Sparkle className="h-4 w-4 text-pif-gold-500" aria-hidden="true" />
                 Giving is always voluntary and separate from your monthly share.
               </p>
             </Reveal>
@@ -233,7 +232,7 @@ export default function GivingFundPage() {
                 href="/contact"
                 className="inline-flex items-center gap-2 font-semibold text-pif-teal-700 transition-colors hover:text-pif-green-600"
               >
-                <Send className="h-4 w-4" aria-hidden="true" />
+                <PaperPlaneTilt className="h-4 w-4" aria-hidden="true" />
                 Start a Giving Fund request
               </Link>
             </div>
@@ -276,7 +275,7 @@ export default function GivingFundPage() {
           <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-20">
             <Reveal>
               <Eyebrow tone="gold">A member story</Eyebrow>
-              <Quote className="mt-6 h-10 w-10 text-pif-gold-300" aria-hidden="true" />
+              <Quotes className="mt-6 h-10 w-10 text-pif-gold-300" aria-hidden="true" />
               <blockquote className="mt-5 font-heading text-2xl font-medium leading-snug text-white text-balance md:text-3xl">
                 &ldquo;My daughter&apos;s condition started before we joined, so it wasn&apos;t
                 eligible for sharing yet. I braced myself to face it alone. Instead, the Giving Fund

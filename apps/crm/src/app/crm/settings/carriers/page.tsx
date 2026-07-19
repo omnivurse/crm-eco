@@ -288,7 +288,7 @@ function CarrierManagementContent() {
             Manage insurance carriers and health sharing ministries
           </p>
         </div>
-        <Button size="sm" onClick={openCreate} className="bg-gradient-to-r from-teal-500 to-emerald-500 text-white">
+        <Button size="sm" onClick={openCreate} >
           <Plus className="w-4 h-4 mr-1.5" />
           {addButtonLabel}
         </Button>

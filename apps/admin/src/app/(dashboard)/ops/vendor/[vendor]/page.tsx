@@ -1,5 +1,6 @@
 'use client';
 
+import { ArrowClockwise, ArrowCounterClockwise, ArrowLeft, Buildings, Calendar, CaretLeft, CaretRight, CheckCircle, CircleNotch, Clock, Database, Eye, EyeSlash, GearSix, Key, PencilSimple, Play, Plus, ShieldCheck, Trash, Users, Warning, XCircle } from '@phosphor-icons/react';
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { createClient } from '@crm-eco/lib/supabase/client';
@@ -36,31 +37,6 @@ import {
   TableRow,
   ScrollArea,
 } from '@crm-eco/ui';
-import {
-  Play,
-  Clock,
-  CheckCircle2,
-  XCircle,
-  AlertTriangle,
-  Loader2,
-  RefreshCw,
-  Settings,
-  Key,
-  Calendar,
-  ChevronLeft,
-  ChevronRight,
-  Plus,
-  Pencil,
-  Trash2,
-  Eye,
-  EyeOff,
-  Shield,
-  Users,
-  Building2,
-  Database,
-  RotateCcw,
-  ArrowLeft,
-} from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 import Link from 'next/link';
@@ -115,19 +91,19 @@ interface VendorCredential {
 }
 
 const vendorInfo: Record<string, { name: string; icon: any; color: string; description: string }> = {
-  arm: { name: 'ARM', icon: Shield, color: 'bg-blue-100 text-blue-600', description: 'Alliance of Health Care Sharing Ministries' },
+  arm: { name: 'ARM', icon: ShieldCheck, color: 'bg-blue-100 text-blue-600', description: 'Alliance of Health Care Sharing Ministries' },
   sedera: { name: 'Sedera', icon: Users, color: 'bg-purple-100 text-purple-600', description: 'Health cost sharing community' },
-  zion: { name: 'Zion', icon: Building2, color: 'bg-emerald-100 text-emerald-600', description: 'Zion Health' },
-  mphc: { name: 'MPHC', icon: Shield, color: 'bg-amber-100 text-amber-600', description: 'Medical Professional Health Coalition' },
+  zion: { name: 'Zion', icon: Buildings, color: 'bg-emerald-100 text-emerald-600', description: 'Zion Health' },
+  mphc: { name: 'MPHC', icon: ShieldCheck, color: 'bg-amber-100 text-amber-600', description: 'Medical Professional Health Coalition' },
   altrua: { name: 'Altrua', icon: Users, color: 'bg-pink-100 text-pink-600', description: 'Altrua Health' },
 };
 
 const statusConfig: Record<string, { icon: any; color: string; label: string }> = {
   pending: { icon: Clock, color: 'bg-slate-100 text-slate-600', label: 'Pending' },
-  running: { icon: Loader2, color: 'bg-blue-100 text-blue-600', label: 'Running' },
-  completed: { icon: CheckCircle2, color: 'bg-emerald-100 text-emerald-600', label: 'Completed' },
+  running: { icon: CircleNotch, color: 'bg-blue-100 text-blue-600', label: 'Running' },
+  completed: { icon: CheckCircle, color: 'bg-emerald-100 text-emerald-600', label: 'Completed' },
   failed: { icon: XCircle, color: 'bg-red-100 text-red-600', label: 'Failed' },
-  cancelled: { icon: AlertTriangle, color: 'bg-amber-100 text-amber-600', label: 'Cancelled' },
+  cancelled: { icon: Warning, color: 'bg-amber-100 text-amber-600', label: 'Cancelled' },
 };
 
 const jobTypeLabels: Record<string, string> = {
@@ -591,7 +567,7 @@ export default function VendorOpsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+        <CircleNotch weight="light" className="w-8 h-8 animate-spin text-slate-400" />
       </div>
     );
   }
@@ -603,7 +579,7 @@ export default function VendorOpsPage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link href="/ops" className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
-              <ArrowLeft className="w-5 h-5 text-slate-500" />
+              <ArrowLeft weight="light" className="w-5 h-5 text-slate-500" />
             </Link>
             <div className={`p-3 rounded-xl ${vendor.color}`}>
               <VendorIcon className="w-6 h-6" />
@@ -614,7 +590,7 @@ export default function VendorOpsPage() {
             </div>
           </div>
           <Button onClick={() => setIsRunModalOpen(true)}>
-            <Play className="w-4 h-4 mr-2" />
+            <Play weight="light" className="w-4 h-4 mr-2" />
             Run Now
           </Button>
         </div>
@@ -625,7 +601,7 @@ export default function VendorOpsPage() {
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
                 <div className="p-3 rounded-xl bg-slate-100">
-                  <Clock className="w-6 h-6 text-slate-600" />
+                  <Clock weight="light" className="w-6 h-6 text-slate-600" />
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-slate-900">{totalCount}</p>
@@ -639,7 +615,7 @@ export default function VendorOpsPage() {
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
                 <div className="p-3 rounded-xl bg-emerald-100">
-                  <CheckCircle2 className="w-6 h-6 text-emerald-600" />
+                  <CheckCircle weight="light" className="w-6 h-6 text-emerald-600" />
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-emerald-600">{successfulRuns}</p>
@@ -653,7 +629,7 @@ export default function VendorOpsPage() {
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
                 <div className="p-3 rounded-xl bg-red-100">
-                  <XCircle className="w-6 h-6 text-red-600" />
+                  <XCircle weight="light" className="w-6 h-6 text-red-600" />
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-red-600">{failedRuns}</p>
@@ -667,7 +643,7 @@ export default function VendorOpsPage() {
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
                 <div className="p-3 rounded-xl bg-purple-100">
-                  <Calendar className="w-6 h-6 text-purple-600" />
+                  <Calendar weight="light" className="w-6 h-6 text-purple-600" />
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-slate-900">
@@ -684,15 +660,15 @@ export default function VendorOpsPage() {
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList>
             <TabsTrigger value="runs">
-              <Clock className="w-4 h-4 mr-2" />
+              <Clock weight="light" className="w-4 h-4 mr-2" />
               Run History
             </TabsTrigger>
             <TabsTrigger value="configs">
-              <Settings className="w-4 h-4 mr-2" />
+              <GearSix weight="light" className="w-4 h-4 mr-2" />
               Configurations
             </TabsTrigger>
             <TabsTrigger value="credentials">
-              <Key className="w-4 h-4 mr-2" />
+              <Key weight="light" className="w-4 h-4 mr-2" />
               Credentials
             </TabsTrigger>
           </TabsList>
@@ -703,7 +679,7 @@ export default function VendorOpsPage() {
                 <div className="flex items-center justify-between">
                   <CardTitle>Run History</CardTitle>
                   <Button variant="outline" onClick={fetchData}>
-                    <RefreshCw className="w-4 h-4 mr-2" />
+                    <ArrowClockwise weight="light" className="w-4 h-4 mr-2" />
                     Refresh
                   </Button>
                 </div>
@@ -711,10 +687,10 @@ export default function VendorOpsPage() {
               <CardContent className="p-0">
                 {runs.length === 0 ? (
                   <div className="text-center py-12">
-                    <Clock className="w-12 h-12 text-slate-200 mx-auto mb-3" />
+                    <Clock weight="light" className="w-12 h-12 text-slate-200 mx-auto mb-3" />
                     <p className="text-slate-500">No runs yet</p>
                     <Button className="mt-4" onClick={() => setIsRunModalOpen(true)}>
-                      <Play className="w-4 h-4 mr-2" />
+                      <Play weight="light" className="w-4 h-4 mr-2" />
                       Run Now
                     </Button>
                   </div>
@@ -779,7 +755,7 @@ export default function VendorOpsPage() {
                                   size="sm"
                                   onClick={() => handleRetryRun(run)}
                                 >
-                                  <RotateCcw className="w-4 h-4" />
+                                  <ArrowCounterClockwise weight="light" className="w-4 h-4" />
                                 </Button>
                               )}
                             </TableCell>
@@ -797,11 +773,11 @@ export default function VendorOpsPage() {
                   </p>
                   <div className="flex items-center gap-2">
                     <Button variant="outline" size="sm" onClick={() => setPage(p => p - 1)} disabled={page === 0}>
-                      <ChevronLeft className="w-4 h-4" />
+                      <CaretLeft weight="light" className="w-4 h-4" />
                     </Button>
                     <span className="text-sm text-slate-500">Page {page + 1} of {totalPages}</span>
                     <Button variant="outline" size="sm" onClick={() => setPage(p => p + 1)} disabled={page >= totalPages - 1}>
-                      <ChevronRight className="w-4 h-4" />
+                      <CaretRight weight="light" className="w-4 h-4" />
                     </Button>
                   </div>
                 </div>
@@ -815,7 +791,7 @@ export default function VendorOpsPage() {
                 <div className="flex items-center justify-between">
                   <CardTitle>Job Configurations</CardTitle>
                   <Button onClick={() => openConfigModal()}>
-                    <Plus className="w-4 h-4 mr-2" />
+                    <Plus weight="light" className="w-4 h-4 mr-2" />
                     Add Configuration
                   </Button>
                 </div>
@@ -823,10 +799,10 @@ export default function VendorOpsPage() {
               <CardContent>
                 {configs.length === 0 ? (
                   <div className="text-center py-12">
-                    <Settings className="w-12 h-12 text-slate-200 mx-auto mb-3" />
+                    <GearSix weight="light" className="w-12 h-12 text-slate-200 mx-auto mb-3" />
                     <p className="text-slate-500">No configurations yet</p>
                     <Button className="mt-4" onClick={() => openConfigModal()}>
-                      <Plus className="w-4 h-4 mr-2" />
+                      <Plus weight="light" className="w-4 h-4 mr-2" />
                       Add Configuration
                     </Button>
                   </div>
@@ -840,7 +816,7 @@ export default function VendorOpsPage() {
                               <h3 className="font-semibold text-slate-900">{config.name}</h3>
                               {config.schedule_enabled && (
                                 <Badge variant="secondary">
-                                  <Calendar className="w-3 h-3 mr-1" />
+                                  <Calendar weight="light" className="w-3 h-3 mr-1" />
                                   Scheduled
                                 </Badge>
                               )}
@@ -858,10 +834,10 @@ export default function VendorOpsPage() {
                           </div>
                           <div className="flex items-center gap-2">
                             <Button variant="ghost" size="sm" onClick={() => openConfigModal(config)}>
-                              <Pencil className="w-4 h-4" />
+                              <PencilSimple weight="light" className="w-4 h-4" />
                             </Button>
                             <Button variant="ghost" size="sm" className="text-red-600" onClick={() => handleDeleteConfig(config.id)}>
-                              <Trash2 className="w-4 h-4" />
+                              <Trash weight="light" className="w-4 h-4" />
                             </Button>
                           </div>
                         </div>
@@ -882,7 +858,7 @@ export default function VendorOpsPage() {
                     <p className="text-sm text-slate-500 mt-1">Securely stored credentials for vendor API access</p>
                   </div>
                   <Button onClick={() => openCredentialModal()}>
-                    <Plus className="w-4 h-4 mr-2" />
+                    <Plus weight="light" className="w-4 h-4 mr-2" />
                     Add Credential
                   </Button>
                 </div>
@@ -890,10 +866,10 @@ export default function VendorOpsPage() {
               <CardContent>
                 {credentials.length === 0 ? (
                   <div className="text-center py-12">
-                    <Key className="w-12 h-12 text-slate-200 mx-auto mb-3" />
+                    <Key weight="light" className="w-12 h-12 text-slate-200 mx-auto mb-3" />
                     <p className="text-slate-500">No credentials configured</p>
                     <Button className="mt-4" onClick={() => openCredentialModal()}>
-                      <Plus className="w-4 h-4 mr-2" />
+                      <Plus weight="light" className="w-4 h-4 mr-2" />
                       Add Credential
                     </Button>
                   </div>
@@ -927,10 +903,10 @@ export default function VendorOpsPage() {
                           </div>
                           <div className="flex items-center gap-2">
                             <Button variant="ghost" size="sm" onClick={() => openCredentialModal(cred)}>
-                              <Pencil className="w-4 h-4" />
+                              <PencilSimple weight="light" className="w-4 h-4" />
                             </Button>
                             <Button variant="ghost" size="sm" className="text-red-600" onClick={() => handleDeleteCredential(cred.id)}>
-                              <Trash2 className="w-4 h-4" />
+                              <Trash weight="light" className="w-4 h-4" />
                             </Button>
                           </div>
                         </div>
@@ -971,7 +947,7 @@ export default function VendorOpsPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsRunModalOpen(false)}>Cancel</Button>
             <Button onClick={handleRunJob} disabled={runningJob}>
-              {runningJob ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Play className="w-4 h-4 mr-2" />}
+              {runningJob ? <CircleNotch weight="light" className="w-4 h-4 mr-2 animate-spin" /> : <Play weight="light" className="w-4 h-4 mr-2" />}
               Start Run
             </Button>
           </DialogFooter>
@@ -1072,7 +1048,7 @@ export default function VendorOpsPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsConfigModalOpen(false)}>Cancel</Button>
             <Button onClick={handleSaveConfig} disabled={saving}>
-              {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              {saving && <CircleNotch weight="light" className="w-4 h-4 mr-2 animate-spin" />}
               {editingConfig ? 'Update' : 'Create'}
             </Button>
           </DialogFooter>
@@ -1202,7 +1178,7 @@ export default function VendorOpsPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsCredentialModalOpen(false)}>Cancel</Button>
             <Button onClick={handleSaveCredential} disabled={saving}>
-              {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              {saving && <CircleNotch weight="light" className="w-4 h-4 mr-2 animate-spin" />}
               {editingCredential ? 'Update' : 'Create'}
             </Button>
           </DialogFooter>

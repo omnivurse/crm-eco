@@ -1,18 +1,17 @@
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
-import { 
-  ArrowLeft, 
-  User, 
-  Mail, 
-  Phone, 
-  MapPin, 
+import {
+  ArrowLeft,
+  User,
+  Envelope,
+  Phone,
+  MapPin,
   Calendar,
   FileText,
   Users,
-  DollarSign,
   Heart,
-} from 'lucide-react';
+} from '@phosphor-icons/react/dist/ssr';
 import { Card, CardContent, CardHeader, CardTitle } from '@crm-eco/ui/components/card';
 import { Button } from '@crm-eco/ui/components/button';
 import { Badge } from '@crm-eco/ui/components/badge';
@@ -111,7 +110,7 @@ export default async function AgentMemberDetailPage({ params }: PageProps) {
       <div className="flex items-center gap-4">
         <Link href="/agent/members">
           <Button variant="ghost" size="icon">
-            <ArrowLeft className="h-5 w-5" />
+            <ArrowLeft weight="light" className="h-5 w-5" />
           </Button>
         </Link>
         <div className="flex-1">
@@ -130,7 +129,7 @@ export default async function AgentMemberDetailPage({ params }: PageProps) {
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" />
+              <User weight="light" className="h-5 w-5" />
               Personal Information
             </CardTitle>
           </CardHeader>
@@ -162,14 +161,14 @@ export default async function AgentMemberDetailPage({ params }: PageProps) {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex items-start gap-3">
-                <Mail className="h-5 w-5 text-slate-400 mt-0.5" />
+                <Envelope weight="light" className="h-5 w-5 text-slate-400 mt-0.5" />
                 <div>
                   <label className="text-sm font-medium text-slate-500">Email</label>
                   <p className="text-slate-900">{member.email || '-'}</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <Phone className="h-5 w-5 text-slate-400 mt-0.5" />
+                <Phone weight="light" className="h-5 w-5 text-slate-400 mt-0.5" />
                 <div>
                   <label className="text-sm font-medium text-slate-500">Phone</label>
                   <p className="text-slate-900">{member.phone || '-'}</p>
@@ -180,7 +179,7 @@ export default async function AgentMemberDetailPage({ params }: PageProps) {
             <hr />
 
             <div className="flex items-start gap-3">
-              <MapPin className="h-5 w-5 text-slate-400 mt-0.5" />
+              <MapPin weight="light" className="h-5 w-5 text-slate-400 mt-0.5" />
               <div>
                 <label className="text-sm font-medium text-slate-500">Address</label>
                 <p className="text-slate-900">
@@ -202,7 +201,7 @@ export default async function AgentMemberDetailPage({ params }: PageProps) {
               <>
                 <hr />
                 <div className="flex items-start gap-3">
-                  <Heart className="h-5 w-5 text-red-400 mt-0.5" />
+                  <Heart weight="light" className="h-5 w-5 text-red-400 mt-0.5" />
                   <div>
                     <label className="text-sm font-medium text-slate-500">Pre-existing Conditions</label>
                     <p className="text-slate-900">{member.existing_condition_description || 'Yes (no details provided)'}</p>
@@ -218,7 +217,7 @@ export default async function AgentMemberDetailPage({ params }: PageProps) {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
+                <Calendar weight="light" className="h-5 w-5" />
                 Member Since
               </CardTitle>
             </CardHeader>
@@ -240,7 +239,7 @@ export default async function AgentMemberDetailPage({ params }: PageProps) {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
+                <Users weight="light" className="h-5 w-5" />
                 Dependents
               </CardTitle>
             </CardHeader>
@@ -273,7 +272,7 @@ export default async function AgentMemberDetailPage({ params }: PageProps) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
+            <FileText weight="light" className="h-5 w-5" />
             Enrollments
           </CardTitle>
         </CardHeader>
@@ -286,8 +285,8 @@ export default async function AgentMemberDetailPage({ params }: PageProps) {
                   className="flex items-center justify-between p-4 bg-slate-50 rounded-lg"
                 >
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center">
-                      <FileText className="h-6 w-6 text-blue-600" />
+                    <div className="w-12 h-12 rounded-lg bg-[rgba(11,109,133,0.1)] flex items-center justify-center">
+                      <FileText weight="light" className="h-6 w-6 text-[var(--mp-teal)]" />
                     </div>
                     <div>
                       <p className="font-medium text-slate-900">
@@ -317,7 +316,7 @@ export default async function AgentMemberDetailPage({ params }: PageProps) {
             </div>
           ) : (
             <div className="text-center py-8">
-              <FileText className="h-12 w-12 mx-auto mb-3 text-slate-300" />
+              <FileText weight="light" className="h-12 w-12 mx-auto mb-3 text-slate-300" />
               <p className="text-slate-500">No enrollments yet</p>
             </div>
           )}
@@ -329,7 +328,7 @@ export default async function AgentMemberDetailPage({ params }: PageProps) {
         {member.email && (
           <Button variant="outline" className="gap-2" asChild>
             <a href={`mailto:${member.email}`}>
-              <Mail className="h-4 w-4" />
+              <Envelope weight="light" className="h-4 w-4" />
               Send Email
             </a>
           </Button>
@@ -337,7 +336,7 @@ export default async function AgentMemberDetailPage({ params }: PageProps) {
         {member.phone && (
           <Button variant="outline" className="gap-2" asChild>
             <a href={`tel:${member.phone}`}>
-              <Phone className="h-4 w-4" />
+              <Phone weight="light" className="h-4 w-4" />
               Call Member
             </a>
           </Button>

@@ -1,5 +1,5 @@
+import { ArrowClockwise, CaretLeft, CaretRight, GitBranch, Plus, UserCircleGear, Users } from '@phosphor-icons/react/dist/ssr';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button } from '@crm-eco/ui';
-import { Plus, GitBranch, RefreshCw, Users, UserCog, ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { AgentTable } from '@/components/agents/AgentTable';
@@ -56,31 +56,31 @@ export default async function AgentsPage({ searchParams }: PageProps) {
       <PageHeader
         title="Agents"
         description="Manage agent accounts and commissions"
-        icon={<UserCog className="w-6 h-6" />}
+        icon={<UserCircleGear weight="light" className="w-6 h-6" />}
         gradient="from-[#059669] to-[#34d399]"
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <Link href="/agents/bill-groups">
               <Button variant="outline" size="sm">
-                <Users className="h-4 w-4 sm:mr-2" />
+                <Users weight="light" className="h-4 w-4 sm:mr-2" />
                 <span className="hidden sm:inline">Bill Groups</span>
               </Button>
             </Link>
             <Link href="/agents/assignment">
               <Button variant="outline" size="sm">
-                <RefreshCw className="h-4 w-4 sm:mr-2" />
+                <ArrowClockwise weight="light" className="h-4 w-4 sm:mr-2" />
                 <span className="hidden sm:inline">Assignment</span>
               </Button>
             </Link>
             <Link href="/agents/tree">
               <Button variant="outline" size="sm">
-                <GitBranch className="h-4 w-4 sm:mr-2" />
+                <GitBranch weight="light" className="h-4 w-4 sm:mr-2" />
                 <span className="hidden sm:inline">Tree View</span>
               </Button>
             </Link>
             <Link href="/agents/new">
               <Button size="sm">
-                <Plus className="h-4 w-4 sm:mr-2" />
+                <Plus weight="light" className="h-4 w-4 sm:mr-2" />
                 <span className="hidden sm:inline">Add Agent</span>
               </Button>
             </Link>
@@ -109,10 +109,10 @@ export default async function AgentsPage({ searchParams }: PageProps) {
             <Button variant="outline" size="sm" disabled={page <= 1} asChild={page > 1}>
               {page > 1 ? (
                 <Link href={buildPageUrl(page - 1)}>
-                  <ChevronLeft className="w-4 h-4 mr-1" /> Previous
+                  <CaretLeft weight="light" className="w-4 h-4 mr-1" /> Previous
                 </Link>
               ) : (
-                <span><ChevronLeft className="w-4 h-4 mr-1" /> Previous</span>
+                <span><CaretLeft weight="light" className="w-4 h-4 mr-1" /> Previous</span>
               )}
             </Button>
             <span className="text-sm text-muted-foreground px-2">
@@ -121,10 +121,10 @@ export default async function AgentsPage({ searchParams }: PageProps) {
             <Button variant="outline" size="sm" disabled={page >= totalPages} asChild={page < totalPages}>
               {page < totalPages ? (
                 <Link href={buildPageUrl(page + 1)}>
-                  Next <ChevronRight className="w-4 h-4 ml-1" />
+                  Next <CaretRight weight="light" className="w-4 h-4 ml-1" />
                 </Link>
               ) : (
-                <span>Next <ChevronRight className="w-4 h-4 ml-1" /></span>
+                <span>Next <CaretRight weight="light" className="w-4 h-4 ml-1" /></span>
               )}
             </Button>
           </div>

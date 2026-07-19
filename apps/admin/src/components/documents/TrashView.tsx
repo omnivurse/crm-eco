@@ -1,6 +1,6 @@
 'use client';
 
-import { Folder, RotateCcw, Trash2 } from 'lucide-react';
+import { ArrowCounterClockwise, Folder, Trash } from '@phosphor-icons/react';
 import { Button } from '@crm-eco/ui/components/button';
 import {
   AlertDialog,
@@ -35,7 +35,7 @@ export function TrashView({ trashedDocs, trashedFolders, loading, onRestore, onD
   if (isEmpty) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-12 text-gray-400">
-        <Trash2 className="w-12 h-12 mb-3" />
+        <Trash weight="light" className="w-12 h-12 mb-3" />
         <p className="text-lg font-medium">Trash is empty</p>
       </div>
     );
@@ -57,7 +57,7 @@ export function TrashView({ trashedDocs, trashedFolders, loading, onRestore, onD
             <TableRow key={folder.id}>
               <TableCell>
                 <div className="flex items-center gap-2 text-sm">
-                  <Folder className="w-4 h-4 text-blue-400" />
+                  <Folder weight="light" className="w-4 h-4 text-blue-400" />
                   {folder.name}
                 </div>
               </TableCell>
@@ -73,12 +73,12 @@ export function TrashView({ trashedDocs, trashedFolders, loading, onRestore, onD
                     onClick={() => onRestore([], [folder.id])}
                     title="Restore"
                   >
-                    <RotateCcw className="w-4 h-4" />
+                    <ArrowCounterClockwise weight="light" className="w-4 h-4" />
                   </Button>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button variant="ghost" size="sm" title="Delete permanently">
-                        <Trash2 className="w-4 h-4 text-red-500" />
+                        <Trash weight="light" className="w-4 h-4 text-red-500" />
                       </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
@@ -106,7 +106,7 @@ export function TrashView({ trashedDocs, trashedFolders, loading, onRestore, onD
               <TableRow key={doc.id}>
                 <TableCell>
                   <div className="flex items-center gap-2 text-sm">
-                    <Icon className="w-4 h-4 text-gray-400" />
+                    <Icon weight="light" className="w-4 h-4 text-gray-400" />
                     {doc.name}
                   </div>
                 </TableCell>
@@ -124,12 +124,12 @@ export function TrashView({ trashedDocs, trashedFolders, loading, onRestore, onD
                       onClick={() => onRestore([doc.id], [])}
                       title="Restore"
                     >
-                      <RotateCcw className="w-4 h-4" />
+                      <ArrowCounterClockwise weight="light" className="w-4 h-4" />
                     </Button>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <Button variant="ghost" size="sm" title="Delete permanently">
-                          <Trash2 className="w-4 h-4 text-red-500" />
+                          <Trash weight="light" className="w-4 h-4 text-red-500" />
                         </Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent>

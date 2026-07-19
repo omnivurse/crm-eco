@@ -1,7 +1,7 @@
 'use client';
 
+import { Eye, Package } from '@phosphor-icons/react';
 import { Badge, Button } from '@crm-eco/ui';
-import { Eye, Package } from 'lucide-react';
 import Link from 'next/link';
 import { format } from 'date-fns';
 
@@ -36,7 +36,7 @@ export function ProductTable({ products }: ProductTableProps) {
   if (products.length === 0) {
     return (
       <div className="text-center py-12">
-        <Package className="h-12 w-12 mx-auto text-slate-300 mb-4" />
+        <Package weight="light" className="h-12 w-12 mx-auto text-slate-300 mb-4" />
         <p className="text-slate-500">No products found</p>
         <Link href="/products/new" className="text-blue-600 text-sm hover:underline mt-2 inline-block">
           Add your first product
@@ -100,7 +100,7 @@ export function ProductTable({ products }: ProductTableProps) {
               <td className="py-3">
                 <Link href={`/products/${product.id}`}>
                   <Button variant="ghost" size="sm">
-                    <Eye className="h-4 w-4" />
+                    <Eye weight="light" className="h-4 w-4" />
                   </Button>
                 </Link>
               </td>

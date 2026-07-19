@@ -2,31 +2,32 @@
 
 import { useState, useCallback } from 'react';
 import {
-  Search,
+  MagnifyingGlass,
   MapPin,
   Phone,
-  ChevronRight,
-  ChevronDown,
-  Building2,
+  CaretRight,
+  CaretDown,
+  Buildings,
   Stethoscope,
-  Zap,
+  Lightning,
   Brain,
   Eye,
-  FlaskConical,
+  Flask,
   Scan,
-  Smile,
+  Smiley,
   Pill,
   Heart,
-  Video,
+  VideoCamera,
   UserCheck,
-  Loader2,
-  Activity,
-} from 'lucide-react';
+  CircleNotch,
+  Pulse,
+} from '@phosphor-icons/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@crm-eco/ui/components/card';
 import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
 import { Badge } from '@crm-eco/ui/components/badge';
 import { cn } from '@crm-eco/ui/lib/utils';
+import { Bezel } from '@/components/ui/Bezel';
 
 interface Service {
   service_id: string;
@@ -59,25 +60,25 @@ interface Location {
 }
 
 const CATEGORY_CONFIG: Record<string, { label: string; Icon: typeof Stethoscope; color: string }> = {
-  primary_care:    { label: 'Primary Care',     Icon: Stethoscope,  color: 'bg-blue-100 text-blue-700' },
-  telehealth:      { label: 'Telehealth',       Icon: Video,        color: 'bg-purple-100 text-purple-700' },
-  urgent_care:     { label: 'Urgent Care',      Icon: Zap,          color: 'bg-red-100 text-red-700' },
-  specialist:      { label: 'Specialists',      Icon: UserCheck,    color: 'bg-indigo-100 text-indigo-700' },
-  mental_health:   { label: 'Mental Health',    Icon: Brain,        color: 'bg-pink-100 text-pink-700' },
-  dental:          { label: 'Dental',           Icon: Smile,        color: 'bg-cyan-100 text-cyan-700' },
-  vision:          { label: 'Vision',           Icon: Eye,          color: 'bg-amber-100 text-amber-700' },
-  pharmacy:        { label: 'Pharmacy',         Icon: Pill,         color: 'bg-green-100 text-green-700' },
-  lab:             { label: 'Lab & Diagnostics', Icon: FlaskConical, color: 'bg-orange-100 text-orange-700' },
-  imaging:         { label: 'Imaging',          Icon: Scan,         color: 'bg-teal-100 text-cyan-700' },
-  physical_therapy: { label: 'Physical Therapy', Icon: Activity,    color: 'bg-lime-100 text-lime-700' },
-  wellness:        { label: 'Wellness',         Icon: Heart,        color: 'bg-rose-100 text-rose-700' },
+  primary_care:    { label: 'Primary Care',     Icon: Stethoscope,  color: 'bg-[rgba(11,109,133,0.1)] text-[var(--mp-teal)]' },
+  telehealth:      { label: 'Telehealth',       Icon: VideoCamera,  color: 'bg-[rgba(14,140,154,0.12)] text-[var(--mp-teal-soft)]' },
+  urgent_care:     { label: 'Urgent Care',      Icon: Lightning,    color: 'bg-red-50 text-red-700' },
+  specialist:      { label: 'Specialists',      Icon: UserCheck,    color: 'bg-slate-100 text-slate-700' },
+  mental_health:   { label: 'Mental Health',    Icon: Brain,        color: 'bg-rose-50 text-rose-700' },
+  dental:          { label: 'Dental',           Icon: Smiley,       color: 'bg-[rgba(11,109,133,0.08)] text-[var(--mp-teal)]' },
+  vision:          { label: 'Vision',           Icon: Eye,          color: 'bg-amber-50 text-amber-700' },
+  pharmacy:        { label: 'Pharmacy',         Icon: Pill,         color: 'bg-emerald-50 text-emerald-700' },
+  lab:             { label: 'Lab & Diagnostics', Icon: Flask,       color: 'bg-orange-50 text-orange-700' },
+  imaging:         { label: 'Imaging',          Icon: Scan,         color: 'bg-[rgba(11,109,133,0.1)] text-[var(--mp-teal)]' },
+  physical_therapy: { label: 'Physical Therapy', Icon: Pulse,       color: 'bg-lime-50 text-lime-700' },
+  wellness:        { label: 'Wellness',         Icon: Heart,        color: 'bg-rose-50 text-rose-700' },
 };
 
 const COVERAGE_COLORS: Record<string, string> = {
-  full: 'bg-green-100 text-green-700',
-  partial: 'bg-amber-100 text-amber-700',
-  referral_only: 'bg-blue-100 text-blue-700',
-  telehealth_only: 'bg-purple-100 text-purple-700',
+  full: 'bg-emerald-50 text-emerald-700',
+  partial: 'bg-amber-50 text-amber-700',
+  referral_only: 'bg-[rgba(11,109,133,0.1)] text-[var(--mp-teal)]',
+  telehealth_only: 'bg-[rgba(14,140,154,0.12)] text-[var(--mp-teal-soft)]',
 };
 
 interface ServicesSearchProps {
@@ -143,12 +144,11 @@ export function ServicesSearch({ memberZip }: ServicesSearchProps) {
 
   return (
     <div className="space-y-6">
-      {/* Search bar */}
-      <Card>
-        <CardContent className="pt-6">
+      <Bezel>
+        <div className="p-5 md:p-6">
           <div className="flex gap-3">
-            <div className="relative flex-1 max-w-xs">
-              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" aria-hidden />
+            <div className="relative max-w-xs flex-1">
+              <MapPin weight="light" className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden />
               <Input
                 type="text"
                 placeholder="Enter ZIP code"
@@ -162,39 +162,37 @@ export function ServicesSearch({ memberZip }: ServicesSearchProps) {
             <Button
               onClick={handleSearch}
               disabled={loading}
-              className="gap-2"
-              style={{ backgroundColor: 'var(--hub-accent, #06b6d4)' }}
+              className="gap-2 bg-[var(--mp-teal)] hover:bg-[var(--mp-teal-soft)]"
             >
               {loading ? (
-                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                <CircleNotch weight="light" className="h-4 w-4 animate-spin" aria-hidden />
               ) : (
-                <Search className="h-4 w-4" aria-hidden />
+                <MagnifyingGlass weight="light" className="h-4 w-4" aria-hidden />
               )}
               Search
             </Button>
           </div>
           {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
-        </CardContent>
-      </Card>
+        </div>
+      </Bezel>
 
-      {/* Results */}
       {loading && (
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <CircleNotch weight="light" className="h-8 w-8 animate-spin text-[var(--mp-teal)]" />
         </div>
       )}
 
       {!loading && searched && services.length === 0 && (
-        <Card className="text-center py-12">
-          <CardContent>
-            <Building2 className="h-12 w-12 mx-auto mb-3 text-slate-300" aria-hidden />
-            <h3 className="text-lg font-semibold text-slate-900 mb-1">No Services Found</h3>
+        <Bezel>
+          <div className="px-6 py-12 text-center">
+            <Buildings weight="light" className="mx-auto mb-3 h-12 w-12 text-slate-300" aria-hidden />
+            <h3 className="mb-1 text-lg font-semibold text-[var(--mp-ink)]">No Services Found</h3>
             <p className="text-slate-500">
               No healthcare services are currently available for ZIP code {zipCode}.
               Try a nearby ZIP code.
             </p>
-          </CardContent>
-        </Card>
+          </div>
+        </Bezel>
       )}
 
       {!loading && searched && Object.keys(byCategory).length > 0 && (
@@ -204,21 +202,21 @@ export function ServicesSearch({ memberZip }: ServicesSearchProps) {
           </p>
 
           {Object.entries(byCategory).map(([cat, catServices]) => {
-            const config = CATEGORY_CONFIG[cat] || { label: cat.replace(/_/g, ' '), Icon: Building2, color: 'bg-slate-100 text-slate-700' };
+            const config = CATEGORY_CONFIG[cat] || { label: cat.replace(/_/g, ' '), Icon: Buildings, color: 'bg-slate-100 text-slate-700' };
             const CategoryIcon = config.Icon;
 
             return (
               <Card key={cat}>
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <span className={cn('inline-flex items-center justify-center w-8 h-8 rounded-lg', config.color)}>
-                      <CategoryIcon className="h-4 w-4" aria-hidden />
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <span className={cn('inline-flex h-8 w-8 items-center justify-center rounded-lg', config.color)}>
+                      <CategoryIcon weight="light" className="h-4 w-4" aria-hidden />
                     </span>
                     {config.label}
                     <Badge variant="secondary" className="ml-auto">{catServices.length}</Badge>
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="pt-0 space-y-2">
+                <CardContent className="space-y-2 pt-0">
                   {catServices.map((svc) => {
                     const isExpanded = selectedService?.service_id === svc.service_id;
 
@@ -228,20 +226,20 @@ export function ServicesSearch({ memberZip }: ServicesSearchProps) {
                           type="button"
                           onClick={() => handleServiceClick(svc)}
                           className={cn(
-                            'w-full text-left p-3 rounded-lg border transition-colors',
+                            'w-full rounded-lg border p-3 text-left transition-colors duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]',
                             isExpanded
-                              ? 'bg-cyan-50 border-cyan-200'
-                              : 'bg-slate-50 border-transparent hover:bg-slate-100'
+                              ? 'border-[rgba(11,109,133,0.2)] bg-[rgba(11,109,133,0.06)]'
+                              : 'border-transparent bg-slate-50 hover:bg-slate-100'
                           )}
                         >
                           <div className="flex items-center justify-between">
-                            <div className="flex-1 min-w-0">
-                              <p className="font-medium text-slate-900">{svc.service_name}</p>
+                            <div className="min-w-0 flex-1">
+                              <p className="font-medium text-[var(--mp-ink)]">{svc.service_name}</p>
                               {svc.description && (
-                                <p className="text-sm text-slate-500 truncate">{svc.description}</p>
+                                <p className="truncate text-sm text-slate-500">{svc.description}</p>
                               )}
                             </div>
-                            <div className="flex items-center gap-2 ml-3 shrink-0">
+                            <div className="ml-3 flex shrink-0 items-center gap-2">
                               {svc.coverage_level && (
                                 <Badge className={COVERAGE_COLORS[svc.coverage_level] || 'bg-slate-100 text-slate-600'}>
                                   {svc.coverage_level.replace(/_/g, ' ')}
@@ -251,20 +249,19 @@ export function ServicesSearch({ memberZip }: ServicesSearchProps) {
                                 {svc.location_count} location{svc.location_count !== 1 ? 's' : ''}
                               </span>
                               {isExpanded ? (
-                                <ChevronDown className="h-4 w-4 text-slate-400" aria-hidden />
+                                <CaretDown weight="light" className="h-4 w-4 text-slate-400" aria-hidden />
                               ) : (
-                                <ChevronRight className="h-4 w-4 text-slate-400" aria-hidden />
+                                <CaretRight weight="light" className="h-4 w-4 text-slate-400" aria-hidden />
                               )}
                             </div>
                           </div>
                         </button>
 
-                        {/* Expanded locations */}
                         {isExpanded && (
-                          <div className="mt-2 ml-4 space-y-2">
+                          <div className="ml-4 mt-2 space-y-2">
                             {locationsLoading ? (
                               <div className="flex items-center gap-2 py-4 text-sm text-slate-500">
-                                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                                <CircleNotch weight="light" className="h-4 w-4 animate-spin" aria-hidden />
                                 Loading locations...
                               </div>
                             ) : locations.length === 0 ? (
@@ -273,33 +270,33 @@ export function ServicesSearch({ memberZip }: ServicesSearchProps) {
                               locations.map((loc) => (
                                 <div
                                   key={loc.location_id}
-                                  className="p-3 rounded-lg border bg-white"
+                                  className="rounded-lg border border-[rgba(11,109,133,0.08)] bg-white p-3"
                                 >
                                   <div className="flex items-start justify-between gap-3">
-                                    <div className="flex-1 min-w-0">
-                                      <p className="font-medium text-slate-900">{loc.name}</p>
+                                    <div className="min-w-0 flex-1">
+                                      <p className="font-medium text-[var(--mp-ink)]">{loc.name}</p>
                                       <p className="text-sm text-slate-500">
                                         {loc.address && `${loc.address}, `}{loc.city}, {loc.state} {loc.zip}
                                       </p>
-                                      <div className="flex items-center gap-3 mt-1.5">
+                                      <div className="mt-1.5 flex items-center gap-3">
                                         {loc.phone && (
                                           <a
                                             href={`tel:${loc.phone.replace(/\D/g, '')}`}
-                                            className="inline-flex items-center gap-1 text-sm text-cyan-700 hover:underline"
+                                            className="inline-flex items-center gap-1 text-sm text-[var(--mp-teal)] hover:underline"
                                             onClick={(e) => e.stopPropagation()}
                                           >
-                                            <Phone className="h-3.5 w-3.5" aria-hidden />
+                                            <Phone weight="light" className="h-3.5 w-3.5" aria-hidden />
                                             {loc.phone}
                                           </a>
                                         )}
                                       </div>
                                     </div>
-                                    <div className="flex flex-col items-end gap-1 shrink-0">
+                                    <div className="flex shrink-0 flex-col items-end gap-1">
                                       {loc.accepting_new_patients && (
-                                        <Badge className="bg-green-100 text-green-700 text-xs">Accepting Patients</Badge>
+                                        <Badge className="bg-emerald-50 text-xs text-emerald-700">Accepting Patients</Badge>
                                       )}
                                       {loc.telehealth_capable && (
-                                        <Badge className="bg-purple-100 text-purple-700 text-xs">Telehealth</Badge>
+                                        <Badge className="bg-[rgba(11,109,133,0.1)] text-xs text-[var(--mp-teal)]">Telehealth</Badge>
                                       )}
                                     </div>
                                   </div>

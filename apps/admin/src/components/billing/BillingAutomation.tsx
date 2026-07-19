@@ -1,9 +1,8 @@
 'use client';
 
+import { CircleNotch, GearSix, Play, ShieldCheck, ShieldSlash } from '@phosphor-icons/react';
 import { useState, useTransition } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@crm-eco/ui';
-import { Settings, Shield, ShieldOff, Play, Loader2 } from 'lucide-react';
-
 interface AutomationConfig {
   id: string;
   billing_enabled: boolean;
@@ -70,7 +69,7 @@ export function BillingAutomationCard({ config }: { config: AutomationConfig | n
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
-            <Settings className="h-5 w-5" />
+            <GearSix weight="light" className="h-5 w-5" />
             Billing Automation
           </CardTitle>
           <CardDescription>Not configured for this organization</CardDescription>
@@ -89,7 +88,7 @@ export function BillingAutomationCard({ config }: { config: AutomationConfig | n
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
-          <Settings className="h-5 w-5" />
+          <GearSix weight="light" className="h-5 w-5" />
           Billing Automation
         </CardTitle>
         <CardDescription>Automated billing and commission processing configuration</CardDescription>
@@ -100,9 +99,9 @@ export function BillingAutomationCard({ config }: { config: AutomationConfig | n
           <div className="flex items-center justify-between p-3 rounded-lg border">
             <div className="flex items-center gap-2">
               {config.billing_enabled ? (
-                <Shield className="h-4 w-4 text-green-600" />
+                <ShieldCheck weight="light" className="h-4 w-4 text-green-600" />
               ) : (
-                <ShieldOff className="h-4 w-4 text-gray-400" />
+                <ShieldSlash weight="light" className="h-4 w-4 text-gray-400" />
               )}
               <span className="text-sm font-medium">Billing Processing</span>
             </div>
@@ -117,9 +116,9 @@ export function BillingAutomationCard({ config }: { config: AutomationConfig | n
           <div className="flex items-center justify-between p-3 rounded-lg border">
             <div className="flex items-center gap-2">
               {config.commission_enabled ? (
-                <Shield className="h-4 w-4 text-green-600" />
+                <ShieldCheck weight="light" className="h-4 w-4 text-green-600" />
               ) : (
-                <ShieldOff className="h-4 w-4 text-gray-400" />
+                <ShieldSlash weight="light" className="h-4 w-4 text-gray-400" />
               )}
               <span className="text-sm font-medium">Commission Processing</span>
             </div>
@@ -172,7 +171,7 @@ export function JobRunHistoryCard({ jobRuns }: { jobRuns: JobRun[] }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
-          <Play className="h-5 w-5" />
+          <Play weight="light" className="h-5 w-5" />
           Recent Job Runs
         </CardTitle>
         <CardDescription>Billing and commission processing history</CardDescription>
@@ -226,7 +225,7 @@ export function JobRunHistoryCard({ jobRuns }: { jobRuns: JobRun[] }) {
           </div>
         ) : (
           <div className="text-center py-8 text-slate-500">
-            <Play className="h-8 w-8 mx-auto mb-2 text-slate-300" />
+            <Play weight="light" className="h-8 w-8 mx-auto mb-2 text-slate-300" />
             No job runs recorded yet
           </div>
         )}

@@ -159,7 +159,7 @@ export function CrmHeader({ profile, onOpenCommandPalette }: CrmHeaderProps) {
         {/* Quick Create */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button className="h-9 px-4 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white font-medium transition-all duration-200 shadow-sm hover:shadow-md">
+            <Button className="h-9 px-4 rounded-xl font-medium transition-all duration-200 shadow-sm hover:shadow-md">
               <Plus className="w-4 h-4 mr-1.5" />
               Create
               <ChevronDown className="w-3 h-3 ml-1.5 opacity-70" />

@@ -98,7 +98,7 @@ export function ModuleHeader({
 
                 <Button
                     onClick={onCreateClick}
-                    className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white font-medium shadow-sm"
+                    className="font-medium shadow-sm"
                 >
                     <Plus className="w-4 h-4 mr-2" />
                     {createLabel || `Create ${moduleName}`}

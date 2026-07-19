@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, Badge } from '@crm-eco/ui';
-import { MessageSquare, HelpCircle, ArrowRight } from 'lucide-react';
+import { ChatCircle, Question, CaretRight } from '@phosphor-icons/react/dist/ssr';
 import { format } from 'date-fns';
 import { StatusBadge } from '@/components/dashboard/StatusBadge';
 
@@ -32,14 +32,14 @@ export function SupportTicketsList({ tickets }: SupportTicketsListProps) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
-            <MessageSquare className="w-5 h-5 text-slate-400" />
+            <ChatCircle weight="light" className="w-5 h-5 text-slate-400" />
             Your Support Tickets
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
             <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-slate-100 flex items-center justify-center">
-              <HelpCircle className="w-7 h-7 text-slate-400" />
+              <Question weight="light" className="w-7 h-7 text-slate-400" />
             </div>
             <p className="text-slate-600 mb-2">No support tickets yet.</p>
             <p className="text-sm text-slate-500">
@@ -55,7 +55,7 @@ export function SupportTicketsList({ tickets }: SupportTicketsListProps) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
-          <MessageSquare className="w-5 h-5 text-blue-600" />
+          <ChatCircle weight="light" className="w-5 h-5 text-[var(--mp-teal)]" />
           Your Support Tickets
         </CardTitle>
       </CardHeader>
@@ -83,7 +83,7 @@ export function SupportTicketsList({ tickets }: SupportTicketsListProps) {
                 </div>
                 <div className="flex items-center gap-2">
                   <StatusBadge status={ticket.status} showIcon={false} />
-                  <ArrowRight className="w-4 h-4 text-slate-400" />
+                  <CaretRight weight="light" className="w-4 h-4 text-slate-400" />
                 </div>
               </div>
             </Link>
@@ -93,4 +93,3 @@ export function SupportTicketsList({ tickets }: SupportTicketsListProps) {
     </Card>
   );
 }
-

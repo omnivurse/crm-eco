@@ -1,5 +1,6 @@
 'use client';
 
+import { CheckCircle, CircleNotch, GearSix, ShieldCheck } from '@phosphor-icons/react';
 import { useState, useEffect } from 'react';
 import {
   Card,
@@ -21,8 +22,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@crm-eco/ui';
-import { Settings, Shield, Loader2, CheckCircle2 } from 'lucide-react';
-
 type RateSetValue = 'current' | 'rates_2026' | 'auto';
 
 interface ActiveRateSetControlProps {
@@ -106,10 +105,10 @@ export function ActiveRateSetControl({ compact = false }: ActiveRateSetControlPr
   if (compact) {
     return (
       <div className="flex items-center gap-3">
-        <Shield className="w-4 h-4 text-slate-500" />
+        <ShieldCheck weight="light" className="w-4 h-4 text-slate-500" />
         <span className="text-sm font-medium text-slate-600">Active Rate Set:</span>
         {loading ? (
-          <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
+          <CircleNotch weight="light" className="w-4 h-4 animate-spin text-slate-400" />
         ) : (
           <>
             <Badge variant={getBadgeVariant(currentValue)} className="text-xs">
@@ -117,7 +116,7 @@ export function ActiveRateSetControl({ compact = false }: ActiveRateSetControlPr
             </Badge>
             {saved && (
               <span className="text-xs text-green-600 flex items-center gap-1">
-                <CheckCircle2 className="w-3 h-3" /> Saved
+                <CheckCircle weight="light" className="w-3 h-3" /> Saved
               </span>
             )}
           </>
@@ -131,7 +130,7 @@ export function ActiveRateSetControl({ compact = false }: ActiveRateSetControlPr
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Settings className="h-5 w-5" />
+            <GearSix weight="light" className="h-5 w-5" />
             Active Rate Set Override
           </CardTitle>
           <CardDescription>
@@ -142,7 +141,7 @@ export function ActiveRateSetControl({ compact = false }: ActiveRateSetControlPr
         <CardContent className="space-y-4">
           {loading ? (
             <div className="flex items-center gap-2 text-slate-500">
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <CircleNotch weight="light" className="w-4 h-4 animate-spin" />
               Loading setting...
             </div>
           ) : (
@@ -165,7 +164,7 @@ export function ActiveRateSetControl({ compact = false }: ActiveRateSetControlPr
 
                 {saved && (
                   <span className="text-sm text-green-600 flex items-center gap-1">
-                    <CheckCircle2 className="w-4 h-4" /> Saved
+                    <CheckCircle weight="light" className="w-4 h-4" /> Saved
                   </span>
                 )}
               </div>
@@ -223,7 +222,7 @@ export function ActiveRateSetControl({ compact = false }: ActiveRateSetControlPr
               Cancel
             </Button>
             <Button onClick={confirmChange} disabled={saving}>
-              {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              {saving && <CircleNotch weight="light" className="w-4 h-4 mr-2 animate-spin" />}
               Confirm Change
             </Button>
           </DialogFooter>

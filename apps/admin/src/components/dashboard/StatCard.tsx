@@ -1,7 +1,7 @@
 'use client';
 
+import { ArrowUpRight, Minus, TrendDown, TrendUp } from '@phosphor-icons/react';
 import Link from 'next/link';
-import { ArrowUpRight, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { cn } from '@crm-eco/ui';
 
 export interface StatCardProps {
@@ -33,11 +33,11 @@ export function StatCard({
     if (!trend) return null;
     switch (trend.direction) {
       case 'up':
-        return <TrendingUp className="w-3 h-3" />;
+        return <TrendUp weight="light" className="w-3 h-3" />;
       case 'down':
-        return <TrendingDown className="w-3 h-3" />;
+        return <TrendDown weight="light" className="w-3 h-3" />;
       default:
-        return <Minus className="w-3 h-3" />;
+        return <Minus weight="light" className="w-3 h-3" />;
     }
   };
 
@@ -103,7 +103,7 @@ export function StatCard({
             )}
           </div>
           {href && (
-            <ArrowUpRight className="w-4 h-4 text-slate-300 group-hover:text-slate-500 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
+            <ArrowUpRight weight="light" className="w-4 h-4 text-slate-300 group-hover:text-slate-500 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
           )}
         </div>
       </div>
@@ -135,28 +135,25 @@ export function CommissionCard({
 }: CommissionCardProps) {
   return (
     <Link href={href}>
-      <div className="group relative overflow-hidden rounded-2xl bg-white border border-slate-200/60 shadow-[0_1px_3px_rgba(0,0,0,0.05),0_20px_25px_-5px_rgba(0,0,0,0.05)] hover:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.15)] transition-all duration-500 hover:-translate-y-1">
-        {/* Accent bar */}
-        <div className="absolute top-0 left-0 right-0 h-1.5 bg-slate-200" />
-
-        <div className="relative p-6">
-          <div className="flex items-start justify-between mb-4">
-            <p className="text-sm font-semibold text-slate-600 tracking-wide">
+      <div className="adm-bezel">
+        <div className="group adm-bezel-inner relative p-6">
+          <div className="mb-4 flex items-start justify-between">
+            <p className="text-sm font-semibold tracking-wide text-[var(--adm-muted)]">
               {title}
             </p>
-            <div className="p-3 rounded-xl bg-slate-100">
-              <div className="text-slate-600">{icon}</div>
+            <div className="rounded-xl bg-[rgba(11,109,133,0.06)] p-3 dark:bg-white/5">
+              <div className="text-[var(--adm-teal)]">{icon}</div>
             </div>
           </div>
           <div className="flex items-end justify-between">
             <div>
-              <p className="text-4xl font-bold tracking-tight text-slate-900">
+              <p className="text-4xl font-bold tracking-tight text-[var(--adm-ink)]">
                 {value}
               </p>
-              <p className="text-xs text-slate-400 mt-2">{subtitle}</p>
+              <p className="mt-2 text-xs text-[var(--adm-muted)]">{subtitle}</p>
             </div>
-            <div className="p-2 rounded-full bg-slate-100 group-hover:bg-slate-200 transition-colors">
-              <ArrowUpRight className="w-4 h-4 text-slate-400 group-hover:text-slate-600 transition-colors" />
+            <div className="rounded-full bg-[rgba(11,109,133,0.06)] p-2 transition-colors group-hover:bg-[rgba(11,109,133,0.12)] dark:bg-white/5 dark:group-hover:bg-white/10">
+              <ArrowUpRight weight="light" className="h-4 w-4 text-[var(--adm-muted)] transition-colors group-hover:text-[var(--adm-teal)]" />
             </div>
           </div>
         </div>

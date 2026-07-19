@@ -1,5 +1,6 @@
 'use client';
 
+import { ArrowClockwise, Buildings, Calendar, CaretLeft, CaretRight, CheckCircle, Clock, CurrencyDollar, DownloadSimple, Eye, Funnel, MagnifyingGlass, PencilSimple, Plus, Trash, User, Warning, XCircle } from '@phosphor-icons/react';
 import { useState, useEffect } from 'react';
 import {
   Card,
@@ -19,26 +20,6 @@ import {
   DialogTitle,
   Textarea,
 } from '@crm-eco/ui';
-import {
-  DollarSign,
-  Search,
-  Filter,
-  Download,
-  RefreshCw,
-  Plus,
-  Eye,
-  Edit,
-  CheckCircle,
-  Clock,
-  XCircle,
-  AlertTriangle,
-  ChevronLeft,
-  ChevronRight,
-  Trash2,
-  Building2,
-  User,
-  Calendar,
-} from 'lucide-react';
 import Link from 'next/link';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { toast } from 'sonner';
@@ -196,7 +177,7 @@ export default function PayablesPage() {
     }
   }, [organizationId, statusFilter, payeeTypeFilter]);
 
-  // Filter by search
+  // Funnel by search
   const filteredPayables = payables.filter((p) => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
@@ -235,7 +216,7 @@ export default function PayablesPage() {
     if (isOverdue) {
       return (
         <Badge className="bg-red-100 text-red-700">
-          <AlertTriangle className="w-3 h-3 mr-1" />
+          <Warning weight="light" className="w-3 h-3 mr-1" />
           Overdue
         </Badge>
       );
@@ -245,35 +226,35 @@ export default function PayablesPage() {
       case 'paid':
         return (
           <Badge className="bg-emerald-100 text-emerald-700">
-            <CheckCircle className="w-3 h-3 mr-1" />
+            <CheckCircle weight="light" className="w-3 h-3 mr-1" />
             Paid
           </Badge>
         );
       case 'pending':
         return (
           <Badge className="bg-amber-100 text-amber-700">
-            <Clock className="w-3 h-3 mr-1" />
+            <Clock weight="light" className="w-3 h-3 mr-1" />
             Pending
           </Badge>
         );
       case 'approved':
         return (
           <Badge className="bg-blue-100 text-blue-700">
-            <CheckCircle className="w-3 h-3 mr-1" />
+            <CheckCircle weight="light" className="w-3 h-3 mr-1" />
             Approved
           </Badge>
         );
       case 'processing':
         return (
           <Badge className="bg-purple-100 text-purple-700">
-            <RefreshCw className="w-3 h-3 mr-1" />
+            <ArrowClockwise weight="light" className="w-3 h-3 mr-1" />
             Processing
           </Badge>
         );
       case 'on_hold':
         return (
           <Badge className="bg-slate-100 text-slate-700">
-            <XCircle className="w-3 h-3 mr-1" />
+            <XCircle weight="light" className="w-3 h-3 mr-1" />
             On Hold
           </Badge>
         );
@@ -285,11 +266,11 @@ export default function PayablesPage() {
   const getPayeeTypeIcon = (type: string) => {
     switch (type) {
       case 'agent':
-        return <User className="h-4 w-4 text-teal-500" />;
+        return <User weight="light" className="h-4 w-4 text-teal-500" />;
       case 'vendor':
-        return <Building2 className="h-4 w-4 text-blue-500" />;
+        return <Buildings weight="light" className="h-4 w-4 text-blue-500" />;
       default:
-        return <Building2 className="h-4 w-4 text-slate-500" />;
+        return <Buildings weight="light" className="h-4 w-4 text-slate-500" />;
     }
   };
 
@@ -449,11 +430,11 @@ export default function PayablesPage() {
             <Button variant="outline">View Summary</Button>
           </Link>
           <Button variant="outline" onClick={exportPayables}>
-            <Download className="h-4 w-4 mr-2" />
+            <DownloadSimple weight="light" className="h-4 w-4 mr-2" />
             Export
           </Button>
           <Button onClick={() => setShowCreateModal(true)}>
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus weight="light" className="h-4 w-4 mr-2" />
             New Payable
           </Button>
         </div>
@@ -465,7 +446,7 @@ export default function PayablesPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-slate-100 rounded-lg">
-                <DollarSign className="h-5 w-5 text-slate-600" />
+                <CurrencyDollar weight="light" className="h-5 w-5 text-slate-600" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total</p>
@@ -479,7 +460,7 @@ export default function PayablesPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-amber-100 rounded-lg">
-                <Clock className="h-5 w-5 text-amber-600" />
+                <Clock weight="light" className="h-5 w-5 text-amber-600" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Pending</p>
@@ -493,7 +474,7 @@ export default function PayablesPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-blue-100 rounded-lg">
-                <CheckCircle className="h-5 w-5 text-blue-600" />
+                <CheckCircle weight="light" className="h-5 w-5 text-blue-600" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Approved</p>
@@ -507,7 +488,7 @@ export default function PayablesPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-red-100 rounded-lg">
-                <AlertTriangle className="h-5 w-5 text-red-600" />
+                <Warning weight="light" className="h-5 w-5 text-red-600" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Overdue</p>
@@ -523,9 +504,9 @@ export default function PayablesPage() {
         <CardContent className="pt-6">
           <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <MagnifyingGlass weight="light" className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search payables..."
+                placeholder="MagnifyingGlass payables..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9"
@@ -556,7 +537,7 @@ export default function PayablesPage() {
                 <option value="other">Other</option>
               </select>
               <Button variant="outline" size="sm" onClick={fetchPayables}>
-                <RefreshCw className="h-4 w-4" />
+                <ArrowClockwise weight="light" className="h-4 w-4" />
               </Button>
             </div>
           </div>
@@ -568,15 +549,15 @@ export default function PayablesPage() {
         <CardContent className="p-0">
           {loading ? (
             <div className="flex items-center justify-center py-16">
-              <RefreshCw className="h-8 w-8 animate-spin text-slate-400" />
+              <ArrowClockwise weight="light" className="h-8 w-8 animate-spin text-slate-400" />
             </div>
           ) : paginatedPayables.length === 0 ? (
             <div className="text-center py-16">
-              <DollarSign className="h-12 w-12 text-slate-200 mx-auto mb-4" />
+              <CurrencyDollar weight="light" className="h-12 w-12 text-slate-200 mx-auto mb-4" />
               <p className="text-lg font-medium">No payables found</p>
               <p className="text-sm text-muted-foreground mb-4">Create your first payable to get started</p>
               <Button onClick={() => setShowCreateModal(true)}>
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus weight="light" className="h-4 w-4 mr-2" />
                 New Payable
               </Button>
             </div>
@@ -620,7 +601,7 @@ export default function PayablesPage() {
                       <td className="py-3 px-4">
                         {payable.due_date ? (
                           <div className="flex items-center gap-1">
-                            <Calendar className="h-4 w-4 text-muted-foreground" />
+                            <Calendar weight="light" className="h-4 w-4 text-muted-foreground" />
                             <span className="text-sm">{format(new Date(payable.due_date), 'MMM d, yyyy')}</span>
                           </div>
                         ) : (
@@ -637,16 +618,16 @@ export default function PayablesPage() {
                               setShowDetailModal(true);
                             }}
                           >
-                            <Eye className="h-4 w-4" />
+                            <Eye weight="light" className="h-4 w-4" />
                           </Button>
                           {payable.status === 'pending' && (
                             <Button variant="ghost" size="sm" onClick={() => handleApprove(payable)}>
-                              <CheckCircle className="h-4 w-4 text-blue-500" />
+                              <CheckCircle weight="light" className="h-4 w-4 text-blue-500" />
                             </Button>
                           )}
                           {payable.status === 'approved' && (
                             <Button variant="ghost" size="sm" onClick={() => handleMarkPaid(payable)}>
-                              <DollarSign className="h-4 w-4 text-emerald-500" />
+                              <CurrencyDollar weight="light" className="h-4 w-4 text-emerald-500" />
                             </Button>
                           )}
                         </div>
@@ -673,7 +654,7 @@ export default function PayablesPage() {
                 onClick={() => setCurrentPage(currentPage - 1)}
                 disabled={currentPage === 1}
               >
-                <ChevronLeft className="h-4 w-4" />
+                <CaretLeft weight="light" className="h-4 w-4" />
               </Button>
               <span className="text-sm">
                 Page {currentPage} of {totalPages}
@@ -684,7 +665,7 @@ export default function PayablesPage() {
                 onClick={() => setCurrentPage(currentPage + 1)}
                 disabled={currentPage === totalPages}
               >
-                <ChevronRight className="h-4 w-4" />
+                <CaretRight weight="light" className="h-4 w-4" />
               </Button>
             </div>
           </div>
@@ -693,7 +674,7 @@ export default function PayablesPage() {
 
       {/* Create Payable Modal */}
       <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>New Payable</DialogTitle>
             <DialogDescription>Create a new payable record</DialogDescription>
@@ -812,12 +793,12 @@ export default function PayablesPage() {
             <Button onClick={handleCreate} disabled={saving}>
               {saving ? (
                 <>
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  <ArrowClockwise weight="light" className="h-4 w-4 mr-2 animate-spin" />
                   Creating...
                 </>
               ) : (
                 <>
-                  <Plus className="h-4 w-4 mr-2" />
+                  <Plus weight="light" className="h-4 w-4 mr-2" />
                   Create Payable
                 </>
               )}
@@ -909,7 +890,7 @@ export default function PayablesPage() {
                   setShowDetailModal(false);
                 }}
               >
-                <CheckCircle className="h-4 w-4 mr-2" />
+                <CheckCircle weight="light" className="h-4 w-4 mr-2" />
                 Approve
               </Button>
             )}
@@ -920,7 +901,7 @@ export default function PayablesPage() {
                   setShowDetailModal(false);
                 }}
               >
-                <DollarSign className="h-4 w-4 mr-2" />
+                <CurrencyDollar weight="light" className="h-4 w-4 mr-2" />
                 Mark Paid
               </Button>
             )}

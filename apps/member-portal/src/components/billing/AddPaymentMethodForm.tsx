@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useId, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Script from 'next/script';
-import { Loader2, Lock, CreditCard } from 'lucide-react';
+import { CircleNotch, Lock, CreditCard } from '@phosphor-icons/react';
 import { Button, Input, Label, Card, CardContent, CardHeader, CardTitle } from '@crm-eco/ui';
 import type { AcceptJsConfig } from '@/lib/billing/accept-config';
 
@@ -192,7 +192,7 @@ export function AddPaymentMethodForm({ config }: AddPaymentMethodFormProps) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <CreditCard className="h-4 w-4 text-slate-600" aria-hidden />
+            <CreditCard weight="light" className="h-4 w-4 text-[var(--mp-teal)]" aria-hidden />
             Card details
           </CardTitle>
         </CardHeader>
@@ -204,8 +204,8 @@ export function AddPaymentMethodForm({ config }: AddPaymentMethodFormProps) {
               </div>
             )}
 
-            <div className="flex items-start gap-2 rounded-lg border border-emerald-100 bg-emerald-50 p-3 text-sm text-emerald-900">
-              <Lock className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+            <div className="flex items-start gap-2 rounded-lg border border-[rgba(11,109,133,0.12)] bg-[rgba(11,109,133,0.06)] p-3 text-sm text-[var(--mp-ink)]">
+              <Lock weight="light" className="mt-0.5 h-4 w-4 shrink-0 text-[var(--mp-teal)]" aria-hidden />
               <p>
                 Your card number is tokenized by Authorize.Net Accept.js in your browser.
                 We never receive or store your full card number.
@@ -361,12 +361,12 @@ export function AddPaymentMethodForm({ config }: AddPaymentMethodFormProps) {
             >
               {submitting ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
+                  <CircleNotch weight="light" className="mr-2 h-4 w-4 animate-spin" aria-hidden />
                   Saving…
                 </>
               ) : !scriptReady ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
+                  <CircleNotch weight="light" className="mr-2 h-4 w-4 animate-spin" aria-hidden />
                   Loading secure form…
                 </>
               ) : (

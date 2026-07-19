@@ -1,5 +1,6 @@
 'use client';
 
+import { ArrowLeft, CaretRight, CheckCircle, CircleNotch, DownloadSimple, FileText, UploadSimple, WarningCircle, XCircle } from '@phosphor-icons/react';
 import { useState, useCallback } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import {
@@ -14,17 +15,6 @@ import {
   Label,
   Badge,
 } from '@crm-eco/ui';
-import {
-  Upload,
-  FileText,
-  CheckCircle2,
-  XCircle,
-  AlertCircle,
-  Loader2,
-  Download,
-  ChevronRight,
-  ArrowLeft,
-} from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ImportLicensesModalProps {
@@ -296,12 +286,12 @@ export function ImportLicensesModal({
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Upload className="h-5 w-5" />
+            <UploadSimple weight="light" className="h-5 w-5" />
             Import {importType === 'licenses' ? 'Licenses' : 'Appointments'}
           </DialogTitle>
           <DialogDescription>
             {step === 'select' && 'Select what you want to import'}
-            {step === 'upload' && 'Upload a CSV file with the data to import'}
+            {step === 'upload' && 'UploadSimple a CSV file with the data to import'}
             {step === 'mapping' && 'Map CSV columns to data fields'}
             {step === 'preview' && 'Review the data before importing'}
             {step === 'importing' && 'Importing data...'}
@@ -317,12 +307,12 @@ export function ImportLicensesModal({
               className={`border rounded-lg p-4 cursor-pointer hover:border-teal-500 transition-colors`}
             >
               <div className="flex items-center gap-3">
-                <FileText className="h-8 w-8 text-teal-600" />
+                <FileText weight="light" className="h-8 w-8 text-teal-600" />
                 <div>
                   <p className="font-medium">Import Licenses</p>
                   <p className="text-sm text-slate-500">Bulk import state licenses for agents</p>
                 </div>
-                <ChevronRight className="h-5 w-5 ml-auto text-slate-400" />
+                <CaretRight weight="light" className="h-5 w-5 ml-auto text-slate-400" />
               </div>
             </div>
             <div
@@ -330,24 +320,24 @@ export function ImportLicensesModal({
               className={`border rounded-lg p-4 cursor-pointer hover:border-teal-500 transition-colors`}
             >
               <div className="flex items-center gap-3">
-                <FileText className="h-8 w-8 text-blue-600" />
+                <FileText weight="light" className="h-8 w-8 text-blue-600" />
                 <div>
                   <p className="font-medium">Import Carrier Appointments</p>
                   <p className="text-sm text-slate-500">Bulk import carrier appointment data</p>
                 </div>
-                <ChevronRight className="h-5 w-5 ml-auto text-slate-400" />
+                <CaretRight weight="light" className="h-5 w-5 ml-auto text-slate-400" />
               </div>
             </div>
           </div>
         )}
 
-        {/* Step: Upload */}
+        {/* Step: UploadSimple */}
         {step === 'upload' && (
           <div className="space-y-4 py-4">
             <div className="border-2 border-dashed rounded-lg p-8 text-center">
-              <Upload className="h-12 w-12 mx-auto text-slate-400 mb-4" />
+              <UploadSimple weight="light" className="h-12 w-12 mx-auto text-slate-400 mb-4" />
               <p className="text-sm text-slate-600 mb-4">
-                Upload a CSV file with {importType === 'licenses' ? 'license' : 'appointment'} data
+                UploadSimple a CSV file with {importType === 'licenses' ? 'license' : 'appointment'} data
               </p>
               <Input
                 type="file"
@@ -359,8 +349,8 @@ export function ImportLicensesModal({
             <div className="flex items-center justify-between text-sm text-slate-500">
               <span>Need a template?</span>
               <Button variant="link" size="sm" onClick={downloadTemplate}>
-                <Download className="h-4 w-4 mr-1" />
-                Download Template
+                <DownloadSimple weight="light" className="h-4 w-4 mr-1" />
+                DownloadSimple Template
               </Button>
             </div>
             <div className="text-sm text-slate-500">
@@ -406,11 +396,11 @@ export function ImportLicensesModal({
           <div className="space-y-4 py-4">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-5 w-5 text-green-500" />
+                <CheckCircle weight="light" className="h-5 w-5 text-green-500" />
                 <span className="font-medium">{validCount} valid</span>
               </div>
               <div className="flex items-center gap-2">
-                <XCircle className="h-5 w-5 text-red-500" />
+                <XCircle weight="light" className="h-5 w-5 text-red-500" />
                 <span className="font-medium">{invalidCount} invalid</span>
               </div>
             </div>
@@ -455,7 +445,7 @@ export function ImportLicensesModal({
 
             {invalidCount > 0 && (
               <div className="flex items-center gap-2 text-amber-600 text-sm">
-                <AlertCircle className="h-4 w-4" />
+                <WarningCircle weight="light" className="h-4 w-4" />
                 <span>Invalid rows will be skipped during import</span>
               </div>
             )}
@@ -465,7 +455,7 @@ export function ImportLicensesModal({
         {/* Step: Importing */}
         {step === 'importing' && (
           <div className="py-12 text-center">
-            <Loader2 className="h-12 w-12 animate-spin text-teal-600 mx-auto mb-4" />
+            <CircleNotch weight="light" className="h-12 w-12 animate-spin text-teal-600 mx-auto mb-4" />
             <p className="text-lg font-medium">Importing data...</p>
             <p className="text-slate-500">Please wait while we process your file</p>
           </div>
@@ -474,7 +464,7 @@ export function ImportLicensesModal({
         {/* Step: Complete */}
         {step === 'complete' && (
           <div className="py-8 text-center">
-            <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto mb-4" />
+            <CheckCircle weight="light" className="h-16 w-16 text-green-500 mx-auto mb-4" />
             <p className="text-xl font-medium mb-2">Import Complete</p>
             <div className="flex items-center justify-center gap-6 text-lg">
               <span className="text-green-600">{importResults.success} imported</span>
@@ -492,7 +482,7 @@ export function ImportLicensesModal({
               else if (step === 'mapping') setStep('upload');
               else if (step === 'preview') setStep('mapping');
             }}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
+              <ArrowLeft weight="light" className="h-4 w-4 mr-2" />
               Back
             </Button>
           )}

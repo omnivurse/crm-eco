@@ -63,7 +63,7 @@ export default function TemplateDetailPage() {
 
   if (!template) {
     return (
-      <div className="max-w-7xl mx-auto text-center py-16">
+      <div className="w-full text-center py-16">
         <AlertCircle className="w-16 h-16 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
         <h1 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
           Template Not Found
@@ -195,7 +195,7 @@ export default function TemplateDetailPage() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="w-full space-y-6">
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
         <div>

@@ -1229,7 +1229,6 @@ export const RecordTable = memo(function RecordTable({
               Get started by creating a new record.
             </p>
             <Button
-              className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400"
               asChild
             >
               <Link href={`/crm/modules/${moduleKey}/new`}>
@@ -1392,7 +1391,6 @@ export const RecordTable = memo(function RecordTable({
                       </Link>
                     </Button>
                     <Button
-                      className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400"
                       asChild
                     >
                       <Link href={`/crm/modules/${moduleKey}/new`}>

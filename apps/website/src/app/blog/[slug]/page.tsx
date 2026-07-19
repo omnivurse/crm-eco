@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowLeft, ArrowRight, Calendar, Clock, User } from 'lucide-react';
+import { ArrowLeft, ArrowUpRight, Calendar, Clock, User } from '@phosphor-icons/react/dist/ssr';
 import { Reveal } from '@/components/sections/Reveal';
 import { Container, CTABand } from '@/components/sections/blocks';
 import { IMAGES, imageUrl, type SiteImage } from '@/lib/site-images';
@@ -61,7 +61,7 @@ const PLACEHOLDER_POSTS: Record<
     category: 'Wellness',
     date: '2025-02-01',
     readTime: '7 min read',
-    excerpt: 'Building sustainable health habits with simple, evidence-based practices.',
+    excerpt: 'Buildings sustainable health habits with simple, evidence-based practices.',
     author: { name: 'Dr. Amanda Foster', role: 'Wellness Advisor' },
     related: [
       { slug: 'preventive-care-matters', title: 'Why Preventive Care Matters for Your Family' },
@@ -188,7 +188,7 @@ export default async function BlogPostPage({ params }: Props) {
               href="/blog"
               className="mb-8 inline-flex items-center gap-2 text-sm font-semibold text-pif-teal-700 transition-colors hover:text-pif-green-600"
             >
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft weight="light" className="h-4 w-4" />
               Back to Blog
             </Link>
             <h1 className="font-heading text-3xl font-semibold text-pif-navy-800">
@@ -216,7 +216,7 @@ export default async function BlogPostPage({ params }: Props) {
               href="/blog"
               className="inline-flex items-center gap-2 text-sm font-semibold text-pif-teal-700 transition-colors hover:text-pif-green-600"
             >
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft weight="light" className="h-4 w-4" />
               Back to Blog
             </Link>
             <div className="mt-8">
@@ -229,15 +229,15 @@ export default async function BlogPostPage({ params }: Props) {
             </h1>
             <div className="mt-6 flex flex-wrap items-center gap-5 text-sm text-slate-500">
               <span className="flex items-center gap-1.5">
-                <User className="h-4 w-4" aria-hidden="true" />
+                <User weight="light" className="h-4 w-4" aria-hidden="true" />
                 {post.author.name}
               </span>
               <span className="flex items-center gap-1.5">
-                <Calendar className="h-4 w-4" aria-hidden="true" />
+                <Calendar weight="light" className="h-4 w-4" aria-hidden="true" />
                 {formatDate(post.date)}
               </span>
               <span className="flex items-center gap-1.5">
-                <Clock className="h-4 w-4" aria-hidden="true" />
+                <Clock weight="light" className="h-4 w-4" aria-hidden="true" />
                 {post.readTime}
               </span>
             </div>
@@ -282,7 +282,7 @@ export default async function BlogPostPage({ params }: Props) {
             {/* Author card */}
             <div className="mt-12 flex items-center gap-4 rounded-2xl border border-pif-navy-100 bg-white p-6 shadow-sm ring-1 ring-pif-navy/5">
               <span className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-full pif-grad-care text-white shadow-md shadow-pif-teal/25">
-                <User className="h-7 w-7" aria-hidden="true" />
+                <User weight="light" className="h-7 w-7" aria-hidden="true" />
               </span>
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-pif-teal-700">
@@ -341,7 +341,7 @@ export default async function BlogPostPage({ params }: Props) {
                         </p>
                         <span className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-pif-teal-700">
                           Read article
-                          <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                          <ArrowUpRight weight="light" className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                         </span>
                       </div>
                     </Link>

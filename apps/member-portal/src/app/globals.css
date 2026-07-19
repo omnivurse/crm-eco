@@ -1,4 +1,4 @@
-/* Double Helix Hub - Member Portal Styles */
+/* Double Helix Hub - Member Portal Styles · Soft Structuralism */
 @import '@crm-eco/ui/styles/theme.css';
 @import '@crm-eco/ui/styles/auth.css';
 
@@ -15,14 +15,284 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
-    font-family: var(--font-body), 'Inter', system-ui, sans-serif;
+    @apply text-foreground;
+    font-family: var(--font-body), 'Plus Jakarta Sans', system-ui, sans-serif;
+    background: var(--mp-canvas);
     overflow-x: hidden;
     overscroll-behavior-x: none;
   }
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-heading), 'Plus Jakarta Sans', system-ui, sans-serif;
   }
+}
+
+/* Soft Structuralism tokens (member-portal scope) */
+:root {
+  --primary: 192 85% 28%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 224 71% 42%;
+  --secondary-foreground: 0 0% 100%;
+  --ring: 192 85% 34%;
+  --background: 192 33% 97%;
+  --mp-teal: #0b6d85;
+  --mp-teal-soft: #0e8c9a;
+  --mp-ink: #0b1220;
+  --mp-mist: #f2f7f9;
+  --mp-canvas: #f6fafb;
+  --mp-slate: #64748b;
+  --mp-ease: cubic-bezier(0.32, 0.72, 0, 1);
+  --mp-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --mp-shadow-soft:
+    0 1px 2px rgba(11, 18, 32, 0.03),
+    0 8px 24px rgba(11, 109, 133, 0.06),
+    0 20px 40px rgba(11, 109, 133, 0.04);
+}
+
+/* Atmosphere */
+.mp-atmosphere {
+  position: relative;
+  min-height: 100dvh;
+  background:
+    radial-gradient(ellipse 60% 40% at 10% 0%, rgba(11, 109, 133, 0.07), transparent 55%),
+    radial-gradient(ellipse 50% 35% at 90% 20%, rgba(14, 140, 154, 0.05), transparent 50%),
+    var(--mp-canvas);
+}
+
+.mp-grain {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Floating island nav */
+.mp-island {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  width: 100%;
+  max-width: 56rem;
+  padding: 0.4rem 0.4rem 0.4rem 1rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(11, 109, 133, 0.08);
+  box-shadow:
+    0 1px 2px rgba(11, 18, 32, 0.04),
+    0 8px 28px rgba(11, 109, 133, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  transition: box-shadow 700ms var(--mp-ease), background 700ms var(--mp-ease);
+}
+
+.mp-island-scrolled {
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: var(--mp-shadow-soft);
+}
+
+/* Double-bezel cards */
+.mp-bezel {
+  background: rgba(11, 109, 133, 0.04);
+  border: 1px solid rgba(11, 109, 133, 0.06);
+  border-radius: 2rem;
+  padding: 0.375rem;
+  transition: transform 700ms var(--mp-ease), box-shadow 700ms var(--mp-ease);
+}
+
+.mp-bezel-inner {
+  background: #fff;
+  border-radius: calc(2rem - 0.375rem);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.9);
+  overflow: hidden;
+}
+
+.mp-bezel-hero .mp-bezel-inner {
+  background: linear-gradient(145deg, #0b6d85 0%, #0e8c9a 55%, #12a065 120%);
+  color: #fff;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.15);
+}
+
+.mp-bezel-deep .mp-bezel-inner {
+  background: linear-gradient(160deg, #0b1220 0%, #0b3d4d 100%);
+  color: #fff;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.12);
+}
+
+.mp-bezel:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--mp-shadow-soft);
+}
+
+/* Island CTA */
+.mp-btn-island {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.45rem 0.45rem 1.15rem;
+  border-radius: 999px;
+  border: 0;
+  background: #fff;
+  color: var(--mp-teal);
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: transform 600ms var(--mp-ease);
+}
+
+.mp-btn-island:hover {
+  transform: scale(0.98);
+}
+
+.mp-btn-island .mp-btn-ico {
+  width: 1.85rem;
+  height: 1.85rem;
+  border-radius: 999px;
+  background: rgba(11, 109, 133, 0.1);
+  display: grid;
+  place-items: center;
+  transition: transform 600ms var(--mp-ease);
+}
+
+.mp-btn-island:hover .mp-btn-ico {
+  transform: translate(2px, -1px) scale(1.05);
+}
+
+.mp-btn-ghost-light {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.7rem 1.2rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: transparent;
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 550;
+  transition: background 500ms var(--mp-ease);
+}
+
+.mp-btn-ghost-light:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Asymmetrical bento */
+.mp-bento {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 768px) {
+  .mp-bento {
+    grid-template-columns: repeat(12, 1fr);
+    grid-auto-rows: minmax(0, auto);
+    gap: 1.15rem;
+  }
+  .mp-span-3 { grid-column: span 3; }
+  .mp-span-4 { grid-column: span 4; }
+  .mp-span-6 { grid-column: span 6; }
+  .mp-span-8 { grid-column: span 8; }
+  .mp-span-12 { grid-column: span 12; }
+  .mp-row-2 { grid-row: span 2; }
+}
+
+.mp-reveal {
+  opacity: 0;
+  transform: translateY(1.75rem);
+  filter: blur(5px);
+  animation: mp-fade-up 850ms var(--mp-ease-out) both;
+}
+
+.mp-reveal:nth-child(1) { animation-delay: 60ms; }
+.mp-reveal:nth-child(2) { animation-delay: 120ms; }
+.mp-reveal:nth-child(3) { animation-delay: 180ms; }
+.mp-reveal:nth-child(4) { animation-delay: 240ms; }
+.mp-reveal:nth-child(5) { animation-delay: 300ms; }
+.mp-reveal:nth-child(6) { animation-delay: 360ms; }
+.mp-reveal:nth-child(7) { animation-delay: 420ms; }
+.mp-reveal:nth-child(8) { animation-delay: 480ms; }
+.mp-reveal:nth-child(9) { animation-delay: 540ms; }
+
+@keyframes mp-fade-up {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+.mp-kicker {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  margin-bottom: 0.5rem;
+}
+
+.mp-kicker-teal { color: var(--mp-teal); }
+.mp-kicker-light { color: rgba(255, 255, 255, 0.65); }
+
+/* Floating mobile dock */
+.mp-dock {
+  position: fixed;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 40;
+  width: calc(100% - 2rem);
+  max-width: 24rem;
+  display: flex;
+  justify-content: space-around;
+  padding: 0.55rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(11, 109, 133, 0.08);
+  box-shadow: var(--mp-shadow-soft);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* Soften default UI cards across the portal */
+.mp-atmosphere [data-slot='card'],
+.mp-atmosphere .rounded-xl.border.bg-card,
+.mp-atmosphere .rounded-lg.border.bg-card {
+  border-color: rgba(11, 109, 133, 0.08);
+  box-shadow: var(--mp-shadow-soft);
+  border-radius: 1.25rem;
+}
+
+/* Uniform teal accents — remaps leftover blue utility classes inside atmosphere */
+.mp-atmosphere .text-blue-600,
+.mp-atmosphere .text-blue-700,
+.mp-atmosphere .hover\:text-blue-700:hover,
+.mp-atmosphere .hover\:text-blue-800:hover {
+  color: var(--mp-teal) !important;
+}
+.mp-atmosphere .bg-blue-50 {
+  background-color: rgba(11, 109, 133, 0.06) !important;
+}
+.mp-atmosphere .bg-blue-100 {
+  background-color: rgba(11, 109, 133, 0.1) !important;
+}
+.mp-atmosphere .border-blue-100,
+.mp-atmosphere .border-blue-200 {
+  border-color: rgba(11, 109, 133, 0.12) !important;
+}
+.mp-atmosphere .text-blue-900 {
+  color: var(--mp-ink) !important;
+}
+.mp-atmosphere .text-blue-700 {
+  color: #0e5f74 !important;
+}
+.mp-atmosphere .bg-blue-500,
+.mp-atmosphere .bg-blue-600 {
+  background-color: var(--mp-teal) !important;
+}
+.mp-atmosphere .focus\:ring-blue-500:focus {
+  --tw-ring-color: rgba(11, 109, 133, 0.45) !important;
+}
+.mp-atmosphere .ring-blue-500 {
+  --tw-ring-color: rgba(11, 109, 133, 0.45) !important;
 }
 
 /* ── Login Hero Animations ───────────────────────────────── */
@@ -60,7 +330,6 @@
   100% { transform: translate(30px, -40px) scale(0.92); }
 }
 
-/* Quote crossfade */
 .login-quote-transition {
   transition: opacity 0.8s ease, transform 0.8s ease;
 }
@@ -75,33 +344,66 @@
 
 @media (prefers-reduced-motion: reduce) {
   .login-blob,
-  .login-quote-transition {
+  .login-quote-transition,
+  .mp-reveal,
+  .mp-bezel,
+  .mp-btn-island,
+  .mp-btn-island .mp-btn-ico {
     animation: none !important;
     transition: none !important;
   }
+  .mp-reveal {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
 }
 
-/* Outline buttons on dark / gradient hero surfaces (avoid white-on-white).
-   `!` (important) so this wins over the shared Button `outline` variant's
-   base `bg-background` / `text-foreground` on these hero surfaces. */
+@media (max-width: 767px) {
+  .mp-bezel:hover { transform: none; }
+  .mp-span-3,
+  .mp-span-4,
+  .mp-span-6,
+  .mp-span-8,
+  .mp-span-12 { grid-column: span 1; }
+  .mp-row-2 { grid-row: auto; }
+}
+
 @layer components {
   .btn-hero-outline {
     @apply !border-white/40 !bg-white/10 !text-white hover:!bg-white/20 hover:!text-white;
   }
 }
 
-/* ── Premium, accessible brand tokens (member-portal scope) ───────────────
-   The shared theme's --primary is bright cyan (#06b6d4); white text on it is
-   only ~2.1:1, so primary buttons/links read as washed-out — the "text is the
-   same colour as the button" complaint. Deepen it to an AA-compliant teal
-   (white on #0b6d85 ≈ 5.9:1) and darken the rarely-used secondary. Foregrounds
-   are forced to pure white for crisp labels. This is placed AFTER the theme
-   import so it becomes the portal default; a white-label tenant's
-   `organizations.branding` still overrides it (injected in the layout <head>). */
-:root {
-  --primary: 192 85% 28%;
-  --primary-foreground: 0 0% 100%;
-  --secondary: 224 71% 42%;
-  --secondary-foreground: 0 0% 100%;
-  --ring: 192 85% 34%;
+/* Soft Structuralism auth — teal instead of cyan/blue/purple */
+.mp-auth {
+  --auth-accent: #0b6d85;
+  --auth-accent-highlight: #5ec8d8;
+  --auth-gradient: linear-gradient(135deg, #0b6d85 0%, #0e8c9a 55%, #12a065 100%);
+}
+.mp-auth h2.bg-gradient-to-r,
+.mp-auth h2[class*='from-cyan'] {
+  background-image: linear-gradient(90deg, #7dd3e0, #5ec8d8, #3db89a) !important;
+}
+.mp-auth a.text-cyan-400,
+.mp-auth .text-cyan-400 {
+  color: #5ec8d8 !important;
+}
+.mp-auth a.hover\:text-cyan-300:hover,
+.mp-auth .hover\:text-cyan-300:hover {
+  color: #7dd3e0 !important;
+}
+.mp-auth button[type='submit'] {
+  background-image: linear-gradient(90deg, #0b6d85, #0e8c9a) !important;
+  box-shadow: 0 4px 20px rgba(11, 109, 133, 0.28) !important;
+}
+.mp-auth button[type='submit']:hover {
+  background-image: linear-gradient(90deg, #0e8c9a, #12a065) !important;
+}
+.mp-auth .group-focus-within\:text-cyan-400:is(:focus-within *) {
+  color: #5ec8d8 !important;
+}
+.mp-auth input:focus {
+  border-color: #0e8c9a !important;
+  --tw-ring-color: rgba(11, 109, 133, 0.25) !important;
 }

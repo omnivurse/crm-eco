@@ -1,5 +1,5 @@
+import { Shield } from '@phosphor-icons/react/dist/ssr';
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@crm-eco/ui';
-import { ShieldX } from 'lucide-react';
 import Link from 'next/link';
 
 export default function AccessDeniedPage() {
@@ -8,7 +8,7 @@ export default function AccessDeniedPage() {
       <Card className="w-full max-w-md text-center">
         <CardHeader>
           <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
-            <ShieldX className="h-8 w-8 text-red-600" />
+            <Shield weight="light" className="h-8 w-8 text-red-600" />
           </div>
           <CardTitle className="text-2xl">Access Denied</CardTitle>
           <CardDescription>

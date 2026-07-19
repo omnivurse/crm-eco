@@ -1,5 +1,6 @@
 'use client';
 
+import { ArrowClockwise, Buildings, Calendar, CaretLeft, CheckCircle, CircleNotch, Clock, CreditCard, CurrencyDollar, DownloadSimple, Eye, Funnel, MagnifyingGlass, X, XCircle } from '@phosphor-icons/react';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import {
@@ -18,23 +19,6 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@crm-eco/ui';
-import {
-  Search,
-  Download,
-  Filter,
-  ChevronLeft,
-  CheckCircle,
-  XCircle,
-  Clock,
-  RefreshCw,
-  Loader2,
-  Eye,
-  DollarSign,
-  CreditCard,
-  Building,
-  Calendar,
-  X,
-} from 'lucide-react';
 import { StatusBadge } from '@crm-eco/ui/components/status-badge';
 import Link from 'next/link';
 import { format, subDays, startOfMonth, startOfDay, endOfDay } from 'date-fns';
@@ -106,13 +90,13 @@ function getDateRange(preset: DatePreset): { start: Date; end: Date } {
 function getStatusIcon(status: string) {
   switch (status) {
     case 'success':
-      return <CheckCircle className="h-4 w-4 text-green-500" />;
+      return <CheckCircle weight="light" className="h-4 w-4 text-green-500" />;
     case 'failed':
-      return <XCircle className="h-4 w-4 text-red-500" />;
+      return <XCircle weight="light" className="h-4 w-4 text-red-500" />;
     case 'refunded':
-      return <RefreshCw className="h-4 w-4 text-blue-500" />;
+      return <ArrowClockwise weight="light" className="h-4 w-4 text-blue-500" />;
     default:
-      return <Clock className="h-4 w-4 text-yellow-500" />;
+      return <Clock weight="light" className="h-4 w-4 text-yellow-500" />;
   }
 }
 
@@ -253,7 +237,7 @@ export default function BillingListPage() {
         <div className="flex items-center gap-4">
           <Link href="/billing">
             <Button variant="ghost" size="icon">
-              <ChevronLeft className="h-5 w-5" />
+              <CaretLeft weight="light" className="h-5 w-5" />
             </Button>
           </Link>
           <div>
@@ -263,11 +247,11 @@ export default function BillingListPage() {
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" onClick={() => loadTransactions()} disabled={loading}>
-            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            <ArrowClockwise weight="light" className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
           <Button variant="outline" onClick={exportToCSV} disabled={exporting || loading}>
-            {exporting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
+            {exporting ? <CircleNotch weight="light" className="h-4 w-4 mr-2 animate-spin" /> : <DownloadSimple weight="light" className="h-4 w-4 mr-2" />}
             Export
           </Button>
         </div>
@@ -293,7 +277,7 @@ export default function BillingListPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center">
-                <DollarSign className="h-5 w-5 text-green-600" />
+                <CurrencyDollar weight="light" className="h-5 w-5 text-green-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold">${stats.totalCollected.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
@@ -306,7 +290,7 @@ export default function BillingListPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center">
-                <XCircle className="h-5 w-5 text-red-600" />
+                <XCircle weight="light" className="h-5 w-5 text-red-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold">${stats.totalFailed.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
@@ -319,7 +303,7 @@ export default function BillingListPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
-                <RefreshCw className="h-5 w-5 text-blue-600" />
+                <ArrowClockwise weight="light" className="h-5 w-5 text-blue-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold">${stats.totalRefunded.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
@@ -332,7 +316,7 @@ export default function BillingListPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center">
-                <CreditCard className="h-5 w-5 text-purple-600" />
+                <CreditCard weight="light" className="h-5 w-5 text-purple-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{stats.count}</p>
@@ -353,16 +337,16 @@ export default function BillingListPage() {
             </div>
             <div className="flex items-center gap-2">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <MagnifyingGlass weight="light" className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search member or transaction ID..."
+                  placeholder="MagnifyingGlass member or transaction ID..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-9 w-64"
                 />
               </div>
               <Button variant="outline" onClick={() => setShowFilters(!showFilters)}>
-                <Filter className="h-4 w-4 mr-2" />
+                <Funnel weight="light" className="h-4 w-4 mr-2" />
                 Filters
               </Button>
             </div>
@@ -401,7 +385,7 @@ export default function BillingListPage() {
                   setTypeFilter('all');
                   setSearchQuery('');
                 }}>
-                  <X className="h-4 w-4 mr-1" />
+                  <X weight="light" className="h-4 w-4 mr-1" />
                   Clear
                 </Button>
               )}
@@ -411,11 +395,11 @@ export default function BillingListPage() {
         <CardContent>
           {loading ? (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              <CircleNotch weight="light" className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : filteredTransactions.length === 0 ? (
             <div className="text-center py-12 text-slate-500">
-              <CreditCard className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <CreditCard weight="light" className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p>No transactions found</p>
             </div>
           ) : (
@@ -473,7 +457,7 @@ export default function BillingListPage() {
                       </td>
                       <td className="py-3 text-sm text-right">
                         <Button variant="ghost" size="sm" onClick={() => setSelectedTransaction(txn)}>
-                          <Eye className="h-4 w-4" />
+                          <Eye weight="light" className="h-4 w-4" />
                         </Button>
                       </td>
                     </tr>
@@ -487,7 +471,7 @@ export default function BillingListPage() {
 
       {/* Transaction Detail Modal */}
       <Dialog open={!!selectedTransaction} onOpenChange={() => setSelectedTransaction(null)}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Transaction Details</DialogTitle>
             <DialogDescription>

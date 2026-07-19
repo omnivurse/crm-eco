@@ -3,11 +3,23 @@ import preset from '@crm-eco/ui/tailwind.preset';
 import tailwindcssAnimate from 'tailwindcss-animate';
 
 const config: Config = {
+  darkMode: 'class',
   presets: [preset as Config],
   content: [
     './src/**/*.{ts,tsx}',
     '../../packages/ui/src/**/*.{ts,tsx}',
   ],
+  theme: {
+    extend: {
+      fontFamily: {
+        sans: ['var(--font-body)', 'Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+        heading: ['var(--font-heading)', 'Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+      },
+      transitionTimingFunction: {
+        dh: 'cubic-bezier(0.32, 0.72, 0, 1)',
+      },
+    },
+  },
   plugins: [tailwindcssAnimate],
 };
 

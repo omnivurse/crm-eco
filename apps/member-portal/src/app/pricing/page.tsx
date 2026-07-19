@@ -2,6 +2,7 @@ import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { getMemberForUser } from '@crm-eco/lib';
 import { redirect } from 'next/navigation';
 import { PricingSearch } from '@/components/pricing/PricingSearch';
+import { PageHeader } from '@/components/PageHeader';
 
 export default async function PricingPage() {
   const supabase = await createServerSupabaseClient();
@@ -24,12 +25,11 @@ export default async function PricingPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Compare Cash Prices</h1>
-        <p className="text-slate-500">
-          Find and compare cash prices for common medical procedures near you.
-        </p>
-      </div>
+      <PageHeader
+        title="Compare Cash Prices"
+        description="Find and compare cash prices for common medical procedures near you."
+        kicker="Pricing"
+      />
       <PricingSearch
         memberZip={(member as any).zip || ''}
         procedures={procedures || []}

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Label, Button, Card, CardContent } from '@crm-eco/ui';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@crm-eco/ui';
-import { Loader2, ArrowRight, CreditCard, Building2, Calendar, Check } from 'lucide-react';
+import { CircleNotch, ArrowRight, CreditCard, Buildings, Calendar, Check } from '@phosphor-icons/react';
 import type { WizardPlan } from '@crm-eco/enrollment';
 
 interface PaymentData {
@@ -57,8 +57,8 @@ export function SelfServePaymentStep({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <p className="text-sm text-blue-800">
+      <div className="bg-[rgba(11,109,133,0.06)] border border-[rgba(11,109,133,0.15)] rounded-lg p-4">
+        <p className="text-sm text-[var(--mp-ink)]">
           <strong>Set up your monthly contribution.</strong> Choose how you&apos;d like to 
           make your monthly share payments. Your first payment will be processed after 
           your enrollment is approved.
@@ -94,15 +94,15 @@ export function SelfServePaymentStep({
           <Card
             className={`cursor-pointer transition-all ${
               paymentMethod === 'bank_draft'
-                ? 'ring-2 ring-blue-500 border-blue-500'
-                : 'hover:border-blue-300'
+                ? 'ring-2 ring-[var(--mp-teal)] border-[var(--mp-teal)]'
+                : 'hover:border-[rgba(11,109,133,0.35)]'
             }`}
             onClick={() => setPaymentMethod('bank_draft')}
           >
             <CardContent className="pt-6">
               <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                  <Building2 className="w-5 h-5 text-blue-600" />
+                <div className="w-10 h-10 rounded-full bg-[rgba(11,109,133,0.1)] flex items-center justify-center">
+                  <Buildings weight="light" className="w-5 h-5 text-[var(--mp-teal)]" />
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
@@ -115,7 +115,7 @@ export function SelfServePaymentStep({
                   </p>
                 </div>
                 {paymentMethod === 'bank_draft' && (
-                  <Check className="w-5 h-5 text-blue-600" />
+                  <Check weight="light" className="w-5 h-5 text-[var(--mp-teal)]" />
                 )}
               </div>
             </CardContent>
@@ -124,15 +124,15 @@ export function SelfServePaymentStep({
           <Card
             className={`cursor-pointer transition-all ${
               paymentMethod === 'credit_card'
-                ? 'ring-2 ring-blue-500 border-blue-500'
-                : 'hover:border-blue-300'
+                ? 'ring-2 ring-[var(--mp-teal)] border-[var(--mp-teal)]'
+                : 'hover:border-[rgba(11,109,133,0.35)]'
             }`}
             onClick={() => setPaymentMethod('credit_card')}
           >
             <CardContent className="pt-6">
               <div className="flex items-start gap-4">
                 <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center">
-                  <CreditCard className="w-5 h-5 text-slate-600" />
+                  <CreditCard weight="light" className="w-5 h-5 text-slate-600" />
                 </div>
                 <div className="flex-1">
                   <h4 className="font-semibold text-slate-900">Credit/Debit Card</h4>
@@ -141,7 +141,7 @@ export function SelfServePaymentStep({
                   </p>
                 </div>
                 {paymentMethod === 'credit_card' && (
-                  <Check className="w-5 h-5 text-blue-600" />
+                  <Check weight="light" className="w-5 h-5 text-[var(--mp-teal)]" />
                 )}
               </div>
             </CardContent>
@@ -152,7 +152,7 @@ export function SelfServePaymentStep({
       {/* Billing Day */}
       <div className="space-y-4">
         <div className="flex items-center gap-2">
-          <Calendar className="w-5 h-5 text-slate-400" />
+          <Calendar weight="light" className="w-5 h-5 text-slate-400" />
           <Label className="text-base font-medium">Billing Day *</Label>
         </div>
 
@@ -230,13 +230,13 @@ export function SelfServePaymentStep({
         <Button type="submit" disabled={loading} className="gap-2">
           {loading ? (
             <>
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <CircleNotch weight="light" className="w-4 h-4 animate-spin" />
               Saving...
             </>
           ) : (
             <>
               Continue
-              <ArrowRight className="w-4 h-4" />
+              <ArrowRight weight="light" className="w-4 h-4" />
             </>
           )}
         </Button>

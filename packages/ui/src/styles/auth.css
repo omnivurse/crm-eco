@@ -1,16 +1,19 @@
 /**
- * Double Helix Hub — shared auth page styling
- * Matches crm.doublehelixhub.com landing palette (#030712 / #0a1628 / cyan)
+ * Double Helix — Ethereal Glass auth surfaces
+ * Aligned with marketing site: void canvas, cyan/emerald mesh, no purple.
  */
 
 :root {
-  --auth-bg: #030712;
-  --auth-panel: #0a1628;
-  --auth-text: #f1f5f9;
-  --auth-muted: #94a3b8;
+  --auth-bg: #050505;
+  --auth-panel: #0a0a0a;
+  --auth-text: #f4f4f5;
+  --auth-muted: rgba(244, 244, 245, 0.55);
   --auth-accent: #06b6d4;
-  --auth-accent-highlight: #3dd6ff;
-  --auth-gradient: linear-gradient(135deg, #06b6d4 0%, #3b82f6 50%, #8b5cf6 100%);
+  --auth-accent-highlight: #22d3ee;
+  --auth-emerald: #059669;
+  --auth-hairline: rgba(255, 255, 255, 0.1);
+  --auth-ease: cubic-bezier(0.32, 0.72, 0, 1);
+  --auth-gradient: linear-gradient(135deg, #06b6d4 0%, #059669 100%);
 }
 
 /* Animated mesh blobs */
@@ -22,7 +25,7 @@
 .login-blob {
   position: absolute;
   border-radius: 50%;
-  filter: blur(60px);
+  filter: blur(72px);
   pointer-events: none;
 }
 
@@ -54,7 +57,7 @@
 .login-blob-drift-4 { animation: login-blob-drift-4 20s ease-in-out infinite; }
 
 .login-quote-transition {
-  transition: opacity 0.8s ease, transform 0.8s ease;
+  transition: opacity 0.8s var(--auth-ease), transform 0.8s var(--auth-ease);
 }
 
 .login-quote-active {
@@ -66,6 +69,16 @@
   opacity: 0;
   transform: translateY(12px);
   pointer-events: none;
+}
+
+/* Subtle grain over auth hero */
+.auth-grain {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.035;
+  z-index: 1;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 @media (prefers-reduced-motion: reduce) {

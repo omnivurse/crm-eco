@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ChevronLeft, FileText, Users, Edit3, XCircle } from 'lucide-react';
+import { FileText, Users, Pencil, XCircle } from '@phosphor-icons/react/dist/ssr';
 import { Card, CardContent, CardHeader, CardTitle } from '@crm-eco/ui';
 import {
   getPlanOverview,
@@ -11,6 +11,7 @@ import { PlanCoverageCard } from '@/components/plan/PlanCoverageCard';
 import { formatCoverageDateRange, formatCoverageReason } from '@crm-eco/lib';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { requireActiveMembership } from '@/lib/auth/require-active-membership';
+import { PageHeader } from '@/components/PageHeader';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,14 +35,12 @@ export default async function PlanOverviewPage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 px-4 py-8">
-      <Link href="/" className="inline-flex items-center text-sm text-primary hover:underline">
-        <ChevronLeft className="mr-1 h-4 w-4" /> Back
-      </Link>
-
-      <div>
-        <h1 className="text-3xl font-bold text-slate-900">My Plan</h1>
-        <p className="mt-1 text-sm text-slate-600">Plan details, dependents, documents, and changes.</p>
-      </div>
+      <PageHeader
+        title="My Plan"
+        description="Plan details, dependents, documents, and changes."
+        backHref="/"
+        backLabel="Back"
+      />
 
       {planOverview ? (
         <PlanCoverageCard overview={planOverview} />
@@ -61,7 +60,7 @@ export default async function PlanOverviewPage() {
           href="/dependents"
           className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:border-slate-300 hover:shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
         >
-          <Users className="mb-3 h-6 w-6 text-primary" />
+          <Users weight="light" className="mb-3 h-6 w-6 text-[var(--mp-teal)]" />
           <p className="font-semibold text-slate-900">Dependents</p>
           <p className="mt-1 text-xs text-slate-500">
             {familyCoverage.coveredCount} of {familyCoverage.totalDependents} currently on plan
@@ -71,7 +70,7 @@ export default async function PlanOverviewPage() {
           href="/plan/change"
           className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:border-slate-300 hover:shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
         >
-          <Edit3 className="mb-3 h-6 w-6 text-amber-600" />
+          <Pencil weight="light" className="mb-3 h-6 w-6 text-amber-600" />
           <p className="font-semibold text-slate-900">Request a change</p>
           <p className="mt-1 text-xs text-slate-500">Plan, IUA, or effective date</p>
         </Link>
@@ -79,7 +78,7 @@ export default async function PlanOverviewPage() {
           href="/plan/cancel"
           className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:border-slate-300 hover:shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
         >
-          <XCircle className="mb-3 h-6 w-6 text-red-600" />
+          <XCircle weight="light" className="mb-3 h-6 w-6 text-red-600" />
           <p className="font-semibold text-slate-900">Cancel membership</p>
           <p className="mt-1 text-xs text-slate-500">Submit a cancellation request</p>
         </Link>
@@ -88,7 +87,7 @@ export default async function PlanOverviewPage() {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
-            <Users className="h-4 w-4 text-primary" />
+            <Users weight="light" className="h-4 w-4 text-[var(--mp-teal)]" />
             Family coverage
           </CardTitle>
         </CardHeader>
@@ -113,7 +112,7 @@ export default async function PlanOverviewPage() {
           ) : (
             <p className="text-xs text-slate-500">
               No coverage changes logged yet.{' '}
-              <Link href="/dependents" className="text-primary hover:underline">
+              <Link href="/dependents" className="text-[var(--mp-teal)] hover:underline">
                 Manage dependents
               </Link>
             </p>
@@ -124,7 +123,7 @@ export default async function PlanOverviewPage() {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
-            <FileText className="h-4 w-4 text-primary" />
+            <FileText weight="light" className="h-4 w-4 text-[var(--mp-teal)]" />
             Plan documents
           </CardTitle>
         </CardHeader>

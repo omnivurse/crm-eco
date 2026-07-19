@@ -98,7 +98,7 @@ export function ServiceWorkerRegistration() {
             </div>
             <button
               onClick={handleUpdate}
-              className="flex-shrink-0 bg-blue-500 hover:bg-blue-600 text-white text-xs font-medium px-3 py-1.5 rounded transition-colors"
+              className="flex-shrink-0 rounded bg-[var(--mp-teal)] px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-[#0e8c9a]"
             >
               Refresh
             </button>

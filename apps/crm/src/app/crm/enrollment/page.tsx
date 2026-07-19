@@ -243,7 +243,7 @@ async function EnrollmentContent({
     .eq('status', 'active');
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="w-full space-y-6">
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
@@ -268,7 +268,6 @@ async function EnrollmentContent({
             Filter
           </Button>
           <Button
-              className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white glow-sm hover:glow-md"
              asChild>
             <Link href="/crm/enrollment?new=true" prefetch={false}>
               <Plus className="w-4 h-4 mr-2" />
@@ -352,7 +351,7 @@ async function EnrollmentContent({
                 </div>
                 <p className="text-slate-900 dark:text-white font-medium mb-1">No enrollments yet</p>
                 <p className="text-slate-500 dark:text-slate-500 text-sm mb-4">New enrollment applications will appear here.</p>
-                <Button className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white" asChild>
+                <Button  asChild>
                   <Link href="/crm/enrollment?new=true" prefetch={false}>
                     <Plus className="w-4 h-4 mr-2" />
                     Start First Enrollment
@@ -460,7 +459,7 @@ export default async function EnrollmentPage({
 
 function EnrollmentSkeleton() {
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="w-full space-y-6">
       {/* Header skeleton */}
       <div className="flex justify-between items-start">
         <div className="space-y-2">

@@ -1,7 +1,7 @@
+import { Calendar, Plus, TrendDown, TrendUp } from '@phosphor-icons/react/dist/ssr';
 import { Card, CardContent, CardHeader, CardTitle, Badge, Button } from '@crm-eco/ui';
 import Link from 'next/link';
 import { format } from 'date-fns';
-import { Calendar, Plus, TrendingDown, TrendingUp } from 'lucide-react';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { getActiveTenant } from '@/lib/tenant';
 
@@ -55,7 +55,7 @@ export default async function PriceChangesPage() {
         </div>
         <Link href="/billing/price-changes/new">
           <Button>
-            <Plus className="mr-2 h-4 w-4" />
+            <Plus weight="light" className="mr-2 h-4 w-4" />
             Schedule Price Change
           </Button>
         </Link>
@@ -68,7 +68,7 @@ export default async function PriceChangesPage() {
         <CardContent>
           {schedules.length === 0 ? (
             <div className="rounded-lg border border-dashed p-8 text-center">
-              <TrendingUp className="mx-auto h-8 w-8 text-muted-foreground" />
+              <TrendUp weight="light" className="mx-auto h-8 w-8 text-muted-foreground" />
               <p className="mt-2 text-sm text-muted-foreground">No price changes scheduled</p>
             </div>
           ) : (
@@ -82,15 +82,15 @@ export default async function PriceChangesPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       {s.processed_count && s.processed_count > 0 ? (
-                        <TrendingUp className="h-5 w-5 text-blue-500" />
+                        <TrendUp weight="light" className="h-5 w-5 text-blue-500" />
                       ) : (
-                        <TrendingDown className="h-5 w-5 text-muted-foreground" />
+                        <TrendDown weight="light" className="h-5 w-5 text-muted-foreground" />
                       )}
                       <div>
                         <div className="font-medium">{s.plans?.name ?? 'Unknown plan'}</div>
                         <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
                           <span className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
+                            <Calendar weight="light" className="h-3 w-3" />
                             {format(new Date(s.scheduled_date), 'MMM d, yyyy')}
                           </span>
                           {s.affected_enrollments_count != null && (

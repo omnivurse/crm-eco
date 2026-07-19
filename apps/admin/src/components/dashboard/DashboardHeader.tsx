@@ -1,7 +1,7 @@
 'use client';
 
+import { ArrowClockwise, Clock, ShieldCheck, WifiHigh, WifiSlash } from '@phosphor-icons/react';
 import { useState, useEffect } from 'react';
-import { RefreshCw, Clock, Shield, Wifi, WifiOff } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface DashboardHeaderProps {
@@ -53,7 +53,7 @@ export function DashboardHeader({ greeting, onRefresh, isRefreshing = false }: D
         <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
           <defs>
             <pattern id="heroGrid" width="5" height="5" patternUnits="userSpaceOnUse">
-              <path d="M 5 0 L 0 0 0 5" fill="none" stroke="white" strokeWidth="0.3" />
+              <path d="M 5 0 L 0 0 0 5" fill="none" stroke="white" />
             </pattern>
           </defs>
           <rect width="100" height="100" fill="url(#heroGrid)" />
@@ -77,13 +77,13 @@ export function DashboardHeader({ greeting, onRefresh, isRefreshing = false }: D
                       <div className="w-2 h-2 rounded-full bg-emerald-400" />
                       <div className="absolute inset-0 w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
                     </div>
-                    <Wifi className="w-3.5 h-3.5 text-emerald-400" />
+                    <WifiHigh weight="light" className="w-3.5 h-3.5 text-emerald-400" />
                     <span className="text-xs font-medium text-emerald-400">Live</span>
                   </>
                 ) : (
                   <>
                     <div className="w-2 h-2 rounded-full bg-red-400" />
-                    <WifiOff className="w-3.5 h-3.5 text-red-400" />
+                    <WifiSlash weight="light" className="w-3.5 h-3.5 text-red-400" />
                     <span className="text-xs font-medium text-red-400">Offline</span>
                   </>
                 )}
@@ -91,7 +91,7 @@ export function DashboardHeader({ greeting, onRefresh, isRefreshing = false }: D
               
               {/* Admin Access badge */}
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#f59e0b]/20 backdrop-blur-sm border border-[#f59e0b]/30">
-                <Shield className="w-3.5 h-3.5 text-[#f59e0b]" />
+                <ShieldCheck weight="light" className="w-3.5 h-3.5 text-[#f59e0b]" />
                 <span className="text-xs font-medium text-[#f59e0b]">Admin Access</span>
               </div>
             </div>
@@ -108,14 +108,14 @@ export function DashboardHeader({ greeting, onRefresh, isRefreshing = false }: D
               disabled={isRefreshing}
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/10 text-white text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <ArrowClockwise weight="light" className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
               <span className="hidden sm:inline">{isRefreshing ? 'Refreshing...' : 'Refresh Data'}</span>
             </button>
             
             {/* Current time and last updated */}
             <div className="hidden lg:flex flex-col items-end gap-1 px-4 py-2 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10">
               <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-white/60" />
+                <Clock weight="light" className="w-4 h-4 text-white/60" />
                 <span className="text-sm font-medium text-white">
                   {format(currentTime, 'h:mm:ss a')}
                 </span>

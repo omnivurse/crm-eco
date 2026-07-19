@@ -1,5 +1,6 @@
 'use client';
 
+import { ArrowClockwise, ArrowLeft, Buildings, Calendar, CheckCircle, CircleNotch, Clock, File, Play, TrendDown, TrendUp, Users, Warning, XCircle } from '@phosphor-icons/react';
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import {
@@ -23,22 +24,6 @@ import {
   TableHeader,
   TableRow,
 } from '@crm-eco/ui';
-import {
-  Play,
-  RefreshCw,
-  CheckCircle2,
-  XCircle,
-  Clock,
-  AlertTriangle,
-  Loader2,
-  Building2,
-  Users,
-  FileCheck,
-  ArrowLeft,
-  Calendar,
-  TrendingUp,
-  TrendingDown,
-} from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 import Link from 'next/link';
@@ -276,7 +261,7 @@ export default function EligibilityPage() {
         <div className="flex items-center gap-4">
           <Link href="/ops">
             <Button variant="ghost" size="icon">
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft weight="light" className="w-4 h-4" />
             </Button>
           </Link>
           <div>
@@ -287,12 +272,12 @@ export default function EligibilityPage() {
         <Button onClick={runAllChecks} disabled={runningJobs.size > 0}>
           {runningJobs.size > 0 ? (
             <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              <CircleNotch weight="light" className="w-4 h-4 mr-2 animate-spin" />
               Running ({runningJobs.size})
             </>
           ) : (
             <>
-              <Play className="w-4 h-4 mr-2" />
+              <Play weight="light" className="w-4 h-4 mr-2" />
               Run All Checks
             </>
           )}
@@ -305,7 +290,7 @@ export default function EligibilityPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-xl bg-blue-100">
-                <Building2 className="w-6 h-6 text-blue-600" />
+                <Buildings weight="light" className="w-6 h-6 text-blue-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold text-slate-900">{vendors.length}</p>
@@ -319,7 +304,7 @@ export default function EligibilityPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-xl bg-purple-100">
-                <Users className="w-6 h-6 text-purple-600" />
+                <Users weight="light" className="w-6 h-6 text-purple-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold text-slate-900">{totalMembers.toLocaleString()}</p>
@@ -333,7 +318,7 @@ export default function EligibilityPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-xl bg-emerald-100">
-                <FileCheck className="w-6 h-6 text-emerald-600" />
+                <File weight="light" className="w-6 h-6 text-emerald-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold text-slate-900">{recentRuns.length}</p>
@@ -347,7 +332,7 @@ export default function EligibilityPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-xl bg-amber-100">
-                <Clock className="w-6 h-6 text-amber-600" />
+                <Clock weight="light" className="w-6 h-6 text-amber-600" />
               </div>
               <div>
                 <p className="text-lg font-bold text-slate-900">{lastRunTime}</p>
@@ -363,13 +348,13 @@ export default function EligibilityPage() {
         <h2 className="text-lg font-semibold text-slate-900 mb-4">Vendors</h2>
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+            <CircleNotch weight="light" className="w-8 h-8 animate-spin text-slate-400" />
           </div>
         ) : vendors.length === 0 ? (
           <Card>
             <CardContent className="py-12">
               <div className="text-center">
-                <Building2 className="w-12 h-12 text-slate-200 mx-auto mb-3" />
+                <Buildings weight="light" className="w-12 h-12 text-slate-200 mx-auto mb-3" />
                 <p className="text-slate-500">No active vendors</p>
                 <Link href="/vendors/new">
                   <Button className="mt-4">Add Vendor</Button>
@@ -436,12 +421,12 @@ export default function EligibilityPage() {
                     >
                       {isRunning ? (
                         <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          <CircleNotch weight="light" className="w-4 h-4 mr-2 animate-spin" />
                           Running...
                         </>
                       ) : (
                         <>
-                          <Play className="w-4 h-4 mr-2" />
+                          <Play weight="light" className="w-4 h-4 mr-2" />
                           Run Check
                         </>
                       )}
@@ -478,7 +463,7 @@ export default function EligibilityPage() {
         <CardContent>
           {filteredRuns.length === 0 ? (
             <div className="text-center py-8">
-              <Clock className="w-12 h-12 text-slate-200 mx-auto mb-3" />
+              <Clock weight="light" className="w-12 h-12 text-slate-200 mx-auto mb-3" />
               <p className="text-slate-500">No eligibility checks yet</p>
             </div>
           ) : (
@@ -508,7 +493,7 @@ export default function EligibilityPage() {
                         }
                       >
                         {run.status === 'running' && (
-                          <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                          <CircleNotch weight="light" className="w-3 h-3 mr-1 animate-spin" />
                         )}
                         {run.status}
                       </Badge>
@@ -527,7 +512,7 @@ export default function EligibilityPage() {
                     <TableCell>
                       {run.members_changed > 0 ? (
                         <span className="flex items-center gap-1 text-amber-600">
-                          <TrendingUp className="w-3 h-3" />
+                          <TrendUp weight="light" className="w-3 h-3" />
                           {run.members_changed}
                         </span>
                       ) : (

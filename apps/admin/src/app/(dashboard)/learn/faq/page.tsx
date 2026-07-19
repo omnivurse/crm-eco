@@ -1,10 +1,9 @@
 'use client';
 
+import { CaretDown } from '@phosphor-icons/react';
 import { useState } from 'react';
 import { ArticleLayout } from '@/components/learn/LearnComponents';
 import { cn } from '@crm-eco/ui';
-import { ChevronDown } from 'lucide-react';
-
 interface FAQItem {
   question: string;
   answer: string;
@@ -112,7 +111,7 @@ function FAQAccordion({ item }: { item: FAQItem }) {
         className="w-full flex items-center justify-between p-4 text-left hover:bg-slate-50 transition-colors"
       >
         <span className="font-medium text-slate-900 pr-4">{item.question}</span>
-        <ChevronDown className={cn(
+        <CaretDown weight="light" className={cn(
           'w-5 h-5 text-slate-400 flex-shrink-0 transition-transform duration-200',
           isOpen && 'rotate-180'
         )} />

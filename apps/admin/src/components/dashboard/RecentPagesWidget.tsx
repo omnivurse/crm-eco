@@ -1,24 +1,10 @@
 'use client';
 
+import { Buildings, ChartBar, CircleNotch, Clock, ClockCounterClockwise, CurrencyDollar, EnvelopeSimple, FileText, GearSix, Link as LinkIcon, Package, UserCheck, Users } from '@phosphor-icons/react';
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { usePathname } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@crm-eco/ui';
-import {
-  Users,
-  UserCheck,
-  FileText,
-  Package,
-  DollarSign,
-  Mail,
-  BarChart3,
-  Settings,
-  Building2,
-  Link2,
-  Clock,
-  History,
-  Loader2,
-} from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import Link from 'next/link';
 
@@ -44,12 +30,12 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   UserCheck,
   FileText,
   Package,
-  DollarSign,
-  Mail,
-  BarChart3,
-  Settings,
-  Building2,
-  Link2,
+  CurrencyDollar,
+  EnvelopeSimple,
+  ChartBar,
+  GearSix,
+  Buildings,
+  Link: LinkIcon,
 };
 
 // Determine icon based on path
@@ -59,18 +45,18 @@ function getIconForPath(path: string, iconName?: string | null): React.ReactNode
     return <Icon className="w-4 h-4" />;
   }
 
-  if (path.includes('/members')) return <Users className="w-4 h-4" />;
-  if (path.includes('/agents')) return <UserCheck className="w-4 h-4" />;
-  if (path.includes('/enrollments')) return <FileText className="w-4 h-4" />;
-  if (path.includes('/products')) return <Package className="w-4 h-4" />;
-  if (path.includes('/billing') || path.includes('/commissions')) return <DollarSign className="w-4 h-4" />;
-  if (path.includes('/communications')) return <Mail className="w-4 h-4" />;
-  if (path.includes('/reports') || path.includes('/analytics')) return <BarChart3 className="w-4 h-4" />;
-  if (path.includes('/settings')) return <Settings className="w-4 h-4" />;
-  if (path.includes('/vendors')) return <Building2 className="w-4 h-4" />;
-  if (path.includes('/enrollment-links')) return <Link2 className="w-4 h-4" />;
+  if (path.includes('/members')) return <Users weight="light" className="w-4 h-4" />;
+  if (path.includes('/agents')) return <UserCheck weight="light" className="w-4 h-4" />;
+  if (path.includes('/enrollments')) return <FileText weight="light" className="w-4 h-4" />;
+  if (path.includes('/products')) return <Package weight="light" className="w-4 h-4" />;
+  if (path.includes('/billing') || path.includes('/commissions')) return <CurrencyDollar weight="light" className="w-4 h-4" />;
+  if (path.includes('/communications')) return <EnvelopeSimple weight="light" className="w-4 h-4" />;
+  if (path.includes('/reports') || path.includes('/analytics')) return <ChartBar weight="light" className="w-4 h-4" />;
+  if (path.includes('/settings')) return <GearSix weight="light" className="w-4 h-4" />;
+  if (path.includes('/vendors')) return <Buildings weight="light" className="w-4 h-4" />;
+  if (path.includes('/enrollment-links')) return <LinkIcon weight="light" className="w-4 h-4" />;
 
-  return <FileText className="w-4 h-4" />;
+  return <FileText weight="light" className="w-4 h-4" />;
 }
 
 // Generate title from path
@@ -186,7 +172,7 @@ export function RecentPagesWidget({ profileId, organizationId }: RecentPagesWidg
       <CardHeader className="pb-3">
         <div className="flex items-center gap-3">
           <div className="p-2.5 rounded-xl bg-gradient-to-br from-teal-500 to-cyan-500">
-            <History className="w-5 h-5 text-white" />
+            <ClockCounterClockwise weight="light" className="w-5 h-5 text-white" />
           </div>
           <div>
             <CardTitle className="text-lg">Recently Visited</CardTitle>
@@ -198,12 +184,12 @@ export function RecentPagesWidget({ profileId, organizationId }: RecentPagesWidg
       <CardContent>
         {loading ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+            <CircleNotch weight="light" className="w-6 h-6 animate-spin text-slate-400" />
           </div>
         ) : visits.length === 0 ? (
           <div className="text-center py-8">
             <div className="w-16 h-16 mx-auto mb-3 bg-slate-100 rounded-2xl flex items-center justify-center">
-              <Clock className="w-8 h-8 text-slate-300" />
+              <Clock weight="light" className="w-8 h-8 text-slate-300" />
             </div>
             <p className="font-medium text-slate-600 mb-1">No recent pages</p>
             <p className="text-sm text-slate-400">Your navigation history will appear here</p>

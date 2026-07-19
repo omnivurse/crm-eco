@@ -246,7 +246,7 @@ export function MergeRecordDialog({
 
   return (
     <Dialog open={open} onOpenChange={(v) => !isMerging && onOpenChange(v)}>
-      <DialogContent className="max-w-2xl bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10">
+      <DialogContent className="max-w-4xl bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-slate-900 dark:text-white">
             <GitMerge className="w-5 h-5 text-teal-500" />
@@ -436,7 +436,6 @@ export function MergeRecordDialog({
             type="button"
             onClick={handleMerge}
             disabled={!selected || isMerging}
-            className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white"
           >
             {isMerging ? (
               <>

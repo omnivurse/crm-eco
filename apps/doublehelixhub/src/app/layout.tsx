@@ -1,18 +1,19 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter, Plus_Jakarta_Sans } from 'next/font/google';
+import { Plus_Jakarta_Sans } from 'next/font/google';
 import { LeadGenQuotePinGate } from '@crm-eco/ui/components/pin-lock-overlay';
 import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
 import './globals.css';
 
-const inter = Inter({
+const plusJakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
   variable: '--font-body',
+  weight: ['400', '500', '600', '700', '800'],
   display: 'swap',
   fallback: ['system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
 });
 
-const plusJakarta = Plus_Jakarta_Sans({
+const plusJakartaHeading = Plus_Jakarta_Sans({
   subsets: ['latin'],
   variable: '--font-heading',
   weight: ['600', '700', '800'],
@@ -49,22 +50,23 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
-    { media: '(prefers-color-scheme: dark)', color: '#0f172a' },
-  ],
+  themeColor: '#050505',
   width: 'device-width',
   initialScale: 1,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${inter.variable} ${plusJakarta.variable}`}>
+    <html lang="en" className={`${plusJakarta.variable} ${plusJakartaHeading.variable} dark`}>
       <body className="font-sans antialiased">
         <LeadGenQuotePinGate />
-        <SiteHeader />
-        {children}
-        <SiteFooter />
+        <div className="dh-mesh" aria-hidden />
+        <div className="dh-grain" aria-hidden />
+        <div className="relative z-[1] flex min-h-[100dvh] flex-col">
+          <SiteHeader />
+          <div className="flex-1">{children}</div>
+          <SiteFooter />
+        </div>
       </body>
     </html>
   );
