@@ -5,6 +5,7 @@ import { X, Plus, Tag, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { queuedSend } from '@/lib/offline/queued-send';
+import { buildRecordTagsPatch } from './record-tags-patch';
 
 export interface RecordTagsRowProps {
   recordId: string;
@@ -61,7 +62,7 @@ export function RecordTagsRow({
       const result = await queuedSend({
         method: 'PATCH',
         url: `/api/crm/records/${recordId}`,
-        body: { data: { ...(recordData || {}), tags: next } },
+        body: buildRecordTagsPatch(next),
         queue: {
           label: 'Update tags',
           // Collapse rapid tag toggles into one queued mutation — the
@@ -88,7 +89,7 @@ export function RecordTagsRow({
       setTags(previous);
       toast.error(result.error || 'Failed to save tags');
     },
-    [recordId, recordData, onChange],
+    [recordId, onChange],
   );
 
   const addTag = useCallback(
