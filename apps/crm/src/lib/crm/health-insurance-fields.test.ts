@@ -17,7 +17,7 @@ describe('health-insurance-fields', () => {
 
   it('bridges indexed carrier_id to health_insurance_carrier on read', () => {
     const base = {
-      market_type: 'health_insurance',
+      market_type: 'traditional_insurance',
       carrier_id: '11111111-1111-1111-1111-111111111111',
     };
     bridgeHealthInsuranceReadPaths(base, 'leads');
@@ -43,7 +43,7 @@ describe('mergeCrmDataJsonIntoRowColumns health insurance sync', () => {
       },
       { moduleKey: 'leads' },
     );
-    expect(updates.market_type).toBe('health_insurance');
+    expect(updates.market_type).toBe('traditional_insurance');
     expect(updates.carrier_id).toBe('22222222-2222-2222-2222-222222222222');
     expect(updates.original_start_date).toBe('2026-08-01');
   });

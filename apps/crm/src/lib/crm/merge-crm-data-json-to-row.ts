@@ -436,8 +436,10 @@ export function mergeCrmDataJsonIntoRowColumns(
     ) {
       updates.carrier_id = carrierFromInsurance;
     }
+    // Must match chk_crm_records_market_type:
+    // healthshare | traditional_insurance | unknown (not form-section key "health_insurance").
     if (updates.market_type === undefined || updates.market_type === null) {
-      updates.market_type = 'health_insurance';
+      updates.market_type = 'traditional_insurance';
     }
     if (
       d.health_insurance_start_date !== undefined &&
