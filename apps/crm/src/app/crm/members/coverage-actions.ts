@@ -43,7 +43,10 @@ async function resolveCrmCoverageContext(): Promise<
 
 function revalidateCrmMemberSurfaces(memberId: string) {
   revalidatePath(`/crm/members/${memberId}`);
-  revalidatePath('/crm/records');
+  revalidatePath('/crm/members');
+  revalidatePath(`/crm/r/${memberId}`);
+  revalidatePath('/crm/modules/members');
+  revalidatePath('/crm');
 }
 
 export async function crmAddDependentWithCoverage(input: {

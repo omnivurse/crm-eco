@@ -876,18 +876,28 @@ export const KanbanView = memo(function KanbanView({
 
     if (newVal !== oldVal) {
       try {
-        const isSystemField = ['status', 'lead_status', 'contact_status', 'stage'].includes(groupByField);
-        const updateField = groupByField === 'lead_status' || groupByField === 'contact_status' ? 'status' : groupByField;
+        const isStatusField = ['status', 'lead_status', 'contact_status'].includes(groupByField);
+        const isSystemField = isStatusField || groupByField === 'stage';
 
-        const updates: Record<string, unknown> = isSystemField
-          ? { [updateField]: newVal }
-          : { data: { ...record.data, [groupByField]: newVal } };
-
-        const response = await fetch(`/api/crm/records/${activeId}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(updates),
-        });
+        // Status: hit dedicated endpoint so column + JSONB stay in sync.
+        // Stage/other system fields: top-level PATCH. Custom fields: JSONB only.
+        let response: Response;
+        if (isStatusField) {
+          response = await fetch(`/api/crm/records/${activeId}/status`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: newVal }),
+          });
+        } else {
+          const updates: Record<string, unknown> = isSystemField
+            ? { [groupByField]: newVal }
+            : { data: { ...record.data, [groupByField]: newVal } };
+          response = await fetch(`/api/crm/records/${activeId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updates),
+          });
+        }
 
         if (!response.ok) throw new Error('Failed to update');
         toast.success(`Moved to "${newVal || 'No Value'}"`);

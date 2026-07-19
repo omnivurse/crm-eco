@@ -1,15 +1,21 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import {
+  authorizeInternalEdgeRequest,
+  unauthorizedResponse,
+} from "../_shared/cron-auth.ts";
 
-const ALLOWED_ORIGINS = (Deno.env.get("ALLOWED_ORIGINS") || "*").split(",").map(s => s.trim());
+const ALLOWED_ORIGINS = (Deno.env.get("ALLOWED_ORIGINS") || "*").split(",").map((s) => s.trim());
 
 function getCorsHeaders(req: Request): Record<string, string> {
   const origin = req.headers.get("origin") || "";
-  const allowed = ALLOWED_ORIGINS.includes("*") ? "*" :
-    (ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]);
+  const allowed = ALLOWED_ORIGINS.includes("*")
+    ? "*"
+    : (ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]);
   return {
     "Access-Control-Allow-Origin": allowed,
     "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
+    "Access-Control-Allow-Headers":
+      "Content-Type, Authorization, X-Client-Info, Apikey, x-cron-secret",
   };
 }
 
@@ -20,6 +26,11 @@ Deno.serve(async (req: Request) => {
       status: 200,
       headers: corsHeaders,
     });
+  }
+
+  // Fail closed: require service-role bearer or CRON_SECRET.
+  if (!authorizeInternalEdgeRequest(req)) {
+    return unauthorizedResponse(corsHeaders);
   }
 
   try {
@@ -34,7 +45,7 @@ Deno.serve(async (req: Request) => {
 
     const queueResponse = await fetch(
       `${supabaseUrl}/rest/v1/workflow_queue?status=eq.pending&order=created_at.asc&limit=10`,
-      { headers: supabaseHeaders }
+      { headers: supabaseHeaders },
     );
 
     if (!queueResponse.ok) {
@@ -51,7 +62,7 @@ Deno.serve(async (req: Request) => {
           method: "PATCH",
           headers: supabaseHeaders,
           body: JSON.stringify({ status: "processing" }),
-        }
+        },
       );
 
       try {
@@ -83,7 +94,7 @@ Deno.serve(async (req: Request) => {
               status: "completed",
               processed_at: new Date().toISOString(),
             }),
-          }
+          },
         );
 
         results.push({
@@ -106,7 +117,7 @@ Deno.serve(async (req: Request) => {
               retry_count: retryCount,
               error_message: error instanceof Error ? error.message : "Unknown error",
             }),
-          }
+          },
         );
 
         results.push({
@@ -129,7 +140,7 @@ Deno.serve(async (req: Request) => {
           ...corsHeaders,
           "Content-Type": "application/json",
         },
-      }
+      },
     );
   } catch (error) {
     console.error("Workflow processor error:", error);
@@ -145,7 +156,7 @@ Deno.serve(async (req: Request) => {
           ...corsHeaders,
           "Content-Type": "application/json",
         },
-      }
+      },
     );
   }
 });

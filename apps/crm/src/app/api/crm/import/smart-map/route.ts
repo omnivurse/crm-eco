@@ -18,6 +18,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createClient, getAuthProfile } from '@/lib/supabase-server';
+import { requireActiveOrgCrmRoles } from '@/lib/crm/require-crm-role';
 import type { CrmField } from '@/lib/crm/types';
 import {
   detectModule,
@@ -42,7 +43,12 @@ export async function POST(request: NextRequest) {
   if (!profile) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  if (!['crm_admin', 'crm_manager'].includes(profile.crm_role || '')) {
+  const supabase = await createClient();
+  const roleGate = await requireActiveOrgCrmRoles(supabase, profile.organization_id, [
+    'crm_admin',
+    'crm_manager',
+  ]);
+  if (!roleGate.ok) {
     return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
   }
 
@@ -57,7 +63,7 @@ export async function POST(request: NextRequest) {
   }
 
   const { headers, moduleId } = parsed;
-  const supabase = await createClient();
+  // `supabase` already created for the active-org role gate above.
 
   // Available modules for this org (id, key, name) — detection only picks
   // among modules that actually exist.

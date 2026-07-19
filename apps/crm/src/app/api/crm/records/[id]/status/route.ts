@@ -7,39 +7,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { createClient, getAuthProfile } from '@/lib/supabase-server';
+import { applyStatusToRecordUpdates } from '@/lib/crm/status-sync';
+import { isAllowedCrmStatus } from '@/lib/crm/status-allowlist';
 
 export const dynamic = 'force-dynamic';
-
-const ALLOWED_STATUSES = [
-  // Core operational
-  'Active', 'Active HS Member', 'Active Member', 'Active Insurance Client',
-  'Active DPC', 'Active ADVISOR',
-  'Inactive', 'In-Active', 'Pending', 'Cancelled', 'Cancellation Pending',
-  'Terminated', 'Converted', 'Deceased', 'Hold', 'Archived', 'Suspended',
-  // Enrollment
-  'Enrolled - 2016', 'Enrolled - 2017', 'Enrolled - 2018', 'Enrolled - 2019',
-  'Enrolled - 2020', 'Enrolled 2020', 'Enrolled - 2021', 'Enrolled - 2022', 'Enrolled - 2023',
-  'Enrolled - 2024', 'Enrolled - 2025', 'Enrolled - 2026',
-  'Enrolled Member', 'Enrolled-2016',
-  // Pipeline
-  'Approved Pending', 'Application in Process', 'Application In Process',
-  'In process', 'In Process', 'Contacted', 'Not Contacted',
-  'Attempted Contact One', 'Attempted Contact Two',
-  'Attempted Contact Three', 'Attempted Contact Four', 'Attempted to Contact',
-  // Prospects
-  'Hot Prospect - ready to move', 'Warm Prospect - Maybe', 'Warm - Future Prospect',
-  'Cold Prospect - Released', 'Future Prospect', 'DPC Prospect',
-  'Agent - Prospect', 'Agent- PROSPECT', 'Employee Prospect',
-  // Outcomes
-  'Lost Opportunity', 'Dropout', 'Released', 'Not Qualified', 'Junk Lead',
-  'Ready to Convert', 'Closed - New Member',
-  'Decision Making Stage', 'Full Presentation Given - Decision Mode',
-  'Full Presentation Completed', 'Product Selection', 'Qualification',
-  // Special
-  'Group Policy', 'Non Client', 'PERSONAL', 'Complimentary', 'LIVE',
-  'Agency- SUPPORT', 'Agent- SPONSOR', 'Agent- SPONSOR- InActive',
-  'Cancelled - In New CRM', 'Cancelled Application',
-];
 
 export async function PATCH(
   request: NextRequest,
@@ -61,14 +32,13 @@ export async function PATCH(
     const body = await request.json();
     const { status, reason } = body as { status: string; reason?: string };
 
-    if (!status || !ALLOWED_STATUSES.includes(status)) {
+    if (!status || !isAllowedCrmStatus(status)) {
       return NextResponse.json(
-        { error: `Invalid status. Allowed: ${ALLOWED_STATUSES.join(', ')}` },
+        { error: 'Invalid status value' },
         { status: 400 }
       );
     }
 
-    // Fetch current record with module key so we know which JSONB status field to sync
     const { data: record, error: fetchError } = await supabase
       .from('crm_records')
       .select('id, org_id, status, title, module_id, data, crm_modules!inner(key)')
@@ -81,20 +51,21 @@ export async function PATCH(
     }
 
     const previousStatus = record.status;
-    const moduleKey = (record as any).crm_modules?.key as string | undefined;
+    const moduleKey = (record as { crm_modules?: { key?: string } }).crm_modules?.key;
 
-    // Sync both the row-level status column AND the JSONB status field
-    const currentData = (record.data || {}) as Record<string, unknown>;
-    const statusFieldKey = moduleKey === 'leads' ? 'lead_status' : 'contact_status';
-    const updatedData = { ...currentData, [statusFieldKey]: status };
+    const updates: Record<string, unknown> = {
+      updated_at: new Date().toISOString(),
+    };
+    applyStatusToRecordUpdates(
+      updates,
+      status,
+      moduleKey,
+      (record.data || {}) as Record<string, unknown>,
+    );
 
     const { error: updateError } = await supabase
       .from('crm_records')
-      .update({
-        status,
-        data: updatedData,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updates)
       .eq('id', recordId)
       .eq('org_id', profile.organization_id);
 
@@ -102,7 +73,6 @@ export async function PATCH(
       return NextResponse.json({ error: 'Failed to update status' }, { status: 500 });
     }
 
-    // Write audit log
     await supabase.from('unified_audit_logs').insert({
       organization_id: profile.organization_id,
       app_source: 'crm',
@@ -126,6 +96,11 @@ export async function PATCH(
 
     revalidatePath('/crm');
     revalidatePath(`/crm/r/${recordId}`);
+    // Module list pages (RSC) — best-effort path refresh
+    if (moduleKey) {
+      revalidatePath(`/crm/modules/${moduleKey}`);
+      revalidatePath(`/crm/${moduleKey}`);
+    }
 
     return NextResponse.json({
       success: true,

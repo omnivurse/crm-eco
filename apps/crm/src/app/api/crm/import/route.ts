@@ -6,6 +6,7 @@ import {
   pickUpdateMirrorColumns,
   sanitizeCrmDataJsonPatch,
 } from '@/lib/crm/merge-crm-data-json-to-row';
+import { requireActiveOrgCrmRoles } from '@/lib/crm/require-crm-role';
 
 
 interface ColumnMapping {
@@ -119,7 +120,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  if (!['crm_admin', 'crm_manager'].includes(profile.crm_role || '')) {
+  const roleGate = await requireActiveOrgCrmRoles(supabase, profile.organization_id, [
+    'crm_admin',
+    'crm_manager',
+  ]);
+  if (!roleGate.ok) {
     return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
   }
 

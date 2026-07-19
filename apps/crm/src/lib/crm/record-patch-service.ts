@@ -9,6 +9,7 @@ import {
   mergeCrmDataJsonIntoRowColumns,
   normalizeRowColumnValue,
   normalizeDateColumnValue,
+  pickUpdateMirrorColumns,
   sanitizeCrmDataJsonPatch,
 } from '@/lib/crm/merge-crm-data-json-to-row';
 import { alignMisalignedRecordModule } from '@/lib/crm/align-record-module';
@@ -18,6 +19,10 @@ import {
   CRM_RECORD_DATE_COLUMN_KEYS,
   CRM_RECORD_UUID_COLUMN_KEYS,
 } from '@/lib/crm/record-field-registry';
+import {
+  applyStatusToRecordUpdates,
+  patchTouchesStatus,
+} from '@/lib/crm/status-sync';
 
 /** Matches `getAuthProfile()` shape used by CRM API routes */
 /** Profile fields required by CRM record create/patch (matches `getAuthProfile()`). */
@@ -100,13 +105,25 @@ export async function executeCrmRecordPatch(params: {
         : {};
     const mergedData = { ...prevData, ...patch };
     updates.data = mergedData;
-    Object.assign(
-      updates,
-      mergeCrmDataJsonIntoRowColumns(mergedData, {
-        previousTitle: previousRecord.title,
-        moduleKey,
-      })
-    );
+    const mirrored = mergeCrmDataJsonIntoRowColumns(mergedData, {
+      previousTitle: previousRecord.title,
+      moduleKey,
+    });
+    // Drop out-of-band columns (status/advisor/…) unless this patch intentionally
+    // set them — otherwise stale JSONB remirrors clobber Kanban/bulk/owner writes.
+    const allowKeys: string[] = [];
+    if (patchTouchesStatus(patch)) allowKeys.push('status');
+    if (patch.advisor_id !== undefined) allowKeys.push('advisor_id');
+    if (patch.stage !== undefined) allowKeys.push('stage');
+    if (patch.normalization_status !== undefined) {
+      allowKeys.push(
+        'normalization_status',
+        'canonical_advisor_id',
+        'normalized_advisor_name',
+        'normalized_agent_name',
+      );
+    }
+    Object.assign(updates, pickUpdateMirrorColumns(mirrored, [], allowKeys));
   }
 
   if (body.owner_id !== undefined) {
@@ -138,7 +155,21 @@ export async function executeCrmRecordPatch(params: {
     }
   }
 
-  if (body.status !== undefined) updates.status = body.status;
+  // Top-level status: keep JSONB mirrors in lockstep (Kanban / list / clients).
+  if (body.status !== undefined) {
+    const prevData =
+      updates.data && typeof updates.data === 'object'
+        ? (updates.data as Record<string, unknown>)
+        : previousRecord.data && typeof previousRecord.data === 'object'
+          ? (previousRecord.data as Record<string, unknown>)
+          : {};
+    applyStatusToRecordUpdates(
+      updates,
+      (body.status as string | null) ?? null,
+      moduleKey,
+      prevData,
+    );
+  }
   if (body.title !== undefined) updates.title = body.title;
 
   if (body.stage !== undefined && body.stage !== previousRecord.stage) {

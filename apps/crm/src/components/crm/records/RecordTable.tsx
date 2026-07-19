@@ -3,6 +3,7 @@
 import { useState, useMemo, useRef, useEffect, useLayoutEffect, useCallback, memo } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useCrmDensity } from '@/lib/crm/density';
+import { CRM_STATUS_PICKER_CORE } from '@/lib/crm/status-allowlist';
 import { StatusBadge } from '@/components/ui/status-badge';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -577,11 +578,8 @@ export const RecordTable = memo(function RecordTable({
     }
   }, []);
 
-  // Status options for common status fields
-  const STATUS_OPTIONS = [
-    'Active', 'Inactive', 'New', 'Contacted', 'Qualified', 'Working',
-    'Converted', 'Lost', 'Hot Prospect - ready to move', 'Prospect',
-  ];
+  // Status options — shared allowlist subset (see status-allowlist.ts)
+  const STATUS_OPTIONS = [...CRM_STATUS_PICKER_CORE];
 
   // Handle inline edit save
   const handleInlineEditSave = useCallback(async (value: unknown) => {
@@ -602,14 +600,22 @@ export const RecordTable = memo(function RecordTable({
         if (!Number.isNaN(d.getTime())) storeValue = d.toISOString();
       }
 
-      // Determine if this is a system field or data field
-      const isSystemField = ['status', 'title', 'owner_id'].includes(editingCell.field);
-
-      const updates: Record<string, unknown> = isSystemField
-        ? { [editingCell.field]: storeValue }
-        : { data: { ...record.data, [editingCell.field]: storeValue } };
-
-      await onRecordUpdate(editingCell.recordId, updates);
+      const isStatusField = ['status', 'lead_status', 'contact_status'].includes(
+        editingCell.field,
+      );
+      // Status aliases must update the indexed column + JSONB together.
+      // Prefer the dedicated status endpoint when available via onRecordUpdate
+      // callers that pass through PATCH — send top-level `status` so the server
+      // applies status-sync (see executeCrmRecordPatch / status route).
+      if (isStatusField) {
+        await onRecordUpdate(editingCell.recordId, { status: storeValue });
+      } else {
+        const isSystemField = ['title', 'owner_id'].includes(editingCell.field);
+        const updates: Record<string, unknown> = isSystemField
+          ? { [editingCell.field]: storeValue }
+          : { data: { ...record.data, [editingCell.field]: storeValue } };
+        await onRecordUpdate(editingCell.recordId, updates);
+      }
       toast.success('Updated successfully');
     } catch (error) {
       console.error('Error updating field:', error);

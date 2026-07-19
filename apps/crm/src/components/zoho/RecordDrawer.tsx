@@ -118,10 +118,11 @@ export function RecordDrawer() {
     try {
       await patchCrmRecord(data.record.id, { data: updatedData });
 
-      // Invalidate caches to refetch fresh data
+      // Invalidate caches to refetch fresh data (including module lists)
       queryClient.invalidateQueries({ queryKey: queryKeys.records.detail(data.record.id) });
       queryClient.invalidateQueries({ queryKey: ['edit-record', data.record.id] });
       queryClient.invalidateQueries({ queryKey: queryKeys.records.drawer(data.record.id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.records.lists() });
     } catch (error) {
       // Rollback on error
       setLocalRecordData(null);

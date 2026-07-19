@@ -18,6 +18,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createClient, getAuthProfile } from '@/lib/supabase-server';
+import { requireActiveOrgCrmRoles } from '@/lib/crm/require-crm-role';
 import {
   buildUpdatePayload,
   extractMatchKeys,
@@ -109,7 +110,13 @@ export async function POST(req: NextRequest) {
   if (!profile) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  if (!['crm_admin', 'crm_manager'].includes(profile.crm_role || '')) {
+  const supabase = await createClient();
+  const roleGate = await requireActiveOrgCrmRoles(
+    supabase,
+    profile.organization_id,
+    ['crm_admin', 'crm_manager'],
+  );
+  if (!roleGate.ok) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
@@ -128,7 +135,6 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const supabase = await createClient();
   const orgId = profile.organization_id;
   const { rows, moduleKey, matchPriority, dryRun, overwriteEmpty, fileName } =
     parsed.data;

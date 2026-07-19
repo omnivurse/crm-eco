@@ -265,11 +265,19 @@ export const CRM_UPDATE_MIRROR_EXCLUDE_KEYS: readonly string[] = [
 export function pickUpdateMirrorColumns(
   columns: Record<string, unknown>,
   extraExclude: readonly string[] = [],
+  /**
+   * Keys that this PATCH intentionally owns (e.g. `status` when the client
+   * sent `lead_status` / `contact_status` / `status` in `data`). Excluded
+   * columns in this set are still written.
+   */
+  allowKeys: readonly string[] = [],
 ): Record<string, unknown> {
   const exclude = new Set<string>([...CRM_UPDATE_MIRROR_EXCLUDE_KEYS, ...extraExclude]);
+  const allow = new Set<string>(allowKeys);
   const out: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(columns)) {
-    if (!exclude.has(key)) out[key] = value;
+    if (exclude.has(key) && !allow.has(key)) continue;
+    out[key] = value;
   }
   return out;
 }

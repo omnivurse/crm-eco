@@ -20,7 +20,7 @@ function getCorsHeaders(req: Request): Record<string, string> {
  * Client calls this after signIn/signInWithOAuth.
  * We decode the user's access token to extract:
  *  - sub (user id)
- *  - app_metadata or user_metadata groups
+ *  - app_metadata.groups only (never user_metadata — user-editable)
  * Then apply group->role mapping server-side.
  */
 Deno.serve(async (req) => {
@@ -88,13 +88,10 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Authorize only from app_metadata (server-controlled). Never trust
+    // user_metadata.groups — end users can edit that claim.
     const groupsFromApp = payload?.app_metadata?.groups;
-    const groupsFromUser = payload?.user_metadata?.groups;
-    const groups: string[] = Array.isArray(groupsFromApp)
-      ? groupsFromApp
-      : Array.isArray(groupsFromUser)
-      ? groupsFromUser
-      : [];
+    const groups: string[] = Array.isArray(groupsFromApp) ? groupsFromApp : [];
 
     // Apply mapping through RPC
     const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/apply_role_from_groups`, {

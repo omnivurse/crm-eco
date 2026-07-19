@@ -7,6 +7,7 @@ import {
   buildNormalizedRecordWrite,
   pickUpdateMirrorColumns,
 } from '@/lib/crm/merge-crm-data-json-to-row';
+import { applyStatusToRecordUpdates } from '@/lib/crm/status-sync';
 
 /**
  * Bulk record endpoint.
@@ -187,11 +188,51 @@ async function runBulkPatch({
     const updatedIds = new Set<string>();
     const failed: Array<{ id: string; reason: string }> = [];
 
-    // Step 1 — top-level column updates (single UPDATE ... IN (...)).
+    // Resolve module keys early when status sync needs JSONB mirrors.
+    const moduleKeyByIdEarly = new Map<string, string>();
+    if (updates.status !== undefined && working.length > 0) {
+      const moduleIds = [...new Set(working.map((r) => r.module_id))];
+      const { data: mods } = await supabase
+        .from('crm_modules')
+        .select('id, key')
+        .in('id', moduleIds)
+        .eq('org_id', profile.organization_id);
+      (mods ?? []).forEach((m: { id: string; key: string }) =>
+        moduleKeyByIdEarly.set(m.id, m.key),
+      );
+    }
+
+    // Step 1 — top-level column updates.
+    // Status: per-row so JSONB lead_status/contact_status stay in sync.
+    // Owner/stage: single UPDATE ... IN (...).
     const topLevel: Record<string, unknown> = {};
     if (updates.owner_id !== undefined) topLevel.owner_id = updates.owner_id;
-    if (updates.status !== undefined) topLevel.status = updates.status;
     if (updates.stage !== undefined) topLevel.stage = updates.stage;
+
+    if (updates.status !== undefined && working.length > 0) {
+      for (const row of working) {
+        const moduleKey = moduleKeyByIdEarly.get(row.module_id) ?? null;
+        const rowUpdate: Record<string, unknown> = { updated_at: updatedAt };
+        applyStatusToRecordUpdates(
+          rowUpdate,
+          updates.status,
+          moduleKey,
+          row.data,
+        );
+        const { error: statusErr } = await supabase
+          .from('crm_records')
+          .update(rowUpdate)
+          .eq('id', row.id)
+          .eq('org_id', profile.organization_id);
+        if (statusErr) {
+          failed.push({ id: row.id, reason: statusErr.message });
+        } else {
+          updatedIds.add(row.id);
+          // Keep in-memory data current for later JSONB merge steps.
+          row.data = rowUpdate.data as Record<string, unknown>;
+        }
+      }
+    }
 
     if (Object.keys(topLevel).length > 0 && working.length > 0) {
       const { data: updatedRows, error: updateError } = await supabase
@@ -212,7 +253,10 @@ async function runBulkPatch({
       } else {
         (updatedRows ?? []).forEach((r: { id: string }) => updatedIds.add(r.id));
       }
-    } else if (Object.keys(topLevel).length === 0) {
+    } else if (
+      Object.keys(topLevel).length === 0 &&
+      updates.status === undefined
+    ) {
       // If only JSONB ops were requested, seed updatedIds with all resolved
       // rows; per-row step below will prune on individual failure.
       working.forEach((r) => updatedIds.add(r.id));

@@ -96,10 +96,25 @@ export function mergeCrmRecordRowIntoFormDefaults(
   if (row.phone != null && row.phone !== '' && base.phone == null) {
     base.phone = row.phone;
   }
+  // Indexed `status` is canonical. Always overlay onto the module status key so
+  // edit/autosave cannot resurrect a stale JSONB value after Kanban/list writes.
   if (row.status != null && row.status !== '') {
-    if (base.contact_status == null && base.lead_status == null) {
+    const moduleKey = options?.moduleKey ?? null;
+    if (moduleKey === 'leads') {
+      base.lead_status = row.status;
+    } else if (moduleKey === 'contacts' || moduleKey === 'members') {
       base.contact_status = row.status;
+      // Converted leads often keep historical lead_status in JSONB — strip it so
+      // form PATCH does not remirror "Converted" onto an Active contact/member.
+      delete base.lead_status;
+    } else {
+      // Other modules: prefer contact_status mirror; clear competing lead_status.
+      base.contact_status = row.status;
+      if (base.lead_status != null && base.lead_status !== row.status) {
+        delete base.lead_status;
+      }
     }
+    base.status = row.status;
   }
 
   // Legacy imports may store invalid DOB strings (e.g. 01/00/2000). Normalize

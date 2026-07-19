@@ -1,6 +1,7 @@
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { cache } from 'react';
 import type { Database } from '@crm-eco/lib/types';
+import { getActiveTenant } from '@/lib/tenant';
 
 type Profile = Database['public']['Tables']['profiles']['Row'] & { organization_id: string };
 
@@ -8,6 +9,8 @@ export type UserRole = 'owner' | 'admin' | 'advisor' | 'staff';
 
 export interface CurrentUserProfile extends Profile {
   advisorId?: string | null;
+  /** When set, user reached this org via tenant switch (organization_members). */
+  active_tenant_role?: string | null;
 }
 
 /**
@@ -46,9 +49,22 @@ async function fetchCurrentProfile(): Promise<CurrentUserProfile | null> {
     advisorId = advisor?.id ?? null;
   }
 
+  // Match getAuthProfile: override organization_id when the user has switched
+  // tenants so reports/tickets scoped via this helper use the active org.
+  const tenant = await getActiveTenant();
+  if (tenant && tenant.organizationId !== profile.organization_id) {
+    return {
+      ...profile,
+      organization_id: tenant.organizationId,
+      advisorId,
+      active_tenant_role: tenant.role,
+    } as CurrentUserProfile;
+  }
+
   return {
     ...profile,
     advisorId,
+    active_tenant_role: null,
   } as CurrentUserProfile;
 }
 

@@ -907,6 +907,11 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
   //      Health" and would otherwise read as health-sharing.
   // Falls back to 'unknown' (nothing filtered — real data is never hidden).
   const recordPlanType = useMemo<'healthshare' | 'insurance' | 'unknown'>(() => {
+    // Indexed market_type is canonical — prefer it over heuristics/aliases.
+    const market = defaultValues.market_type;
+    if (market === 'healthshare') return 'healthshare';
+    if (market === 'traditional_insurance') return 'insurance';
+
     const norm = (v: unknown) => (typeof v === 'string' ? v.trim().toLowerCase() : '');
     for (const k of ['coverage_type', 'plan_type', 'product_type', 'product', 'coverage_category']) {
       const v = norm(defaultValues[k]);
@@ -920,8 +925,8 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
       const byMeta = heroSharingField.metadata?.carrier_type;
       if (byMeta === 'insurance' || byMeta === 'healthshare') return byMeta;
     }
-    const hasSharing = ['monthly_contribution', 'monthly_share', 'iua_amount', 'member_tier', 'sharing_status', 'sharing_member_id'].some((k) => hasValue(k));
-    const hasInsurance = ['health_insurance_carrier', 'monthly_premium', 'health_insurance_plan_name', 'insurance_plan_name', 'health_insurance_premium'].some((k) => hasValue(k));
+    const hasSharing = ['monthly_contribution', 'monthly_share', 'share_amount', 'iua_amount', 'member_tier', 'sharing_status', 'sharing_member_id'].some((k) => hasValue(k));
+    const hasInsurance = ['health_insurance_carrier', 'insurance_carrier', 'monthly_premium', 'health_insurance_plan_name', 'insurance_plan_name', 'health_insurance_premium', 'insurance_premium'].some((k) => hasValue(k));
     if (hasSharing && !hasInsurance) return 'healthshare';
     if (hasInsurance && !hasSharing) return 'insurance';
     return 'unknown';

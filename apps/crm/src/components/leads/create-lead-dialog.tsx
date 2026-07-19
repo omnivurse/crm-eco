@@ -60,10 +60,13 @@ const CURRENT_COVERAGE_OPTIONS = [
 
 const LEAD_STATUS_OPTIONS = [
   { value: 'New', label: 'New' },
+  { value: 'Not Contacted', label: 'Not Contacted' },
   { value: 'Contacted', label: 'Contacted' },
   { value: 'Working', label: 'Working' },
   { value: 'Qualified', label: 'Qualified' },
-  { value: 'Unqualified', label: 'Unqualified' },
+  { value: 'Not Qualified', label: 'Not Qualified' },
+  { value: 'Hot Prospect - ready to move', label: 'Hot Prospect' },
+  { value: 'Lost Opportunity', label: 'Lost Opportunity' },
 ];
 
 // Roles for the point-of-contact on a small-group lead (often not the
@@ -240,10 +243,25 @@ export function CreateLeadDialog() {
         notes: formData.notes || null,
       };
 
+      // owner_id = CRM user (list/assignment). advisor_id = advisor entity.
+      // When an advisor is selected and mapped to a profile, set both.
+      let ownerId: string | null = authProfile.id;
+      if (formData.advisorId) {
+        const { data: advProfile } = await supabase
+          .from('advisors')
+          .select('profile_id')
+          .eq('id', formData.advisorId)
+          .maybeSingle();
+        if (advProfile?.profile_id) {
+          ownerId = advProfile.profile_id as string;
+        }
+      }
+
       const insertedLead = await postCrmRecord({
         org_id: authProfile.organization_id,
         module_id: leadsModuleId,
         status: leadStatus,
+        owner_id: ownerId,
         data: recordData,
         force: forceCreate,
       });

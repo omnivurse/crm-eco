@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createClient, getAuthProfile } from '@/lib/supabase-server';
+import { requireActiveOrgCrmRoles } from '@/lib/crm/require-crm-role';
 
 export const dynamic = 'force-dynamic';
 
@@ -141,7 +142,11 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient();
     const profile = await getAuthProfile();
     if (!profile) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!['crm_admin', 'crm_manager'].includes(profile.crm_role || '')) {
+    const exportRoleGate = await requireActiveOrgCrmRoles(supabase, profile.organization_id, [
+      'crm_admin',
+      'crm_manager',
+    ]);
+    if (!exportRoleGate.ok) {
       return NextResponse.json({ error: 'Forbidden — admin/manager only' }, { status: 403 });
     }
 
@@ -375,7 +380,10 @@ export async function DELETE(request: NextRequest) {
     const supabase = await createClient();
     const profile = await getAuthProfile();
     if (!profile) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (profile.crm_role !== 'crm_admin') {
+    const deleteRoleGate = await requireActiveOrgCrmRoles(supabase, profile.organization_id, [
+      'crm_admin',
+    ]);
+    if (!deleteRoleGate.ok) {
       return NextResponse.json({ error: 'Forbidden — admin only' }, { status: 403 });
     }
 

@@ -52,6 +52,15 @@ Prefer the smallest safe change that fixes the root cause. Don't rewrite large m
 ## 15. Self-Audit Before Final Answer
 Before responding, check: solved the actual request? inspected before changing? avoided unnecessary migrations? preserved auth/RLS/security? avoided duplicate systems? updated all affected layers? ran verification? documented risks? provided rollback guidance? left the repo cleaner? If any answer is "no," fix it or clearly disclose the gap.
 
+## 16. Git Staging Discipline (never mix unrelated work)
+When the user asks to commit, stage **only** the paths that belong to that request. Before `git add` / commit:
+
+1. Run `git status` and `git diff` and classify every changed path as in-scope or out-of-scope.
+2. Stage by **explicit path** (`git add path/a path/b`) — never blind `git add .` / `git add -A` when the working tree has unrelated dirty files.
+3. If skill/config/docs changes are requested, do **not** include `apps/**`, `packages/**`, or other product-code diffs unless the user explicitly asked to commit those too.
+4. After staging, re-check `git status` / `git diff --cached` and abort/unstage if anything out-of-scope appears.
+5. Prefer one commit per concern (skills vs product bugfix vs migrations). Split rather than mix.
+
 ---
 
 ### Required response shape for non-trivial tasks
