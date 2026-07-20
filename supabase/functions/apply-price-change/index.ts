@@ -55,15 +55,6 @@ async function callerMayAccessOrg(
   const { data: { user }, error } = await userClient.auth.getUser();
   if (error || !user) return false;
 
-  const { data: profile } = await service
-    .from('profiles')
-    .select('id')
-    .eq('user_id', user.id)
-    .maybeSingle();
-
-  const identityFilters = [`user_id.eq.${user.id}`];
-  if (profile?.id) identityFilters.push(`profile_id.eq.${profile.id}`);
-
   // This service-role function changes enrollment and billing amounts, so
   // tenant membership alone is insufficient. Match the table's modify policy
   // and require an active privileged membership for user-triggered execution.
@@ -71,9 +62,9 @@ async function callerMayAccessOrg(
     .from('organization_members')
     .select('id')
     .eq('organization_id', organizationId)
+    .eq('user_id', user.id)
     .eq('is_active', true)
     .in('role', ['owner', 'super_admin', 'admin'])
-    .or(identityFilters.join(','))
     .limit(1)
     .maybeSingle();
 
