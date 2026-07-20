@@ -56,8 +56,9 @@ export const InlineFieldCell = memo(function InlineFieldCell({
     return raw.map((v) => ({ value: v, label: v }));
   }, [field]);
 
-  // Legacy imported HTML rendered elsewhere — keep read-only.
-  if (field.type === 'text' && field.key === 'notes_history') {
+  // Legacy notes_history HTML is owned by LegacyNotesCard / Notes tab.
+  // If it ever reaches this cell, keep it read-only (never inline-edit).
+  if (field.key === 'notes_history') {
     return (
       <span className={className}>
         <FieldRenderer field={field} value={value} />

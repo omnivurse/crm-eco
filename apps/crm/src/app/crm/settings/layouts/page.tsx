@@ -171,6 +171,35 @@ export default function LayoutsPage() {
     setSaving(true);
 
     try {
+      // Warn before reintroducing orphan layout bands (zero fields, non-coverage).
+      // Coverage empties are intentional (post-conversion parity UI).
+      const coverageKeep = new Set([
+        'health_sharing',
+        'health_insurance',
+        'insurance',
+        'insurance_coverage',
+        'dental_coverage',
+        'vision_coverage',
+        'other_coverage',
+        'life_coverage',
+        'product',
+      ]);
+      const { data: moduleFields } = await supabase
+        .from('crm_fields')
+        .select('section')
+        .eq('module_id', form.module_id);
+      const presentSections = new Set(
+        (moduleFields ?? []).map((f) => f.section).filter(Boolean) as string[],
+      );
+      const orphanLabels = form.sections
+        .filter((s) => s.key && !coverageKeep.has(s.key) && !presentSections.has(s.key))
+        .map((s) => s.label || s.key);
+      if (orphanLabels.length > 0) {
+        toast.warning(
+          `These sections have no fields assigned and will stay hidden on records: ${orphanLabels.join(', ')}`,
+        );
+      }
+
       const data = {
         org_id: orgId,
         module_id: form.module_id,

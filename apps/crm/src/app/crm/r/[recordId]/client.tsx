@@ -15,7 +15,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@crm-eco/ui/components
 import { Avatar, AvatarFallback } from '@crm-eco/ui/components/avatar';
 import { Separator } from '@crm-eco/ui/components/separator';
 import { DynamicRecordForm, FieldRenderer } from '@/components/crm/records';
-import { normalizeLegacySectionHeading } from '@/components/crm/records/section-utils';
+import {
+  isRecordFormExcludedField,
+  normalizeLegacySectionHeading,
+} from '@/components/crm/records/section-utils';
+import { mergeCrmRecordRowIntoFormDefaults } from '@/lib/crm/record-form-defaults';
 import type {
   CrmRecord,
   CrmModule,
@@ -78,8 +82,9 @@ export function RecordDetailClient({
   const canEdit = ['crm_admin', 'crm_manager', 'crm_agent'].includes(profile.crm_role || '');
   const canDelete = ['crm_admin', 'crm_manager'].includes(profile.crm_role || '');
 
-  // Group fields by section
+  // Group fields by section (skip legacy notes_history — Notes tab owns that UX)
   const fieldsBySection = fields.reduce((acc, field) => {
+    if (isRecordFormExcludedField(field.key)) return acc;
     const section = field.section || 'main';
     if (!acc[section]) acc[section] = [];
     acc[section].push(field);
@@ -282,11 +287,18 @@ export function RecordDetailClient({
                 <DynamicRecordForm
                   fields={fields}
                   layout={layout}
-                  defaultValues={record.data as Record<string, unknown>}
+                  defaultValues={mergeCrmRecordRowIntoFormDefaults(
+                    {
+                      ...(record as unknown as Record<string, unknown>),
+                      data: (record.data as Record<string, unknown>) || {},
+                    },
+                    { moduleKey: module.key },
+                  )}
                   onSubmit={handleSave}
                   onCancel={() => setIsEditing(false)}
                   isLoading={isSaving}
                   mode="edit"
+                  moduleKey={module.key}
                 />
               </CardContent>
             </Card>

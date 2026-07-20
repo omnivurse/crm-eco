@@ -48,8 +48,13 @@ describe('section-utils person coverage visibility', () => {
     expect(shouldAlwaysShowEmptySection('contacts', 'address', false)).toBe(false);
   });
 
-  it('always shows empty sections when inline editable', () => {
-    expect(shouldAlwaysShowEmptySection('deals', 'address', true)).toBe(true);
+  it('does not force orphan non-coverage sections just because inline edit is on', () => {
+    // Blank fields in a real section stay visible via shouldIncludeSectionInNav;
+    // zero-field layout leftovers (start_date, notes_history form card) must not.
+    expect(shouldAlwaysShowEmptySection('deals', 'address', true)).toBe(false);
+    expect(shouldAlwaysShowEmptySection('contacts', 'start_date', true)).toBe(false);
+    expect(shouldAlwaysShowEmptySection('contacts', 'notes_history', true)).toBe(false);
+    expect(shouldAlwaysShowEmptySection('contacts', 'health_insurance', true)).toBe(true);
   });
 
   it('labels legacy insurance section distinctly from health_sharing', () => {
@@ -174,7 +179,8 @@ describe('section-utils person coverage visibility', () => {
     const notes = meta.find((s) => s.key === 'notes_history');
     expect(notes?.label).toBe('Notes History');
     expect(notes?.badgeCount).toBeUndefined();
-    expect(notes?.navAction).toBeUndefined();
+    // Notes-group pills always open the Notes tab, even without a count.
+    expect(notes?.navAction).toBe('open-notes');
   });
 
   it('applies semantic accent colors by section key', () => {
@@ -254,5 +260,79 @@ describe('section-utils person coverage visibility', () => {
       { inlineEditable: true },
     );
     expect(metaInline.map((s) => s.key)).toEqual(['core']);
+  });
+
+  it('drops orphan layout sections with zero fields (start_date) from nav', () => {
+    const meta = getSectionMeta(
+      [field('first_name', 'core'), field('notes_history', 'notes_history')],
+      {
+        id: 'layout',
+        org_id: 'org',
+        module_id: 'mod',
+        name: 'Default',
+        is_default: true,
+        config: {
+          sections: [
+            { key: 'core', label: 'Name', columns: 2 },
+            { key: 'notes_history', label: 'Notes History', columns: 1 },
+            { key: 'start_date', label: 'Start Date', columns: 2 },
+            { key: 'health_insurance', label: 'Health Insurance', columns: 2 },
+          ],
+        },
+        created_at: '',
+        updated_at: '',
+      },
+      { first_name: 'Travis' },
+      'contacts',
+      { inlineEditable: true, noteCount: 2 },
+    );
+
+    expect(meta.map((s) => s.key)).toEqual([
+      'core',
+      'notes_history',
+      'health_insurance',
+    ]);
+    expect(meta.find((s) => s.key === 'notes_history')?.badgeCount).toBe(2);
+    expect(meta.find((s) => s.key === 'notes_history')?.navAction).toBe('open-notes');
+    expect(meta.find((s) => s.key === 'start_date')).toBeUndefined();
+  });
+
+  it('hides every live PIF orphan layout band from nav in inline-edit mode', () => {
+    // Live default layouts still declare these sections with zero assigned fields.
+    const orphanKeys = [
+      'start_date',
+      'activity',
+      'additional',
+      'family',
+      'zoho_system',
+      'commissions',
+    ];
+    const meta = getSectionMeta(
+      [field('first_name', 'core')],
+      {
+        id: 'layout',
+        org_id: 'org',
+        module_id: 'mod',
+        name: 'Default',
+        is_default: true,
+        config: {
+          sections: [
+            { key: 'core', label: 'Name', columns: 2 },
+            ...orphanKeys.map((key) => ({ key, label: key, columns: 2 as const })),
+          ],
+        },
+        created_at: '',
+        updated_at: '',
+      },
+      { first_name: 'Travis' },
+      'contacts',
+      { inlineEditable: true },
+    );
+
+    expect(meta.map((s) => s.key)).toEqual(['core']);
+    for (const key of orphanKeys) {
+      expect(meta.find((s) => s.key === key)).toBeUndefined();
+      expect(shouldAlwaysShowEmptySection('contacts', key, true)).toBe(false);
+    }
   });
 });

@@ -36,6 +36,7 @@ import { patchCrmRecord } from '@/lib/crm/patch-record-client';
 import {
   isPersonCoverageSectionKey,
   isPersonModuleKey,
+  isRecordFormExcludedField,
 } from '@/components/crm/records/section-utils';
 
 // Readable labels for section keys
@@ -182,7 +183,7 @@ export function RecordDrawer() {
       'locked', 'admin123',
     ]);
     const candidates = data.fields.filter(
-      f => !DRAWER_EXCLUDED_KEYS.has(f.key)
+      (f) => !DRAWER_EXCLUDED_KEYS.has(f.key) && !isRecordFormExcludedField(f.key),
     );
 
     // Group fields by section

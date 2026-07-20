@@ -12,6 +12,18 @@ import type {
   LayoutSectionVariant,
 } from '@/lib/crm/types';
 
+/**
+ * Fields that must not render inside record forms / drawers.
+ * `notes_history` is legacy Zoho HTML — detail views use LegacyNotesCard / the
+ * Notes tab (`crm_notes`) instead. Keeping it in the form leaves an empty
+ * "Notes History" section that previously showed a false coverage-parity error.
+ */
+export const RECORD_FORM_EXCLUDED_FIELD_KEYS = ['notes_history'] as const;
+
+export function isRecordFormExcludedField(fieldKey: string): boolean {
+  return (RECORD_FORM_EXCLUDED_FIELD_KEYS as readonly string[]).includes(fieldKey);
+}
+
 // ---------------------------------------------------------------------------
 // Carrier / Ministry terminology helper
 // ---------------------------------------------------------------------------
@@ -63,19 +75,27 @@ export const CRM_SECTION_NAV_EVENT = 'crm-record-section-navigate' as const;
 export const PERSON_SECTION_DISPLAY_ORDER: readonly string[] = [
   'core',
   'main',
+  'personal',
+  'contact',
   'notes_history',
   'notes',
   'start_date',
   'health_sharing',
   'insurance',
+  'coverage',
   'insurance_coverage',
   'health_insurance',
   'dental_coverage',
   'vision_coverage',
   'other_coverage',
   'life_coverage',
+  'product',
+  'family_spouse',
+  'family_children',
   'family',
+  'relationships',
   'address',
+  'advisor',
   'management',
   'payment',
   'identifiers',
@@ -87,7 +107,6 @@ export const PERSON_SECTION_DISPLAY_ORDER: readonly string[] = [
   'additional',
   'activity',
   'commissions',
-  'product',
   'conversion',
   'zoho_system',
   'system',
@@ -170,17 +189,35 @@ export function getSectionDisplayOrder(moduleKey?: string | null): readonly stri
 }
 
 export function getSectionNavGroup(sectionKey: string): SectionNavGroup {
-  if (['core', 'main', 'start_date'].includes(sectionKey)) return 'identity';
+  if (['core', 'main', 'personal', 'contact', 'start_date'].includes(sectionKey)) {
+    return 'identity';
+  }
   if (['notes_history', 'notes'].includes(sectionKey)) return 'notes';
   if (
     isPersonCoverageSectionKey(sectionKey) ||
-    ['product', 'conversion', 'deal', 'amounts', 'pipeline', 'stage', 'products'].includes(sectionKey)
+    [
+      'coverage',
+      'product',
+      'conversion',
+      'deal',
+      'amounts',
+      'pipeline',
+      'stage',
+      'products',
+    ].includes(sectionKey)
   ) {
     return 'coverage';
   }
-  if (['address', 'family', 'contacts', 'deals'].includes(sectionKey)) return 'location';
+  if (
+    ['address', 'family', 'family_spouse', 'family_children', 'relationships', 'contacts', 'deals'].includes(
+      sectionKey,
+    )
+  ) {
+    return 'location';
+  }
   if (
     [
+      'advisor',
       'management',
       'payment',
       'identifiers',
@@ -213,11 +250,14 @@ export function getSectionNavGroupLabel(group: SectionNavGroup): string {
 export const SECTION_ACCENT_BY_KEY: Partial<Record<string, LayoutSectionAccent>> = {
   core: 'blue',
   main: 'blue',
+  personal: 'blue',
+  contact: 'blue',
   notes_history: 'sky',
   notes: 'sky',
   start_date: 'indigo',
   health_sharing: 'emerald',
   insurance: 'teal',
+  coverage: 'teal',
   insurance_coverage: 'blue',
   health_insurance: 'blue',
   dental_coverage: 'cyan',
@@ -225,7 +265,11 @@ export const SECTION_ACCENT_BY_KEY: Partial<Record<string, LayoutSectionAccent>>
   other_coverage: 'amber',
   life_coverage: 'rose',
   family: 'pink',
+  family_spouse: 'pink',
+  family_children: 'pink',
+  relationships: 'pink',
   address: 'teal',
+  advisor: 'violet',
   management: 'violet',
   payment: 'lime',
   identifiers: 'slate',
@@ -355,9 +399,18 @@ export function shouldIncludeSectionInNav(
   recordData: Record<string, unknown> | null | undefined,
   moduleKey: string | undefined | null,
   inlineEditable: boolean,
+  options?: { noteCount?: number; notesAnchored?: boolean },
 ): boolean {
   if (section.variant === 'hero') return true;
   if (shouldAlwaysShowEmptySection(moduleKey, section.key, inlineEditable)) return true;
+  // Notes pill stays when the page knows a real note total (crm_notes + legacy),
+  // or when a legacy notes_history field anchors the section (form-excluded).
+  if (
+    getSectionNavGroup(section.key) === 'notes' &&
+    (typeof options?.noteCount === 'number' || options?.notesAnchored)
+  ) {
+    return true;
+  }
   if (sectionFields.length === 0) return false;
   if (inlineEditable) return true;
   if (!recordData) return sectionFields.length > 0;
@@ -412,13 +465,24 @@ export function isPersonCoverageSectionKey(sectionKey: string): boolean {
   return (PERSON_COVERAGE_SECTION_KEYS as readonly string[]).includes(sectionKey);
 }
 
-/** Whether an empty section card should still render on the record detail view. */
+/**
+ * Whether a section with zero configured fields should still render on the
+ * record detail view.
+ *
+ * Only person-module coverage sections force-show when empty — reps need those
+ * cards (with the parity prompt) right after lead → contact conversion.
+ *
+ * `inlineEditable` is accepted for call-site symmetry but does **not** force
+ * orphan layout sections (e.g. a leftover `start_date` band with no fields, or
+ * `notes_history` after the legacy textarea is excluded from the form). Sections
+ * that *have* fields but blank values stay visible via
+ * {@link shouldIncludeSectionInNav}'s `inlineEditable` branch instead.
+ */
 export function shouldAlwaysShowEmptySection(
   moduleKey: string | undefined | null,
   sectionKey: string,
-  inlineEditable: boolean,
+  _inlineEditable: boolean,
 ): boolean {
-  if (inlineEditable) return true;
   return isPersonModuleKey(moduleKey) && isPersonCoverageSectionKey(sectionKey);
 }
 
@@ -458,15 +522,27 @@ export function getSectionMeta(
   const noteCount = options?.noteCount;
   const layoutConfig: LayoutConfig = layout?.config || { sections: [{ key: 'main', label: 'Information', columns: 2 }] };
 
-  // Group fields by section
+  // Group form-visible fields for counts. Keep notes-section anchors when the
+  // only field is the excluded legacy notes_history textarea so the Notes pill
+  // still appears (with open-notes / noteCount badge).
   const grouped: Record<string, CrmField[]> = {};
+  const sectionKeys = new Set<string>();
+  const notesAnchors = new Set<string>();
   for (const field of fields) {
     const section = field.section || 'main';
+    sectionKeys.add(section);
+    if (isRecordFormExcludedField(field.key)) {
+      if (getSectionNavGroup(section) === 'notes') notesAnchors.add(section);
+      continue;
+    }
     if (!grouped[section]) grouped[section] = [];
     grouped[section].push(field);
   }
+  for (const key of sectionKeys) {
+    if (!grouped[key]) grouped[key] = [];
+  }
 
-  const allSections = buildEffectiveSections(layoutConfig, Object.keys(grouped), moduleKey);
+  const allSections = buildEffectiveSections(layoutConfig, sectionKeys, moduleKey);
 
   return allSections
     .filter((s) =>
@@ -476,6 +552,7 @@ export function getSectionMeta(
         recordData,
         moduleKey,
         inlineEditable,
+        { noteCount, notesAnchored: notesAnchors.has(s.key) },
       ),
     )
     .map((s) => {
@@ -485,9 +562,11 @@ export function getSectionMeta(
         ? sectionFields.filter((f) => isPopulated(recordData[f.key])).length
         : fieldCount;
       const navGroup = getSectionNavGroup(s.key);
-      // Notes-group pills mirror the sidebar's note-record count and link to
-      // the Notes related list, so the top nav and the sidebar never disagree.
-      const syncsNoteCount = navGroup === 'notes' && typeof noteCount === 'number';
+      // Notes-group pills always open the Notes tab (canonical crm_notes +
+      // legacy history). When noteCount is provided, the badge mirrors that
+      // total so the pill never disagrees with the tab/sidebar.
+      const isNotesGroup = navGroup === 'notes';
+      const syncsNoteCount = isNotesGroup && typeof noteCount === 'number';
       return {
         key: s.key,
         // Notes pills read "Notes" to match the sidebar related list; the
@@ -497,7 +576,7 @@ export function getSectionMeta(
         fieldCount,
         filledCount,
         badgeCount: syncsNoteCount ? noteCount : undefined,
-        navAction: syncsNoteCount ? ('open-notes' as const) : undefined,
+        navAction: isNotesGroup ? ('open-notes' as const) : undefined,
         accent: resolveSectionAccent(s.key, s.accent),
         variant: s.variant,
         navGroup,

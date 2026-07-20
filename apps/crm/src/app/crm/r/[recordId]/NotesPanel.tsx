@@ -17,6 +17,12 @@ interface NotesPanelProps {
   recordId: string;
   notes: CrmNoteWithAuthor[];
   orgId: string;
+  /**
+   * When structured `crm_notes` are empty but imported `notes_history` HTML
+   * still renders below this panel, suppress the false "No notes yet" empty
+   * state so the tab doesn't contradict the badge / LegacyNotesCard.
+   */
+  hasLegacyNotes?: boolean;
 }
 
 function NoteCard({
@@ -128,7 +134,7 @@ function NoteCard({
   );
 }
 
-export function NotesPanel({ recordId, notes, orgId }: NotesPanelProps) {
+export function NotesPanel({ recordId, notes, orgId, hasLegacyNotes = false }: NotesPanelProps) {
   const router = useRouter();
   const [isAdding, setIsAdding] = useState(false);
   const [newNote, setNewNote] = useState('');
@@ -339,7 +345,7 @@ export function NotesPanel({ recordId, notes, orgId }: NotesPanelProps) {
             />
           ))}
         </div>
-      ) : (
+      ) : hasLegacyNotes ? null : (
         <div className="text-center py-12">
           <StickyNote className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-1">No notes yet</h3>

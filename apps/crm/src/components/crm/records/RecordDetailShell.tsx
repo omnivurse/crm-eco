@@ -204,6 +204,9 @@ export const RecordDetailShell = memo(function RecordDetailShell({
   className,
 }: RecordDetailShellProps) {
   const router = useRouter();
+  // Prefer the page-computed total (crm_notes + legacy notes_history entries)
+  // so rail/drawer badges never disagree with the Notes tab.
+  const noteTotal = noteCount ?? notesProp.length;
   const [activeTab, setActiveTab] = useState('overview');
 
   // Listen for tab switch events from child components (e.g., NotesOverviewCard "View All")
@@ -822,7 +825,7 @@ export const RecordDetailShell = memo(function RecordDetailShell({
                   Notes
                 </h4>
                 <span className="inline-flex items-center justify-center h-4 min-w-[16px] px-1 rounded-full bg-slate-100 dark:bg-slate-700 text-[10px] font-semibold text-slate-600 dark:text-slate-300">
-                  {notesProp.length}
+                  {noteTotal}
                 </span>
               </div>
               <button
@@ -855,18 +858,34 @@ export const RecordDetailShell = memo(function RecordDetailShell({
                   </button>
                 ))}
               </div>
+            ) : noteTotal > 0 ? (
+              <button
+                type="button"
+                onClick={() => {
+                  window.dispatchEvent(new CustomEvent('crm:switch-tab', { detail: 'notes' }));
+                }}
+                className="w-full text-xs text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 py-2 text-center font-medium"
+              >
+                Open Notes tab for imported history
+              </button>
             ) : (
               <p className="text-xs text-slate-400 dark:text-slate-500 py-2 text-center">
                 No notes yet
               </p>
             )}
-            {notesProp.length > 0 && (
+            {noteTotal > 0 && (
               <button
                 type="button"
-                onClick={() => setShowNotesDrawer(true)}
+                onClick={() => {
+                  if (notesProp.length > 0) {
+                    setShowNotesDrawer(true);
+                  } else {
+                    window.dispatchEvent(new CustomEvent('crm:switch-tab', { detail: 'notes' }));
+                  }
+                }}
                 className="mt-2 w-full text-center text-xs font-medium text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 transition-colors"
               >
-                View all {notesProp.length} notes &rarr;
+                View all {noteTotal} notes &rarr;
               </button>
             )}
           </div>
@@ -978,7 +997,7 @@ export const RecordDetailShell = memo(function RecordDetailShell({
               <StickyNote className="w-5 h-5 text-teal-600 dark:text-teal-400" />
               Notes
               <span className="inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-slate-100 dark:bg-slate-700 text-xs font-medium text-slate-600 dark:text-slate-300">
-                {notesProp.length}
+                {noteTotal}
               </span>
             </SheetTitle>
             <SheetDescription className="text-slate-500 dark:text-slate-400">
@@ -1015,7 +1034,11 @@ export const RecordDetailShell = memo(function RecordDetailShell({
             ) : (
               <div className="text-center py-12">
                 <StickyNote className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-                <p className="text-sm text-slate-500 dark:text-slate-400">No notes yet.</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  {noteTotal > 0
+                    ? 'Imported notes history is on the Notes tab.'
+                    : 'No notes yet.'}
+                </p>
               </div>
             )}
           </div>

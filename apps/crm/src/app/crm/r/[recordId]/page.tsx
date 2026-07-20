@@ -275,6 +275,7 @@ async function RecordDetailContent({ params }: PageProps) {
               recordId={recordId}
               notes={notes}
               orgId={profile.organization_id}
+              hasLegacyNotes={!!legacyNotes}
             />
             {legacyNotes && <LegacyNotesCard notesHtml={legacyNotes} />}
           </div>

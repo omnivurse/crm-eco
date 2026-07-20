@@ -60,6 +60,9 @@ import { AdvisorCarrierField } from './AdvisorCarrierField';
 import {
   CRM_SECTION_NAV_EVENT,
   buildEffectiveSections,
+  getSectionNavGroup,
+  isPersonCoverageSectionKey,
+  isRecordFormExcludedField,
   shouldAlwaysShowEmptySection,
 } from './section-utils';
 import { getSectionCardAccent } from './section-accent-tokens';
@@ -517,8 +520,11 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
     },
     ref
   ) {
-  // notes_history is legacy imported HTML rendered by LegacyNotesCard on detail views
-  const visibleFields = useMemo(() => fields.filter(f => f.key !== 'notes_history'), [fields]);
+  // Legacy notes_history HTML is rendered by LegacyNotesCard / Notes tab — not the form.
+  const visibleFields = useMemo(
+    () => fields.filter((f) => !isRecordFormExcludedField(f.key)),
+    [fields],
+  );
 
   const layoutConfig = layout?.config || { sections: [{ key: 'main', label: 'Information', columns: 2 }] };
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(() => {
@@ -1334,8 +1340,11 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
                   </div>
                 ) : sectionFields.length === 0 ? (
                   <p className="text-sm text-muted-foreground">
-                    Coverage fields are not configured for this section. Ask an admin to
-                    run coverage field parity, or use Edit to add fields in Settings.
+                    {isPersonCoverageSectionKey(section.key)
+                      ? 'Coverage fields are not configured for this section. Ask an admin to run coverage field parity, or use Edit to add fields in Settings.'
+                      : getSectionNavGroup(section.key) === 'notes'
+                        ? 'Notes live in the Notes tab — use the Notes pill above to open them.'
+                        : 'No fields are configured for this section yet. An admin can add them in Settings.'}
                   </p>
                 ) : (
                   <div
