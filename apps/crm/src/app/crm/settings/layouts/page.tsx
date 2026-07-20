@@ -188,9 +188,10 @@ export default function LayoutsPage() {
         .from('crm_fields')
         .select('section')
         .eq('module_id', form.module_id);
-      const presentSections = new Set(
-        (moduleFields ?? []).map((f) => f.section).filter(Boolean) as string[],
-      );
+      const presentSections = new Set<string>();
+      for (const field of moduleFields ?? []) {
+        if (field.section) presentSections.add(field.section);
+      }
       const orphanLabels = form.sections
         .filter((s) => s.key && !coverageKeep.has(s.key) && !presentSections.has(s.key))
         .map((s) => s.label || s.key);

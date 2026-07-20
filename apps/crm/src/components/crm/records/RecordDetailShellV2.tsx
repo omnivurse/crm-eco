@@ -442,9 +442,6 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
     [notesProp],
   );
 
-  // crm_notes + legacy notes_history — keep drawer/rail badges aligned with the Notes tab.
-  const noteTotal = insights?.counts?.notes ?? noteCount ?? notesProp.length;
-
   useEffect(() => {
     if (!optimisticStatus) return;
     // Server prop now matches — clear optimistic.
@@ -467,6 +464,9 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
   useEffect(() => {
     setInsights(insightsProp);
   }, [insightsProp]);
+
+  // crm_notes + legacy notes_history — keep drawer/rail badges aligned with the Notes tab.
+  const noteTotal = insights?.counts?.notes ?? noteCount ?? notesProp.length;
 
   // Remember this record in the offline index so it appears as a
   // clickable entry on /offline.html if the user lands there after
