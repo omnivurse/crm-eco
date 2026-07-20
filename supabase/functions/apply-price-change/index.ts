@@ -15,7 +15,10 @@
  */
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import {
+  createClient,
+  type SupabaseClient,
+} from 'https://esm.sh/@supabase/supabase-js@2';
 import {
   authorizeInternalEdgeRequest,
   unauthorizedResponse,
@@ -36,7 +39,7 @@ function getCorsHeaders(req: Request): Record<string, string> {
 }
 
 async function callerMayAccessOrg(
-  service: ReturnType<typeof createClient>,
+  service: SupabaseClient,
   req: Request,
   organizationId: string,
 ): Promise<boolean> {
