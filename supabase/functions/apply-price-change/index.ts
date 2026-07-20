@@ -8,14 +8,17 @@
  *
  * Auth (fail closed):
  *   - Authorization: Bearer <SERVICE_ROLE_KEY> or <CRON_SECRET>
- *   - OR a user JWT whose profile/membership includes the target org
+ *   - OR a user JWT with an active owner/admin membership in the target org
  *
  * Organization scope is resolved from schedule_id when provided (never
  * trusts a client-supplied organization_id over the schedule row).
  */
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import {
+  createClient,
+  type SupabaseClient,
+} from 'https://esm.sh/@supabase/supabase-js@2';
 import {
   authorizeInternalEdgeRequest,
   unauthorizedResponse,
@@ -36,7 +39,7 @@ function getCorsHeaders(req: Request): Record<string, string> {
 }
 
 async function callerMayAccessOrg(
-  service: ReturnType<typeof createClient>,
+  service: SupabaseClient,
   req: Request,
   organizationId: string,
 ): Promise<boolean> {
@@ -52,26 +55,20 @@ async function callerMayAccessOrg(
   const { data: { user }, error } = await userClient.auth.getUser();
   if (error || !user) return false;
 
-  const { data: profile } = await service
-    .from('profiles')
-    .select('id, organization_id')
+  // This service-role function changes enrollment and billing amounts, so
+  // tenant membership alone is insufficient. Match the table's modify policy
+  // and require an active privileged membership for user-triggered execution.
+  const { data: membership, error: membershipError } = await service
+    .from('organization_members')
+    .select('id')
+    .eq('organization_id', organizationId)
     .eq('user_id', user.id)
+    .eq('is_active', true)
+    .in('role', ['owner', 'super_admin', 'admin'])
+    .limit(1)
     .maybeSingle();
 
-  if (profile?.organization_id === organizationId) return true;
-
-  if (profile?.id) {
-    const { data: membership } = await service
-      .from('organization_members')
-      .select('id')
-      .eq('organization_id', organizationId)
-      .or(`user_id.eq.${user.id},profile_id.eq.${profile.id}`)
-      .limit(1)
-      .maybeSingle();
-    if (membership) return true;
-  }
-
-  return false;
+  return !membershipError && Boolean(membership);
 }
 
 serve(async (req) => {
