@@ -8,7 +8,7 @@
  *
  * Auth (fail closed):
  *   - Authorization: Bearer <SERVICE_ROLE_KEY> or <CRON_SECRET>
- *   - OR a user JWT whose profile/membership includes the target org
+ *   - OR a user JWT with an active owner/admin membership in the target org
  *
  * Organization scope is resolved from schedule_id when provided (never
  * trusts a client-supplied organization_id over the schedule row).
@@ -54,24 +54,27 @@ async function callerMayAccessOrg(
 
   const { data: profile } = await service
     .from('profiles')
-    .select('id, organization_id')
+    .select('id')
     .eq('user_id', user.id)
     .maybeSingle();
 
-  if (profile?.organization_id === organizationId) return true;
+  const identityFilters = [`user_id.eq.${user.id}`];
+  if (profile?.id) identityFilters.push(`profile_id.eq.${profile.id}`);
 
-  if (profile?.id) {
-    const { data: membership } = await service
-      .from('organization_members')
-      .select('id')
-      .eq('organization_id', organizationId)
-      .or(`user_id.eq.${user.id},profile_id.eq.${profile.id}`)
-      .limit(1)
-      .maybeSingle();
-    if (membership) return true;
-  }
+  // This service-role function changes enrollment and billing amounts, so
+  // tenant membership alone is insufficient. Match the table's modify policy
+  // and require an active privileged membership for user-triggered execution.
+  const { data: membership, error: membershipError } = await service
+    .from('organization_members')
+    .select('id')
+    .eq('organization_id', organizationId)
+    .eq('is_active', true)
+    .in('role', ['owner', 'super_admin', 'admin'])
+    .or(identityFilters.join(','))
+    .limit(1)
+    .maybeSingle();
 
-  return false;
+  return !membershipError && Boolean(membership);
 }
 
 serve(async (req) => {
