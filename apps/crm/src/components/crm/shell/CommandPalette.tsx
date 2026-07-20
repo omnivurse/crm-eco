@@ -27,6 +27,10 @@ import { VisuallyHidden } from '@crm-eco/ui';
 import { Input } from '@crm-eco/ui/components/input';
 import { cn } from '@crm-eco/ui/lib/utils';
 import type { CrmModule } from '@/lib/crm/types';
+import { useUiPreferences } from '@/hooks/useUiPreferences';
+import { parseHabitsProfile } from '@/lib/crm/habits/types';
+import { sortModulesByHabits } from '@/lib/crm/habits/score';
+import { emitHabitSignal, hashSearchQuery } from '@/lib/crm/habits/beacon';
 import {
   Search,
   Plus,
@@ -195,6 +199,12 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
   const searchAbortRef = useRef<AbortController | null>(null);
   const router = useRouter();
   const pathname = usePathname();
+  const { preferences } = useUiPreferences();
+  const habits = parseHabitsProfile(preferences.habits);
+  const orderedModules = useMemo(
+    () => sortModulesByHabits(modules, habits),
+    [modules, habits],
+  );
 
   useEffect(() => subscribeRecordCommandContext(() => setRecordContextVersion((v) => v + 1)), []);
 
@@ -214,19 +224,19 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
     [router, onOpenChange],
   );
 
-  // Load recent records on open (once per open cycle).
+  // Load recent records on open; boost habit top_records to the front.
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch('/api/crm/recently-viewed?limit=5', {
+        const res = await fetch('/api/crm/recently-viewed?limit=12', {
           credentials: 'same-origin',
         });
         if (!res.ok) return;
         const body = (await res.json()) as { data?: RecentlyViewedApiItem[] };
         if (cancelled) return;
-        const items: RecordSearchResult[] = (body.data ?? []).map((it) => ({
+        let items: RecordSearchResult[] = (body.data ?? []).map((it) => ({
           id: it.recordId,
           title: it.title || 'Untitled',
           subtitle: it.moduleName ?? undefined,
@@ -234,7 +244,16 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
           moduleKey: it.moduleKey ?? '',
           url: `/crm/r/${it.recordId}`,
         }));
-        setRecents(items);
+        const habitIds = habits?.top_records?.map((r) => r.id) ?? [];
+        if (habitIds.length > 0) {
+          const rank = new Map(habitIds.map((id, i) => [id, i]));
+          items = [...items].sort((a, b) => {
+            const ra = rank.has(a.id) ? rank.get(a.id)! : 999;
+            const rb = rank.has(b.id) ? rank.get(b.id)! : 999;
+            return ra - rb;
+          });
+        }
+        setRecents(items.slice(0, 5));
       } catch {
         /* network failure is non-fatal */
       }
@@ -242,7 +261,7 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
     return () => {
       cancelled = true;
     };
-  }, [open]);
+  }, [open, habits?.top_records]);
 
   // Debounced live record search.
   useEffect(() => {
@@ -269,6 +288,13 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
         const body = (await res.json()) as { results?: RecordSearchResult[] };
         if (!ctrl.signal.aborted) {
           setSearchResults(body.results ?? []);
+          // Habit signal: hashed query only (never raw PII)
+          void hashSearchQuery(trimmed).then((q_hash) => {
+            emitHabitSignal('search_query', {
+              meta: { q_hash },
+              dedupeMs: 60_000,
+            });
+          });
         }
       } catch (err) {
         if ((err as Error)?.name === 'AbortError') return;
@@ -364,7 +390,7 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
         category: 'Navigation',
         keywords: ['home', 'main', 'dashboard'],
       },
-      ...modules.map((module) => ({
+      ...orderedModules.map((module) => ({
         id: `nav-${module.key}`,
         label: `Go to ${module.name_plural || module.name + 's'}`,
         icon: iconMap[module.icon] || <FileText className="w-4 h-4" />,
@@ -380,7 +406,7 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
         category: 'Navigation',
         keywords: ['config', 'preferences', 'modules', 'fields'],
       },
-      ...modules.map((module) => ({
+      ...orderedModules.map((module) => ({
         id: `create-${module.key}`,
         label: `Create New ${module.name}`,
         description: `Add a new ${module.name.toLowerCase()} record`,
@@ -447,7 +473,7 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
       },
     ];
     return commands;
-  }, [modules, navigate]);
+  }, [orderedModules, navigate]);
 
   // Filter "base" commands by the free-text query.
   const filteredBase = useMemo(() => {

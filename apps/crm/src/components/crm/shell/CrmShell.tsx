@@ -10,6 +10,7 @@ import { CommandPalette } from './CommandPalette';
 import { OfflineBanner } from '@/components/crm/offline/OfflineBanner';
 import { SyncToastNotifier } from '@/components/crm/offline/SyncToastNotifier';
 import { OfflineAnalyticsBoot } from '@/components/crm/offline/OfflineAnalyticsBoot';
+import { HabitSignalsBoot } from '@/components/crm/habits/HabitSignalsBoot';
 import { ModuleProvider, ModulePathSync } from '@/contexts/ModuleContext';
 import { GizmoProvider } from '@/components/crm/gizmo';
 import dynamic from 'next/dynamic';
@@ -92,6 +93,7 @@ export function CrmShell({
                 "Back online" / "Couldn't sync" toasts. */}
             <SyncToastNotifier />
             <OfflineAnalyticsBoot />
+            <HabitSignalsBoot />
 
             {/* Top Bar */}
             <CrmTopBar

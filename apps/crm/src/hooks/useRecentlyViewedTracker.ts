@@ -10,11 +10,15 @@
  */
 
 import { useEffect } from 'react';
+import { emitHabitSignal } from '@/lib/crm/habits/beacon';
 
 const lastLoggedAt = new Map<string, number>();
 const DEDUPE_WINDOW_MS = 30_000;
 
-export function useRecentlyViewedTracker(recordId: string | null | undefined) {
+export function useRecentlyViewedTracker(
+  recordId: string | null | undefined,
+  moduleKey?: string | null,
+) {
   useEffect(() => {
     if (!recordId) return;
     const now = Date.now();
@@ -33,8 +37,14 @@ export function useRecentlyViewedTracker(recordId: string | null | undefined) {
       lastLoggedAt.delete(recordId);
     });
 
+    // Parallel habit signal (0 tokens) — complements recently-viewed for scoring.
+    emitHabitSignal('record_opened', {
+      entity_id: recordId,
+      module_key: moduleKey ?? null,
+    });
+
     return () => {
       controller.abort();
     };
-  }, [recordId]);
+  }, [recordId, moduleKey]);
 }

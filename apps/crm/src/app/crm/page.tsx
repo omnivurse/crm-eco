@@ -16,6 +16,9 @@ import {
 import { loadDashboardLayout } from './dashboard-actions';
 import { WIDGET_REGISTRY } from '@/lib/dashboard';
 import { resolveDefaultDashboardLayout } from '@/lib/dashboard/role-default-layout';
+import { biasLayoutWidgetOrder } from '@/lib/crm/habits/score';
+import { parseHabitsProfile } from '@/lib/crm/habits/types';
+import { HabitForYouCard } from '@/components/crm/habits/HabitForYouCard';
 import { DashboardLayoutProvider } from '@/contexts/DashboardLayoutContext';
 import { DashboardHero } from '@/components/dashboard/DashboardHero';
 import type { HeroCalendarEvent } from '@/components/dashboard/DashboardHero';
@@ -200,12 +203,26 @@ async function DashboardContent() {
   }
 
   // Load user's saved layout, or role-aware defaults for first-time visitors.
+  // Habit bias only applies when there is no custom saved layout.
   let layout = resolveDefaultDashboardLayout(profile.crm_role);
+  let usedSavedLayout = false;
   try {
     const savedLayout = await loadDashboardLayout();
-    if (savedLayout) layout = savedLayout;
+    if (savedLayout) {
+      layout = savedLayout;
+      usedSavedLayout = true;
+    }
   } catch (err) {
     console.error('[Dashboard] Failed to load layout, using role default:', err);
+  }
+  if (!usedSavedLayout) {
+    const habits = parseHabitsProfile(profile.ui_preferences?.habits);
+    if (habits) {
+      layout = {
+        ...layout,
+        widgets: biasLayoutWidgetOrder(layout.widgets, habits),
+      };
+    }
   }
 
   // Strip comingSoon widgets from the rendered layout (catalog already hides them)
@@ -292,6 +309,9 @@ async function DashboardContent() {
 
         {/* CRM Alerts — only renders when there are actionable items */}
         <CrmAlerts heroStats={heroStats} />
+
+        {/* Habit coach tips (cached from nightly AI batch — 0 tokens on load) */}
+        <HabitForYouCard />
 
         {/* Below-fold customizable widgets */}
         <section aria-label="Dashboard widgets" className="space-y-3 pt-1">

@@ -21,6 +21,7 @@ import type { AdvisorTreeData, AgentTreeData } from '@/lib/crm/queries';
 import { ModuleListClient } from './ModuleListClient';
 import type { CrmModule, CrmField, CrmView, CrmRecord, ViewSort, ViewFilter, TreeGroupBy, CrmDealStage } from '@/lib/crm/types';
 import { CRM_RECORD_PAGE_SIZES, parseCrmRecordPageSize } from '@/lib/crm/record-list-constants';
+import { parseHabitsProfile } from '@/lib/crm/habits/types';
 
 /* ---------- Contacts tab components (lazy-loaded) ---------- */
 const ContactGroups = dynamic(() => import('@/components/contacts/ContactGroups'));
@@ -175,9 +176,18 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
   const defaultView = defaultViewResult.status === 'fulfilled' ? defaultViewResult.value : null;
 
   // Resolve current view (sync — no extra await)
+  // Habit preferred view wins when URL has no explicit ?view= and user
+  // has no stronger default already applied via viewId.
   let currentView: CrmView | null = null;
   if (viewId) {
     currentView = views.find(v => v.id === viewId) || null;
+  }
+  if (!currentView) {
+    const habitViewId = parseHabitsProfile(profile.ui_preferences?.habits)
+      ?.preferred_views?.[moduleKey];
+    if (habitViewId) {
+      currentView = views.find((v) => v.id === habitViewId) || null;
+    }
   }
   if (!currentView) {
     currentView = defaultView;

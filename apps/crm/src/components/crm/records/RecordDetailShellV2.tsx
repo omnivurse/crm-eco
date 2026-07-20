@@ -113,6 +113,7 @@ import {
 import { RecordRelatedListChips } from './v2/RecordRelatedListChips';
 import { MobileActionBar } from './v2/MobileActionBar';
 import { RecordInsightsPanel } from './v2/RecordInsightsPanel';
+import { HabitNextBestActions } from '@/components/crm/habits/HabitNextBestActions';
 import { InlineRecordSearch, type NavigateToMatchArgs } from './v2/InlineRecordSearch';
 import { SendEmailDialog } from './v2/SendEmailDialog';
 import {
@@ -855,7 +856,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
     releaseFieldLock,
   } = useRecordPresence(record.id);
 
-  useRecentlyViewedTracker(record.id);
+  useRecentlyViewedTracker(record.id, module?.key);
 
   const handleLiveEvent = useCallback(
     (event: LiveRecordEvent) => {
@@ -1982,6 +1983,26 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                 ]}
                 extras={
                   <>
+                    <HabitNextBestActions
+                      moduleKey={module?.key}
+                      stage={
+                        typeof (record as { status?: string }).status === 'string'
+                          ? (record as { status?: string }).status
+                          : null
+                      }
+                      onEmail={() => {
+                        if (record.email) {
+                          setShowSendEmailDialog(true);
+                        }
+                      }}
+                      onTask={handleAddTask}
+                      onCall={() => {
+                        // Composer / call log entry points live on the shell action bus.
+                        window.dispatchEvent(
+                          new CustomEvent('crm:quick-action', { detail: 'call' }),
+                        );
+                      }}
+                    />
                     <AiFollowUpEmailButton
                       recordId={record.id}
                       hasRecipient={Boolean(record.email)}

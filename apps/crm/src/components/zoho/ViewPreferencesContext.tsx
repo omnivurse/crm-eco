@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
 import type { ViewMode } from '@/lib/crm/types';
+import { emitHabitSignal } from '@/lib/crm/habits/beacon';
 
 export type Density = 'compact' | 'default' | 'comfortable';
 
@@ -102,6 +103,12 @@ export function ViewPreferencesProvider({ children }: ViewPreferencesProviderPro
 
   const setViewId = useCallback((moduleKey: string, viewId: string | null) => {
     updatePreferences(moduleKey, { viewId });
+    if (viewId) {
+      emitHabitSignal('view_selected', {
+        module_key: moduleKey,
+        meta: { view_id: viewId },
+      });
+    }
   }, [updatePreferences]);
 
   const setColumns = useCallback((moduleKey: string, columns: string[]) => {

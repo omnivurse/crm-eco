@@ -50,6 +50,14 @@
     {
       "path": "/api/automation/cron",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/habits-aggregate",
+      "schedule": "0 5 * * *"
+    },
+    {
+      "path": "/api/cron/habits-ai-tips",
+      "schedule": "30 5 * * *"
     }
   ]
 }

@@ -1257,6 +1257,11 @@ export interface CrmUiPreferences {
   collapsed_sections?: Record<string, boolean>;
   /** Saved related-list ordering + visibility per module. */
   related_list_order?: Record<string, string[]>;
+  /**
+   * Learned habit profile (heuristics + optional cached AI tips).
+   * Written by /api/cron/habits-aggregate — never call OpenAI from the client.
+   */
+  habits?: import('./habits/types').CrmHabitsProfile;
   [key: string]: unknown;
 }
 
