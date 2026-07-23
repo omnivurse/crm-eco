@@ -97,8 +97,8 @@ export async function syncContactIndexedColumnsFromCoverage(
 }
 
 /**
- * After lead→member RPC, create a CRM `members` module record carrying lead
- * coverage JSONB and link to the enrollment `members` row.
+ * After person→member RPC, create a CRM `members` module record carrying the
+ * source Lead/Contact coverage JSONB and link to the enrollment `members` row.
  */
 export async function ensureCrmMemberRecordFromLead(
   adminClient: SupabaseClient,
@@ -120,8 +120,8 @@ export async function ensureCrmMemberRecordFromLead(
   }
 
   const moduleKey = (lead.module as { key?: string } | null)?.key;
-  if (moduleKey !== 'leads') {
-    return { ok: false, error: 'Record is not a lead' };
+  if (moduleKey !== 'leads' && moduleKey !== 'contacts') {
+    return { ok: false, error: 'Record is not a lead or contact' };
   }
 
   const { data: membersModule } = await adminClient
@@ -156,7 +156,9 @@ export async function ensureCrmMemberRecordFromLead(
   const memberData: Record<string, unknown> = {
     ...leadData,
     linked_member_id: params.enrollmentMemberId,
-    converted_from_lead_id: params.leadRecordId,
+    ...(moduleKey === 'leads'
+      ? { converted_from_lead_id: params.leadRecordId }
+      : { converted_from_contact_id: params.leadRecordId }),
     contact_status: 'Active',
   };
   delete memberData.is_converted;
@@ -191,7 +193,7 @@ export async function ensureCrmMemberRecordFromLead(
     organization_id: params.orgId,
     source_record_id: params.leadRecordId,
     target_record_id: inserted.id,
-    link_type: 'lead_to_member',
+    link_type: moduleKey === 'leads' ? 'lead_to_member' : 'contact_to_member',
     is_primary: true,
     created_by: params.userId,
   });
