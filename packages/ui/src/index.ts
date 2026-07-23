@@ -38,5 +38,6 @@ export * from './components/audit-log-table';
 export * from './components/risk-level-badge';
 export * from './components/crm-lane-badges';
 export * from './components/sonner';
+export * from './data-table';
 export * from './lib/utils';
 

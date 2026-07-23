@@ -18,6 +18,8 @@
     "./email": "./src/email/index.ts",
     "./realtime": "./src/realtime/index.ts",
     "./audit": "./src/audit/index.ts",
+    "./data-table": "./src/data-table/index.ts",
+    "./permissions": "./src/permissions/index.ts",
     "./rate-limit": "./src/rate-limit.ts",
     "./security/captcha": "./src/security/captcha.ts"
   },

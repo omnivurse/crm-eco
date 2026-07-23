@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { TenantProvider } from '@/components/tenant/TenantContext';
 import { AdminShell } from '@/components/layout/AdminShell';
 import { AdminNotificationListener } from '@/components/notifications/AdminNotificationListener';
+import { PermissionsProvider } from '@/components/permissions/PermissionsProvider';
 import { TerminalWrapper } from '@/components/terminal/TerminalWrapper';
 import type { SwitcherTenant } from '@/components/layout/OrganizationSwitcher';
 
@@ -53,21 +54,26 @@ export function DashboardClientShell({
           organization_id: activeTenantId || undefined,
         }}
       >
-        <AdminShell
-          profile={{
-            fullName: profileFullName || '',
-            email: profileEmail,
-            avatarUrl: null,
-            role: profileRole || '',
-            organizationId: activeTenantId,
-          }}
-          userId={profileId}
-          tenants={switcherTenants}
-          activeTenantId={activeTenantId}
+        <PermissionsProvider
+          role={activeTenantRole || profileRole}
+          organizationId={activeTenantId}
         >
-          <AdminNotificationListener userId={profileId} />
-          {children}
-        </AdminShell>
+          <AdminShell
+            profile={{
+              fullName: profileFullName || '',
+              email: profileEmail,
+              avatarUrl: null,
+              role: profileRole || '',
+              organizationId: activeTenantId,
+            }}
+            userId={profileId}
+            tenants={switcherTenants}
+            activeTenantId={activeTenantId}
+          >
+            <AdminNotificationListener userId={profileId} />
+            {children}
+          </AdminShell>
+        </PermissionsProvider>
       </TerminalWrapper>
     </TenantProvider>
   );
