@@ -113,6 +113,7 @@ export async function ensureCrmMemberRecordFromLead(
     .from('crm_records')
     .select('id, title, email, phone, status, owner_id, data, module:crm_modules!crm_records_module_id_fkey(key)')
     .eq('id', params.leadRecordId)
+    .eq('org_id', params.orgId)
     .single();
 
   if (leadError || !lead) {

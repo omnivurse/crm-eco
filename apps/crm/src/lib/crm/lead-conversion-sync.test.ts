@@ -21,6 +21,16 @@ function queryBuilder<T>(terminal: 'single' | 'maybeSingle', result: T) {
 function createConversionClient(moduleKey: string) {
   const recordInsert = vi.fn();
   const linkInsert = vi.fn(async () => ({ data: null, error: null }));
+  const sourceQuery = queryBuilder('single', {
+    id: SOURCE_RECORD_ID,
+    title: 'Test Person',
+    email: 'test@example.com',
+    phone: '555-0100',
+    status: 'Active',
+    owner_id: USER_ID,
+    data: { first_name: 'Test', lead_status: 'Qualified' },
+    module: { key: moduleKey },
+  });
   let recordQueryNumber = 0;
 
   const from = vi.fn((table: string) => {
@@ -38,16 +48,7 @@ function createConversionClient(moduleKey: string) {
 
     recordQueryNumber += 1;
     if (recordQueryNumber === 1) {
-      return queryBuilder('single', {
-        id: SOURCE_RECORD_ID,
-        title: 'Test Person',
-        email: 'test@example.com',
-        phone: '555-0100',
-        status: 'Active',
-        owner_id: USER_ID,
-        data: { first_name: 'Test', lead_status: 'Qualified' },
-        module: { key: moduleKey },
-      });
+      return sourceQuery;
     }
     if (recordQueryNumber === 2) {
       return queryBuilder('maybeSingle', null);
@@ -74,6 +75,7 @@ function createConversionClient(moduleKey: string) {
     client: { from } as unknown as SupabaseClient,
     recordInsert,
     linkInsert,
+    sourceQuery,
   };
 }
 
@@ -86,11 +88,13 @@ const params = {
 
 describe('ensureCrmMemberRecordFromLead', () => {
   it('creates the CRM member record when the conversion source is a Contact', async () => {
-    const { client, recordInsert, linkInsert } = createConversionClient('contacts');
+    const { client, recordInsert, linkInsert, sourceQuery } =
+      createConversionClient('contacts');
 
     const result = await ensureCrmMemberRecordFromLead(client, params);
 
     expect(result).toEqual({ ok: true, crmMemberRecordId: CRM_MEMBER_RECORD_ID });
+    expect(sourceQuery.eq).toHaveBeenCalledWith('org_id', ORG_ID);
     expect(recordInsert).toHaveBeenCalledWith(
       expect.objectContaining({
         org_id: ORG_ID,
