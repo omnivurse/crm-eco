@@ -15,8 +15,9 @@ type Props = {
   onFilterChange: (key: string, value: string | null) => void;
   onClear: () => void;
   onRefresh: () => void;
-  onExport?: () => void;
+  onExport?: () => void | Promise<void>;
   loading?: boolean;
+  exporting?: boolean;
   toolbar?: ReactNode;
 };
 
@@ -31,6 +32,7 @@ export function FilterBar({
   onRefresh,
   onExport,
   loading,
+  exporting,
   toolbar,
 }: Props) {
   const hasActive =
@@ -91,9 +93,19 @@ export function FilterBar({
           )}
         </Button>
         {onExport && (
-          <Button type="button" variant="outline" size="sm" onClick={onExport}>
-            <Download className="mr-1 h-4 w-4" />
-            Export
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => void onExport()}
+            disabled={exporting}
+          >
+            {exporting ? (
+              <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="mr-1 h-4 w-4" />
+            )}
+            {exporting ? 'Exporting…' : 'Export'}
           </Button>
         )}
         {toolbar}
