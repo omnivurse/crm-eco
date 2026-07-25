@@ -1,20 +1,19 @@
 import type { Metadata, Viewport } from 'next';
-import { Plus_Jakarta_Sans, Fraunces } from 'next/font/google';
+import { Inter, Fraunces } from 'next/font/google';
 import './globals.css';
 import { LeadGenQuotePinGate } from '@crm-eco/ui/components/pin-lock-overlay';
 import { SiteHeader } from '@/components/SiteHeader';
 import { SiteFooter } from '@/components/SiteFooter';
 
-const plusJakarta = Plus_Jakarta_Sans({
+const inter = Inter({
   subsets: ['latin'],
   variable: '--font-body',
   display: 'swap',
   preload: false,
-  weight: ['400', '500', '600', '700'],
 });
 
-// Warm "old-style" serif for display + headings — Soft Structuralism pairing
-// with Plus Jakarta Sans (Inter removed).
+// Warm "old-style" serif for display + headings — deliberately not the default
+// Inter/Geist look of generic Next.js sites. Reads established and trustworthy.
 const fraunces = Fraunces({
   subsets: ['latin'],
   variable: '--font-heading',
@@ -74,11 +73,10 @@ export default function RootLayout({
   return (
     <html lang="en" className="scroll-smooth">
       <body
-        className={`${plusJakarta.variable} ${fraunces.variable} font-sans antialiased`}
+        className={`${inter.variable} ${fraunces.variable} font-sans antialiased`}
       >
         <LeadGenQuotePinGate />
-        <div className="relative flex min-h-[100dvh] flex-col">
-          <div className="pif-grain" aria-hidden />
+        <div className="min-h-screen flex flex-col">
           <SiteHeader />
           <main className="flex-1">{children}</main>
           <SiteFooter />

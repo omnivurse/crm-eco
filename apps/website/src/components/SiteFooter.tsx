@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { Phone, EnvelopeSimple, ArrowUpRight } from '@phosphor-icons/react/dist/ssr';
+import { Phone, Mail, ArrowRight } from 'lucide-react';
 import { BRAND, PORTAL_URL, PHONE, EMAIL, SOCIAL } from '@/lib/site';
 
 const columns = [
@@ -46,132 +46,125 @@ export function SiteFooter() {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="relative mt-8 overflow-hidden text-white">
-      <div className="mx-4 mb-4 overflow-hidden rounded-[2rem] pif-grad-deep sm:mx-6 md:mx-8">
-        {/* Pre-footer CTA strip */}
-        <div className="border-b border-white/10">
-          <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-8 px-6 py-14 sm:px-10 lg:flex-row lg:items-center lg:px-12">
-            <div className="max-w-xl">
-              <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-pif-teal-200">
-                Join the community
-              </p>
-              <h2 className="font-heading text-2xl font-medium tracking-[-0.02em] text-white sm:text-3xl">
-                Healthcare you can actually afford — and a community that has your back.
-              </h2>
-              <p className="mt-3 text-white/65">Join in minutes. No open-enrollment window, ever.</p>
-            </div>
-            <Link
-              href="/enroll"
-              className="group inline-flex flex-shrink-0 items-center gap-2 rounded-full bg-white px-6 py-3.5 font-semibold text-pif-navy-800 transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.98]"
-            >
-              Become a Member
-              <span className="grid h-8 w-8 place-items-center rounded-full bg-pif-navy-800/5 transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-x-0.5 group-hover:-translate-y-px">
-                <ArrowUpRight weight="light" className="h-4 w-4" />
-              </span>
-            </Link>
+    <footer className="pif-grad-deep text-white">
+      {/* Pre-footer CTA strip */}
+      <div className="border-b border-white/10">
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 px-5 py-10 sm:px-8 lg:flex-row lg:px-12">
+          <div>
+            <h2 className="font-heading text-2xl font-semibold text-white sm:text-3xl">
+              Healthcare you can actually afford — and a community that has your back.
+            </h2>
+            <p className="mt-2 text-white/70">Join in minutes. No open-enrollment window, ever.</p>
           </div>
+          <Link
+            href="/enroll"
+            className="inline-flex flex-shrink-0 items-center gap-2 rounded-xl bg-white px-7 py-3.5 font-semibold text-pif-navy-800 shadow-lg transition-transform hover:-translate-y-0.5"
+          >
+            Become a Member
+            <ArrowRight className="h-4 w-4" />
+          </Link>
         </div>
+      </div>
 
-        {/* Columns */}
-        <div className="mx-auto max-w-7xl px-6 pb-12 pt-14 sm:px-10 lg:px-12">
-          <div className="grid grid-cols-2 gap-8 lg:grid-cols-12 lg:gap-12">
-            <div className="col-span-2 lg:col-span-4">
-              <Link href="/" className="mb-5 inline-flex items-center">
-                <Image
-                  src="/logo.png"
-                  alt={BRAND.name}
-                  width={200}
-                  height={48}
-                  className="h-10 w-auto object-contain brightness-0 invert"
-                  loading="lazy"
-                />
-              </Link>
-              <p className="mb-6 max-w-xs text-sm leading-relaxed text-white/65">
-                A caring community where members share one another&apos;s medical costs — an affordable
-                alternative to traditional health insurance. Welcoming to all, with no networks and no
-                enrollment windows.
-              </p>
-              <div className="space-y-2 text-sm">
-                <a href={`tel:${PHONE.tel}`} className="flex items-center gap-2 text-white/75 transition-colors hover:text-white">
-                  <Phone weight="light" className="h-4 w-4 text-pif-teal-200" />
-                  {PHONE.display}
-                </a>
-                <a href={`mailto:${EMAIL.general}`} className="flex items-center gap-2 text-white/75 transition-colors hover:text-white">
-                  <EnvelopeSimple weight="light" className="h-4 w-4 text-pif-teal-200" />
-                  {EMAIL.general}
-                </a>
-              </div>
-              <div className="mt-6 flex items-center gap-2">
-                {socialIcons.map((s) => (
-                  <a
-                    key={s.label}
-                    href={s.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={s.label}
-                    className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white/70 transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-white/20 hover:text-white"
-                  >
-                    <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden>
-                      <path d={s.path} />
-                    </svg>
-                  </a>
-                ))}
-              </div>
+      {/* Columns */}
+      <div className="mx-auto max-w-7xl px-5 pb-12 pt-14 sm:px-8 lg:px-12">
+        <div className="grid grid-cols-2 gap-8 lg:grid-cols-12 lg:gap-12">
+          <div className="col-span-2 lg:col-span-4">
+            <Link href="/" className="mb-5 inline-flex items-center">
+              <Image
+                src="/logo.png"
+                alt={BRAND.name}
+                width={200}
+                height={48}
+                className="h-10 w-auto object-contain brightness-0 invert"
+                loading="lazy"
+              />
+            </Link>
+            <p className="mb-6 max-w-xs text-sm leading-relaxed text-white/70">
+              A caring community where members share one another&apos;s medical costs — an affordable
+              alternative to traditional health insurance. Welcoming to all, with no networks and no
+              enrollment windows.
+            </p>
+            <div className="space-y-2 text-sm">
+              <a href={`tel:${PHONE.tel}`} className="flex items-center gap-2 text-white/80 hover:text-white">
+                <Phone className="h-4 w-4 text-pif-teal-200" />
+                {PHONE.display}
+              </a>
+              <a href={`mailto:${EMAIL.general}`} className="flex items-center gap-2 text-white/80 hover:text-white">
+                <Mail className="h-4 w-4 text-pif-teal-200" />
+                {EMAIL.general}
+              </a>
             </div>
+            <div className="mt-6 flex items-center gap-3">
+              {socialIcons.map((s) => (
+                <a
+                  key={s.label}
+                  href={s.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={s.label}
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white/70 transition-colors hover:bg-white/20 hover:text-white"
+                >
+                  <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden>
+                    <path d={s.path} />
+                  </svg>
+                </a>
+              ))}
+            </div>
+          </div>
 
-            {columns.map((col) => (
-              <div key={col.heading} className="lg:col-span-2">
-                <h3 className="mb-5 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/90">{col.heading}</h3>
-                <ul className="space-y-3">
-                  {col.links.map((link) => (
-                    <li key={link.name}>
-                      <Link href={link.href} className="text-sm text-white/60 transition-colors duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:text-white">
-                        {link.name}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-
-            <div className="lg:col-span-2">
-              <h3 className="mb-5 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/90">Members</h3>
+          {columns.map((col) => (
+            <div key={col.heading} className="lg:col-span-2">
+              <h3 className="mb-5 text-sm font-semibold uppercase tracking-wider text-white">{col.heading}</h3>
               <ul className="space-y-3">
-                <li>
-                  <a href={PORTAL_URL} target="_blank" rel="noopener noreferrer" className="text-sm text-white/60 transition-colors hover:text-white">
-                    Member Portal
-                  </a>
-                </li>
-                <li><Link href="/enroll" className="text-sm text-white/60 transition-colors hover:text-white">Become a Member</Link></li>
-                <li><Link href="/contact" className="text-sm text-white/60 transition-colors hover:text-white">Contact Us</Link></li>
-                <li><Link href="/legal/privacy" className="text-sm text-white/60 transition-colors hover:text-white">Privacy Policy</Link></li>
-                <li><Link href="/legal/terms" className="text-sm text-white/60 transition-colors hover:text-white">Terms of Service</Link></li>
+                {col.links.map((link) => (
+                  <li key={link.name}>
+                    <Link href={link.href} className="text-sm text-white/65 transition-colors hover:text-white">
+                      {link.name}
+                    </Link>
+                  </li>
+                ))}
               </ul>
             </div>
+          ))}
+
+          <div className="lg:col-span-2">
+            <h3 className="mb-5 text-sm font-semibold uppercase tracking-wider text-white">Members</h3>
+            <ul className="space-y-3">
+              <li>
+                <a href={PORTAL_URL} target="_blank" rel="noopener noreferrer" className="text-sm text-white/65 transition-colors hover:text-white">
+                  Member Portal
+                </a>
+              </li>
+              <li><Link href="/enroll" className="text-sm text-white/65 transition-colors hover:text-white">Become a Member</Link></li>
+              <li><Link href="/contact" className="text-sm text-white/65 transition-colors hover:text-white">Contact Us</Link></li>
+              <li><Link href="/legal/privacy" className="text-sm text-white/65 transition-colors hover:text-white">Privacy Policy</Link></li>
+              <li><Link href="/legal/terms" className="text-sm text-white/65 transition-colors hover:text-white">Terms of Service</Link></li>
+            </ul>
           </div>
         </div>
+      </div>
 
-        {/* Disclaimer + copyright */}
-        <div className="border-t border-white/10">
-          <div className="mx-auto max-w-7xl px-6 py-8 sm:px-10 lg:px-12">
-            <div className="mb-6 rounded-2xl bg-white/5 p-5 ring-1 ring-white/10">
-              <p className="text-xs leading-relaxed text-white/55">
-                <strong className="font-semibold text-white/80">Important Notice:</strong> {BRAND.name} is a
-                health care sharing program — it is <strong>NOT insurance</strong>. Members voluntarily share
-                one another&apos;s eligible medical expenses. Participation is not a contract of insurance and
-                does not guarantee that medical bills will be paid. The program is not subject to state
-                insurance regulation and may not meet ACA / individual-mandate requirements in some states.
-                Please review our{' '}
-                <Link href="/legal/sharing-guidelines" className="text-white/80 underline underline-offset-2 hover:text-white">
-                  Member Guidelines
-                </Link>{' '}
-                for complete details.
-              </p>
-            </div>
-            <div className="flex flex-col items-center justify-between gap-2 text-xs text-white/45 sm:flex-row">
-              <p>&copy; {year} {BRAND.name}. All rights reserved.</p>
-              <p>A caring community, built on {BRAND.platform}.</p>
-            </div>
+      {/* Disclaimer + copyright */}
+      <div className="border-t border-white/10">
+        <div className="mx-auto max-w-7xl px-5 py-8 sm:px-8 lg:px-12">
+          <div className="mb-6 rounded-xl bg-white/5 p-4">
+            <p className="text-xs leading-relaxed text-white/60">
+              <strong className="font-semibold text-white/80">Important Notice:</strong> {BRAND.name} is a
+              health care sharing program — it is <strong>NOT insurance</strong>. Members voluntarily share
+              one another&apos;s eligible medical expenses. Participation is not a contract of insurance and
+              does not guarantee that medical bills will be paid. The program is not subject to state
+              insurance regulation and may not meet ACA / individual-mandate requirements in some states.
+              Please review our{' '}
+              <Link href="/legal/sharing-guidelines" className="text-white/80 underline underline-offset-2 hover:text-white">
+                Member Guidelines
+              </Link>{' '}
+              for complete details.
+            </p>
+          </div>
+          <div className="flex flex-col items-center justify-between gap-2 text-xs text-white/50 sm:flex-row">
+            <p>&copy; {year} {BRAND.name}. All rights reserved.</p>
+            <p>A caring community, built on {BRAND.platform}.</p>
           </div>
         </div>
       </div>

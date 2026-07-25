@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Phone, CaretDown, ArrowUpRight } from '@phosphor-icons/react';
+import { Button } from '@crm-eco/ui';
+import { Menu, X, Phone, ChevronDown, ArrowRight } from 'lucide-react';
 import { NAV, UTILITY_LINKS, PHONE, PORTAL_URL, BRAND } from '@/lib/site';
 
 export function SiteHeader() {
@@ -12,7 +13,7 @@ export function SiteHeader() {
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 16);
+    const onScroll = () => setScrolled(window.scrollY > 10);
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
@@ -26,62 +27,95 @@ export function SiteHeader() {
   }, [mobileOpen]);
 
   return (
-    <>
-      <header className="pointer-events-none sticky top-0 z-40 w-full pt-4 sm:pt-5">
-        <div className="mx-auto flex w-full max-w-7xl justify-center px-4 sm:px-6">
-          <div
-            className={`pointer-events-auto flex w-full max-w-5xl items-center gap-2 rounded-full px-3 py-2 transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] sm:gap-3 sm:px-4 ${
-              scrolled ? 'pif-island pif-island-scrolled' : 'pif-island'
-            }`}
-          >
-            <Link
-              href="/"
-              className="flex flex-shrink-0 items-center pl-1"
-              aria-label={`${BRAND.name} home`}
-            >
+    <header className="sticky top-0 z-50 w-full">
+      {/* ── Utility bar ── */}
+      <div
+        className={`pif-grad-deep transition-all duration-300 overflow-hidden ${
+          scrolled ? 'max-h-0 opacity-0' : 'max-h-10 opacity-100'
+        }`}
+      >
+        <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-12">
+          <div className="flex h-10 items-center justify-between text-xs">
+            <nav className="hidden items-center gap-1 sm:flex" aria-label="Audience">
+              {UTILITY_LINKS.map((link, i) => (
+                <span key={link.name} className="flex items-center">
+                  <Link
+                    href={link.href}
+                    className="rounded px-2 py-1 font-medium text-white/75 transition-colors hover:text-white"
+                  >
+                    {link.name}
+                  </Link>
+                  {i < UTILITY_LINKS.length - 1 && (
+                    <span className="select-none text-white/25" aria-hidden>|</span>
+                  )}
+                </span>
+              ))}
+            </nav>
+            <div className="ml-auto flex items-center gap-4">
+              <a href={`${PORTAL_URL}`} className="font-medium text-white/75 transition-colors hover:text-white">
+                Member Sign In
+              </a>
+              <span className="hidden select-none text-white/25 sm:inline" aria-hidden>|</span>
+              <a
+                href={`tel:${PHONE.tel}`}
+                className="hidden items-center gap-1.5 font-medium text-white/75 transition-colors hover:text-white sm:flex"
+              >
+                <Phone className="h-3 w-3" />
+                {PHONE.display}
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Main bar ── */}
+      <div
+        className={`transition-all duration-300 ${
+          scrolled ? 'bg-white/95 shadow-sm backdrop-blur-md' : 'border-b border-pif-navy-100 bg-white'
+        }`}
+      >
+        <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-12">
+          <div className="flex h-16 items-center justify-between">
+            <Link href="/" className="flex flex-shrink-0 items-center" aria-label={`${BRAND.name} home`}>
               <Image
                 src="/logo.png"
                 alt={BRAND.name}
-                width={160}
-                height={40}
-                className="h-7 w-auto object-contain sm:h-8"
+                width={200}
+                height={48}
+                className="h-9 w-auto object-contain sm:h-10"
                 priority
               />
             </Link>
 
             {/* Desktop nav */}
-            <nav className="ml-1 hidden flex-1 items-center justify-center gap-0.5 lg:flex" aria-label="Main">
+            <nav className="hidden items-center gap-1 lg:flex" aria-label="Main">
               {NAV.map((item) =>
                 item.children ? (
                   <div key={item.name} className="group relative">
                     <Link
                       href={item.href}
-                      className="flex items-center gap-1 rounded-full px-3 py-2 text-[0.8125rem] font-medium text-pif-navy-800/80 transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-pif-navy-800/[0.05] hover:text-pif-navy-800"
+                      className="flex items-center gap-1 rounded-md px-3 py-2 text-sm font-medium text-pif-navy-800 transition-colors hover:text-pif-teal-700"
                     >
                       {item.name}
-                      <CaretDown
-                        weight="light"
-                        className="h-3.5 w-3.5 text-slate-400 transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:rotate-180"
-                      />
+                      <ChevronDown className="h-3.5 w-3.5 text-slate-400 transition-transform group-hover:rotate-180" />
                     </Link>
-                    <div className="invisible absolute left-1/2 top-full z-50 w-80 -translate-x-1/2 translate-y-2 pt-3 opacity-0 transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100">
-                      <div className="pif-bezel">
-                        <div className="pif-bezel-inner p-2">
-                          {item.children.map((child) => (
-                            <Link
-                              key={child.name}
-                              href={child.href}
-                              className="block rounded-[calc(2rem-0.75rem)] px-4 py-3 transition-colors duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-pif-mist"
-                            >
-                              <span className="block text-sm font-semibold text-pif-navy-800">{child.name}</span>
-                              {child.description && (
-                                <span className="mt-0.5 block text-xs leading-snug text-slate-500">
-                                  {child.description}
-                                </span>
-                              )}
-                            </Link>
-                          ))}
-                        </div>
+                    {/* Dropdown — opens on hover and keyboard focus */}
+                    <div className="invisible absolute left-0 top-full z-50 w-80 translate-y-1 pt-2 opacity-0 transition-all duration-200 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100">
+                      <div className="overflow-hidden rounded-2xl border border-pif-navy-100 bg-white p-2 shadow-xl shadow-pif-navy/10 ring-1 ring-pif-navy/5">
+                        {item.children.map((child) => (
+                          <Link
+                            key={child.name}
+                            href={child.href}
+                            className="block rounded-xl px-4 py-3 transition-colors hover:bg-pif-mist"
+                          >
+                            <span className="block text-sm font-semibold text-pif-navy-800">{child.name}</span>
+                            {child.description && (
+                              <span className="mt-0.5 block text-xs leading-snug text-slate-500">
+                                {child.description}
+                              </span>
+                            )}
+                          </Link>
+                        ))}
                       </div>
                     </div>
                   </div>
@@ -89,7 +123,7 @@ export function SiteHeader() {
                   <Link
                     key={item.name}
                     href={item.href}
-                    className="rounded-full px-3 py-2 text-[0.8125rem] font-medium text-pif-navy-800/80 transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-pif-navy-800/[0.05] hover:text-pif-navy-800"
+                    className="rounded-md px-3 py-2 text-sm font-medium text-pif-navy-800 transition-colors hover:text-pif-teal-700"
                   >
                     {item.name}
                   </Link>
@@ -97,165 +131,99 @@ export function SiteHeader() {
               )}
             </nav>
 
-            <div className="ml-auto hidden items-center gap-2 lg:flex">
-              <a
-                href={PORTAL_URL}
-                className="rounded-full px-3 py-2 text-[0.8125rem] font-medium text-slate-500 transition-colors duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:text-pif-navy-800"
-              >
-                Sign in
-              </a>
-              <Link
-                href="/enroll"
-                className="group pif-btn-island pif-btn-care text-[0.8125rem]"
-              >
-                Join
-                <span className="pif-btn-ico">
-                  <ArrowUpRight weight="light" className="h-3.5 w-3.5" />
-                </span>
+            <div className="hidden items-center gap-3 lg:flex">
+              <Link href="/enroll">
+                <Button size="sm" className="hub-btn-gradient gap-1.5 rounded-lg px-5 font-semibold">
+                  Join Now
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
               </Link>
             </div>
 
-            {/* Mobile hamburger — morphs to X */}
+            {/* Mobile toggle */}
             <button
               type="button"
-              className="relative ml-auto flex h-10 w-10 items-center justify-center rounded-full text-pif-navy-800 transition-colors duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-pif-navy-800/[0.05] lg:hidden"
+              className="rounded-md p-2 text-pif-navy-700 transition-colors hover:bg-pif-mist lg:hidden"
               onClick={() => setMobileOpen((o) => !o)}
               aria-expanded={mobileOpen}
               aria-controls="mobile-menu"
               aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
             >
-              <span className="sr-only">{mobileOpen ? 'Close' : 'Menu'}</span>
-              <span className="relative block h-3.5 w-5">
-                <span
-                  className={`absolute left-0 top-0 block h-[1.5px] w-full origin-center rounded-full bg-current transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${
-                    mobileOpen ? 'translate-y-[6px] rotate-45' : ''
-                  }`}
-                />
-                <span
-                  className={`absolute left-0 top-[6px] block h-[1.5px] w-full rounded-full bg-current transition-opacity duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${
-                    mobileOpen ? 'opacity-0' : 'opacity-100'
-                  }`}
-                />
-                <span
-                  className={`absolute left-0 top-[12px] block h-[1.5px] w-full origin-center rounded-full bg-current transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${
-                    mobileOpen ? '-translate-y-[6px] -rotate-45' : ''
-                  }`}
-                />
-              </span>
+              {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </button>
           </div>
         </div>
-      </header>
+      </div>
 
-      {/* Mobile glass overlay */}
+      {/* ── Mobile menu ── */}
       <div
         id="mobile-menu"
-        className={`fixed inset-0 z-[45] lg:hidden ${
-          mobileOpen ? 'pointer-events-auto' : 'pointer-events-none'
-        }`}
-        aria-hidden={!mobileOpen}
+        className={`fixed inset-x-0 overflow-y-auto bg-white shadow-xl transition-all duration-300 ease-in-out lg:hidden ${
+          mobileOpen ? 'max-h-[calc(100vh-4rem)] opacity-100' : 'max-h-0 opacity-0'
+        } ${scrolled ? 'top-16' : 'top-[6.5rem]'}`}
       >
-        <div
-          className={`absolute inset-0 bg-pif-navy-900/70 backdrop-blur-3xl transition-opacity duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] ${
-            mobileOpen ? 'opacity-100' : 'opacity-0'
-          }`}
-          onClick={() => setMobileOpen(false)}
-        />
-        <div
-          className={`relative flex h-full flex-col px-6 pb-10 pt-24 transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] ${
-            mobileOpen ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'
-          }`}
-        >
-          <nav className="flex-1 space-y-1 overflow-y-auto" aria-label="Mobile">
-            {NAV.map((item, i) =>
-              item.children ? (
-                <div
-                  key={item.name}
-                  className={`border-b border-white/10 transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] ${
-                    mobileOpen ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'
-                  }`}
-                  style={{ transitionDelay: mobileOpen ? `${100 + i * 50}ms` : '0ms' }}
-                >
-                  <button
-                    type="button"
-                    className="flex w-full items-center justify-between py-4 text-left text-2xl font-heading font-medium text-white"
-                    onClick={() => setOpenGroup((g) => (g === item.name ? null : item.name))}
-                    aria-expanded={openGroup === item.name}
-                  >
-                    {item.name}
-                    <CaretDown
-                      weight="light"
-                      className={`h-5 w-5 text-white/50 transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${
-                        openGroup === item.name ? 'rotate-180' : ''
-                      }`}
-                    />
-                  </button>
-                  <div className={`${openGroup === item.name ? 'block' : 'hidden'} pb-3`}>
-                    {item.children.map((child) => (
-                      <Link
-                        key={child.name}
-                        href={child.href}
-                        className="block py-2.5 pl-1 text-base text-white/70 transition-colors hover:text-white"
-                        onClick={() => setMobileOpen(false)}
-                      >
-                        {child.name}
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`block border-b border-white/10 py-4 font-heading text-2xl font-medium text-white transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] ${
-                    mobileOpen ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'
-                  }`}
-                  style={{ transitionDelay: mobileOpen ? `${100 + i * 50}ms` : '0ms' }}
-                  onClick={() => setMobileOpen(false)}
+        <div className="mx-auto max-w-7xl space-y-1 px-5 py-4 sm:px-8">
+          {NAV.map((item) =>
+            item.children ? (
+              <div key={item.name} className="border-b border-pif-navy-50 pb-1">
+                <button
+                  type="button"
+                  className="flex w-full items-center justify-between rounded-md px-3 py-3 text-base font-semibold text-pif-navy-800"
+                  onClick={() => setOpenGroup((g) => (g === item.name ? null : item.name))}
+                  aria-expanded={openGroup === item.name}
                 >
                   {item.name}
-                </Link>
-              ),
-            )}
-          </nav>
+                  <ChevronDown
+                    className={`h-4 w-4 text-slate-400 transition-transform ${openGroup === item.name ? 'rotate-180' : ''}`}
+                  />
+                </button>
+                <div className={`${openGroup === item.name ? 'block' : 'hidden'} pb-2`}>
+                  {item.children.map((child) => (
+                    <Link
+                      key={child.name}
+                      href={child.href}
+                      className="block rounded-md px-6 py-2.5 text-sm text-slate-600 transition-colors hover:bg-pif-mist hover:text-pif-teal-700"
+                      onClick={() => setMobileOpen(false)}
+                    >
+                      {child.name}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <Link
+                key={item.name}
+                href={item.href}
+                className="block rounded-md px-3 py-3 text-base font-semibold text-pif-navy-800 transition-colors hover:bg-pif-mist"
+                onClick={() => setMobileOpen(false)}
+              >
+                {item.name}
+              </Link>
+            ),
+          )}
 
-          <div
-            className={`mt-6 space-y-4 transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] ${
-              mobileOpen ? 'translate-y-0 opacity-100 delay-300' : 'translate-y-12 opacity-0'
-            }`}
-          >
-            <div className="flex flex-wrap gap-3 text-sm text-white/60">
-              {UTILITY_LINKS.map((link) => (
-                <Link
-                  key={link.name}
-                  href={link.href}
-                  className="hover:text-white"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  {link.name}
-                </Link>
-              ))}
-            </div>
-            <a
-              href={`tel:${PHONE.tel}`}
-              className="flex items-center gap-2 text-white/80 hover:text-white"
-            >
-              <Phone weight="light" className="h-4 w-4" />
+          <div className="space-y-3 pt-4">
+            <a href={`${PORTAL_URL}`} className="block rounded-md px-3 py-2.5 text-base font-medium text-slate-600 hover:bg-pif-mist">
+              Member Sign In
+            </a>
+            <a href={`tel:${PHONE.tel}`} className="flex items-center gap-2 rounded-md px-3 py-2.5 text-base font-medium text-slate-600 hover:bg-pif-mist">
+              <Phone className="h-4 w-4" />
               {PHONE.display}
             </a>
-            <Link
-              href="/enroll"
-              onClick={() => setMobileOpen(false)}
-              className="group flex w-full items-center justify-between rounded-full bg-white px-6 py-3.5 font-semibold text-pif-navy-800"
-            >
-              Become a Member
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-pif-navy-800/5 transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-x-0.5 group-hover:-translate-y-px">
-                <ArrowUpRight weight="light" className="h-4 w-4" />
-              </span>
+            <Link href="/enroll" onClick={() => setMobileOpen(false)}>
+              <Button className="hub-btn-gradient mt-1 w-full rounded-lg font-semibold">Join Now</Button>
             </Link>
           </div>
         </div>
       </div>
-    </>
+
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 z-[-1] bg-pif-navy-900/20 backdrop-blur-sm lg:hidden"
+          onClick={() => setMobileOpen(false)}
+          aria-hidden
+        />
+      )}
+    </header>
   );
 }

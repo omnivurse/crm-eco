@@ -1,144 +1,129 @@
 'use client';
 
 import Link from 'next/link';
-import {
-  ArrowUpRight,
-  ShieldCheck,
-  Handshake,
-  CalendarCheck,
-  Heart,
-} from '@phosphor-icons/react';
+import Image from 'next/image';
+import { Button } from '@crm-eco/ui';
+import { ArrowRight, ShieldCheck, HeartHandshake, CalendarCheck } from 'lucide-react';
 import { motion, type Variants } from 'framer-motion';
+import { IMAGES, imageUrl } from '@/lib/site-images';
 import { STATS } from '@/lib/site';
 
 const container: Variants = {
   hidden: {},
-  visible: { transition: { staggerChildren: 0.1, delayChildren: 0.08 } },
+  visible: { transition: { staggerChildren: 0.12, delayChildren: 0.05 } },
 };
 const fadeUp: Variants = {
-  hidden: { opacity: 0, y: 28, filter: 'blur(6px)' },
-  visible: {
-    opacity: 1,
-    y: 0,
-    filter: 'blur(0px)',
-    transition: { duration: 0.85, ease: [0.22, 1, 0.36, 1] },
-  },
+  hidden: { opacity: 0, y: 24 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } },
 };
 
 const PROMISES = [
   { icon: ShieldCheck, label: 'Not insurance' },
   { icon: CalendarCheck, label: 'Join any time' },
-  { icon: Handshake, label: 'No networks' },
+  { icon: HeartHandshake, label: 'No networks' },
 ] as const;
 
 export function HeroSection() {
   return (
-    <section className="hub-page-hero relative overflow-hidden">
-      <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-8 lg:px-12">
+    <section className="hub-page-hero relative overflow-hidden border-b border-pif-navy-100">
+      {/* Subtle full-bleed background */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 z-0">
+        <Image
+          src={imageUrl(IMAGES.heroBackground, 1920)}
+          alt=""
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover opacity-[0.22]"
+        />
+        <div className="absolute left-1/2 top-[46%] -translate-x-1/2 -translate-y-1/2">
+          <Image
+            src={imageUrl(IMAGES.logoMark)}
+            alt=""
+            width={780}
+            height={938}
+            className="h-[clamp(72px,13vw,128px)] w-auto opacity-40"
+          />
+        </div>
+        <div className="absolute inset-0 bg-white/82" />
+      </div>
+
+      <div className="relative z-10 mx-auto max-w-7xl px-5 sm:px-8 lg:px-12">
         <motion.div
-          className="grid min-h-[auto] items-center gap-10 py-16 sm:py-20 lg:min-h-[calc(100dvh-7rem)] lg:grid-cols-[1.1fr_0.9fr] lg:gap-16 lg:py-24"
+          className="flex min-h-[auto] flex-col justify-center py-14 sm:py-20 lg:min-h-[88vh] lg:py-28"
           variants={container}
           initial="hidden"
           animate="visible"
         >
-          {/* Copy column */}
-          <div>
-            <motion.div variants={fadeUp} className="mb-7">
-              <span className="hub-eyebrow">
-                <span className="h-1.5 w-1.5 rounded-full bg-pif-green-500 shadow-[0_0_0_3px_rgba(18,160,101,0.18)]" />
-                Community health sharing
+          <motion.div variants={fadeUp} className="mb-6 inline-flex w-fit items-center gap-2 rounded-full border border-pif-teal-100 bg-pif-teal-50/90 px-3.5 py-1.5 backdrop-blur-sm">
+            <span className="h-2 w-2 rounded-full bg-pif-green-500" />
+            <span className="text-xs font-semibold text-pif-teal-800">Community health sharing · welcoming to all</span>
+          </motion.div>
+
+          <motion.h1
+            variants={fadeUp}
+            className="mb-6 max-w-3xl font-heading font-semibold leading-[1.06] text-pif-navy-800"
+            style={{ fontSize: 'clamp(38px, 5.2vw, 66px)', letterSpacing: '-0.015em' }}
+          >
+            The caring alternative to{' '}
+            <span className="gradient-text">health insurance</span>
+          </motion.h1>
+
+          <motion.p variants={fadeUp} className="mb-9 max-w-xl text-lg leading-relaxed text-slate-600">
+            At Pay It Forward Health, members share one another&apos;s medical costs in a community built
+            on generosity. Keep your own doctors, skip the networks, and pay a fraction of what
+            traditional insurance costs — and when you&apos;re well, you help{' '}
+            <span className="pif-underline font-semibold text-pif-navy-800">pay it forward</span>.
+          </motion.p>
+
+          <motion.div variants={fadeUp} className="mb-9 flex flex-col gap-4 sm:flex-row">
+            <Link href="/enroll">
+              <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
+                <Button size="lg" className="hub-btn-gradient w-full gap-2 rounded-xl px-8 text-base font-semibold sm:w-auto">
+                  Become a Member
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </motion.div>
+            </Link>
+            <Link href="/how-it-works">
+              <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="w-full rounded-xl border-pif-navy-200 bg-white/90 px-8 text-base font-semibold text-pif-navy-800 backdrop-blur-sm hover:border-pif-teal-400 hover:bg-pif-teal-50/60 hover:text-pif-navy-900 sm:w-auto"
+                >
+                  See How It Works
+                </Button>
+              </motion.div>
+            </Link>
+          </motion.div>
+
+          <motion.div variants={fadeUp} className="mb-10 flex flex-wrap items-center gap-x-6 gap-y-3">
+            {PROMISES.map(({ icon: Icon, label }) => (
+              <span key={label} className="inline-flex items-center gap-2 text-sm font-medium text-slate-600">
+                <Icon className="h-4 w-4 text-pif-green-600" strokeWidth={2.25} />
+                {label}
               </span>
-            </motion.div>
+            ))}
+          </motion.div>
 
-            <motion.h1
-              variants={fadeUp}
-              className="mb-6 max-w-[14ch] font-heading text-[clamp(2.75rem,6vw,4.75rem)] font-medium leading-[1.02] tracking-[-0.03em] text-pif-navy-800"
-            >
-              Care that <em className="font-normal italic text-pif-teal-700">moves</em> forward
-              together
-            </motion.h1>
-
-            <motion.p
-              variants={fadeUp}
-              className="mb-10 max-w-xl text-lg leading-relaxed text-slate-600"
-            >
-              Members share medical costs in a community built on generosity. Keep your doctors.
-              Skip the networks. And when you&apos;re well, you help{' '}
-              <span className="pif-underline font-semibold text-pif-navy-800">pay it forward</span>.
-            </motion.p>
-
-            <motion.div variants={fadeUp} className="mb-10 flex flex-col gap-3 sm:flex-row sm:items-center">
-              <Link href="/enroll" className="group pif-btn-island pif-btn-care text-base">
-                Become a Member
-                <span className="pif-btn-ico">
-                  <ArrowUpRight weight="light" className="h-4 w-4" />
-                </span>
-              </Link>
-              <Link href="/how-it-works" className="pif-btn-ghost text-center text-base sm:text-left">
-                See how it works
-              </Link>
-            </motion.div>
-
-            <motion.ul variants={fadeUp} className="flex flex-wrap items-center gap-x-6 gap-y-3">
-              {PROMISES.map(({ icon: Icon, label }) => (
-                <li key={label} className="inline-flex items-center gap-2 text-sm font-medium text-slate-600">
-                  <Icon weight="light" className="h-[18px] w-[18px] text-pif-green-600" />
-                  {label}
-                </li>
-              ))}
-            </motion.ul>
-          </div>
-
-          {/* Z-Axis cascade cards */}
-          <motion.div variants={fadeUp} className="relative min-h-[380px] md:min-h-[460px]">
-            {/* Main shared card */}
-            <div className="pif-bezel relative z-[3] -rotate-1 md:w-[92%]">
-              <div className="pif-bezel-inner p-7 sm:p-8">
-                <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-pif-teal-700">
-                  Shared this year
-                </p>
-                <p className="font-heading text-[clamp(2.5rem,5vw,3.25rem)] font-medium leading-none tracking-[-0.03em] text-pif-navy-800">
-                  {STATS.shared}
-                </p>
-                <p className="mt-2 mb-6 text-sm text-slate-500">Medical costs covered by the community</p>
-                <div className="mb-5 h-1 overflow-hidden rounded-full bg-pif-teal-50">
-                  <div className="pif-bar-fill h-full w-[72%] rounded-full bg-gradient-to-r from-pif-teal to-pif-green" />
-                </div>
-                <div className="flex items-center justify-between border-t border-pif-navy-50 pt-4 text-sm text-slate-500">
-                  <span>Member contributions</span>
-                  <strong className="font-semibold text-pif-navy-800">On track</strong>
-                </div>
+          <motion.div
+            variants={fadeUp}
+            className="flex flex-wrap gap-4 sm:gap-5"
+          >
+            <div className="flex items-center gap-3 rounded-2xl border border-pif-navy-100/80 bg-white/90 px-4 py-3 shadow-sm shadow-pif-navy/5 backdrop-blur-sm">
+              <span className="pif-grad-care flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white">
+                <HeartHandshake className="h-5 w-5" />
+              </span>
+              <div>
+                <p className="font-heading text-2xl font-bold leading-none text-pif-navy-800">{STATS.shared}</p>
+                <p className="text-xs text-slate-500">shared by members</p>
               </div>
             </div>
-
-            {/* Floating members card */}
-            <div className="pif-bezel pif-bezel-deep absolute -right-1 top-0 z-[4] w-[min(200px,48%)] rotate-[3deg] max-md:relative max-md:right-auto max-md:top-auto max-md:mt-4 max-md:w-full max-md:rotate-0">
-              <div className="pif-bezel-inner p-5">
-                <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-pif-gold-300">
-                  Active members
-                </p>
-                <p className="font-heading text-[1.75rem] font-medium leading-none tracking-[-0.03em] text-white">
-                  {STATS.members}
-                </p>
-                <p className="mt-2 text-sm text-white/65">Families caring for families</p>
-              </div>
-            </div>
-
-            {/* Floating promises card */}
-            <div className="pif-bezel absolute -left-2 bottom-2 z-[2] w-[min(220px,52%)] -rotate-[2.5deg] max-md:relative max-md:bottom-auto max-md:left-auto max-md:mt-4 max-md:w-full max-md:rotate-0">
-              <div className="pif-bezel-inner space-y-3 p-5">
-                {[
-                  { icon: Heart, label: 'Keep your doctors' },
-                  { icon: Handshake, label: 'Transparent sharing' },
-                  { icon: CalendarCheck, label: 'Join in minutes' },
-                ].map(({ icon: Icon, label }) => (
-                  <div key={label} className="flex items-center gap-2.5 text-sm font-medium text-pif-ink">
-                    <span className="grid h-7 w-7 place-items-center rounded-lg bg-pif-teal-50 text-pif-teal-700">
-                      <Icon weight="light" className="h-3.5 w-3.5" />
-                    </span>
-                    {label}
-                  </div>
-                ))}
+            <div className="flex items-center gap-3 rounded-2xl border border-pif-navy-100/80 bg-white/90 px-4 py-3 shadow-sm shadow-pif-navy/5 backdrop-blur-sm">
+              <div>
+                <p className="font-heading text-2xl font-bold leading-none text-pif-navy-800">{STATS.satisfaction}</p>
+                <p className="text-xs text-slate-500">member rating</p>
               </div>
             </div>
           </motion.div>

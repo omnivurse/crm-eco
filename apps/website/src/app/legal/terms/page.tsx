@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowLeft, ArrowUpRight, FileText } from '@phosphor-icons/react/dist/ssr';
+import { ArrowLeft, ArrowRight, FileText } from 'lucide-react';
 import { Container, Eyebrow, CTABand } from '@/components/sections/blocks';
 import { Reveal } from '@/components/sections/Reveal';
 
@@ -17,16 +17,16 @@ export default function TermsOfServicePage() {
       <section className="hub-section-dark relative overflow-hidden py-16 md:py-20">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.10),transparent_65%)]" />
         <Container className="relative">
-            <Link
-              href="/"
-              className="inline-flex items-center gap-2 text-sm font-medium text-white/70 transition-colors hover:text-white"
-            >
-              <ArrowLeft weight="light" className="h-4 w-4" />
-              Back to home
-            </Link>
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-sm font-medium text-white/70 transition-colors hover:text-white"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to home
+          </Link>
           <div className="mt-8 max-w-2xl">
             <span className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 text-pif-gold-300 ring-1 ring-white/15">
-              <FileText weight="light" className="h-6 w-6" />
+              <FileText className="h-6 w-6" strokeWidth={2} />
             </span>
             <Eyebrow tone="light" className="mt-6">
               Legal
@@ -234,14 +234,14 @@ export default function TermsOfServicePage() {
                 className="inline-flex items-center gap-1.5 text-sm font-semibold text-pif-teal-700 transition-colors hover:text-pif-green-600"
               >
                 Privacy Policy
-                <ArrowUpRight weight="light" className="h-4 w-4" />
+                <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
                 href="/legal/sharing-guidelines"
                 className="inline-flex items-center gap-1.5 text-sm font-semibold text-pif-teal-700 transition-colors hover:text-pif-green-600"
               >
                 Sharing Guidelines
-                <ArrowUpRight weight="light" className="h-4 w-4" />
+                <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
           </Reveal>

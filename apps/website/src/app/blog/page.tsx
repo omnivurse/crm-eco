@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowUpRight, Calendar, Clock } from '@phosphor-icons/react/dist/ssr';
+import { ArrowRight, Calendar, Clock } from 'lucide-react';
 import { Reveal } from '@/components/sections/Reveal';
 import {
   Container,
@@ -58,7 +58,7 @@ const PLACEHOLDER_POSTS = [
     slug: 'wellness-habits-that-stick',
     title: '5 Wellness Habits That Actually Stick',
     excerpt:
-      'Buildings lasting health habits does not require drastic changes. Discover simple, evidence-based practices that support your wellbeing for the long haul.',
+      'Building lasting health habits does not require drastic changes. Discover simple, evidence-based practices that support your wellbeing for the long haul.',
     category: 'Wellness',
     date: '2025-02-01',
     readTime: '7 min read',
@@ -180,17 +180,17 @@ export default function BlogPage() {
                 </p>
                 <div className="mt-6 flex flex-wrap items-center gap-5 text-sm text-slate-500">
                   <span className="flex items-center gap-1.5">
-                    <Calendar weight="light" className="h-4 w-4" aria-hidden="true" />
+                    <Calendar className="h-4 w-4" aria-hidden="true" />
                     {formatDate(featured.date)}
                   </span>
                   <span className="flex items-center gap-1.5">
-                    <Clock weight="light" className="h-4 w-4" aria-hidden="true" />
+                    <Clock className="h-4 w-4" aria-hidden="true" />
                     {featured.readTime}
                   </span>
                 </div>
                 <span className="mt-7 inline-flex items-center gap-1.5 text-sm font-semibold text-pif-teal-700">
                   Read the story
-                  <ArrowUpRight weight="light" className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                 </span>
               </div>
             </Link>
@@ -240,11 +240,11 @@ export default function BlogPage() {
                       </p>
                       <div className="mt-5 flex flex-wrap items-center gap-4 border-t border-pif-navy-100 pt-4 text-xs text-slate-500">
                         <span className="flex items-center gap-1.5">
-                          <Calendar weight="light" className="h-3.5 w-3.5" aria-hidden="true" />
+                          <Calendar className="h-3.5 w-3.5" aria-hidden="true" />
                           {formatDate(post.date)}
                         </span>
                         <span className="flex items-center gap-1.5">
-                          <Clock weight="light" className="h-3.5 w-3.5" aria-hidden="true" />
+                          <Clock className="h-3.5 w-3.5" aria-hidden="true" />
                           {post.readTime}
                         </span>
                       </div>

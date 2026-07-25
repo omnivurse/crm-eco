@@ -3,19 +3,19 @@ import Link from 'next/link';
 import { Button } from '@crm-eco/ui';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import {
-  CheckCircle,
-  ArrowUpRight,
+  CheckCircle2,
+  ArrowRight,
   Star,
-  CalendarBlank,
+  CalendarClock,
   Wallet,
   ShieldCheck,
-  Handshake,
+  HeartHandshake,
   Stethoscope,
   Pill,
-  VideoCamera,
-  Scales,
+  Video,
+  Scale,
   Users,
-} from '@phosphor-icons/react/dist/ssr';
+} from 'lucide-react';
 import { buildMatrixPreview } from '@crm-eco/rates';
 import type { RateConfig } from '@crm-eco/rates/types';
 import seedConfig from '@crm-eco/rates/config';
@@ -106,18 +106,18 @@ const PRICING_FACTS = [
     body: 'The Initial Unshareable Amount is what you pay out of pocket for a given medical need before the community shares the rest. A lower IUA pairs with a higher monthly share — pick the balance that fits.',
   },
   {
-    icon: CalendarBlank,
+    icon: CalendarClock,
     title: 'No annual deductible',
     body: 'There is nothing to "satisfy" each year and no networks to chase. The IUA applies per incident, your sharing begins the first of the following month, and you can change or cancel any time.',
   },
 ];
 
 const INCLUDED = [
-  { icon: Handshake, title: 'Medical cost sharing', body: 'The heart of every program — eligible doctor visits, hospital stays, surgeries and more, shared by the community.' },
+  { icon: HeartHandshake, title: 'Medical cost sharing', body: 'The heart of every program — eligible doctor visits, hospital stays, surgeries and more, shared by the community.' },
   { icon: Stethoscope, title: 'Preventive care', body: 'Annual wellness visits and screenings that help you stay ahead of bigger problems, included in your membership.' },
-  { icon: VideoCamera, title: 'Virtual care', body: 'Talk to a licensed provider by phone or video, day or night, usually at no additional cost to you.' },
+  { icon: Video, title: 'Virtual care', body: 'Talk to a licensed provider by phone or video, day or night, usually at no additional cost to you.' },
   { icon: Pill, title: 'Prescription savings', body: 'Meaningful discounts on everyday and specialty medications through our pharmacy savings program.' },
-  { icon: Scales, title: 'Medical advocacy', body: 'Our team reviews and negotiates large bills on your behalf, so you are never facing the system alone.' },
+  { icon: Scale, title: 'Medical advocacy', body: 'Our team reviews and negotiates large bills on your behalf, so you are never facing the system alone.' },
   { icon: Users, title: 'A real community', body: 'No religious requirement and no health questionnaire to get a quote — everyone is welcome to join and belong.' },
 ];
 
@@ -188,7 +188,7 @@ export default async function PlansPage() {
                 <Link href="/enroll">
                   <Button size="lg" className="hub-btn-gradient w-full gap-2 font-semibold text-white sm:w-auto">
                     Become a Member
-                    <ArrowUpRight weight="light" className="h-4 w-4" />
+                    <ArrowRight className="h-4 w-4" />
                   </Button>
                 </Link>
                 <Link href="/how-it-works">
@@ -202,7 +202,7 @@ export default async function PlansPage() {
                 </Link>
               </div>
               <p className="mt-6 flex items-center gap-2 text-sm text-slate-500">
-                <CheckCircle weight="light" className="h-4 w-4 text-pif-green-600" />
+                <CheckCircle2 className="h-4 w-4 text-pif-green-600" />
                 Not insurance &middot; No networks &middot; Welcoming to all
               </p>
             </div>
@@ -226,7 +226,7 @@ export default async function PlansPage() {
 
           {plans.length === 0 ? (
             <div className="mx-auto mt-14 max-w-xl rounded-2xl border border-pif-navy-100 bg-pif-mist p-10 text-center ring-1 ring-pif-navy/5">
-              <IconChip icon={CalendarBlank} variant="soft" className="mx-auto mb-5" />
+              <IconChip icon={CalendarClock} variant="soft" className="mx-auto mb-5" />
               <h3 className="font-heading text-xl font-semibold text-pif-navy-800">
                 Programs are being finalized
               </h3>
@@ -236,11 +236,11 @@ export default async function PlansPage() {
               </p>
               <Link href="/contact" className="mt-6 inline-flex items-center gap-2 font-semibold text-pif-teal-700 transition-colors hover:text-pif-green-600">
                 Talk to our team
-                <ArrowUpRight weight="light" className="h-4 w-4" />
+                <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
           ) : (
-            <div className="mx-auto mt-16 grid max-w-5xl gap-5 md:grid-cols-3">
+            <div className="mx-auto mt-14 grid max-w-5xl gap-6 md:grid-cols-3">
               {plans.map((plan, index) => {
                 const isPopular = index === popularIndex;
                 const planBenefits = benefitsByPlan.get(plan.id) || [];
@@ -252,75 +252,67 @@ export default async function PlansPage() {
 
                 return (
                   <Reveal key={plan.id} delay={index * 0.08} className="h-full">
-                    <div className={`pif-bezel relative h-full ${isPopular ? 'md:-translate-y-3' : ''}`}>
-                      <div
-                        className={`pif-bezel-inner relative flex h-full flex-col p-7 md:p-8 ${
-                          isPopular ? 'text-white' : 'bg-white'
-                        }`}
-                        style={isPopular ? { background: 'var(--pif-grad-deep)' } : undefined}
-                      >
-                        {isPopular && (
-                          <span className="pif-grad-gold absolute -top-3 left-1/2 inline-flex -translate-x-1/2 items-center gap-1 rounded-full px-3.5 py-1 text-xs font-bold text-pif-navy-900 shadow-[0_4px_16px_rgba(244,180,0,0.35)]">
-                            <Star weight="fill" className="h-3 w-3" />
-                            Most Popular
-                          </span>
-                        )}
+                    <div
+                      className={`relative flex h-full flex-col rounded-2xl p-7 md:p-8 ${
+                        isPopular
+                          ? 'hub-card-popular text-white md:-mt-3 md:mb-3'
+                          : 'border border-pif-navy-100 bg-white shadow-sm ring-1 ring-pif-navy/5'
+                      }`}
+                    >
+                      {isPopular && (
+                        <span className="pif-grad-gold absolute -top-3 left-1/2 inline-flex -translate-x-1/2 items-center gap-1 rounded-full px-3.5 py-1 text-xs font-bold text-pif-navy-900 shadow-md">
+                          <Star className="h-3 w-3 fill-current" />
+                          Most Popular
+                        </span>
+                      )}
 
-                        <h3 className={`font-heading text-xl font-medium ${isPopular ? 'text-white' : 'text-pif-navy-800'}`}>
-                          {plan.name}
-                        </h3>
-                        <p className={`mt-1 text-sm ${isPopular ? 'text-pif-teal-100' : 'text-slate-500'}`}>
-                          {plan.description || 'Community health sharing program'}
+                      <h3 className={`font-heading text-xl font-semibold ${isPopular ? 'text-white' : 'text-pif-navy-800'}`}>
+                        {plan.name}
+                      </h3>
+                      <p className={`mt-1 text-sm ${isPopular ? 'text-pif-teal-100' : 'text-slate-500'}`}>
+                        {plan.description || 'Community health sharing program'}
+                      </p>
+
+                      <div className="mb-1 mt-5">
+                        <span className={`font-heading text-4xl font-bold ${isPopular ? 'text-white' : 'text-pif-navy-800'}`}>
+                          {formatCurrency(price)}
+                        </span>
+                        <span className={`text-sm ${isPopular ? 'text-pif-teal-100' : 'text-slate-500'}`}>
+                          {startingAt ? '/mo starting' : '/month'}
+                        </span>
+                      </div>
+                      {plan.iua_amount !== null && (
+                        <p className={`mb-6 text-xs ${isPopular ? 'text-pif-teal-100/80' : 'text-slate-400'}`}>
+                          {formatCurrency(plan.iua_amount)} IUA per incident
                         </p>
+                      )}
+                      {plan.iua_amount === null && <div className="mb-6" />}
 
-                        <div className="mb-1 mt-5">
-                          <span className={`font-heading text-4xl font-medium tracking-[-0.02em] ${isPopular ? 'text-white' : 'text-pif-navy-800'}`}>
-                            {formatCurrency(price)}
-                          </span>
-                          <span className={`text-sm ${isPopular ? 'text-pif-teal-100' : 'text-slate-500'}`}>
-                            {startingAt ? '/mo starting' : '/month'}
-                          </span>
-                        </div>
-                        {plan.iua_amount !== null && (
-                          <p className={`mb-6 text-xs ${isPopular ? 'text-pif-teal-100/80' : 'text-slate-400'}`}>
-                            {formatCurrency(plan.iua_amount)} IUA per incident
-                          </p>
-                        )}
-                        {plan.iua_amount === null && <div className="mb-6" />}
+                      {planBenefits.length > 0 && (
+                        <ul className="mb-8 space-y-2.5">
+                          {planBenefits.map((benefit) => (
+                            <li key={benefit.id} className="flex items-start gap-2">
+                              <CheckCircle2
+                                className={`mt-0.5 h-4 w-4 flex-shrink-0 ${isPopular ? 'text-pif-gold-300' : 'text-pif-green-600'}`}
+                              />
+                              <span className={`text-sm ${isPopular ? 'text-white/85' : 'text-slate-600'}`}>
+                                {benefit.benefit_name}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
 
-                        {planBenefits.length > 0 && (
-                          <ul className="mb-8 space-y-2.5">
-                            {planBenefits.map((benefit) => (
-                              <li key={benefit.id} className="flex items-start gap-2">
-                                <CheckCircle
-                                  weight="light"
-                                  className={`mt-0.5 h-4 w-4 flex-shrink-0 ${isPopular ? 'text-pif-gold-300' : 'text-pif-green-600'}`}
-                                />
-                                <span className={`text-sm ${isPopular ? 'text-white/85' : 'text-slate-600'}`}>
-                                  {benefit.benefit_name}
-                                </span>
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-
-                        <div className="mt-auto">
-                          <Link
-                            href={`/enroll?plan=${plan.id}`}
-                            className={`group flex w-full items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.98] ${
-                              isPopular
-                                ? 'bg-white text-pif-navy-800'
-                                : 'hub-btn-gradient text-white'
+                      <div className="mt-auto">
+                        <Link href={`/enroll?plan=${plan.id}`}>
+                          <Button
+                            className={`w-full font-semibold ${
+                              isPopular ? 'bg-white text-pif-navy-800 hover:bg-pif-mist' : 'hub-btn-gradient text-white'
                             }`}
                           >
                             Enroll Now
-                            <span className={`grid h-7 w-7 place-items-center rounded-full transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-x-0.5 group-hover:-translate-y-px ${
-                              isPopular ? 'bg-pif-navy-800/5' : 'bg-white/15'
-                            }`}>
-                              <ArrowUpRight weight="light" className="h-3.5 w-3.5" />
-                            </span>
-                          </Link>
-                        </div>
+                          </Button>
+                        </Link>
                       </div>
                     </div>
                   </Reveal>
@@ -332,11 +324,11 @@ export default async function PlansPage() {
           {/* Feature comparison table -- only if we have plans and benefits */}
           {plans.length >= 2 && allBenefitNames.length > 0 && (
             <Reveal className="mx-auto mt-16 max-w-4xl">
-              <div className="pif-bezel">
-                <div className="pif-bezel-inner overflow-x-auto">
+              <div className="overflow-hidden rounded-2xl border border-pif-navy-100 bg-white shadow-sm ring-1 ring-pif-navy/5">
+                <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
-                      <tr className="border-b border-pif-navy-50 bg-pif-mist">
+                      <tr className="border-b border-pif-navy-100 bg-pif-mist">
                         <th className="p-4 text-left text-sm font-semibold text-pif-navy-800">
                           What&apos;s included
                         </th>
@@ -388,7 +380,7 @@ export default async function PlansPage() {
                             {plans.map((plan, idx) => (
                               <td key={plan.id} className={`p-4 text-center ${idx === popularIndex ? 'bg-pif-teal-50/50' : ''}`}>
                                 {planHasBenefit[idx] ? (
-                                  <CheckCircle weight="light" className="mx-auto h-5 w-5 text-pif-green-600" />
+                                  <CheckCircle2 className="mx-auto h-5 w-5 text-pif-green-600" />
                                 ) : (
                                   <span className="mx-auto block h-px w-4 bg-pif-navy-200" aria-label="Not included" />
                                 )}
@@ -500,7 +492,7 @@ export default async function PlansPage() {
           <div className="mt-10 text-center">
             <Link href="/faq" className="inline-flex items-center gap-2 font-semibold text-pif-teal-700 transition-colors hover:text-pif-green-600">
               Read all frequently asked questions
-              <ArrowUpRight weight="light" className="h-4 w-4" />
+              <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
         </Container>

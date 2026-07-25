@@ -2,19 +2,19 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Button } from '@crm-eco/ui';
 import {
-  ArrowUpRight,
+  ArrowRight,
   FileText,
   BookOpen,
   Wallet,
   UserPlus,
   Compass,
   PiggyBank,
-  PaperPlaneTilt,
-  Heartbeat,
+  Send,
+  HeartPulse,
   Check,
   X,
-  Question,
-} from '@phosphor-icons/react/dist/ssr';
+  HelpCircle,
+} from 'lucide-react';
 import { Reveal } from '@/components/sections/Reveal';
 import {
   Container,
@@ -72,13 +72,13 @@ const STEPS = [
     body: 'Your affordable monthly share goes to support fellow members with eligible needs — a fraction of a typical insurance premium, and a direct act of community care.',
   },
   {
-    icon: PaperPlaneTilt,
+    icon: Send,
     step: '04',
     title: 'Submit a sharing request',
     body: 'When a medical need arises, pay your IUA, see the doctor you choose, and submit a sharing request. The community shares the eligible balance, often within days.',
   },
   {
-    icon: Heartbeat,
+    icon: HeartPulse,
     step: '05',
     title: 'Live well',
     body: 'With preventive care, telehealth, prescription savings and advocacy included, you stay ahead of problems — and the cycle of paying it forward continues for the next member who needs it.',
@@ -151,7 +151,7 @@ export default function HowItWorksPage() {
                   className="w-full gap-2 bg-white font-semibold text-pif-navy-800 shadow-lg hover:bg-pif-mist sm:w-auto"
                 >
                   Become a Member
-                  <ArrowUpRight className="h-4 w-4" />
+                  <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
               <Link href="/plans">
@@ -278,13 +278,13 @@ export default function HowItWorksPage() {
                   <div className="p-5 font-medium text-pif-navy-800">{row.category}</div>
                   <div className="flex items-start justify-center gap-2 p-5">
                     <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-pif-green-50 text-pif-green-600">
-                      <Check className="h-3.5 w-3.5" />
+                      <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
                     </span>
                     <span className="text-sm text-slate-700">{row.sharing}</span>
                   </div>
                   <div className="flex items-start justify-center gap-2 p-5">
                     <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-400">
-                      <X className="h-3.5 w-3.5" />
+                      <X className="h-3.5 w-3.5" strokeWidth={2.5} />
                     </span>
                     <span className="text-sm text-slate-500">{row.insurance}</span>
                   </div>
@@ -303,7 +303,7 @@ export default function HowItWorksPage() {
                   <div className="space-y-3">
                     <div className="flex items-start gap-2.5">
                       <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-pif-green-50 text-pif-green-600">
-                        <Check className="h-3.5 w-3.5" />
+                        <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
                       </span>
                       <div>
                         <span className="block text-xs font-semibold uppercase tracking-wide text-pif-teal-700">
@@ -314,7 +314,7 @@ export default function HowItWorksPage() {
                     </div>
                     <div className="flex items-start gap-2.5">
                       <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-400">
-                        <X className="h-3.5 w-3.5" />
+                        <X className="h-3.5 w-3.5" strokeWidth={2.5} />
                       </span>
                       <div>
                         <span className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -395,7 +395,7 @@ export default function HowItWorksPage() {
         <Container>
           <Reveal>
             <div className="mx-auto flex max-w-3xl flex-col items-center rounded-3xl border border-pif-navy-100 bg-white p-10 text-center shadow-sm ring-1 ring-pif-navy/5 md:p-14">
-              <IconChip icon={Question} variant="gold" className="mb-6" />
+              <IconChip icon={HelpCircle} variant="gold" className="mb-6" />
               <h2 className="font-heading text-[clamp(1.5rem,3vw,2.25rem)] font-semibold leading-tight text-pif-navy-800 text-balance">
                 Still have questions?
               </h2>
@@ -408,7 +408,7 @@ export default function HowItWorksPage() {
                 className="mt-7 inline-flex items-center gap-2 font-semibold text-pif-teal-700 transition-colors hover:text-pif-green-600"
               >
                 Read frequently asked questions
-                <ArrowUpRight className="h-4 w-4" />
+                <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
           </Reveal>

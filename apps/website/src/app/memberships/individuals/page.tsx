@@ -2,21 +2,21 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Button } from '@crm-eco/ui';
 import {
-  ArrowUpRight,
-  Handshake,
+  ArrowRight,
+  HeartHandshake,
   Stethoscope,
-  VideoCamera,
+  Video,
   Pill,
   Baby,
-  Scales,
+  Scale,
   User,
   Users,
-  UsersThree,
+  UsersRound,
   UserPlus,
-  ClipboardText,
+  ClipboardList,
   CalendarCheck,
-  Question,
-} from '@phosphor-icons/react/dist/ssr';
+  HelpCircle,
+} from 'lucide-react';
 import { Reveal } from '@/components/sections/Reveal';
 import {
   Container,
@@ -48,7 +48,7 @@ const WHO_ITS_FOR = [
 
 const INCLUDED = [
   {
-    icon: Handshake,
+    icon: HeartHandshake,
     title: 'Medical Cost Sharing',
     body: 'The heart of your membership — eligible doctor visits, hospital stays, surgeries, and major medical needs shared by the community.',
   },
@@ -58,7 +58,7 @@ const INCLUDED = [
     body: 'Annual wellness visits and routine screenings to help you and your family stay ahead of problems, included in your share.',
   },
   {
-    icon: VideoCamera,
+    icon: Video,
     title: 'Virtual Care',
     body: 'Talk to a licensed provider by phone or video, day or night, for everyday concerns — usually at no additional cost.',
   },
@@ -73,7 +73,7 @@ const INCLUDED = [
     body: 'Optional maternity sharing and family-focused benefits, so growing households are cared for through every season.',
   },
   {
-    icon: Scales,
+    icon: Scale,
     title: 'Medical Advocacy',
     body: 'Our team reviews and negotiates large bills on your behalf, so you are never facing the system alone.',
   },
@@ -95,7 +95,7 @@ const HOUSEHOLDS = [
     note: 'Two adults sharing together — partners, spouses, or a parent and adult child.',
   },
   {
-    icon: UsersThree,
+    icon: UsersRound,
     label: 'Family',
     who: 'Two adults + children',
     share: '$389',
@@ -106,7 +106,7 @@ const HOUSEHOLDS = [
 
 const STEPS = [
   {
-    icon: ClipboardText,
+    icon: ClipboardList,
     step: '01',
     title: 'Pick your program',
     body: 'Compare programs and choose the monthly share level that fits your household and budget. No health questionnaire to get a quote.',
@@ -154,7 +154,7 @@ export default function IndividualsMembershipPage() {
           <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-20">
             <Reveal>
               <div className="inline-flex items-center gap-2 rounded-full bg-pif-teal-50 px-4 py-1.5 ring-1 ring-pif-teal-100">
-                <Handshake className="h-4 w-4 text-pif-teal-600" />
+                <HeartHandshake className="h-4 w-4 text-pif-teal-600" />
                 <span className="text-sm font-semibold text-pif-teal-700">
                   Individuals &amp; Families
                 </span>
@@ -178,7 +178,7 @@ export default function IndividualsMembershipPage() {
                     className="w-full gap-2 pif-grad-care font-semibold text-white shadow-lg hover:opacity-95 sm:w-auto"
                   >
                     Become a Member
-                    <ArrowUpRight className="h-4 w-4" />
+                    <ArrowRight className="h-4 w-4" />
                   </Button>
                 </Link>
                 <Link href="/plans">
@@ -405,7 +405,7 @@ export default function IndividualsMembershipPage() {
                     className="gap-2 bg-white font-semibold text-pif-navy-800 shadow-lg hover:bg-pif-mist"
                   >
                     Compare Plans &amp; Pricing
-                    <ArrowUpRight className="h-4 w-4" />
+                    <ArrowRight className="h-4 w-4" />
                   </Button>
                 </Link>
               </div>
@@ -448,9 +448,9 @@ export default function IndividualsMembershipPage() {
                 href="/faq"
                 className="inline-flex items-center gap-2 font-semibold text-pif-teal-700 transition-colors hover:text-pif-green-600"
               >
-                <Question className="h-4 w-4" />
+                <HelpCircle className="h-4 w-4" />
                 Read all frequently asked questions
-                <ArrowUpRight className="h-4 w-4" />
+                <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
           </Reveal>

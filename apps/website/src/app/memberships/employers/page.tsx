@@ -2,23 +2,23 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Button } from '@crm-eco/ui';
 import {
-  ArrowUpRight,
+  ArrowRight,
   Briefcase,
-  TrendDown,
-  Smiley,
-  GearSix,
+  TrendingDown,
+  Smile,
+  Settings2,
   UserPlus,
-  ClipboardText,
+  ClipboardCheck,
   PhoneCall,
-  Handshake,
+  HeartHandshake,
   Stethoscope,
   Pill,
-  VideoCamera,
-  Scales,
+  Video,
+  Scale,
   Gift,
   CalendarCheck,
   Wallet,
-} from '@phosphor-icons/react/dist/ssr';
+} from 'lucide-react';
 import { Reveal } from '@/components/sections/Reveal';
 import {
   Container,
@@ -42,17 +42,17 @@ export const metadata: Metadata = {
 
 const WHY_EMPLOYERS = [
   {
-    icon: TrendDown,
+    icon: TrendingDown,
     title: 'Lower, more predictable cost',
     body: 'Monthly shares run a fraction of traditional group premiums. No surprise double-digit renewals — just transparent, steady pricing your budget can count on.',
   },
   {
-    icon: Smiley,
+    icon: Smile,
     title: 'Happier, healthier teams',
     body: 'People keep the doctors they trust, with no networks or referrals to chase. Telehealth, Rx savings, and advocacy come standard, so your team feels genuinely cared for.',
   },
   {
-    icon: GearSix,
+    icon: Settings2,
     title: 'Refreshingly simple admin',
     body: 'No open-enrollment scramble and no thick benefits binder. Add or remove members any time, and let us handle onboarding, billing, and member support.',
   },
@@ -66,7 +66,7 @@ const STEPS = [
     body: 'Tell us about your company, your headcount, and what you want a benefit to do. We will map options to your goals — no obligation, no pressure.',
   },
   {
-    icon: ClipboardText,
+    icon: ClipboardCheck,
     step: '02',
     title: 'Pick the right programs',
     body: 'Choose the membership levels that fit your team and your budget. Offer one program or a few, and decide how much of the monthly share you cover.',
@@ -78,7 +78,7 @@ const STEPS = [
     body: 'We make onboarding effortless with simple sign-up and clear guides. New hires can join any time of year — there is no enrollment window to miss.',
   },
   {
-    icon: Handshake,
+    icon: HeartHandshake,
     step: '04',
     title: 'We care for them',
     body: 'Your people get telehealth, prescription savings, advocacy, and a real community behind them. You get one point of contact and predictable billing.',
@@ -87,7 +87,7 @@ const STEPS = [
 
 const INCLUDED = [
   {
-    icon: Handshake,
+    icon: HeartHandshake,
     title: 'Medical Cost Sharing',
     body: 'The heart of every membership — eligible doctor visits, hospital stays, and surgeries shared by a community of fellow members.',
   },
@@ -97,7 +97,7 @@ const INCLUDED = [
     body: 'Annual wellness visits and screenings that help your team stay ahead of problems, built right into membership.',
   },
   {
-    icon: VideoCamera,
+    icon: Video,
     title: 'Virtual Care',
     body: 'Talk to a licensed provider by phone or video, day or night — keeping your people healthy without the wait or the cost.',
   },
@@ -107,7 +107,7 @@ const INCLUDED = [
     body: 'Meaningful discounts on everyday and specialty medications through our pharmacy savings program.',
   },
   {
-    icon: Scales,
+    icon: Scale,
     title: 'Medical Advocacy',
     body: 'Our team reviews and negotiates large bills on a member’s behalf, so no one on your team faces the system alone.',
   },
@@ -161,7 +161,7 @@ export default function EmployersPage() {
                     className="w-full gap-2 pif-grad-care font-semibold text-white shadow-lg shadow-pif-teal/25 hover:opacity-95 sm:w-auto"
                   >
                     Talk to our team
-                    <ArrowUpRight className="h-4 w-4" />
+                    <ArrowRight className="h-4 w-4" />
                   </Button>
                 </Link>
                 <Link href="/plans">
@@ -344,7 +344,7 @@ export default function EmployersPage() {
                     body: 'We tailor program levels and your contribution to what your business can comfortably support.',
                   },
                   {
-                    icon: Handshake,
+                    icon: HeartHandshake,
                     title: 'A partner, not a policy',
                     body: 'One dedicated contact who knows your account and your people — for the long haul.',
                   },
@@ -365,7 +365,7 @@ export default function EmployersPage() {
                     className="w-full gap-2 pif-grad-care font-semibold text-white shadow-lg shadow-pif-teal/25 hover:opacity-95 sm:w-auto"
                   >
                     Book a consultation
-                    <ArrowUpRight className="h-4 w-4" />
+                    <ArrowRight className="h-4 w-4" />
                   </Button>
                 </Link>
                 <a

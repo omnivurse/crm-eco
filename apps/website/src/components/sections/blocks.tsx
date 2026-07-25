@@ -1,8 +1,8 @@
 import Link from 'next/link';
 import Image from 'next/image';
+import { Button } from '@crm-eco/ui';
 import { cn } from '@crm-eco/ui/lib/utils';
-import type { Icon } from '@phosphor-icons/react';
-import { ArrowUpRight } from '@phosphor-icons/react/dist/ssr';
+import { ArrowRight, type LucideIcon } from 'lucide-react';
 import { imageUrl, type SiteImage } from '@/lib/site-images';
 
 /* ----------------------------------------------------------------- Container */
@@ -35,10 +35,10 @@ export function Eyebrow({
   return (
     <p
       className={cn(
-        'inline-flex items-center rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em]',
-        tone === 'teal' && 'bg-pif-teal-50/90 text-pif-teal-700 ring-1 ring-pif-teal-100',
-        tone === 'gold' && 'bg-pif-gold-50 text-pif-gold-700 ring-1 ring-pif-gold-100',
-        tone === 'light' && 'bg-white/10 text-pif-teal-200 ring-1 ring-white/15',
+        'text-[0.8125rem] font-bold uppercase tracking-[0.2em]',
+        tone === 'teal' && 'text-pif-teal-700',
+        tone === 'gold' && 'text-pif-gold-600',
+        tone === 'light' && 'text-pif-teal-200',
         className,
       )}
     >
@@ -62,7 +62,7 @@ export function SectionHeading({
   title: React.ReactNode;
   subtitle?: React.ReactNode;
   align?: 'center' | 'left';
-  tone?: 'dark' | 'light';
+  tone?: 'dark' | 'light'; // text color: dark text (on light bg) | light text (on dark bg)
   eyebrowTone?: 'teal' | 'gold' | 'light';
   className?: string;
 }) {
@@ -74,14 +74,14 @@ export function SectionHeading({
       )}
     >
       {eyebrow && (
-        <Eyebrow tone={eyebrowTone ?? (tone === 'light' ? 'light' : 'teal')} className="mb-5">
+        <Eyebrow tone={eyebrowTone ?? (tone === 'light' ? 'light' : 'teal')} className="mb-4">
           {eyebrow}
         </Eyebrow>
       )}
       <h2
         className={cn(
-          'font-heading font-medium leading-[1.1] text-balance tracking-[-0.02em]',
-          'text-[clamp(1.875rem,3.5vw,2.875rem)]',
+          'font-heading font-semibold leading-[1.12] text-balance',
+          'text-[clamp(1.75rem,3.5vw,2.75rem)]',
           tone === 'light' ? 'text-white' : 'text-pif-navy-800',
         )}
       >
@@ -104,25 +104,25 @@ export function SectionHeading({
 /* ------------------------------------------------------------------ IconChip */
 
 export function IconChip({
-  icon: IconComp,
+  icon: Icon,
   variant = 'soft',
   className,
 }: {
-  icon: Icon;
+  icon: LucideIcon;
   variant?: 'soft' | 'brand' | 'gold';
   className?: string;
 }) {
   return (
     <span
       className={cn(
-        'inline-flex h-12 w-12 items-center justify-center rounded-2xl',
+        'inline-flex h-12 w-12 items-center justify-center rounded-xl',
         variant === 'soft' && 'bg-pif-teal-50 text-pif-teal-700 ring-1 ring-pif-teal-100',
-        variant === 'brand' && 'pif-grad-care text-white shadow-[0_8px_20px_rgba(14,140,154,0.22)]',
+        variant === 'brand' && 'pif-grad-care text-white shadow-md shadow-pif-teal/25',
         variant === 'gold' && 'pif-grad-gold text-pif-navy-900',
         className,
       )}
     >
-      <IconComp className="h-6 w-6" weight="light" />
+      <Icon className="h-6 w-6" strokeWidth={2} />
     </span>
   );
 }
@@ -138,7 +138,7 @@ export function FeatureCard({
   iconVariant = 'soft',
   className,
 }: {
-  icon: Icon;
+  icon: LucideIcon;
   title: string;
   children: React.ReactNode;
   href?: string;
@@ -147,21 +147,24 @@ export function FeatureCard({
   className?: string;
 }) {
   return (
-    <div className={cn('pif-bezel h-full', className)}>
-      <div className="pif-bezel-inner group flex h-full flex-col p-7 transition-transform duration-700 ease-[cubic-bezier(0.32,0.72,0,1)]">
-        <IconChip icon={icon} variant={iconVariant} className="mb-5" />
-        <h3 className="font-heading text-xl font-medium text-pif-navy-800">{title}</h3>
-        <p className="mt-3 flex-1 leading-relaxed text-slate-600">{children}</p>
-        {href && (
-          <Link
-            href={href}
-            className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-pif-teal-700 transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:gap-2.5 hover:text-pif-green-600"
-          >
-            {linkLabel}
-            <ArrowUpRight weight="light" className="h-4 w-4" />
-          </Link>
-        )}
-      </div>
+    <div
+      className={cn(
+        'group flex h-full flex-col rounded-2xl border border-pif-navy-100 bg-white p-7 shadow-sm ring-1 ring-pif-navy/5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-pif-navy/10',
+        className,
+      )}
+    >
+      <IconChip icon={icon} variant={iconVariant} className="mb-5" />
+      <h3 className="font-heading text-xl font-semibold text-pif-navy-800">{title}</h3>
+      <p className="mt-3 flex-1 leading-relaxed text-slate-600">{children}</p>
+      {href && (
+        <Link
+          href={href}
+          className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-pif-teal-700 transition-colors hover:text-pif-green-600"
+        >
+          {linkLabel}
+          <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+        </Link>
+      )}
     </div>
   );
 }
@@ -176,47 +179,41 @@ export function StatStrip({
   className,
 }: {
   stats: Stat[];
-  tone?: 'light' | 'dark';
+  tone?: 'light' | 'dark'; // background tone
   className?: string;
 }) {
   return (
     <div
       className={cn(
-        'pif-bezel',
+        'grid gap-px overflow-hidden rounded-3xl',
+        tone === 'dark' ? 'bg-white/10' : 'bg-pif-navy-100',
+        stats.length === 4 ? 'grid-cols-2 lg:grid-cols-4' : 'grid-cols-1 sm:grid-cols-3',
         className,
       )}
     >
-      <div
-        className={cn(
-          'pif-bezel-inner grid gap-px overflow-hidden',
-          tone === 'dark' ? 'bg-white/10' : 'bg-pif-navy-50',
-          stats.length === 4 ? 'grid-cols-2 lg:grid-cols-4' : 'grid-cols-1 sm:grid-cols-3',
-        )}
-      >
-        {stats.map((s) => (
+      {stats.map((s) => (
+        <div
+          key={s.label}
+          className={cn('px-6 py-8 text-center', tone === 'dark' ? 'bg-pif-navy-800' : 'bg-pif-mist')}
+        >
           <div
-            key={s.label}
-            className={cn('px-6 py-9 text-center', tone === 'dark' ? 'bg-pif-navy-800' : 'bg-white')}
+            className={cn(
+              'font-heading text-4xl font-bold',
+              tone === 'dark' ? 'text-white' : 'gradient-text',
+            )}
           >
-            <div
-              className={cn(
-                'font-heading text-4xl font-medium tracking-[-0.02em]',
-                tone === 'dark' ? 'text-white' : 'gradient-text',
-              )}
-            >
-              {s.value}
-            </div>
-            <div
-              className={cn(
-                'mt-2 text-sm font-medium',
-                tone === 'dark' ? 'text-white/70' : 'text-slate-500',
-              )}
-            >
-              {s.label}
-            </div>
+            {s.value}
           </div>
-        ))}
-      </div>
+          <div
+            className={cn(
+              'mt-2 text-sm font-medium',
+              tone === 'dark' ? 'text-white/70' : 'text-slate-500',
+            )}
+          >
+            {s.label}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -230,7 +227,6 @@ export function BrandImage({
   aspect = 'aspect-[4/3]',
   scrim = true,
   className,
-  tilt,
 }: {
   image: SiteImage;
   width?: number;
@@ -238,30 +234,26 @@ export function BrandImage({
   aspect?: string;
   scrim?: boolean;
   className?: string;
-  tilt?: 'left' | 'right' | 'none';
 }) {
   return (
     <div
       className={cn(
-        'pif-bezel',
-        tilt === 'left' && 'md:-rotate-1',
-        tilt === 'right' && 'md:rotate-1',
+        'relative overflow-hidden rounded-3xl shadow-xl shadow-pif-navy/15 ring-1 ring-pif-navy/10',
+        aspect,
         className,
       )}
     >
-      <div className={cn('pif-bezel-inner relative overflow-hidden', aspect)}>
-        <Image
-          src={imageUrl(image, width)}
-          alt={image.alt}
-          fill
-          priority={priority}
-          sizes="(max-width: 1024px) 100vw, 50vw"
-          className="object-cover"
-        />
-        {scrim && (
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-pif-navy-900/30 via-transparent to-transparent" />
-        )}
-      </div>
+      <Image
+        src={imageUrl(image, width)}
+        alt={image.alt}
+        fill
+        priority={priority}
+        sizes="(max-width: 1024px) 100vw, 50vw"
+        className="object-cover"
+      />
+      {scrim && (
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-pif-navy-900/30 via-transparent to-transparent" />
+      )}
     </div>
   );
 }
@@ -280,32 +272,34 @@ export function CTABand({
   secondary?: { label: string; href: string } | null;
 }) {
   return (
-    <section className="relative overflow-hidden py-24 md:py-32">
-      <div className="absolute inset-4 rounded-[2rem] pif-grad-brand sm:inset-6 md:inset-8" />
-      <div className="absolute inset-4 rounded-[2rem] bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.12),transparent_70%)] sm:inset-6 md:inset-8" />
-      <Container className="relative text-center py-8">
-        <h2 className="mx-auto max-w-3xl font-heading text-[clamp(1.875rem,3.5vw,2.875rem)] font-medium leading-tight tracking-[-0.02em] text-white text-balance">
+    <section className="relative overflow-hidden pif-grad-brand py-20 md:py-28">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.12),transparent_70%)]" />
+      <Container className="relative text-center">
+        <h2 className="mx-auto max-w-3xl font-heading text-[clamp(1.875rem,3.5vw,2.75rem)] font-semibold leading-tight text-white text-balance">
           {title}
         </h2>
         {subtitle && (
           <p className="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-white/85">{subtitle}</p>
         )}
-        <div className="mt-10 flex flex-col justify-center gap-3 sm:flex-row sm:items-center">
-          <Link
-            href={primary.href}
-            className="group inline-flex items-center justify-center gap-2 rounded-full bg-white px-6 py-3.5 font-semibold text-pif-navy-800 shadow-[0_8px_28px_rgba(0,0,0,0.15)] transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.98]"
-          >
-            {primary.label}
-            <span className="grid h-8 w-8 place-items-center rounded-full bg-pif-navy-800/5 transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-x-0.5 group-hover:-translate-y-px">
-              <ArrowUpRight weight="light" className="h-4 w-4" />
-            </span>
+        <div className="mt-10 flex flex-col justify-center gap-4 sm:flex-row">
+          <Link href={primary.href}>
+            <Button
+              size="lg"
+              className="w-full gap-2 bg-white font-semibold text-pif-navy-800 shadow-lg hover:bg-pif-mist sm:w-auto"
+            >
+              {primary.label}
+              <ArrowRight className="h-4 w-4" />
+            </Button>
           </Link>
           {secondary && (
-            <Link
-              href={secondary.href}
-              className="inline-flex items-center justify-center rounded-full border border-white/40 px-6 py-3.5 font-semibold text-white transition-colors duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-white/10"
-            >
-              {secondary.label}
+            <Link href={secondary.href}>
+              <Button
+                size="lg"
+                variant="outline"
+                className="w-full border-white/50 bg-transparent font-semibold text-white hover:bg-white/10 sm:w-auto"
+              >
+                {secondary.label}
+              </Button>
             </Link>
           )}
         </div>
@@ -336,7 +330,7 @@ export function CheckList({
             )}
           >
             <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-              <path d="M5 10.5 8.5 14 15 6.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M5 10.5 8.5 14 15 6.5" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </span>
           <span className={cn('leading-relaxed', tone === 'light' ? 'text-white/90' : 'text-slate-700')}>
