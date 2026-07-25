@@ -34,6 +34,7 @@ import {
   Label,
   ResourceList,
   Textarea,
+  useCan,
   type ResourceDescriptor,
 } from '@crm-eco/ui';
 
@@ -141,6 +142,9 @@ function PayeeIcon({ type }: { type: string }) {
 
 export default function PayablesPage() {
   const supabase = createClient();
+  const canCreate = useCan(Permissions.PayablesCreate);
+  const canApprove = useCan(Permissions.PayablesApprove);
+  const canMarkPaid = useCan(Permissions.PayablesPay);
   const [organizationId, setOrganizationId] = useState<string | null>(null);
   const [profileId, setProfileId] = useState<string | null>(null);
   const [categories, setCategories] = useState<PayableCategory[]>([]);
@@ -227,6 +231,11 @@ export default function PayablesPage() {
 
   const handleApprove = useCallback(
     async (payable: Payable) => {
+      if (!canApprove) {
+        toast.error('You do not have permission to approve payables');
+        return;
+      }
+
       try {
         const { error } = await (supabase as any)
           .from('payables')
@@ -235,7 +244,11 @@ export default function PayablesPage() {
             approved_by: profileId,
             approved_at: new Date().toISOString(),
           })
-          .eq('id', payable.id);
+          .eq('id', payable.id)
+          .eq('organization_id', organizationId)
+          .eq('status', 'pending')
+          .select('id')
+          .single();
         if (error) throw error;
 
         await (supabase as any).from('financial_audit_log').insert({
@@ -254,11 +267,16 @@ export default function PayablesPage() {
         toast.error('Failed to approve payable');
       }
     },
-    [organizationId, profileId, supabase],
+    [canApprove, organizationId, profileId, supabase],
   );
 
   const handleMarkPaid = useCallback(
     async (payable: Payable) => {
+      if (!canMarkPaid) {
+        toast.error('You do not have permission to mark payables as paid');
+        return;
+      }
+
       try {
         const { error } = await (supabase as any)
           .from('payables')
@@ -266,7 +284,11 @@ export default function PayablesPage() {
             status: 'paid',
             paid_date: new Date().toISOString().split('T')[0],
           })
-          .eq('id', payable.id);
+          .eq('id', payable.id)
+          .eq('organization_id', organizationId)
+          .eq('status', 'approved')
+          .select('id')
+          .single();
         if (error) throw error;
 
         await (supabase as any).from('financial_audit_log').insert({
@@ -285,10 +307,15 @@ export default function PayablesPage() {
         toast.error('Failed to update payable');
       }
     },
-    [organizationId, profileId, supabase],
+    [canMarkPaid, organizationId, profileId, supabase],
   );
 
   const handleCreate = async () => {
+    if (!canCreate) {
+      toast.error('You do not have permission to create payables');
+      return;
+    }
+
     if (!formData.payee_name || !formData.amount) {
       toast.error('Please fill in required fields');
       return;
@@ -353,12 +380,12 @@ export default function PayablesPage() {
       emptyState: {
         title: 'No payables found',
         description: 'Create your first payable to get started',
-        action: (
+        action: canCreate ? (
           <Button onClick={() => setShowCreateModal(true)}>
             <Plus weight="light" className="mr-2 h-4 w-4" />
             New Payable
           </Button>
-        ),
+        ) : undefined,
       },
       toolbar: (
         <>
@@ -367,10 +394,12 @@ export default function PayablesPage() {
               View Summary
             </Button>
           </Link>
-          <Button size="sm" onClick={() => setShowCreateModal(true)}>
-            <Plus weight="light" className="mr-1 h-4 w-4" />
-            New Payable
-          </Button>
+          {canCreate && (
+            <Button size="sm" onClick={() => setShowCreateModal(true)}>
+              <Plus weight="light" className="mr-1 h-4 w-4" />
+              New Payable
+            </Button>
+          )}
         </>
       ),
       filters: [
@@ -516,7 +545,7 @@ export default function PayablesPage() {
           }),
       },
     };
-  }, [handleApprove, handleMarkPaid, organizationId, supabase]);
+  }, [canCreate, handleApprove, handleMarkPaid, organizationId, supabase]);
 
   if (!organizationId || !descriptor) {
     return (
@@ -792,7 +821,7 @@ export default function PayablesPage() {
             <Button variant="outline" onClick={() => setShowDetailModal(false)}>
               Close
             </Button>
-            {selectedPayable?.status === 'pending' && (
+            {canApprove && selectedPayable?.status === 'pending' && (
               <Button
                 onClick={() => {
                   void handleApprove(selectedPayable);
@@ -803,7 +832,7 @@ export default function PayablesPage() {
                 Approve
               </Button>
             )}
-            {selectedPayable?.status === 'approved' && (
+            {canMarkPaid && selectedPayable?.status === 'approved' && (
               <Button
                 onClick={() => {
                   void handleMarkPaid(selectedPayable);
