@@ -244,7 +244,11 @@ export default function PayablesPage() {
             approved_by: profileId,
             approved_at: new Date().toISOString(),
           })
-          .eq('id', payable.id);
+          .eq('id', payable.id)
+          .eq('organization_id', organizationId)
+          .eq('status', 'pending')
+          .select('id')
+          .single();
         if (error) throw error;
 
         await (supabase as any).from('financial_audit_log').insert({
@@ -280,7 +284,11 @@ export default function PayablesPage() {
             status: 'paid',
             paid_date: new Date().toISOString().split('T')[0],
           })
-          .eq('id', payable.id);
+          .eq('id', payable.id)
+          .eq('organization_id', organizationId)
+          .eq('status', 'approved')
+          .select('id')
+          .single();
         if (error) throw error;
 
         await (supabase as any).from('financial_audit_log').insert({
