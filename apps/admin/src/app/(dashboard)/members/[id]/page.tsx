@@ -43,6 +43,7 @@ const VALID_TABS = new Set<string>([
   'invoices',
   'payment-profiles',
   'portal',
+  'support',
   'documents',
   'activity',
   'audit',

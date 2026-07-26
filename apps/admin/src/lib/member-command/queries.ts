@@ -50,6 +50,7 @@ export async function loadMemberCommandCenterData(
     adminActivityRes,
     agentsRes,
     plansRes,
+    ticketsRes,
   ] = await Promise.all([
     supabase
       .from('memberships')
@@ -149,6 +150,13 @@ export async function loadMemberCommandCenterData(
       .eq('organization_id', orgId)
       .eq('is_active', true)
       .order('name'),
+    supabase
+      .from('tickets')
+      .select('id, subject, status, priority, category, created_at')
+      .eq('member_id', memberId)
+      .eq('organization_id', orgId)
+      .order('created_at', { ascending: false })
+      .limit(50),
   ]);
 
   const dependents = (dependentsRes.data ?? []) as Record<string, unknown>[];
@@ -198,6 +206,7 @@ export async function loadMemberCommandCenterData(
     contracts: (contractsRes.data ?? []) as Record<string, unknown>[],
     adminActivity: (adminActivityRes.data ?? []) as Record<string, unknown>[],
     enrollmentAudit,
+    tickets: (ticketsRes.data ?? []) as MemberCommandCenterData['tickets'],
     agents: (agentsRes.data ?? []) as MemberCommandCenterData['agents'],
     availablePlans: (plansRes.data ?? []) as MemberCommandCenterData['availablePlans'],
   };

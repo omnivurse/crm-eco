@@ -30,6 +30,7 @@ import {
   Pulse,
   Funnel,
   SignOut,
+  ChatCircle,
 } from '@phosphor-icons/react';
 import { useTerminal } from '@/components/terminal';
 
@@ -60,6 +61,7 @@ const navSections: NavSection[] = [
     items: [
       { label: 'Dashboard', href: '/dashboard', icon: icon(<SquaresFour weight="light" className="h-5 w-5" />) },
       { label: 'Members', href: '/members', icon: icon(<Users weight="light" className="h-5 w-5" />) },
+      { label: 'Support', href: '/support', icon: icon(<ChatCircle weight="light" className="h-5 w-5" />) },
       { label: 'Agents', href: '/agents', icon: icon(<UserCircleGear weight="light" className="h-5 w-5" />) },
     ],
   },

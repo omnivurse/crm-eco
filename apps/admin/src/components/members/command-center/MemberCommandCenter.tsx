@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowLeft, ClipboardText, CreditCard, FileText, Key, Package, Pulse, ShieldCheck, Users } from '@phosphor-icons/react';
+import { ArrowLeft, ChatCircle, ClipboardText, CreditCard, FileText, Key, Package, Pulse, ShieldCheck, Users } from '@phosphor-icons/react';
 import { useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -393,6 +393,51 @@ export function MemberCommandCenter({
             </CardHeader>
           </Card>
           <MemberBillingTab memberId={member.id} />
+        </TabsContent>
+
+        <TabsContent value="support" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ChatCircle weight="light" className="h-5 w-5" />
+                Support tickets
+              </CardTitle>
+              <CardDescription>
+                Same tickets as the member portal and CRM queue ·{' '}
+                <Link href="/support" className="text-[var(--adm-cyan)] hover:underline">
+                  Open support queue
+                </Link>
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              {data.tickets.length === 0 ? (
+                <p className="text-slate-500">No support tickets for this member.</p>
+              ) : (
+                data.tickets.map((ticket) => (
+                  <div
+                    key={ticket.id}
+                    className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 py-2 last:border-0 dark:border-white/5"
+                  >
+                    <div className="min-w-0">
+                      <Link
+                        href={`/support/${ticket.id}`}
+                        className="font-medium text-slate-900 hover:underline dark:text-white"
+                      >
+                        {ticket.subject}
+                      </Link>
+                      <p className="text-xs text-slate-500">
+                        {format(new Date(ticket.created_at), 'MMM d, yyyy')} · {ticket.category}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={statusBadgeVariant(ticket.status)}>{ticket.status}</Badge>
+                      <Badge variant="outline">{ticket.priority}</Badge>
+                    </div>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="portal" className="mt-6 max-w-lg">

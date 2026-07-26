@@ -130,6 +130,7 @@ import { InlineFieldEditor } from './v2/InlineFieldEditor';
 import { UnsavedChangesPill } from './v2/UnsavedChangesPill';
 import { MembershipChangeHistory } from './v2/MembershipChangeHistory';
 import { DependentCoverageHistory } from './v2/DependentCoverageHistory';
+import { MemberSupportTickets } from './v2/MemberSupportTickets';
 import { RecordTasksPanel } from './v2/RecordTasksPanel';
 import {
   RecordCampaignsPanel,
@@ -1128,7 +1129,10 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
             )}
 
             {linkedMemberId && (
-              <DependentCoverageHistory memberId={linkedMemberId} className="mt-4" />
+              <>
+                <DependentCoverageHistory memberId={linkedMemberId} className="mt-4" />
+                <MemberSupportTickets memberId={linkedMemberId} className="mt-4" />
+              </>
             )}
           </>
         );

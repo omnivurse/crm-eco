@@ -17,6 +17,8 @@ interface MembershipTenant {
 interface DashboardClientShellProps {
   children: ReactNode;
   profileId: string;
+  /** Auth user id (auth.uid) — required for admin_notifications RLS + realtime channel. */
+  authUserId: string;
   profileFullName: string | null;
   profileEmail: string;
   profileRole: string | null;
@@ -30,6 +32,7 @@ interface DashboardClientShellProps {
 export function DashboardClientShell({
   children,
   profileId,
+  authUserId,
   profileFullName,
   profileEmail,
   profileRole,
@@ -66,11 +69,11 @@ export function DashboardClientShell({
               role: profileRole || '',
               organizationId: activeTenantId,
             }}
-            userId={profileId}
+            userId={authUserId}
             tenants={switcherTenants}
             activeTenantId={activeTenantId}
           >
-            <AdminNotificationListener userId={profileId} />
+            <AdminNotificationListener userId={authUserId} />
             {children}
           </AdminShell>
         </PermissionsProvider>

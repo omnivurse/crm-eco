@@ -1,7 +1,7 @@
 'use server';
 
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
-import { getMemberForUser } from '@crm-eco/lib';
+import { getMemberForUser, notifyStaffOfMemberTicket } from '@crm-eco/lib';
 import { revalidatePath } from 'next/cache';
 import { findRecentDuplicate } from '@/lib/api/guard';
 
@@ -131,6 +131,18 @@ export async function createMemberTicket(formData: {
       // Don't fail the whole operation - ticket was created
     }
 
+    const memberName = [member.first_name, member.last_name].filter(Boolean).join(' ') || 'Member';
+    // Non-blocking: portal create must succeed even if staff notify fails.
+    void notifyStaffOfMemberTicket({
+      orgId: member.organization_id,
+      ticketId: ticket.id,
+      memberId: member.id,
+      memberName,
+      subject: formData.subject.trim(),
+      priority: 'normal',
+      kind: 'create',
+    });
+
     revalidatePath('/support');
 
     return { 
@@ -202,7 +214,8 @@ export async function addMemberTicketComment(
     }
 
     // Re-open waiting tickets when member replies
-    if (ticket.status === 'waiting') {
+    const wasWaiting = ticket.status === 'waiting';
+    if (wasWaiting) {
       await supabase
         .from('tickets')
         .update({ status: 'open', updated_at: new Date().toISOString() })
@@ -212,6 +225,24 @@ export async function addMemberTicketComment(
         .from('tickets')
         .update({ updated_at: new Date().toISOString() })
         .eq('id', ticketId);
+    }
+
+    if (wasWaiting) {
+      const memberName = [member.first_name, member.last_name].filter(Boolean).join(' ') || 'Member';
+      const { data: ticketRow } = await supabase
+        .from('tickets')
+        .select('subject, priority')
+        .eq('id', ticketId)
+        .maybeSingle();
+      void notifyStaffOfMemberTicket({
+        orgId: member.organization_id,
+        ticketId,
+        memberId: member.id,
+        memberName,
+        subject: ticketRow?.subject ?? 'Support ticket',
+        priority: ticketRow?.priority ?? 'normal',
+        kind: 'reply',
+      });
     }
 
     revalidatePath('/support');

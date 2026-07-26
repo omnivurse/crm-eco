@@ -4,6 +4,7 @@ import { brandingToCssText } from '@crm-eco/ui/lib/branding';
 import { LeadGenQuotePinGate } from '@crm-eco/ui/components/pin-lock-overlay';
 import { ConfirmDialogHost } from '@crm-eco/ui/components/confirm-dialog';
 import { PromptDialogHost } from '@crm-eco/ui/components/prompt-dialog';
+import { Toaster } from '@crm-eco/ui';
 import { getActiveTenant } from '@/lib/tenant';
 import { ThemeProvider } from '@/components/providers/theme-provider';
 import './globals.css';
@@ -78,6 +79,7 @@ export default async function RootLayout({
           {children}
           <ConfirmDialogHost />
           <PromptDialogHost />
+          <Toaster richColors position="top-right" />
         </ThemeProvider>
       </body>
     </html>

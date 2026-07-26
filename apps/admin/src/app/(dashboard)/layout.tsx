@@ -40,6 +40,7 @@ export default async function DashboardLayout({
   return (
     <DashboardClientShell
       profileId={profile.id}
+      authUserId={profile.user_id}
       profileFullName={profile.full_name}
       profileEmail={profile.email}
       profileRole={profile.role}

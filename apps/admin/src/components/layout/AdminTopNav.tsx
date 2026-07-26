@@ -44,12 +44,21 @@ import Link from 'next/link';
 interface Notification {
   id: string;
   title: string;
+  /** Mapped from DB `message` for display. */
   body?: string;
+  message?: string;
   href?: string;
   icon?: string;
   type?: string;
   is_read: boolean;
   created_at: string;
+  meta?: { href?: string; ticket_id?: string; member_id?: string } | Record<string, unknown> | null;
+}
+
+function resolveNotificationHref(n: Notification): string | undefined {
+  if (typeof n.href === 'string' && n.href) return n.href;
+  const metaHref = n.meta && typeof n.meta === 'object' ? (n.meta as { href?: unknown }).href : undefined;
+  return typeof metaHref === 'string' && metaHref ? metaHref : undefined;
 }
 
 interface AdminTopNavProps {
@@ -166,8 +175,21 @@ export function AdminTopNav({
       .limit(10);
 
     if (!error && data) {
-      setNotifications(data);
-      setUnreadCount(data.filter((n) => !n.is_read).length);
+      const mapped: Notification[] = data.map((n) => {
+        const meta = (n as { meta?: Notification['meta'] }).meta ?? null;
+        const href = resolveNotificationHref({
+          ...(n as Notification),
+          meta,
+        });
+        return {
+          ...(n as Notification),
+          meta,
+          href,
+          body: (n as { message?: string }).message ?? (n as Notification).body,
+        };
+      });
+      setNotifications(mapped);
+      setUnreadCount(mapped.filter((n) => !n.is_read).length);
     }
   }, [userId, supabase]);
 
@@ -226,8 +248,9 @@ export function AdminTopNav({
     if (!notification.is_read) {
       await handleMarkAsRead(notification.id);
     }
-    if (notification.href) {
-      router.push(notification.href);
+    const href = resolveNotificationHref(notification);
+    if (href) {
+      router.push(href);
     }
     setIsOpen(false);
   };
@@ -404,16 +427,16 @@ export function AdminTopNav({
                       >
                         {notification.title}
                       </p>
-                      {notification.body && (
+                      {(notification.body || notification.message) && (
                         <p className="mt-0.5 truncate text-xs text-[var(--adm-muted)]">
-                          {notification.body}
+                          {notification.body || notification.message}
                         </p>
                       )}
                       <p className="mt-1 text-xs text-[var(--adm-muted)]">
                         {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
                       </p>
                     </div>
-                    {notification.href && (
+                    {resolveNotificationHref(notification) && (
                       <ArrowSquareOut weight="light" className="mt-1 h-3 w-3 flex-shrink-0 text-[var(--adm-muted)]" />
                     )}
                   </DropdownMenuItem>

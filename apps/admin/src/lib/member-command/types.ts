@@ -16,6 +16,7 @@ export type MemberCommandTab =
   | 'invoices'
   | 'payment-profiles'
   | 'portal'
+  | 'support'
   | 'documents'
   | 'activity'
   | 'audit'
@@ -36,6 +37,7 @@ export const MEMBER_COMMAND_TABS: { id: MemberCommandTab; label: string }[] = [
   { id: 'invoices', label: 'Invoices' },
   { id: 'payment-profiles', label: 'Payment Profiles' },
   { id: 'portal', label: 'Portal Access' },
+  { id: 'support', label: 'Support' },
   { id: 'documents', label: 'Documents' },
   { id: 'activity', label: 'Activity' },
   { id: 'audit', label: 'Audit Log' },
@@ -108,6 +110,11 @@ export const MEMBER_COMMAND_TAB_SOURCES: Record<
     actions: ['members/actions.ts inviteMemberToPortal → memberOnboarding.ts'],
     components: ['MemberPortalAccess'],
   },
+  support: {
+    tables: ['tickets', 'ticket_comments'],
+    actions: ['getMemberTickets', 'support/actions.ts'],
+    components: ['MemberCommandCenter support tab'],
+  },
   documents: {
     tables: ['enrollment_contracts'],
     actions: ['loadMemberCommandCenterData'],
@@ -167,6 +174,14 @@ export interface MemberCommandCenterData {
   contracts: Record<string, unknown>[];
   adminActivity: Record<string, unknown>[];
   enrollmentAudit: Record<string, unknown>[];
+  tickets: {
+    id: string;
+    subject: string;
+    status: string;
+    priority: string;
+    category: string;
+    created_at: string;
+  }[];
   agents: { id: string; first_name: string; last_name: string; email: string }[];
   availablePlans: {
     id: string;
