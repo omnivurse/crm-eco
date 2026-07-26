@@ -226,7 +226,7 @@ export default function LoginPage() {
           type="button"
           className={authForm.secondaryBtn}
           onClick={() => {
-            window.location.href = 'mailto:support@doublehelixhub.com';
+            window.location.href = 'mailto:support@payitforwardhealth.com';
           }}
         >
           Contact Administrator

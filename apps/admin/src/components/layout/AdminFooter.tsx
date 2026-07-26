@@ -56,7 +56,7 @@ export function AdminFooter() {
             <span className="hidden sm:inline">Help</span>
           </Link>
           <a
-            href="mailto:support@doublehelixhub.com"
+            href="mailto:support@payitforwardhealth.com"
             title="Support"
             className="flex items-center gap-1.5 text-sm text-[var(--adm-muted)] transition-colors hover:text-[var(--adm-cyan)]"
           >

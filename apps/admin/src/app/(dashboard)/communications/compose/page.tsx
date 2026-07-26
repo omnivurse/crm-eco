@@ -37,6 +37,13 @@ interface Member {
   email: string;
 }
 
+interface SenderAddress {
+  id: string;
+  email: string;
+  name: string;
+  is_default: boolean;
+}
+
 export default function ComposeEmailPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -44,6 +51,7 @@ export default function ComposeEmailPage() {
   
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
+  const [senderAddresses, setSenderAddresses] = useState<SenderAddress[]>([]);
   const [sending, setSending] = useState(false);
   const [mode, setMode] = useState<'template' | 'custom'>('template');
   const [memberSearch, setMemberSearch] = useState('');
@@ -57,6 +65,8 @@ export default function ComposeEmailPage() {
     subject: '',
     bodyHtml: '',
     bodyText: '',
+    fromEmail: '',
+    fromName: '',
     variables: {} as Record<string, string>,
   });
 
@@ -112,6 +122,22 @@ export default function ComposeEmailPage() {
     if (membersData) {
       setMembers(membersData);
     }
+
+    try {
+      const sendersRes = await fetch('/api/email/sender-addresses');
+      const sendersData = await sendersRes.json();
+      if (sendersRes.ok && sendersData.addresses?.length) {
+        setSenderAddresses(sendersData.addresses);
+        const defaultSender = sendersData.addresses.find((a: SenderAddress) => a.is_default) || sendersData.addresses[0];
+        setFormData((prev) => ({
+          ...prev,
+          fromEmail: defaultSender.email,
+          fromName: defaultSender.name,
+        }));
+      }
+    } catch {
+      // Fall back to env default on send
+    }
   }
 
   function selectMember(member: Member) {
@@ -162,6 +188,9 @@ export default function ComposeEmailPage() {
           subject: mode === 'custom' ? formData.subject : undefined,
           html: mode === 'custom' ? formData.bodyHtml : undefined,
           text: mode === 'custom' ? formData.bodyText : undefined,
+          fromEmail: formData.fromEmail || undefined,
+          fromName: formData.fromName || undefined,
+          replyTo: formData.fromEmail?.startsWith('noreply@') ? 'support@payitforwardhealth.com' : formData.fromEmail || undefined,
           variables: formData.variables,
         }),
       });
@@ -260,6 +289,39 @@ export default function ComposeEmailPage() {
               </div>
             </CardContent>
           </Card>
+
+          {senderAddresses.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>From</CardTitle>
+                <CardDescription>Send as a verified @payitforwardhealth.com address</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Select
+                  value={formData.fromEmail}
+                  onValueChange={(value) => {
+                    const sender = senderAddresses.find((s) => s.email === value);
+                    setFormData((prev) => ({
+                      ...prev,
+                      fromEmail: value,
+                      fromName: sender?.name || prev.fromName,
+                    }));
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select sender" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {senderAddresses.map((sender) => (
+                      <SelectItem key={sender.id} value={sender.email}>
+                        {sender.name} &lt;{sender.email}&gt;
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Email Content */}
           <Card>

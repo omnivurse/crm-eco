@@ -216,7 +216,7 @@ export default function TermsOfServicePage() {
                 </h2>
                 <p className="mt-4">
                   If you have questions about these Terms of Service, please
-                  contact us at legal@doublehelixhub.com or through our Contact
+                  contact us at legal@payitforwardhealth.com or through our Contact
                   page. We will respond to inquiries as promptly as possible.
                 </p>
                 <p className="mt-4">

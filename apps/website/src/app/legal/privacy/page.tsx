@@ -131,7 +131,7 @@ export default function PrivacyPolicyPage() {
                   Depending on your location, you may have rights to access, correct,
                   or delete your personal information. You may also have the right
                   to restrict or object to certain processing. To exercise these
-                  rights, contact us at privacy@doublehelixhub.com.
+                  rights, contact us at privacy@payitforwardhealth.com.
                 </p>
                 <p className="mt-4">
                   We will respond to your request within a reasonable timeframe. If
@@ -195,7 +195,7 @@ export default function PrivacyPolicyPage() {
                 </h2>
                 <p className="mt-4">
                   For questions about this Privacy Policy or our data practices,
-                  please contact us at privacy@doublehelixhub.com or through
+                  please contact us at privacy@payitforwardhealth.com or through
                   our Contact page. Our privacy team will respond to your inquiry
                   as promptly as possible.
                 </p>

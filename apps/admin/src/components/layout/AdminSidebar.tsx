@@ -117,6 +117,7 @@ const navSections: NavSection[] = [
     title: 'Communications',
     collapsible: true,
     items: [
+      { label: 'Inbox', href: '/communications/inbox', icon: icon(<ChatCircle weight="light" className="h-5 w-5" />) },
       { label: 'Compose', href: '/communications/compose', icon: icon(<EnvelopeSimple weight="light" className="h-5 w-5" />) },
       { label: 'Templates', href: '/communications/templates', icon: icon(<FileText weight="light" className="h-5 w-5" />) },
       { label: 'History', href: '/communications/history', icon: icon(<ChartBar weight="light" className="h-5 w-5" />) },

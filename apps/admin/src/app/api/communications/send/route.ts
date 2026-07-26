@@ -31,6 +31,9 @@ export async function POST(request: NextRequest) {
       html,
       text,
       variables = {},
+      fromEmail,
+      fromName,
+      replyTo,
     } = body;
 
     const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -79,6 +82,9 @@ export async function POST(request: NextRequest) {
       html,
       text,
       variables,
+      fromEmail,
+      fromName,
+      replyTo,
       triggeredBy: 'manual',
       triggeredByProfileId: profile.id,
     });

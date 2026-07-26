@@ -478,7 +478,7 @@ export async function GET(request: NextRequest) {
     process.env.AGE_65_NOTIFICATION_FROM
     || process.env.RESEND_FROM_EMAIL
     || process.env.FROM_EMAIL
-    || 'notifications@doublehelixhub.com';
+    || 'notifications@payitforwardhealth.com';
   const fromEmail = `${fromName} <${fromAddress}>`;
 
   let sent = 0;

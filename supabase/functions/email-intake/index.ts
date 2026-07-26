@@ -167,10 +167,14 @@ async function verifyAuth(req: Request): Promise<boolean> {
   const svixTimestamp = req.headers.get("svix-timestamp");
   const svixSignature = req.headers.get("svix-signature");
   if (svixId && svixTimestamp && svixSignature) {
-    const webhookSecret = Deno.env.get("RESEND_WEBHOOK_SECRET");
-    if (webhookSecret) {
-      cachedRawBody = await req.text();
-      return verifySvixSignature(cachedRawBody, svixId, svixTimestamp, svixSignature, webhookSecret);
+    cachedRawBody = await req.text();
+    const inboundSecret = Deno.env.get("RESEND_INBOUND_WEBHOOK_SECRET");
+    const legacySecret = Deno.env.get("RESEND_WEBHOOK_SECRET");
+    for (const webhookSecret of [inboundSecret, legacySecret]) {
+      if (!webhookSecret) continue;
+      if (await verifySvixSignature(cachedRawBody, svixId, svixTimestamp, svixSignature, webhookSecret)) {
+        return true;
+      }
     }
   }
 

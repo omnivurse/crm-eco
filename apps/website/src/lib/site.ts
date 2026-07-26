@@ -33,6 +33,17 @@ export const EMAIL = {
   general: 'hello@payitforwardhealth.com',
   support: 'support@payitforwardhealth.com',
   sales: 'membership@payitforwardhealth.com',
+  contact: 'contact@payitforwardhealth.com',
+  info: 'info@payitforwardhealth.com',
+  billing: 'billing@payitforwardhealth.com',
+  admin: 'admin@payitforwardhealth.com',
+  privacy: 'privacy@payitforwardhealth.com',
+  compliance: 'compliance@payitforwardhealth.com',
+  legal: 'legal@payitforwardhealth.com',
+  noreply: 'noreply@payitforwardhealth.com',
+  enrollment: 'enrollment@payitforwardhealth.com',
+  advocacy: 'advocacy@payitforwardhealth.com',
+  security: 'security@payitforwardhealth.com',
 } as const;
 
 export const PORTAL_URL =
