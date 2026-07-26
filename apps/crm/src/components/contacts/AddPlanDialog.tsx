@@ -161,7 +161,7 @@ export function AddPlanDialog({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="sm:col-span-2">
-              <Label htmlFor="plan_name">Plan name *</Label>
+              <Label htmlFor="plan_name" className="mb-1.5 block">Plan name *</Label>
               <Input
                 id="plan_name"
                 value={form.plan_name}
@@ -171,7 +171,7 @@ export function AddPlanDialog({
               />
             </div>
             <div>
-              <Label htmlFor="plan_type">Plan type</Label>
+              <Label htmlFor="plan_type" className="mb-1.5 block">Plan type</Label>
               <select
                 id="plan_type"
                 value={form.plan_type}
@@ -186,7 +186,7 @@ export function AddPlanDialog({
               </select>
             </div>
             <div>
-              <Label htmlFor="metal_level">Metal level</Label>
+              <Label htmlFor="metal_level" className="mb-1.5 block">Metal level</Label>
               <select
                 id="metal_level"
                 value={form.metal_level}
@@ -201,43 +201,46 @@ export function AddPlanDialog({
               </select>
             </div>
             <div>
-              <Label htmlFor="base_premium">Monthly premium ($)</Label>
+              <Label htmlFor="base_premium" className="mb-1.5 block">Monthly premium ($)</Label>
               <Input
                 id="base_premium"
                 type="number"
                 inputMode="decimal"
                 min={0}
                 step="0.01"
+                placeholder="0.00"
                 value={form.base_premium}
                 onChange={(e) => update('base_premium', e.target.value)}
               />
             </div>
             <div>
-              <Label htmlFor="deductible">Deductible ($)</Label>
+              <Label htmlFor="deductible" className="mb-1.5 block">Deductible ($)</Label>
               <Input
                 id="deductible"
                 type="number"
                 inputMode="decimal"
                 min={0}
                 step="0.01"
+                placeholder="0.00"
                 value={form.deductible}
                 onChange={(e) => update('deductible', e.target.value)}
               />
             </div>
             <div>
-              <Label htmlFor="max_out_of_pocket">Max out-of-pocket ($)</Label>
+              <Label htmlFor="max_out_of_pocket" className="mb-1.5 block">Max out-of-pocket ($)</Label>
               <Input
                 id="max_out_of_pocket"
                 type="number"
                 inputMode="decimal"
                 min={0}
                 step="0.01"
+                placeholder="0.00"
                 value={form.max_out_of_pocket}
                 onChange={(e) => update('max_out_of_pocket', e.target.value)}
               />
             </div>
             <div>
-              <Label htmlFor="plan_year">Plan year</Label>
+              <Label htmlFor="plan_year" className="mb-1.5 block">Plan year</Label>
               <Input
                 id="plan_year"
                 type="number"
@@ -250,31 +253,33 @@ export function AddPlanDialog({
               />
             </div>
             <div>
-              <Label htmlFor="copay_primary">Primary copay ($)</Label>
+              <Label htmlFor="copay_primary" className="mb-1.5 block">Primary copay ($)</Label>
               <Input
                 id="copay_primary"
                 type="number"
                 inputMode="decimal"
                 min={0}
                 step="0.01"
+                placeholder="0.00"
                 value={form.copay_primary}
                 onChange={(e) => update('copay_primary', e.target.value)}
               />
             </div>
             <div>
-              <Label htmlFor="copay_specialist">Specialist copay ($)</Label>
+              <Label htmlFor="copay_specialist" className="mb-1.5 block">Specialist copay ($)</Label>
               <Input
                 id="copay_specialist"
                 type="number"
                 inputMode="decimal"
                 min={0}
                 step="0.01"
+                placeholder="0.00"
                 value={form.copay_specialist}
                 onChange={(e) => update('copay_specialist', e.target.value)}
               />
             </div>
             <div className="sm:col-span-2">
-              <Label htmlFor="summary_url">Plan summary URL</Label>
+              <Label htmlFor="summary_url" className="mb-1.5 block">Plan summary URL</Label>
               <Input
                 id="summary_url"
                 type="url"

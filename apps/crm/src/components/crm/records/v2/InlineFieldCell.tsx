@@ -229,7 +229,9 @@ export const InlineFieldCell = memo(function InlineFieldCell({
             value={value == null ? '' : String(value)}
             type="text"
             moneyDecimals={2}
-            placeholder={`Add ${field.label.toLowerCase()}`}
+            // Short empty cue — avoid echoing the label (e.g. "Add annual deductible")
+            // which collided with the dense left-hand label column.
+            placeholder="—"
             validate={(v) => {
               if (v === '') return null;
               if (!isValidCurrencyTyping(v)) return 'Enter up to 2 decimal places';
@@ -270,7 +272,7 @@ export const InlineFieldCell = memo(function InlineFieldCell({
           value={value == null ? '' : String(value)}
           type="text"
           moneyDecimals={2}
-          placeholder={`Add ${field.label.toLowerCase()}`}
+          placeholder="—"
           validate={(v) => {
             if (v === '') return null;
             if (!isValidCurrencyTyping(v)) return 'Enter up to 2 decimal places';

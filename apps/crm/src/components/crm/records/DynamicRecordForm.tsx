@@ -272,7 +272,9 @@ const FormFieldRenderer = memo(function FormFieldRenderer({
         <Input
           id={field.key}
           className={cn(error && 'border-destructive')}
-          placeholder={field.tooltip || `Enter ${field.label.toLowerCase()}`}
+          // Neutral amount placeholder — do not echo the field label (avoids
+          // "Annual deductible" / "Enter annual deductible" visual collision).
+          placeholder="$0.00"
           type="text"
           inputMode="decimal"
           autoComplete="off"
@@ -296,7 +298,7 @@ const FormFieldRenderer = memo(function FormFieldRenderer({
           <Input
             id={field.key}
             className={cn(error && 'border-destructive')}
-            placeholder={field.tooltip || `Enter ${field.label.toLowerCase()}`}
+            placeholder="$0.00"
             type="text"
             inputMode="decimal"
             autoComplete="off"
@@ -802,9 +804,12 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
           >
             <Label
               htmlFor={field.key}
+              title={field.label}
               className={cn(
-                'shrink-0 text-muted-foreground text-[11px] font-medium uppercase leading-snug tracking-wide',
-                opts?.tightLabel ? 'w-24' : 'w-36',
+                // Fixed width + truncate so long labels (e.g. "Max out-of-pocket")
+                // never spill into / overlap the editable value column.
+                'shrink-0 truncate text-muted-foreground text-[11px] font-medium uppercase leading-snug tracking-wide',
+                opts?.tightLabel ? 'w-32' : 'w-40',
               )}
             >
               {field.label}

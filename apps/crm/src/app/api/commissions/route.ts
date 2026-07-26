@@ -21,7 +21,10 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status');
     const periodStart = searchParams.get('periodStart');
     const periodEnd = searchParams.get('periodEnd');
-    const limit = parseInt(searchParams.get('limit') || '50');
+    const rawLimit = parseInt(searchParams.get('limit') || '50', 10);
+    const limit = Number.isFinite(rawLimit)
+      ? Math.min(Math.max(rawLimit, 1), 500)
+      : 50;
 
     let query = supabase
       .from('commission_transactions')

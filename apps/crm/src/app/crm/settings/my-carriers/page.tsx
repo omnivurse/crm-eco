@@ -107,10 +107,18 @@ export default function MyCarriersPage() {
   );
 }
 
+/** Only allow in-app CRM relative paths (blocks open redirects). */
+function safeCrmReturnPath(raw: string | null): string | null {
+  if (!raw) return null;
+  if (!raw.startsWith('/') || raw.startsWith('//')) return null;
+  if (!raw.startsWith('/crm/')) return null;
+  return raw;
+}
+
 function MyCarriersContent() {
   const [activeTab, setActiveTab] = useState<FieldCarrierType>('insurance');
   const searchParams = useSearchParams();
-  const returnTo = searchParams.get('returnTo');
+  const returnTo = safeCrmReturnPath(searchParams.get('returnTo'));
 
   return (
     <div className="space-y-6">
@@ -140,7 +148,10 @@ function MyCarriersContent() {
               Curate the carriers and ministries you actively write business with. The list you build here drives
               the dropdowns on every record (Lead, Contact, Member). Options come from the
               org&rsquo;s shared{' '}
-              <Link href="/crm/settings/carriers" className="text-teal-600 hover:underline">
+              <Link
+                href={`/crm/settings/carriers${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ''}`}
+                className="text-teal-600 hover:underline"
+              >
                 Carrier & Ministry Directory
               </Link>{' '}
               directory.

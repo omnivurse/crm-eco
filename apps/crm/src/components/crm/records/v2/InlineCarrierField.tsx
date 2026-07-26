@@ -13,6 +13,7 @@
 
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { Badge } from '@crm-eco/ui/components/badge';
 import {
@@ -181,6 +182,7 @@ export const InlineCarrierField = memo(function InlineCarrierField({
   className,
   ariaLabel,
 }: InlineCarrierFieldProps) {
+  const pathname = usePathname();
   const terms = getCarrierTerms(carrierType);
   const placeholder = placeholderOverride ?? `Select ${terms.singularLower}`;
   const { save, fields } = useRecordFieldSave();
@@ -528,7 +530,7 @@ export const InlineCarrierField = memo(function InlineCarrierField({
           {/* Footer — manage list link */}
           <div className="mt-1 border-t border-slate-100 px-2 py-1.5 dark:border-slate-800">
             <Link
-              href="/crm/settings/my-carriers"
+              href={`/crm/settings/my-carriers${pathname ? `?returnTo=${encodeURIComponent(pathname)}` : ''}`}
               className="inline-flex items-center gap-1 text-[11px] text-teal-600 hover:underline dark:text-teal-400"
               onClick={closePicker}
             >

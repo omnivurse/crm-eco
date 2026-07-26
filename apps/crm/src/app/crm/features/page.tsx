@@ -921,14 +921,14 @@ export default function FeaturesPage() {
         <FeatureCard
           icon={<FileSpreadsheet className="w-6 h-6" />}
           title="Sales Reports"
-          description="Detailed sales performance reporting"
+          description="Track advisor commissions and export payout reports"
           features={[
-            'Pipeline reports',
-            'Revenue reports',
-            'Activity reports',
-            'Conversion reports',
+            'Per-advisor commission tracking',
+            'Hierarchy and transaction views',
+            'Status filters',
+            'CSV export',
           ]}
-          href="/crm/reports/sales"
+          href="/crm/commissions"
         />
         <FeatureCard
           icon={<Download className="w-6 h-6" />}

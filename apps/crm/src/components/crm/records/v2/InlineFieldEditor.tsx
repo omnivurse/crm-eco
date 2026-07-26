@@ -349,6 +349,7 @@ export const InlineFieldEditor = memo(function InlineFieldEditor({
           inputMode={moneyDecimals != null ? 'decimal' : undefined}
           step={moneyDecimals != null ? '0.01' : undefined}
           {...sharedEditProps}
+          placeholder={moneyDecimals != null ? '$0.00' : placeholder}
           className={cn(
             'min-w-0 rounded-md border border-teal-400 dark:border-teal-500/60 bg-white dark:bg-slate-900',
             'px-1.5 py-0.5 text-sm text-slate-900 dark:text-slate-100',

@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense, useState, useEffect, useCallback } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useDebouncedValue } from '@/hooks/useDebouncedSearch';
 import Link from 'next/link';
 import { CarrierContactsPanel } from '@/components/crm/carriers/CarrierContactsPanel';
@@ -45,6 +45,14 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@crm-eco/ui/lib/utils';
+
+/** Only allow in-app CRM relative paths (blocks open redirects). */
+function safeCrmReturnPath(raw: string | null): string | null {
+  if (!raw) return null;
+  if (!raw.startsWith('/') || raw.startsWith('//')) return null;
+  if (!raw.startsWith('/crm/')) return null;
+  return raw;
+}
 
 interface Carrier {
   id: string;
@@ -119,8 +127,9 @@ function CarrierManagementContent() {
   const [editingCarrier, setEditingCarrier] = useState<Carrier | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
+  const router = useRouter();
   const searchParams = useSearchParams();
-  const returnTo = searchParams.get('returnTo');
+  const returnTo = safeCrmReturnPath(searchParams.get('returnTo'));
 
   // Context-aware terminology: 'Ministry' for healthshare, 'Carrier' for everything else
   const activeType = editingCarrier?.carrier_type ?? form.carrier_type;
@@ -185,6 +194,10 @@ function CarrierManagementContent() {
         });
         if (!res.ok) throw new Error(await readApiError(res, 'Update failed'));
         toast.success(`${termForType(editingCarrier.carrier_type)} updated`);
+        setDialogOpen(false);
+        setEditingCarrier(null);
+        setForm(emptyForm);
+        fetchCarriers();
       } else {
         const res = await fetch('/api/crm/carriers', {
           method: 'POST',
@@ -193,11 +206,16 @@ function CarrierManagementContent() {
         });
         if (!res.ok) throw new Error(await readApiError(res, 'Create failed'));
         toast.success(`${termForType(form.carrier_type)} created`);
+        setDialogOpen(false);
+        setEditingCarrier(null);
+        setForm(emptyForm);
+        // Return to the member/record the user was editing (if they arrived via returnTo).
+        if (returnTo) {
+          router.push(returnTo);
+          return;
+        }
+        fetchCarriers();
       }
-      setDialogOpen(false);
-      setEditingCarrier(null);
-      setForm(emptyForm);
-      fetchCarriers();
     } catch (err) {
       const message =
         err instanceof Error && err.message && err.message !== '[object Object]'
