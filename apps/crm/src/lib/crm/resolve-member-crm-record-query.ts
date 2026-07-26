@@ -19,6 +19,10 @@ type RecordRow = {
   crm_modules: { key: string } | { key: string }[] | null;
 };
 
+/** PostgREST filter builder after `.select()` — keep loose so call sites stay simple. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type CrmRecordsFilterQuery = any;
+
 function toCandidate(row: RecordRow): MemberCrmRecordCandidate {
   const modules = Array.isArray(row.crm_modules)
     ? row.crm_modules
@@ -48,20 +52,16 @@ function dedupeCandidates(rows: RecordRow[]): MemberCrmRecordCandidate[] {
 async function fetchContactModuleCandidates(
   supabase: SupabaseClient,
   orgId: string,
-  buildQuery: (
-    query: ReturnType<SupabaseClient['from']>,
-  ) => ReturnType<SupabaseClient['from']>,
+  applyFilters: (query: CrmRecordsFilterQuery) => CrmRecordsFilterQuery,
 ): Promise<RecordRow[]> {
-  let query = supabase
+  const base = supabase
     .from('crm_records')
     .select(CANDIDATE_SELECT)
     .eq('organization_id', orgId)
     .is('deleted_at' as never, null)
     .in('crm_modules.key', ['contacts', 'members']);
 
-  query = buildQuery(query) as typeof query;
-
-  const { data, error } = await query;
+  const { data, error } = await applyFilters(base);
   if (error) {
     console.error('[resolveMemberCrmRecord] candidate query failed:', error.message);
     return [];
