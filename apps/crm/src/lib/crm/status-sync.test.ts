@@ -45,6 +45,16 @@ describe('applyStatusToRecordUpdates', () => {
     expect(data.contact_status).toBe('Active');
     expect(data.lead_status).toBeUndefined();
   });
+
+  it('preserves tenant-defined statuses outside the compact picker allowlist', () => {
+    const updates: Record<string, unknown> = {};
+    applyStatusToRecordUpdates(updates, 'Sent to Webinar', 'contacts', {
+      contact_status: 'Contacted',
+    });
+
+    expect(updates.status).toBe('Sent to Webinar');
+    expect(updates.data).toEqual({ contact_status: 'Sent to Webinar' });
+  });
 });
 
 describe('PATCH remirror clobber guard (Wave 1)', () => {
