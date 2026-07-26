@@ -62,7 +62,7 @@ export function Footer() {
               <span className="hidden sm:inline">Help</span>
             </Link>
             <a
-              href="mailto:support@doublehelixhub.com"
+              href="mailto:support@payitforwardhealth.com"
               className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
             >
               <MessageCircle className="w-4 h-4" />

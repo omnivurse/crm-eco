@@ -50,6 +50,12 @@ export function ComposeModal({
       throw new Error('At least one recipient is required');
     }
 
+    const fromEmail = data.from_email || 'noreply@payitforwardhealth.com';
+    const fromName = data.from_name || 'Pay It Forward Health';
+    const replyTo = fromEmail.startsWith('noreply@')
+      ? 'support@payitforwardhealth.com'
+      : fromEmail;
+
     // Send via Resend through the communications API
     const res = await fetch('/api/communications/send', {
       method: 'POST',
@@ -62,7 +68,9 @@ export function ComposeModal({
         body_text: data.body_text,
         cc: data.cc.map(r => r.email),
         bcc: data.bcc.map(r => r.email),
-        from_name: authProfile.full_name || authUserEmail,
+        from_email: fromEmail,
+        from_name: fromName,
+        reply_to: replyTo,
       }),
     });
 
@@ -73,7 +81,7 @@ export function ComposeModal({
     const now = new Date().toISOString();
     const messageId = result.message_id
       ? `<${result.message_id}>`
-      : `<${crypto.randomUUID()}@mail.doublehelixhub.com>`;
+      : `<${crypto.randomUUID()}@payitforwardhealth.com>`;
 
     const plainPreview = (data.body_text || data.body_html || '')
       .replace(/<[^>]*>/g, '')
@@ -112,8 +120,8 @@ export function ComposeModal({
         conversation_id: conv.id,
         channel: 'email',
         direction: 'outbound',
-        from_name: authProfile.full_name || authUserEmail,
-        from_address: authUserEmail,
+        from_name: fromName,
+        from_address: fromEmail,
         to_address: data.to[0].email,
         to_name: data.to[0].name || null,
         subject: data.subject || null,
@@ -280,8 +288,8 @@ export function ComposeModal({
               showSave={true}
               showAttachments={true}
               showSignatures={true}
-              fallbackEmail={authUserEmail}
-              fallbackName={authProfile.full_name || undefined}
+              fallbackEmail="noreply@payitforwardhealth.com"
+              fallbackName="Pay It Forward Health"
               className="border-0 shadow-none"
             />
           </div>

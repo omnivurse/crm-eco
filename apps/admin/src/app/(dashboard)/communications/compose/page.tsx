@@ -62,10 +62,10 @@ export default function ComposeEmailPage() {
     toName: '',
     recipientType: 'member' as 'member' | 'advisor' | 'lead' | 'other',
     recipientId: searchParams.get('recipientId') || '',
-    subject: '',
+    subject: searchParams.get('subject') || '',
     bodyHtml: '',
     bodyText: '',
-    fromEmail: '',
+    fromEmail: searchParams.get('from') || '',
     fromName: '',
     variables: {} as Record<string, string>,
   });
@@ -128,12 +128,22 @@ export default function ComposeEmailPage() {
       const sendersData = await sendersRes.json();
       if (sendersRes.ok && sendersData.addresses?.length) {
         setSenderAddresses(sendersData.addresses);
-        const defaultSender = sendersData.addresses.find((a: SenderAddress) => a.is_default) || sendersData.addresses[0];
-        setFormData((prev) => ({
-          ...prev,
-          fromEmail: defaultSender.email,
-          fromName: defaultSender.name,
-        }));
+        setFormData((prev) => {
+          const preferred =
+            sendersData.addresses.find((a: SenderAddress) => a.email === prev.fromEmail) ||
+            sendersData.addresses.find((a: SenderAddress) => a.is_default) ||
+            sendersData.addresses[0];
+          return {
+            ...prev,
+            fromEmail: preferred.email,
+            fromName: preferred.name,
+            // Prefer custom/reply mode when opened from inbox with a recipient
+            ...(prev.toEmail && prev.subject ? {} : {}),
+          };
+        });
+        if (searchParams.get('to')) {
+          setMode('custom');
+        }
       }
     } catch {
       // Fall back to env default on send

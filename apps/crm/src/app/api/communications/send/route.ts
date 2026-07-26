@@ -89,6 +89,7 @@ export async function POST(request: NextRequest) {
         body_text: params.body_text as string | undefined,
         cc: params.cc as string[] | undefined,
         bcc: params.bcc as string[] | undefined,
+        from_email: params.from_email as string | undefined,
         from_name: params.from_name as string | undefined,
         reply_to: params.reply_to as string | undefined,
         template_id: params.template_id as string | undefined,

@@ -49,15 +49,30 @@ export function ReplyForm({
     return messages.length > 0 ? messages[messages.length - 1] : null;
   }, [messages]);
 
+  /** Monitored mailbox that received the inbound mail (support@, billing@, …). */
+  const monitoredFrom = useMemo(() => {
+    const candidate =
+      lastInbound?.to_address ||
+      lastInbound?.reply_to_address ||
+      'support@payitforwardhealth.com';
+    const normalized = candidate.trim().toLowerCase();
+    if (normalized.endsWith('@payitforwardhealth.com') || normalized.endsWith('@mail.payitforwardhealth.com')) {
+      // Prefer root-domain From for outbound even if inbound arrived via mail.
+      return normalized.replace('@mail.payitforwardhealth.com', '@payitforwardhealth.com');
+    }
+    return 'support@payitforwardhealth.com';
+  }, [lastInbound]);
+
   // Build CC list for Reply All
   const replyAllCc = useMemo(() => {
     if (!lastInbound) return [];
     const ccList = lastInbound.cc_addresses || [];
-    // Filter out our own email from CC
-    return ccList.filter(
-      (addr: { email: string }) => addr.email.toLowerCase() !== authUserEmail.toLowerCase()
-    );
-  }, [lastInbound, authUserEmail]);
+    // Filter out our own monitored mailbox + agent email from CC
+    return ccList.filter((addr: { email: string }) => {
+      const email = addr.email.toLowerCase();
+      return email !== authUserEmail.toLowerCase() && email !== monitoredFrom;
+    });
+  }, [lastInbound, authUserEmail, monitoredFrom]);
 
   const handleSendReply = useCallback(async () => {
     if (!replyHtml.trim() || replyHtml === '<p></p>') {
@@ -95,7 +110,9 @@ export function ReplyForm({
       // Build CC list for Reply All
       const ccEmails = replyMode === 'reply_all' ? replyAllCc.map(r => r.email) : [];
 
-      // Send via Resend
+      const fromName = 'Pay It Forward Health';
+
+      // Send via Resend from the monitored mailbox that received the thread
       const res = await fetch('/api/communications/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -106,8 +123,9 @@ export function ReplyForm({
           body_html: replyHtml,
           body_text: bodyText,
           cc: ccEmails,
-          from_name: authProfile.full_name || authUserEmail,
-          reply_to: authUserEmail,
+          from_email: monitoredFrom,
+          from_name: fromName,
+          reply_to: monitoredFrom,
         }),
       });
 
@@ -132,8 +150,8 @@ export function ReplyForm({
         conversation_id: selectedConversation.id,
         channel: 'email',
         direction: 'outbound',
-        from_name: authProfile.full_name || authUserEmail,
-        from_address: authUserEmail,
+        from_name: fromName,
+        from_address: monitoredFrom,
         to_address: toAddress,
         to_name: lastInbound?.from_name || selectedConversation.contact_name,
         subject: replySubject,
@@ -182,6 +200,7 @@ export function ReplyForm({
     lastMessage,
     authProfile,
     authUserEmail,
+    monitoredFrom,
     replyAllCc,
     onReplySent,
     onForward,
@@ -228,6 +247,10 @@ export function ReplyForm({
               </div>
             </>
           )}
+        </div>
+
+        <div className="text-xs text-slate-500 truncate">
+          From <span className="font-medium text-slate-700 dark:text-slate-300">{monitoredFrom}</span>
         </div>
 
         {replyMode === 'reply_all' && replyAllCc.length > 0 && (

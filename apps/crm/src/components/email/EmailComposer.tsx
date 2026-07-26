@@ -80,6 +80,8 @@ interface EmailComposerProps {
 
 export interface EmailComposerData {
   sender_address_id?: string;
+  from_email?: string;
+  from_name?: string;
   to: EmailRecipient[];
   cc: EmailRecipient[];
   bcc: EmailRecipient[];
@@ -117,6 +119,8 @@ export const EmailComposer = memo(function EmailComposer({
 }: EmailComposerProps) {
   // Form state
   const [senderAddressId, setSenderAddressId] = useState<string>('');
+  const [fromEmail, setFromEmail] = useState<string>(fallbackEmail || '');
+  const [fromName, setFromName] = useState<string>(fallbackName || '');
   const [to, setTo] = useState<EmailRecipient[]>(initialTo);
   const [cc, setCc] = useState<EmailRecipient[]>(initialCc);
   const [bcc, setBcc] = useState<EmailRecipient[]>(initialBcc);
@@ -185,6 +189,8 @@ export const EmailComposer = memo(function EmailComposer({
   // Get composer data
   const getComposerData = useCallback((): EmailComposerData => ({
     sender_address_id: senderAddressId || undefined,
+    from_email: fromEmail || fallbackEmail || undefined,
+    from_name: fromName || fallbackName || undefined,
     to,
     cc,
     bcc,
@@ -192,7 +198,20 @@ export const EmailComposer = memo(function EmailComposer({
     body_html: getFullBody(),
     signature_id: signatureId || undefined,
     attachments: attachments.filter(a => !a.is_uploading && !a.error),
-  }), [senderAddressId, to, cc, bcc, subject, getFullBody, signatureId, attachments]);
+  }), [
+    senderAddressId,
+    fromEmail,
+    fromName,
+    fallbackEmail,
+    fallbackName,
+    to,
+    cc,
+    bcc,
+    subject,
+    getFullBody,
+    signatureId,
+    attachments,
+  ]);
 
   // Add recipient helper
   const addRecipient = (
@@ -321,7 +340,11 @@ export const EmailComposer = memo(function EmailComposer({
           <div className="flex-1">
             <SenderSelector
               value={senderAddressId}
-              onChange={(id) => setSenderAddressId(id)}
+              onChange={(id, address) => {
+                setSenderAddressId(id);
+                setFromEmail(address.email);
+                setFromName(address.name || '');
+              }}
               disabled={disabled}
               fallbackEmail={fallbackEmail}
               fallbackName={fallbackName}

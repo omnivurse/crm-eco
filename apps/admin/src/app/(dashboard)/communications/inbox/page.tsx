@@ -163,7 +163,10 @@ export default function AdminInboxPage() {
                   </div>
                   <Button variant="outline" size="sm" asChild>
                     <Link
-                      href={`/communications/compose?to=${encodeURIComponent(selectedConversation?.from_email || '')}&subject=${encodeURIComponent(`Re: ${selectedConversation?.subject || ''}`)}`}
+                      href={`/communications/compose?to=${encodeURIComponent(selectedConversation?.from_email || '')}&subject=${encodeURIComponent(`Re: ${selectedConversation?.subject || ''}`)}&from=${encodeURIComponent(
+                        messages.find((m) => m.direction === 'inbound')?.to_address ||
+                          'support@payitforwardhealth.com',
+                      )}`}
                     >
                       Reply
                     </Link>

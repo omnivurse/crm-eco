@@ -73,7 +73,7 @@ export class ResendEmailService {
     if (!this.defaultFrom) {
       throw new Error('RESEND_FROM_EMAIL environment variable is required');
     }
-    this.defaultFromName = defaultFromName || process.env.RESEND_FROM_NAME || 'Double Helix Hub';
+    this.defaultFromName = defaultFromName || process.env.RESEND_FROM_NAME || 'Pay It Forward Health';
   }
 
   /**

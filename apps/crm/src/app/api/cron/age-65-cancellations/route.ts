@@ -473,7 +473,7 @@ export async function GET(request: NextRequest) {
 
   const rows = (unsent || []) as OutboxRow[];
   const resendKey = process.env.RESEND_API_KEY;
-  const fromName = process.env.RESEND_FROM_NAME || 'Double Helix CRM';
+  const fromName = process.env.RESEND_FROM_NAME || 'Pay It Forward Health';
   const fromAddress =
     process.env.AGE_65_NOTIFICATION_FROM
     || process.env.RESEND_FROM_EMAIL

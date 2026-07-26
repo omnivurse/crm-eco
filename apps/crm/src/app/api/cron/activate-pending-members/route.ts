@@ -312,7 +312,7 @@ export async function GET(request: NextRequest) {
 
   const rows = (unsent || []) as ActivationOutboxRow[];
   const resendKey = process.env.RESEND_API_KEY;
-  const fromName = process.env.RESEND_FROM_NAME || 'Double Helix CRM';
+  const fromName = process.env.RESEND_FROM_NAME || 'Pay It Forward Health';
   const fromAddress =
     process.env.ACTIVATION_NOTIFICATION_FROM ||
     process.env.RESEND_FROM_EMAIL ||

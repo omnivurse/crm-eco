@@ -35,6 +35,8 @@ export interface SendEmailParams {
   body_text?: string;
   cc?: string[];
   bcc?: string[];
+  /** Registered org sender address (preferred over integration/env default). */
+  from_email?: string;
   from_name?: string;
   reply_to?: string;
   template_id?: string;
@@ -111,12 +113,24 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
     .single();
   
   const toEmails = Array.isArray(params.to) ? params.to : [params.to];
-  const fromName = params.from_name || profile.full_name || org?.name || 'CRM';
+  const fromName =
+    params.from_name ||
+    process.env.RESEND_FROM_NAME ||
+    org?.name ||
+    'Pay It Forward Health';
 
-  // Use org's verified sending domain — never the user's personal email as FROM
+  // Prefer explicit registered sender, then integration/env — never personal user email as FROM
   const integrationFromEmail = emailConnection?.settings?.from_email as string | undefined;
-  const fromEmail = integrationFromEmail || process.env.RESEND_FROM_EMAIL || 'hello@mail.doublehelixhub.com';
-  const replyTo = params.reply_to || profile.email;
+  const fromEmail =
+    params.from_email ||
+    integrationFromEmail ||
+    process.env.RESEND_FROM_EMAIL ||
+    process.env.FROM_EMAIL ||
+    'noreply@payitforwardhealth.com';
+  const replyTo =
+    params.reply_to ||
+    process.env.SUPPORT_EMAIL ||
+    'support@payitforwardhealth.com';
 
   // Auto-generate plain text from HTML if not provided (improves deliverability)
   const bodyText = params.body_text || (params.body_html ? htmlToPlainText(params.body_html) : undefined);
