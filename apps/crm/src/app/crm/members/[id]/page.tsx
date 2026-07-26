@@ -1,6 +1,7 @@
 import { redirect, notFound } from 'next/navigation';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { getCachedCurrentProfile } from '@/lib/crm/queries';
+import { resolveMemberCrmRecordId } from '@/lib/crm/resolve-member-crm-record-query';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,47 +23,21 @@ export default async function CrmMemberBridgePage({
 
   const { data: member } = await supabase
     .from('members')
-    .select('id')
+    .select('id, email, phone, first_name, last_name, member_number')
     .eq('id', memberId)
     .eq('organization_id', profile.organization_id)
     .maybeSingle();
 
   if (!member) notFound();
 
-  // Prefer records that store linked_member_id in data JSONB.
-  const { data: linked } = await supabase
-    .from('crm_records')
-    .select('id')
-    .eq('organization_id', profile.organization_id)
-    .contains('data', { linked_member_id: memberId })
-    .is('deleted_at' as never, null)
-    .limit(1)
-    .maybeSingle();
+  const crmRecordId = await resolveMemberCrmRecordId(
+    supabase,
+    profile.organization_id,
+    member,
+  );
 
-  if (linked?.id) {
-    redirect(`/crm/r/${linked.id}`);
-  }
-
-  // Fallback: email match used by MembersListClient.
-  const { data: memberRow } = await supabase
-    .from('members')
-    .select('email')
-    .eq('id', memberId)
-    .maybeSingle();
-
-  if (memberRow?.email) {
-    const { data: byEmail } = await supabase
-      .from('crm_records')
-      .select('id')
-      .eq('organization_id', profile.organization_id)
-      .ilike('email', memberRow.email)
-      .is('deleted_at' as never, null)
-      .limit(1)
-      .maybeSingle();
-
-    if (byEmail?.id) {
-      redirect(`/crm/r/${byEmail.id}`);
-    }
+  if (crmRecordId) {
+    redirect(`/crm/r/${crmRecordId}`);
   }
 
   // No CRM record yet — keep the members list as a safe landing.
