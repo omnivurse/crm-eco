@@ -3,6 +3,8 @@
  *
  * - **Person modules** (leads / contacts / members): this row + Zoho lineage fields
  *   (`converted_from_lead_id`, `converted_contact_id`) + `lead_to_contact` graph peers.
+ * - **Contacts**: also same-email sibling contacts in the same org (Zoho duplicate contacts
+ *   that share an email but were never linked via lead_to_contact).
  * - **Deals**: this row + `deal_to_contact` / `deal_to_account` linked records; for each
  *   linked person row, same lineage + lead/contact graph as above (batched link query).
  *
@@ -20,6 +22,14 @@ const DEAL_MODULE_KEYS = new Set(['deals']);
 
 const LINK_LEAD_CONTACT = 'lead_to_contact';
 const LINK_DEAL_TO_RELATED = ['deal_to_contact', 'deal_to_account'] as const;
+
+/**
+ * Record fields used to resolve note sources.
+ * `email` + `org_id` are required for same-email contact sibling lookup;
+ * without them, lineage + lead↔contact peers still work.
+ */
+export type NoteAggregateRecord = Pick<CrmRecord, 'id' | 'data'> &
+  Partial<Pick<CrmRecord, 'email' | 'org_id'>>;
 
 function normalizeModuleKey(moduleKey: string): string {
   return (moduleKey || '').trim().toLowerCase();
@@ -46,6 +56,14 @@ export function parseUuidLoose(value: unknown): string | null {
   if (typeof value !== 'string') return null;
   const t = value.trim().replace(/^["']+|["']+$/g, '');
   return UUID_RE.test(t) ? t : null;
+}
+
+/** Trim + lowercase for same-email sibling matching. Empty → null (skip lookup). */
+export function normalizeEmailForNoteAggregate(
+  value: string | null | undefined,
+): string | null {
+  const t = (value ?? '').trim().toLowerCase();
+  return t.length > 0 ? t : null;
 }
 
 /**
@@ -136,9 +154,49 @@ async function addLeadContactNeighborhood(
   }
 }
 
+/**
+ * Adds other **contacts** in the same org that share a normalized email.
+ * Guards: contacts module only, non-empty email, org-scoped, exclude soft-deleted
+ * and the current record. Does not cross tenants.
+ */
+export async function addSameEmailContactSiblings(
+  supabase: SupabaseClient,
+  orgId: string | null | undefined,
+  email: string | null | undefined,
+  excludeId: string,
+  into: Set<string>,
+): Promise<void> {
+  const normalized = normalizeEmailForNoteAggregate(email);
+  const org = parseUuidLoose(orgId);
+  const exclude = parseUuidLoose(excludeId);
+  if (!normalized || !org || !exclude) return;
+
+  const { data: siblings, error } = await supabase
+    .from('crm_records')
+    .select('id, crm_modules!inner(key)')
+    .eq('org_id', org)
+    .ilike('email', normalized)
+    .eq('crm_modules.key', 'contacts')
+    .is('deleted_at' as never, null)
+    .neq('id', exclude);
+
+  if (error || !siblings?.length) return;
+
+  for (const row of siblings) {
+    // Defense in depth: only accept rows whose joined module is contacts.
+    const joined = (row as { crm_modules?: unknown }).crm_modules;
+    if (normalizeModuleKey(moduleKeyFromJoinedRelation(joined)) !== 'contacts') {
+      continue;
+    }
+    const id = parseUuidLoose(row.id);
+    if (id) into.add(id);
+  }
+}
+
 async function resolvePersonNoteSources(
   supabase: SupabaseClient,
-  record: Pick<CrmRecord, 'id' | 'data'>,
+  record: NoteAggregateRecord,
+  moduleKey: string,
 ): Promise<string[]> {
   const root = parseUuidLoose(record.id);
   if (!root) return [];
@@ -146,12 +204,24 @@ async function resolvePersonNoteSources(
   const ids = new Set<string>([root]);
   applyZohoPersonLineageFromData(ids, record.data as Record<string, unknown> | undefined);
   await addLeadContactNeighborhood(supabase, [root], ids);
+
+  // Same-email Zoho duplicate contacts — contacts module only.
+  if (normalizeModuleKey(moduleKey) === 'contacts') {
+    await addSameEmailContactSiblings(
+      supabase,
+      record.org_id,
+      record.email,
+      root,
+      ids,
+    );
+  }
+
   return [...ids];
 }
 
 async function resolveDealNoteSources(
   supabase: SupabaseClient,
-  record: Pick<CrmRecord, 'id' | 'data'>,
+  record: NoteAggregateRecord,
 ): Promise<string[]> {
   const root = parseUuidLoose(record.id);
   if (!root) return [];
@@ -187,7 +257,7 @@ async function resolveDealNoteSources(
  */
 export async function resolveNoteSourceRecordIdsWithClient(
   supabase: SupabaseClient,
-  record: Pick<CrmRecord, 'id' | 'data'>,
+  record: NoteAggregateRecord,
   moduleKey: string,
 ): Promise<string[]> {
   if (!parseUuidLoose(record.id)) return [];
@@ -195,7 +265,7 @@ export async function resolveNoteSourceRecordIdsWithClient(
   const mk = normalizeModuleKey(moduleKey);
 
   if (isPersonModuleKey(mk)) {
-    return resolvePersonNoteSources(supabase, record);
+    return resolvePersonNoteSources(supabase, record, mk);
   }
 
   if (isDealModuleKey(mk)) {

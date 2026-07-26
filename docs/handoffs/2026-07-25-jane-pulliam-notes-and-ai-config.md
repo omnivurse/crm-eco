@@ -1,10 +1,22 @@
 # Handoff → other machine: Jane Pulliam notes + AI config
 
-**Date:** 2026-07-25  
+**Date:** 2026-07-25 (live remediation 2026-07-26)  
 **Reported by:** client reviewing Jane Pulliam's account in DHH  
 **Prod project:** `sffisarikcreyyjzdjvb` (PIF-ECO-V2)  
-**PIFH org (verify live):** `ac6e7228-2ea0-4582-8464-562c3e8ac56e`  
+**PIFH org (live):** `00000000-0000-0000-0000-000000000001` (Pay It Forward Health)  
+**Deprecated org id in older notes:** `ac6e7228-2ea0-4582-8464-562c3e8ac56e`  
 **Repo:** pull `main` first (`git pull origin main`)
+
+### Live remediation status (2026-07-26)
+
+| Item | Status |
+|------|--------|
+| Keeper contact | `02a35029-5ebe-4160-b09f-99982d3bccfd` (`zcrm_1579374000153586130`) |
+| Orphan notes promoted | **22** inserted from staging parents `…69994407` + `…41659570` (idempotent) |
+| Notes on keeper | **32** total; Premium HSA ×2, Secure ×3, 4/14/25 1095-C ×1 |
+| Contact duplicates | None (only 1 contact). Inactive empty member stub soft-deleted. |
+| Same-email note aggregation | Code in `apps/crm/src/lib/crm/note-aggregate.ts` (+ tests) |
+| `OPENAI_API_KEY` on crm-core Vercel | **Still missing** — add + redeploy (see Part C) |
 
 ---
 
