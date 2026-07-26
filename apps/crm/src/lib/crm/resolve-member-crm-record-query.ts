@@ -133,7 +133,7 @@ export async function resolveMemberCrmRecordIds(
       .map((memberId) => `data.cs.${JSON.stringify({ linked_member_id: memberId })}`)
       .join(',');
     rows.push(
-      ...(await fetchContactModuleCandidates(supabase, orgId, (query) => query.or(linkedOr)),
+      ...(await fetchContactModuleCandidates(supabase, orgId, (query) => query.or(linkedOr))),
     );
   }
 
@@ -148,7 +148,7 @@ export async function resolveMemberCrmRecordIds(
   if (emails.length > 0) {
     const orClause = emails.map((e) => `email.ilike.${escapeIlikeExact(e)}`).join(',');
     rows.push(
-      ...(await fetchContactModuleCandidates(supabase, orgId, (query) => query.or(orClause)),
+      ...(await fetchContactModuleCandidates(supabase, orgId, (query) => query.or(orClause))),
     );
     for (const email of emails) {
       rows.push(
