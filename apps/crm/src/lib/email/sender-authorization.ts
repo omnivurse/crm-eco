@@ -29,7 +29,6 @@ interface UserEmailSettingsRow {
 // The sender registry is not yet represented in the generated database types.
 // Keep the untyped boundary local to this module.
 interface SenderAuthorizationClient {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   from(table: string): any;
 }
 
