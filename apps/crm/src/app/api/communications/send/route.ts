@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUser, getAuthProfile, createClient } from '@/lib/supabase-server';
 import { sendEmail, sendSms } from '@/lib/email/send-service';
+import { resolveAuthorizedSenderAddress } from '@/lib/email/sender-authorization';
 
 const RATE_LIMIT_MAX = 50;
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
@@ -19,21 +20,23 @@ export async function POST(request: NextRequest) {
 
     // Rate limit: max 50 sends per user per hour (keyed by profile.id stored in sent_emails.metadata.sent_by)
     const profile = await getAuthProfile();
-    if (profile) {
-      const supabase = await createClient();
-      const oneHourAgo = new Date(Date.now() - RATE_LIMIT_WINDOW_MS).toISOString();
-      const { count } = await supabase
-        .from('sent_emails')
-        .select('id', { count: 'exact', head: true })
-        .eq('metadata->>sent_by', profile.id)
-        .gte('sent_at', oneHourAgo);
+    if (!profile) {
+      return NextResponse.json({ error: 'User profile not found' }, { status: 403 });
+    }
 
-      if (count !== null && count >= RATE_LIMIT_MAX) {
-        return NextResponse.json(
-          { error: `Rate limit exceeded. Maximum ${RATE_LIMIT_MAX} emails per hour.` },
-          { status: 429 }
-        );
-      }
+    const supabase = await createClient();
+    const oneHourAgo = new Date(Date.now() - RATE_LIMIT_WINDOW_MS).toISOString();
+    const { count } = await supabase
+      .from('sent_emails')
+      .select('id', { count: 'exact', head: true })
+      .eq('metadata->>sent_by', profile.id)
+      .gte('sent_at', oneHourAgo);
+
+    if (count !== null && count >= RATE_LIMIT_MAX) {
+      return NextResponse.json(
+        { error: `Rate limit exceeded. Maximum ${RATE_LIMIT_MAX} emails per hour.` },
+        { status: 429 }
+      );
     }
 
     // Parse body — handle both JSON and FormData
@@ -46,7 +49,10 @@ export async function POST(request: NextRequest) {
       for (const [key, value] of formData.entries()) {
         if (typeof value === 'string') {
           if (key === 'cc' || key === 'bcc') {
-            body[key] = value.split(',').map((e: string) => e.trim()).filter(Boolean);
+            body[key] = value
+              .split(',')
+              .map((e: string) => e.trim())
+              .filter(Boolean);
           } else {
             body[key] = value;
           }
@@ -65,7 +71,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    
+
     if (channel === 'email') {
       // Validate email params
       if (!params.to || !params.subject) {
@@ -74,14 +80,30 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
       }
-      
+
       if (!params.body_html && !params.body_text) {
         return NextResponse.json(
           { error: 'Email must have body_html or body_text' },
           { status: 400 }
         );
       }
-      
+
+      // Client sender selection is advisory. Resolve it against the server-side
+      // verified registry so a direct API call cannot spoof another mailbox.
+      const senderAuthorization = await resolveAuthorizedSenderAddress(
+        supabase,
+        profile,
+        params.from_email
+      );
+      if (!senderAuthorization.authorized) {
+        return NextResponse.json(
+          { error: 'Sender address is not authorized for this user' },
+          { status: 403 }
+        );
+      }
+
+      const authorizedSender = senderAuthorization.sender;
+
       const result = await sendEmail({
         to: params.to as string | string[],
         subject: params.subject as string,
@@ -89,8 +111,10 @@ export async function POST(request: NextRequest) {
         body_text: params.body_text as string | undefined,
         cc: params.cc as string[] | undefined,
         bcc: params.bcc as string[] | undefined,
-        from_email: params.from_email as string | undefined,
-        from_name: params.from_name as string | undefined,
+        from_email: authorizedSender?.email,
+        from_name: authorizedSender
+          ? (authorizedSender.name ?? undefined)
+          : (params.from_name as string | undefined),
         reply_to: params.reply_to as string | undefined,
         template_id: params.template_id as string | undefined,
         template_variables: params.template_variables as Record<string, unknown> | undefined,
@@ -98,14 +122,14 @@ export async function POST(request: NextRequest) {
         linked_lead_id: params.linked_lead_id as string | undefined,
         linked_deal_id: params.linked_deal_id as string | undefined,
       });
-      
+
       if (!result.success) {
         return NextResponse.json(
           { error: result.error || 'Failed to send email' },
           { status: 500 }
         );
       }
-      
+
       return NextResponse.json({
         success: true,
         channel: 'email',
@@ -113,7 +137,7 @@ export async function POST(request: NextRequest) {
         provider: result.provider,
       });
     }
-    
+
     if (channel === 'sms') {
       // Validate SMS params
       if (!params.to || !params.body) {
@@ -122,7 +146,7 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
       }
-      
+
       const result = await sendSms({
         to: params.to as string,
         body: params.body as string,
@@ -130,14 +154,11 @@ export async function POST(request: NextRequest) {
         linked_lead_id: params.linked_lead_id as string | undefined,
         linked_deal_id: params.linked_deal_id as string | undefined,
       });
-      
+
       if (!result.success) {
-        return NextResponse.json(
-          { error: result.error || 'Failed to send SMS' },
-          { status: 500 }
-        );
+        return NextResponse.json({ error: result.error || 'Failed to send SMS' }, { status: 500 });
       }
-      
+
       return NextResponse.json({
         success: true,
         channel: 'sms',
@@ -145,16 +166,13 @@ export async function POST(request: NextRequest) {
         provider: result.provider,
       });
     }
-    
+
     return NextResponse.json(
       { error: 'Invalid channel. Must be "email" or "sms"' },
       { status: 400 }
     );
   } catch (error) {
     console.error('Error in POST /api/communications/send:', error);
-    return NextResponse.json(
-      { error: 'Failed to send communication' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to send communication' }, { status: 500 });
   }
 }
