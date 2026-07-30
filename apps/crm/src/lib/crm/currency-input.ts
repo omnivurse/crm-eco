@@ -50,3 +50,24 @@ export function formatCurrencyInputValue(value: unknown): string {
   if (trimmed === '') return '';
   return trimmed;
 }
+
+/**
+ * Format a stored money value for read-only display (e.g. "$324.00").
+ *
+ * Returns `null` for blank / unset / non-numeric values so callers can render a
+ * placeholder instead. Critically, an **empty string is treated as unset**, not
+ * as zero: `Number('') === 0`, so naively formatting a legacy empty JSONB amount
+ * would render "$0.00" for a field that simply has no value. A genuine numeric
+ * `0` still formats as "$0.00".
+ */
+export function formatCurrencyDisplay(value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+  const trimmed = String(value).trim();
+  if (trimmed === '') return null;
+  const n = Number(trimmed);
+  if (!Number.isFinite(n)) return null;
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+  }).format(n);
+}

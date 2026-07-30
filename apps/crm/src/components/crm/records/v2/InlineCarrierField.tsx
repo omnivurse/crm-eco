@@ -252,20 +252,20 @@ export const InlineCarrierField = memo(function InlineCarrierField({
   // Resolve a stored carrier UUID that is absent from the advisor's list to its
   // name via the org directory, so a legacy / other-advisor ministry (e.g. a
   // Sedera carrier_id on a HealthShare contact) shows "Sedera HealthShare"
-  // instead of a truncated UUID or a blank rail.
+  // instead of a truncated UUID or a blank rail. Route every branch through the
+  // async continuation so we never call setState synchronously in the effect
+  // body (react-hooks/set-state-in-effect); same pattern as InlineLookupField.
   useEffect(() => {
-    if (!value || !UUID_RE.test(value) || carriers.some((c) => c.id === value)) {
-      setResolvedName(undefined);
-      return;
-    }
-    const cached = idNameCache.get(value);
-    if (cached) {
-      setResolvedName(cached);
-      return;
-    }
     let cancelled = false;
-    void lookupCarrierNameById(value).then((name) => {
-      if (!cancelled && name) setResolvedName(name);
+    const needsLookup = Boolean(
+      value && UUID_RE.test(value) && !carriers.some((c) => c.id === value),
+    );
+    const pending: Promise<string | undefined> = needsLookup
+      ? lookupCarrierNameById(value as string)
+      : Promise.resolve(undefined);
+    void pending.then((name) => {
+      if (cancelled) return;
+      setResolvedName(needsLookup ? name : undefined);
     });
     return () => {
       cancelled = true;

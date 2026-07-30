@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  formatCurrencyDisplay,
   isValidCurrencyTyping,
   parseCurrencyInput,
   sanitizeCurrencyInput,
@@ -35,5 +36,29 @@ describe('isValidCurrencyTyping', () => {
   it('still accepts plain numeric typing', () => {
     expect(isValidCurrencyTyping('12.')).toBe(true);
     expect(isValidCurrencyTyping('12.3')).toBe(true);
+  });
+});
+
+describe('formatCurrencyDisplay', () => {
+  it('formats real amounts as USD', () => {
+    expect(formatCurrencyDisplay(324)).toBe('$324.00');
+    expect(formatCurrencyDisplay('324')).toBe('$324.00');
+    expect(formatCurrencyDisplay(1234.5)).toBe('$1,234.50');
+  });
+
+  it('treats empty / unset values as no value (never "$0.00")', () => {
+    // Regression: an empty JSONB amount ("") must NOT render "$0.00" — the
+    // coverage snapshot showed a HealthShare member "$0.00" for a blank
+    // monthly_contribution because Number('') === 0.
+    expect(formatCurrencyDisplay('')).toBeNull();
+    expect(formatCurrencyDisplay('   ')).toBeNull();
+    expect(formatCurrencyDisplay(null)).toBeNull();
+    expect(formatCurrencyDisplay(undefined)).toBeNull();
+    expect(formatCurrencyDisplay('abc')).toBeNull();
+  });
+
+  it('still renders a genuine zero as "$0.00"', () => {
+    expect(formatCurrencyDisplay(0)).toBe('$0.00');
+    expect(formatCurrencyDisplay('0')).toBe('$0.00');
   });
 });

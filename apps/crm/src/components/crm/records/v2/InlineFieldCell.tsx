@@ -12,7 +12,7 @@
  * rollout on long-tail field types — those ship as follow-on PRs.
  */
 
-import { memo, useMemo } from 'react';
+import { memo, useMemo, type ReactNode } from 'react';
 import type { CrmField } from '@/lib/crm/types';
 import { getFieldOptions } from '@/lib/crm/utils';
 import type { FieldSaveTarget } from '@/hooks/useRecordFieldSave';
@@ -26,9 +26,26 @@ import { InlineLookupField } from './InlineLookupField';
 import { InlineCarrierField } from './InlineCarrierField';
 import {
   fieldUsesDecimalMoney,
+  formatCurrencyDisplay,
   isValidCurrencyTyping,
   parseCurrencyInput,
 } from '@/lib/crm/currency-input';
+
+/**
+ * Render a money value for a click-to-edit cell.
+ *
+ * Guards against `Number('') === 0`: a blank / unset amount shows the "—"
+ * placeholder instead of "$0.00" (legacy Zoho JSONB frequently stores "" for an
+ * unset amount, which previously surfaced as "$0.00" on the coverage snapshot).
+ * A genuine `0` still renders "$0.00".
+ */
+function renderMoneyDisplay(value: string | number | null | undefined): ReactNode {
+  const formatted = formatCurrencyDisplay(value);
+  if (formatted === null) {
+    return <span className="text-slate-400 dark:text-slate-500">—</span>;
+  }
+  return <span className="font-medium">{formatted}</span>;
+}
 
 export interface InlineFieldCellProps {
   field: CrmField;
@@ -238,18 +255,7 @@ export const InlineFieldCell = memo(function InlineFieldCell({
               const n = parseCurrencyInput(v);
               return n == null ? 'Must be a number' : null;
             }}
-            display={(v) => {
-              const num = v == null ? NaN : Number(v);
-              if (Number.isNaN(num)) return null;
-              return (
-                <span className="font-medium">
-                  {new Intl.NumberFormat('en-US', {
-                    style: 'currency',
-                    currency: 'USD',
-                  }).format(num)}
-                </span>
-              );
-            }}
+            display={renderMoneyDisplay}
           />
         );
       }
@@ -279,18 +285,7 @@ export const InlineFieldCell = memo(function InlineFieldCell({
             const n = parseCurrencyInput(v);
             return n == null ? 'Must be a number' : null;
           }}
-          display={(v) => {
-            const num = v == null ? NaN : Number(v);
-            if (Number.isNaN(num)) return null;
-            return (
-              <span className="font-medium">
-                {new Intl.NumberFormat('en-US', {
-                  style: 'currency',
-                  currency: 'USD',
-                }).format(num)}
-              </span>
-            );
-          }}
+          display={renderMoneyDisplay}
         />
       );
 
