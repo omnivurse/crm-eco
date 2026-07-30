@@ -1124,6 +1124,8 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
             {showChangeHistory && (
               <MembershipChangeHistory
                 data={(record.data ?? null) as Record<string, unknown> | null}
+                recordId={record.id}
+                recordTitle={getRecordDisplayName(record)}
                 className="mt-4"
               />
             )}

@@ -23,7 +23,9 @@ import {
   Trash2,
   ChevronRight,
   ChevronsUpDown,
+  Bell,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@crm-eco/ui/components/button';
 import { Badge } from '@crm-eco/ui/components/badge';
 import { Input } from '@crm-eco/ui/components/input';
@@ -44,10 +46,11 @@ import {
 } from '@crm-eco/ui/components/select';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { format, parseISO } from 'date-fns';
+import { useRecordFieldSaveOptional } from '@/hooks/useRecordFieldSave';
 import {
-  useRecordFieldSave,
-  useRecordFieldSaveOptional,
-} from '@/hooks/useRecordFieldSave';
+  buildPlanChangeFollowUpTask,
+  shouldCreatePlanChangeFollowUp,
+} from '@/lib/crm/plan-change-follow-up';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -73,6 +76,8 @@ export interface MembershipChange {
   notes?: string;
   created_at: string;
   created_by?: string;
+  /** Linked follow-up task created for a future/today effective date. */
+  follow_up_task_id?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -194,6 +199,15 @@ function ChangeEntry({
             <CalendarDays className="w-3 h-3" />
             {formatDate(change.date)}
           </span>
+          {change.follow_up_task_id && (
+            <span
+              className="text-xs text-teal-600 dark:text-teal-400 flex items-center gap-1"
+              title="Follow-up reminder linked"
+            >
+              <Bell className="w-3 h-3" />
+              Reminder set
+            </span>
+          )}
 
           {!readOnly && (
             <div className="ml-auto flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -314,7 +328,7 @@ function ChangeFormDialog({
 }: {
   open: boolean;
   onClose: () => void;
-  onSave: (change: MembershipChange) => void;
+  onSave: (change: MembershipChange, opts: { createFollowUp: boolean }) => void | Promise<void>;
   initial?: MembershipChange | null;
   /** Current record data to auto-populate "from" fields */
   currentData?: Record<string, unknown> | null;
@@ -337,37 +351,69 @@ function ChangeFormDialog({
     const d = currentData ?? {};
     return {
       ...EMPTY_FORM,
+      type: 'downgrade',
       from_plan:
-        (d.health_insurance_carrier as string) ??
-        (d.life_carrier as string) ??
-        (d.other_carrier as string) ??
-        (d.plan_name as string) ??
+        (d.product as string) ||
+        (d.plan_name as string) ||
+        (d.health_insurance_carrier as string) ||
+        (d.life_carrier as string) ||
+        (d.other_carrier as string) ||
         '',
-      from_iua: (d.iua as string) ?? (d.individual_unshared_amount as string) ?? '',
-      from_monthly: (d.monthly_amount as string) ?? '',
+      from_iua:
+        (d.iua_amount as string) ||
+        (d.iua as string) ||
+        (d.individual_unshared_amount as string) ||
+        '',
+      from_monthly:
+        (d.monthly_premium as string) ||
+        (d.monthly_contribution as string) ||
+        (d.monthly_amount as string) ||
+        '',
     };
   });
 
+  const [createFollowUp, setCreateFollowUp] = useState(
+    () =>
+      shouldCreatePlanChangeFollowUp(
+        initial?.date ?? new Date().toISOString().slice(0, 10),
+        undefined,
+        initial?.follow_up_task_id,
+      ),
+  );
   const [saving, setSaving] = useState(false);
 
-  const handleSave = () => {
+  const followUpEligible = shouldCreatePlanChangeFollowUp(
+    form.date,
+    undefined,
+    initial?.follow_up_task_id,
+  );
+
+  const handleSave = async () => {
     setSaving(true);
-    const change: MembershipChange = {
-      id: initial?.id ?? generateId(),
-      date: form.date,
-      type: form.type,
-      ...(form.from_plan && { from_plan: form.from_plan }),
-      ...(form.to_plan && { to_plan: form.to_plan }),
-      ...(form.from_iua && { from_iua: form.from_iua }),
-      ...(form.to_iua && { to_iua: form.to_iua }),
-      ...(form.from_monthly && { from_monthly: form.from_monthly }),
-      ...(form.to_monthly && { to_monthly: form.to_monthly }),
-      ...(form.notes && { notes: form.notes }),
-      created_at: initial?.created_at ?? new Date().toISOString(),
-      created_by: initial?.created_by,
-    };
-    onSave(change);
-    setSaving(false);
+    try {
+      const change: MembershipChange = {
+        id: initial?.id ?? generateId(),
+        date: form.date,
+        type: form.type,
+        ...(form.from_plan && { from_plan: form.from_plan }),
+        ...(form.to_plan && { to_plan: form.to_plan }),
+        ...(form.from_iua && { from_iua: form.from_iua }),
+        ...(form.to_iua && { to_iua: form.to_iua }),
+        ...(form.from_monthly && { from_monthly: form.from_monthly }),
+        ...(form.to_monthly && { to_monthly: form.to_monthly }),
+        ...(form.notes && { notes: form.notes }),
+        created_at: initial?.created_at ?? new Date().toISOString(),
+        created_by: initial?.created_by,
+        ...(initial?.follow_up_task_id && {
+          follow_up_task_id: initial.follow_up_task_id,
+        }),
+      };
+      await onSave(change, {
+        createFollowUp: createFollowUp && followUpEligible,
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const set = (k: keyof ChangeFormState, v: string) =>
@@ -417,7 +463,17 @@ function ChangeFormDialog({
               <Input
                 type="date"
                 value={form.date}
-                onChange={(e) => set('date', e.target.value)}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  set('date', next);
+                  setCreateFollowUp(
+                    shouldCreatePlanChangeFollowUp(
+                      next,
+                      undefined,
+                      initial?.follow_up_task_id,
+                    ),
+                  );
+                }}
                 className="bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white"
               />
             </div>
@@ -497,11 +553,37 @@ function ChangeFormDialog({
             <Textarea
               value={form.notes}
               onChange={(e) => set('notes', e.target.value)}
-              placeholder='e.g. "Merged household with Genevieve Waters-Eddins"'
+              placeholder='e.g. "Member requested Secure HSA → Care+ for Sept 1"'
               rows={2}
               className="bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white placeholder:text-slate-400"
             />
           </div>
+
+          {followUpEligible ? (
+            <label className="flex items-start gap-2.5 rounded-lg border border-teal-200 dark:border-teal-500/30 bg-teal-50/80 dark:bg-teal-500/10 px-3 py-2.5 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={createFollowUp}
+                onChange={(e) => setCreateFollowUp(e.target.checked)}
+                className="mt-0.5 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+              />
+              <span className="text-xs text-slate-700 dark:text-slate-200">
+                <span className="font-semibold flex items-center gap-1">
+                  <Bell className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+                  Create follow-up reminder on effective date
+                </span>
+                <span className="block mt-0.5 text-slate-500 dark:text-slate-400">
+                  High-priority task so Product / IUA / monthly get updated when the change takes effect.
+                  Leave current product unchanged until then.
+                </span>
+              </span>
+            </label>
+          ) : initial?.follow_up_task_id ? (
+            <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+              <Bell className="w-3.5 h-3.5 text-teal-500" />
+              A follow-up reminder is already linked to this change.
+            </p>
+          ) : null}
         </div>
 
         <DialogFooter className="mt-4">
@@ -513,7 +595,7 @@ function ChangeFormDialog({
             Cancel
           </Button>
           <Button
-            onClick={handleSave}
+            onClick={() => void handleSave()}
             disabled={!form.date || saving}
             className="bg-teal-500 hover:bg-teal-400 text-white"
           >
@@ -535,12 +617,18 @@ function ChangeFormDialog({
 export interface MembershipChangeHistoryProps {
   /** Current JSONB `data` from the record */
   data: Record<string, unknown> | null;
+  /** Contact/member record id — required to attach follow-up tasks */
+  recordId: string;
+  /** Display name for the follow-up task title */
+  recordTitle: string;
   readOnly?: boolean;
   className?: string;
 }
 
 export const MembershipChangeHistory = memo(function MembershipChangeHistory({
   data,
+  recordId,
+  recordTitle,
   readOnly,
   className,
 }: MembershipChangeHistoryProps) {
@@ -571,20 +659,65 @@ export const MembershipChangeHistory = memo(function MembershipChangeHistory({
   );
 
   const handleSave = useCallback(
-    async (change: MembershipChange) => {
+    async (change: MembershipChange, opts: { createFollowUp: boolean }) => {
+      let nextChange = change;
+
+      if (opts.createFollowUp && recordId) {
+        try {
+          const payload = buildPlanChangeFollowUpTask({
+            recordId,
+            recordTitle: recordTitle || 'Member',
+            changeId: change.id,
+            type: change.type,
+            effectiveDate: change.date,
+            fromPlan: change.from_plan,
+            toPlan: change.to_plan,
+            notes: change.notes,
+          });
+          const res = await fetch('/api/tasks', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(
+              (err as { error?: string }).error || 'Failed to create follow-up',
+            );
+          }
+          const task = (await res.json()) as { id?: string };
+          if (task.id) {
+            nextChange = { ...change, follow_up_task_id: task.id };
+          }
+          toast.success('Plan change logged', {
+            description: `Follow-up reminder set for ${formatDate(change.date)}. Leave current product as-is until then.`,
+          });
+        } catch (err) {
+          console.error('[MembershipChangeHistory] follow-up create failed:', err);
+          toast.error('Plan change saved, but follow-up reminder failed', {
+            description:
+              err instanceof Error
+                ? err.message
+                : 'Add a task manually on the Activities tab.',
+          });
+        }
+      } else {
+        toast.success('Plan change logged');
+      }
+
       const existing = (data?.membership_changes ?? []) as MembershipChange[];
       const arr = Array.isArray(existing) ? [...existing] : [];
-      const idx = arr.findIndex((c) => c.id === change.id);
+      const idx = arr.findIndex((c) => c.id === nextChange.id);
       if (idx >= 0) {
-        arr[idx] = change;
+        arr[idx] = nextChange;
       } else {
-        arr.push(change);
+        arr.push(nextChange);
       }
       await persistChanges(arr);
       setDialogOpen(false);
       setEditing(null);
     },
-    [data, persistChanges],
+    [data, persistChanges, recordId, recordTitle],
   );
 
   const handleDelete = useCallback(
@@ -689,17 +822,19 @@ export const MembershipChangeHistory = memo(function MembershipChangeHistory({
         )}
       </div>
 
-      {/* Add/Edit Dialog */}
-      <ChangeFormDialog
-        open={dialogOpen}
-        onClose={() => {
-          setDialogOpen(false);
-          setEditing(null);
-        }}
-        onSave={handleSave}
-        initial={editing}
-        currentData={data}
-      />
+      {/* Add/Edit Dialog — remount on open so form state resets */}
+      {dialogOpen && (
+        <ChangeFormDialog
+          open={dialogOpen}
+          onClose={() => {
+            setDialogOpen(false);
+            setEditing(null);
+          }}
+          onSave={handleSave}
+          initial={editing}
+          currentData={data}
+        />
+      )}
     </div>
   );
 });
