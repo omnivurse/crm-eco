@@ -58,6 +58,10 @@ import {
 } from '@/lib/crm/record-command-context';
 import { SearchMatchChips, HighlightedText } from '@/components/crm/records/SearchMatchChips';
 import type { RecordSearchMatch } from '@/lib/crm/search-match';
+import {
+  shouldClearEphemeralSearchOnOpenChange,
+  useEphemeralSearchWhenClosed,
+} from '@/hooks/useEphemeralSearchWhenClosed';
 
 interface CommandPaletteProps {
   open: boolean;
@@ -215,13 +219,34 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
 
   const onRecordPage = pathname?.startsWith('/crm/r/') ?? false;
 
+  const resetSearch = useCallback(() => {
+    setQuery('');
+    setSearchResults([]);
+    setSelectedIndex(0);
+    setSearchLoading(false);
+    searchAbortRef.current?.abort();
+  }, []);
+
+  // Shell-mounted palette: every close path must wipe the query (overlay
+  // click, Escape, ⌘K toggle, result navigation). Shared hook owns the contract.
+  useEphemeralSearchWhenClosed(open, resetSearch);
+
+  const handleOpenChange = useCallback(
+    (nextOpen: boolean) => {
+      onOpenChange(nextOpen);
+      if (shouldClearEphemeralSearchOnOpenChange(nextOpen)) {
+        resetSearch();
+      }
+    },
+    [onOpenChange, resetSearch],
+  );
+
   const navigate = useCallback(
     (path: string) => {
       router.push(path);
-      onOpenChange(false);
-      setQuery('');
+      handleOpenChange(false);
     },
-    [router, onOpenChange],
+    [router, handleOpenChange],
   );
 
   // Load recent records on open; boost habit top_records to the front.
@@ -372,13 +397,12 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
       icon: <Crosshair className="w-4 h-4" />,
       action: () => {
         recordCommandContext.jumpTo(hit.navigate);
-        onOpenChange(false);
-        setQuery('');
+        handleOpenChange(false);
       },
       category: 'Jump to field',
       keywords: [hit.label.toLowerCase(), hit.snippet.toLowerCase()],
     }));
-  }, [onRecordPage, recordCommandContext, query, onOpenChange]);
+  }, [onRecordPage, recordCommandContext, query, handleOpenChange]);
 
   const baseCommands: CommandItem[] = useMemo(() => {
     const commands: CommandItem[] = [
@@ -543,34 +567,33 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
           break;
         case 'Escape':
           e.preventDefault();
-          onOpenChange(false);
-          setQuery('');
+          handleOpenChange(false);
           break;
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [open, selectedIndex, flatCommands, onOpenChange, terminalMatch, navigate]);
+  }, [open, selectedIndex, flatCommands, handleOpenChange, terminalMatch, navigate]);
 
   // Reset selection as the list changes.
   useEffect(() => {
     queueMicrotask(() => setSelectedIndex(0));
   }, [query, searchResults.length, recents.length]);
 
-  // Global ⌘K / Ctrl+K toggle.
+  // Global ⌘K / Ctrl+K toggle — sole keyboard owner (TopBar button opens via bus).
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
-        onOpenChange(!open);
+        handleOpenChange(!open);
       }
     };
     window.addEventListener('keydown', handleGlobalKeyDown);
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
-  }, [open, onOpenChange]);
+  }, [open, handleOpenChange]);
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="p-0 max-w-xl overflow-hidden">
         <VisuallyHidden>
           <DialogTitle>Command Palette</DialogTitle>
@@ -643,8 +666,7 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
                   type="button"
                   onClick={() => {
                     const q = query.trim();
-                    onOpenChange(false);
-                    setQuery('');
+                    handleOpenChange(false);
                     router.push(`/crm/search?q=${encodeURIComponent(q)}`);
                   }}
                   className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
@@ -750,8 +772,7 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
                 type="button"
                 onClick={() => {
                   const q = query.trim();
-                  onOpenChange(false);
-                  setQuery('');
+                  handleOpenChange(false);
                   router.push(`/crm/search?q=${encodeURIComponent(q)}`);
                 }}
                 className="text-primary hover:underline font-medium truncate max-w-[10rem] sm:max-w-none"

@@ -25,6 +25,7 @@ import { ViewModeSwitcher } from '@/components/crm/views/ViewModeSwitcher';
 import { SavedViewsBar } from '@/components/crm/views/SavedViewsBar';
 import { MobileToolbarDrawer } from './MobileToolbarDrawer';
 import { ModuleLiveSearchDropdown, type ModuleLiveSearchResult } from './ModuleLiveSearchDropdown';
+import { nextModuleSpotlightStateAfterSelect } from '@/lib/crm/module-spotlight-select';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { useCrmDensity } from '@/lib/crm/density';
 import type { CrmModule, CrmField, CrmView, CrmRecord, CrmTerritory, ViewFilter, ViewMode } from '@/lib/crm/types';
@@ -996,7 +997,12 @@ export const ModuleShell = memo(function ModuleShell({
               open={liveOpen}
               onOpenChange={handleLiveOpenChange}
               searchQuery={searchQuery}
-              onSearchQueryChange={setSearchQuery}
+              onSearchQueryChange={(value) => {
+                // A prior spotlight select sets this to block a stale URL flush;
+                // clear it once the user starts a new query.
+                suppressSearchFlushRef.current = false;
+                setSearchQuery(value);
+              }}
               onSubmit={handleSearch}
               placeholder={`Search ${module.name_plural?.toLowerCase() || 'records'}...`}
               results={liveResults}
@@ -1005,7 +1011,10 @@ export const ModuleShell = memo(function ModuleShell({
               onSelectedIndexChange={setLiveSelectedIdx}
               onSelectResult={(target) => {
                 suppressSearchFlushRef.current = true;
-                setLiveOpen(false);
+                const cleared = nextModuleSpotlightStateAfterSelect();
+                setLiveOpen(cleared.liveOpen);
+                setSearchQuery(cleared.searchQuery);
+                setLiveResults(cleared.liveResults);
                 router.push(`/crm/r/${target.id}`);
               }}
               onKeyDown={(e) => {
@@ -1020,7 +1029,10 @@ export const ModuleShell = memo(function ModuleShell({
                   e.preventDefault();
                   const target = liveResults[liveSelectedIdx];
                   suppressSearchFlushRef.current = true;
-                  setLiveOpen(false);
+                  const cleared = nextModuleSpotlightStateAfterSelect();
+                  setLiveOpen(cleared.liveOpen);
+                  setSearchQuery(cleared.searchQuery);
+                  setLiveResults(cleared.liveResults);
                   router.push(`/crm/r/${target.id}`);
                 } else if (e.key === 'Escape') {
                   setLiveOpen(false);

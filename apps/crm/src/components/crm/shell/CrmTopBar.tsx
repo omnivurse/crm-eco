@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, memo } from 'react';
+import { useState, memo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase-client';
@@ -71,17 +71,9 @@ export const CrmTopBar = memo(function CrmTopBar({
   const [quickCreateOpen, setQuickCreateOpen] = useState(false);
   const router = useRouter();
 
-  // ⌘K / Ctrl+K — global command palette (search, navigate, workflows)
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault();
-        openCommandPalette(onOpenCommandPalette);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onOpenCommandPalette]);
+  // ⌘K / Ctrl+K is owned solely by CommandPalette (toggle + clear-on-close).
+  // TopBar search button / event bus only *open* the palette — never register
+  // a second keydown handler here, or open+toggle race and leave stale query.
 
   const handleSignOut = async () => {
     try {

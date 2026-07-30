@@ -5,7 +5,7 @@
  * Kept for reference / potential ModuleShell parity; do not re-introduce dual search UX.
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Dialog,
@@ -16,6 +16,10 @@ import { VisuallyHidden } from '@crm-eco/ui';
 import { Input } from '@crm-eco/ui/components/input';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { CRM_SPOTLIGHT_SEARCH_LIMIT } from '@/lib/crm/search-limits';
+import {
+  shouldClearEphemeralSearchOnOpenChange,
+  useEphemeralSearchWhenClosed,
+} from '@/hooks/useEphemeralSearchWhenClosed';
 import {
   Search,
   Users,
@@ -63,6 +67,26 @@ export function GlobalSearchOverlay({ open, onOpenChange }: GlobalSearchOverlayP
   const [loading, setLoading] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const searchAbortRef = useRef<AbortController | null>(null);
+
+  const resetSearch = useCallback(() => {
+    setQuery('');
+    setResults([]);
+    setSelectedIndex(0);
+    setLoading(false);
+    searchAbortRef.current?.abort();
+  }, []);
+
+  useEphemeralSearchWhenClosed(open, resetSearch);
+
+  const handleOpenChange = useCallback(
+    (nextOpen: boolean) => {
+      onOpenChange(nextOpen);
+      if (shouldClearEphemeralSearchOnOpenChange(nextOpen)) {
+        resetSearch();
+      }
+    },
+    [onOpenChange, resetSearch],
+  );
 
   // Debounced search — abort in-flight fetches when query changes (same pattern as CommandPalette).
   useEffect(() => {
@@ -134,6 +158,14 @@ export function GlobalSearchOverlay({ open, onOpenChange }: GlobalSearchOverlayP
     };
   }, [query, open]);
 
+  const navigateToResult = useCallback(
+    (result: SearchResult) => {
+      router.push(`/crm/r/${result.id}`);
+      handleOpenChange(false);
+    },
+    [router, handleOpenChange],
+  );
+
   // Keyboard navigation
   useEffect(() => {
     if (!open) return;
@@ -159,23 +191,7 @@ export function GlobalSearchOverlay({ open, onOpenChange }: GlobalSearchOverlayP
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [open, results, selectedIndex]);
-
-  const navigateToResult = (result: SearchResult) => {
-    router.push(`/crm/r/${result.id}`);
-    onOpenChange(false);
-    setQuery('');
-    setResults([]);
-  };
-
-  // Reset on close
-  useEffect(() => {
-    if (!open) {
-      setQuery('');
-      setResults([]);
-      setSelectedIndex(0);
-    }
-  }, [open]);
+  }, [open, results, selectedIndex, navigateToResult]);
 
   // Group results by module
   const groupedResults = results.reduce((acc, result) => {
@@ -185,7 +201,7 @@ export function GlobalSearchOverlay({ open, onOpenChange }: GlobalSearchOverlayP
   }, {} as Record<string, SearchResult[]>);
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="p-0 max-w-xl overflow-hidden bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10">
         <VisuallyHidden>
           <DialogTitle>Search Records</DialogTitle>

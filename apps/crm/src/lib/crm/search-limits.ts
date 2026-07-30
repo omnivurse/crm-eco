@@ -7,5 +7,9 @@
  * client used to under-fetch when many rows tied on rank (e.g. bulk
  * `updated_at` realignment + common surnames); see
  * `supabase/migrations/202605020008_smart_search_deterministic_order.sql`.
+ *
+ * Shell-mounted search overlays (⌘K) must clear query on every close path via
+ * `useEphemeralSearchWhenClosed` — do not reintroduce ad-hoc clear-only-on-
+ * navigate patterns (stale person names block the next search).
  */
 export const CRM_SPOTLIGHT_SEARCH_LIMIT = 25;
