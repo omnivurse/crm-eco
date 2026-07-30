@@ -89,6 +89,11 @@ export async function GET(request: NextRequest) {
     
     return NextResponse.json(response);
   } catch (error) {
+    const message = error instanceof Error ? error.message : '';
+    if (message === 'User not authenticated' || message === 'User profile not found') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     console.error('Error in GET /api/integrations/logs:', error);
     return NextResponse.json(
       { error: 'Failed to fetch logs' },

@@ -67,26 +67,43 @@ export interface LogStats {
 // ============================================================================
 
 /**
- * Create a new log entry
+ * Integration logs carry request and response payloads, so every query in this
+ * file scopes on org_id explicitly rather than relying on RLS alone.
  */
-export async function createLog(params: CreateLogParams): Promise<IntegrationLog> {
-  const supabase = await createClient() as any;
-  
-  // Get org_id from profile using cached auth helpers
+async function requireOrgContext(): Promise<{ supabase: any; orgId: string }> {
   const { user, error: authError } = await getAuthUser();
-  
+
   if (!user || authError) {
     throw new Error('User not authenticated');
   }
-  
+
   const profile = await getAuthProfile();
-  
+
   if (!profile) {
     throw new Error('User profile not found');
   }
-  
+
+  const supabase = await createClient() as any;
+
+  return { supabase, orgId: profile.organization_id };
+}
+
+/**
+ * PostgREST reads commas and parentheses as filter syntax, so an unescaped
+ * value can inject extra conditions into an `.or()` expression.
+ */
+function escapeFilterValue(value: string): string {
+  return value.slice(0, 200).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+}
+
+/**
+ * Create a new log entry
+ */
+export async function createLog(params: CreateLogParams): Promise<IntegrationLog> {
+  const { supabase, orgId } = await requireOrgContext();
+
   const logData = {
-    org_id: profile.organization_id,
+    org_id: orgId,
     connection_id: params.connection_id || null,
     event_type: params.event_type,
     provider: params.provider,
@@ -128,11 +145,12 @@ export async function getLogs(
   page: number = 1,
   limit: number = 50
 ): Promise<LogsResult> {
-  const supabase = await createClient() as any;
-  
+  const { supabase, orgId } = await requireOrgContext();
+
   let query = supabase
     .from('integration_logs')
     .select('*', { count: 'exact' })
+    .eq('org_id', orgId)
     .order('created_at', { ascending: false });
   
   // Apply filters
@@ -164,7 +182,8 @@ export async function getLogs(
     query = query.lte('created_at', filters.to_date);
   }
   if (filters?.search) {
-    query = query.or(`endpoint.ilike.%${filters.search}%,error_message.ilike.%${filters.search}%`);
+    const term = escapeFilterValue(filters.search);
+    query = query.or(`endpoint.ilike."%${term}%",error_message.ilike."%${term}%"`);
   }
   
   // Pagination
@@ -195,12 +214,13 @@ export async function getLogs(
  * Get a single log by ID
  */
 export async function getLog(id: string): Promise<IntegrationLog | null> {
-  const supabase = await createClient() as any;
-  
+  const { supabase, orgId } = await requireOrgContext();
+
   const { data, error } = await supabase
     .from('integration_logs')
     .select('*')
     .eq('id', id)
+    .eq('org_id', orgId)
     .single();
   
   if (error) {
@@ -220,13 +240,14 @@ export async function getLog(id: string): Promise<IntegrationLog | null> {
 export async function getLogStats(
   periodDays: number = 7
 ): Promise<LogStats> {
-  const supabase = await createClient() as any;
-  
+  const { supabase, orgId } = await requireOrgContext();
+
   const fromDate = new Date(Date.now() - periodDays * 24 * 60 * 60 * 1000).toISOString();
-  
+
   const { data: logs, error: logsError } = await supabase
     .from('integration_logs')
     .select('status, provider, event_type')
+    .eq('org_id', orgId)
     .gte('created_at', fromDate);
 
   if (logsError?.code === '42P01' || logsError?.message?.includes('does not exist')) {
@@ -272,12 +293,13 @@ export async function getRecentErrors(
   connectionId: string,
   limit: number = 10
 ): Promise<IntegrationLog[]> {
-  const supabase = await createClient() as any;
-  
+  const { supabase, orgId } = await requireOrgContext();
+
   const { data, error } = await supabase
     .from('integration_logs')
     .select('*')
     .eq('connection_id', connectionId)
+    .eq('org_id', orgId)
     .eq('status', 'error')
     .order('created_at', { ascending: false })
     .limit(limit);
@@ -294,13 +316,14 @@ export async function getRecentErrors(
  * Delete old logs (cleanup)
  */
 export async function deleteOldLogs(retentionDays: number = 30): Promise<number> {
-  const supabase = await createClient() as any;
-  
+  const { supabase, orgId } = await requireOrgContext();
+
   const cutoffDate = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000).toISOString();
-  
+
   const { count, error } = await supabase
     .from('integration_logs')
     .delete({ count: 'exact' })
+    .eq('org_id', orgId)
     .lt('created_at', cutoffDate);
   
   if (error) {
