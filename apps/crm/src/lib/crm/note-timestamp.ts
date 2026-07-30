@@ -25,3 +25,23 @@ export function formatNoteRelative(dateInput: string | Date): string {
   if (Number.isNaN(date.getTime())) return '';
   return formatDistanceToNow(date, { addSuffix: true });
 }
+
+/**
+ * True when a note was meaningfully edited after it was created.
+ *
+ * Both `created_at` and `updated_at` default to `now()` on INSERT, so they are
+ * effectively equal for a brand-new note. A small threshold absorbs any
+ * sub-second clock jitter between the two stamps and prevents freshly created
+ * notes from being mislabelled "Edited"; anything beyond it reflects a real
+ * user edit (a PATCH bumps `updated_at`).
+ */
+export function isNoteEdited(
+  createdAt: string | Date,
+  updatedAt: string | Date | null | undefined,
+): boolean {
+  if (!updatedAt) return false;
+  const created = new Date(createdAt).getTime();
+  const updated = new Date(updatedAt).getTime();
+  if (Number.isNaN(created) || Number.isNaN(updated)) return false;
+  return updated - created > 2000;
+}

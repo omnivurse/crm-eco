@@ -22,7 +22,7 @@ import { Input } from '@crm-eco/ui/components/input';
 import { sanitizeNoteHtml, getNoteAuthorDisplay, getNoteAuthorName, stripLegacyAuthorAttribution } from '@/lib/crm/note-sanitize';
 import { NoteRichArea } from '@/components/crm/notes/NoteRichArea';
 import { Dialog, DialogContent, DialogTitle } from '@crm-eco/ui/components/dialog';
-import { formatNoteTimestamp, formatNoteRelative } from '@/lib/crm/note-timestamp';
+import { formatNoteTimestamp, formatNoteRelative, isNoteEdited } from '@/lib/crm/note-timestamp';
 import { toast } from 'sonner';
 import type { CrmNoteWithAuthor } from '@/lib/crm/types';
 
@@ -100,11 +100,18 @@ function NotePreviewItem({
           })()}
         </span>
         <span
-          className="text-xs text-slate-500 dark:text-slate-400 flex-shrink-0"
-          title={formatNoteRelative(note.created_at)}
+          className="text-xs text-slate-500 dark:text-slate-400 flex-shrink-0 inline-flex items-center gap-1"
+          title={
+            isNoteEdited(note.created_at, note.updated_at)
+              ? `Created ${formatNoteTimestamp(note.created_at)} · Edited ${formatNoteTimestamp(note.updated_at)}`
+              : formatNoteRelative(note.created_at)
+          }
           suppressHydrationWarning
         >
-          {formatNoteTimestamp(note.created_at)}
+          Created {formatNoteTimestamp(note.created_at)}
+          {isNoteEdited(note.created_at, note.updated_at) && (
+            <Pencil className="w-2.5 h-2.5 text-slate-400 dark:text-slate-500" aria-label="Edited" />
+          )}
         </span>
         {note.is_pinned && <Pin className="w-3 h-3 text-amber-500 fill-amber-500 flex-shrink-0" />}
         <div className="ml-auto flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">

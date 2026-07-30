@@ -2,13 +2,14 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { StickyNote, Plus, Pin, Pencil, Trash2, Loader2, User } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import { Dialog, DialogContent, DialogTitle } from '@crm-eco/ui/components/dialog';
 import { sanitizeNoteHtml, getNoteAuthorDisplay } from '@/lib/crm/note-sanitize';
 import { NoteRichArea } from '@/components/crm/notes/NoteRichArea';
-import { formatNoteTimestamp, formatNoteRelative } from '@/lib/crm/note-timestamp';
+import { formatNoteTimestamp, formatNoteRelative, isNoteEdited } from '@/lib/crm/note-timestamp';
 import { toast } from 'sonner';
 import { toastItemDeletedWithUndo } from '@/lib/crm/undo-delete';
 import type { CrmNoteWithAuthor } from '@/lib/crm/types';
@@ -89,14 +90,21 @@ function NoteCard({
                 );
               })()}
             </p>
-            <p
-              className="text-xs text-slate-500"
-              title={formatNoteRelative(note.created_at)}
-              suppressHydrationWarning
-            >
-              {formatNoteTimestamp(note.created_at)}
-              <span className="text-slate-400 dark:text-slate-500"> · {formatNoteRelative(note.created_at)}</span>
-            </p>
+            <div className="text-xs text-slate-500" suppressHydrationWarning>
+              <p title={formatNoteRelative(note.created_at)}>
+                Created {formatNoteTimestamp(note.created_at)}
+                <span className="text-slate-400 dark:text-slate-500"> · {formatNoteRelative(note.created_at)}</span>
+              </p>
+              {isNoteEdited(note.created_at, note.updated_at) && (
+                <p
+                  className="mt-0.5 flex items-center gap-1 text-slate-400 dark:text-slate-500"
+                  title={`Edited ${formatNoteTimestamp(note.updated_at)}`}
+                >
+                  <Pencil className="w-3 h-3" />
+                  Edited {formatNoteRelative(note.updated_at)}
+                </p>
+              )}
+            </div>
           </div>
         </div>
 
@@ -217,6 +225,20 @@ export function NotesPanel({ recordId, notes, orgId, hasLegacyNotes = false }: N
 
   return (
     <div className="space-y-4">
+      {/* Utility row: how notes are ordered + one-click access to restore deleted notes */}
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-xs text-slate-400 dark:text-slate-500">
+          Newest first. Each note is date-stamped when saved.
+        </p>
+        <Link
+          href="/crm/trash"
+          className="inline-flex items-center gap-1 text-xs font-medium text-slate-400 hover:text-slate-700 dark:text-slate-500 dark:hover:text-slate-200 transition-colors"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+          View Trash
+        </Link>
+      </div>
+
       {/* Add Note Button */}
       <Button
         variant="outline"
