@@ -13,5 +13,10 @@ export interface LoginBrandingContext {
 export function safeCrmRedirect(path: string | null | undefined): string {
   if (!path) return '/crm';
   if (!path.startsWith('/crm') || path.startsWith('//')) return '/crm';
+  // Backslashes and control characters are normalised inconsistently by
+  // browsers and can smuggle a host past the prefix check
+  // (e.g. "/crm\@evil.example.com"), turning a post-login or post-MFA
+  // redirect into an open-redirect gadget.
+  if (/[\\\u0000-\u001f]/.test(path)) return '/crm';
   return path;
 }
