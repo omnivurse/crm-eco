@@ -269,28 +269,62 @@
    cascading layer: change a token, every /crm page follows.
    ============================================================ */
 :root {
-  /* Signature accent — Spruce Teal (bolder refresh, evolved from the
-     brand cyan). #0E7C86 ≈ 4.8:1 with white → WCAG AA on every CTA,
-     fixing the old white-on-#06b6d4 2.43:1 failure. Ring follows. */
-  --primary: 187 81% 29%;
-  --ring: 187 81% 29%;
+  /* Signature accent — Muted Spruce. Calmer, lower-chroma evolution of the
+     old brand cyan: deeper + desaturated so CTAs read bold, not fluorescent.
+     ~7.6:1 on white → WCAG AAA on every primary CTA. Ring follows. */
+  --primary: 189 55% 26%;
+  --ring: 189 55% 26%;
+
+  /* Supporting accents, desaturated to sit calmly beside the spruce primary:
+     slate-blue instead of electric #3b82f6, dusty violet instead of #7c3aed. */
+  --secondary: 215 48% 42%;
+  --brand-purple: 258 35% 48%;
+
+  /* Status semantics, pulled down from the neon originals but kept AA. */
+  --success: 160 55% 33%;
+  --warning: 38 80% 44%;
 
   /* Reclaim shadcn's --accent as a NEUTRAL hover/selected surface
      (it was purple, which flashed on every menu / select / ghost
-     button). Deliberate purple now lives in --brand-purple. */
-  --accent: 210 40% 96%;
+     button). Deliberate purple now lives in --brand-purple. A touch darker
+     than the canvas so hover states are visible on both cards and the app bg. */
+  --accent: 214 32% 93%;
   --accent-foreground: 222 47% 11%;
-  --brand-purple: 263 70% 60%;
+
+  /* --- Surface + border DELINEATION -----------------------------
+     The near-white background sat only ~2% off pure-white cards, so panels,
+     rows and dividers floated together. Nudge the canvas grayer, deepen
+     borders/inputs a full step (≈ slate-300), and darken muted text so the
+     gray / white / black planes are clearly distinct. */
+  --background: 210 30% 96%;
+  --muted: 214 30% 92%;
+  --muted-foreground: 215 20% 32%;
+  --border: 215 20% 83%;
+  --input: 215 20% 83%;
+
+  /* --- Legacy neon leaking from shared theme.css ----------------
+     Brand teal / auth / sidebar accents were still fluorescent cyan
+     (#06b6d4 / #22d3ee / #3dd6ff). Fold them into the muted spruce family. */
+  --brand-teal-500: 190 52% 33%;
+  --brand-teal-700: 192 46% 26%;
+  --auth-accent: #0e7c86;
+  --auth-highlight: #1499a6;
+  --sidebar-active: #0e7c86;
+  --sidebar-accent: #3aa7b2;
+  --accent-gradient: linear-gradient(135deg, #0b5f66 0%, #345f8f 50%, #574e86 100%);
 
   /* --- Semantic TONE layer — one hue = one meaning --------------
      Consumed by <StatusBadge>. -bg = tint, -fg = text/icon. */
-  --tone-neutral-fg:#64748b;   --tone-neutral-bg:#64748b14;   --tone-neutral-border:#64748b40;
-  --tone-info-fg:#2563eb;      --tone-info-bg:#2563eb14;      --tone-info-border:#2563eb40;
-  --tone-progress-fg:#7c3aed;  --tone-progress-bg:#7c3aed14;  --tone-progress-border:#7c3aed40;
-  --tone-attention-fg:#c2740a; --tone-attention-bg:#c2740a16; --tone-attention-border:#c2740a40;
-  --tone-success-fg:#0e9f6e;   --tone-success-bg:#0e9f6e16;   --tone-success-border:#0e9f6e40;
-  --tone-danger-fg:#dc2626;    --tone-danger-bg:#dc262614;    --tone-danger-border:#dc262640;
-  --tone-special-fg:#db2777;   --tone-special-bg:#db277714;   --tone-special-border:#db277740;
+  /* Legibility-first tones: deep 700-level text on a stronger tint + a clearly
+     visible 50%-alpha border. Fixes the washed-out pastel pills the client
+     couldn't read on contacts / leads lists. */
+  --tone-neutral-fg:#475569;   --tone-neutral-bg:#47556924;   --tone-neutral-border:#47556980;
+  --tone-info-fg:#1d4ed8;      --tone-info-bg:#1d4ed824;      --tone-info-border:#1d4ed880;
+  --tone-progress-fg:#6d28d9;  --tone-progress-bg:#6d28d924;  --tone-progress-border:#6d28d980;
+  --tone-attention-fg:#b45309; --tone-attention-bg:#b4530924; --tone-attention-border:#b4530980;
+  --tone-success-fg:#047857;   --tone-success-bg:#04785724;   --tone-success-border:#04785780;
+  --tone-danger-fg:#b91c1c;    --tone-danger-bg:#b91c1c24;    --tone-danger-border:#b91c1c80;
+  --tone-special-fg:#be185d;   --tone-special-bg:#be185d24;   --tone-special-border:#be185d80;
 
   /* --- Density-aware spacing/size scale (comfortable-dense default)
      Consumed by shell / tables / toolbars in later phases. ------- */
@@ -315,21 +349,38 @@
 }
 
 .dark {
-  /* Brighter spruce teal so the accent pops on dark grounds. */
-  --primary: 187 72% 46%;
-  --ring: 187 72% 46%;
+  /* Muted spruce, lifted just enough to read on dark grounds — not neon. */
+  --primary: 188 45% 45%;
+  --ring: 188 45% 45%;
+
+  --secondary: 215 50% 46%;
+  --brand-purple: 258 40% 66%;
+  --success: 160 48% 44%;
+  --warning: 38 78% 52%;
+
+  /* Delineation on dark: lift cards/popovers off the near-black canvas and
+     darken borders/inputs up a step so panels and dividers stay visible. */
+  --card: 222 40% 9%;
+  --popover: 222 40% 12%;
+  --muted: 220 28% 15%;
+  --border: 220 22% 24%;
+  --input: 220 22% 22%;
 
   --accent: 220 40% 14%;
   --accent-foreground: 210 40% 98%;
-  --brand-purple: 263 70% 72%;
 
-  --tone-neutral-fg:#94a3b8;   --tone-neutral-bg:#94a3b81f;   --tone-neutral-border:#94a3b840;
-  --tone-info-fg:#60a5fa;      --tone-info-bg:#60a5fa1f;      --tone-info-border:#60a5fa40;
-  --tone-progress-fg:#a78bfa;  --tone-progress-bg:#a78bfa1f;  --tone-progress-border:#a78bfa40;
-  --tone-attention-fg:#fbbf24; --tone-attention-bg:#fbbf241f; --tone-attention-border:#fbbf2440;
-  --tone-success-fg:#34d399;   --tone-success-bg:#34d3991f;   --tone-success-border:#34d39940;
-  --tone-danger-fg:#f87171;    --tone-danger-bg:#f871711f;    --tone-danger-border:#f8717140;
-  --tone-special-fg:#f472b6;   --tone-special-bg:#f472b61f;   --tone-special-border:#f472b640;
+  --brand-teal-500: 190 48% 46%;
+  --brand-teal-700: 192 42% 40%;
+
+  /* Dark tones: light-enough text for contrast, de-neoned a step, on a stronger
+     tint + 35%-alpha border for clear separation from the card. */
+  --tone-neutral-fg:#cbd5e1;   --tone-neutral-bg:#cbd5e124;   --tone-neutral-border:#cbd5e159;
+  --tone-info-fg:#93c5fd;      --tone-info-bg:#93c5fd24;      --tone-info-border:#93c5fd59;
+  --tone-progress-fg:#c4b5fd;  --tone-progress-bg:#c4b5fd24;  --tone-progress-border:#c4b5fd59;
+  --tone-attention-fg:#fcd34d; --tone-attention-bg:#fcd34d24; --tone-attention-border:#fcd34d59;
+  --tone-success-fg:#6ee7b7;   --tone-success-bg:#6ee7b724;   --tone-success-border:#6ee7b759;
+  --tone-danger-fg:#fca5a5;    --tone-danger-bg:#fca5a524;    --tone-danger-border:#fca5a559;
+  --tone-special-fg:#f9a8d4;   --tone-special-bg:#f9a8d424;   --tone-special-border:#f9a8d459;
 }
 
 /* Density modes — html[data-density] is set pre-paint by the layout.tsx theme
@@ -359,20 +410,20 @@
    on the <aside> flows the hue to every nav item inside it.
    All 14 foregrounds verified WCAG AA on their ground.
    ============================================================ */
-[data-crm-module='crm']            { --mod-h: 187; --mod-s: 80%; --mod-l: 30%; }
-[data-crm-module='communications'] { --mod-h: 217; --mod-s: 80%; --mod-l: 45%; }
-[data-crm-module='revenue']        { --mod-h: 152; --mod-s: 65%; --mod-l: 30%; }
-[data-crm-module='operations']     { --mod-h: 28;  --mod-s: 90%; --mod-l: 38%; }
-[data-crm-module='analytics']      { --mod-h: 263; --mod-s: 60%; --mod-l: 52%; }
-[data-crm-module='integrations']   { --mod-h: 292; --mod-s: 60%; --mod-l: 45%; }
+[data-crm-module='crm']            { --mod-h: 189; --mod-s: 50%; --mod-l: 30%; }
+[data-crm-module='communications'] { --mod-h: 217; --mod-s: 48%; --mod-l: 42%; }
+[data-crm-module='revenue']        { --mod-h: 152; --mod-s: 42%; --mod-l: 30%; }
+[data-crm-module='operations']     { --mod-h: 28;  --mod-s: 58%; --mod-l: 38%; }
+[data-crm-module='analytics']      { --mod-h: 258; --mod-s: 40%; --mod-l: 48%; }
+[data-crm-module='integrations']   { --mod-h: 292; --mod-s: 38%; --mod-l: 44%; }
 [data-crm-module='settings']       { --mod-h: 220; --mod-s: 12%; --mod-l: 40%; }
 
-.dark [data-crm-module='crm']            { --mod-s: 70%; --mod-l: 62%; }
-.dark [data-crm-module='communications'] { --mod-s: 85%; --mod-l: 66%; }
-.dark [data-crm-module='revenue']        { --mod-s: 60%; --mod-l: 58%; }
-.dark [data-crm-module='operations']     { --mod-s: 90%; --mod-l: 60%; }
-.dark [data-crm-module='analytics']      { --mod-s: 75%; --mod-l: 72%; }
-.dark [data-crm-module='integrations']   { --mod-s: 70%; --mod-l: 70%; }
+.dark [data-crm-module='crm']            { --mod-s: 48%; --mod-l: 62%; }
+.dark [data-crm-module='communications'] { --mod-s: 55%; --mod-l: 66%; }
+.dark [data-crm-module='revenue']        { --mod-s: 45%; --mod-l: 58%; }
+.dark [data-crm-module='operations']     { --mod-s: 60%; --mod-l: 60%; }
+.dark [data-crm-module='analytics']      { --mod-s: 50%; --mod-l: 72%; }
+.dark [data-crm-module='integrations']   { --mod-s: 45%; --mod-l: 70%; }
 .dark [data-crm-module='settings']       { --mod-s: 12%; --mod-l: 66%; }
 
 [data-crm-module] {

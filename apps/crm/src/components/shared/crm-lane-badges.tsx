@@ -20,21 +20,21 @@ const MARKET_TYPE_CONFIG: Record<string, {
     short: 'HS',
     ownerLabel: 'Advisor',
     icon: Heart,
-    color: 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/30',
+    color: 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/40',
   },
   traditional_insurance: {
     label: 'Traditional Insurance',
     short: 'Ins',
     ownerLabel: 'Agent',
     icon: Shield,
-    color: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-500/20 dark:text-blue-400 dark:border-blue-500/30',
+    color: 'bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-500/20 dark:text-blue-300 dark:border-blue-500/40',
   },
   unknown: {
     label: 'Needs Classification',
     short: '?',
     ownerLabel: 'Owner',
     icon: HelpCircle,
-    color: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-500/20 dark:text-amber-400 dark:border-amber-500/30',
+    color: 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/40',
   },
 };
 
@@ -78,17 +78,17 @@ const NORMALIZATION_CONFIG: Record<string, {
   normalized: {
     label: 'Verified',
     icon: CheckCircle,
-    color: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30',
+    color: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/40',
   },
   needs_review: {
     label: 'Needs Review',
     icon: AlertTriangle,
-    color: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30',
+    color: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/40',
   },
   unresolved: {
     label: 'Unresolved',
     icon: Clock,
-    color: 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/30',
+    color: 'bg-red-500/15 text-red-700 dark:text-red-300 border-red-500/40',
   },
 };
 

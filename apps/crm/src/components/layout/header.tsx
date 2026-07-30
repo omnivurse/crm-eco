@@ -96,9 +96,9 @@ export function Header({ profile }: HeaderProps) {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="flex items-center gap-3 h-auto py-2 px-3 hover:bg-slate-50 rounded-xl">
-              <Avatar className="h-9 w-9 ring-2 ring-[#0891b2]/20">
+              <Avatar className="h-9 w-9 ring-2 ring-[#255f69]/25">
                 <AvatarImage src={profile.avatarUrl || undefined} alt={profile.fullName} />
-                <AvatarFallback className="bg-gradient-to-br from-[#0891b2] to-[#06b6d4] text-white text-sm font-semibold">
+                <AvatarFallback className="bg-gradient-to-br from-[#255f69] to-[#2f757f] text-white text-sm font-semibold">
                   {getInitials(profile.fullName)}
                 </AvatarFallback>
               </Avatar>

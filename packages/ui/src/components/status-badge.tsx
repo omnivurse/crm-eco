@@ -88,6 +88,7 @@ const STATUS_TONE: Record<string, Tone> = {
   // approvals / enrollments / billing
   approved: 'success',
   rejected: 'danger',
+  denied: 'danger',
   submitted: 'info',
   terminated: 'neutral',
   paused: 'attention',
@@ -97,6 +98,13 @@ const STATUS_TONE: Record<string, Tone> = {
   refunded: 'neutral',
   success: 'success',
   processing: 'progress',
+  // needs / cases workflow
+  intake: 'info',
+  inreview: 'progress',
+  pricing: 'progress',
+  reimbursementpending: 'progress',
+  awaitingmemberdocs: 'attention',
+  awaitingproviderdocs: 'attention',
   // invoices
   sent: 'info',
   partial: 'attention',
