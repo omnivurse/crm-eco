@@ -73,7 +73,7 @@ const issues = [];
 for (const mod of modules ?? []) {
   const { data: fields } = await sb
     .from('crm_fields')
-    .select('key, section')
+    .select('key, section, label')
     .eq('module_id', mod.id);
   const { data: layout } = await sb
     .from('crm_layouts')
@@ -104,6 +104,38 @@ for (const mod of modules ?? []) {
     if (count === 0) {
       issues.push(`${mod.key}: layout lists "${sectionKey}" but zero crm_fields in that section`);
     }
+  }
+
+  // Amount terminology: never two "Monthly Premium" labels on coverage amount keys.
+  const AMOUNT_KEYS = new Set([
+    'monthly_premium',
+    'health_insurance_premium',
+    'insurance_premium',
+    'monthly_contribution',
+    'monthly_share',
+    'share_amount',
+  ]);
+  const DEDICATED_PREMIUM = new Set(['health_insurance_premium', 'insurance_premium']);
+  const norm = (s) => String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
+  const amountFields = (fields ?? []).filter((f) => AMOUNT_KEYS.has(f.key));
+  const premiumLabeled = amountFields.filter((f) => norm(f.label) === 'monthly premium');
+  if (premiumLabeled.length > 1) {
+    issues.push(
+      `${mod.key}: ${premiumLabeled.length} amount fields labeled Monthly Premium (${premiumLabeled
+        .map((f) => f.key)
+        .join(', ')}) — one must be Monthly Contribution`,
+    );
+  }
+  const hasDedicatedPremium = amountFields.some((f) => DEDICATED_PREMIUM.has(f.key));
+  const monthlyPremium = amountFields.find((f) => f.key === 'monthly_premium');
+  if (
+    hasDedicatedPremium &&
+    monthlyPremium &&
+    norm(monthlyPremium.label) === 'monthly premium'
+  ) {
+    issues.push(
+      `${mod.key}: monthly_premium is labeled "Monthly Premium" while a dedicated insurance premium field exists — label it Monthly Contribution`,
+    );
   }
 }
 

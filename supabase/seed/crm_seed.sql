@@ -185,7 +185,9 @@ BEGIN
      '["Member Only", "Member and Spouse", "Member and Child", "Member and Family"]'::jsonb),
     (v_org_id, v_contacts_module_id, 'carrier', 'Carrier', 'text', false, false, 62, 'product', '[]'::jsonb),
     (v_org_id, v_contacts_module_id, 'previous_product', 'Previous Product', 'text', false, false, 63, 'product', '[]'::jsonb),
-    (v_org_id, v_contacts_module_id, 'monthly_premium', 'Monthly Premium', 'currency', false, false, 64, 'product', '[]'::jsonb),
+    -- Legacy Zoho key: when health_insurance_premium also exists, UI treats this
+    -- as Monthly Contribution (see applyCoverageSnapshotAmountLabels).
+    (v_org_id, v_contacts_module_id, 'monthly_premium', 'Monthly Contribution', 'currency', false, false, 64, 'product', '[]'::jsonb),
     (v_org_id, v_contacts_module_id, 'start_date', 'Start Date', 'date', false, false, 65, 'product', '[]'::jsonb),
     (v_org_id, v_contacts_module_id, 'cancellation_date', 'Cancellation Date', 'date', false, false, 66, 'product', '[]'::jsonb),
     (v_org_id, v_contacts_module_id, 'iua_amount', 'IUA Amount', 'currency', false, false, 67, 'product', '[]'::jsonb)

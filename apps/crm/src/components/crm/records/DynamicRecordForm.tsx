@@ -44,6 +44,8 @@ import { getFieldOptions } from '@/lib/crm/utils';
 import { toDatetimeLocalValue } from '@/lib/crm/datetime-local';
 import { normalizeDateColumnValue } from '@/lib/crm/merge-crm-data-json-to-row';
 import { classifyCarrierValue } from '@/lib/crm/coverage-carriers';
+import { selectCoverageSnapshotPlanFields } from '@/lib/crm/coverage-snapshot-plan-fields';
+import { selectHeroSharingField } from '@/lib/crm/coverage-snapshot-identity';
 import {
   isoDateToMaskedDisplay,
   maskDateTyping,
@@ -902,8 +904,12 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
       ),
     ].filter((f): f is CrmField => Boolean(f));
 
-    return candidates.find((f) => hasValue(f.key)) ?? candidates[0];
-  }, [findFieldByKey, findFieldInSection, matchByKeyPattern, hasValue]);
+    // Prefer a candidate whose value is *resolvable* (a carrier UUID or a real
+    // ministry name) over an ambiguous legacy value like `carrier: "Other"`, so
+    // a HealthShare member with `sharing_entity: <Sedera UUID>` never reads
+    // "Sharing Entity: Other". Falls back to first-populated, then placeholder.
+    return selectHeroSharingField({ candidates, values: defaultValues });
+  }, [findFieldByKey, findFieldInSection, matchByKeyPattern, defaultValues]);
 
   // Classify the record's coverage as health-sharing vs insurance so the
   // snapshot shows ONE coherent set of terms — never an insurance Monthly
@@ -1000,82 +1006,23 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
     return candidates.find((f) => hasValue(f.key)) ?? candidates[0];
   }, [findFieldByKey, matchByKeyPattern, hasValue]);
 
-  /** Product / plan / tier lines for the emerald snapshot (never duplicates carrier/date rows). */
+  /** Product / plan / tier lines for the coverage snapshot (never duplicates carrier/date rows). */
   const heroProductPlanFields = useMemo(() => {
     const skipKeys = new Set<string>();
     if (heroSharingField) skipKeys.add(heroSharingField.key);
     if (heroStartDateField) skipKeys.add(heroStartDateField.key);
 
-    // Plan-type separation: skip the OTHER coverage type's exclusive rows so a
-    // health-share member never shows an insurance Monthly Premium, and an
-    // insurance member never shows a Monthly Contribution / IUA. 'unknown'
-    // skips nothing (both the preferred-key loop and the pattern fallback below
-    // honor skipKeys).
-    if (recordPlanType === 'healthshare') {
-      // Only unambiguous insurance terms. 'coverage_option'/'plan_name' are
-      // left neutral (either type can carry one) so a real value is never hidden.
-      for (const k of ['health_insurance_plan_name', 'insurance_plan_name', 'health_insurance_premium', 'monthly_premium']) skipKeys.add(k);
-    } else if (recordPlanType === 'insurance') {
-      for (const k of ['monthly_share', 'monthly_contribution', 'iua_amount', 'member_tier', 'sharing_member_id', 'sharing_status']) skipKeys.add(k);
-    }
-
-    const preferredKeys = [
-      'product',
-      'health_insurance_plan_name',
-      'insurance_plan_name',
-      'health_insurance_premium',
-      'plan_name',
-      'plan_type',
-      'coverage_option',
-      'monthly_share',
-      'monthly_contribution',
-      'monthly_premium',
-      'monthly_amount',
-      'monthly_rate',
-      'iua_amount',
-      'member_tier',
-      'sharing_member_id',
-      'sharing_status',
-      'previous_product',
-    ];
-
-    const out: CrmField[] = [];
-    const seen = new Set<string>();
-
-    const tryAdd = (f: CrmField | undefined) => {
-      if (!f || skipKeys.has(f.key) || seen.has(f.key)) return;
-      out.push(f);
-      seen.add(f.key);
-    };
-
-    for (const k of preferredKeys) {
-      tryAdd(findFieldByKey(k));
-      if (out.length >= 6) break;
-    }
-
-    if (out.length < 6) {
-      const patterned = visibleFields.filter(
-        (f) =>
-          !skipKeys.has(f.key) &&
-          !seen.has(f.key) &&
-          (f.type === 'text' ||
-            f.type === 'textarea' ||
-            f.type === 'select' ||
-            f.type === 'picklist' ||
-            f.type === 'number' ||
-            f.type === 'currency') &&
-          /plan|product|tier|premium|monthly|contribution|coverage.?option|member.?tier|rate|amount/i.test(
-            f.key,
-          ),
-      );
-      for (const f of patterned) {
-        tryAdd(f);
-        if (out.length >= 6) break;
-      }
-    }
-
-    return out;
-  }, [visibleFields, findFieldByKey, heroSharingField, heroStartDateField, recordPlanType]);
+    // Selection + amount-label invariant live in selectCoverageSnapshotPlanFields
+    // so "Monthly Premium" cannot appear twice (regression-tested). Passing
+    // `values` makes selection populated-first, so a real contribution / tier is
+    // never pushed past the row cap by an empty placeholder field.
+    return selectCoverageSnapshotPlanFields({
+      fields: visibleFields,
+      skipKeys,
+      planType: recordPlanType,
+      values: defaultValues,
+    });
+  }, [visibleFields, heroSharingField, heroStartDateField, recordPlanType, defaultValues]);
 
   /** Omit empty rows in static read-only snapshot; keep placeholders in edit / inline-edit. */
   const heroProductPlanSnapshotFields = useMemo(() => {

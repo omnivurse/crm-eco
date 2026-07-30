@@ -10,6 +10,10 @@ import {
   type HealthSharingDataKey,
 } from '@/lib/crm/lead-contact-sharing-fields';
 import {
+  auditCoverageAmountFieldLabels,
+  type CoverageAmountLabelIssue,
+} from '@/lib/crm/premium-field-aliases';
+import {
   isPersonCoverageSectionKey,
   isPersonModuleKey,
   PERSON_COVERAGE_SECTION_KEYS,
@@ -64,7 +68,11 @@ export const REQUIRED_PERSON_COVERAGE_FIELD_KEYS = [
 ] as const;
 
 export interface CoverageParityIssue {
-  code: 'missing_field' | 'wrong_section' | 'layout_section_no_fields';
+  code:
+    | 'missing_field'
+    | 'wrong_section'
+    | 'layout_section_no_fields'
+    | CoverageAmountLabelIssue['code'];
   moduleKey: string;
   fieldKey?: string;
   sectionKey?: string;
@@ -72,7 +80,8 @@ export interface CoverageParityIssue {
 }
 
 /**
- * Detect schema/layout gaps that would hide coverage UI after lead conversion.
+ * Detect schema/layout gaps that would hide coverage UI after lead conversion,
+ * plus amount-label drift that would show "Monthly Premium" twice.
  */
 export function auditPersonModuleCoverageFields(
   moduleKey: string,
@@ -117,6 +126,15 @@ export function auditPersonModuleCoverageFields(
         message: `${moduleKey} layout lists "${sectionKey}" but no crm_fields are assigned to that section`,
       });
     }
+  }
+
+  for (const labelIssue of auditCoverageAmountFieldLabels(fields, moduleKey)) {
+    issues.push({
+      code: labelIssue.code,
+      moduleKey,
+      fieldKey: labelIssue.fieldKey,
+      message: labelIssue.message,
+    });
   }
 
   return issues;

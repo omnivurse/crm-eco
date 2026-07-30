@@ -95,7 +95,7 @@ export function InlineEditableRecordForm({
       }
     }
     return merged;
-  }, [defaultValues, saveFields]);
+  }, [defaultValues, saveFields, record.id]);
 
   return (
     <DynamicRecordForm

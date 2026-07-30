@@ -155,6 +155,37 @@ async function addCarrierToMyList(carrierId: string): Promise<boolean> {
   }
 }
 
+// Session cache: carrier UUID -> name, resolved via the org directory by id.
+// Separate from `listCache` (keyed by carrier_type) so a single stored id can be
+// named even when it is absent from the advisor's personal list.
+const idNameCache = new Map<string, string>();
+
+/**
+ * Resolve a single carrier UUID to its display name via the org directory.
+ * Mirrors `FieldRenderer.lookupCarrierById`: used when a stored `carrier_id`
+ * is NOT in the advisor's personal list (legacy import, or a ministry curated
+ * by another advisor) so the field shows e.g. "Sedera HealthShare" instead of
+ * a truncated UUID or an empty placeholder.
+ */
+async function lookupCarrierNameById(id: string): Promise<string | undefined> {
+  const cached = idNameCache.get(id);
+  if (cached) return cached;
+  try {
+    const res = await fetch(`/api/crm/carriers/${encodeURIComponent(id)}`);
+    if (!res.ok) return undefined;
+    const json = (await res.json()) as {
+      data?: { carrier_name?: string } | null;
+      carrier_name?: string;
+    };
+    const name = json.data?.carrier_name ?? json.carrier_name;
+    if (!name) return undefined;
+    idNameCache.set(id, name);
+    return name;
+  } catch {
+    return undefined;
+  }
+}
+
 export interface InlineCarrierFieldProps {
   field: string;
   value: string | null | undefined;
@@ -199,6 +230,9 @@ export const InlineCarrierField = memo(function InlineCarrierField({
   const [directory, setDirectory] = useState<DirectoryEntry[]>([]);
   const [directoryLoading, setDirectoryLoading] = useState(false);
   const [adding, setAdding] = useState<string | null>(null);
+  const [resolvedName, setResolvedName] = useState<string | undefined>(
+    value && UUID_RE.test(value) ? idNameCache.get(value) : undefined,
+  );
   const containerRef = useRef<HTMLSpanElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -214,6 +248,29 @@ export const InlineCarrierField = memo(function InlineCarrierField({
       cancelled = true;
     };
   }, [carrierType, loaded]);
+
+  // Resolve a stored carrier UUID that is absent from the advisor's list to its
+  // name via the org directory, so a legacy / other-advisor ministry (e.g. a
+  // Sedera carrier_id on a HealthShare contact) shows "Sedera HealthShare"
+  // instead of a truncated UUID or a blank rail.
+  useEffect(() => {
+    if (!value || !UUID_RE.test(value) || carriers.some((c) => c.id === value)) {
+      setResolvedName(undefined);
+      return;
+    }
+    const cached = idNameCache.get(value);
+    if (cached) {
+      setResolvedName(cached);
+      return;
+    }
+    let cancelled = false;
+    void lookupCarrierNameById(value).then((name) => {
+      if (!cancelled && name) setResolvedName(name);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [value, carriers]);
 
   const closePicker = useCallback(() => {
     setOpen(false);
@@ -264,7 +321,8 @@ export const InlineCarrierField = memo(function InlineCarrierField({
       ? carriers.find((c) => c.id === value)!.name
       : value && !UUID_RE.test(value)
         ? String(value)
-        : null;
+        : // Stored UUID not in the advisor list — use the org-directory name.
+          resolvedName ?? null;
 
   const openPicker = () => {
     if (readOnly || lockOwner) return;
