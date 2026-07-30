@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { executeMatchingWorkflows } from '@/lib/automation';
 import type { CrmRecord } from '@/lib/crm/types';
 import type { CrmWebform } from '@/lib/automation/types';
-import { rateLimit, getRateLimitHeaders } from '@crm-eco/lib/rate-limit';
+import { rateLimitDurable, getRateLimitHeaders } from '@crm-eco/lib/rate-limit';
 import {
   buildNormalizedRecordWrite,
   pickUpdateMirrorColumns,
@@ -54,7 +54,10 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
   const forwarded = request.headers.get('x-forwarded-for');
   const ip = forwarded?.split(',')[0]?.trim() || 'unknown';
-  const rateLimitResult = rateLimit(`webform:${ip}`, { limit: 10, windowMs: 60 * 60 * 1000 });
+  const rateLimitResult = await rateLimitDurable(`webform:${ip}`, {
+    limit: 10,
+    windowSeconds: 60 * 60,
+  });
   if (!rateLimitResult.success) {
     return NextResponse.json(
       { error: 'Too many submissions. Please try again later.' },

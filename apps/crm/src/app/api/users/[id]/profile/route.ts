@@ -8,6 +8,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, getAuthProfile } from '@/lib/supabase-server';
+import { logAuditEvent, AuditActions } from '@crm-eco/lib/audit';
+import { revokeUserSessions } from '@/lib/security/revoke-sessions';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,7 +34,7 @@ export async function PATCH(
     // Get the target user profile
     const { data: targetUser, error: fetchError } = await supabase
       .from('profiles')
-      .select('id, organization_id, full_name, is_active')
+      .select('id, organization_id, full_name, is_active, user_id')
       .eq('id', userId)
       .single();
 
@@ -87,9 +89,50 @@ export async function PATCH(
       return NextResponse.json({ error: 'Failed to update profile' }, { status: 500 });
     }
 
+    const deactivated =
+      allowedFields.is_active === false && targetUser.is_active !== false;
+    const reactivated =
+      allowedFields.is_active === true && targetUser.is_active !== true;
+
+    // Only a deactivation ends sessions, and only because an admin just asked for
+    // it. Renaming a user doesn't sign them out, and neither does elapsed time.
+    const revocation = deactivated
+      ? await revokeUserSessions(targetUser.user_id, 'account_deactivated')
+      : null;
+
+    await logAuditEvent({
+      appSource: 'crm',
+      action: deactivated
+        ? AuditActions.USER_DEACTIVATED
+        : reactivated
+          ? AuditActions.USER_REACTIVATED
+          : AuditActions.USER_UPDATED,
+      actionCategory: 'data_modification',
+      riskLevel: deactivated || reactivated ? 'high' : 'low',
+      targetEntityType: 'profile',
+      targetEntityId: targetUser.id,
+      targetUserId: targetUser.user_id ?? undefined,
+      description: deactivated
+        ? `Deactivated ${targetUser.full_name ?? targetUser.id}`
+        : reactivated
+          ? `Reactivated ${targetUser.full_name ?? targetUser.id}`
+          : `Updated profile for ${targetUser.full_name ?? targetUser.id}`,
+      changes: {
+        old: { full_name: targetUser.full_name, is_active: targetUser.is_active },
+        new: allowedFields,
+      },
+      details: revocation
+        ? {
+            sessions_revoked: revocation.revoked,
+            session_revocation_ok: revocation.ok,
+          }
+        : undefined,
+    });
+
     return NextResponse.json({
       success: true,
       user: updated,
+      ...(revocation ? { sessions_revoked: revocation.revoked } : {}),
     });
   } catch (error) {
     console.error('[Users] Update profile error:', error);

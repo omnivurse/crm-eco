@@ -7,6 +7,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, getAuthProfile } from '@/lib/supabase-server';
+import { logAuditEvent, AuditActions } from '@crm-eco/lib/audit';
+import { revokeUserSessions } from '@/lib/security/revoke-sessions';
 import type { CrmRole } from '@/lib/crm/types';
 
 export const dynamic = 'force-dynamic';
@@ -83,9 +85,38 @@ export async function PATCH(
       return NextResponse.json({ error: 'Failed to update role' }, { status: 500 });
     }
 
+    // End the target's sessions so a demotion or revocation can't be ridden out on
+    // an already-issued token. Triggered by this admin action only — never by
+    // inactivity or elapsed time. Best-effort: the role change has already
+    // committed, and RLS plus the middleware profile lookup enforce the new role
+    // regardless, so a revocation failure must not turn into a 500.
+    const revocation = await revokeUserSessions(targetUser.user_id, 'role_changed');
+
+    await logAuditEvent({
+      appSource: 'crm',
+      action: AuditActions.ROLE_CHANGED,
+      actionCategory: 'authorization',
+      riskLevel: 'high',
+      targetEntityType: 'profile',
+      targetEntityId: targetUser.id,
+      targetUserId: targetUser.user_id ?? undefined,
+      description: normalizedRole
+        ? `CRM role changed to ${normalizedRole} for ${targetUser.full_name ?? targetUser.id}`
+        : `CRM access removed from ${targetUser.full_name ?? targetUser.id}`,
+      changes: {
+        old: { crm_role: targetUser.crm_role },
+        new: { crm_role: normalizedRole },
+      },
+      details: {
+        sessions_revoked: revocation.revoked,
+        session_revocation_ok: revocation.ok,
+      },
+    });
+
     return NextResponse.json({
       success: true,
       crm_role: normalizedRole,
+      sessions_revoked: revocation.revoked,
       message: normalizedRole
         ? `CRM role updated to ${normalizedRole}`
         : 'CRM access removed',

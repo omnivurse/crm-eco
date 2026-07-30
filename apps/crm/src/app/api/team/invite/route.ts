@@ -7,7 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient, getAuthProfile } from '@/lib/supabase-server';
 import crypto from 'crypto';
 import { sendTeamInviteEmail } from '@/lib/email/transactional';
-import { rateLimit, getRateLimitHeaders } from '@crm-eco/lib/rate-limit';
+import { rateLimitDurable, getRateLimitHeaders } from '@crm-eco/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,7 +26,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Rate limit: 20 invites per user per hour
-    const rl = rateLimit(`team_invite_${profile.id}`, { limit: 20, windowMs: 3600_000 });
+    const rl = await rateLimitDurable(`team_invite_${profile.id}`, {
+      limit: 20,
+      windowSeconds: 3600,
+    });
     if (!rl.success) {
       return NextResponse.json(
         { error: 'Too many invitation requests. Try again later.' },

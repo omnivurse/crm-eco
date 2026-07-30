@@ -21,6 +21,7 @@ import {
     Copy,
     Check
 } from 'lucide-react';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { Button } from '@crm-eco/ui/components/button';
 import { Badge } from '@crm-eco/ui/components/badge';
 import { Input } from '@crm-eco/ui/components/input';
@@ -37,13 +38,13 @@ import {
 import { toast } from 'sonner';
 import { clearOfflineState } from '@/lib/offline/reset';
 
-interface Session {
+interface KnownDevice {
     id: string;
-    user_agent: string;
-    ip_address: string;
-    last_activity_at: string;
-    created_at: string;
-    is_current: boolean;
+    user_agent: string | null;
+    last_ip: string | null;
+    first_seen_at: string;
+    last_seen_at: string;
+    revoked_at: string | null;
 }
 
 interface SecurityLog {
@@ -61,7 +62,8 @@ export default function SecuritySettingsPage() {
     const [loading, setLoading] = useState(true);
     const [mfaEnabled, setMfaEnabled] = useState(false);
     const [mfaEnrolling, setMfaEnrolling] = useState(false);
-    const [sessions, setSessions] = useState<Session[]>([]);
+    const [devices, setDevices] = useState<KnownDevice[]>([]);
+    const [devicesAvailable, setDevicesAvailable] = useState(true);
     const [recentActivity, setRecentActivity] = useState<SecurityLog[]>([]);
     const [showPasswordDialog, setShowPasswordDialog] = useState(false);
     const [showMFADialog, setShowMFADialog] = useState(false);
@@ -91,17 +93,25 @@ export default function SecuritySettingsPage() {
             const { data: factors } = await supabase.auth.mfa.listFactors();
             setMfaEnabled(factors?.totp?.length ? factors.totp.length > 0 : false);
 
-            // Load active sessions (mock for now - needs backend)
-            setSessions([
-                {
-                    id: '1',
-                    user_agent: navigator.userAgent,
-                    ip_address: '192.168.1.1',
-                    last_activity_at: new Date().toISOString(),
-                    created_at: new Date().toISOString(),
-                    is_current: true
-                }
-            ]);
+            // Load recognized devices. `known_devices` is created in migration
+            // 202607290003 and is not in the generated Database types yet, so the
+            // client is widened for this one query. RLS limits rows to the caller.
+            const { data: deviceRows, error: deviceError } = await (supabase as unknown as SupabaseClient)
+                .from('known_devices')
+                .select('id, user_agent, last_ip, first_seen_at, last_seen_at, revoked_at')
+                .order('last_seen_at', { ascending: false })
+                .limit(20);
+
+            if (deviceError) {
+                // Until the migration is applied the table does not exist. Show the
+                // unavailable state rather than claiming the user has no devices.
+                console.warn('Device history unavailable:', deviceError.message);
+                setDevicesAvailable(false);
+                setDevices([]);
+            } else {
+                setDevicesAvailable(true);
+                setDevices((deviceRows ?? []) as KnownDevice[]);
+            }
 
             // Load recent activity (would come from phi_access_log)
             setRecentActivity([]);
@@ -202,16 +212,6 @@ export default function SecuritySettingsPage() {
             toast.success('MFA disabled');
         } catch (error) {
             toast.error('Failed to disable MFA');
-        }
-    }
-
-    async function handleRevokeSession(sessionId: string) {
-        try {
-            // Would call invalidateSession here
-            setSessions(prev => prev.filter(s => s.id !== sessionId));
-            toast.success('Session revoked');
-        } catch (error) {
-            toast.error('Failed to revoke session');
         }
     }
 
@@ -367,7 +367,7 @@ export default function SecuritySettingsPage() {
                 )}
             </div>
 
-            {/* Active Sessions */}
+            {/* Recognized devices */}
             <div className="bg-white dark:bg-slate-900/50 rounded-2xl p-6 border border-slate-200 dark:border-white/10 shadow-sm">
                 <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
@@ -375,8 +375,8 @@ export default function SecuritySettingsPage() {
                             <Monitor className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                         </div>
                         <div>
-                            <h3 className="font-semibold text-slate-900 dark:text-white">Active Sessions</h3>
-                            <p className="text-sm text-slate-500">Devices currently signed in to your account</p>
+                            <h3 className="font-semibold text-slate-900 dark:text-white">Recognized devices</h3>
+                            <p className="text-sm text-slate-500">Devices that have signed in to your account</p>
                         </div>
                     </div>
                     <Button variant="destructive" size="sm" onClick={handleRevokeAllSessions}>
@@ -385,50 +385,54 @@ export default function SecuritySettingsPage() {
                     </Button>
                 </div>
 
-                <div className="space-y-3">
-                    {sessions.map(session => {
-                        const { browser, os } = parseUserAgent(session.user_agent);
-                        return (
-                            <div
-                                key={session.id}
-                                className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl"
-                            >
-                                <div className="flex items-center gap-4">
-                                    <Monitor className="w-10 h-10 p-2 bg-white dark:bg-slate-700 rounded-lg text-slate-600 dark:text-slate-300" />
-                                    <div>
-                                        <div className="flex items-center gap-2">
-                                            <p className="font-medium text-slate-900 dark:text-white">{browser} on {os}</p>
-                                            {session.is_current && (
-                                                <Badge className="bg-teal-100 text-teal-700 dark:bg-teal-500/20 dark:text-teal-400">
-                                                    Current
-                                                </Badge>
-                                            )}
-                                        </div>
-                                        <div className="flex items-center gap-3 text-sm text-slate-500">
-                                            <span className="flex items-center gap-1">
-                                                <MapPin className="w-3 h-3" />
-                                                {session.ip_address}
-                                            </span>
-                                            <span className="flex items-center gap-1">
-                                                <Clock className="w-3 h-3" />
-                                                Active now
-                                            </span>
+                {!devicesAvailable ? (
+                    <p className="p-4 text-sm text-slate-500 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+                        Device history isn&apos;t available yet.
+                    </p>
+                ) : devices.length === 0 ? (
+                    <p className="p-4 text-sm text-slate-500 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+                        No devices recorded yet. Devices are listed here after your next sign-in.
+                    </p>
+                ) : (
+                    <div className="space-y-3">
+                        {devices.map(device => {
+                            const { browser, os } = parseUserAgent(device.user_agent ?? '');
+                            return (
+                                <div
+                                    key={device.id}
+                                    className="flex items-center justify-between gap-4 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl"
+                                >
+                                    <div className="flex items-center gap-4 min-w-0">
+                                        <Monitor className="w-10 h-10 shrink-0 p-2 bg-white dark:bg-slate-700 rounded-lg text-slate-600 dark:text-slate-300" />
+                                        <div className="min-w-0">
+                                            <div className="flex items-center gap-2">
+                                                <p className="font-medium text-slate-900 dark:text-white truncate">{browser} on {os}</p>
+                                                {device.revoked_at && (
+                                                    <Badge className="bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                                                        Revoked
+                                                    </Badge>
+                                                )}
+                                            </div>
+                                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-500">
+                                                {device.last_ip && (
+                                                    <span className="flex items-center gap-1">
+                                                        <MapPin className="w-3 h-3" />
+                                                        {device.last_ip}
+                                                    </span>
+                                                )}
+                                                <span className="flex items-center gap-1">
+                                                    <Clock className="w-3 h-3" />
+                                                    Last seen {new Date(device.last_seen_at).toLocaleString()}
+                                                </span>
+                                                <span>First seen {new Date(device.first_seen_at).toLocaleDateString()}</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                                {!session.is_current && (
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => handleRevokeSession(session.id)}
-                                    >
-                                        Revoke
-                                    </Button>
-                                )}
-                            </div>
-                        );
-                    })}
-                </div>
+                            );
+                        })}
+                    </div>
+                )}
             </div>
 
             {/* Session Timeout Info */}
@@ -439,20 +443,20 @@ export default function SecuritySettingsPage() {
                     </div>
                     <div>
                         <h3 className="font-semibold text-slate-900 dark:text-white">Session Security</h3>
-                        <p className="text-sm text-slate-500">Automatic session protection settings</p>
+                        <p className="text-sm text-slate-500">How your session is protected</p>
                     </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
                         <p className="text-sm font-medium text-slate-900 dark:text-white">Inactivity Timeout</p>
-                        <p className="text-2xl font-bold text-teal-600 dark:text-teal-400">30 minutes</p>
-                        <p className="text-xs text-slate-500 mt-1">Session locks after inactivity</p>
+                        <p className="text-2xl font-bold text-slate-900 dark:text-white">None</p>
+                        <p className="text-xs text-slate-500 mt-1">You are not signed out for being idle</p>
                     </div>
                     <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-                        <p className="text-sm font-medium text-slate-900 dark:text-white">Maximum Session</p>
-                        <p className="text-2xl font-bold text-teal-600 dark:text-teal-400">12 hours</p>
-                        <p className="text-xs text-slate-500 mt-1">Re-authentication required</p>
+                        <p className="text-sm font-medium text-slate-900 dark:text-white">Sign out everywhere</p>
+                        <p className="text-2xl font-bold text-teal-600 dark:text-teal-400">Available</p>
+                        <p className="text-xs text-slate-500 mt-1">Ends your session on every device</p>
                     </div>
                 </div>
             </div>

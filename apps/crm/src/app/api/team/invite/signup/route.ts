@@ -12,7 +12,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { createServerClient } from '@supabase/ssr';
-import { rateLimit, getRateLimitHeaders } from '@crm-eco/lib/rate-limit';
+import { rateLimitDurable, getRateLimitHeaders } from '@crm-eco/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,7 +36,10 @@ export async function POST(request: NextRequest) {
 
     // Rate limit: 5 signup attempts per IP per hour
     const ip = request.headers.get('x-forwarded-for') || 'unknown';
-    const rl = rateLimit(`invite_signup_${ip}`, { limit: 5, windowMs: 3600_000 });
+    const rl = await rateLimitDurable(`invite_signup_${ip}`, {
+      limit: 5,
+      windowSeconds: 3600,
+    });
     if (!rl.success) {
       return NextResponse.json(
         { error: 'Too many signup attempts. Try again later.' },

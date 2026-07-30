@@ -1,60 +1,78 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient, getAuthUser } from '@/lib/supabase-server';
+import { getAuthUser } from '@/lib/supabase-server';
 import { logAuthEvent } from '@crm-eco/lib/audit';
+import { getClientIp } from '@crm-eco/lib/security/captcha';
+import { rateLimitDurable, getRateLimitHeaders } from '@crm-eco/lib/rate-limit';
+import { recordDeviceSighting } from '@/lib/security/device';
 
 export const dynamic = 'force-dynamic';
 
 // Actions that can be logged without authentication (pre-login events)
 const UNAUTHENTICATED_ACTIONS = ['login_failed', 'password_reset'];
 
-// ── In-memory rate limiter (per-IP) ──────────────────────────────────
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-const RATE_LIMIT_WINDOW_MS = 60_000; // 1 minute
-const RATE_LIMIT_MAX_AUTH = 10;       // authenticated: 10 req/min
-const RATE_LIMIT_MAX_UNAUTH = 5;     // unauthenticated: 5 req/min
+const VALID_ACTIONS = [
+  'login_success',
+  'login_failed',
+  'logout',
+  'password_reset',
+  'mfa_enabled',
+  'mfa_disabled',
+] as const;
 
-function isRateLimited(ip: string, max: number): boolean {
-  const now = Date.now();
-  const entry = rateLimitMap.get(ip);
+type AuthLogAction = (typeof VALID_ACTIONS)[number];
 
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
-    return false;
-  }
-
-  entry.count++;
-  return entry.count > max;
+function isValidAction(value: string): value is AuthLogAction {
+  return (VALID_ACTIONS as readonly string[]).includes(value);
 }
 
-// Periodic cleanup to prevent memory leaks (every 5 min)
-setInterval(() => {
-  const now = Date.now();
-  for (const [ip, entry] of rateLimitMap) {
-    if (now > entry.resetAt) rateLimitMap.delete(ip);
-  }
-}, 5 * 60_000).unref?.();
+// Window and ceilings are unchanged from the previous in-memory limiter; only
+// the store moved (per-instance Map → Postgres), so a limit now survives cold
+// starts, redeploys, and fan-out across instances.
+const RATE_LIMIT_WINDOW_SECONDS = 60;
+const RATE_LIMIT_MAX_AUTH = 10;
+const RATE_LIMIT_MAX_UNAUTH = 5;
 
 export async function POST(request: NextRequest) {
   try {
-    // ── Rate limit by IP ───────────────────────────────────────────
-    const ip =
-      request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-      request.headers.get('x-real-ip') ||
-      'unknown';
+    const ip = getClientIp(request) ?? 'unknown';
 
-    const body = await request.json();
-    const { action, email, details } = body;
+    let body: { action?: unknown; email?: unknown; details?: unknown };
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+    }
 
-    // Validate action
-    const validActions = [
-      'login_success',
-      'login_failed',
-      'logout',
-      'password_reset',
-      'mfa_enabled',
-      'mfa_disabled',
-    ];
-    if (!validActions.includes(action)) {
+    const action = typeof body.action === 'string' ? body.action : '';
+    const email = typeof body.email === 'string' ? body.email : '';
+    const details = (body.details ?? {}) as Record<string, unknown>;
+
+    // Rate limit *before* validating the payload: otherwise a flood of
+    // deliberately-invalid requests short-circuits to 400 without ever being
+    // counted. Unrecognised actions get the stricter unauthenticated ceiling.
+    const isUnauthAction =
+      UNAUTHENTICATED_ACTIONS.includes(action) || !isValidAction(action);
+
+    const decision = await rateLimitDurable(
+      `${isUnauthAction ? 'auth-log-unauth' : 'auth-log'}:${ip}`,
+      {
+        limit: isUnauthAction ? RATE_LIMIT_MAX_UNAUTH : RATE_LIMIT_MAX_AUTH,
+        windowSeconds: RATE_LIMIT_WINDOW_SECONDS,
+        // Fail open: this endpoint sits on the login path, so a database blip
+        // must not stop people signing in. The in-memory fallback still applies
+        // a per-instance limit in that window.
+        failMode: 'open',
+      },
+    );
+
+    if (!decision.success) {
+      return NextResponse.json(
+        { error: 'Too many requests' },
+        { status: 429, headers: getRateLimitHeaders(decision) },
+      );
+    }
+
+    if (!isValidAction(action)) {
       return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     }
 
@@ -62,19 +80,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Email required' }, { status: 400 });
     }
 
-    const isUnauthAction = UNAUTHENTICATED_ACTIONS.includes(action);
-
-    // Apply rate limiting (stricter for unauthenticated calls)
-    const rateMax = isUnauthAction ? RATE_LIMIT_MAX_UNAUTH : RATE_LIMIT_MAX_AUTH;
-    if (isRateLimited(ip, rateMax)) {
-      return NextResponse.json(
-        { error: 'Too many requests' },
-        { status: 429 },
-      );
-    }
-
     // For unauthenticated actions (login_failed, password_reset), skip auth check
-    if (!isUnauthAction) {
+    let userId: string | null = null;
+    if (!UNAUTHENTICATED_ACTIONS.includes(action)) {
       const { user } = await getAuthUser();
 
       if (!user) {
@@ -85,13 +93,31 @@ export async function POST(request: NextRequest) {
       if (user.email !== email) {
         return NextResponse.json({ error: 'Email mismatch' }, { status: 403 });
       }
+
+      userId = user.id;
     }
 
-    // Log the auth event
+    // Device recognition, recorded against the verified user only. Reported as
+    // metadata on the existing auth event rather than a new event type, so no
+    // auth_events constraint changes are required.
+    let newDevice: boolean | undefined;
+    if (action === 'login_success' && userId) {
+      const sighting = await recordDeviceSighting({
+        userId,
+        headers: request.headers,
+        ip,
+      });
+      if (!sighting.degraded) {
+        newDevice = sighting.isNewDevice;
+      }
+    }
+
     const result = await logAuthEvent('crm', action, email, {
       ...details,
       ip_address: ip,
       source: 'crm_login_page',
+      ...(newDevice === undefined ? {} : { new_device: newDevice }),
+      ...(decision.degraded ? { rate_limit_degraded: true } : {}),
     });
 
     if (!result.success) {
