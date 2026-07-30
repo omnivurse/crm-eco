@@ -7,6 +7,7 @@ import {
   formatNoteDateOnly,
   noteDateDiffersFromCreated,
   noteSortTime,
+  backdatedNoteDateOrNull,
 } from './note-timestamp';
 
 describe('formatNoteTimestamp', () => {
@@ -97,6 +98,23 @@ describe('noteSortTime', () => {
   });
   it('orders back-dated notes by their intended date', () => {
     expect(noteSortTime('2026-07-25', created)).toBeGreaterThan(noteSortTime('2026-07-24', created));
+  });
+});
+
+describe('backdatedNoteDateOrNull', () => {
+  it('returns null when nothing was picked', () => {
+    expect(backdatedNoteDateOrNull('', '2026-07-29')).toBeNull();
+    expect(backdatedNoteDateOrNull(null, '2026-07-29')).toBeNull();
+    expect(backdatedNoteDateOrNull(undefined, '2026-07-29')).toBeNull();
+  });
+  it('returns null when the picked date equals the reference day (not a back-date)', () => {
+    // Regression: prevents stamping every note with an explicit date that would
+    // then sort at local midnight instead of by created_at.
+    expect(backdatedNoteDateOrNull('2026-07-29', '2026-07-29')).toBeNull();
+  });
+  it('returns the picked date only when it is a genuine back-date', () => {
+    expect(backdatedNoteDateOrNull('2026-07-24', '2026-07-29')).toBe('2026-07-24');
+    expect(backdatedNoteDateOrNull('2026-08-01', '2026-07-29')).toBe('2026-08-01');
   });
 });
 

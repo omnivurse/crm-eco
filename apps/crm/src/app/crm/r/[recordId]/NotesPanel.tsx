@@ -17,6 +17,7 @@ import {
   formatNoteDateOnly,
   noteDateDiffersFromCreated,
   noteSortTime,
+  backdatedNoteDateOrNull,
 } from '@/lib/crm/note-timestamp';
 import { toast } from 'sonner';
 import { toastItemDeletedWithUndo } from '@/lib/crm/undo-delete';
@@ -181,7 +182,7 @@ export function NotesPanel({ recordId, notes, orgId, hasLegacyNotes = false }: N
       const response = await fetch(`/api/crm/notes/${editingNote.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ body: sanitizedBody, note_date: editNoteDate || null }),
+        body: JSON.stringify({ body: sanitizedBody, note_date: backdatedNoteDateOrNull(editNoteDate, localDateInputValue(editingNote.created_at)) }),
       });
 
       if (!response.ok) {
@@ -215,7 +216,7 @@ export function NotesPanel({ recordId, notes, orgId, hasLegacyNotes = false }: N
         body: JSON.stringify({
           record_id: recordId,
           body: sanitizedBody,
-          note_date: newNoteDate || null,
+          note_date: backdatedNoteDateOrNull(newNoteDate, localDateInputValue()),
         }),
       });
 

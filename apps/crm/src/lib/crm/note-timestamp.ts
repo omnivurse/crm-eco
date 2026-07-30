@@ -84,3 +84,22 @@ export function noteSortTime(noteDate: string | null | undefined, createdAt: str
   const t = noteDate ? new Date(`${noteDate}T00:00:00`).getTime() : new Date(createdAt).getTime();
   return Number.isNaN(t) ? 0 : t;
 }
+
+/**
+ * Decide what to persist for a note's `note_date`. Returns the picked date only
+ * when it's a genuine back-date — i.e. it differs from the reference day the
+ * note would otherwise sort by (today for a new note, the created day for an
+ * existing one). Otherwise returns null so the note keeps falling back to
+ * `created_at`.
+ *
+ * Without this, defaulting the picker to "today" would stamp every note with an
+ * explicit date and sort it at local midnight, pushing it out of created_at
+ * order relative to notes that have no note_date.
+ */
+export function backdatedNoteDateOrNull(
+  picked: string | null | undefined,
+  referenceDay: string,
+): string | null {
+  if (!picked) return null;
+  return picked === referenceDay ? null : picked;
+}
