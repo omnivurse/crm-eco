@@ -51,6 +51,7 @@ import {
   buildPlanChangeFollowUpTask,
   shouldCreatePlanChangeFollowUp,
 } from '@/lib/crm/plan-change-follow-up';
+import { persistPlanChangeWithFollowUp } from '@/lib/crm/plan-change-follow-up-flow';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -652,68 +653,98 @@ export const MembershipChangeHistory = memo(function MembershipChangeHistory({
   // Persist changes array back to the record
   const persistChanges = useCallback(
     async (next: MembershipChange[]) => {
-      if (!saveCtx) return;
-      await saveCtx.save('membership_changes', next);
+      if (!saveCtx) {
+        return {
+          status: 'error' as const,
+          error: 'Plan-change saving is unavailable',
+        };
+      }
+      return saveCtx.save('membership_changes', next, {
+        // This array is read-modify-write. Retrying a stale snapshot after a
+        // 409 would overwrite another agent's concurrently-added change.
+        retryOnConflict: false,
+      });
     },
     [saveCtx],
   );
 
   const handleSave = useCallback(
     async (change: MembershipChange, opts: { createFollowUp: boolean }) => {
-      let nextChange = change;
+      const existing = (data?.membership_changes ?? []) as MembershipChange[];
+      const currentChanges = Array.isArray(existing) ? existing : [];
+      const result = await persistPlanChangeWithFollowUp({
+        currentChanges,
+        change,
+        persistChanges,
+        createFollowUp:
+          opts.createFollowUp && recordId
+            ? async () => {
+                const payload = buildPlanChangeFollowUpTask({
+                  recordId,
+                  recordTitle: recordTitle || 'Member',
+                  changeId: change.id,
+                  type: change.type,
+                  effectiveDate: change.date,
+                  fromPlan: change.from_plan,
+                  toPlan: change.to_plan,
+                  notes: change.notes,
+                });
+                const res = await fetch('/api/tasks', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(payload),
+                });
+                if (!res.ok) {
+                  const err = await res.json().catch(() => ({}));
+                  throw new Error(
+                    (err as { error?: string }).error || 'Failed to create follow-up'
+                  );
+                }
+                return (await res.json()) as { id?: string };
+              }
+            : undefined,
+      });
 
-      if (opts.createFollowUp && recordId) {
-        try {
-          const payload = buildPlanChangeFollowUpTask({
-            recordId,
-            recordTitle: recordTitle || 'Member',
-            changeId: change.id,
-            type: change.type,
-            effectiveDate: change.date,
-            fromPlan: change.from_plan,
-            toPlan: change.to_plan,
-            notes: change.notes,
+      switch (result.status) {
+        case 'history-error':
+          toast.error('Plan change was not saved', {
+            description: result.error,
           });
-          const res = await fetch('/api/tasks', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
+          return;
+        case 'history-queued':
+          toast.warning('Plan change queued for sync', {
+            description:
+              'The follow-up reminder was not created. Reopen this change after syncing to add it safely.',
           });
-          if (!res.ok) {
-            const err = await res.json().catch(() => ({}));
-            throw new Error(
-              (err as { error?: string }).error || 'Failed to create follow-up',
-            );
-          }
-          const task = (await res.json()) as { id?: string };
-          if (task.id) {
-            nextChange = { ...change, follow_up_task_id: task.id };
-          }
+          break;
+        case 'saved-task-error':
+          console.error('[MembershipChangeHistory] follow-up create failed:', result.error);
+          toast.error('Plan change saved, but follow-up reminder failed', {
+            description: result.error,
+          });
+          break;
+        case 'saved-with-follow-up-unlinked':
+          console.error('[MembershipChangeHistory] follow-up link failed:', result.error);
+          toast.warning('Plan change and reminder saved separately', {
+            description:
+              'The reminder exists, but its linked badge could not be saved. Check the Activities tab before retrying.',
+          });
+          break;
+        case 'saved-with-follow-up-link-queued':
+          toast.success('Plan change logged', {
+            description: `Follow-up reminder set for ${formatDate(change.date)}; its link is queued for sync.`,
+          });
+          break;
+        case 'saved-with-follow-up':
           toast.success('Plan change logged', {
             description: `Follow-up reminder set for ${formatDate(change.date)}. Leave current product as-is until then.`,
           });
-        } catch (err) {
-          console.error('[MembershipChangeHistory] follow-up create failed:', err);
-          toast.error('Plan change saved, but follow-up reminder failed', {
-            description:
-              err instanceof Error
-                ? err.message
-                : 'Add a task manually on the Activities tab.',
-          });
-        }
-      } else {
-        toast.success('Plan change logged');
+          break;
+        case 'saved':
+          toast.success('Plan change logged');
+          break;
       }
 
-      const existing = (data?.membership_changes ?? []) as MembershipChange[];
-      const arr = Array.isArray(existing) ? [...existing] : [];
-      const idx = arr.findIndex((c) => c.id === nextChange.id);
-      if (idx >= 0) {
-        arr[idx] = nextChange;
-      } else {
-        arr.push(nextChange);
-      }
-      await persistChanges(arr);
       setDialogOpen(false);
       setEditing(null);
     },
