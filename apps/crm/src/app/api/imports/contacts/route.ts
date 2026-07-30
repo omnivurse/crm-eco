@@ -104,6 +104,7 @@ export async function POST(request: NextRequest) {
             .eq('org_id', profile.organization_id)
             .eq('module_id', contactsModule.id)
             .eq('email', email)
+            .is('deleted_at' as never, null)
             .limit(1);
           
           if (existing && existing.length > 0) {

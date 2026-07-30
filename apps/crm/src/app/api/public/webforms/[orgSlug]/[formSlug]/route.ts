@@ -164,7 +164,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         .from('crm_records')
         .select('*')
         .eq('org_id', org.id)
-        .eq('module_id', typedWebform.module_id);
+        .eq('module_id', typedWebform.module_id)
+        .is('deleted_at' as never, null);
 
       for (const field of dedupeConfig.fields) {
         const value = extractedSystem[field] || dataFields[field];
@@ -217,8 +218,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
             data: norm.data,
           })
           .eq('id', existingRecord.id)
+          .is('deleted_at' as never, null)
           .select()
-          .single();
+          .maybeSingle();
 
         if (updateError) {
           console.error('Failed to update record:', updateError);
@@ -228,8 +230,14 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           );
         }
 
-        record = updated as CrmRecord;
-        isNew = false;
+        if (updated) {
+          record = updated as CrmRecord;
+          isNew = false;
+        } else {
+          // The duplicate was trashed between lookup and update. Continue into
+          // the create path so the submission is not written to an invisible row.
+          existingRecord = null;
+        }
       } else {
         // create_duplicate - fall through to create
         existingRecord = null;

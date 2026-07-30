@@ -327,6 +327,7 @@ export async function POST(request: NextRequest) {
           .select('id, email')
           .eq('org_id', organizationId)
           .eq('module_id', moduleId)
+          .is('deleted_at' as never, null)
           .not('email', 'is', null);
 
         for (const r of existingByEmail ?? []) {
@@ -347,6 +348,7 @@ export async function POST(request: NextRequest) {
           .select('id, phone')
           .eq('org_id', organizationId)
           .eq('module_id', moduleId)
+          .is('deleted_at' as never, null)
           .not('phone', 'is', null);
 
         for (const r of existingByPhone ?? []) {
@@ -368,7 +370,8 @@ export async function POST(request: NextRequest) {
           .from('crm_records')
           .select('id, fn:data->>first_name, ln:data->>last_name, dob:data->>date_of_birth')
           .eq('org_id', organizationId)
-          .eq('module_id', moduleId);
+          .eq('module_id', moduleId)
+          .is('deleted_at' as never, null);
 
         if (nameDobError) {
           // Surface rather than swallow: a PostgREST/schema regression here must
@@ -519,6 +522,7 @@ export async function POST(request: NextRequest) {
           .from('crm_records')
           .select('id, data, title')
           .eq('org_id', organizationId)
+          .is('deleted_at' as never, null)
           .in('id', chunk);
         for (const r of existingRecs ?? []) {
           existingById.set(r.id as string, {
@@ -531,16 +535,26 @@ export async function POST(request: NextRequest) {
       for (const { row, existingId } of updateRows) {
         const existing = existingById.get(existingId);
         if (!existing) continue; // record vanished between lookup and update
-        const { error: upErr } = await supabase
+        const { data: updatedRecord, error: upErr } = await supabase
           .from('crm_records')
           .update(buildUpdateRecord(row, existing))
           .eq('id', existingId)
-          .eq('org_id', organizationId);
+          .eq('org_id', organizationId)
+          .is('deleted_at' as never, null)
+          .select('id')
+          .maybeSingle();
 
         if (upErr) {
           errors++;
           errorDetails.push({ row: row.index + 1, error: upErr.message });
           row.error = upErr.message;
+        } else if (!updatedRecord) {
+          // The record was trashed after dedupe resolution. Never report a
+          // successful upsert when no live row was actually updated.
+          const message = 'Matched record is no longer available';
+          errors++;
+          errorDetails.push({ row: row.index + 1, error: message });
+          row.error = message;
         } else {
           updated++;
           updatedRecords.push({ rowIndex: row.index, recordId: existingId, row });
