@@ -14,6 +14,8 @@ import { toast } from 'sonner';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { LazyEmailEditor } from '@/components/email/LazyEmailEditor';
 import type { InboxConversation, InboxMessage } from '@/lib/inbox/types';
+import type { SharedMailbox } from '@/lib/inbox/shared-mailboxes';
+import { resolveReplyFromAddress } from '@/lib/inbox/reply-from';
 
 type ReplyMode = 'reply' | 'reply_all' | 'forward';
 
@@ -22,6 +24,9 @@ interface ReplyFormProps {
   messages: InboxMessage[];
   authProfile: { id: string; organization_id: string; full_name: string | null };
   authUserEmail: string;
+  /** Verified sender registry, used to pick the From address. */
+  mailboxes?: SharedMailbox[];
+  verifiedDomains?: string[];
   onReplySent: (conversationId: string) => void;
   onForward?: (subject: string, body: string) => void;
 }
@@ -31,6 +36,8 @@ export function ReplyForm({
   messages,
   authProfile,
   authUserEmail,
+  mailboxes = [],
+  verifiedDomains = [],
   onReplySent,
   onForward,
 }: ReplyFormProps) {
@@ -49,19 +56,28 @@ export function ReplyForm({
     return messages.length > 0 ? messages[messages.length - 1] : null;
   }, [messages]);
 
-  /** Monitored mailbox that received the inbound mail (support@, billing@, …). */
-  const monitoredFrom = useMemo(() => {
-    const candidate =
-      lastInbound?.to_address ||
-      lastInbound?.reply_to_address ||
-      'support@payitforwardhealth.com';
-    const normalized = candidate.trim().toLowerCase();
-    if (normalized.endsWith('@payitforwardhealth.com') || normalized.endsWith('@mail.payitforwardhealth.com')) {
-      // Prefer root-domain From for outbound even if inbound arrived via mail.
-      return normalized.replace('@mail.payitforwardhealth.com', '@payitforwardhealth.com');
-    }
-    return 'support@payitforwardhealth.com';
-  }, [lastInbound]);
+  /**
+   * Shared mailbox this reply goes out as (support@, billing@, …).
+   * Driven by the thread's mailbox plus the verified sender registry, so it
+   * stays correct for any org rather than assuming one hardcoded domain.
+   */
+  const monitoredFrom = useMemo(
+    () =>
+      resolveReplyFromAddress({
+        conversationMailbox: selectedConversation.mailbox_address,
+        lastInboundTo: lastInbound?.to_address,
+        lastInboundReplyTo: lastInbound?.reply_to_address,
+        senders: mailboxes.map((m) => ({ email: m.email, isDefault: m.isDefault })),
+        verifiedDomains,
+      }),
+    [selectedConversation.mailbox_address, lastInbound, mailboxes, verifiedDomains],
+  );
+
+  /** Display name: a person mailbox signs as the person, role boxes as the org. */
+  const fromName = useMemo(() => {
+    const match = mailboxes.find((m) => m.email === monitoredFrom);
+    return match?.name || 'Pay It Forward Health';
+  }, [mailboxes, monitoredFrom]);
 
   // Build CC list for Reply All
   const replyAllCc = useMemo(() => {
@@ -105,12 +121,16 @@ export function ReplyForm({
           : `Re: ${selectedConversation.subject}`)
         : 'Re:';
 
+      if (!monitoredFrom) {
+        throw new Error(
+          'No verified sending address is configured. Add one in Settings → Email Domains.',
+        );
+      }
+
       const bodyText = replyHtml.replace(/<[^>]*>/g, '');
 
       // Build CC list for Reply All
       const ccEmails = replyMode === 'reply_all' ? replyAllCc.map(r => r.email) : [];
-
-      const fromName = 'Pay It Forward Health';
 
       // Send via Resend from the monitored mailbox that received the thread
       const res = await fetch('/api/communications/send', {
@@ -201,6 +221,7 @@ export function ReplyForm({
     authProfile,
     authUserEmail,
     monitoredFrom,
+    fromName,
     replyAllCc,
     onReplySent,
     onForward,
@@ -249,9 +270,15 @@ export function ReplyForm({
           )}
         </div>
 
-        <div className="text-xs text-slate-500 truncate">
-          From <span className="font-medium text-slate-700 dark:text-slate-300">{monitoredFrom}</span>
-        </div>
+        {monitoredFrom ? (
+          <div className="text-xs text-slate-500 truncate">
+            From <span className="font-medium text-slate-700 dark:text-slate-300">{monitoredFrom}</span>
+          </div>
+        ) : (
+          <div className="text-xs text-amber-600 dark:text-amber-500 truncate">
+            No verified sending address — configure one in Settings → Email Domains
+          </div>
+        )}
 
         {replyMode === 'reply_all' && replyAllCc.length > 0 && (
           <div className="flex items-center gap-1 text-xs text-slate-500 truncate">

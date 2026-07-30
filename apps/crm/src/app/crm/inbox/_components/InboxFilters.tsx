@@ -16,11 +16,13 @@ import {
   User,
   UserPlus,
   AlertCircle,
+  AtSign,
   X,
   ChevronDown,
 } from 'lucide-react';
 import { cn } from '@crm-eco/ui/lib/utils';
 import type { InboxChannel, InboxStats, ConversationStatus } from '@/lib/inbox/types';
+import type { SharedMailbox } from '@/lib/inbox/shared-mailboxes';
 
 type FilterType = 'all' | 'unread' | 'assigned_to_me' | 'unassigned';
 
@@ -39,6 +41,10 @@ interface InboxFiltersProps {
   onChannelFilterChange: (c: InboxChannel | 'all') => void;
   statusFilter?: ConversationStatus | 'active';
   onStatusFilterChange?: (s: ConversationStatus | 'active') => void;
+  mailboxFilter?: string | 'all';
+  onMailboxFilterChange?: (m: string | 'all') => void;
+  mailboxes?: SharedMailbox[];
+  mailboxesLoading?: boolean;
   stats: InboxStats | null;
   conversationCount: number;
   draftsCount?: number;
@@ -56,6 +62,127 @@ interface FolderItem {
   active: boolean;
 }
 
+/** Mailboxes shown before the list collapses behind "Show all". */
+const MAILBOX_COLLAPSED_COUNT = 6;
+
+const SharedMailboxSection = React.memo(function SharedMailboxSection({
+  mailboxes,
+  loading,
+  activeMailbox,
+  onSelect,
+}: {
+  mailboxes: SharedMailbox[];
+  loading: boolean;
+  activeMailbox: string | 'all';
+  onSelect: (mailbox: string | 'all') => void;
+}) {
+  const [expanded, setExpanded] = React.useState(false);
+
+  // A selected mailbox must stay visible even when it sits past the cutoff,
+  // otherwise the active filter appears to vanish from the sidebar.
+  const activeIsHidden =
+    activeMailbox !== 'all' &&
+    mailboxes.findIndex((m) => m.email === activeMailbox) >= MAILBOX_COLLAPSED_COUNT;
+
+  const showAll = expanded || activeIsHidden;
+  const visible = showAll ? mailboxes : mailboxes.slice(0, MAILBOX_COLLAPSED_COUNT);
+  const hiddenCount = mailboxes.length - visible.length;
+
+  return (
+    <div>
+      <h3 className="text-[10px] font-semibold text-slate-500 uppercase tracking-[0.15em] mb-1.5 px-2">
+        Shared Mailboxes
+      </h3>
+
+      {loading ? (
+        <div className="space-y-1 px-2.5 py-1" aria-label="Loading mailboxes">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="h-6 rounded bg-slate-100 dark:bg-slate-800 animate-pulse" />
+          ))}
+        </div>
+      ) : mailboxes.length === 0 ? (
+        <p className="px-2.5 py-1 text-xs text-slate-500 dark:text-slate-400">
+          No verified sending addresses yet. Add one in Settings → Email Domains.
+        </p>
+      ) : (
+        <div className="space-y-0.5">
+          <button
+            onClick={() => onSelect('all')}
+            className={cn(
+              'w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-sm transition-colors',
+              activeMailbox === 'all'
+                ? 'bg-teal-50 dark:bg-teal-500/10 text-teal-700 dark:text-teal-400 font-semibold'
+                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium'
+            )}
+          >
+            <InboxIcon className="w-4 h-4 flex-shrink-0" />
+            All Mailboxes
+          </button>
+
+          {visible.map((mailbox) => {
+            const active = activeMailbox === mailbox.email;
+            return (
+              <button
+                key={mailbox.email}
+                onClick={() => onSelect(mailbox.email)}
+                title={`${mailbox.label} — ${mailbox.email}`}
+                className={cn(
+                  'w-full flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg text-sm transition-colors text-left',
+                  active
+                    ? 'bg-teal-50 dark:bg-teal-500/10 text-teal-700 dark:text-teal-400 font-semibold'
+                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium'
+                )}
+              >
+                <span className="flex items-center gap-2.5 min-w-0">
+                  <AtSign className="w-4 h-4 flex-shrink-0" />
+                  <span className="min-w-0">
+                    <span className="block truncate">{mailbox.label}</span>
+                    <span className="block truncate text-[10px] font-normal text-slate-400 dark:text-slate-500">
+                      {mailbox.email}
+                    </span>
+                  </span>
+                </span>
+                {mailbox.unreadCount > 0 && (
+                  <span
+                    className={cn(
+                      'text-[11px] min-w-[20px] text-center px-1.5 py-0.5 rounded-full font-semibold flex-shrink-0',
+                      active
+                        ? 'bg-teal-100 dark:bg-teal-500/20 text-teal-700 dark:text-teal-400'
+                        : 'bg-red-500 text-white'
+                    )}
+                  >
+                    {mailbox.unreadCount}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+
+          {hiddenCount > 0 && (
+            <button
+              onClick={() => setExpanded(true)}
+              className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            >
+              <ChevronDown className="w-3.5 h-3.5 flex-shrink-0" />
+              Show all {mailboxes.length}
+            </button>
+          )}
+
+          {showAll && !activeIsHidden && mailboxes.length > MAILBOX_COLLAPSED_COUNT && (
+            <button
+              onClick={() => setExpanded(false)}
+              className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            >
+              <ChevronDown className="w-3.5 h-3.5 flex-shrink-0 rotate-180" />
+              Show less
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+});
+
 const FilterItems = React.memo(function FilterItems({
   filter,
   onFilterChange,
@@ -63,6 +190,10 @@ const FilterItems = React.memo(function FilterItems({
   onChannelFilterChange,
   statusFilter = 'active',
   onStatusFilterChange,
+  mailboxFilter = 'all',
+  onMailboxFilterChange,
+  mailboxes = [],
+  mailboxesLoading = false,
   stats,
   conversationCount,
   draftsCount = 0,
@@ -200,6 +331,19 @@ const FilterItems = React.memo(function FilterItems({
           ))}
         </div>
       </div>
+
+      {/* Shared mailboxes */}
+      {onMailboxFilterChange && (
+        <SharedMailboxSection
+          mailboxes={mailboxes}
+          loading={mailboxesLoading}
+          activeMailbox={mailboxFilter}
+          onSelect={(m) => {
+            onMailboxFilterChange(m);
+            onItemClick?.();
+          }}
+        />
+      )}
 
       {/* Team */}
       <div>

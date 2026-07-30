@@ -66,6 +66,11 @@ export interface InboxConversation {
   thread_id: string;
   subject: string | null;
   preview: string | null;
+  /**
+   * Org-owned address this thread was addressed to — the shared mailbox key
+   * (billing@, enrollment@, ...). Null for non-email channels.
+   */
+  mailbox_address: string | null;
   contact_id: string | null;
   contact_email: string | null;
   contact_phone: string | null;
@@ -212,6 +217,8 @@ export interface InboxStats {
 
 export interface ConversationFilters {
   channel?: InboxChannel;
+  /** Restrict to one shared mailbox, e.g. 'billing@payitforwardhealth.com'. */
+  mailbox?: string;
   status?: ConversationStatus;
   priority?: ConversationPriority;
   assigned_to?: string;

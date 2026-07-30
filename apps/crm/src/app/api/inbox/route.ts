@@ -44,6 +44,11 @@ export async function GET(request: NextRequest) {
       filters.channel = channel as ConversationFilters['channel'];
     }
     
+    const mailbox = searchParams.get('mailbox');
+    if (mailbox) {
+      filters.mailbox = mailbox;
+    }
+    
     const status = searchParams.get('status');
     if (status) {
       filters.status = status as ConversationFilters['status'];

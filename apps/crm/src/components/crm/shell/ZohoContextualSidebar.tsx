@@ -6,6 +6,9 @@ import { usePathname, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase-client';
 import { clearOfflineState } from '@/lib/offline/reset';
 import { cn } from '@crm-eco/ui/lib/utils';
+import { useTenantOrganizationId } from '@/contexts/TenantContext';
+import { useInboxUnreadCount } from '@/hooks/useInboxUnreadCount';
+import { formatUnreadBadge, unreadBadgeAriaLabel } from '@/lib/inbox/unread-badge';
 import {
     LayoutDashboard,
     UserPlus,
@@ -231,6 +234,11 @@ export function ZohoContextualSidebar({
     const pathname = usePathname();
     const router = useRouter();
 
+    // Live unread mail, so the count is visible from anywhere in the CRM rather
+    // than only once you are already on the inbox page.
+    const organizationId = useTenantOrganizationId();
+    const inboxUnread = useInboxUnreadCount(organizationId);
+
     const handleSignOut = async () => {
         try {
             const { data: { user } } = await supabase.auth.getUser();
@@ -319,6 +327,7 @@ export function ZohoContextualSidebar({
 
                         const Icon = getIcon(item.icon);
                         const active = isActive(item.href);
+                        const unreadBadge = item.key === 'inbox' ? formatUnreadBadge(inboxUnread) : null;
 
                         return (
                             <Link
@@ -327,7 +336,7 @@ export function ZohoContextualSidebar({
                                 href={item.href}
                                 style={active ? { backgroundColor: 'var(--mod-bg)', color: 'var(--mod-fg)', borderColor: 'var(--mod-border)' } : undefined}
                                 className={cn(
-                                    'flex items-center gap-2.5 px-2.5 py-[5px] rounded-md text-[13px] font-medium transition-colors',
+                                    'relative flex items-center gap-2.5 px-2.5 py-[5px] rounded-md text-[13px] font-medium transition-colors',
                                     'hover:bg-slate-100 dark:hover:bg-white/5',
                                     active
                                         ? 'border-l-[3px] pl-[7px]'
@@ -340,9 +349,25 @@ export function ZohoContextualSidebar({
                                     style={active ? { color: 'var(--mod-fg)' } : undefined}
                                     className="w-[15px] h-[15px] flex-shrink-0"
                                 />
+                                {/* Collapsed rail has no room for a count, so unread
+                                    shows as a dot — still visible, never clipped. */}
+                                {!isOpen && unreadBadge && (
+                                    <span
+                                        aria-label={unreadBadgeAriaLabel(inboxUnread) ?? undefined}
+                                        className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-teal-500"
+                                    />
+                                )}
                                 {isOpen && (
                                     <>
                                         <span className="flex-1 truncate">{item.label}</span>
+                                        {unreadBadge && (
+                                            <span
+                                                aria-label={unreadBadgeAriaLabel(inboxUnread) ?? undefined}
+                                                className="ml-auto min-w-[18px] text-center text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-teal-500 text-white tabular-nums"
+                                            >
+                                                {unreadBadge}
+                                            </span>
+                                        )}
                                         {item.badge === 'new' && (
                                             <span className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400 uppercase tracking-wider">
                                                 New
@@ -437,6 +462,7 @@ export function ZohoContextualSidebar({
 
                         const Icon = getIcon(item.icon);
                         const active = isActive(item.href);
+                        const unreadBadge = item.key === 'inbox' ? formatUnreadBadge(inboxUnread) : null;
 
                         return (
                             <Link
@@ -459,6 +485,14 @@ export function ZohoContextualSidebar({
                                     className="w-5 h-5 flex-shrink-0"
                                 />
                                 <span className="flex-1">{item.label}</span>
+                                {unreadBadge && (
+                                    <span
+                                        aria-label={unreadBadgeAriaLabel(inboxUnread) ?? undefined}
+                                        className="min-w-[20px] text-center text-[11px] font-bold px-1.5 py-0.5 rounded-full bg-teal-500 text-white tabular-nums"
+                                    >
+                                        {unreadBadge}
+                                    </span>
+                                )}
                                 {item.badge === 'new' && (
                                     <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400 uppercase">
                                         New

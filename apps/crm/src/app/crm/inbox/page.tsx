@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState, useEffect, useCallback } from 'react';
+import { Suspense, useState, useEffect, useCallback, useMemo } from 'react';
 import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
 import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase-client';
@@ -11,6 +11,7 @@ import {
   Loader2,
   RefreshCw,
   Menu,
+  X,
 } from 'lucide-react';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { toast } from 'sonner';
@@ -21,12 +22,14 @@ import type {
   InboxChannel,
   ConversationStatus,
 } from '@/lib/inbox/types';
+import type { SharedMailbox } from '@/lib/inbox/shared-mailboxes';
 
 import { InboxFilters } from './_components/InboxFilters';
 import { ConversationList } from './_components/ConversationList';
 import { MessageThread } from './_components/MessageThread';
 import { ReplyForm } from './_components/ReplyForm';
 import { ComposeModal } from './_components/ComposeModal';
+import { NotificationSettings } from './_components/NotificationSettings';
 
 type FilterType = 'all' | 'unread' | 'assigned_to_me' | 'unassigned';
 
@@ -50,6 +53,10 @@ function InboxPageContent() {
   const [filter, setFilter] = useState<FilterType>('all');
   const [channelFilter, setChannelFilter] = useState<InboxChannel | 'all'>('all');
   const [statusFilter, setStatusFilter] = useState<ConversationStatus | 'active'>('active');
+  const [mailboxFilter, setMailboxFilter] = useState<string | 'all'>('all');
+  const [mailboxes, setMailboxes] = useState<SharedMailbox[]>([]);
+  const [verifiedDomains, setVerifiedDomains] = useState<string[]>([]);
+  const [mailboxesLoading, setMailboxesLoading] = useState(true);
   const [showComposeModal, setShowComposeModal] = useState(false);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [composeInitialSubject, setComposeInitialSubject] = useState<string | undefined>();
@@ -92,6 +99,10 @@ function InboxPageContent() {
 
       if (channelFilter !== 'all') {
         query = query.eq('channel', channelFilter);
+      }
+
+      if (mailboxFilter !== 'all') {
+        query = query.eq('mailbox_address', mailboxFilter);
       }
 
       if (filter === 'assigned_to_me') {
@@ -163,11 +174,34 @@ function InboxPageContent() {
     } finally {
       setLoading(false);
     }
-  }, [authProfile, filter, channelFilter, statusFilter, debouncedQuery]);
+  }, [authProfile, filter, channelFilter, statusFilter, mailboxFilter, debouncedQuery]);
 
   useEffect(() => {
     loadConversations();
   }, [loadConversations]);
+
+  // Shared mailbox list + unread badges. Kept separate from loadConversations
+  // so switching queues does not refetch the sidebar on every click.
+  const loadMailboxes = useCallback(async () => {
+    if (!authProfile) return;
+    try {
+      const res = await fetch('/api/inbox/mailboxes');
+      if (!res.ok) throw new Error(`mailboxes request failed: ${res.status}`);
+      const json = await res.json();
+      setMailboxes(json.mailboxes || []);
+      setVerifiedDomains(json.domains || []);
+    } catch (error) {
+      console.error('Failed to load shared mailboxes:', error);
+      setMailboxes([]);
+      setVerifiedDomains([]);
+    } finally {
+      setMailboxesLoading(false);
+    }
+  }, [authProfile]);
+
+  useEffect(() => {
+    loadMailboxes();
+  }, [loadMailboxes]);
 
   // Realtime subscriptions for live inbox updates
   useEffect(() => {
@@ -185,6 +219,8 @@ function InboxPageContent() {
         },
         () => {
           loadConversations();
+          // Keep the per-mailbox unread badges honest as mail arrives or is read.
+          loadMailboxes();
         }
       )
       .subscribe();
@@ -192,7 +228,7 @@ function InboxPageContent() {
     return () => {
       supabase.removeChannel(convChannel);
     };
-  }, [authProfile, loadConversations]);
+  }, [authProfile, loadConversations, loadMailboxes]);
 
   // Load messages for selected conversation
   const loadMessages = useCallback(async (conversationId: string) => {
@@ -378,6 +414,11 @@ function InboxPageContent() {
     setShowMobileSidebar(false);
   }, []);
 
+  const activeMailbox = useMemo(
+    () => (mailboxFilter === 'all' ? null : mailboxes.find((m) => m.email === mailboxFilter) ?? null),
+    [mailboxFilter, mailboxes],
+  );
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -397,14 +438,30 @@ function InboxPageContent() {
           >
             <Menu className="w-5 h-5 text-slate-600 dark:text-slate-400" />
           </button>
-          <div>
-            <h1 className="text-xl lg:text-2xl font-bold text-slate-900 dark:text-white">Inbox</h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400 hidden sm:block">
-              {stats ? `${stats.total_unread} unread, ${stats.total_open + stats.total_pending} active` : 'Unified communications inbox'}
+          <div className="min-w-0">
+            <h1 className="text-xl lg:text-2xl font-bold text-slate-900 dark:text-white truncate">
+              {activeMailbox ? activeMailbox.label : 'Inbox'}
+            </h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400 hidden sm:block truncate">
+              {activeMailbox
+                ? activeMailbox.email
+                : stats
+                ? `${stats.total_unread} unread, ${stats.total_open + stats.total_pending} active`
+                : 'Unified communications inbox'}
             </p>
           </div>
+          {activeMailbox && (
+            <button
+              onClick={() => setMailboxFilter('all')}
+              className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-teal-50 dark:bg-teal-500/10 text-teal-700 dark:text-teal-400 hover:bg-teal-100 dark:hover:bg-teal-500/20 transition-colors"
+            >
+              Filtered to this mailbox
+              <X className="w-3 h-3" />
+            </button>
+          )}
         </div>
         <div className="flex items-center gap-2 lg:gap-3">
+          <NotificationSettings />
           <button
             onClick={loadConversations}
             className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
@@ -431,6 +488,10 @@ function InboxPageContent() {
           onChannelFilterChange={handleChannelFilterChange}
           statusFilter={statusFilter}
           onStatusFilterChange={setStatusFilter}
+          mailboxFilter={mailboxFilter}
+          onMailboxFilterChange={setMailboxFilter}
+          mailboxes={mailboxes}
+          mailboxesLoading={mailboxesLoading}
           stats={stats}
           conversationCount={conversations.length}
           isMobileOpen={showMobileSidebar}
@@ -467,6 +528,8 @@ function InboxPageContent() {
                 messages={messages}
                 authProfile={authProfile!}
                 authUserEmail={authUser?.email || ''}
+                mailboxes={mailboxes}
+                verifiedDomains={verifiedDomains}
                 onReplySent={handleReplySent}
                 onForward={handleForward}
               />
