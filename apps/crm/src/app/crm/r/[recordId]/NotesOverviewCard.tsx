@@ -15,6 +15,7 @@ import {
   Loader2,
   Pencil,
   Trash2,
+  CalendarDays,
 } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
@@ -22,7 +23,15 @@ import { Input } from '@crm-eco/ui/components/input';
 import { sanitizeNoteHtml, getNoteAuthorDisplay, getNoteAuthorName, stripLegacyAuthorAttribution } from '@/lib/crm/note-sanitize';
 import { NoteRichArea } from '@/components/crm/notes/NoteRichArea';
 import { Dialog, DialogContent, DialogTitle } from '@crm-eco/ui/components/dialog';
-import { formatNoteTimestamp, formatNoteRelative, isNoteEdited } from '@/lib/crm/note-timestamp';
+import {
+  formatNoteTimestamp,
+  formatNoteRelative,
+  isNoteEdited,
+  localDateInputValue,
+  formatNoteDateOnly,
+  noteDateDiffersFromCreated,
+  noteSortTime,
+} from '@/lib/crm/note-timestamp';
 import { toast } from 'sonner';
 import type { CrmNoteWithAuthor } from '@/lib/crm/types';
 
@@ -99,6 +108,12 @@ function NotePreviewItem({
             );
           })()}
         </span>
+        {note.note_date && noteDateDiffersFromCreated(note.note_date, note.created_at) && (
+          <span className="inline-flex items-center gap-0.5 text-xs font-medium text-slate-600 dark:text-slate-300 flex-shrink-0">
+            <CalendarDays className="w-3 h-3" />
+            {formatNoteDateOnly(note.note_date)}
+          </span>
+        )}
         <span
           className="text-xs text-slate-500 dark:text-slate-400 flex-shrink-0 inline-flex items-center gap-1"
           title={
@@ -178,6 +193,8 @@ export function NotesOverviewCard({ notes, recordId, onViewAll }: NotesOverviewC
   const [editNoteBody, setEditNoteBody] = useState('');
   const [isEditSubmitting, setIsEditSubmitting] = useState(false);
   const [composeEpoch, setComposeEpoch] = useState(0);
+  const [newNoteDate, setNewNoteDate] = useState<string>(() => localDateInputValue());
+  const [editNoteDate, setEditNoteDate] = useState<string>('');
 
   const handleEditSubmit = async () => {
     if (!editingNote) return;
@@ -188,12 +205,13 @@ export function NotesOverviewCard({ notes, recordId, onViewAll }: NotesOverviewC
       const res = await fetch(`/api/crm/notes/${editingNote.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ body: sanitizedBody }),
+        body: JSON.stringify({ body: sanitizedBody, note_date: editNoteDate || null }),
       });
       if (!res.ok) throw new Error('Failed to update note');
       toast.success('Note updated');
       setEditingNote(null);
       setEditNoteBody('');
+      setEditNoteDate('');
       router.refresh();
     } catch {
       toast.error('Failed to update note');
@@ -206,6 +224,8 @@ export function NotesOverviewCard({ notes, recordId, onViewAll }: NotesOverviewC
     return [...notes].sort((a, b) => {
       if (a.is_pinned && !b.is_pinned) return -1;
       if (!a.is_pinned && b.is_pinned) return 1;
+      const diff = noteSortTime(b.note_date, b.created_at) - noteSortTime(a.note_date, a.created_at);
+      if (diff !== 0) return diff;
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     });
   }, [notes]);
@@ -237,6 +257,7 @@ export function NotesOverviewCard({ notes, recordId, onViewAll }: NotesOverviewC
         body: JSON.stringify({
           record_id: recordId,
           body: sanitizedBody,
+          note_date: newNoteDate || null,
         }),
       });
 
@@ -276,6 +297,7 @@ export function NotesOverviewCard({ notes, recordId, onViewAll }: NotesOverviewC
           size="sm"
           onClick={() => {
             setNewNote('');
+            setNewNoteDate(localDateInputValue());
             setComposeEpoch((e) => e + 1);
             setIsAdding(true);
           }}
@@ -303,9 +325,19 @@ export function NotesOverviewCard({ notes, recordId, onViewAll }: NotesOverviewC
       {isAdding && (
         <div className="mb-4 p-3 rounded-lg bg-slate-50 dark:bg-slate-900/40 border border-teal-200 dark:border-teal-500/30">
           <NoteRichArea key={`overview-${composeEpoch}`} value={newNote} onChange={setNewNote} />
-          <p className="mt-1.5 text-[11px] text-slate-400 dark:text-slate-500">
-            Date and time are stamped automatically when the note is saved.
-          </p>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <label htmlFor="overview-new-note-date" className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+              Note date
+            </label>
+            <input
+              id="overview-new-note-date"
+              type="date"
+              value={newNoteDate}
+              onChange={(e) => setNewNoteDate(e.target.value)}
+              className="h-7 rounded-md border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 px-2 text-xs text-slate-700 dark:text-slate-200"
+            />
+            <span className="text-[11px] text-slate-400 dark:text-slate-500">defaults to today</span>
+          </div>
           <div className="flex justify-end gap-2 mt-2">
             <Button
               variant="ghost"
@@ -346,6 +378,7 @@ export function NotesOverviewCard({ notes, recordId, onViewAll }: NotesOverviewC
               onEdit={(n) => {
                 setEditingNote(n);
                 setEditNoteBody(n.body);
+                setEditNoteDate(n.note_date ?? localDateInputValue(n.created_at));
               }}
               onDelete={() => router.refresh()}
             />
@@ -366,6 +399,7 @@ export function NotesOverviewCard({ notes, recordId, onViewAll }: NotesOverviewC
             size="sm"
             onClick={() => {
               setNewNote('');
+              setNewNoteDate(localDateInputValue());
               setComposeEpoch((e) => e + 1);
               setIsAdding(true);
             }}
@@ -406,6 +440,20 @@ export function NotesOverviewCard({ notes, recordId, onViewAll }: NotesOverviewC
           </DialogTitle>
           {editingNote ? (
             <NoteRichArea key={editingNote.id} value={editNoteBody} onChange={setEditNoteBody} />
+          ) : null}
+          {editingNote ? (
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <label htmlFor="overview-edit-note-date" className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                Note date
+              </label>
+              <input
+                id="overview-edit-note-date"
+                type="date"
+                value={editNoteDate}
+                onChange={(e) => setEditNoteDate(e.target.value)}
+                className="h-7 rounded-md border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 px-2 text-xs text-slate-700 dark:text-slate-200"
+              />
+            </div>
           ) : null}
           <div className="flex justify-end gap-2 pt-2">
             <Button

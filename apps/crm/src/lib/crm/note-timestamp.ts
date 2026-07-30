@@ -45,3 +45,42 @@ export function isNoteEdited(
   if (Number.isNaN(created) || Number.isNaN(updated)) return false;
   return updated - created > 2000;
 }
+
+/**
+ * Local calendar date (YYYY-MM-DD) suitable for an `<input type="date">` value.
+ * Defaults to today. Used to seed the "Note date" picker.
+ */
+export function localDateInputValue(dateInput: string | Date = new Date()): string {
+  const d = new Date(dateInput);
+  if (Number.isNaN(d.getTime())) return '';
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+/** Format a bare YYYY-MM-DD note date as "Jul 24, 2026". */
+export function formatNoteDateOnly(noteDate: string): string {
+  const d = new Date(`${noteDate}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return '';
+  return format(d, 'MMM d, yyyy');
+}
+
+/** True when a note's explicit date refers to a different day than when it was saved. */
+export function noteDateDiffersFromCreated(
+  noteDate: string | null | undefined,
+  createdAt: string,
+): boolean {
+  if (!noteDate) return false;
+  return noteDate !== localDateInputValue(createdAt);
+}
+
+/**
+ * Millisecond value a note should sort by: its explicit `note_date` when set,
+ * otherwise the system `created_at`. Lets back-dated notes sort by the date the
+ * advisor actually means rather than when they happened to type it.
+ */
+export function noteSortTime(noteDate: string | null | undefined, createdAt: string): number {
+  const t = noteDate ? new Date(`${noteDate}T00:00:00`).getTime() : new Date(createdAt).getTime();
+  return Number.isNaN(t) ? 0 : t;
+}

@@ -23,6 +23,21 @@ export async function PATCH(
       return NextResponse.json({ error: 'Note body is required' }, { status: 400 });
     }
 
+    // Optional user-facing note date (YYYY-MM-DD), or null to clear it. Only
+    // touched when the client explicitly sends the key.
+    let noteDateProvided = false;
+    let noteDate: string | null = null;
+    if (Object.prototype.hasOwnProperty.call(body, 'note_date')) {
+      noteDateProvided = true;
+      if (body.note_date === null) {
+        noteDate = null;
+      } else if (typeof body.note_date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(body.note_date)) {
+        noteDate = body.note_date;
+      } else {
+        return NextResponse.json({ error: 'note_date must be YYYY-MM-DD or null' }, { status: 400 });
+      }
+    }
+
     // Verify note exists and belongs to this org
     const { data: note, error: fetchError } = await supabase
       .from('crm_notes')
@@ -40,9 +55,15 @@ export async function PATCH(
       return NextResponse.json({ error: 'Forbidden: only the author or an admin can edit this note' }, { status: 403 });
     }
 
-    const { data: updated, error: updateError } = await supabase
+    const updatePayload: Record<string, unknown> = { body: body.body.trim() };
+    if (noteDateProvided) {
+      updatePayload.note_date = noteDate;
+    }
+
+    // Cast: note_date isn't in the generated DB types until regenerated.
+    const { data: updated, error: updateError } = await (supabase as any)
       .from('crm_notes')
-      .update({ body: body.body.trim() })
+      .update(updatePayload)
       .eq('id', id)
       .eq('org_id', profile.organization_id)
       .select()
