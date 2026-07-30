@@ -76,13 +76,36 @@ export function noteDateDiffersFromCreated(
 }
 
 /**
- * Millisecond value a note should sort by: its explicit `note_date` when set,
- * otherwise the system `created_at`. Lets back-dated notes sort by the date the
- * advisor actually means rather than when they happened to type it.
+ * Millisecond value a note should sort by. Always a full timestamp: `note_date`
+ * supplies the calendar day (when set) and `created_at` supplies the
+ * time-of-day; with no `note_date` it is just `created_at`.
+ *
+ * Using a single granularity is what makes ordering safe. If `note_date` were
+ * treated as local midnight, a note whose `note_date` equals its own created
+ * day would sort *behind* older notes from that same day — the misordering bug
+ * this shape prevents. Consequently a `note_date` on the created day is
+ * ordering-neutral, and notes sharing an effective day fall back to when they
+ * were actually written.
  */
 export function noteSortTime(noteDate: string | null | undefined, createdAt: string): number {
-  const t = noteDate ? new Date(`${noteDate}T00:00:00`).getTime() : new Date(createdAt).getTime();
-  return Number.isNaN(t) ? 0 : t;
+  const created = new Date(createdAt);
+  const createdValid = !Number.isNaN(created.getTime());
+  const parts = noteDate ? /^(\d{4})-(\d{2})-(\d{2})$/.exec(noteDate) : null;
+
+  if (!parts) return createdValid ? created.getTime() : 0;
+
+  const effective = new Date(
+    Number(parts[1]),
+    Number(parts[2]) - 1,
+    Number(parts[3]),
+    createdValid ? created.getHours() : 0,
+    createdValid ? created.getMinutes() : 0,
+    createdValid ? created.getSeconds() : 0,
+    createdValid ? created.getMilliseconds() : 0,
+  );
+  const t = effective.getTime();
+  if (Number.isNaN(t)) return createdValid ? created.getTime() : 0;
+  return t;
 }
 
 /**

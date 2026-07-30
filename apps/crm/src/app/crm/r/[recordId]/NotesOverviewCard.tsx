@@ -30,9 +30,9 @@ import {
   localDateInputValue,
   formatNoteDateOnly,
   noteDateDiffersFromCreated,
-  noteSortTime,
   backdatedNoteDateOrNull,
 } from '@/lib/crm/note-timestamp';
+import { sortNotesForDisplay } from '@/lib/crm/note-sort';
 import { toast } from 'sonner';
 import type { CrmNoteWithAuthor } from '@/lib/crm/types';
 
@@ -221,15 +221,7 @@ export function NotesOverviewCard({ notes, recordId, onViewAll }: NotesOverviewC
     }
   };
 
-  const sortedNotes = useMemo(() => {
-    return [...notes].sort((a, b) => {
-      if (a.is_pinned && !b.is_pinned) return -1;
-      if (!a.is_pinned && b.is_pinned) return 1;
-      const diff = noteSortTime(b.note_date, b.created_at) - noteSortTime(a.note_date, a.created_at);
-      if (diff !== 0) return diff;
-      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-    });
-  }, [notes]);
+  const sortedNotes = useMemo(() => sortNotesForDisplay(notes), [notes]);
 
   const filteredNotes = useMemo(() => {
     if (!search.trim()) return sortedNotes;

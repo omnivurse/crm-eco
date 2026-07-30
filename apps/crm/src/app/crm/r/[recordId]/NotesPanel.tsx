@@ -16,9 +16,9 @@ import {
   localDateInputValue,
   formatNoteDateOnly,
   noteDateDiffersFromCreated,
-  noteSortTime,
   backdatedNoteDateOrNull,
 } from '@/lib/crm/note-timestamp';
+import { sortNotesForDisplay } from '@/lib/crm/note-sort';
 import { toast } from 'sonner';
 import { toastItemDeletedWithUndo } from '@/lib/crm/undo-delete';
 import type { CrmNoteWithAuthor } from '@/lib/crm/types';
@@ -236,16 +236,7 @@ export function NotesPanel({ recordId, notes, orgId, hasLegacyNotes = false }: N
     }
   };
 
-  // Sort: pinned first, then by effective date (note_date ?? created_at) in the
-  // chosen direction, with created_at as a stable tiebreaker.
-  const dirMul = sortDir === 'newest' ? 1 : -1;
-  const sortedNotes = [...notes].sort((a, b) => {
-    if (a.is_pinned && !b.is_pinned) return -1;
-    if (!a.is_pinned && b.is_pinned) return 1;
-    const diff = noteSortTime(b.note_date, b.created_at) - noteSortTime(a.note_date, a.created_at);
-    if (diff !== 0) return diff * dirMul;
-    return (new Date(b.created_at).getTime() - new Date(a.created_at).getTime()) * dirMul;
-  });
+  const sortedNotes = sortNotesForDisplay(notes, sortDir);
 
   return (
     <div className="space-y-4">

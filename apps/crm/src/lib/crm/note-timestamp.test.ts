@@ -93,8 +93,18 @@ describe('noteSortTime', () => {
     expect(noteSortTime(null, created)).toBe(new Date(created).getTime());
     expect(noteSortTime(undefined, created)).toBe(new Date(created).getTime());
   });
-  it('uses local midnight of note_date when present', () => {
-    expect(noteSortTime('2026-07-24', created)).toBe(new Date('2026-07-24T00:00:00').getTime());
+  it("combines note_date's day with created_at's time-of-day", () => {
+    const createdLocal = new Date(2026, 6, 20, 10, 0, 0); // Jul 20 2026, 10:00 local
+    expect(noteSortTime('2026-07-24', createdLocal.toISOString())).toBe(
+      new Date(2026, 6, 24, 10, 0, 0).getTime(),
+    );
+  });
+  it('is ordering-neutral when note_date equals the created day', () => {
+    // Guards the misordering bug: stamping a note with its own created day must
+    // not change where it sorts.
+    const createdLocal = new Date(2026, 6, 20, 10, 0, 0);
+    const iso = createdLocal.toISOString();
+    expect(noteSortTime(localDateInputValue(createdLocal), iso)).toBe(new Date(iso).getTime());
   });
   it('orders back-dated notes by their intended date', () => {
     expect(noteSortTime('2026-07-25', created)).toBeGreaterThan(noteSortTime('2026-07-24', created));
