@@ -3,13 +3,22 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { StickyNote, Plus, Pin, Pencil, Trash2, Loader2, User } from 'lucide-react';
+import { StickyNote, Plus, Pin, Pencil, Trash2, Loader2, User, CalendarDays, ArrowUpDown } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import { Dialog, DialogContent, DialogTitle } from '@crm-eco/ui/components/dialog';
 import { sanitizeNoteHtml, getNoteAuthorDisplay } from '@/lib/crm/note-sanitize';
 import { NoteRichArea } from '@/components/crm/notes/NoteRichArea';
-import { formatNoteTimestamp, formatNoteRelative, isNoteEdited } from '@/lib/crm/note-timestamp';
+import {
+  formatNoteTimestamp,
+  formatNoteRelative,
+  isNoteEdited,
+  localDateInputValue,
+  formatNoteDateOnly,
+  noteDateDiffersFromCreated,
+  backdatedNoteDateOrNull,
+} from '@/lib/crm/note-timestamp';
+import { sortNotesForDisplay } from '@/lib/crm/note-sort';
 import { toast } from 'sonner';
 import { toastItemDeletedWithUndo } from '@/lib/crm/undo-delete';
 import type { CrmNoteWithAuthor } from '@/lib/crm/types';
@@ -91,6 +100,12 @@ function NoteCard({
               })()}
             </p>
             <div className="text-xs text-slate-500" suppressHydrationWarning>
+              {note.note_date && noteDateDiffersFromCreated(note.note_date, note.created_at) && (
+                <p className="flex items-center gap-1 font-medium text-slate-600 dark:text-slate-300">
+                  <CalendarDays className="w-3 h-3" />
+                  {formatNoteDateOnly(note.note_date)}
+                </p>
+              )}
               <p title={formatNoteRelative(note.created_at)}>
                 Created {formatNoteTimestamp(note.created_at)}
                 <span className="text-slate-400 dark:text-slate-500"> · {formatNoteRelative(note.created_at)}</span>
@@ -152,6 +167,9 @@ export function NotesPanel({ recordId, notes, orgId, hasLegacyNotes = false }: N
   const [isEditSubmitting, setIsEditSubmitting] = useState(false);
   /** Bumps keyed remount so the rich editor resets each time Add Note opens */
   const [composeEpoch, setComposeEpoch] = useState(0);
+  const [sortDir, setSortDir] = useState<'newest' | 'oldest'>('newest');
+  const [newNoteDate, setNewNoteDate] = useState<string>(() => localDateInputValue());
+  const [editNoteDate, setEditNoteDate] = useState<string>('');
 
   const handleEditSubmit = async () => {
     if (!editingNote) return;
@@ -164,7 +182,7 @@ export function NotesPanel({ recordId, notes, orgId, hasLegacyNotes = false }: N
       const response = await fetch(`/api/crm/notes/${editingNote.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ body: sanitizedBody }),
+        body: JSON.stringify({ body: sanitizedBody, note_date: backdatedNoteDateOrNull(editNoteDate, localDateInputValue(editingNote.created_at)) }),
       });
 
       if (!response.ok) {
@@ -174,6 +192,7 @@ export function NotesPanel({ recordId, notes, orgId, hasLegacyNotes = false }: N
       toast.success('Note updated successfully');
       setEditingNote(null);
       setEditNoteBody('');
+      setEditNoteDate('');
       router.refresh();
     } catch (error) {
       console.error('Failed to update note:', error);
@@ -197,6 +216,7 @@ export function NotesPanel({ recordId, notes, orgId, hasLegacyNotes = false }: N
         body: JSON.stringify({
           record_id: recordId,
           body: sanitizedBody,
+          note_date: backdatedNoteDateOrNull(newNoteDate, localDateInputValue()),
         }),
       });
 
@@ -216,20 +236,21 @@ export function NotesPanel({ recordId, notes, orgId, hasLegacyNotes = false }: N
     }
   };
 
-  // Sort notes: pinned first, then by date
-  const sortedNotes = [...notes].sort((a, b) => {
-    if (a.is_pinned && !b.is_pinned) return -1;
-    if (!a.is_pinned && b.is_pinned) return 1;
-    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-  });
+  const sortedNotes = sortNotesForDisplay(notes, sortDir);
 
   return (
     <div className="space-y-4">
-      {/* Utility row: how notes are ordered + one-click access to restore deleted notes */}
+      {/* Utility row: sort-order toggle + one-click access to restore deleted notes */}
       <div className="flex items-center justify-between gap-2">
-        <p className="text-xs text-slate-400 dark:text-slate-500">
-          Newest first. Each note is date-stamped when saved.
-        </p>
+        <button
+          type="button"
+          onClick={() => setSortDir((d) => (d === 'newest' ? 'oldest' : 'newest'))}
+          className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100 transition-colors"
+          title="Toggle note order"
+        >
+          <ArrowUpDown className="w-3.5 h-3.5" />
+          {sortDir === 'newest' ? 'Newest first' : 'Oldest first'}
+        </button>
         <Link
           href="/crm/trash"
           className="inline-flex items-center gap-1 text-xs font-medium text-slate-400 hover:text-slate-700 dark:text-slate-500 dark:hover:text-slate-200 transition-colors"
@@ -244,6 +265,7 @@ export function NotesPanel({ recordId, notes, orgId, hasLegacyNotes = false }: N
         variant="outline"
         onClick={() => {
           setNewNote('');
+          setNewNoteDate(localDateInputValue());
           setComposeEpoch((e) => e + 1);
           setIsAdding(true);
         }}
@@ -266,9 +288,23 @@ export function NotesPanel({ recordId, notes, orgId, hasLegacyNotes = false }: N
             <NoteRichArea key={`compose-${composeEpoch}`} value={newNote} onChange={setNewNote} />
             <p className="mt-2 text-xs text-slate-400 dark:text-slate-500">
               Bold, italic, underline, and color from the toolbar; paste from email or Docs keeps
-              formatting when safe. The date and time are stamped automatically when the note is
-              saved.
+              formatting when safe.
             </p>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <label htmlFor="new-note-date" className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                Note date
+              </label>
+              <input
+                id="new-note-date"
+                type="date"
+                value={newNoteDate}
+                onChange={(e) => setNewNoteDate(e.target.value)}
+                className="h-8 rounded-md border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 px-2 text-sm text-slate-700 dark:text-slate-200"
+              />
+              <span className="text-[11px] text-slate-400 dark:text-slate-500">
+                Defaults to today — change it to back-date this note. The exact save time is always recorded.
+              </span>
+            </div>
           </div>
 
           <div className="flex justify-end gap-2 pt-4 border-t border-slate-200 dark:border-white/10">
@@ -321,6 +357,20 @@ export function NotesPanel({ recordId, notes, orgId, hasLegacyNotes = false }: N
             {editingNote ? (
               <NoteRichArea key={editingNote.id} value={editNoteBody} onChange={setEditNoteBody} />
             ) : null}
+            {editingNote ? (
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <label htmlFor="edit-note-date" className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                  Note date
+                </label>
+                <input
+                  id="edit-note-date"
+                  type="date"
+                  value={editNoteDate}
+                  onChange={(e) => setEditNoteDate(e.target.value)}
+                  className="h-8 rounded-md border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 px-2 text-sm text-slate-700 dark:text-slate-200"
+                />
+              </div>
+            ) : null}
           </div>
 
           <div className="flex justify-end gap-2 pt-4 border-t border-slate-200 dark:border-white/10">
@@ -363,6 +413,7 @@ export function NotesPanel({ recordId, notes, orgId, hasLegacyNotes = false }: N
               onEdit={(n) => {
                 setEditingNote(n);
                 setEditNoteBody(n.body);
+                setEditNoteDate(n.note_date ?? localDateInputValue(n.created_at));
               }}
             />
           ))}

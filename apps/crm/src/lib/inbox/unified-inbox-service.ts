@@ -63,6 +63,9 @@ export async function getConversations(
   if (filters?.channel) {
     query = query.eq('channel', filters.channel);
   }
+  if (filters?.mailbox) {
+    query = query.eq('mailbox_address', filters.mailbox.trim().toLowerCase());
+  }
   if (filters?.status) {
     query = query.eq('status', filters.status);
   } else {

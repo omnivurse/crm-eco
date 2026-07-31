@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { formatNoteTimestamp, formatNoteRelative } from './note-timestamp';
+import {
+  formatNoteTimestamp,
+  formatNoteRelative,
+  isNoteEdited,
+  localDateInputValue,
+  formatNoteDateOnly,
+  noteDateDiffersFromCreated,
+  noteSortTime,
+  backdatedNoteDateOrNull,
+} from './note-timestamp';
 
 describe('formatNoteTimestamp', () => {
   it('shows weekday, date, and time for current-year notes', () => {
@@ -23,6 +32,99 @@ describe('formatNoteTimestamp', () => {
   it('accepts ISO strings (as stored in created_at)', () => {
     const iso = new Date().toISOString();
     expect(formatNoteTimestamp(iso)).toMatch(/·\s\d{1,2}:\d{2}\s[AP]M$/);
+  });
+});
+
+describe('isNoteEdited', () => {
+  const t = '2026-07-20T10:00:00Z';
+  it('is false when never updated or updated within the 2s save jitter', () => {
+    expect(isNoteEdited(t, null)).toBe(false);
+    expect(isNoteEdited(t, undefined)).toBe(false);
+    expect(isNoteEdited(t, t)).toBe(false);
+    expect(isNoteEdited(t, '2026-07-20T10:00:01Z')).toBe(false);
+  });
+  it('is true when meaningfully edited later', () => {
+    expect(isNoteEdited(t, '2026-07-20T10:00:05Z')).toBe(true);
+  });
+});
+
+describe('localDateInputValue', () => {
+  it('formats a Date as local YYYY-MM-DD', () => {
+    expect(localDateInputValue(new Date(2026, 0, 5))).toBe('2026-01-05');
+    expect(localDateInputValue(new Date(2026, 11, 31))).toBe('2026-12-31');
+  });
+  it('defaults to today and returns a YYYY-MM-DD shape', () => {
+    expect(localDateInputValue()).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+  it('returns empty string for invalid input', () => {
+    expect(localDateInputValue('not-a-date')).toBe('');
+  });
+});
+
+describe('formatNoteDateOnly', () => {
+  it('formats a bare YYYY-MM-DD as a readable date', () => {
+    expect(formatNoteDateOnly('2026-07-24')).toBe('Jul 24, 2026');
+  });
+  it('returns empty string for invalid input', () => {
+    expect(formatNoteDateOnly('nope')).toBe('');
+  });
+});
+
+describe('noteDateDiffersFromCreated', () => {
+  const created = new Date(2026, 6, 24, 12, 0, 0); // local Jul 24 2026, noon
+  const createdIso = created.toISOString();
+  const createdDay = localDateInputValue(created);
+  it('is false when there is no note date', () => {
+    expect(noteDateDiffersFromCreated(null, createdIso)).toBe(false);
+    expect(noteDateDiffersFromCreated(undefined, createdIso)).toBe(false);
+  });
+  it('is false when the note date is the same calendar day it was saved', () => {
+    expect(noteDateDiffersFromCreated(createdDay, createdIso)).toBe(false);
+  });
+  it('is true when the note is back-dated to a different day', () => {
+    const earlier = localDateInputValue(new Date(2026, 6, 20, 12, 0, 0));
+    expect(noteDateDiffersFromCreated(earlier, createdIso)).toBe(true);
+  });
+});
+
+describe('noteSortTime', () => {
+  const created = '2026-07-20T10:00:00Z';
+  it('falls back to created_at when note_date is absent', () => {
+    expect(noteSortTime(null, created)).toBe(new Date(created).getTime());
+    expect(noteSortTime(undefined, created)).toBe(new Date(created).getTime());
+  });
+  it("combines note_date's day with created_at's time-of-day", () => {
+    const createdLocal = new Date(2026, 6, 20, 10, 0, 0); // Jul 20 2026, 10:00 local
+    expect(noteSortTime('2026-07-24', createdLocal.toISOString())).toBe(
+      new Date(2026, 6, 24, 10, 0, 0).getTime(),
+    );
+  });
+  it('is ordering-neutral when note_date equals the created day', () => {
+    // Guards the misordering bug: stamping a note with its own created day must
+    // not change where it sorts.
+    const createdLocal = new Date(2026, 6, 20, 10, 0, 0);
+    const iso = createdLocal.toISOString();
+    expect(noteSortTime(localDateInputValue(createdLocal), iso)).toBe(new Date(iso).getTime());
+  });
+  it('orders back-dated notes by their intended date', () => {
+    expect(noteSortTime('2026-07-25', created)).toBeGreaterThan(noteSortTime('2026-07-24', created));
+  });
+});
+
+describe('backdatedNoteDateOrNull', () => {
+  it('returns null when nothing was picked', () => {
+    expect(backdatedNoteDateOrNull('', '2026-07-29')).toBeNull();
+    expect(backdatedNoteDateOrNull(null, '2026-07-29')).toBeNull();
+    expect(backdatedNoteDateOrNull(undefined, '2026-07-29')).toBeNull();
+  });
+  it('returns null when the picked date equals the reference day (not a back-date)', () => {
+    // Regression: prevents stamping every note with an explicit date that would
+    // then sort at local midnight instead of by created_at.
+    expect(backdatedNoteDateOrNull('2026-07-29', '2026-07-29')).toBeNull();
+  });
+  it('returns the picked date only when it is a genuine back-date', () => {
+    expect(backdatedNoteDateOrNull('2026-07-24', '2026-07-29')).toBe('2026-07-24');
+    expect(backdatedNoteDateOrNull('2026-08-01', '2026-07-29')).toBe('2026-08-01');
   });
 });
 

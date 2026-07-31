@@ -23,11 +23,18 @@ import {
 import type { LoginBrandingContext } from '@/lib/login-branding-types';
 import { ACTIVE_ORG_COOKIE } from '@/lib/login-branding-types';
 import { resolveBrandDisplay } from '@crm-eco/ui/lib/branding';
+import { MFAChallenge } from '@/components/auth';
 
 export interface CrmLoginClientProps {
   brandingContext: LoginBrandingContext | null;
   redirectTo: string;
   initialError?: string | null;
+  /**
+   * Mirrors the server-side CRM_ENFORCE_MFA flag. While false the login form
+   * behaves exactly as before, so enabling MFA enforcement is a single
+   * atomic switch across both the UI challenge and the middleware gate.
+   */
+  enforceMfa?: boolean;
 }
 
 function persistActiveOrgCookie(organizationId: string) {
@@ -39,6 +46,7 @@ export function CrmLoginClient({
   brandingContext,
   redirectTo,
   initialError = null,
+  enforceMfa = false,
 }: CrmLoginClientProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -46,6 +54,7 @@ export function CrmLoginClient({
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [mfaRequired, setMfaRequired] = useState(false);
 
   const { companyName } = resolveBrandDisplay(
     brandingContext?.branding,
@@ -114,6 +123,21 @@ export function CrmLoginClient({
 
       await logAuthEvent('login_success', { role: profile.crm_role });
 
+      // A password alone leaves the session at AAL1. If this user has enrolled
+      // a TOTP factor, Supabase reports nextLevel === 'aal2' and the session is
+      // not fully assured until the code is verified — so challenge here rather
+      // than dropping them into the CRM. Middleware enforces the same rule on
+      // every request, so skipping this screen cannot bypass the factor.
+      if (enforceMfa) {
+        const { data: assurance } =
+          await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+        if (assurance?.nextLevel === 'aal2' && assurance.currentLevel !== 'aal2') {
+          setMfaRequired(true);
+          setLoading(false);
+          return;
+        }
+      }
+
       window.location.href = redirectTo;
     } catch {
       await logAuthEvent('login_failed', { reason: 'Unexpected error' });
@@ -121,6 +145,28 @@ export function CrmLoginClient({
       setLoading(false);
     }
   };
+
+  const handleMfaCancel = async () => {
+    // Backing out of the challenge must not leave a half-assured session behind.
+    await supabase.auth.signOut();
+    setMfaRequired(false);
+    setPassword('');
+    setLoading(false);
+  };
+
+  if (mfaRequired) {
+    return (
+      <MFAChallenge
+        email={email}
+        onSuccess={() => {
+          window.location.href = redirectTo;
+        }}
+        onCancel={() => {
+          void handleMfaCancel();
+        }}
+      />
+    );
+  }
 
   const heroSubtitle = tenantLabel
     ? `Pipelines and workqueues for ${tenantLabel} — purpose-built for benefits.`

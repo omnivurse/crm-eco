@@ -70,3 +70,18 @@ content_path = "./supabase/templates/magic_link.html"
 [auth.email.template.email_change]
 subject = "Confirm your email change — Double Helix Hub"
 content_path = "./supabase/templates/email_change.html"
+
+# Inbound email webhook (Resend -> unified inbox).
+#
+# Resend signs deliveries with Svix headers and sends no Authorization header,
+# so the default JWT gate rejects every delivery at the platform edge with
+# UNAUTHORIZED_NO_AUTH_HEADER and the function never runs. Turning the gate off
+# is what allows the function's own signature verification to execute.
+#
+# This does NOT make the endpoint open: email-intake fails closed unless the
+# Svix signature validates against RESEND_INBOUND_WEBHOOK_SECRET (or the legacy
+# RESEND_WEBHOOK_SECRET), or the caller presents the service-role bearer token.
+# The secret MUST be configured before disabling the gate, or inbound mail is
+# rejected by the function instead.
+[functions.email-intake]
+verify_jwt = false

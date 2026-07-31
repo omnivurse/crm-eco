@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUser, getAuthProfile, createClient } from '@/lib/supabase-server';
 import { sendEmail, sendSms } from '@/lib/email/send-service';
+import { rateLimitDurable, getRateLimitHeaders } from '@crm-eco/lib/rate-limit';
 
 const RATE_LIMIT_MAX = 50;
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
@@ -17,8 +18,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
-    // Rate limit: max 50 sends per user per hour (keyed by profile.id stored in sent_emails.metadata.sent_by)
     const profile = await getAuthProfile();
+
+    // Two limits guard outbound sends, because each catches what the other misses.
+    //
+    // The atomic one comes first: counting sent_emails rows is a read, so N
+    // concurrent requests can all observe a count under the cap and all proceed.
+    // It also keys off the caller rather than the profile, so a request without a
+    // resolvable profile is still metered instead of being unlimited.
+    const rl = await rateLimitDurable(`communications_send_${profile?.id ?? user.id}`, {
+      limit: RATE_LIMIT_MAX,
+      windowSeconds: RATE_LIMIT_WINDOW_MS / 1000,
+    });
+    if (!rl.success) {
+      return NextResponse.json(
+        { error: `Rate limit exceeded. Maximum ${RATE_LIMIT_MAX} emails per hour.` },
+        { status: 429, headers: getRateLimitHeaders(rl) }
+      );
+    }
+
+    // The row count stays as the ground-truth backstop: it reflects sends that
+    // actually happened, so it still holds if the counter is ever reset or lost.
     if (profile) {
       const supabase = await createClient();
       const oneHourAgo = new Date(Date.now() - RATE_LIMIT_WINDOW_MS).toISOString();

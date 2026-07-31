@@ -17,10 +17,11 @@ const buttonVariants = cva(
         secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
         ghost: 'hover:bg-accent hover:text-accent-foreground',
         link: 'text-primary underline-offset-4 hover:underline',
-        // Semantic solid variants for status actions (approve / caution). Colors
-        // chosen for AA-passing contrast with their foreground in light + dark.
-        success: 'bg-emerald-600 text-white hover:bg-emerald-600/90',
-        warning: 'bg-amber-500 text-amber-950 hover:bg-amber-500/90',
+        // Semantic solid variants for status actions (approve / caution). Wired
+        // to the --success / --warning tokens so they follow each app's theme
+        // (e.g. the CRM's muted palette) and stay AA against their foreground.
+        success: 'bg-success text-success-foreground hover:bg-success/90',
+        warning: 'bg-warning text-warning-foreground hover:bg-warning/90',
         // Soft "tonal" fill — a low-emphasis primary that reads as branded
         // without competing with the solid default CTA. Token-based, so it
         // adapts to light/dark automatically.

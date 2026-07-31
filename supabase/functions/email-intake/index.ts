@@ -1,4 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { resolveMailboxAddress } from "../_shared/mailbox-address.ts";
+import { fetchReceivedEmail, mergeHydratedEmail } from "../_shared/resend-inbound.ts";
 
 const ALLOWED_ORIGINS = (Deno.env.get("ALLOWED_ORIGINS") || "*").split(",").map(s => s.trim());
 
@@ -214,11 +216,53 @@ async function supaFetch(
 // Inbox routing
 // ---------------------------------------------------------------------------
 
-async function resolveOrgId(
+interface OrgContext {
+  orgId: string;
+  /** Every verified domain the org owns — used to pick the shared mailbox. */
+  ownedDomains: string[];
+  /** Registered sender addresses — used to collapse forwarded mail onto one queue. */
+  registeredAddresses: string[];
+}
+
+async function listSenderAddresses(
+  orgId: string,
+  supabaseUrl: string,
+  headers: SupaHeaders
+): Promise<string[]> {
+  try {
+    const rows = await supaFetch(
+      supabaseUrl,
+      `/rest/v1/email_sender_addresses?org_id=eq.${orgId}&select=email`,
+      headers
+    );
+    return (rows || []).map((r: { email: string }) => r.email).filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+async function listVerifiedDomains(
+  orgId: string,
+  supabaseUrl: string,
+  headers: SupaHeaders
+): Promise<string[]> {
+  try {
+    const rows = await supaFetch(
+      supabaseUrl,
+      `/rest/v1/email_domains?org_id=eq.${orgId}&status=eq.verified&select=domain`,
+      headers
+    );
+    return (rows || []).map((r: { domain: string }) => r.domain).filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+async function resolveOrgContext(
   toAddresses: string[],
   supabaseUrl: string,
   headers: SupaHeaders
-): Promise<string | null> {
+): Promise<OrgContext | null> {
   // Try to match a verified email domain
   for (const addr of toAddresses) {
     const domain = extractDomain(addr);
@@ -229,11 +273,25 @@ async function resolveOrgId(
         `/rest/v1/email_domains?domain=eq.${encodeURIComponent(domain)}&status=eq.verified&select=org_id&limit=1`,
         headers
       );
-      if (rows && rows.length > 0) return rows[0].org_id;
+      if (rows && rows.length > 0) {
+        const orgId = rows[0].org_id;
+        const [ownedDomains, registeredAddresses] = await Promise.all([
+          listVerifiedDomains(orgId, supabaseUrl, headers),
+          listSenderAddresses(orgId, supabaseUrl, headers),
+        ]);
+        return { orgId, ownedDomains, registeredAddresses };
+      }
     } catch { /* continue */ }
   }
+
   // Fallback: env variable for single-tenant setups
-  return Deno.env.get("DEFAULT_ORG_ID") || null;
+  const fallbackOrgId = Deno.env.get("DEFAULT_ORG_ID");
+  if (!fallbackOrgId) return null;
+  const [ownedDomains, registeredAddresses] = await Promise.all([
+    listVerifiedDomains(fallbackOrgId, supabaseUrl, headers),
+    listSenderAddresses(fallbackOrgId, supabaseUrl, headers),
+  ]);
+  return { orgId: fallbackOrgId, ownedDomains, registeredAddresses };
 }
 
 async function findConversationByThreading(
@@ -297,14 +355,25 @@ async function handleInboxMessage(
   const toFirst = parseEmailAddress(toAddresses[0] || "");
 
   // Resolve org_id from the recipient domain
-  const orgId = await resolveOrgId(toAddresses, supabaseUrl, headers);
-  if (!orgId) {
+  const orgContext = await resolveOrgContext(toAddresses, supabaseUrl, headers);
+  if (!orgContext) {
     console.error("Could not resolve org_id from to addresses:", toAddresses);
     return new Response(
       JSON.stringify({ success: false, error: "Could not resolve organization from recipient address" }),
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
+  const { orgId, ownedDomains, registeredAddresses } = orgContext;
+
+  // Which shared mailbox owns this thread (billing@, enrollment@, support@, ...).
+  // Forwarded mail arriving on a receiving subdomain collapses onto the
+  // registered apex address so each role has exactly one queue.
+  const mailboxAddress = resolveMailboxAddress(
+    toAddresses,
+    emailData.cc || [],
+    ownedDomains,
+    registeredAddresses
+  );
 
   const hdrs = normaliseHeaders(emailData.headers);
   const messageId = hdrs["message-id"] || null;
@@ -359,30 +428,27 @@ async function handleInboxMessage(
       },
     });
 
-    // Update conversation counters
-    await supaFetch(supabaseUrl, `/rest/v1/rpc/inbox_increment_unread`, headers, {
-      method: "POST",
-      body: { p_conversation_id: conversationId, p_preview: preview, p_last_message_at: now },
-    }).catch(async () => {
-      // Fallback: direct PATCH if RPC doesn't exist yet
-      // Fetch current counts
-      const conv = await supaFetch(
+    // File pre-existing threads that predate shared-mailbox tagging. The
+    // is.null filter makes this a no-op once a thread already has a mailbox,
+    // so a reply can never move a thread between shared queues.
+    if (mailboxAddress) {
+      await supaFetch(
         supabaseUrl,
-        `/rest/v1/inbox_conversations?id=eq.${conversationId}&select=unread_count,message_count`,
-        headers
-      );
-      const current = conv?.[0] || { unread_count: 0, message_count: 0 };
-      await supaFetch(supabaseUrl, `/rest/v1/inbox_conversations?id=eq.${conversationId}`, headers, {
-        method: "PATCH",
-        body: {
-          unread_count: (current.unread_count || 0) + 1,
-          message_count: (current.message_count || 0) + 1,
-          last_message_at: now,
-          preview,
-          status: "open", // Re-open on new inbound message
-        },
-      });
-    });
+        `/rest/v1/inbox_conversations?id=eq.${conversationId}&mailbox_address=is.null`,
+        headers,
+        { method: "PATCH", body: { mailbox_address: mailboxAddress } }
+      ).catch((e) => console.error("mailbox_address backfill on reply failed (non-blocking):", e));
+    }
+
+    // Counters, preview and last_message_at are owned by the
+    // update_conversation_on_message trigger, which already fired on the insert
+    // above. Incrementing them here as well is what made message_count read 2
+    // for a single message. Only the re-open is ours to do: the trigger has no
+    // opinion about a resolved thread coming back to life.
+    await supaFetch(supabaseUrl, `/rest/v1/inbox_conversations?id=eq.${conversationId}`, headers, {
+      method: "PATCH",
+      body: { status: "open" },
+    }).catch((e) => console.error("re-open on reply failed (non-blocking):", e));
 
     return new Response(
       JSON.stringify({ success: true, action: "reply_added", conversation_id: conversationId, message_id: msgs?.[0]?.id }),
@@ -403,13 +469,17 @@ async function handleInboxMessage(
       thread_id: threadId,
       subject: emailData.subject || "(No Subject)",
       preview,
+      mailbox_address: mailboxAddress,
       contact_id: contactId,
       contact_email: from.email,
       contact_name: from.name || null,
       status: "open",
       priority,
-      unread_count: 1,
-      message_count: 1,
+      // Seeded at zero because the message insert below fires
+      // update_conversation_on_message, which increments both. Seeding them at
+      // 1 double-counted every first message.
+      unread_count: 0,
+      message_count: 0,
       last_message_at: now,
       first_message_at: now,
       tags: [],
@@ -743,6 +813,29 @@ Deno.serve(async (req: Request) => {
       emailData = normaliseResendInbound(parsed as ResendInboundEvent);
     } else {
       emailData = parsed as EmailPayload;
+    }
+
+    // Resend's inbound webhook is metadata-only: no body, headers, or
+    // attachments. Without this second call every thread lands with an empty
+    // body. Best-effort by design — on failure we still file the message so
+    // the mail is visible rather than silently dropped.
+    const resendEmailId = parsed?.data?.email_id;
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    if (resendEmailId && !emailData.body_text && !emailData.body_html) {
+      if (resendApiKey) {
+        const hydrated = await fetchReceivedEmail(resendEmailId, resendApiKey);
+        if (hydrated) {
+          emailData = mergeHydratedEmail(emailData, hydrated);
+        } else {
+          console.error(
+            `Inbound ${resendEmailId} filed WITHOUT a body: hydration failed. Thread will show subject only.`,
+          );
+        }
+      } else {
+        console.error(
+          "RESEND_API_KEY is not set; inbound bodies cannot be hydrated and will be empty.",
+        );
+      }
     }
 
     const intakeMode = Deno.env.get("INTAKE_MODE") || "inbox";

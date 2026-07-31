@@ -1,9 +1,21 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
+import {
+  MFA_STEP_UP_PATH,
+  hasVerifiedTotpFactor,
+  isMfaEnforcementEnabled,
+  isMfaStepUpRequired,
+  readAalFromAccessToken,
+} from '@/lib/security/mfa';
 
 // Cache profile data in a signed cookie to avoid DB query on every request
 const PROFILE_CACHE_COOKIE = 'crm_profile_cache';
-const PROFILE_CACHE_TTL = 5 * 60 * 1000; // 5 minutes in ms
+// 60s, not 5min: this cache is how long a revoked role or a deactivated account
+// can still pass the *routing* check. Data access is unaffected — RLS derives
+// permissions from live tables keyed by auth.uid(), so a revoked role stops
+// returning rows immediately. Shortening the window bounds the residual
+// routing-decision lag to a minute without forcing a DB read per request.
+const PROFILE_CACHE_TTL = 60 * 1000;
 
 interface CachedProfile {
   id: string;
@@ -231,8 +243,14 @@ export async function middleware(request: NextRequest) {
     pathname === '/' || publicPrefixes.some(prefix => pathname.startsWith(prefix));
 
   if (isPublicRoute) {
+    // The MFA step-up screen lives under /crm-login so it stays reachable
+    // without a fully-assured session, but it must NOT behave like a login
+    // page: bouncing an authenticated AAL1 user from it to /crm would
+    // ping-pong forever against the step-up redirect below.
+    const isStepUpPage = pathname === MFA_STEP_UP_PATH;
     const isLoginPage =
-      pathname.startsWith('/crm-login') || pathname.startsWith('/login');
+      !isStepUpPage &&
+      (pathname.startsWith('/crm-login') || pathname.startsWith('/login'));
 
     // Authenticated user on a login page — redirect to CRM only if they
     // have a valid, active profile with a CRM role. Otherwise let them
@@ -305,6 +323,35 @@ export async function middleware(request: NextRequest) {
       supabaseResponse,
     );
     return redirect;
+  }
+
+  // ── Continuous MFA verification (step-up) ────────────────────────────
+  // Supabase issues an AAL1 session after a password sign-in even when the user
+  // holds a verified TOTP factor, so enforcing the challenge only in the login
+  // UI is not enforcement at all — a client can navigate straight past it.
+  // Re-check the assurance level here, on every protected request.
+  //
+  // The factor check runs first because it is free (already on `user`), and it
+  // keeps the extra session read off the path of users without MFA enrolled.
+  if (isMfaEnforcementEnabled() && hasVerifiedTotpFactor(user.factors)) {
+    // getSession() reads the cookie without re-validating it, which is safe
+    // here: getUser() above already authenticated this request against the auth
+    // server, and we only read the `aal` claim out of that same verified token.
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (
+      isMfaStepUpRequired({
+        enforced: true,
+        hasVerifiedFactor: true,
+        aal: readAalFromAccessToken(session?.access_token),
+      })
+    ) {
+      const stepUpUrl = new URL(MFA_STEP_UP_PATH, request.url);
+      stepUpUrl.searchParams.set('redirect', pathname);
+      return redirectWithCookies(stepUpUrl, supabaseResponse);
+    }
   }
 
   return supabaseResponse;

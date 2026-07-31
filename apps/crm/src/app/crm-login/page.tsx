@@ -2,6 +2,7 @@ import { Suspense } from 'react';
 import { brandingToCssVariables } from '@crm-eco/ui/lib/branding';
 import { getLoginBrandingContext } from '@/lib/login-tenant';
 import { safeCrmRedirect } from '@/lib/login-branding-types';
+import { isMfaEnforcementEnabled } from '@/lib/security/mfa';
 import { CrmLoginClient } from './CrmLoginClient';
 
 export const dynamic = 'force-dynamic';
@@ -37,6 +38,9 @@ async function CrmLoginContent({ searchParams }: CrmLoginPageProps) {
         brandingContext={brandingContext}
         redirectTo={redirectTo}
         initialError={initialError}
+        // Read server-side so the login challenge and the middleware gate are
+        // driven by the same single flag — no NEXT_PUBLIC_* duplicate to drift.
+        enforceMfa={isMfaEnforcementEnabled()}
       />
     </div>
   );

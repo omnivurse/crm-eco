@@ -11,6 +11,7 @@ import { OfflineBanner } from '@/components/crm/offline/OfflineBanner';
 import { SyncToastNotifier } from '@/components/crm/offline/SyncToastNotifier';
 import { OfflineAnalyticsBoot } from '@/components/crm/offline/OfflineAnalyticsBoot';
 import { HabitSignalsBoot } from '@/components/crm/habits/HabitSignalsBoot';
+import { NewMailNotifier } from '@/components/crm/inbox/NewMailNotifier';
 import { ModuleProvider, ModulePathSync } from '@/contexts/ModuleContext';
 import { GizmoProvider } from '@/components/crm/gizmo';
 import dynamic from 'next/dynamic';
@@ -94,6 +95,11 @@ export function CrmShell({
             <SyncToastNotifier />
             <OfflineAnalyticsBoot />
             <HabitSignalsBoot />
+
+            {/* Announces inbound email from anywhere in the CRM, not just the
+                inbox page — the agent who needs telling is the one who isn't
+                looking at the inbox. */}
+            <NewMailNotifier organizationId={profile.organization_id} />
 
             {/* Top Bar */}
             <CrmTopBar

@@ -12,7 +12,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createServerClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
 import { createClient, getAuthProfile } from '@/lib/supabase-server';
-import { rateLimit, getRateLimitHeaders } from '@crm-eco/lib/rate-limit';
+import { rateLimitDurable, getRateLimitHeaders } from '@crm-eco/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,7 +24,10 @@ export async function POST(
     const { id: userId } = await params;
 
     // Rate limit: 5 resets per user per hour
-    const rl = rateLimit(`password_reset_${userId}`, { limit: 5, windowMs: 3600_000 });
+    const rl = await rateLimitDurable(`password_reset_${userId}`, {
+      limit: 5,
+      windowSeconds: 3600,
+    });
     if (!rl.success) {
       return NextResponse.json(
         { error: 'Too many password reset requests. Try again later.' },

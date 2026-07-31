@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
-import { rateLimit, getRateLimitHeaders } from '@crm-eco/lib/rate-limit';
+import { rateLimitDurable, getRateLimitHeaders } from '@crm-eco/lib/rate-limit';
 import { verifyCaptcha, getClientIp } from '@crm-eco/lib/security/captcha';
 
 export const dynamic = 'force-dynamic';
@@ -41,7 +41,10 @@ export async function POST(request: NextRequest) {
   const clientIp = getClientIp(request) ?? 'unknown';
 
   // Layer 1: rate-limit before doing any expensive work.
-  const rl = rateLimit(`scheduling-book:${clientIp}`, { limit: 5, windowMs: 60_000 });
+  const rl = await rateLimitDurable(`scheduling-book:${clientIp}`, {
+    limit: 5,
+    windowSeconds: 60,
+  });
   if (!rl.success) {
     return NextResponse.json(
       { error: 'rate_limited' },

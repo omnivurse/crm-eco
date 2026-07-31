@@ -430,6 +430,12 @@ export interface CrmNote {
   record_id: string;
   body: string;
   is_pinned: boolean;
+  /**
+   * Optional user-facing note date (the date the note is *about*), as
+   * `YYYY-MM-DD`. NULL/undefined = fall back to `created_at`. Distinct from
+   * `created_at`, which is the immutable system save time.
+   */
+  note_date: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
