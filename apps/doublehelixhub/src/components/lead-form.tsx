@@ -48,9 +48,9 @@ export function LeadForm() {
 
   if (status === 'success') {
     return (
-      <div className="rounded-2xl border border-emerald-400/25 bg-emerald-400/10 p-8 text-center">
-        <h3 className="font-heading text-lg font-semibold text-white">Thanks — we&rsquo;ll be in touch.</h3>
-        <p className="mt-2 text-sm text-white/55">
+      <div className="rounded-2xl border border-emerald-500/25 bg-emerald-500/10 p-8 text-center">
+        <h3 className="font-heading text-lg font-semibold text-foreground">Thanks — we&rsquo;ll be in touch.</h3>
+        <p className="mt-2 text-sm text-muted-foreground">
           Your request landed in our queue. Expect a reply within one business day.
         </p>
       </div>
@@ -76,7 +76,7 @@ export function LeadForm() {
         <Field label="Phone" name="phone" type="tel" />
       </div>
       <div>
-        <label className="mb-1.5 block text-sm font-medium text-white/70">I&rsquo;m interested in</label>
+        <label className="mb-1.5 block text-sm font-medium text-foreground/70">I&rsquo;m interested in</label>
         <select name="productInterest" defaultValue="both" className="dh-select">
           <option value="crm">CRM Core</option>
           <option value="admin">Admin Enrollment</option>
@@ -85,13 +85,13 @@ export function LeadForm() {
         </select>
       </div>
       <div>
-        <label className="mb-1.5 block text-sm font-medium text-white/70">Anything we should know?</label>
+        <label className="mb-1.5 block text-sm font-medium text-foreground/70">Anything we should know?</label>
         <textarea name="notes" rows={3} className="dh-textarea" />
       </div>
       <button
         type="submit"
         disabled={status === 'submitting'}
-        className="group dh-btn-island dh-btn-white mt-1 w-full justify-between disabled:cursor-not-allowed disabled:opacity-60"
+        className="group dh-btn-island dh-btn-primary mt-1 w-full justify-between disabled:cursor-not-allowed disabled:opacity-60"
       >
         {status === 'submitting' ? 'Sending…' : 'Request access'}
         <span className="dh-btn-ico">
@@ -99,7 +99,7 @@ export function LeadForm() {
         </span>
       </button>
       {status === 'error' && errorMessage && (
-        <p className="text-sm text-red-400">{errorMessage}</p>
+        <p className="text-sm text-red-500 dark:text-red-400">{errorMessage}</p>
       )}
     </form>
   );
@@ -118,9 +118,9 @@ function Field({
 }) {
   return (
     <div>
-      <label htmlFor={name} className="mb-1.5 block text-sm font-medium text-white/70">
+      <label htmlFor={name} className="mb-1.5 block text-sm font-medium text-foreground/70">
         {label}
-        {required && <span className="text-cyan-400"> *</span>}
+        {required && <span className="text-cyan-600 dark:text-cyan-400"> *</span>}
       </label>
       <input id={name} name={name} type={type} required={required} className="dh-input" />
     </div>

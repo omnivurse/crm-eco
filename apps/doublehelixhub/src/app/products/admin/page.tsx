@@ -100,16 +100,16 @@ export default function AdminProductPage() {
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_0_3px_rgba(5,150,105,0.25)]" />
                 Product 02 · Admin Enrollment
               </span>
-              <h1 className="mt-7 max-w-[15ch] font-heading text-[clamp(2.6rem,5.5vw,4.25rem)] font-bold leading-[0.98] tracking-[-0.04em] text-white">
+              <h1 className="mt-7 max-w-[15ch] font-heading text-[clamp(2.6rem,5.5vw,4.25rem)] font-bold leading-[0.98] tracking-[-0.04em] text-foreground">
                 Enrollment ops on one{' '}
                 <span className="gradient-text-helix">tenancy spine</span>
               </h1>
-              <p className="mt-6 max-w-lg text-[1.05rem] leading-relaxed text-white/55">
+              <p className="mt-6 max-w-lg text-[1.05rem] leading-relaxed text-muted-foreground">
                 Plans, members, billing, commissions, payouts, and portals — multi-tenant isolation
                 for every agency and TPA. The operational half of Double Helix.
               </p>
               <div className="mt-9 flex flex-wrap gap-3">
-                <Link href="/#request-access" className="group dh-btn-island dh-btn-white">
+                <Link href="/#request-access" className="group dh-btn-island dh-btn-primary">
                   Request access
                   <span className="dh-btn-ico">
                     <ArrowUpRight weight="light" className="h-3.5 w-3.5" />
@@ -123,21 +123,21 @@ export default function AdminProductPage() {
 
             <div className="dh-bezel dh-bezel-suite">
               <div className="dh-bezel-inner p-7 sm:p-8">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-400/90">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-600 dark:text-emerald-400/90">
                   Built for
                 </p>
                 <ul className="mt-5 space-y-4">
                   {pillars.map(({ icon: Icon, label }) => (
-                    <li key={label} className="flex items-center gap-3 text-sm font-medium text-white/80">
-                      <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-emerald-400/10 text-emerald-400 ring-1 ring-emerald-400/20">
+                    <li key={label} className="flex items-center gap-3 text-sm font-medium text-foreground/80">
+                      <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-emerald-400/10 text-emerald-600 dark:text-emerald-400 ring-1 ring-emerald-400/20">
                         <Icon weight="light" className="h-5 w-5" />
                       </span>
                       {label}
                     </li>
                   ))}
                 </ul>
-                <div className="mt-7 border-t border-white/[0.06] pt-5">
-                  <p className="text-sm leading-relaxed text-white/45">
+                <div className="mt-7 border-t border-border pt-5">
+                  <p className="text-sm leading-relaxed text-muted-foreground">
                     Every agency and TPA runs in its own isolated partition — shared platform, private data.
                   </p>
                 </div>
@@ -152,10 +152,10 @@ export default function AdminProductPage() {
         <div className="container-page">
           <div className="max-w-2xl">
             <span className="dh-eyebrow">How it runs</span>
-            <h2 className="mt-5 font-heading text-[clamp(1.75rem,3.5vw,2.5rem)] font-bold tracking-[-0.03em] text-white">
+            <h2 className="mt-5 font-heading text-[clamp(1.75rem,3.5vw,2.5rem)] font-bold tracking-[-0.03em] text-foreground">
               Configure → enroll → operate
             </h2>
-            <p className="mt-4 text-white/50">
+            <p className="mt-4 text-muted-foreground">
               From rate cards to ACH payouts — the full member lifecycle lives on one backbone.
             </p>
           </div>
@@ -163,13 +163,13 @@ export default function AdminProductPage() {
             {workflow.map((item) => (
               <div key={item.step} className="dh-bezel h-full">
                 <div className="dh-bezel-inner flex h-full flex-col p-7">
-                  <span className="font-heading text-3xl font-bold tracking-[-0.04em] text-emerald-400/80">
+                  <span className="font-heading text-3xl font-bold tracking-[-0.04em] text-emerald-600 dark:text-emerald-400/80">
                     {item.step}
                   </span>
-                  <h3 className="mt-4 font-heading text-xl font-semibold tracking-[-0.02em] text-white">
+                  <h3 className="mt-4 font-heading text-xl font-semibold tracking-[-0.02em] text-foreground">
                     {item.title}
                   </h3>
-                  <p className="mt-2 text-sm leading-relaxed text-white/50">{item.body}</p>
+                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{item.body}</p>
                 </div>
               </div>
             ))}
@@ -182,7 +182,7 @@ export default function AdminProductPage() {
         <div className="container-page">
           <div className="max-w-2xl">
             <span className="dh-eyebrow">Capabilities</span>
-            <h2 className="mt-5 font-heading text-[clamp(1.75rem,3.5vw,2.5rem)] font-bold tracking-[-0.03em] text-white">
+            <h2 className="mt-5 font-heading text-[clamp(1.75rem,3.5vw,2.5rem)] font-bold tracking-[-0.03em] text-foreground">
               The ops platform behind your agency
             </h2>
           </div>
@@ -190,13 +190,13 @@ export default function AdminProductPage() {
             {capabilities.map(({ icon: Icon, title, body }) => (
               <div key={title} className="dh-bezel h-full">
                 <div className="dh-bezel-inner flex h-full flex-col p-6">
-                  <div className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-400/10 text-emerald-400 ring-1 ring-emerald-400/20">
+                  <div className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-400/10 text-emerald-600 dark:text-emerald-400 ring-1 ring-emerald-400/20">
                     <Icon weight="light" className="h-5 w-5" />
                   </div>
-                  <h3 className="mt-4 font-heading text-base font-semibold tracking-[-0.02em] text-white">
+                  <h3 className="mt-4 font-heading text-base font-semibold tracking-[-0.02em] text-foreground">
                     {title}
                   </h3>
-                  <p className="mt-2 text-sm leading-relaxed text-white/50">{body}</p>
+                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{body}</p>
                 </div>
               </div>
             ))}
@@ -211,10 +211,10 @@ export default function AdminProductPage() {
             <div className="dh-bezel-inner grid gap-10 p-8 sm:p-10 lg:grid-cols-2 lg:gap-16 lg:p-14">
               <div>
                 <span className="dh-eyebrow">Multi-tenant by design</span>
-                <h2 className="mt-5 font-heading text-[clamp(1.75rem,3vw,2.25rem)] font-bold tracking-[-0.03em] text-white">
+                <h2 className="mt-5 font-heading text-[clamp(1.75rem,3vw,2.25rem)] font-bold tracking-[-0.03em] text-foreground">
                   Isolation is the product
                 </h2>
-                <p className="mt-4 text-white/50">
+                <p className="mt-4 text-muted-foreground">
                   Agencies and TPAs share infrastructure — never data. RLS, branding, domains, and
                   billing all resolve at the org boundary.
                 </p>
@@ -226,8 +226,8 @@ export default function AdminProductPage() {
                   'Gateway credentials scoped to the org that owns them',
                   'Commission books that never leak across agencies',
                 ].map((item) => (
-                  <li key={item} className="flex gap-3 text-sm text-white/70">
-                    <Check weight="light" className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
+                  <li key={item} className="flex gap-3 text-sm text-muted-foreground">
+                    <Check weight="light" className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
                     <span>{item}</span>
                   </li>
                 ))}
@@ -242,19 +242,19 @@ export default function AdminProductPage() {
         <div className="container-page grid gap-4 lg:grid-cols-2">
           <div className="dh-bezel h-full">
             <div className="dh-bezel-inner flex h-full flex-col p-8 sm:p-10">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-400/90">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-600 dark:text-emerald-400/90">
                 Pair with
               </p>
-              <h3 className="mt-3 font-heading text-2xl font-bold tracking-[-0.03em] text-white">
+              <h3 className="mt-3 font-heading text-2xl font-bold tracking-[-0.03em] text-foreground">
                 CRM Core
               </h3>
-              <p className="mt-3 flex-1 text-sm leading-relaxed text-white/50">
+              <p className="mt-3 flex-1 text-sm leading-relaxed text-muted-foreground">
                 Advisors close in CRM; ops enrolls in Admin. Same identity, same tenancy — no
                 reconciliation tax between sales and membership.
               </p>
               <Link
                 href="/products/crm"
-                className="group mt-8 inline-flex items-center gap-2 text-sm font-semibold text-white transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:gap-3"
+                className="group mt-8 inline-flex items-center gap-2 text-sm font-semibold text-foreground transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:gap-3"
               >
                 Explore CRM Core
                 <ArrowUpRight weight="light" className="h-4 w-4" />
@@ -263,17 +263,17 @@ export default function AdminProductPage() {
           </div>
           <div className="dh-bezel dh-bezel-suite h-full">
             <div className="dh-bezel-inner flex h-full flex-col p-8 sm:p-10">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-400/90">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-600 dark:text-emerald-400/90">
                 Early access
               </p>
-              <h3 className="mt-3 font-heading text-2xl font-bold tracking-[-0.03em] text-white">
+              <h3 className="mt-3 font-heading text-2xl font-bold tracking-[-0.03em] text-foreground">
                 Ready to run enrollment here?
               </h3>
-              <p className="mt-3 flex-1 text-sm leading-relaxed text-white/50">
+              <p className="mt-3 flex-1 text-sm leading-relaxed text-muted-foreground">
                 We&rsquo;re onboarding agencies and TPAs in waves. Tell us your stack — we&rsquo;ll
                 respond within a business day.
               </p>
-              <Link href="/#request-access" className="group mt-8 inline-flex dh-btn-island dh-btn-white w-fit">
+              <Link href="/#request-access" className="group mt-8 inline-flex dh-btn-island dh-btn-primary w-fit">
                 Request access
                 <span className="dh-btn-ico">
                   <ArrowUpRight weight="light" className="h-3.5 w-3.5" />

@@ -58,10 +58,10 @@ export default function PricingPage() {
     <main className="container-page py-20 md:py-28">
       <div className="max-w-2xl">
         <span className="dh-eyebrow">Pricing</span>
-        <h1 className="mt-5 font-heading text-[clamp(2.25rem,5vw,3.5rem)] font-bold tracking-[-0.04em] text-white">
+        <h1 className="mt-5 font-heading text-[clamp(2.25rem,5vw,3.5rem)] font-bold tracking-[-0.04em] text-foreground">
           Pricing scales with your tenancy.
         </h1>
-        <p className="mt-5 text-lg leading-relaxed text-white/50">
+        <p className="mt-5 text-lg leading-relaxed text-muted-foreground">
           We&rsquo;re onboarding manually during phase 1 — every customer gets a hands-on
           implementation. Final pricing is custom while we calibrate seats, volume tiers, and
           gateway-specific fees.
@@ -76,22 +76,22 @@ export default function PricingPage() {
           >
             <div className="dh-bezel-inner flex h-full flex-col p-7 sm:p-8">
               {tier.highlighted && (
-                <span className="mb-3 inline-flex w-fit rounded-full bg-cyan-400/15 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-cyan-300 ring-1 ring-cyan-400/25">
+                <span className="mb-3 inline-flex w-fit rounded-full bg-cyan-500/15 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-cyan-700 ring-1 ring-cyan-500/25 dark:text-cyan-300 dark:ring-cyan-400/25">
                   Most popular
                 </span>
               )}
-              <h2 className="font-heading text-2xl font-bold tracking-[-0.03em] text-white">{tier.name}</h2>
-              <p className="mt-1 text-sm text-white/45">{tier.description}</p>
+              <h2 className="font-heading text-2xl font-bold tracking-[-0.03em] text-foreground">{tier.name}</h2>
+              <p className="mt-1 text-sm text-muted-foreground">{tier.description}</p>
               <div className="mt-6 flex items-baseline gap-2">
-                <span className="font-heading text-4xl font-bold tracking-[-0.03em] text-white">
+                <span className="font-heading text-4xl font-bold tracking-[-0.03em] text-foreground">
                   {tier.price}
                 </span>
-                <span className="text-sm text-white/40">{tier.period}</span>
+                <span className="text-sm text-muted-foreground/80">{tier.period}</span>
               </div>
               <ul className="mt-6 flex-1 space-y-3 text-sm">
                 {tier.features.map((f) => (
-                  <li key={f} className="flex gap-2 text-white/65">
-                    <Check weight="light" className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
+                  <li key={f} className="flex gap-2 text-muted-foreground">
+                    <Check weight="light" className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
                     <span>{f}</span>
                   </li>
                 ))}
@@ -100,8 +100,8 @@ export default function PricingPage() {
                 href="/#request-access"
                 className={`group mt-8 inline-flex h-11 w-full items-center justify-center gap-2 rounded-full px-4 text-sm font-semibold transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.98] ${
                   tier.highlighted
-                    ? 'bg-white text-[#050505]'
-                    : 'border border-white/15 text-white hover:bg-white/5'
+                    ? 'dh-btn-primary bg-[var(--dh-btn-primary-bg)] text-[var(--dh-btn-primary-fg)]'
+                    : 'border border-border text-foreground hover:bg-foreground/5'
                 }`}
               >
                 {tier.cta}
@@ -112,7 +112,7 @@ export default function PricingPage() {
         ))}
       </div>
 
-      <p className="mt-12 text-center text-sm text-white/40">
+      <p className="mt-12 text-center text-sm text-muted-foreground/80">
         Volume, multi-tenant, and partner agreements available — talk to us.
       </p>
     </main>

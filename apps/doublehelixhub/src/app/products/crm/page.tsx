@@ -89,16 +89,16 @@ export default function CrmProductPage() {
                 <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 shadow-[0_0_0_3px_rgba(6,182,212,0.2)]" />
                 Product 01 · CRM Core
               </span>
-              <h1 className="mt-7 max-w-[14ch] font-heading text-[clamp(2.6rem,5.5vw,4.25rem)] font-bold leading-[0.98] tracking-[-0.04em] text-white">
+              <h1 className="mt-7 max-w-[14ch] font-heading text-[clamp(2.6rem,5.5vw,4.25rem)] font-bold leading-[0.98] tracking-[-0.04em] text-foreground">
                 The CRM that already knows{' '}
                 <span className="gradient-text-helix">benefits</span>
               </h1>
-              <p className="mt-6 max-w-lg text-[1.05rem] leading-relaxed text-white/55">
+              <p className="mt-6 max-w-lg text-[1.05rem] leading-relaxed text-muted-foreground">
                 Pipelines, modules, and automations purpose-built for Medicare, ACA, group, and
                 healthshare advisors. Stop bending a generic CRM into shape.
               </p>
               <div className="mt-9 flex flex-wrap gap-3">
-                <Link href="/#request-access" className="group dh-btn-island dh-btn-white">
+                <Link href="/#request-access" className="group dh-btn-island dh-btn-primary">
                   Request access
                   <span className="dh-btn-ico">
                     <ArrowUpRight weight="light" className="h-3.5 w-3.5" />
@@ -112,21 +112,21 @@ export default function CrmProductPage() {
 
             <div className="dh-bezel dh-bezel-suite">
               <div className="dh-bezel-inner p-7 sm:p-8">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-400/90">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-700 dark:text-cyan-400/90">
                   Built for
                 </p>
                 <ul className="mt-5 space-y-4">
                   {audiences.map(({ icon: Icon, label }) => (
-                    <li key={label} className="flex items-center gap-3 text-sm font-medium text-white/80">
-                      <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-cyan-400/10 text-cyan-400 ring-1 ring-cyan-400/20">
+                    <li key={label} className="flex items-center gap-3 text-sm font-medium text-foreground/80">
+                      <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-cyan-400/10 text-cyan-600 dark:text-cyan-400 ring-1 ring-cyan-400/20">
                         <Icon weight="light" className="h-5 w-5" />
                       </span>
                       {label}
                     </li>
                   ))}
                 </ul>
-                <div className="mt-7 border-t border-white/[0.06] pt-5">
-                  <p className="text-sm leading-relaxed text-white/45">
+                <div className="mt-7 border-t border-border pt-5">
+                  <p className="text-sm leading-relaxed text-muted-foreground">
                     One tenancy-aware spine — every lead, deal, and sequence stays inside your org.
                   </p>
                 </div>
@@ -141,10 +141,10 @@ export default function CrmProductPage() {
         <div className="container-page">
           <div className="max-w-2xl">
             <span className="dh-eyebrow">How it runs</span>
-            <h2 className="mt-5 font-heading text-[clamp(1.75rem,3.5vw,2.5rem)] font-bold tracking-[-0.03em] text-white">
+            <h2 className="mt-5 font-heading text-[clamp(1.75rem,3.5vw,2.5rem)] font-bold tracking-[-0.03em] text-foreground">
               Capture → qualify → close
             </h2>
-            <p className="mt-4 text-white/50">
+            <p className="mt-4 text-muted-foreground">
               A motion tuned for benefits sales — not a generic opportunity object with a health
               sticker on it.
             </p>
@@ -153,13 +153,13 @@ export default function CrmProductPage() {
             {workflow.map((item) => (
               <div key={item.step} className="dh-bezel h-full">
                 <div className="dh-bezel-inner flex h-full flex-col p-7">
-                  <span className="font-heading text-3xl font-bold tracking-[-0.04em] text-cyan-400/80">
+                  <span className="font-heading text-3xl font-bold tracking-[-0.04em] text-cyan-600 dark:text-cyan-400/80">
                     {item.step}
                   </span>
-                  <h3 className="mt-4 font-heading text-xl font-semibold tracking-[-0.02em] text-white">
+                  <h3 className="mt-4 font-heading text-xl font-semibold tracking-[-0.02em] text-foreground">
                     {item.title}
                   </h3>
-                  <p className="mt-2 text-sm leading-relaxed text-white/50">{item.body}</p>
+                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{item.body}</p>
                 </div>
               </div>
             ))}
@@ -172,7 +172,7 @@ export default function CrmProductPage() {
         <div className="container-page">
           <div className="max-w-2xl">
             <span className="dh-eyebrow">Capabilities</span>
-            <h2 className="mt-5 font-heading text-[clamp(1.75rem,3.5vw,2.5rem)] font-bold tracking-[-0.03em] text-white">
+            <h2 className="mt-5 font-heading text-[clamp(1.75rem,3.5vw,2.5rem)] font-bold tracking-[-0.03em] text-foreground">
               Everything a benefits book needs
             </h2>
           </div>
@@ -180,13 +180,13 @@ export default function CrmProductPage() {
             {capabilities.map(({ icon: Icon, title, body }) => (
               <div key={title} className="dh-bezel h-full">
                 <div className="dh-bezel-inner flex h-full flex-col p-6">
-                  <div className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-cyan-400/10 text-cyan-400 ring-1 ring-cyan-400/20">
+                  <div className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-cyan-400/10 text-cyan-600 dark:text-cyan-400 ring-1 ring-cyan-400/20">
                     <Icon weight="light" className="h-5 w-5" />
                   </div>
-                  <h3 className="mt-4 font-heading text-base font-semibold tracking-[-0.02em] text-white">
+                  <h3 className="mt-4 font-heading text-base font-semibold tracking-[-0.02em] text-foreground">
                     {title}
                   </h3>
-                  <p className="mt-2 text-sm leading-relaxed text-white/50">{body}</p>
+                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{body}</p>
                 </div>
               </div>
             ))}
@@ -201,10 +201,10 @@ export default function CrmProductPage() {
             <div className="dh-bezel-inner grid gap-10 p-8 sm:p-10 lg:grid-cols-2 lg:gap-16 lg:p-14">
               <div>
                 <span className="dh-eyebrow">Why CRM Core</span>
-                <h2 className="mt-5 font-heading text-[clamp(1.75rem,3vw,2.25rem)] font-bold tracking-[-0.03em] text-white">
+                <h2 className="mt-5 font-heading text-[clamp(1.75rem,3vw,2.25rem)] font-bold tracking-[-0.03em] text-foreground">
                   Purpose-built beats bolted-on
                 </h2>
-                <p className="mt-4 text-white/50">
+                <p className="mt-4 text-muted-foreground">
                   Generic platforms force you to invent Medicare stages, ACA households, and
                   commission handoffs. We ship them.
                 </p>
@@ -216,8 +216,8 @@ export default function CrmProductPage() {
                   'Sequences that respect compliance-sensitive outreach',
                   'Clean handoff into Admin Enrollment when you need ops',
                 ].map((item) => (
-                  <li key={item} className="flex gap-3 text-sm text-white/70">
-                    <Check weight="light" className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
+                  <li key={item} className="flex gap-3 text-sm text-muted-foreground">
+                    <Check weight="light" className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
                     <span>{item}</span>
                   </li>
                 ))}
@@ -232,19 +232,19 @@ export default function CrmProductPage() {
         <div className="container-page grid gap-4 lg:grid-cols-2">
           <div className="dh-bezel h-full">
             <div className="dh-bezel-inner flex h-full flex-col p-8 sm:p-10">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-400/90">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-700 dark:text-cyan-400/90">
                 Pair with
               </p>
-              <h3 className="mt-3 font-heading text-2xl font-bold tracking-[-0.03em] text-white">
+              <h3 className="mt-3 font-heading text-2xl font-bold tracking-[-0.03em] text-foreground">
                 Admin Enrollment
               </h3>
-              <p className="mt-3 flex-1 text-sm leading-relaxed text-white/50">
+              <p className="mt-3 flex-1 text-sm leading-relaxed text-muted-foreground">
                 Close in CRM, enroll in Admin — same identity layer, same tenancy model, no CSV
                 ping-pong between sales and ops.
               </p>
               <Link
                 href="/products/admin"
-                className="group mt-8 inline-flex items-center gap-2 text-sm font-semibold text-white transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:gap-3"
+                className="group mt-8 inline-flex items-center gap-2 text-sm font-semibold text-foreground transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:gap-3"
               >
                 Explore Admin
                 <ArrowUpRight weight="light" className="h-4 w-4" />
@@ -253,17 +253,17 @@ export default function CrmProductPage() {
           </div>
           <div className="dh-bezel dh-bezel-suite h-full">
             <div className="dh-bezel-inner flex h-full flex-col p-8 sm:p-10">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-400/90">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-700 dark:text-cyan-400/90">
                 Early access
               </p>
-              <h3 className="mt-3 font-heading text-2xl font-bold tracking-[-0.03em] text-white">
+              <h3 className="mt-3 font-heading text-2xl font-bold tracking-[-0.03em] text-foreground">
                 Ready to run your book here?
               </h3>
-              <p className="mt-3 flex-1 text-sm leading-relaxed text-white/50">
+              <p className="mt-3 flex-1 text-sm leading-relaxed text-muted-foreground">
                 We&rsquo;re onboarding agencies in waves. Tell us what you&rsquo;re running today —
                 we&rsquo;ll get back within a business day.
               </p>
-              <Link href="/#request-access" className="group mt-8 inline-flex dh-btn-island dh-btn-white w-fit">
+              <Link href="/#request-access" className="group mt-8 inline-flex dh-btn-island dh-btn-primary w-fit">
                 Request access
                 <span className="dh-btn-ico">
                   <ArrowUpRight weight="light" className="h-3.5 w-3.5" />

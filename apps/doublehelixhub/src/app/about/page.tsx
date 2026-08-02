@@ -31,8 +31,8 @@ export default function AboutPage() {
         ].map((item) => (
           <div key={item.title} className="dh-bezel h-full">
             <div className="dh-bezel-inner h-full p-7">
-              <h3 className="font-heading text-base font-semibold tracking-[-0.02em] text-white">{item.title}</h3>
-              <p className="mt-3 text-sm leading-relaxed text-white/50">{item.body}</p>
+              <h3 className="font-heading text-base font-semibold tracking-[-0.02em] text-foreground">{item.title}</h3>
+              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{item.body}</p>
             </div>
           </div>
         ))}

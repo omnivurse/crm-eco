@@ -13,7 +13,7 @@ export default function PrivacyPage() {
       lede="A full privacy policy will be published before general availability. The summary below describes our current data handling for evaluation accounts."
     >
       <div className="dh-bezel max-w-3xl">
-        <div className="dh-bezel-inner space-y-5 p-7 text-sm leading-relaxed text-white/55 sm:p-8">
+        <div className="dh-bezel-inner space-y-5 p-7 text-sm leading-relaxed text-muted-foreground sm:p-8">
           <p>
             Double Helix Software is a multi-tenant SaaS platform. Each licensed tenant org owns its
             customer, member, and operational data within an isolated row-level-secured database
@@ -32,7 +32,7 @@ export default function PrivacyPage() {
           <p>
             A finalized policy will replace this page before public launch. Until then, please
             contact{' '}
-            <a className="text-cyan-400 underline underline-offset-2 hover:text-cyan-300" href="mailto:privacy@doublehelixhub.com">
+            <a className="text-cyan-600 dark:text-cyan-400 underline underline-offset-2 hover:text-cyan-300" href="mailto:privacy@doublehelixhub.com">
               privacy@doublehelixhub.com
             </a>{' '}
             with any questions.

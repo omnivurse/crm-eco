@@ -13,7 +13,7 @@ export default function TermsPage() {
       lede="A full Terms of Service agreement will be published before general availability. The summary below describes our current evaluation terms."
     >
       <div className="dh-bezel max-w-3xl">
-        <div className="dh-bezel-inner space-y-5 p-7 text-sm leading-relaxed text-white/55 sm:p-8">
+        <div className="dh-bezel-inner space-y-5 p-7 text-sm leading-relaxed text-muted-foreground sm:p-8">
           <p>
             Double Helix Software is currently in private access. Use of any Double Helix product or
             service is governed by a written agreement signed between Double Helix and the licensed
@@ -28,7 +28,7 @@ export default function TermsPage() {
           <p>
             Questions about the current evaluation agreement or proposed master services
             agreement?{' '}
-            <a className="text-cyan-400 underline underline-offset-2 hover:text-cyan-300" href="mailto:legal@doublehelixhub.com">
+            <a className="text-cyan-600 dark:text-cyan-400 underline underline-offset-2 hover:text-cyan-300" href="mailto:legal@doublehelixhub.com">
               legal@doublehelixhub.com
             </a>
             .
