@@ -72,7 +72,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const contribMap = await fetchEnrollmentContributionSettings(supabase, organizationId);
+    const contribMap = await fetchEnrollmentContributionSettings(
+      supabase as unknown,
+      organizationId
+    );
     const config = buildRateConfigFromDb(rateSets);
     const input: QuoteInput = {
       planId: params.planId,

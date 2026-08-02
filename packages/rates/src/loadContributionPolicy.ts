@@ -5,24 +5,28 @@
 
 export type SettingsRow = { setting_key: string; setting_value: string | null };
 
-interface SettingsQueryClient {
-  from: (table: string) => {
-    select: (cols: string) => {
-      eq: (col: string, val: string) => {
-        like: (
-          col: string,
-          pattern: string
-        ) => Promise<{ data: SettingsRow[] | null }>;
+/**
+ * Accept opaque clients (Supabase) via unknown + narrow cast so we don't trigger
+ * deep generic instantiation on PostgrestFilterBuilder.
+ */
+export async function fetchEnrollmentContributionSettings(
+  supabase: unknown,
+  organizationId: string
+): Promise<Record<string, string>> {
+  const client = supabase as {
+    from: (table: string) => {
+      select: (cols: string) => {
+        eq: (col: string, val: string) => {
+          like: (
+            col: string,
+            pattern: string
+          ) => PromiseLike<{ data: SettingsRow[] | null }>;
+        };
       };
     };
   };
-}
 
-export async function fetchEnrollmentContributionSettings(
-  supabase: SettingsQueryClient,
-  organizationId: string
-): Promise<Record<string, string>> {
-  const { data } = await supabase
+  const { data } = await client
     .from('system_settings')
     .select('setting_key, setting_value')
     .eq('organization_id', organizationId)

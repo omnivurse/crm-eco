@@ -83,6 +83,8 @@ interface IntakeStepData {
   advisorId?: string | null;
   enrollmentSource?: string;
   channel?: string;
+  /** Optional requested coverage start; used when creating a pending member */
+  requestedEffectiveDate?: string;
 }
 
 interface RxPricingData {
