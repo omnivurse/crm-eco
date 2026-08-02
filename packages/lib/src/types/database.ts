@@ -42741,6 +42741,16 @@ export type Database = {
         }
         Returns: Json
       }
+      finalize_member_enrollment_tx: {
+        Args: {
+          p_charged_first_month?: boolean
+          p_effective_date?: string
+          p_enrollment_id: string
+          p_org_id: string
+          p_payment_profile_id?: string
+        }
+        Returns: Json
+      }
       filter_records_by_related: {
         Args: {
           p_activity_type?: string
