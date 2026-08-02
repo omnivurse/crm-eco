@@ -4,7 +4,12 @@ import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Input, Label, Badge } from '@crm-eco/ui';
 import { Calculator, ArrowLeft } from '@phosphor-icons/react';
 import Link from 'next/link';
-import { quote, getPlanOptions, buildMatrixPreview } from '@crm-eco/rates';
+import {
+  quote,
+  getPlanOptions,
+  buildMatrixPreview,
+  DEFAULT_ENROLLMENT_CONTRIBUTION_POLICY,
+} from '@crm-eco/rates';
 import type {
   RateConfig,
   RateSetKey,
@@ -52,7 +57,10 @@ export default function RatePlaygroundPage() {
       coverageStart,
     };
 
-    const res = quote(config, input, { rateSetOverride: rateSet });
+    const res = quote(config, input, {
+      rateSetOverride: rateSet,
+      enrollmentContribution: DEFAULT_ENROLLMENT_CONTRIBUTION_POLICY,
+    });
     setResult(res);
   };
 

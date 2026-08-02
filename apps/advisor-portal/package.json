@@ -11,6 +11,7 @@
     },
     "dependencies": {
         "@crm-eco/lib": "*",
+        "@crm-eco/rates": "*",
         "@crm-eco/shared": "*",
         "@crm-eco/ui": "*",
         "@phosphor-icons/react": "^2.1.10",

@@ -17,6 +17,7 @@
   "dependencies": {
     "@crm-eco/enrollment": "*",
     "@crm-eco/lib": "*",
+    "@crm-eco/rates": "*",
     "@crm-eco/shared": "*",
     "@crm-eco/ui": "*",
     "@dnd-kit/core": "^6.3.1",

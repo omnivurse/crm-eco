@@ -14,6 +14,7 @@ import {
 } from '@/lib/crm/merge-crm-data-json-to-row';
 import { alignMisalignedRecordModule } from '@/lib/crm/align-record-module';
 import { buildScheduledCancellationUpdates } from '@/lib/crm/membership-lifecycle';
+import { assertCrmPendingHasStartDate } from '@/lib/crm/pending-start-date-invariant';
 import {
   CRM_RECORD_PATCH_CANONICAL_KEYS,
   CRM_RECORD_DATE_COLUMN_KEYS,
@@ -254,6 +255,29 @@ export async function executeCrmRecordPatch(params: {
       status: 400,
       body: { error: 'No fields to update', code: 'EMPTY_UPDATE' },
     };
+  }
+
+  // Fail closed: Pending-class status requires a resolvable coverage start date.
+  {
+    const resultingStatus = (updates.status ?? previousRecord.status) as string | null;
+    const resultingRecord = {
+      current_year_start_date: (updates.current_year_start_date ??
+        previousRecord.current_year_start_date) as string | null,
+      original_start_date: (updates.original_start_date ??
+        previousRecord.original_start_date) as string | null,
+      data: (updates.data ?? previousRecord.data) as Record<string, unknown> | null,
+    };
+    const pendingStart = assertCrmPendingHasStartDate(resultingStatus, resultingRecord);
+    if (!pendingStart.ok) {
+      return {
+        ok: false,
+        status: 400,
+        body: {
+          error: pendingStart.error,
+          code: 'PENDING_REQUIRES_START_DATE',
+        },
+      };
+    }
   }
 
   const today = new Date().toISOString().slice(0, 10);

@@ -16,7 +16,9 @@ import type {
   MatrixPreview,
   AdditivePersonRates,
   TieredHouseholdRates,
+  AgeRatingBasis,
 } from './types';
+import { resolveEnrollmentContribution } from './enrollmentContribution';
 
 // ──────────────────────────────────────────────
 // Public API
@@ -57,6 +59,7 @@ export function quote(
   // 4. Calculate premium based on rating model
   let monthlyPremium = 0;
   const bandsUsed: QuoteMetadata['bandsUsed'] = {};
+  let ratingAge: number | undefined;
 
   if (plan.rating_model === 'tiered_household') {
     const result = calcTieredHousehold(plan, input, bandsUsed);
@@ -64,6 +67,7 @@ export function quote(
       errors.push(...result.errors);
     }
     monthlyPremium = result.premium;
+    ratingAge = result.ratingAge;
     breakdown.push(...result.breakdown);
   } else if (plan.rating_model === 'additive_person') {
     const result = calcAdditivePerson(plan, input, bandsUsed, opts);
@@ -71,6 +75,7 @@ export function quote(
       errors.push(...result.errors);
     }
     monthlyPremium = result.premium;
+    ratingAge = input.household.memberAge;
     breakdown.push(...result.breakdown);
   } else {
     errors.push({
@@ -107,10 +112,53 @@ export function quote(
 
   monthlyPremium = round(monthlyPremium);
 
-  // 6. Process fees
+  // 6. Process fees (+ optional enrollment contribution waiver)
+  let enrollmentContributionMeta: QuoteMetadata['enrollmentContribution'];
+
   if (plan.fees) {
     for (const fee of plan.fees) {
       if (!fee.enabled) continue;
+
+      if (fee.id === 'enrollment-contribution' && opts?.enrollmentContribution) {
+        const resolved = resolveEnrollmentContribution({
+          ...opts.enrollmentContribution,
+          amount: opts.enrollmentContribution.amount ?? fee.amount,
+        });
+        enrollmentContributionMeta = resolved;
+        if (resolved.listAmount > 0) {
+          breakdown.push({
+            label: 'Enrollment Contribution (list)',
+            amount: resolved.listAmount,
+            meta: { feeId: fee.id },
+          });
+        }
+        if (resolved.waiverAmount > 0) {
+          breakdown.push({
+            label: 'Founding Member Waiver',
+            amount: -resolved.waiverAmount,
+            meta: { feeId: fee.id, founding: true },
+          });
+        }
+        oneTimeFees.push({
+          id: fee.id,
+          label: fee.label,
+          amount: resolved.netAmount,
+          meta: {
+            listAmount: resolved.listAmount,
+            waiverAmount: resolved.waiverAmount,
+            foundingWaiverApplied: resolved.foundingWaiverApplied,
+            ...(resolved.splits ? { splits: resolved.splits } : {}),
+          },
+        });
+        continue;
+      }
+
+      if (fee.id === 'enrollment-contribution') {
+        // No policy passed — charge list amount from fee line as-is
+        oneTimeFees.push({ id: fee.id, label: fee.label, amount: fee.amount });
+        continue;
+      }
+
       if (fee.type === 'flat_monthly') {
         monthlyFees.push({ id: fee.id, label: fee.label, amount: fee.amount });
       } else if (fee.type === 'flat_one_time') {
@@ -137,7 +185,14 @@ export function quote(
     rateSetLabel: rateSet.label,
     effectiveDate: rateSet.effective_date,
     ratingModel: plan.rating_model,
+    ageRatingBasis: plan.age_rating_basis ?? 'primary',
+    marketSegment: plan.market_segment,
+    provisional: plan.provisional,
+    ratingAge,
     bandsUsed,
+    ...(enrollmentContributionMeta
+      ? { enrollmentContribution: enrollmentContributionMeta }
+      : {}),
   };
 
   return {
@@ -166,6 +221,10 @@ export function getPlanOptions(
     ratingModel: plan.rating_model,
     coverageTiers: plan.coverage_tiers,
     ageBands: plan.age_bands,
+    ageRatingBasis: plan.age_rating_basis,
+    marketSegment: plan.market_segment,
+    iuaAmount: plan.iua_amount,
+    provisional: plan.provisional,
   }));
 }
 
@@ -188,6 +247,18 @@ export function buildMatrixPreview(
 
   if (plan.rating_model === 'tiered_household') {
     matrix = buildTieredMatrix(plan);
+    if (plan.age_rating_basis === 'older_of_couple') {
+      footnotes.push(
+        'Individual couple pricing (Member + Spouse / Family) uses the age of the older spouse.'
+      );
+    } else if (plan.market_segment === 'group') {
+      footnotes.push('Group pricing is based on the employee\'s age.');
+    }
+    if (plan.provisional) {
+      footnotes.push(
+        'Provisional rates — partnership (doctor/nurse) costs and wellness lab panel are not included.'
+      );
+    }
   } else {
     matrix = buildAdditiveMatrix(plan, footnotes);
   }
@@ -202,6 +273,9 @@ export function buildMatrixPreview(
     ageBands: plan.age_bands,
     coverageTiers: plan.coverage_tiers,
     matrix,
+    ageRatingBasis: plan.age_rating_basis,
+    marketSegment: plan.market_segment,
+    provisional: plan.provisional,
     ...(footnotes.length > 0 ? { footnotes } : {}),
   };
 }
@@ -211,14 +285,17 @@ export function buildMatrixPreview(
 // ──────────────────────────────────────────────
 
 export function resolveRateSetKey(
-  _config: RateConfig,
+  config: RateConfig,
   coverageStart: string,
   override?: RateSetKey
 ): RateSetKey {
   if (override) return override;
   const startDate = new Date(coverageStart);
   const cutoff = new Date('2026-01-01');
-  return startDate >= cutoff ? 'rates_2026' : 'current';
+  const preferred: RateSetKey = startDate >= cutoff ? 'rates_2026' : 'current';
+  if ((config.rate_sets[preferred]?.plans?.length ?? 0) > 0) return preferred;
+  const fallback: RateSetKey = preferred === 'rates_2026' ? 'current' : 'rates_2026';
+  return (config.rate_sets[fallback]?.plans?.length ?? 0) > 0 ? fallback : preferred;
 }
 
 // ──────────────────────────────────────────────
@@ -232,6 +309,34 @@ export function findAgeBand(
   return ageBands.find((band) => age >= band.min && age <= band.max);
 }
 
+/**
+ * Resolve the age used for tiered household band lookup.
+ */
+export function resolveRatingAge(
+  basis: AgeRatingBasis | undefined,
+  coverageTier: CoverageTier,
+  household: QuoteInput['household']
+): { age: number; errors: QuoteError[] } {
+  const errors: QuoteError[] = [];
+  const useOlder =
+    (basis ?? 'primary') === 'older_of_couple' &&
+    (coverageTier === 'member_spouse' || coverageTier === 'family');
+
+  if (useOlder) {
+    if (household.spouseAge === undefined || household.spouseAge === null) {
+      errors.push({
+        code: 'MISSING_SPOUSE_AGE',
+        message: 'Spouse age is required for older-of-couple rating',
+        path: 'household.spouseAge',
+      });
+      return { age: household.memberAge, errors };
+    }
+    return { age: Math.max(household.memberAge, household.spouseAge), errors };
+  }
+
+  return { age: household.memberAge, errors };
+}
+
 // ──────────────────────────────────────────────
 // Tiered Household Calculation
 // ──────────────────────────────────────────────
@@ -240,20 +345,38 @@ function calcTieredHousehold(
   plan: Plan,
   input: QuoteInput,
   bandsUsed: QuoteMetadata['bandsUsed']
-): { premium: number; breakdown: BreakdownLine[]; errors: QuoteError[] } {
+): { premium: number; breakdown: BreakdownLine[]; errors: QuoteError[]; ratingAge?: number } {
   const errors: QuoteError[] = [];
   const breakdown: BreakdownLine[] = [];
 
-  const memberBand = findAgeBand(plan.age_bands, input.household.memberAge);
-  if (!memberBand) {
+  const { age: ratingAge, errors: ageErrors } = resolveRatingAge(
+    plan.age_rating_basis,
+    input.coverageTier,
+    input.household
+  );
+  if (ageErrors.length > 0) {
+    return { premium: 0, breakdown, errors: ageErrors };
+  }
+
+  const ratingBand = findAgeBand(plan.age_bands, ratingAge);
+  if (!ratingBand) {
     errors.push({
       code: 'NO_AGE_BAND',
-      message: `No age band found for member age ${input.household.memberAge}`,
+      message: `No age band found for rating age ${ratingAge}`,
       path: 'household.memberAge',
     });
     return { premium: 0, breakdown, errors };
   }
-  bandsUsed.memberBand = memberBand.id;
+
+  const memberBand = findAgeBand(plan.age_bands, input.household.memberAge);
+  bandsUsed.memberBand = memberBand?.id;
+  bandsUsed.ratingBand = ratingBand.id;
+  if (
+    input.household.spouseAge !== undefined &&
+    input.household.spouseAge !== null
+  ) {
+    bandsUsed.spouseBand = findAgeBand(plan.age_bands, input.household.spouseAge)?.id;
+  }
 
   const rates = plan.rates as TieredHouseholdRates;
   const tierRates = rates[input.coverageTier];
@@ -266,23 +389,34 @@ function calcTieredHousehold(
     return { premium: 0, breakdown, errors };
   }
 
-  const rate = tierRates[memberBand.id];
+  const rate = tierRates[ratingBand.id];
   if (rate === undefined || rate === null) {
     errors.push({
       code: 'NO_RATE',
-      message: `No rate for tier "${input.coverageTier}" and band "${memberBand.id}"`,
-      path: `rates.${input.coverageTier}.${memberBand.id}`,
+      message: `No rate for tier "${input.coverageTier}" and band "${ratingBand.id}"`,
+      path: `rates.${input.coverageTier}.${ratingBand.id}`,
     });
     return { premium: 0, breakdown, errors };
   }
 
+  const basisLabel =
+    plan.age_rating_basis === 'older_of_couple' &&
+    (input.coverageTier === 'member_spouse' || input.coverageTier === 'family')
+      ? `older of couple, age ${ratingAge}`
+      : `age ${ratingAge}`;
+
   breakdown.push({
-    label: `${input.coverageTier} (${memberBand.label})`,
+    label: `${input.coverageTier} (${ratingBand.label}; ${basisLabel})`,
     amount: round(rate),
-    meta: { tier: input.coverageTier, band: memberBand.id },
+    meta: {
+      tier: input.coverageTier,
+      band: ratingBand.id,
+      ratingAge,
+      ageRatingBasis: plan.age_rating_basis ?? 'primary',
+    },
   });
 
-  return { premium: round(rate), breakdown, errors };
+  return { premium: round(rate), breakdown, errors, ratingAge };
 }
 
 // ──────────────────────────────────────────────
@@ -301,7 +435,6 @@ function calcAdditivePerson(
 
   const rates = plan.rates as AdditivePersonRates;
 
-  // Subscriber premium (always included)
   const memberBand = findAgeBand(plan.age_bands, input.household.memberAge);
   if (!memberBand) {
     errors.push({
@@ -330,7 +463,6 @@ function calcAdditivePerson(
     meta: { person: 'subscriber', band: memberBand.id },
   });
 
-  // Spouse adder (for member_spouse and family)
   if (input.coverageTier === 'member_spouse' || input.coverageTier === 'family') {
     if (rates.spouse_adder) {
       const spouseResult = resolveAdder(
@@ -353,11 +485,10 @@ function calcAdditivePerson(
     }
   }
 
-  // Dependent adders (for member_children and family)
   if (input.coverageTier === 'member_children' || input.coverageTier === 'family') {
     const depAges = input.household.dependentAges ?? [];
-    const maxPriced = opts?.dependentsPricedOverride
-      ?? (rates.max_dependents_priced ?? depAges.length);
+    const maxPriced =
+      opts?.dependentsPricedOverride ?? rates.max_dependents_priced ?? depAges.length;
     const pricedCount = Math.min(depAges.length, maxPriced);
     const depBands: string[] = [];
 
@@ -602,6 +733,9 @@ function errorResult(
       rateSetLabel: rateSet.label,
       effectiveDate: rateSet.effective_date,
       ratingModel: plan?.rating_model ?? 'tiered_household',
+      ageRatingBasis: plan?.age_rating_basis,
+      marketSegment: plan?.market_segment,
+      provisional: plan?.provisional,
       bandsUsed: {},
     },
     errors,

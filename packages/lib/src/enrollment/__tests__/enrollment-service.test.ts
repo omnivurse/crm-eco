@@ -4,9 +4,9 @@
  * Supabase + the audit logger are mocked, so these are fast, hermetic, and
  * assert the CURRENT control flow:
  *   - cancelEnrollment refuses an already-cancelled enrollment
- *   - activateFutureEnrollment requires status 'submitted'
  *   - createEnrollment maps the (mistyped) `baseMonthlyCoat` field to the
  *     RPC's `base_monthly_cost` and applies the documented defaults
+ *   - (activateFutureEnrollment removed — coverage uses finalize + cron)
  *
  * KNOWN FINDING locked here: the public payload field is `baseMonthlyCoat`
  * (typo of "Cost"). Renaming it is a safe, test-covered follow-up.
@@ -100,32 +100,6 @@ describe('EnrollmentService.cancelEnrollment', () => {
     expect(updates[0]).toMatchObject({ status: 'cancelled', inactive_reason: 'voluntary' });
     expect(logEnrollmentAudit).toHaveBeenCalledWith(
       expect.objectContaining({ eventType: 'cancelled', newStatus: 'cancelled' })
-    );
-  });
-});
-
-describe('EnrollmentService.activateFutureEnrollment', () => {
-  it("refuses to activate unless status is 'submitted'", async () => {
-    const { supabase, updates } = makeSupabase({
-      selectQueue: [{ data: { status: 'draft', effective_date: '2026-01-01' }, error: null }],
-    });
-    const svc = new EnrollmentService(supabase as never);
-
-    await expect(svc.activateFutureEnrollment('e1', 'o1')).rejects.toThrow(/must be 'submitted'/);
-    expect(updates).toHaveLength(0);
-  });
-
-  it("promotes a 'submitted' enrollment to 'approved' and audits it", async () => {
-    const { supabase, updates } = makeSupabase({
-      selectQueue: [{ data: { status: 'submitted', effective_date: '2026-01-01' }, error: null }],
-    });
-    const svc = new EnrollmentService(supabase as never);
-
-    await svc.activateFutureEnrollment('e1', 'o1');
-
-    expect(updates[0]).toMatchObject({ status: 'approved' });
-    expect(logEnrollmentAudit).toHaveBeenCalledWith(
-      expect.objectContaining({ eventType: 'activated', newStatus: 'approved' })
     );
   });
 });

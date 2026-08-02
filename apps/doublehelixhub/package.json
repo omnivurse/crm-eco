@@ -11,6 +11,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@crm-eco/rates": "*",
     "@crm-eco/ui": "*",
     "@phosphor-icons/react": "^2.1.10",
     "@radix-ui/react-slot": "^1.0.2",

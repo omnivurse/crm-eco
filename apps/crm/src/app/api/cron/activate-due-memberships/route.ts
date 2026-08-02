@@ -1,24 +1,19 @@
 /**
  * GET /api/cron/activate-due-memberships
  *
- * Daily cron that activates real coverage on the 1st. Enrollment completion
- * provisions a membership in `status='pending'` with `effective_date` = the 1st
- * of the coverage month (see finalize_member_enrollment_tx); on/after that date
- * this cron flips it live:
- *   1. memberships: pending -> active  WHERE effective_date <= today
- *   2. members:     pending -> active  for those members
+ * Thin adapter: daily cron that activates real coverage on the 1st.
+ * Logic lives in `@/lib/crm/member-activation` (billing adapter).
  *
  * Enrollments are intentionally LEFT at 'approved' — flipping them to 'active'
- * would fire trg_enrollment_commission (auto-fire) a second time (the signup
- * commission already fired on approve). Coverage-live state is the membership's.
+ * would fire trg_enrollment_commission a second time.
  *
- * Idempotent (status-guarded), org-agnostic (platform-wide), `?dry_run=1` mutates
- * nothing. Auth: Vercel cron `x-vercel-cron`, or `Bearer CRON_SECRET` for manual.
- * Schedule: daily 06:10 UTC (just after activate-pending-members).
+ * Idempotent (status-guarded), `?dry_run=1` mutates nothing.
+ * Schedule: daily 06:10 UTC.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+import { activateBillingDue } from '@/lib/crm/member-activation';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -45,60 +40,27 @@ export async function GET(request: NextRequest) {
 
   const dryRun = new URL(request.url).searchParams.get('dry_run') === '1';
   const today = new Date().toISOString().slice(0, 10);
-  const sb = serviceClient() as unknown as { from: (t: string) => any };
+  const sb = serviceClient();
 
-  // Memberships whose coverage start has arrived but are still pending.
-  const { data: due, error: dueErr } = await sb
-    .from('memberships')
-    .select('id, member_id, organization_id, effective_date')
-    .eq('status', 'pending')
-    .lte('effective_date', today);
+  const result = await activateBillingDue(sb, today, { dryRun });
 
-  if (dueErr) {
-    return NextResponse.json({ error: dueErr.message }, { status: 500 });
+  if (result.error) {
+    return NextResponse.json({ error: result.error }, { status: 500 });
   }
-
-  const dueMemberships = (due ?? []) as Array<{ id: string; member_id: string }>;
-  const memberIds = Array.from(new Set(dueMemberships.map((m) => m.member_id).filter(Boolean)));
 
   if (dryRun) {
     return NextResponse.json({
       dry_run: true,
       today,
-      memberships_to_activate: dueMemberships.length,
-      members_to_activate: memberIds.length,
+      memberships_to_activate: result.memberships_to_activate,
+      members_to_activate: result.members_to_activate,
     });
-  }
-
-  let membershipsActivated = 0;
-  let membersActivated = 0;
-
-  if (dueMemberships.length > 0) {
-    const { data: m1, error: e1 } = await sb
-      .from('memberships')
-      .update({ status: 'active', updated_at: new Date().toISOString() })
-      .eq('status', 'pending')
-      .lte('effective_date', today)
-      .select('id');
-    if (e1) return NextResponse.json({ error: e1.message }, { status: 500 });
-    membershipsActivated = (m1 ?? []).length;
-
-    if (memberIds.length > 0) {
-      const { data: m2, error: e2 } = await sb
-        .from('members')
-        .update({ status: 'active', updated_at: new Date().toISOString() })
-        .in('id', memberIds)
-        .eq('status', 'pending')
-        .select('id');
-      if (e2) return NextResponse.json({ error: e2.message }, { status: 500 });
-      membersActivated = (m2 ?? []).length;
-    }
   }
 
   return NextResponse.json({
     ok: true,
     today,
-    memberships_activated: membershipsActivated,
-    members_activated: membersActivated,
+    memberships_activated: result.memberships_activated,
+    members_activated: result.members_activated,
   });
 }

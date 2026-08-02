@@ -6,11 +6,16 @@ Facade for **CRM `crm_records`** coverage transitions (contacts/members modules)
 |------------|--------|
 | Active → Cancelled (scheduled end date) | `applyScheduledEndDateCancelForRecord` / `…ForRecordView` |
 | Age-65 auto-cancel | `applyAge65AutoCancelForRecord` |
-| Pending → Active (start date) | helpers from `resolve-effective-start-date` (used by activate-pending cron) |
+| Pending → Active (start date) | `isActivationDue` / `applyPendingActivationForRecord` (from `pending-activation`) |
 
-## Not in this module
+## Coordinating CRM + billing
 
-`apps/crm/src/app/api/cron/activate-due-memberships` updates the billing
-`memberships` + `members` tables. That is a different seam — enrollment
-completion provisions `pending` memberships; the cron flips them live.
-Do not fold that into CRM record cancel/activate without a bridging design.
+`@/lib/crm/member-activation` exposes one coordinator interface:
+
+- `activateCrmRecordsDue` — CRM `crm_records` Pending → Active
+- `activateBillingDue` — billing `memberships` + `members` pending → active
+- `activateAllDue` — ops convenience (cron schedules stay separate)
+
+Billing `memberships` remain a **different adapter**. Do not merge table paths
+without an explicit design; enrollment completion provisions `pending`
+memberships and `activate-due-memberships` flips them live.

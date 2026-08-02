@@ -55,6 +55,11 @@ const HEADER_ALIASES: Record<string, string> = {
   'lead status': 'lead_status',
   'contact status': 'contact_status',
   'stage': 'stage',
+  // Identity for name+DOB match
+  'date of birth': 'date_of_birth',
+  'date_of_birth': 'date_of_birth',
+  'dob': 'date_of_birth',
+  'birthday': 'date_of_birth',
   // Address
   'street': 'mailing_street',
   'address': 'mailing_street',
@@ -66,7 +71,15 @@ const HEADER_ALIASES: Record<string, string> = {
   'country': 'mailing_country',
 };
 
-export type MatchKey = 'zoho_id' | 'email' | 'phone';
+export type MatchKey = 'zoho_id' | 'email' | 'phone' | 'name_dob';
+
+/** Canonical match order for Entity Reupload (trickle update). */
+export const DEFAULT_MATCH_PRIORITY: MatchKey[] = [
+  'zoho_id',
+  'email',
+  'phone',
+  'name_dob',
+];
 
 export interface UpdateRow {
   /** 0-based index in the original CSV (after header row) */
@@ -76,7 +89,13 @@ export interface UpdateRow {
   /** Row keyed by canonical (snake_case / aliased) field key, blanks stripped */
   normalized: Record<string, string>;
   /** Matching keys extracted from the row */
-  keys: { zoho_id?: string; email?: string; phone?: string };
+  keys: {
+    zoho_id?: string;
+    email?: string;
+    phone?: string;
+    /** `first|last|YYYY-MM-DD` when all three are present */
+    name_dob?: string;
+  };
 }
 
 export interface ParsedCsv {
@@ -187,6 +206,49 @@ export function canonicalizeHeader(header: string): string | null {
     .replace(/^_+|_+$/g, '');
 }
 
+/**
+ * Normalize a date-of-birth value to `YYYY-MM-DD` for match comparison.
+ * Returns null when empty/unparseable — those rows never match on name+DOB.
+ */
+export function normalizeDobForMatch(value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+  const s = String(value).trim();
+  if (!s || s === '0000-00-00') return null;
+
+  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+
+  const us = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (us) {
+    return `${us[3]}-${us[1].padStart(2, '0')}-${us[2].padStart(2, '0')}`;
+  }
+
+  const d = new Date(s);
+  if (Number.isNaN(d.getTime())) return null;
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(
+    d.getUTCDate(),
+  ).padStart(2, '0')}`;
+}
+
+/**
+ * Stable identity key from first + last + DOB. Null unless all three present.
+ */
+export function nameDobKey(
+  first: unknown,
+  last: unknown,
+  dob: unknown,
+): string | null {
+  const f = String(first ?? '')
+    .trim()
+    .toLowerCase();
+  const l = String(last ?? '')
+    .trim()
+    .toLowerCase();
+  const d = normalizeDobForMatch(dob);
+  if (!f || !l || !d) return null;
+  return `${f}|${l}|${d}`;
+}
+
 /** Pull match keys out of a normalized row. Phones are digit-only. */
 export function extractMatchKeys(
   normalized: Record<string, string>,
@@ -203,7 +265,31 @@ export function extractMatchKeys(
       keys.phone = digits;
     }
   }
+  const nd = nameDobKey(
+    normalized.first_name,
+    normalized.last_name,
+    normalized.date_of_birth,
+  );
+  if (nd) keys.name_dob = nd;
   return keys;
+}
+
+/**
+ * Keep only the highest-priority match key present on the row.
+ * Used so each row participates in exactly one lookup bucket.
+ */
+export function filterKeysByPriority(
+  keys: UpdateRow['keys'],
+  matchPriority: MatchKey[],
+): UpdateRow['keys'] {
+  const filtered: UpdateRow['keys'] = {};
+  for (const slot of matchPriority) {
+    if (keys[slot]) {
+      filtered[slot] = keys[slot];
+      break;
+    }
+  }
+  return filtered;
 }
 
 // ---------------------------------------------------------------------------
@@ -217,10 +303,13 @@ export interface MatchPlan {
   emails: string[];
   /** Digit-only phones to look up via crm_phone_lookup RPC. */
   phones: string[];
+  /** `first|last|YYYY-MM-DD` keys. */
+  nameDobs: string[];
   /** Index of rows by each key for fast back-lookup after the DB query. */
   byZohoId: Map<string, UpdateRow[]>;
   byEmail: Map<string, UpdateRow[]>;
   byPhone: Map<string, UpdateRow[]>;
+  byNameDob: Map<string, UpdateRow[]>;
 }
 
 /** Bucket rows by their match keys for batch DB queries. */
@@ -228,6 +317,7 @@ export function planMatches(rows: UpdateRow[]): MatchPlan {
   const byZohoId = new Map<string, UpdateRow[]>();
   const byEmail = new Map<string, UpdateRow[]>();
   const byPhone = new Map<string, UpdateRow[]>();
+  const byNameDob = new Map<string, UpdateRow[]>();
 
   for (const row of rows) {
     if (row.keys.zoho_id) {
@@ -236,6 +326,8 @@ export function planMatches(rows: UpdateRow[]): MatchPlan {
       pushTo(byEmail, row.keys.email, row);
     } else if (row.keys.phone) {
       pushTo(byPhone, row.keys.phone, row);
+    } else if (row.keys.name_dob) {
+      pushTo(byNameDob, row.keys.name_dob, row);
     }
   }
 
@@ -243,9 +335,11 @@ export function planMatches(rows: UpdateRow[]): MatchPlan {
     zohoIds: Array.from(byZohoId.keys()),
     emails: Array.from(byEmail.keys()),
     phones: Array.from(byPhone.keys()),
+    nameDobs: Array.from(byNameDob.keys()),
     byZohoId,
     byEmail,
     byPhone,
+    byNameDob,
   };
 }
 

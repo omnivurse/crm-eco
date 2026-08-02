@@ -4,14 +4,19 @@ import {
   checkEligibility,
   buildEnrollmentApprovalRecord,
   checkEnrollmentApprovalRequired,
-} from '@crm-eco/lib';
-import { createServiceRoleClient } from '@crm-eco/lib/supabase/server';
-import {
+  resolvePendingMemberEffectiveDate,
   finalizeEnrollment,
+  isEnrollmentCompletionEnabled,
   type PaymentMethodInput,
   type PaymentBillingAddress,
 } from '@crm-eco/lib';
-import { quote, buildRateConfigFromDb } from '@crm-eco/rates';
+import { createServiceRoleClient } from '@crm-eco/lib/supabase/server';
+import {
+  quote,
+  buildRateConfigFromDb,
+  enrollmentContributionFromSettings,
+  fetchEnrollmentContributionSettings,
+} from '@crm-eco/rates';
 import type { CoverageTier, QuoteInput } from '@crm-eco/rates/types';
 import {
   readDraftFromRequest,
@@ -118,6 +123,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'missing_member_fields' }, { status: 400 });
   }
 
+  // Coverage starts on the 1st — compute before member insert so pending rows
+  // always carry members.effective_date for the activation cron.
+  const coverageStart = resolvePendingMemberEffectiveDate(effective_date);
+
   const supabase = createServiceRoleClient();
   const orgId = draft.organizationId;
 
@@ -172,6 +181,7 @@ export async function POST(request: NextRequest) {
         state: member.state ?? null,
         postal_code: member.zip_code ?? null,
         status: 'pending',
+        effective_date: coverageStart,
         source: 'website',
         advisor_id: advisorId,
       })
@@ -214,11 +224,6 @@ export async function POST(request: NextRequest) {
   }
 
   // 3. Create enrollment via the atomic RPC
-  const defaultEffective = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-    .toISOString()
-    .split('T')[0];
-  const coverageStart = effective_date ?? defaultEffective;
-
   // 2. Compute the price SERVER-SIDE. Default: plans.monthly_share (never hard-fail).
   //    Override with the rate engine only when the flag is on AND a clean quote exists.
   let basePrice = 0;
@@ -268,7 +273,7 @@ export async function POST(request: NextRequest) {
         .from('plan_rate_sets')
         .select(`
           *,
-          plan:plans!inner(id, name, code, organization_id),
+          plan:plans!inner(id, name, code, organization_id, iua_amount, metadata),
           entries:plan_rate_entries(*),
           fees:plan_fees(*)
         `)
@@ -277,6 +282,7 @@ export async function POST(request: NextRequest) {
 
       if (rateSetRows && rateSetRows.length > 0) {
         const config = buildRateConfigFromDb(rateSetRows);
+        const contribMap = await fetchEnrollmentContributionSettings(supabase, orgId);
         const quoteInput: QuoteInput = {
           planId: planCode,
           coverageTier,
@@ -287,7 +293,9 @@ export async function POST(request: NextRequest) {
           },
           coverageStart,
         };
-        const result = quote(config, quoteInput);
+        const result = quote(config, quoteInput, {
+          enrollmentContribution: enrollmentContributionFromSettings(contribMap),
+        });
         if ((!result.errors || result.errors.length === 0) && result.totalMonthly > 0) {
           basePrice = result.monthlyPremium;
           engineTotalMonthly = result.totalMonthly;
@@ -308,7 +316,7 @@ export async function POST(request: NextRequest) {
       primary_member_id: memberId,
       advisor_id: advisorId,
       selected_plan_id: selected_plan_id ?? null,
-      effective_date: effective_date ?? defaultEffective,
+      effective_date: coverageStart,
       household_size: 1 + (household?.length ?? 0),
       base_monthly_cost: basePrice,
       permanent_bill_day: 20,
@@ -497,7 +505,7 @@ export async function POST(request: NextRequest) {
     | { success: boolean; error?: string; placeholderPayment?: boolean }
     | undefined;
   if (
-    process.env.ENROLLMENT_COMPLETION_ENABLED === 'true' &&
+    isEnrollmentCompletionEnabled() &&
     body.paymentMethod &&
     selected_plan_id &&
     basePrice > 0
@@ -520,8 +528,7 @@ export async function POST(request: NextRequest) {
         billingAddress: body.billingAddress,
         planName: planRow?.name ?? undefined,
         organizationName: orgRow?.name ?? 'Pay It Forward Health',
-        // Coverage starts on the 1st — let the RPC default to the 1st of next month.
-        effectiveDate: null,
+        effectiveDate: coverageStart,
         portalRedirectTo: `${process.env.NEXT_PUBLIC_PORTAL_URL ?? 'https://members.payitforwardhealth.com'}/update-password`,
       });
       completion = {

@@ -30,13 +30,38 @@ locality) comes from the `/codebase-design` skill; the terms below name the
   legacy Zoho data and the current schema (`advisors` table, `advisor_id` FKs).
   Agents form a **hierarchy** (upline/downline) that drives override commissions.
 
-- **Plan / Product** — a health-sharing offering with a rate structure. `products`
-  is the catalog entity; `plans` carries the priced/coverage detail
-  (`monthly_share`, `iua_amount`, `max_annual_share`). Rate tables live in
-  `packages/rates`.
+- **Plan / Product** — a health-sharing offering with a rate structure. Admin
+  "products" UI reads/writes the `plans` table; `plans` carries priced/coverage
+  detail (`monthly_share`, `iua_amount`, `max_annual_share`). Authoritative rate
+  cards live in `plan_rate_sets` / `plan_rate_entries` / `plan_fees`, quoted
+  through `@crm-eco/rates`.
+
+- **MSA Rate Card** — a tiered-household rate matrix for Medical Savings Account
+  style sharing: coverage tier × age band × IUA × **Market Segment**. Codes look
+  like `PIFH-MSA-IND-1250` / `PIFH-MSA-GRP-2500`. Seed + DB cards are marked
+  `provisional` until partnership (doctor/nurse) costs and wellness lab panel
+  amounts are finalized.
+
+- **Market Segment** — `individual` or `group`. Selects which MSA rate column
+  applies and which **Age Rating Basis** the engine uses.
+
+- **Age Rating Basis** — how the engine picks the age band for a household:
+  `primary` (Group: employee age) or `older_of_couple` (Individual: max of
+  member and spouse ages for Member+Spouse / Family tiers).
+
+- **Enrollment Contribution** — one-time fee to join PIFH membership (list
+  amount configurable; proposed $800). Not the monthly share. Stored as a
+  `plan_fees` line (`enrollment-contribution`) and org `system_settings`
+  (`enrollment_contribution_*`).
+
+- **Founding Member Waiver** — optional reduction of the Enrollment Contribution
+  for early members (proposed $650 waive against $800 list, cap 250). Always
+  adjustable or fully waivable via settings; split metadata (referring / admin /
+  partner / PIFH) is recorded but not auto-disbursed by the rate engine.
 
 - **IUA (Initial Unshareable Amount)** — the member's per-incident responsibility
-  before sharing begins (a deductible-equivalent). Common tiers: $500–$5,000.
+  before sharing begins (a deductible-equivalent). MSA tiers: $1,250 / $2,500 /
+  $5,000.
 
 - **Enrollment** — the process and record of a member joining a plan. Lives in
   `enrollments` with `enrollment_steps` and `enrollment_audit_log`. Terminal
@@ -92,6 +117,14 @@ locality) comes from the `/codebase-design` skill; the terms below name the
 - **Records model** — the Zoho-style flexible entity store on the CRM side:
   `crm_records` (+ `crm_modules`, `crm_fields`, `crm_views`, `crm_layouts`).
   Contrasts with the strongly-typed admin tables (`members`, `advisors`, etc.).
+
+- **Entity Reupload (Trickle Update)** — update-only CSV refresh of existing
+  `crm_records` (Zoho-style dumps). Match order: `zoho_id` → `email` → `phone` →
+  `name`+`DOB`. Unmatched rows are ignored (never inserted); ambiguous matches
+  fail closed. Dry-run → apply. Lives in `apps/crm/src/lib/imports/run-csv-update.ts`
+  with UI at Import Wizard “Update existing” and `/crm/imports/update`. Distinct
+  from insert import (`/api/crm/import`) and from month-keyed Period Feeds (not yet
+  a product module).
 
 - **Tenant resolver** — the per-request logic that picks the active org from
   header → cookie → subdomain → membership. Currently duplicated in

@@ -23,6 +23,11 @@ import { Button } from '@crm-eco/ui/components/button';
 import { Progress } from '@crm-eco/ui/components/progress';
 import type { CrmModule, CrmField } from '@/lib/crm/types';
 import { resolveModulePalette } from '@/components/crm/records/v2/tokens';
+import {
+  DEFAULT_MATCH_PRIORITY,
+  MAX_CSV_ROWS,
+} from '@/lib/imports/csv-update';
+import type { CsvUpdateResult } from '@/lib/imports/run-csv-update';
 
 interface ImportWizardProps {
   modules: CrmModule[];
@@ -40,7 +45,14 @@ interface SmartInfo {
   aiUsed: boolean;
 }
 
-type WizardStep = 'module' | 'upload' | 'mapping' | 'preview' | 'importing' | 'complete';
+type WizardStep =
+  | 'module'
+  | 'upload'
+  | 'mapping'
+  | 'preview'
+  | 'update-preview'
+  | 'importing'
+  | 'complete';
 
 interface ColumnMapping {
   sourceColumn: string;
@@ -65,6 +77,7 @@ const STEP_LABELS: Record<WizardStep, string> = {
   upload: 'Upload File',
   mapping: 'Map Fields',
   preview: 'Preview',
+  'update-preview': 'Update Preview',
   importing: 'Importing',
   complete: 'Complete',
 };
@@ -97,14 +110,34 @@ export function ImportWizard({ modules, organizationId, preselectedModule, smart
   const [mappingName, setMappingName] = useState('');
   // How to handle rows that match an existing record:
   //   'skip'   — leave existing untouched (default)
-  //   'update' — merge the row's fields into the existing record (upsert)
+  //   'update' — Entity Reupload: dry-run → apply via /api/crm/imports/update
+  //              (matched only; unmatched ignored; never inserts)
   //   'create' — import everything, allowing duplicates
   const [duplicateMode, setDuplicateMode] = useState<'skip' | 'update' | 'create'>('skip');
+  const [updateDryRun, setUpdateDryRun] = useState<CsvUpdateResult | null>(null);
 
   // Calculate step progress
-  const steps: WizardStep[] = ['module', 'upload', 'mapping', 'preview', 'complete'];
-  const currentStepIndex = steps.indexOf(step === 'importing' ? 'preview' : step);
-  const progressPercent = ((currentStepIndex) / (steps.length - 1)) * 100;
+  const steps: WizardStep[] = [
+    'module',
+    'upload',
+    'mapping',
+    'preview',
+    ...(duplicateMode === 'update' ? (['update-preview'] as WizardStep[]) : []),
+    'complete',
+  ];
+  const currentStepIndex = steps.indexOf(
+    step === 'importing'
+      ? duplicateMode === 'update'
+        ? 'update-preview'
+        : 'preview'
+      : step === 'update-preview'
+        ? 'update-preview'
+        : step,
+  );
+  const progressPercent =
+    currentStepIndex >= 0
+      ? (currentStepIndex / (steps.length - 1)) * 100
+      : 0;
 
   // Fetch fields when component mounts with a preselected module
   useEffect(() => {
@@ -395,9 +428,118 @@ export function ImportWizard({ modules, organizationId, preselectedModule, smart
     ));
   }, []);
 
-  // Execute import
+  /** Map wizard column mappings → pre-normalized rows for Entity Reupload. */
+  const buildUpdateRows = useCallback(() => {
+    const activeMappings = mappings.filter((m) => m.targetField);
+    return csvData.map((row, index) => {
+      const raw: Record<string, string> = { ...row };
+      const normalized: Record<string, string> = {};
+      for (const m of activeMappings) {
+        const value = (row[m.sourceColumn] ?? '').trim();
+        if (value.length > 0 && m.targetField) {
+          normalized[m.targetField] = value;
+        }
+      }
+      return { index, raw, normalized };
+    });
+  }, [csvData, mappings]);
+
+  /** Dry-run Entity Reupload — preview matches before any write. */
+  const handleUpdateDryRun = useCallback(async () => {
+    if (!selectedModule) return;
+    if (csvData.length > MAX_CSV_ROWS) {
+      setError(`Too many rows (${csvData.length}). Max ${MAX_CSV_ROWS} per update.`);
+      return;
+    }
+
+    setImporting(true);
+    setError(null);
+    setUpdateDryRun(null);
+
+    try {
+      const rows = buildUpdateRows();
+      const res = await fetch('/api/crm/imports/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          moduleKey: selectedModule.key,
+          rows,
+          matchPriority: DEFAULT_MATCH_PRIORITY,
+          dryRun: true,
+          overwriteEmpty: false,
+          fileName,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Update preview failed' }));
+        throw new Error(
+          typeof err.error === 'string' ? err.error : 'Update preview failed',
+        );
+      }
+      const result = (await res.json()) as CsvUpdateResult;
+      setUpdateDryRun(result);
+      setStep('update-preview');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Update preview failed');
+      setStep('preview');
+    } finally {
+      setImporting(false);
+    }
+  }, [selectedModule, csvData.length, buildUpdateRows, fileName]);
+
+  /** Apply Entity Reupload after dry-run preview. */
+  const handleUpdateApply = useCallback(async () => {
+    if (!selectedModule || !updateDryRun) return;
+
+    setImporting(true);
+    setStep('importing');
+    setError(null);
+    setImportProgress(40);
+
+    try {
+      const rows = buildUpdateRows();
+      const res = await fetch('/api/crm/imports/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          moduleKey: selectedModule.key,
+          rows,
+          matchPriority: DEFAULT_MATCH_PRIORITY,
+          dryRun: false,
+          overwriteEmpty: false,
+          fileName,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Update failed' }));
+        throw new Error(typeof err.error === 'string' ? err.error : 'Update failed');
+      }
+      const result = (await res.json()) as CsvUpdateResult;
+      setImportProgress(100);
+      setImportResult({
+        success: 0,
+        updated: result.updated,
+        skipped: result.unmatched + result.unchanged + result.ambiguous,
+        errors: result.errors.length,
+        total: result.totalRows,
+      });
+      setTimeout(() => setStep('complete'), 400);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Update failed');
+      setStep('update-preview');
+    } finally {
+      setImporting(false);
+    }
+  }, [selectedModule, updateDryRun, buildUpdateRows, fileName]);
+
+  // Execute insert import (skip / create). Update mode uses Entity Reupload.
   const handleImport = useCallback(async () => {
     if (!selectedModule) return;
+
+    if (duplicateMode === 'update') {
+      await handleUpdateDryRun();
+      return;
+    }
 
     setImporting(true);
     setStep('importing');
@@ -405,7 +547,6 @@ export function ImportWizard({ modules, organizationId, preselectedModule, smart
     setImportProgress(0);
 
     try {
-      // Batch size to stay under Vercel's payload limits (~4.5MB)
       const BATCH_SIZE = 500;
       const totalRows = csvData.length;
       const batches = Math.ceil(totalRows / BATCH_SIZE);
@@ -415,19 +556,14 @@ export function ImportWizard({ modules, organizationId, preselectedModule, smart
       let totalSkipped = 0;
       let totalErrors = 0;
       const totalSkippedByReason = { email: 0, phone: 0, name_dob: 0 };
-      let lastJobId: string | null = null;
-      let savedMappingId: string | null = null;
 
-      // Map the UI mode to the API's dedup flags.
       const skipDuplicates = duplicateMode !== 'create';
-      const onDuplicate = duplicateMode === 'update' ? 'update' : 'skip';
 
       for (let i = 0; i < batches; i++) {
         const start = i * BATCH_SIZE;
         const end = Math.min(start + BATCH_SIZE, totalRows);
         const batchData = csvData.slice(start, end);
 
-        // Update progress
         setImportProgress(Math.round((i / batches) * 90));
 
         const res = await fetch('/api/crm/import', {
@@ -439,9 +575,9 @@ export function ImportWizard({ modules, organizationId, preselectedModule, smart
             mappings: mappings.filter(m => m.targetField),
             data: batchData,
             fileName: `${fileName} (batch ${i + 1}/${batches})`,
-            saveMappingAs: i === 0 && saveMapping ? mappingName : undefined, // Only save mapping on first batch
+            saveMappingAs: i === 0 && saveMapping ? mappingName : undefined,
             skipDuplicates,
-            onDuplicate,
+            onDuplicate: 'skip',
           }),
         });
 
@@ -460,8 +596,6 @@ export function ImportWizard({ modules, organizationId, preselectedModule, smart
           totalSkippedByReason.phone += result.skippedByReason.phone || 0;
           totalSkippedByReason.name_dob += result.skippedByReason.name_dob || 0;
         }
-        lastJobId = result.jobId;
-        if (result.savedMappingId) savedMappingId = result.savedMappingId;
       }
 
       setImportProgress(100);
@@ -483,7 +617,17 @@ export function ImportWizard({ modules, organizationId, preselectedModule, smart
     } finally {
       setImporting(false);
     }
-  }, [selectedModule, organizationId, mappings, csvData, fileName, saveMapping, mappingName, duplicateMode]);
+  }, [
+    selectedModule,
+    organizationId,
+    mappings,
+    csvData,
+    fileName,
+    saveMapping,
+    mappingName,
+    duplicateMode,
+    handleUpdateDryRun,
+  ]);
 
   // Reset wizard
   const handleReset = useCallback(() => {
@@ -501,6 +645,8 @@ export function ImportWizard({ modules, organizationId, preselectedModule, smart
     setMappingName('');
     setSmartInfo(null);
     setSmartLoading(false);
+    setUpdateDryRun(null);
+    setDuplicateMode('skip');
   }, [smartMode]);
 
   const mappedFieldsCount = mappings.filter(m => m.targetField).length;
@@ -523,7 +669,8 @@ export function ImportWizard({ modules, organizationId, preselectedModule, smart
             <div key={s} className="flex items-center flex-1">
               <div className={`
                 flex items-center justify-center w-8 h-8 rounded-full text-xs font-semibold transition-all
-                ${step === s || (step === 'importing' && s === 'preview')
+                ${step === s ||
+                (step === 'importing' && (s === 'preview' || s === 'update-preview'))
                   ? 'bg-gradient-to-br from-teal-500 to-emerald-500 text-white glow-sm'
                   : currentStepIndex > idx
                     ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
@@ -830,14 +977,16 @@ export function ImportWizard({ modules, organizationId, preselectedModule, smart
 
             {/* Import Options */}
             <div className="glass rounded-xl border border-slate-200 dark:border-white/5 p-4 space-y-4">
-              {/* Duplicate handling — matched by existing email, phone, or name + DOB */}
+              {/* Duplicate handling — update mode uses Entity Reupload (dry-run → apply) */}
               <div>
                 <span className="text-slate-900 dark:text-white font-medium">When a record already exists</span>
-                <p className="text-slate-500 text-xs mb-2">Matched by existing email, phone, or name + date of birth</p>
+                <p className="text-slate-500 text-xs mb-2">
+                  Update matches by Zoho ID → email → phone → name + date of birth. Unmatched rows are not created.
+                </p>
                 <div className="space-y-2">
                   {([
                     { value: 'skip', label: 'Skip duplicates', hint: 'Leave existing records untouched (default)' },
-                    { value: 'update', label: 'Update existing records', hint: 'Merge this file’s fields into the matching record — only non-empty values are written, nothing is overwritten with blanks' },
+                    { value: 'update', label: 'Update existing records', hint: 'Preview matches first, then apply — only non-empty values; unmatched rows are skipped (never inserted)' },
                     { value: 'create', label: 'Import everything', hint: 'Create all rows, even if they duplicate existing records' },
                   ] as const).map((opt) => (
                     <label key={opt.value} className="flex items-start gap-3 cursor-pointer">
@@ -898,7 +1047,106 @@ export function ImportWizard({ modules, organizationId, preselectedModule, smart
                 className="bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-400 hover:to-green-400 text-white glow-sm hover:glow-md"
               >
                 {importing && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                Import {csvData.length.toLocaleString()} Records
+                {duplicateMode === 'update'
+                  ? `Preview updates (${csvData.length.toLocaleString()} rows)`
+                  : `Import ${csvData.length.toLocaleString()} Records`}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 4a: Entity Reupload dry-run preview */}
+        {step === 'update-preview' && updateDryRun && (
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-1">
+                Update preview
+              </h3>
+              <p className="text-slate-600 dark:text-slate-400 text-sm">
+                Nothing has been written yet. Review matches, then apply.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {[
+                { label: 'Matched', value: updateDryRun.matched, tone: 'text-teal-600' },
+                { label: 'Would update', value: updateDryRun.matched - updateDryRun.unchanged, tone: 'text-emerald-600' },
+                { label: 'Unmatched', value: updateDryRun.unmatched, tone: 'text-amber-600' },
+                { label: 'Ambiguous', value: updateDryRun.ambiguous, tone: 'text-red-600' },
+              ].map((stat) => (
+                <div
+                  key={stat.label}
+                  className="rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-900/40 px-4 py-3"
+                >
+                  <p className={`text-2xl font-bold ${stat.tone}`}>{stat.value.toLocaleString()}</p>
+                  <p className="text-xs text-slate-500 mt-1">{stat.label}</p>
+                </div>
+              ))}
+            </div>
+
+            <p className="text-xs text-slate-500">
+              Match breakdown: Zoho ID {updateDryRun.matchSummary.byZohoId} · email{' '}
+              {updateDryRun.matchSummary.byEmail} · phone {updateDryRun.matchSummary.byPhone} ·
+              name+DOB {updateDryRun.matchSummary.byNameDob}
+              {updateDryRun.unchanged > 0
+                ? ` · ${updateDryRun.unchanged} already up to date`
+                : ''}
+            </p>
+
+            {updateDryRun.previewMatches.length > 0 && (
+              <div className="rounded-xl border border-slate-200 dark:border-white/10 overflow-hidden">
+                <div className="px-4 py-2 bg-slate-100 dark:bg-slate-900/50 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  Sample changes
+                </div>
+                <ul className="divide-y divide-slate-200 dark:divide-white/5 text-sm">
+                  {updateDryRun.previewMatches.map((m) => (
+                    <li key={`${m.recordId}-${m.rowIndex}`} className="px-4 py-3">
+                      <p className="text-slate-900 dark:text-white font-medium">
+                        {m.recordTitle || m.recordId}{' '}
+                        <span className="text-slate-400 font-normal">
+                          via {m.matchedBy}
+                        </span>
+                      </p>
+                      <p className="text-slate-500 text-xs mt-1 truncate">
+                        {Object.entries(m.fieldDelta)
+                          .map(([k, v]) => `${k}: ${String(v.from ?? '—')} → ${String(v.to ?? '—')}`)
+                          .join(' · ') || 'No field preview'}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {updateDryRun.ambiguous > 0 && (
+              <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-300">
+                {updateDryRun.ambiguous.toLocaleString()} row
+                {updateDryRun.ambiguous === 1 ? '' : 's'} matched more than one record and will
+                not be updated. Resolve duplicates in CRM first.
+              </div>
+            )}
+
+            <div className="flex justify-between pt-2">
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setUpdateDryRun(null);
+                  setStep('preview');
+                }}
+                className="text-slate-600 dark:text-slate-400"
+              >
+                Back
+              </Button>
+              <Button
+                onClick={handleUpdateApply}
+                disabled={
+                  importing ||
+                  updateDryRun.matched - updateDryRun.unchanged <= 0
+                }
+                className="bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-400 hover:to-green-400 text-white"
+              >
+                {importing && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Apply {(updateDryRun.matched - updateDryRun.unchanged).toLocaleString()} updates
               </Button>
             </div>
           </div>
@@ -928,11 +1176,17 @@ export function ImportWizard({ modules, organizationId, preselectedModule, smart
             <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-emerald-500/20 to-green-500/20 mb-6 glow-accent">
               <CheckCircle2 className="w-10 h-10 text-emerald-600 dark:text-emerald-400" />
             </div>
-            <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Import Complete!</h3>
+            <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
+              {importResult.success === 0 && importResult.updated > 0
+                ? 'Update Complete!'
+                : 'Import Complete!'}
+            </h3>
             <p className="text-slate-600 dark:text-slate-400 mb-8">
-              {importResult.updated > 0
-                ? `${importResult.success.toLocaleString()} imported · ${importResult.updated.toLocaleString()} updated · ${importResult.total.toLocaleString()} rows`
-                : `Successfully imported ${importResult.success.toLocaleString()} of ${importResult.total.toLocaleString()} records`}
+              {importResult.success === 0 && importResult.updated > 0
+                ? `Updated ${importResult.updated.toLocaleString()} of ${importResult.total.toLocaleString()} rows · ${importResult.skipped.toLocaleString()} unmatched / unchanged / ambiguous`
+                : importResult.updated > 0
+                  ? `${importResult.success.toLocaleString()} imported · ${importResult.updated.toLocaleString()} updated · ${importResult.total.toLocaleString()} rows`
+                  : `Successfully imported ${importResult.success.toLocaleString()} of ${importResult.total.toLocaleString()} records`}
             </p>
 
             <div className="flex justify-center gap-6 mb-8">

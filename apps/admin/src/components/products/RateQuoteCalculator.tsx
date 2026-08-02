@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@crm-eco/ui';
-import { quote, getPlanOptions } from '@crm-eco/rates';
+import { quote, getPlanOptions, DEFAULT_ENROLLMENT_CONTRIBUTION_POLICY } from '@crm-eco/rates';
 import type {
   RateConfig,
   RateSetKey,
@@ -75,7 +75,10 @@ export function RateQuoteCalculator({ defaultPlanId, rateSetOverride }: RateQuot
       coverageStart,
     };
 
-    const opts = rateSetOverride ? { rateSetOverride } : undefined;
+    const opts = {
+      ...(rateSetOverride ? { rateSetOverride } : {}),
+      enrollmentContribution: DEFAULT_ENROLLMENT_CONTRIBUTION_POLICY,
+    };
     const res = quote(config, input, opts);
     setResult(res);
     setLoading(false);

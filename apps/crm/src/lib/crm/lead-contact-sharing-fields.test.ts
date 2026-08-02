@@ -50,6 +50,13 @@ describe('bridgeLegacyCarrierToSharingEntity', () => {
     expect(base.sharing_entity).toBeUndefined();
   });
 
+  it('routes spaced United Healthcare to health_insurance_carrier, not sharing_entity', () => {
+    const base: Record<string, unknown> = { carrier: 'United Healthcare' };
+    bridgeLegacyCarrierToSharingEntity(base, 'contacts');
+    expect(base.health_insurance_carrier).toBe('United Healthcare');
+    expect(base.sharing_entity).toBeUndefined();
+  });
+
   it('routes an insurance carrier to insurance even when sharing_entity is already set', () => {
     const base: Record<string, unknown> = { carrier: 'Aetna', sharing_entity: 'Sedera' };
     bridgeLegacyCarrierToSharingEntity(base, 'contacts');

@@ -206,45 +206,7 @@ export class EnrollmentService {
     });
   }
 
-  /**
-   * Activate a future-dated enrollment when its effective_date arrives.
-   */
-  async activateFutureEnrollment(enrollmentId: string, organizationId: string, actorProfileId?: string): Promise<void> {
-    const { data: enrollment, error: fetchErr } = await this.supabase
-      .from('enrollments')
-      .select('status, effective_date')
-      .eq('id', enrollmentId)
-      .eq('organization_id', organizationId)
-      .single();
-
-    if (fetchErr || !enrollment) {
-      throw new Error(`Enrollment ${enrollmentId} not found`);
-    }
-
-    if (enrollment.status !== 'submitted') {
-      throw new Error(`Cannot activate enrollment in status '${enrollment.status}' — must be 'submitted'`);
-    }
-
-    const { error: updateErr } = await this.supabase
-      .from('enrollments')
-      .update({
-        status: 'approved',
-        last_modified_by: actorProfileId || null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', enrollmentId);
-
-    if (updateErr) throw new Error(`activateFutureEnrollment failed: ${updateErr.message}`);
-
-    await logEnrollmentAudit({
-      supabase: this.supabase,
-      organizationId,
-      enrollmentId,
-      actorProfileId,
-      eventType: 'activated',
-      oldStatus: enrollment.status,
-      newStatus: 'approved',
-      message: 'Future-dated enrollment activated',
-    });
-  }
+  // activateFutureEnrollment removed — coverage goes live via
+  // finalize_member_enrollment_tx (membership pending) + activate-due-memberships
+  // cron. Enrollments stay `approved` (commission invariant).
 }

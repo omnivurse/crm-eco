@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { requireAdminRole } from '@/lib/auth';
-import { quote, buildRateConfigFromDb } from '@crm-eco/rates';
+import {
+  quote,
+  buildRateConfigFromDb,
+  enrollmentContributionFromSettings,
+  fetchEnrollmentContributionSettings,
+} from '@crm-eco/rates';
 import type { QuoteInput, QuoteOptions } from '@crm-eco/rates/types';
 
 export const dynamic = 'force-dynamic';
@@ -57,7 +62,7 @@ export async function POST(request: NextRequest) {
       .from('plan_rate_sets')
       .select(`
         *,
-        plan:plans!inner(id, name, code, organization_id),
+        plan:plans!inner(id, name, code, organization_id, iua_amount, metadata),
         entries:plan_rate_entries(*),
         fees:plan_fees(*)
       `)
@@ -69,6 +74,17 @@ export async function POST(request: NextRequest) {
         { error: 'Failed to load rate configuration' },
         { status: 500 }
       );
+    }
+
+    if (!effectiveOptions.enrollmentContribution) {
+      const map = await fetchEnrollmentContributionSettings(
+        supabase,
+        profile.organization_id
+      );
+      effectiveOptions = {
+        ...effectiveOptions,
+        enrollmentContribution: enrollmentContributionFromSettings(map),
+      };
     }
 
     const config = buildRateConfigFromDb(rateSets ?? []);

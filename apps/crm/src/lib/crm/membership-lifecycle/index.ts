@@ -2,11 +2,14 @@
  * MembershipLifecycle — facade for CRM-record coverage status transitions.
  *
  * Deep logic stays in resolve-effective-end-date / scheduled-end-date-cancel /
- * age-65-auto-cancel / resolve-effective-start-date. Callers (cron, patch, view)
- * should import from this module so transition rules have one entry seam.
+ * age-65-auto-cancel / resolve-effective-start-date / pending-activation.
+ * Callers (cron, patch, view) should import from this module so transition
+ * rules have one entry seam.
  *
  * IMPORTANT: Billing table `memberships` (activate-due-memberships cron) is a
- * separate lifecycle. Do not merge those paths here without an explicit design.
+ * separate lifecycle. Prefer `@/lib/crm/member-activation` when coordinating
+ * both CRM and billing adapters. Do not merge table paths without an explicit
+ * design.
  */
 
 export {
@@ -34,3 +37,14 @@ export {
   resolveActiveStatusForMarket,
   type CrmRecordStartDateInput,
 } from '../resolve-effective-start-date';
+
+export {
+  isPendingContactStatus,
+  isEligibleForActivation,
+  isActivationDue,
+  buildActivationUpdates,
+  applyPendingActivationForRecord,
+  type ActivationDueCheck,
+  type PendingActivationResult,
+  type RecordForPendingActivation,
+} from '../pending-activation';

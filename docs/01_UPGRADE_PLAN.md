@@ -369,7 +369,7 @@ This is the equivalent of saudemax's unifiedEnrollmentService. It must handle:
 1. createEnrollment(input) — for new enrollments
 2. changePlan(input) — for plan changes (inactivate old + create new + optional pro-rata difference)
 3. cancelEnrollment(enrollmentId, reason)
-4. activateFutureEnrollment(enrollmentId) — when future-dated start_date arrives
+4. Coverage activation — finalize leaves membership `pending`; `activate-due-memberships` cron flips live on effective_date (do not use a separate enrollments activate API)
 
 Reference (not to be imported, separate database):
 /Users/qloudagent/Desktop/Desktop/APPLICATIONS/saudemax-admin-system/src/lib/unifiedEnrollmentService.ts
@@ -382,7 +382,7 @@ export class EnrollmentService {
   async createEnrollment(input: CreateEnrollmentInput): Promise<EnrollmentResult>
   async changePlan(input: ChangePlanInput): Promise<EnrollmentResult>
   async cancelEnrollment(enrollmentId: string, reasonCode: string, notes?: string): Promise<EnrollmentResult>
-  async activateFutureEnrollment(enrollmentId: string): Promise<EnrollmentResult>
+  // (removed) activateFutureEnrollment — use finalize + activate-due-memberships cron
 
   // Helpers
   private async computeFirstBillingDate(startDate: Date): Promise<Date>  // 20th of month before start

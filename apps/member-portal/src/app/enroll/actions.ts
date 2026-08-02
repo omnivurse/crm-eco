@@ -2,7 +2,15 @@
 
 import { createServerSupabaseClient, createServiceRoleClient } from '@crm-eco/lib/supabase/server';
 import { requireActiveMembership } from '@/lib/auth/require-active-membership';
-import { getMemberForUser, getRxPricingEstimate, validateMedications } from '@crm-eco/lib';
+import {
+  getMemberForUser,
+  getRxPricingEstimate,
+  validateMedications,
+  isEnrollmentCompletionEnabled,
+  finalizeEnrollment,
+  resolvePendingMemberEffectiveDate,
+  type PaymentMethodInput,
+} from '@crm-eco/lib';
 import type { MedicationInput, RxPricingResult } from '@crm-eco/lib';
 import {
   evaluateEligibility,
@@ -10,7 +18,12 @@ import {
   type EligibilityResult,
   type EligibilityRuleRow,
 } from '@crm-eco/lib';
-import { quote, buildRateConfigFromDb } from '@crm-eco/rates';
+import {
+  quote,
+  buildRateConfigFromDb,
+  enrollmentContributionFromSettings,
+  fetchEnrollmentContributionSettings,
+} from '@crm-eco/rates';
 import type { QuoteInput, QuoteResult } from '@crm-eco/rates';
 import { revalidatePath } from 'next/cache';
 
@@ -494,7 +507,7 @@ export async function getSelfServeQuote(
       .from('plan_rate_sets')
       .select(`
         *,
-        plan:plans!inner(id, name, code, organization_id),
+        plan:plans!inner(id, name, code, organization_id, iua_amount, metadata),
         entries:plan_rate_entries(*),
         fees:plan_fees(*)
       `)
@@ -521,7 +534,12 @@ export async function getSelfServeQuote(
     // Force the plan code from the trusted server-side join so the client
     // cannot point the quote at a different plan.
     const config = buildRateConfigFromDb(rateSets);
-    const quoteResult = quote(config, { ...input, planId: planCode });
+    const contribMap = await fetchEnrollmentContributionSettings(supabase, organizationId);
+    const quoteResult = quote(
+      config,
+      { ...input, planId: planCode },
+      { enrollmentContribution: enrollmentContributionFromSettings(contribMap) }
+    );
 
     // MONEY-SAFE persistence: flag-gated (default OFF) and only on draft /
     // in-progress enrollments where the billing-sync trigger is a no-op.
@@ -1109,14 +1127,16 @@ export async function submitSelfServeEnrollment(
       return { success: false, error: 'Failed to submit enrollment' };
     }
 
-    // For self-serve, create membership with 'pending' status (requires approval)
+    // For self-serve, provision membership. When ENROLLMENT_COMPLETION_ENABLED
+    // is on, prefer finalizeEnrollment (full gold-standard) if a tokenized
+    // payment method is present; otherwise call finalize_member_enrollment_tx
+    // for membership + schedule without charging. Flag off = legacy insert.
     let membershipId: string | undefined;
+    const coverageStart = resolvePendingMemberEffectiveDate(
+      enrollment.requested_effective_date,
+    );
 
     if (enrollment.primary_member_id && enrollment.selected_plan_id) {
-      // IDEMPOTENCY (money-adjacent): a membership may already exist for this
-      // enrollment from a prior submit/retry/double-click. Reuse it instead of
-      // inserting a sibling membership for the same enrollment. memberships.enrollment_id
-      // is the natural key for "the membership this enrollment produced".
       const { data: existingMembership } = await (supabase as any)
         .from('memberships')
         .select('id')
@@ -1125,6 +1145,62 @@ export async function submitSelfServeEnrollment(
 
       if (existingMembership?.id) {
         membershipId = existingMembership.id;
+      } else if (isEnrollmentCompletionEnabled()) {
+        const service = createServiceRoleClient();
+        const snapshot = (enrollment.snapshot || {}) as Record<string, unknown>;
+        const paymentSnap = (snapshot.payment || {}) as Record<string, unknown>;
+        const opaque = paymentSnap.opaque as
+          | { descriptor?: string; value?: string }
+          | undefined;
+        const amountCents = Math.round(Number(enrollment.base_monthly_cost ?? 0) * 100);
+
+        if (opaque?.descriptor && opaque?.value && amountCents > 0) {
+          const paymentMethod: PaymentMethodInput = {
+            type: 'opaque',
+            descriptor: opaque.descriptor,
+            value: opaque.value,
+          };
+          const [{ data: orgRow }, { data: memberRow }] = await Promise.all([
+            service
+              .from('organizations')
+              .select('name')
+              .eq('id', enrollment.organization_id)
+              .maybeSingle(),
+            service
+              .from('members')
+              .select('first_name, last_name, email, phone')
+              .eq('id', enrollment.primary_member_id)
+              .maybeSingle(),
+          ]);
+          const result = await finalizeEnrollment(service, {
+            organizationId: enrollment.organization_id,
+            enrollmentId,
+            memberId: enrollment.primary_member_id,
+            email: memberRow?.email ?? '',
+            firstName: memberRow?.first_name ?? '',
+            lastName: memberRow?.last_name ?? '',
+            phone: memberRow?.phone ?? '',
+            amountCents,
+            paymentMethod,
+            organizationName: orgRow?.name ?? 'Pay It Forward Health',
+            effectiveDate: coverageStart,
+            portalRedirectTo: `${process.env.NEXT_PUBLIC_PORTAL_URL ?? 'https://members.payitforwardhealth.com'}/update-password`,
+          });
+          if (result.success && result.membershipId) {
+            membershipId = result.membershipId;
+          }
+        } else {
+          // No tokenized payment yet — still use the finalize RPC adapter so
+          // membership + members.effective_date stay consistent (no charge).
+          const { data: fin } = await service.rpc('finalize_member_enrollment_tx', {
+            p_org_id: enrollment.organization_id,
+            p_enrollment_id: enrollmentId,
+            p_payment_profile_id: null,
+            p_effective_date: coverageStart,
+            p_charged_first_month: false,
+          });
+          membershipId = (fin as { membership_id?: string } | null)?.membership_id;
+        }
       } else {
         const { data: membership, error: membershipError } = await (supabase as any)
           .from('memberships')
@@ -1134,8 +1210,8 @@ export async function submitSelfServeEnrollment(
             organization_id: enrollment.organization_id,
             enrollment_id: enrollmentId,
             advisor_id: enrollment.advisor_id || null,
-            status: 'pending', // Self-serve requires approval
-            effective_date: enrollment.requested_effective_date,
+            status: 'pending',
+            effective_date: coverageStart,
           })
           .select()
           .single();
@@ -1143,6 +1219,12 @@ export async function submitSelfServeEnrollment(
         if (!membershipError && membership) {
           membershipId = membership.id;
         }
+        // Best-effort: keep members.effective_date aligned for activation cron.
+        await (supabase as any)
+          .from('members')
+          .update({ effective_date: coverageStart })
+          .eq('id', enrollment.primary_member_id)
+          .eq('status', 'pending');
       }
     }
 

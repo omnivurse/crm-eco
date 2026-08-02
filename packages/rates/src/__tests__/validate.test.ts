@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { validateRateConfig } from '../validate';
-import type { RateConfig } from '../types';
+import type { AdditivePersonRates, CoverageTier, RateConfig, RatingModel, TieredHouseholdRates } from '../types';
 import seedConfig from '../rate_tables.config.v2.json';
 
 const validConfig = seedConfig as unknown as RateConfig;
@@ -45,7 +45,7 @@ describe('validateRateConfig', () => {
 
   it('detects invalid rating model', () => {
     const bad = structuredClone(validConfig);
-    (bad.rate_sets.current.plans[0] as any).rating_model = 'invalid_model';
+    bad.rate_sets.current.plans[0].rating_model = 'invalid_model' as RatingModel;
     const result = validateRateConfig(bad);
     expect(result.ok).toBe(false);
     expect(result.errors.some((e) => e.code === 'INVALID_RATING_MODEL')).toBe(true);
@@ -74,7 +74,7 @@ describe('validateRateConfig', () => {
 
   it('detects missing standard coverage tier', () => {
     const bad = structuredClone(validConfig);
-    bad.rate_sets.current.plans[0].coverage_tiers = ['member', 'member_spouse'] as any;
+    bad.rate_sets.current.plans[0].coverage_tiers = ['member', 'member_spouse'] as CoverageTier[];
     const result = validateRateConfig(bad);
     expect(result.ok).toBe(false);
     expect(result.errors.some((e) => e.code === 'MISSING_STANDARD_TIER')).toBe(true);
@@ -83,7 +83,7 @@ describe('validateRateConfig', () => {
   it('detects unknown band reference in tiered rates', () => {
     const bad = structuredClone(validConfig);
     const tieredPlan = bad.rate_sets.current.plans[0];
-    (tieredPlan.rates as any).member['unknown-band'] = 999;
+    (tieredPlan.rates as TieredHouseholdRates).member['unknown-band'] = 999;
     const result = validateRateConfig(bad);
     expect(result.ok).toBe(false);
     expect(result.errors.some((e) => e.code === 'UNKNOWN_BAND_REF')).toBe(true);
@@ -92,7 +92,7 @@ describe('validateRateConfig', () => {
   it('detects negative rate in tiered rates', () => {
     const bad = structuredClone(validConfig);
     const tieredPlan = bad.rate_sets.current.plans[0];
-    (tieredPlan.rates as any).member['18-29'] = -100;
+    (tieredPlan.rates as TieredHouseholdRates).member['18-34'] = -100;
     const result = validateRateConfig(bad);
     expect(result.ok).toBe(false);
     expect(result.errors.some((e) => e.code === 'NEGATIVE_RATE')).toBe(true);
@@ -100,8 +100,14 @@ describe('validateRateConfig', () => {
 
   it('detects missing subscriber rates for additive model', () => {
     const bad = structuredClone(validConfig);
-    const additivePlan = bad.rate_sets.current.plans[1];
-    delete (additivePlan.rates as any).subscriber;
+    bad.rate_sets.current.plans.push({
+      planId: 'demo-additive-bad',
+      displayName: 'Bad Additive',
+      rating_model: 'additive_person',
+      age_bands: bad.rate_sets.current.plans[0].age_bands,
+      coverage_tiers: ['member', 'member_spouse', 'member_children', 'family'],
+      rates: {} as AdditivePersonRates,
+    });
     const result = validateRateConfig(bad);
     expect(result.ok).toBe(false);
     expect(result.errors.some((e) => e.code === 'MISSING_SUBSCRIBER_RATES')).toBe(true);

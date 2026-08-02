@@ -1,34 +1,22 @@
 'use client';
 
-import { CircleNotch, CurrencyDollar, Info, PencilSimple, Plus, Trash, Warning } from '@phosphor-icons/react';
+import { CircleNotch, CurrencyDollar, Info, Warning } from '@phosphor-icons/react';
 import { useState, useCallback, useEffect } from 'react';
-import { createBrowserClient } from '@supabase/ssr';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-  Button,
-  Input,
-  Label,
   Badge,
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
 } from '@crm-eco/ui';
 import { buildMatrixPreview } from '@crm-eco/rates';
 import type {
   RateConfig,
   RateSetKey,
-  RatingModel,
-  AgeBand,
-  FeeLine,
   MatrixPreview,
   CoverageTier,
+  FeeLine,
 } from '@crm-eco/rates/types';
 import seedConfig from '@crm-eco/rates/config';
 
@@ -45,41 +33,65 @@ const TIER_LABELS: Record<CoverageTier, string> = {
   family: 'Family',
 };
 
-const config = seedConfig as unknown as RateConfig;
+const seed = seedConfig as unknown as RateConfig;
 
-export function E123PricingMatrix({ productId, productCode, organizationId }: E123PricingMatrixProps) {
+export function E123PricingMatrix({ productId, productCode }: E123PricingMatrixProps) {
   const [activeRateSet, setActiveRateSet] = useState<RateSetKey>('current');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<MatrixPreview | null>(null);
-  const [showAgeBandDialog, setShowAgeBandDialog] = useState(false);
-  const [showFeeDialog, setShowFeeDialog] = useState(false);
+  const [config, setConfig] = useState<RateConfig>(seed);
+  const [configSource, setConfigSource] = useState<'database' | 'seed'>('seed');
 
   const planId = productCode || productId;
 
-  const loadPreview = useCallback(() => {
+  const loadConfig = useCallback(async () => {
     setLoading(true);
     try {
-      const p = buildMatrixPreview(config, planId, activeRateSet);
-      setPreview(p);
-      if (!p) {
-        setError(`Plan "${planId}" not found in ${activeRateSet} rate set. Configure rates in the seed config.`);
-      } else {
-        setError(null);
+      const res = await fetch(`/api/rates/config?planId=${encodeURIComponent(productId)}`);
+      if (res.ok) {
+        const dbConfig = (await res.json()) as RateConfig;
+        const hasPlans =
+          (dbConfig.rate_sets?.current?.plans?.length ?? 0) > 0 ||
+          (dbConfig.rate_sets?.rates_2026?.plans?.length ?? 0) > 0;
+        if (hasPlans) {
+          setConfig(dbConfig);
+          setConfigSource('database');
+          setError(null);
+          return;
+        }
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load preview');
+      setConfig(seed);
+      setConfigSource('seed');
+      setError(null);
+    } catch {
+      setConfig(seed);
+      setConfigSource('seed');
+      setError('Could not load DB rate config — showing seed MSA tables.');
     } finally {
       setLoading(false);
     }
-  }, [planId, activeRateSet]);
+  }, [productId]);
 
   useEffect(() => {
-    loadPreview();
-  }, [loadPreview]);
+    void loadConfig();
+  }, [loadConfig]);
+
+  useEffect(() => {
+    const p = buildMatrixPreview(config, planId, activeRateSet);
+    setPreview(p);
+    if (!p && !loading) {
+      setError(
+        `Plan "${planId}" not found in ${activeRateSet} rate set (${configSource}). Configure rates or apply the MSA migration.`
+      );
+    }
+  }, [config, planId, activeRateSet, configSource, loading]);
 
   const formatCurrency = (amount: number) =>
     new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+
+  const fees: FeeLine[] =
+    config.rate_sets[activeRateSet]?.plans.find((p) => p.planId === planId)?.fees ?? [];
 
   if (loading) {
     return (
@@ -103,8 +115,7 @@ export function E123PricingMatrix({ productId, productCode, organizationId }: E1
         </div>
       )}
 
-      {/* Rate Set Toggle */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 flex-wrap">
         <div className="flex rounded-lg border overflow-hidden">
           {(['current', 'rates_2026'] as RateSetKey[]).map((key) => (
             <button
@@ -120,25 +131,32 @@ export function E123PricingMatrix({ productId, productCode, organizationId }: E1
             </button>
           ))}
         </div>
+        <Badge variant="outline" className="text-xs">
+          Source: {configSource === 'database' ? 'Database' : 'Seed (provisional)'}
+        </Badge>
         {preview && (
           <div className="flex items-center gap-2 text-sm text-slate-500">
             <Badge variant="outline" className="text-xs">
               {preview.ratingModel === 'tiered_household' ? 'Tiered Household' : 'Additive Person'}
             </Badge>
+            {preview.provisional && (
+              <Badge className="text-xs bg-amber-100 text-amber-900 hover:bg-amber-100">
+                Provisional
+              </Badge>
+            )}
             <span>Effective: {preview.effectiveDate}</span>
           </div>
         )}
       </div>
 
-      {/* 2026 Notice */}
-      {activeRateSet === 'rates_2026' && (
-        <div className="p-3 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 text-sm flex items-center gap-2">
+      {preview?.provisional && (
+        <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 text-sm flex items-center gap-2">
           <Info weight="light" className="w-4 h-4 flex-shrink-0" />
-          Rates effective January 1, 2026
+          Provisional MSA rates — partnership (doctor/nurse) costs and wellness lab panel are not
+          included. Enrollment contribution is configurable.
         </div>
       )}
 
-      {/* Matrix */}
       {preview && (
         <Card>
           <CardHeader>
@@ -148,7 +166,11 @@ export function E123PricingMatrix({ productId, productCode, organizationId }: E1
             </CardTitle>
             <CardDescription>
               Monthly rates by coverage tier and age band
-              {preview.ratingModel === 'additive_person' && ' (derived preview)'}
+              {preview.ageRatingBasis === 'older_of_couple'
+                ? ' · Individual: older spouse for couple/family'
+                : preview.marketSegment === 'group'
+                  ? ' · Group: employee age'
+                  : ''}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -160,7 +182,10 @@ export function E123PricingMatrix({ productId, productCode, organizationId }: E1
                       Coverage Tier
                     </th>
                     {preview.ageBands.map((band) => (
-                      <th key={band.id} className="border p-3 bg-slate-100 text-center font-semibold text-slate-700 min-w-[100px]">
+                      <th
+                        key={band.id}
+                        className="border p-3 bg-slate-100 text-center font-semibold text-slate-700 min-w-[100px]"
+                      >
                         {band.label}
                       </th>
                     ))}
@@ -192,10 +217,9 @@ export function E123PricingMatrix({ productId, productCode, organizationId }: E1
               </table>
             </div>
 
-            {/* Footnotes */}
             {preview.footnotes && preview.footnotes.length > 0 && (
               <div className="mt-4 p-3 rounded-lg bg-amber-50 border border-amber-100 text-amber-800">
-                <p className="text-xs font-semibold uppercase tracking-wider mb-1">Preview Notes</p>
+                <p className="text-xs font-semibold uppercase tracking-wider mb-1">Notes</p>
                 <ul className="text-xs space-y-0.5">
                   {preview.footnotes.map((fn, i) => (
                     <li key={i}>* {fn}</li>
@@ -207,21 +231,20 @@ export function E123PricingMatrix({ productId, productCode, organizationId }: E1
         </Card>
       )}
 
-      {/* Age Bands */}
       {preview && (
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div>
-              <CardTitle>Age Bands</CardTitle>
-              <CardDescription>Age ranges used for rate lookup</CardDescription>
-            </div>
+          <CardHeader>
+            <CardTitle>Age Bands</CardTitle>
+            <CardDescription>Age ranges used for rate lookup</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
               {preview.ageBands.map((band) => (
                 <div key={band.id} className="p-3 rounded-lg border bg-slate-50 text-center">
                   <p className="font-bold text-lg">{band.label}</p>
-                  <p className="text-xs text-slate-500">Ages {band.min}–{band.max}</p>
+                  <p className="text-xs text-slate-500">
+                    Ages {band.min}–{band.max}
+                  </p>
                 </div>
               ))}
             </div>
@@ -229,46 +252,42 @@ export function E123PricingMatrix({ productId, productCode, organizationId }: E1
         </Card>
       )}
 
-      {/* Fees */}
       {preview && (
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div>
-              <CardTitle>Fees</CardTitle>
-              <CardDescription>Administrative and enrollment fees</CardDescription>
-            </div>
+          <CardHeader>
+            <CardTitle>Fees</CardTitle>
+            <CardDescription>Enrollment contribution and stubbed future costs</CardDescription>
           </CardHeader>
           <CardContent>
-            {(() => {
-              const plan = config.rate_sets[activeRateSet].plans.find((p) => p.planId === planId);
-              const fees = plan?.fees ?? [];
-              if (fees.length === 0) {
-                return <p className="text-center text-slate-500 py-4">No fees configured</p>;
-              }
-              return (
-                <div className="space-y-2">
-                  {fees.map((fee) => (
-                    <div
-                      key={fee.id}
-                      className="flex items-center justify-between p-3 rounded-lg border bg-slate-50"
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="font-medium">{fee.label}</span>
-                        <Badge variant={fee.enabled ? 'default' : 'secondary'} className="text-xs">
-                          {fee.enabled ? 'Active' : 'Disabled'}
-                        </Badge>
-                        <Badge variant="outline" className="text-xs">
-                          {fee.type === 'flat_monthly' ? 'Monthly' : fee.type === 'flat_one_time' ? 'One-Time' : 'Percent'}
-                        </Badge>
-                      </div>
-                      <span className="font-bold text-lg">
-                        {fee.type === 'percent' ? `${fee.amount}%` : formatCurrency(fee.amount)}
-                      </span>
+            {fees.length === 0 ? (
+              <p className="text-center text-slate-500 py-4">No fees configured</p>
+            ) : (
+              <div className="space-y-2">
+                {fees.map((fee) => (
+                  <div
+                    key={fee.id}
+                    className="flex items-center justify-between p-3 rounded-lg border bg-slate-50"
+                  >
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <span className="font-medium">{fee.label}</span>
+                      <Badge variant={fee.enabled ? 'default' : 'secondary'} className="text-xs">
+                        {fee.enabled ? 'Active' : 'Disabled'}
+                      </Badge>
+                      <Badge variant="outline" className="text-xs">
+                        {fee.type === 'flat_monthly'
+                          ? 'Monthly'
+                          : fee.type === 'flat_one_time'
+                            ? 'One-Time'
+                            : 'Percent'}
+                      </Badge>
                     </div>
-                  ))}
-                </div>
-              );
-            })()}
+                    <span className="font-bold text-lg">
+                      {fee.type === 'percent' ? `${fee.amount}%` : formatCurrency(fee.amount)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       )}

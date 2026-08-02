@@ -29,7 +29,14 @@ import {
   type UpdateRow,
   MAX_CSV_ROWS,
   MAX_CSV_BYTES,
+  DEFAULT_MATCH_PRIORITY,
 } from '@/lib/imports/csv-update';
+import type {
+  AmbiguousPreview,
+  CsvUpdateResult,
+  MatchPreview,
+  UnmatchedPreview,
+} from '@/lib/imports/run-csv-update';
 
 interface ModuleOption {
   key: string;
@@ -37,33 +44,7 @@ interface ModuleOption {
   name_plural: string | null;
 }
 
-interface MatchPreview {
-  rowIndex: number;
-  matchedBy: 'zoho_id' | 'email' | 'phone';
-  matchValue: string;
-  recordId: string;
-  recordTitle: string | null;
-  fieldDelta: Record<string, { from: unknown; to: unknown }>;
-}
-
-interface UnmatchedPreview {
-  rowIndex: number;
-  keys: { zoho_id?: string; email?: string; phone?: string };
-}
-
-interface UpdateResponse {
-  dryRun: boolean;
-  totalRows: number;
-  matched: number;
-  updated: number;
-  unmatched: number;
-  unchanged: number;
-  errors: Array<{ rowIndex: number; error: string }>;
-  matchSummary: { byZohoId: number; byEmail: number; byPhone: number };
-  previewMatches: MatchPreview[];
-  previewUnmatched: UnmatchedPreview[];
-  jobId?: string;
-}
+type UpdateResponse = CsvUpdateResult;
 
 interface Props {
   modules: ModuleOption[];
@@ -88,16 +69,20 @@ export function UpdateImportClient({ modules, defaultModuleKey }: Props) {
     let withZoho = 0;
     let withEmail = 0;
     let withPhone = 0;
+    let withNameDob = 0;
     for (const r of parsedRows) {
       if (r.keys.zoho_id) withZoho++;
       else if (r.keys.email) withEmail++;
       else if (r.keys.phone) withPhone++;
+      else if (r.keys.name_dob) withNameDob++;
     }
     return {
       withZoho,
       withEmail,
       withPhone,
-      withoutKey: parsedRows.length - withZoho - withEmail - withPhone,
+      withNameDob,
+      withoutKey:
+        parsedRows.length - withZoho - withEmail - withPhone - withNameDob,
     };
   }, [parsedRows]);
 
@@ -182,7 +167,7 @@ export function UpdateImportClient({ modules, defaultModuleKey }: Props) {
             raw: r.raw,
             normalized: r.normalized,
           })),
-          matchPriority: ['zoho_id', 'email', 'phone'],
+          matchPriority: DEFAULT_MATCH_PRIORITY,
           dryRun,
           overwriteEmpty,
           fileName: file?.name,
@@ -239,7 +224,8 @@ export function UpdateImportClient({ modules, defaultModuleKey }: Props) {
             </h1>
             <p className="text-slate-500 dark:text-slate-400">
               Drop a Zoho export and we&apos;ll update only the records that match — by
-              Zoho&nbsp;ID, email, or phone. Other records aren&apos;t touched.
+              Zoho&nbsp;ID, email, phone, or name&nbsp;+&nbsp;DOB. Unmatched rows aren&apos;t
+              created; ambiguous matches are skipped.
             </p>
           </div>
         </div>
@@ -260,13 +246,18 @@ export function UpdateImportClient({ modules, defaultModuleKey }: Props) {
               <span className="font-medium">Email</span> next, case-insensitive.
             </li>
             <li>
-              <span className="font-medium">Phone</span> last, format-agnostic — <code>(800) 555-8888</code>{' '}
+              <span className="font-medium">Phone</span>, format-agnostic — <code>(800) 555-8888</code>{' '}
               and <code>1-800-555-8888</code> match the same record.
+            </li>
+            <li>
+              <span className="font-medium">Name + DOB</span> when higher keys are missing — first,
+              last, and date of birth must all be present.
             </li>
           </ol>
           <p className="mt-2 text-xs text-slate-600 dark:text-slate-400">
-            Empty cells in your CSV never overwrite existing values (so blanks in Zoho don&apos;t wipe
-            updates you made here). Toggle &ldquo;Overwrite empty&rdquo; below if you need that.
+            Unmatched rows are never created. If a key matches more than one record, that row is
+            skipped (fail closed). Empty cells never overwrite existing values unless you toggle
+            &ldquo;Overwrite empty&rdquo; below.
           </p>
         </div>
       </div>
@@ -370,10 +361,11 @@ export function UpdateImportClient({ modules, defaultModuleKey }: Props) {
         )}
 
         {parsedRows.length > 0 && (
-          <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
+          <div className="mt-4 grid grid-cols-2 sm:grid-cols-5 gap-2 text-sm">
             <KeyHint label="Have Zoho ID" value={matchedKeyHints.withZoho} tone="emerald" />
             <KeyHint label="Have email" value={matchedKeyHints.withEmail} tone="sky" />
             <KeyHint label="Have phone" value={matchedKeyHints.withPhone} tone="violet" />
+            <KeyHint label="Have name+DOB" value={matchedKeyHints.withNameDob} tone="amber" />
             <KeyHint label="No match key" value={matchedKeyHints.withoutKey} tone="slate" />
           </div>
         )}
@@ -446,7 +438,7 @@ export function UpdateImportClient({ modules, defaultModuleKey }: Props) {
       {/* ── Result ─────────────────────────────────────────── */}
       {result && (
         <div className="space-y-4">
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             <Stat label="Total rows" value={result.totalRows} />
             <Stat label="Matched" value={result.matched} tone="emerald" />
             <Stat
@@ -460,12 +452,18 @@ export function UpdateImportClient({ modules, defaultModuleKey }: Props) {
               value={result.unmatched}
               tone={result.unmatched > 0 ? 'amber' : 'slate'}
             />
+            <Stat
+              label="Ambiguous"
+              value={result.ambiguous}
+              tone={result.ambiguous > 0 ? 'amber' : 'slate'}
+            />
           </div>
 
           <div className="text-xs text-slate-500 dark:text-slate-400 flex flex-wrap gap-x-4 gap-y-1">
             <span>By Zoho ID: {result.matchSummary.byZohoId}</span>
             <span>By email: {result.matchSummary.byEmail}</span>
             <span>By phone: {result.matchSummary.byPhone}</span>
+            <span>By name+DOB: {result.matchSummary.byNameDob}</span>
             {result.errors.length > 0 && (
               <span className="text-red-600 dark:text-red-400">
                 Errors: {result.errors.length}
@@ -483,6 +481,10 @@ export function UpdateImportClient({ modules, defaultModuleKey }: Props) {
 
           {result.previewUnmatched.length > 0 && (
             <PreviewUnmatchedTable rows={result.previewUnmatched} />
+          )}
+
+          {result.previewAmbiguous.length > 0 && (
+            <PreviewAmbiguousTable rows={result.previewAmbiguous} />
           )}
 
           {result.errors.length > 0 && (
@@ -538,12 +540,13 @@ function KeyHint({
 }: {
   label: string;
   value: number;
-  tone: 'emerald' | 'sky' | 'violet' | 'slate';
+  tone: 'emerald' | 'sky' | 'violet' | 'slate' | 'amber';
 }) {
   const styles: Record<string, string> = {
     emerald: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
     sky: 'bg-sky-50 dark:bg-sky-500/10 text-sky-700 dark:text-sky-300',
     violet: 'bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-300',
+    amber: 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300',
     slate: 'bg-slate-100 dark:bg-slate-800/50 text-slate-700 dark:text-slate-300',
   };
   return (
@@ -656,9 +659,39 @@ function PreviewUnmatchedTable({ rows }: { rows: UnmatchedPreview[] }) {
             {r.keys.zoho_id && <span>zoho_id: {r.keys.zoho_id}</span>}
             {r.keys.email && <span>email: {r.keys.email}</span>}
             {r.keys.phone && <span>phone: {r.keys.phone}</span>}
-            {!r.keys.zoho_id && !r.keys.email && !r.keys.phone && (
+            {r.keys.name_dob && <span>name+DOB: {r.keys.name_dob}</span>}
+            {!r.keys.zoho_id &&
+              !r.keys.email &&
+              !r.keys.phone &&
+              !r.keys.name_dob && (
               <span className="text-amber-700 dark:text-amber-400 italic">no match key</span>
             )}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function PreviewAmbiguousTable({ rows }: { rows: AmbiguousPreview[] }) {
+  return (
+    <div className="rounded-xl border border-red-200 dark:border-red-500/30 bg-red-50/50 dark:bg-red-500/5 overflow-hidden">
+      <div className="px-4 py-3 border-b border-red-200 dark:border-red-500/30">
+        <p className="text-sm font-semibold text-red-700 dark:text-red-300">
+          Ambiguous matches (not updated)
+        </p>
+        <p className="text-xs text-red-700/80 dark:text-red-300/80">
+          More than one CRM record shares this key. Resolve duplicates before re-uploading.
+        </p>
+      </div>
+      <ul className="divide-y divide-red-200 dark:divide-red-500/20 text-xs">
+        {rows.map((r) => (
+          <li key={r.rowIndex} className="px-4 py-2 flex flex-wrap gap-x-4 gap-y-1">
+            <span className="text-red-900 dark:text-red-100">Row {r.rowIndex + 1}</span>
+            <span>
+              {r.matchedBy}: {r.matchValue}
+            </span>
+            <span>{r.candidateCount} candidates</span>
           </li>
         ))}
       </ul>

@@ -17,6 +17,16 @@ export type FeeType = 'flat_monthly' | 'flat_one_time' | 'percent';
 /** Where a fee applies in the flow */
 export type FeeAppliesTo = 'quote' | 'enrollment' | 'checkout';
 
+/**
+ * How age is selected for tiered household rating.
+ * - primary: always the member/employee age (Group)
+ * - older_of_couple: max(member, spouse) for spouse/family tiers (Individual)
+ */
+export type AgeRatingBasis = 'primary' | 'older_of_couple';
+
+/** MSA market segment */
+export type MarketSegment = 'individual' | 'group';
+
 // ──────────────────────────────────────────────
 // Config Schema
 // ──────────────────────────────────────────────
@@ -47,6 +57,11 @@ export interface Plan {
   rating_model: RatingModel;
   age_bands: AgeBand[];
   coverage_tiers: CoverageTier[];
+  /** Defaults to primary when omitted */
+  age_rating_basis?: AgeRatingBasis;
+  market_segment?: MarketSegment;
+  iua_amount?: number;
+  provisional?: boolean;
   regions?: Region[];
   tobacco?: TobaccoConfig;
   fees?: FeeLine[];
@@ -79,6 +94,8 @@ export interface FeeLine {
   amount: number;
   applies_to: FeeAppliesTo;
   enabled: boolean;
+  /** Optional metadata (split rules, provisional flags, etc.) */
+  meta?: Record<string, unknown>;
 }
 
 // ──────────────────────────────────────────────
@@ -98,6 +115,47 @@ export interface AdditivePersonRates {
   spouse_adder?: { [ageBandId: string]: number } | { flat: number };
   dependent_adder?: { [ageBandId: string]: number } | { flat: number };
   max_dependents_priced?: number;
+}
+
+// ──────────────────────────────────────────────
+// Enrollment contribution policy
+// ──────────────────────────────────────────────
+
+/**
+ * Org-configurable one-time enrollment contribution.
+ * Amounts are provisional and adjustable without redeploy.
+ */
+export interface EnrollmentContributionPolicy {
+  /** List price before waiver (e.g. 800) */
+  amount: number;
+  /** Founding-member waiver amount (e.g. 650) */
+  foundingWaiver: number;
+  /** Max founding members who receive the waiver (e.g. 250) */
+  foundingCap: number;
+  /** Whether founding waiver program is active */
+  foundingEnabled: boolean;
+  /** Current count of founding members already enrolled */
+  foundingCount: number;
+  /**
+   * Force-apply or force-skip founding waiver for this quote.
+   * When omitted, waiver applies if foundingEnabled && foundingCount < foundingCap.
+   */
+  applyFoundingWaiver?: boolean;
+  /** Split metadata — not disbursed by the engine */
+  splits?: {
+    referringMember?: number;
+    adminOps?: number;
+    partnerMarketing?: number;
+    pifh?: number;
+  };
+}
+
+export interface EnrollmentContributionResult {
+  listAmount: number;
+  waiverAmount: number;
+  netAmount: number;
+  foundingWaiverApplied: boolean;
+  splits?: EnrollmentContributionPolicy['splits'];
 }
 
 // ──────────────────────────────────────────────
@@ -124,6 +182,8 @@ export interface QuoteInput {
 export interface QuoteOptions {
   rateSetOverride?: RateSetKey;
   dependentsPricedOverride?: number;
+  /** When provided, resolves enrollment-contribution fee with founding waiver */
+  enrollmentContribution?: EnrollmentContributionPolicy;
 }
 
 export interface QuoteResult {
@@ -140,6 +200,7 @@ export interface QuoteFee {
   id: string;
   label: string;
   amount: number;
+  meta?: Record<string, unknown>;
 }
 
 export interface BreakdownLine {
@@ -156,11 +217,17 @@ export interface QuoteMetadata {
   rateSetLabel: string;
   effectiveDate: string;
   ratingModel: RatingModel;
+  ageRatingBasis?: AgeRatingBasis;
+  marketSegment?: MarketSegment;
+  provisional?: boolean;
+  ratingAge?: number;
   bandsUsed: {
     memberBand?: string;
     spouseBand?: string;
     dependentBands?: string[];
+    ratingBand?: string;
   };
+  enrollmentContribution?: EnrollmentContributionResult;
 }
 
 export interface QuoteError {
@@ -179,6 +246,10 @@ export interface PlanOption {
   ratingModel: RatingModel;
   coverageTiers: CoverageTier[];
   ageBands: AgeBand[];
+  ageRatingBasis?: AgeRatingBasis;
+  marketSegment?: MarketSegment;
+  iuaAmount?: number;
+  provisional?: boolean;
 }
 
 export interface MatrixPreview {
@@ -192,6 +263,9 @@ export interface MatrixPreview {
   coverageTiers: CoverageTier[];
   matrix: { [coverageTier: string]: { [ageBandId: string]: number } };
   footnotes?: string[];
+  ageRatingBasis?: AgeRatingBasis;
+  marketSegment?: MarketSegment;
+  provisional?: boolean;
 }
 
 // ──────────────────────────────────────────────

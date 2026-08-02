@@ -49,28 +49,55 @@ export function isCapacityProductValue(value: unknown): boolean {
 }
 
 /**
+ * Membership / plan-name keys whose capacity aliases must never display as a
+ * real plan name in the coverage snapshot.
+ */
+const MEMBERSHIP_NAME_KEYS = new Set([
+  'product',
+  'previous_product',
+  'plan_name',
+  'health_insurance_plan_name',
+  'insurance_plan_name',
+]);
+
+/**
+ * Display value for a coverage-snapshot field. Capacity aliases stored in
+ * product/plan-name keys (e.g. "Health Insurance") coerce to null so the UI
+ * shows an empty / "Add …" placeholder instead of a fake membership name.
+ */
+export function coerceCoverageSnapshotFieldValue(
+  key: string,
+  value: unknown,
+): unknown {
+  if (MEMBERSHIP_NAME_KEYS.has(key) && isCapacityProductValue(value)) {
+    return null;
+  }
+  return value;
+}
+
+/**
  * Ranking tier for populated-first ordering (lower = shown first):
  *   0 — a real, non-empty value (e.g. "Premium Care", 324, "Member Only")
- *   1 — a capacity-label placeholder ("Health Insurance") — real but not a name
- *   2 — empty (kept for inline-edit placeholders, but never pushes a real value out)
+ *   1 — empty / capacity-label placeholder ("Health Insurance") — never outranks
+ *       a real membership / plan name
  */
 function coverageFieldRankTier(
   key: string,
   values: Record<string, unknown>,
 ): number {
-  const v = values[key];
-  if (v === null || v === undefined || v === '') return 2;
-  if (isCapacityProductValue(v)) return 1;
+  const v = coerceCoverageSnapshotFieldValue(key, values[key]);
+  if (v === null || v === undefined || v === '') return 1;
   return 0;
 }
 
 /** Preferred keys for the coverage snapshot detail grid (order matters). */
 export const COVERAGE_SNAPSHOT_PREFERRED_KEYS = [
-  'product',
+  // Real plan / membership names before the often-misused `product` capacity slot.
   'health_insurance_plan_name',
   'insurance_plan_name',
-  'health_insurance_premium',
   'plan_name',
+  'product',
+  'health_insurance_premium',
   'plan_type',
   'coverage_option',
   'monthly_share',

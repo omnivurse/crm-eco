@@ -7,6 +7,7 @@ import {
   sanitizeCrmDataJsonPatch,
 } from '@/lib/crm/merge-crm-data-json-to-row';
 import type { CrmPatchAuthProfile } from '@/lib/crm/record-patch-service';
+import { assertCrmPendingHasStartDate } from '@/lib/crm/pending-start-date-invariant';
 
 export interface ExecuteCrmRecordCreateInput {
   org_id: string;
@@ -137,6 +138,25 @@ export async function executeCrmRecordCreate(params: {
     } else if (mt === 'traditional_insurance' && carrierId) {
       insertRow.normalization_status = 'normalized';
     }
+  }
+
+  const pendingStart = assertCrmPendingHasStartDate(
+    (insertRow.status as string | null | undefined) ?? null,
+    {
+      current_year_start_date: insertRow.current_year_start_date as string | null | undefined,
+      original_start_date: insertRow.original_start_date as string | null | undefined,
+      data: d,
+    },
+  );
+  if (!pendingStart.ok) {
+    return {
+      ok: false,
+      status: 400,
+      body: {
+        error: pendingStart.error,
+        code: 'PENDING_REQUIRES_START_DATE',
+      },
+    };
   }
 
   const { data: record, error } = await supabase

@@ -13,6 +13,7 @@ import {
   BookOpen,
   UsersThree,
   MonitorPlay,
+  CurrencyDollar,
   SignOut,
   List,
   X,
@@ -33,6 +34,7 @@ interface PortalShellProps {
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: SquaresFour },
   { name: 'Contacts', href: '/contacts', icon: Users },
+  { name: 'Pricing', href: '/pricing', icon: CurrencyDollar },
   { name: 'Engagement', href: '/engagement', icon: ChatCircle },
   { name: 'Training', href: '/training', icon: BookOpen },
   { name: 'Team', href: '/team', icon: UsersThree },

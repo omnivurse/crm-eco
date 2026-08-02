@@ -132,10 +132,22 @@ export async function POST(request: NextRequest) {
     const body: ImportRequest = await request.json();
     const { moduleId, organizationId, mappings, data, fileName, saveMappingAs, skipDuplicates = true, onDuplicate = 'skip' } = body;
 
-    // Upsert mode updates existing matches instead of skipping them. Both skip
-    // and update modes need the duplicate lookup to run; only "create all"
-    // (skipDuplicates=false, onDuplicate='skip') bypasses it.
-    const wantUpdate = onDuplicate === 'update';
+    // Entity Reupload (update-only + dry-run) lives at POST /api/crm/imports/update.
+    // The wizard's "Update existing" mode calls that path; this route no longer
+    // accepts upsert-on-duplicate so match/merge logic cannot diverge.
+    if (onDuplicate === 'update') {
+      return NextResponse.json(
+        {
+          error:
+            'Update mode moved to POST /api/crm/imports/update (Entity Reupload). Use Import Wizard update preview or /crm/imports/update.',
+        },
+        { status: 410 },
+      );
+    }
+
+    // Skip-duplicates needs the duplicate lookup; "create all"
+    // (skipDuplicates=false) bypasses it.
+    const wantUpdate = false;
     const dedupeEnabled = skipDuplicates || wantUpdate;
 
     // Verify org matches

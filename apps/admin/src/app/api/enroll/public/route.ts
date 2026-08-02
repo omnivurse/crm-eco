@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
-import { pickActiveMemberByName, insertCrmLead } from '@crm-eco/lib';
+import {
+  pickActiveMemberByName,
+  insertCrmLead,
+  resolvePendingMemberEffectiveDate,
+} from '@crm-eco/lib';
 import {
   sendEnrollmentConfirmationEmail,
   sendAdvisorNotificationEmail,
@@ -113,6 +117,7 @@ export async function POST(request: NextRequest) {
           phone: data.phone,
           state: data.state,
           status: 'pending',
+          effective_date: resolvePendingMemberEffectiveDate(null),
           advisor_id: landingPage.default_advisor_id,
         })
         .select('id')

@@ -103,6 +103,7 @@ export function MemberCommandCenter({
     advisor_id: (member.advisor_id as string | null) ?? null,
     market_type: (member.market_type as string | null) ?? null,
     status: member.status,
+    effective_date: (member.effective_date as string | null) ?? null,
     existing_condition: Boolean(member.existing_condition),
     existing_condition_description: (member.existing_condition_description as string | null) ?? null,
     is_smoker: Boolean(member.is_smoker),

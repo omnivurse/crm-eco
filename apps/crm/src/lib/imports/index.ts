@@ -3,3 +3,5 @@
  */
 
 export * from './contacts-mapping';
+export * from './csv-update';
+export * from './run-csv-update';

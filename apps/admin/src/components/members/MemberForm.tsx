@@ -16,7 +16,11 @@ import {
   Checkbox,
 } from '@crm-eco/ui';
 import { AdvisorCombobox } from './AdvisorCombobox';
-import { guaranteedUpdateWithVersion } from '@crm-eco/lib';
+import {
+  assertPendingHasEffectiveDate,
+  guaranteedUpdateWithVersion,
+  resolvePendingMemberEffectiveDate,
+} from '@crm-eco/lib';
 import { useFormAutosave } from '@/hooks/useFormAutosave';
 
 interface Agent {
@@ -44,6 +48,7 @@ interface MemberFormProps {
     advisor_id: string | null;
     market_type: string | null;
     status: string;
+    effective_date: string | null;
     existing_condition: boolean;
     existing_condition_description: string | null;
     is_smoker: boolean;
@@ -81,6 +86,7 @@ export function MemberForm({ agents, initialData }: MemberFormProps) {
     advisor_id: initialData?.advisor_id ?? '',
     market_type: initialData?.market_type ?? '',
     status: initialData?.status ?? 'pending',
+    effective_date: initialData?.effective_date ?? '',
     existing_condition: initialData?.existing_condition ?? false,
     existing_condition_description: initialData?.existing_condition_description ?? '',
     is_smoker: initialData?.is_smoker ?? false,
@@ -103,6 +109,15 @@ export function MemberForm({ agents, initialData }: MemberFormProps) {
       // The UI field is `zip_code` but the DB column is `postal_code` — map it and
       // drop zip_code from the payload so it isn't sent to a non-existent column.
       const { zip_code, ...nextRest } = next;
+      if (next.status === 'pending') {
+        const check = assertPendingHasEffectiveDate(next.status, next.effective_date, {
+          allowDefault: false,
+        });
+        if (!check.ok) {
+          throw new Error(check.error);
+        }
+        nextRest.effective_date = check.effectiveDate;
+      }
       const memberData = {
         ...nextRest,
         advisor_id: next.advisor_id || null,
@@ -115,6 +130,7 @@ export function MemberForm({ agents, initialData }: MemberFormProps) {
         city: next.city || null,
         state: next.state || null,
         postal_code: zip_code || null,
+        effective_date: nextRest.effective_date || null,
         existing_condition_description: next.existing_condition
           ? next.existing_condition_description || null
           : null,
@@ -172,6 +188,24 @@ export function MemberForm({ agents, initialData }: MemberFormProps) {
 
     // UI field `zip_code` → DB column `postal_code`; drop zip_code from the payload.
     const { zip_code, ...formRest } = formData;
+    const pendingCheck = assertPendingHasEffectiveDate(
+      formData.status,
+      formData.effective_date || null,
+      { allowDefault: false },
+    );
+    if (formData.status === 'pending' && !pendingCheck.ok) {
+      // Default to next 1st when creating pending without a date (explicit UX).
+      if (!isEditing) {
+        formRest.effective_date = resolvePendingMemberEffectiveDate(null);
+      } else {
+        setError(pendingCheck.error);
+        setLoading(false);
+        return;
+      }
+    } else if (pendingCheck.ok && formData.status === 'pending') {
+      formRest.effective_date = pendingCheck.effectiveDate;
+    }
+
     const memberData = {
       ...formRest,
       organization_id: profile.organization_id,
@@ -185,6 +219,7 @@ export function MemberForm({ agents, initialData }: MemberFormProps) {
       city: formData.city || null,
       state: formData.state || null,
       postal_code: zip_code || null,
+      effective_date: formRest.effective_date || null,
       existing_condition_description: formData.existing_condition
         ? formData.existing_condition_description || null
         : null,
@@ -484,6 +519,24 @@ export function MemberForm({ agents, initialData }: MemberFormProps) {
                 <SelectItem value="terminated">Terminated</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="effective_date">
+              Coverage start {formData.status === 'pending' ? '*' : ''}
+            </Label>
+            <Input
+              id="effective_date"
+              type="date"
+              value={formData.effective_date}
+              onChange={(e) => setFormData({ ...formData, effective_date: e.target.value })}
+              disabled={loading}
+              required={formData.status === 'pending' && isEditing}
+              className="h-11 sm:h-10"
+            />
+            <p className="text-xs text-slate-500">
+              Pending members activate on this date (normalized to the 1st). Leave blank on create
+              to default to the 1st of next month.
+            </p>
           </div>
         </div>
 

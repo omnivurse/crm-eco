@@ -29,7 +29,11 @@ import {
 } from '@crm-eco/ui';
 import { Plus, User, MapPin, Shield, Building2, Contact, ChevronDown } from 'lucide-react';
 import type { Database } from '@crm-eco/lib/types';
-import { logActivityForMember, ActivityTypes } from '@crm-eco/lib';
+import {
+  logActivityForMember,
+  ActivityTypes,
+  resolvePendingMemberEffectiveDate,
+} from '@crm-eco/lib';
 import { CustomFieldsForm } from '@/components/shared/custom-fields-form';
 
 const US_STATES = [
@@ -59,6 +63,7 @@ export function AddMemberDialog() {
     city: string;
     postalCode: string;
     status: 'prospect' | 'pending' | 'active' | 'paused' | 'terminated' | 'inactive';
+    effectiveDate: string;
     programType: string;
     coverageType: string;
     // Extended contact
@@ -103,6 +108,7 @@ export function AddMemberDialog() {
     city: '',
     postalCode: '',
     status: 'pending',
+    effectiveDate: '',
     programType: '',
     coverageType: '',
     phoneExt: '',
@@ -156,6 +162,10 @@ export function AddMemberDialog() {
         city: formData.city || null,
         postal_code: formData.postalCode || null,
         status: formData.status,
+        effective_date:
+          formData.status === 'pending'
+            ? resolvePendingMemberEffectiveDate(formData.effectiveDate || null)
+            : formData.effectiveDate || null,
         program_type: formData.programType || null,
         coverage_type: formData.coverageType || null,
         custom_fields: Object.keys(customFields).length > 0 ? customFields : null,
@@ -224,6 +234,7 @@ export function AddMemberDialog() {
         city: '',
         postalCode: '',
         status: 'pending',
+        effectiveDate: '',
         programType: '',
         coverageType: '',
         phoneExt: '',
@@ -430,6 +441,20 @@ export function AddMemberDialog() {
                         <SelectItem value="inactive">Inactive</SelectItem>
                       </SelectContent>
                     </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="effectiveDate">Coverage start</Label>
+                    <Input
+                      id="effectiveDate"
+                      type="date"
+                      value={formData.effectiveDate}
+                      onChange={(e) =>
+                        setFormData({ ...formData, effectiveDate: e.target.value })
+                      }
+                    />
+                    <p className="text-xs text-slate-500">
+                      Required for pending activation. Blank defaults to the 1st of next month.
+                    </p>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="programType">Program Type</Label>

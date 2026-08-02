@@ -6,6 +6,7 @@ import {
 } from './premium-field-aliases';
 import {
   MEMBERSHIP_LABEL,
+  coerceCoverageSnapshotFieldValue,
   coverageSnapshotSkipKeysForPlanType,
   isCapacityProductValue,
   selectCoverageSnapshotPlanFields,
@@ -138,6 +139,34 @@ describe('selectCoverageSnapshotPlanFields', () => {
       values: { product: 'Health Insurance', plan_name: 'Premium Care' },
     });
     expect(result.map((f) => f.key)).toEqual(['plan_name', 'product']);
+  });
+
+  it('prefers real plan-name keys ahead of product in preferred order', () => {
+    const result = selectCoverageSnapshotPlanFields({
+      planType: 'insurance',
+      fields: [
+        { key: 'product', label: 'Product', type: 'text' },
+        { key: 'health_insurance_plan_name', label: 'Plan Name', type: 'text' },
+      ],
+      values: {
+        product: 'Health Insurance',
+        health_insurance_plan_name: 'Gold PPO',
+      },
+    });
+    expect(result.map((f) => f.key)[0]).toBe('health_insurance_plan_name');
+  });
+});
+
+describe('coerceCoverageSnapshotFieldValue', () => {
+  it('blanks capacity aliases on membership/plan-name keys', () => {
+    expect(coerceCoverageSnapshotFieldValue('product', 'Health Insurance')).toBeNull();
+    expect(coerceCoverageSnapshotFieldValue('plan_name', 'insurance')).toBeNull();
+    expect(coerceCoverageSnapshotFieldValue('product', 'Premium Care')).toBe(
+      'Premium Care',
+    );
+    expect(coerceCoverageSnapshotFieldValue('coverage_option', 'Health Insurance')).toBe(
+      'Health Insurance',
+    );
   });
 });
 

@@ -108,6 +108,17 @@ function validatePlan(plan: Plan, path: string, errors: ValidationError[]): void
     });
   }
 
+  if (
+    plan.age_rating_basis !== undefined &&
+    !['primary', 'older_of_couple'].includes(plan.age_rating_basis)
+  ) {
+    errors.push({
+      code: 'INVALID_AGE_RATING_BASIS',
+      message: `${path}.age_rating_basis must be "primary" or "older_of_couple"`,
+      path: `${path}.age_rating_basis`,
+    });
+  }
+
   // Age bands
   if (!plan.age_bands || plan.age_bands.length === 0) {
     errors.push({

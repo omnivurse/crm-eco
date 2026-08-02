@@ -4,9 +4,15 @@ import {
   checkEligibility,
   buildEnrollmentApprovalRecord,
   checkEnrollmentApprovalRequired,
+  resolvePendingMemberEffectiveDate,
 } from '@crm-eco/lib';
 import { createServiceRoleClient } from '@crm-eco/lib/supabase/server';
-import { quote, buildRateConfigFromDb } from '@crm-eco/rates';
+import {
+  quote,
+  buildRateConfigFromDb,
+  enrollmentContributionFromSettings,
+  fetchEnrollmentContributionSettings,
+} from '@crm-eco/rates';
 import type { CoverageTier, QuoteInput } from '@crm-eco/rates/types';
 import {
   readDraftFromRequest,
@@ -108,6 +114,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'missing_member_fields' }, { status: 400 });
   }
 
+  const coverageStart = resolvePendingMemberEffectiveDate(effective_date);
+
   const supabase = createServiceRoleClient();
   const orgId = draft.organizationId;
 
@@ -152,6 +160,7 @@ export async function POST(request: NextRequest) {
         state: member.state ?? null,
         postal_code: member.zip_code ?? null,
         status: 'pending',
+        effective_date: coverageStart,
         source: 'public_wizard',
       })
       .select('id')
@@ -195,11 +204,6 @@ export async function POST(request: NextRequest) {
   }
 
   // 3. Create enrollment via the atomic RPC
-  const defaultEffective = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-    .toISOString()
-    .split('T')[0];
-  const coverageStart = effective_date ?? defaultEffective;
-
   // 2. Compute the price SERVER-SIDE (server is the pricing authority).
   //
   // Default: plans.monthly_share — the historical fallback that this public path
@@ -261,7 +265,7 @@ export async function POST(request: NextRequest) {
         .from('plan_rate_sets')
         .select(`
           *,
-          plan:plans!inner(id, name, code, organization_id),
+          plan:plans!inner(id, name, code, organization_id, iua_amount, metadata),
           entries:plan_rate_entries(*),
           fees:plan_fees(*)
         `)
@@ -270,6 +274,7 @@ export async function POST(request: NextRequest) {
 
       if (rateSetRows && rateSetRows.length > 0) {
         const config = buildRateConfigFromDb(rateSetRows);
+        const contribMap = await fetchEnrollmentContributionSettings(supabase, orgId);
         const quoteInput: QuoteInput = {
           planId: planCode,
           coverageTier,
@@ -280,7 +285,9 @@ export async function POST(request: NextRequest) {
           },
           coverageStart,
         };
-        const result = quote(config, quoteInput);
+        const result = quote(config, quoteInput, {
+          enrollmentContribution: enrollmentContributionFromSettings(contribMap),
+        });
         // Server is the authority: only trust a clean, error-free quote. Any
         // NO_AGE_BAND / missing-rate / household-validation error => keep
         // monthly_share so the public path never persists a $0 / partial price.
@@ -304,7 +311,7 @@ export async function POST(request: NextRequest) {
     p_payload: {
       primary_member_id: memberId,
       selected_plan_id: selected_plan_id ?? null,
-      effective_date: effective_date ?? defaultEffective,
+      effective_date: coverageStart,
       household_size: 1 + (household?.length ?? 0),
       base_monthly_cost: basePrice,
       permanent_bill_day: 20,

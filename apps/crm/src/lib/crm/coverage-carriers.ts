@@ -42,25 +42,35 @@ export const KNOWN_SHARING_ENTITIES = [
   'Solidarity',
 ] as const;
 
+/**
+ * Collapse case, whitespace, and punctuation so free-text variants match the
+ * canonical lists (e.g. "United Healthcare" ≡ "UnitedHealthcare").
+ */
+export function normalizeCarrierMatchKey(value: unknown): string {
+  if (typeof value !== 'string') return '';
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '');
+}
+
 const INSURANCE_SET = new Set<string>(
-  KNOWN_INSURANCE_CARRIERS.map((c) => c.toLowerCase()),
+  KNOWN_INSURANCE_CARRIERS.map((c) => normalizeCarrierMatchKey(c)),
 );
 const SHARING_SET = new Set<string>(
-  KNOWN_SHARING_ENTITIES.map((c) => c.toLowerCase()),
+  KNOWN_SHARING_ENTITIES.map((c) => normalizeCarrierMatchKey(c)),
 );
-
-function normalize(value: unknown): string {
-  return typeof value === 'string' ? value.trim().toLowerCase() : '';
-}
 
 /** True when the value matches a known major-medical insurance carrier. */
 export function isKnownInsuranceCarrier(value: unknown): boolean {
-  return INSURANCE_SET.has(normalize(value));
+  const n = normalizeCarrierMatchKey(value);
+  return n.length > 0 && INSURANCE_SET.has(n);
 }
 
 /** True when the value matches a known health-sharing ministry. */
 export function isKnownSharingEntity(value: unknown): boolean {
-  return SHARING_SET.has(normalize(value));
+  const n = normalizeCarrierMatchKey(value);
+  return n.length > 0 && SHARING_SET.has(n);
 }
 
 export type CarrierClass = 'insurance' | 'healthshare' | 'unknown';
@@ -71,7 +81,7 @@ export type CarrierClass = 'insurance' | 'healthshare' | 'unknown';
  * (e.g. a free-text carrier the rep typed by hand).
  */
 export function classifyCarrierValue(value: unknown): CarrierClass {
-  const n = normalize(value);
+  const n = normalizeCarrierMatchKey(value);
   if (!n) return 'unknown';
   if (INSURANCE_SET.has(n)) return 'insurance';
   if (SHARING_SET.has(n)) return 'healthshare';

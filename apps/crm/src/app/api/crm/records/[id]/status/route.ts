@@ -9,6 +9,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient, getAuthProfile } from '@/lib/supabase-server';
 import { applyStatusToRecordUpdates } from '@/lib/crm/status-sync';
 import { isAllowedCrmStatus } from '@/lib/crm/status-allowlist';
+import { assertCrmPendingHasStartDate } from '@/lib/crm/pending-start-date-invariant';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,7 +42,9 @@ export async function PATCH(
 
     const { data: record, error: fetchError } = await supabase
       .from('crm_records')
-      .select('id, org_id, status, title, module_id, data, crm_modules!inner(key)')
+      .select(
+        'id, org_id, status, title, module_id, data, original_start_date, current_year_start_date, crm_modules!inner(key)',
+      )
       .eq('id', recordId)
       .eq('org_id', profile.organization_id)
       .single();
@@ -52,6 +55,18 @@ export async function PATCH(
 
     const previousStatus = record.status;
     const moduleKey = (record as { crm_modules?: { key?: string } }).crm_modules?.key;
+
+    const pendingStart = assertCrmPendingHasStartDate(status, {
+      current_year_start_date: record.current_year_start_date as string | null,
+      original_start_date: record.original_start_date as string | null,
+      data: (record.data || {}) as Record<string, unknown>,
+    });
+    if (!pendingStart.ok) {
+      return NextResponse.json(
+        { error: pendingStart.error, code: 'PENDING_REQUIRES_START_DATE' },
+        { status: 400 },
+      );
+    }
 
     const updates: Record<string, unknown> = {
       updated_at: new Date().toISOString(),

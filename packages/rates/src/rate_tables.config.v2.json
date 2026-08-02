@@ -1,230 +1,1182 @@
 {
   "meta": {
     "currency": "USD",
-    "updated_at": "2026-02-16T00:00:00Z",
-    "notes": "Double Helix Hub E123 rate tables — seed data for development"
+    "updated_at": "2026-08-01T00:00:00Z",
+    "notes": "PIFH MSA provisional rate cards — excludes partnership (doctor/nurse) costs and wellness lab panel. Enrollment contribution amounts are TBD / configurable."
   },
   "rate_sets": {
     "current": {
-      "label": "Current Rates",
-      "effective_date": "2025-01-01",
+      "label": "MSA Provisional Rates",
+      "effective_date": "2026-08-01",
       "plans": [
         {
-          "planId": "dhh-essential",
-          "displayName": "DHH Essential",
+          "planId": "PIFH-MSA-IND-1250",
+          "displayName": "MSA Individual $1,250 IUA",
           "rating_model": "tiered_household",
+          "age_rating_basis": "older_of_couple",
+          "market_segment": "individual",
+          "iua_amount": 1250,
+          "provisional": true,
           "age_bands": [
-            { "id": "18-29", "min": 18, "max": 29, "label": "18–29" },
-            { "id": "30-39", "min": 30, "max": 39, "label": "30–39" },
-            { "id": "40-49", "min": 40, "max": 49, "label": "40–49" },
-            { "id": "50-59", "min": 50, "max": 59, "label": "50–59" },
-            { "id": "60-64", "min": 60, "max": 64, "label": "60–64" }
-          ],
-          "coverage_tiers": ["member", "member_spouse", "member_children", "family"],
-          "tobacco": { "enabled": true, "factor": 1.15 },
-          "fees": [
             {
-              "id": "admin-fee",
-              "label": "Administrative Fee",
-              "type": "flat_monthly",
-              "amount": 25,
-              "applies_to": "quote",
-              "enabled": true
+              "id": "18-34",
+              "min": 18,
+              "max": 34,
+              "label": "18–34"
             },
             {
-              "id": "enrollment-fee",
-              "label": "One-Time Enrollment Fee",
+              "id": "35-49",
+              "min": 35,
+              "max": 49,
+              "label": "35–49"
+            },
+            {
+              "id": "50-59",
+              "min": 50,
+              "max": 59,
+              "label": "50–59"
+            },
+            {
+              "id": "60-64",
+              "min": 60,
+              "max": 64,
+              "label": "60–64"
+            }
+          ],
+          "coverage_tiers": [
+            "member",
+            "member_spouse",
+            "member_children",
+            "family"
+          ],
+          "tobacco": {
+            "enabled": false
+          },
+          "fees": [
+            {
+              "id": "enrollment-contribution",
+              "label": "Enrollment Contribution",
               "type": "flat_one_time",
-              "amount": 150,
+              "amount": 800,
               "applies_to": "enrollment",
-              "enabled": true
+              "enabled": true,
+              "meta": {
+                "splits": {
+                  "referringMember": 100,
+                  "adminOps": 50
+                }
+              }
+            },
+            {
+              "id": "partnership-cost",
+              "label": "Partnership Cost (Doctor/Nurse)",
+              "type": "flat_monthly",
+              "amount": 0,
+              "applies_to": "quote",
+              "enabled": false
+            },
+            {
+              "id": "wellness-lab",
+              "label": "Wellness Lab Panel",
+              "type": "flat_monthly",
+              "amount": 0,
+              "applies_to": "quote",
+              "enabled": false
             }
           ],
           "rates": {
-            "member":          { "18-29": 225, "30-39": 275, "40-49": 340, "50-59": 425, "60-64": 510 },
-            "member_spouse":   { "18-29": 450, "30-39": 525, "40-49": 650, "50-59": 825, "60-64": 990 },
-            "member_children": { "18-29": 350, "30-39": 400, "40-49": 475, "50-59": 575, "60-64": 675 },
-            "family":          { "18-29": 575, "30-39": 675, "40-49": 825, "50-59": 1025, "60-64": 1225 }
+            "member": {
+              "18-34": 197.1,
+              "35-49": 275.94,
+              "50-59": 354.78,
+              "60-64": 413.91
+            },
+            "member_spouse": {
+              "18-34": 394.2,
+              "35-49": 551.88,
+              "50-59": 709.56,
+              "60-64": 827.82
+            },
+            "member_children": {
+              "18-34": 354.78,
+              "35-49": 496.69,
+              "50-59": 638.6,
+              "60-64": 745.04
+            },
+            "family": {
+              "18-34": 551.88,
+              "35-49": 772.63,
+              "50-59": 993.38,
+              "60-64": 1158.95
+            }
           }
         },
         {
-          "planId": "dhh-premier",
-          "displayName": "DHH Premier",
-          "rating_model": "additive_person",
+          "planId": "PIFH-MSA-IND-2500",
+          "displayName": "MSA Individual $2,500 IUA",
+          "rating_model": "tiered_household",
+          "age_rating_basis": "older_of_couple",
+          "market_segment": "individual",
+          "iua_amount": 2500,
+          "provisional": true,
           "age_bands": [
-            { "id": "18-29", "min": 18, "max": 29, "label": "18–29" },
-            { "id": "30-39", "min": 30, "max": 39, "label": "30–39" },
-            { "id": "40-49", "min": 40, "max": 49, "label": "40–49" },
-            { "id": "50-59", "min": 50, "max": 59, "label": "50–59" },
-            { "id": "60-64", "min": 60, "max": 64, "label": "60–64" }
+            {
+              "id": "18-34",
+              "min": 18,
+              "max": 34,
+              "label": "18–34"
+            },
+            {
+              "id": "35-49",
+              "min": 35,
+              "max": 49,
+              "label": "35–49"
+            },
+            {
+              "id": "50-59",
+              "min": 50,
+              "max": 59,
+              "label": "50–59"
+            },
+            {
+              "id": "60-64",
+              "min": 60,
+              "max": 64,
+              "label": "60–64"
+            }
           ],
-          "coverage_tiers": ["member", "member_spouse", "member_children", "family"],
-          "tobacco": { "enabled": true, "factor": 1.20 },
+          "coverage_tiers": [
+            "member",
+            "member_spouse",
+            "member_children",
+            "family"
+          ],
+          "tobacco": {
+            "enabled": false
+          },
           "fees": [
             {
-              "id": "admin-fee",
-              "label": "Administrative Fee",
-              "type": "flat_monthly",
-              "amount": 35,
-              "applies_to": "quote",
+              "id": "enrollment-contribution",
+              "label": "Enrollment Contribution",
+              "type": "flat_one_time",
+              "amount": 800,
+              "applies_to": "enrollment",
               "enabled": true
             },
             {
-              "id": "enrollment-fee",
-              "label": "One-Time Enrollment Fee",
-              "type": "flat_one_time",
-              "amount": 200,
-              "applies_to": "enrollment",
-              "enabled": true
+              "id": "partnership-cost",
+              "label": "Partnership Cost (Doctor/Nurse)",
+              "type": "flat_monthly",
+              "amount": 0,
+              "applies_to": "quote",
+              "enabled": false
+            },
+            {
+              "id": "wellness-lab",
+              "label": "Wellness Lab Panel",
+              "type": "flat_monthly",
+              "amount": 0,
+              "applies_to": "quote",
+              "enabled": false
             }
           ],
           "rates": {
-            "subscriber":      { "18-29": 310, "30-39": 375, "40-49": 460, "50-59": 565, "60-64": 680 },
-            "spouse_adder":    { "18-29": 195, "30-39": 230, "40-49": 285, "50-59": 350, "60-64": 425 },
-            "dependent_adder": { "18-29": 125, "30-39": 125, "40-49": 125, "50-59": 125, "60-64": 125 },
-            "max_dependents_priced": 3
+            "member": {
+              "18-34": 157.68,
+              "35-49": 220.75,
+              "50-59": 273.18,
+              "60-64": 318.71
+            },
+            "member_spouse": {
+              "18-34": 315.36,
+              "35-49": 441.5,
+              "50-59": 546.36,
+              "60-64": 637.42
+            },
+            "member_children": {
+              "18-34": 283.82,
+              "35-49": 397.35,
+              "50-59": 491.73,
+              "60-64": 573.68
+            },
+            "family": {
+              "18-34": 441.5,
+              "35-49": 618.11,
+              "50-59": 764.91,
+              "60-64": 892.39
+            }
           }
         },
         {
-          "planId": "dhh-value",
-          "displayName": "DHH Value",
-          "rating_model": "additive_person",
+          "planId": "PIFH-MSA-IND-5000",
+          "displayName": "MSA Individual $5,000 IUA",
+          "rating_model": "tiered_household",
+          "age_rating_basis": "older_of_couple",
+          "market_segment": "individual",
+          "iua_amount": 5000,
+          "provisional": true,
           "age_bands": [
-            { "id": "18-29", "min": 18, "max": 29, "label": "18–29" },
-            { "id": "30-39", "min": 30, "max": 39, "label": "30–39" },
-            { "id": "40-49", "min": 40, "max": 49, "label": "40–49" },
-            { "id": "50-59", "min": 50, "max": 59, "label": "50–59" },
-            { "id": "60-64", "min": 60, "max": 64, "label": "60–64" }
+            {
+              "id": "18-34",
+              "min": 18,
+              "max": 34,
+              "label": "18–34"
+            },
+            {
+              "id": "35-49",
+              "min": 35,
+              "max": 49,
+              "label": "35–49"
+            },
+            {
+              "id": "50-59",
+              "min": 50,
+              "max": 59,
+              "label": "50–59"
+            },
+            {
+              "id": "60-64",
+              "min": 60,
+              "max": 64,
+              "label": "60–64"
+            }
           ],
-          "coverage_tiers": ["member", "member_spouse", "member_children", "family"],
-          "tobacco": { "enabled": false },
+          "coverage_tiers": [
+            "member",
+            "member_spouse",
+            "member_children",
+            "family"
+          ],
+          "tobacco": {
+            "enabled": false
+          },
           "fees": [
             {
-              "id": "admin-fee",
-              "label": "Administrative Fee",
-              "type": "flat_monthly",
-              "amount": 20,
-              "applies_to": "quote",
+              "id": "enrollment-contribution",
+              "label": "Enrollment Contribution",
+              "type": "flat_one_time",
+              "amount": 800,
+              "applies_to": "enrollment",
               "enabled": true
+            },
+            {
+              "id": "partnership-cost",
+              "label": "Partnership Cost (Doctor/Nurse)",
+              "type": "flat_monthly",
+              "amount": 0,
+              "applies_to": "quote",
+              "enabled": false
+            },
+            {
+              "id": "wellness-lab",
+              "label": "Wellness Lab Panel",
+              "type": "flat_monthly",
+              "amount": 0,
+              "applies_to": "quote",
+              "enabled": false
             }
           ],
           "rates": {
-            "subscriber":      { "18-29": 185, "30-39": 220, "40-49": 270, "50-59": 335, "60-64": 405 },
-            "spouse_adder":    { "flat": 150 },
-            "dependent_adder": { "flat": 85 },
-            "max_dependents_priced": 4
+            "member": {
+              "18-34": 114.32,
+              "35-49": 160.05,
+              "50-59": 205.77,
+              "60-64": 240.07
+            },
+            "member_spouse": {
+              "18-34": 228.64,
+              "35-49": 320.09,
+              "50-59": 411.54,
+              "60-64": 480.14
+            },
+            "member_children": {
+              "18-34": 205.77,
+              "35-49": 288.08,
+              "50-59": 370.39,
+              "60-64": 432.12
+            },
+            "family": {
+              "18-34": 320.09,
+              "35-49": 448.13,
+              "50-59": 576.16,
+              "60-64": 672.19
+            }
+          }
+        },
+        {
+          "planId": "PIFH-MSA-GRP-1250",
+          "displayName": "MSA Group $1,250 IUA",
+          "rating_model": "tiered_household",
+          "age_rating_basis": "primary",
+          "market_segment": "group",
+          "iua_amount": 1250,
+          "provisional": true,
+          "age_bands": [
+            {
+              "id": "18-34",
+              "min": 18,
+              "max": 34,
+              "label": "18–34"
+            },
+            {
+              "id": "35-49",
+              "min": 35,
+              "max": 49,
+              "label": "35–49"
+            },
+            {
+              "id": "50-59",
+              "min": 50,
+              "max": 59,
+              "label": "50–59"
+            },
+            {
+              "id": "60-64",
+              "min": 60,
+              "max": 64,
+              "label": "60–64"
+            }
+          ],
+          "coverage_tiers": [
+            "member",
+            "member_spouse",
+            "member_children",
+            "family"
+          ],
+          "tobacco": {
+            "enabled": false
+          },
+          "fees": [
+            {
+              "id": "enrollment-contribution",
+              "label": "Enrollment Contribution",
+              "type": "flat_one_time",
+              "amount": 800,
+              "applies_to": "enrollment",
+              "enabled": true
+            },
+            {
+              "id": "partnership-cost",
+              "label": "Partnership Cost (Doctor/Nurse)",
+              "type": "flat_monthly",
+              "amount": 0,
+              "applies_to": "quote",
+              "enabled": false
+            },
+            {
+              "id": "wellness-lab",
+              "label": "Wellness Lab Panel",
+              "type": "flat_monthly",
+              "amount": 0,
+              "applies_to": "quote",
+              "enabled": false
+            }
+          ],
+          "rates": {
+            "member": {
+              "18-34": 187.25,
+              "35-49": 262.14,
+              "50-59": 337.04,
+              "60-64": 393.21
+            },
+            "member_spouse": {
+              "18-34": 411.94,
+              "35-49": 576.71,
+              "50-59": 741.49,
+              "60-64": 865.07
+            },
+            "member_children": {
+              "18-34": 337.04,
+              "35-49": 471.86,
+              "50-59": 606.67,
+              "60-64": 707.79
+            },
+            "family": {
+              "18-34": 561.74,
+              "35-49": 786.43,
+              "50-59": 1011.12,
+              "60-64": 1179.64
+            }
+          }
+        },
+        {
+          "planId": "PIFH-MSA-GRP-2500",
+          "displayName": "MSA Group $2,500 IUA",
+          "rating_model": "tiered_household",
+          "age_rating_basis": "primary",
+          "market_segment": "group",
+          "iua_amount": 2500,
+          "provisional": true,
+          "age_bands": [
+            {
+              "id": "18-34",
+              "min": 18,
+              "max": 34,
+              "label": "18–34"
+            },
+            {
+              "id": "35-49",
+              "min": 35,
+              "max": 49,
+              "label": "35–49"
+            },
+            {
+              "id": "50-59",
+              "min": 50,
+              "max": 59,
+              "label": "50–59"
+            },
+            {
+              "id": "60-64",
+              "min": 60,
+              "max": 64,
+              "label": "60–64"
+            }
+          ],
+          "coverage_tiers": [
+            "member",
+            "member_spouse",
+            "member_children",
+            "family"
+          ],
+          "tobacco": {
+            "enabled": false
+          },
+          "fees": [
+            {
+              "id": "enrollment-contribution",
+              "label": "Enrollment Contribution",
+              "type": "flat_one_time",
+              "amount": 800,
+              "applies_to": "enrollment",
+              "enabled": true
+            },
+            {
+              "id": "partnership-cost",
+              "label": "Partnership Cost (Doctor/Nurse)",
+              "type": "flat_monthly",
+              "amount": 0,
+              "applies_to": "quote",
+              "enabled": false
+            },
+            {
+              "id": "wellness-lab",
+              "label": "Wellness Lab Panel",
+              "type": "flat_monthly",
+              "amount": 0,
+              "applies_to": "quote",
+              "enabled": false
+            }
+          ],
+          "rates": {
+            "member": {
+              "18-34": 149.8,
+              "35-49": 209.71,
+              "50-59": 259.52,
+              "60-64": 302.78
+            },
+            "member_spouse": {
+              "18-34": 329.55,
+              "35-49": 461.37,
+              "50-59": 570.95,
+              "60-64": 666.11
+            },
+            "member_children": {
+              "18-34": 269.63,
+              "35-49": 377.49,
+              "50-59": 467.14,
+              "60-64": 545
+            },
+            "family": {
+              "18-34": 449.39,
+              "35-49": 629.14,
+              "50-59": 778.56,
+              "60-64": 908.33
+            }
+          }
+        },
+        {
+          "planId": "PIFH-MSA-GRP-5000",
+          "displayName": "MSA Group $5,000 IUA",
+          "rating_model": "tiered_household",
+          "age_rating_basis": "primary",
+          "market_segment": "group",
+          "iua_amount": 5000,
+          "provisional": true,
+          "age_bands": [
+            {
+              "id": "18-34",
+              "min": 18,
+              "max": 34,
+              "label": "18–34"
+            },
+            {
+              "id": "35-49",
+              "min": 35,
+              "max": 49,
+              "label": "35–49"
+            },
+            {
+              "id": "50-59",
+              "min": 50,
+              "max": 59,
+              "label": "50–59"
+            },
+            {
+              "id": "60-64",
+              "min": 60,
+              "max": 64,
+              "label": "60–64"
+            }
+          ],
+          "coverage_tiers": [
+            "member",
+            "member_spouse",
+            "member_children",
+            "family"
+          ],
+          "tobacco": {
+            "enabled": false
+          },
+          "fees": [
+            {
+              "id": "enrollment-contribution",
+              "label": "Enrollment Contribution",
+              "type": "flat_one_time",
+              "amount": 800,
+              "applies_to": "enrollment",
+              "enabled": true
+            },
+            {
+              "id": "partnership-cost",
+              "label": "Partnership Cost (Doctor/Nurse)",
+              "type": "flat_monthly",
+              "amount": 0,
+              "applies_to": "quote",
+              "enabled": false
+            },
+            {
+              "id": "wellness-lab",
+              "label": "Wellness Lab Panel",
+              "type": "flat_monthly",
+              "amount": 0,
+              "applies_to": "quote",
+              "enabled": false
+            }
+          ],
+          "rates": {
+            "member": {
+              "18-34": 108.6,
+              "35-49": 152.04,
+              "50-59": 195.48,
+              "60-64": 228.06
+            },
+            "member_spouse": {
+              "18-34": 238.92,
+              "35-49": 334.49,
+              "50-59": 430.06,
+              "60-64": 501.74
+            },
+            "member_children": {
+              "18-34": 195.48,
+              "35-49": 273.68,
+              "50-59": 351.87,
+              "60-64": 410.52
+            },
+            "family": {
+              "18-34": 325.81,
+              "35-49": 456.13,
+              "50-59": 586.45,
+              "60-64": 684.19
+            }
           }
         }
       ]
     },
     "rates_2026": {
-      "label": "2026 Rates",
+      "label": "MSA Provisional Rates (2026)",
       "effective_date": "2026-01-01",
       "plans": [
         {
-          "planId": "dhh-essential",
-          "displayName": "DHH Essential",
+          "planId": "PIFH-MSA-IND-1250",
+          "displayName": "MSA Individual $1,250 IUA",
           "rating_model": "tiered_household",
+          "age_rating_basis": "older_of_couple",
+          "market_segment": "individual",
+          "iua_amount": 1250,
+          "provisional": true,
           "age_bands": [
-            { "id": "18-29", "min": 18, "max": 29, "label": "18–29" },
-            { "id": "30-39", "min": 30, "max": 39, "label": "30–39" },
-            { "id": "40-49", "min": 40, "max": 49, "label": "40–49" },
-            { "id": "50-59", "min": 50, "max": 59, "label": "50–59" },
-            { "id": "60-64", "min": 60, "max": 64, "label": "60–64" }
-          ],
-          "coverage_tiers": ["member", "member_spouse", "member_children", "family"],
-          "tobacco": { "enabled": true, "factor": 1.15 },
-          "fees": [
             {
-              "id": "admin-fee",
-              "label": "Administrative Fee",
-              "type": "flat_monthly",
-              "amount": 30,
-              "applies_to": "quote",
-              "enabled": true
+              "id": "18-34",
+              "min": 18,
+              "max": 34,
+              "label": "18–34"
             },
             {
-              "id": "enrollment-fee",
-              "label": "One-Time Enrollment Fee",
+              "id": "35-49",
+              "min": 35,
+              "max": 49,
+              "label": "35–49"
+            },
+            {
+              "id": "50-59",
+              "min": 50,
+              "max": 59,
+              "label": "50–59"
+            },
+            {
+              "id": "60-64",
+              "min": 60,
+              "max": 64,
+              "label": "60–64"
+            }
+          ],
+          "coverage_tiers": [
+            "member",
+            "member_spouse",
+            "member_children",
+            "family"
+          ],
+          "tobacco": {
+            "enabled": false
+          },
+          "fees": [
+            {
+              "id": "enrollment-contribution",
+              "label": "Enrollment Contribution",
               "type": "flat_one_time",
-              "amount": 150,
+              "amount": 800,
               "applies_to": "enrollment",
-              "enabled": true
+              "enabled": true,
+              "meta": {
+                "splits": {
+                  "referringMember": 100,
+                  "adminOps": 50
+                }
+              }
+            },
+            {
+              "id": "partnership-cost",
+              "label": "Partnership Cost (Doctor/Nurse)",
+              "type": "flat_monthly",
+              "amount": 0,
+              "applies_to": "quote",
+              "enabled": false
+            },
+            {
+              "id": "wellness-lab",
+              "label": "Wellness Lab Panel",
+              "type": "flat_monthly",
+              "amount": 0,
+              "applies_to": "quote",
+              "enabled": false
             }
           ],
           "rates": {
-            "member":          { "18-29": 240, "30-39": 295, "40-49": 365, "50-59": 455, "60-64": 545 },
-            "member_spouse":   { "18-29": 480, "30-39": 560, "40-49": 695, "50-59": 880, "60-64": 1060 },
-            "member_children": { "18-29": 375, "30-39": 425, "40-49": 510, "50-59": 615, "60-64": 720 },
-            "family":          { "18-29": 615, "30-39": 720, "40-49": 880, "50-59": 1095, "60-64": 1310 }
+            "member": {
+              "18-34": 197.1,
+              "35-49": 275.94,
+              "50-59": 354.78,
+              "60-64": 413.91
+            },
+            "member_spouse": {
+              "18-34": 394.2,
+              "35-49": 551.88,
+              "50-59": 709.56,
+              "60-64": 827.82
+            },
+            "member_children": {
+              "18-34": 354.78,
+              "35-49": 496.69,
+              "50-59": 638.6,
+              "60-64": 745.04
+            },
+            "family": {
+              "18-34": 551.88,
+              "35-49": 772.63,
+              "50-59": 993.38,
+              "60-64": 1158.95
+            }
           }
         },
         {
-          "planId": "dhh-premier",
-          "displayName": "DHH Premier",
-          "rating_model": "additive_person",
+          "planId": "PIFH-MSA-IND-2500",
+          "displayName": "MSA Individual $2,500 IUA",
+          "rating_model": "tiered_household",
+          "age_rating_basis": "older_of_couple",
+          "market_segment": "individual",
+          "iua_amount": 2500,
+          "provisional": true,
           "age_bands": [
-            { "id": "18-29", "min": 18, "max": 29, "label": "18–29" },
-            { "id": "30-39", "min": 30, "max": 39, "label": "30–39" },
-            { "id": "40-49", "min": 40, "max": 49, "label": "40–49" },
-            { "id": "50-59", "min": 50, "max": 59, "label": "50–59" },
-            { "id": "60-64", "min": 60, "max": 64, "label": "60–64" }
+            {
+              "id": "18-34",
+              "min": 18,
+              "max": 34,
+              "label": "18–34"
+            },
+            {
+              "id": "35-49",
+              "min": 35,
+              "max": 49,
+              "label": "35–49"
+            },
+            {
+              "id": "50-59",
+              "min": 50,
+              "max": 59,
+              "label": "50–59"
+            },
+            {
+              "id": "60-64",
+              "min": 60,
+              "max": 64,
+              "label": "60–64"
+            }
           ],
-          "coverage_tiers": ["member", "member_spouse", "member_children", "family"],
-          "tobacco": { "enabled": true, "factor": 1.20 },
+          "coverage_tiers": [
+            "member",
+            "member_spouse",
+            "member_children",
+            "family"
+          ],
+          "tobacco": {
+            "enabled": false
+          },
           "fees": [
             {
-              "id": "admin-fee",
-              "label": "Administrative Fee",
-              "type": "flat_monthly",
-              "amount": 40,
-              "applies_to": "quote",
+              "id": "enrollment-contribution",
+              "label": "Enrollment Contribution",
+              "type": "flat_one_time",
+              "amount": 800,
+              "applies_to": "enrollment",
               "enabled": true
             },
             {
-              "id": "enrollment-fee",
-              "label": "One-Time Enrollment Fee",
-              "type": "flat_one_time",
-              "amount": 200,
-              "applies_to": "enrollment",
-              "enabled": true
+              "id": "partnership-cost",
+              "label": "Partnership Cost (Doctor/Nurse)",
+              "type": "flat_monthly",
+              "amount": 0,
+              "applies_to": "quote",
+              "enabled": false
+            },
+            {
+              "id": "wellness-lab",
+              "label": "Wellness Lab Panel",
+              "type": "flat_monthly",
+              "amount": 0,
+              "applies_to": "quote",
+              "enabled": false
             }
           ],
           "rates": {
-            "subscriber":      { "18-29": 330, "30-39": 400, "40-49": 490, "50-59": 605, "60-64": 725 },
-            "spouse_adder":    { "18-29": 210, "30-39": 245, "40-49": 305, "50-59": 375, "60-64": 455 },
-            "dependent_adder": { "18-29": 135, "30-39": 135, "40-49": 135, "50-59": 135, "60-64": 135 },
-            "max_dependents_priced": 3
+            "member": {
+              "18-34": 157.68,
+              "35-49": 220.75,
+              "50-59": 273.18,
+              "60-64": 318.71
+            },
+            "member_spouse": {
+              "18-34": 315.36,
+              "35-49": 441.5,
+              "50-59": 546.36,
+              "60-64": 637.42
+            },
+            "member_children": {
+              "18-34": 283.82,
+              "35-49": 397.35,
+              "50-59": 491.73,
+              "60-64": 573.68
+            },
+            "family": {
+              "18-34": 441.5,
+              "35-49": 618.11,
+              "50-59": 764.91,
+              "60-64": 892.39
+            }
           }
         },
         {
-          "planId": "dhh-value",
-          "displayName": "DHH Value",
-          "rating_model": "additive_person",
+          "planId": "PIFH-MSA-IND-5000",
+          "displayName": "MSA Individual $5,000 IUA",
+          "rating_model": "tiered_household",
+          "age_rating_basis": "older_of_couple",
+          "market_segment": "individual",
+          "iua_amount": 5000,
+          "provisional": true,
           "age_bands": [
-            { "id": "18-29", "min": 18, "max": 29, "label": "18–29" },
-            { "id": "30-39", "min": 30, "max": 39, "label": "30–39" },
-            { "id": "40-49", "min": 40, "max": 49, "label": "40–49" },
-            { "id": "50-59", "min": 50, "max": 59, "label": "50–59" },
-            { "id": "60-64", "min": 60, "max": 64, "label": "60–64" }
+            {
+              "id": "18-34",
+              "min": 18,
+              "max": 34,
+              "label": "18–34"
+            },
+            {
+              "id": "35-49",
+              "min": 35,
+              "max": 49,
+              "label": "35–49"
+            },
+            {
+              "id": "50-59",
+              "min": 50,
+              "max": 59,
+              "label": "50–59"
+            },
+            {
+              "id": "60-64",
+              "min": 60,
+              "max": 64,
+              "label": "60–64"
+            }
           ],
-          "coverage_tiers": ["member", "member_spouse", "member_children", "family"],
-          "tobacco": { "enabled": false },
+          "coverage_tiers": [
+            "member",
+            "member_spouse",
+            "member_children",
+            "family"
+          ],
+          "tobacco": {
+            "enabled": false
+          },
           "fees": [
             {
-              "id": "admin-fee",
-              "label": "Administrative Fee",
-              "type": "flat_monthly",
-              "amount": 25,
-              "applies_to": "quote",
+              "id": "enrollment-contribution",
+              "label": "Enrollment Contribution",
+              "type": "flat_one_time",
+              "amount": 800,
+              "applies_to": "enrollment",
               "enabled": true
+            },
+            {
+              "id": "partnership-cost",
+              "label": "Partnership Cost (Doctor/Nurse)",
+              "type": "flat_monthly",
+              "amount": 0,
+              "applies_to": "quote",
+              "enabled": false
+            },
+            {
+              "id": "wellness-lab",
+              "label": "Wellness Lab Panel",
+              "type": "flat_monthly",
+              "amount": 0,
+              "applies_to": "quote",
+              "enabled": false
             }
           ],
           "rates": {
-            "subscriber":      { "18-29": 200, "30-39": 235, "40-49": 290, "50-59": 360, "60-64": 435 },
-            "spouse_adder":    { "flat": 160 },
-            "dependent_adder": { "flat": 90 },
-            "max_dependents_priced": 4
+            "member": {
+              "18-34": 114.32,
+              "35-49": 160.05,
+              "50-59": 205.77,
+              "60-64": 240.07
+            },
+            "member_spouse": {
+              "18-34": 228.64,
+              "35-49": 320.09,
+              "50-59": 411.54,
+              "60-64": 480.14
+            },
+            "member_children": {
+              "18-34": 205.77,
+              "35-49": 288.08,
+              "50-59": 370.39,
+              "60-64": 432.12
+            },
+            "family": {
+              "18-34": 320.09,
+              "35-49": 448.13,
+              "50-59": 576.16,
+              "60-64": 672.19
+            }
+          }
+        },
+        {
+          "planId": "PIFH-MSA-GRP-1250",
+          "displayName": "MSA Group $1,250 IUA",
+          "rating_model": "tiered_household",
+          "age_rating_basis": "primary",
+          "market_segment": "group",
+          "iua_amount": 1250,
+          "provisional": true,
+          "age_bands": [
+            {
+              "id": "18-34",
+              "min": 18,
+              "max": 34,
+              "label": "18–34"
+            },
+            {
+              "id": "35-49",
+              "min": 35,
+              "max": 49,
+              "label": "35–49"
+            },
+            {
+              "id": "50-59",
+              "min": 50,
+              "max": 59,
+              "label": "50–59"
+            },
+            {
+              "id": "60-64",
+              "min": 60,
+              "max": 64,
+              "label": "60–64"
+            }
+          ],
+          "coverage_tiers": [
+            "member",
+            "member_spouse",
+            "member_children",
+            "family"
+          ],
+          "tobacco": {
+            "enabled": false
+          },
+          "fees": [
+            {
+              "id": "enrollment-contribution",
+              "label": "Enrollment Contribution",
+              "type": "flat_one_time",
+              "amount": 800,
+              "applies_to": "enrollment",
+              "enabled": true
+            },
+            {
+              "id": "partnership-cost",
+              "label": "Partnership Cost (Doctor/Nurse)",
+              "type": "flat_monthly",
+              "amount": 0,
+              "applies_to": "quote",
+              "enabled": false
+            },
+            {
+              "id": "wellness-lab",
+              "label": "Wellness Lab Panel",
+              "type": "flat_monthly",
+              "amount": 0,
+              "applies_to": "quote",
+              "enabled": false
+            }
+          ],
+          "rates": {
+            "member": {
+              "18-34": 187.25,
+              "35-49": 262.14,
+              "50-59": 337.04,
+              "60-64": 393.21
+            },
+            "member_spouse": {
+              "18-34": 411.94,
+              "35-49": 576.71,
+              "50-59": 741.49,
+              "60-64": 865.07
+            },
+            "member_children": {
+              "18-34": 337.04,
+              "35-49": 471.86,
+              "50-59": 606.67,
+              "60-64": 707.79
+            },
+            "family": {
+              "18-34": 561.74,
+              "35-49": 786.43,
+              "50-59": 1011.12,
+              "60-64": 1179.64
+            }
+          }
+        },
+        {
+          "planId": "PIFH-MSA-GRP-2500",
+          "displayName": "MSA Group $2,500 IUA",
+          "rating_model": "tiered_household",
+          "age_rating_basis": "primary",
+          "market_segment": "group",
+          "iua_amount": 2500,
+          "provisional": true,
+          "age_bands": [
+            {
+              "id": "18-34",
+              "min": 18,
+              "max": 34,
+              "label": "18–34"
+            },
+            {
+              "id": "35-49",
+              "min": 35,
+              "max": 49,
+              "label": "35–49"
+            },
+            {
+              "id": "50-59",
+              "min": 50,
+              "max": 59,
+              "label": "50–59"
+            },
+            {
+              "id": "60-64",
+              "min": 60,
+              "max": 64,
+              "label": "60–64"
+            }
+          ],
+          "coverage_tiers": [
+            "member",
+            "member_spouse",
+            "member_children",
+            "family"
+          ],
+          "tobacco": {
+            "enabled": false
+          },
+          "fees": [
+            {
+              "id": "enrollment-contribution",
+              "label": "Enrollment Contribution",
+              "type": "flat_one_time",
+              "amount": 800,
+              "applies_to": "enrollment",
+              "enabled": true
+            },
+            {
+              "id": "partnership-cost",
+              "label": "Partnership Cost (Doctor/Nurse)",
+              "type": "flat_monthly",
+              "amount": 0,
+              "applies_to": "quote",
+              "enabled": false
+            },
+            {
+              "id": "wellness-lab",
+              "label": "Wellness Lab Panel",
+              "type": "flat_monthly",
+              "amount": 0,
+              "applies_to": "quote",
+              "enabled": false
+            }
+          ],
+          "rates": {
+            "member": {
+              "18-34": 149.8,
+              "35-49": 209.71,
+              "50-59": 259.52,
+              "60-64": 302.78
+            },
+            "member_spouse": {
+              "18-34": 329.55,
+              "35-49": 461.37,
+              "50-59": 570.95,
+              "60-64": 666.11
+            },
+            "member_children": {
+              "18-34": 269.63,
+              "35-49": 377.49,
+              "50-59": 467.14,
+              "60-64": 545
+            },
+            "family": {
+              "18-34": 449.39,
+              "35-49": 629.14,
+              "50-59": 778.56,
+              "60-64": 908.33
+            }
+          }
+        },
+        {
+          "planId": "PIFH-MSA-GRP-5000",
+          "displayName": "MSA Group $5,000 IUA",
+          "rating_model": "tiered_household",
+          "age_rating_basis": "primary",
+          "market_segment": "group",
+          "iua_amount": 5000,
+          "provisional": true,
+          "age_bands": [
+            {
+              "id": "18-34",
+              "min": 18,
+              "max": 34,
+              "label": "18–34"
+            },
+            {
+              "id": "35-49",
+              "min": 35,
+              "max": 49,
+              "label": "35–49"
+            },
+            {
+              "id": "50-59",
+              "min": 50,
+              "max": 59,
+              "label": "50–59"
+            },
+            {
+              "id": "60-64",
+              "min": 60,
+              "max": 64,
+              "label": "60–64"
+            }
+          ],
+          "coverage_tiers": [
+            "member",
+            "member_spouse",
+            "member_children",
+            "family"
+          ],
+          "tobacco": {
+            "enabled": false
+          },
+          "fees": [
+            {
+              "id": "enrollment-contribution",
+              "label": "Enrollment Contribution",
+              "type": "flat_one_time",
+              "amount": 800,
+              "applies_to": "enrollment",
+              "enabled": true
+            },
+            {
+              "id": "partnership-cost",
+              "label": "Partnership Cost (Doctor/Nurse)",
+              "type": "flat_monthly",
+              "amount": 0,
+              "applies_to": "quote",
+              "enabled": false
+            },
+            {
+              "id": "wellness-lab",
+              "label": "Wellness Lab Panel",
+              "type": "flat_monthly",
+              "amount": 0,
+              "applies_to": "quote",
+              "enabled": false
+            }
+          ],
+          "rates": {
+            "member": {
+              "18-34": 108.6,
+              "35-49": 152.04,
+              "50-59": 195.48,
+              "60-64": 228.06
+            },
+            "member_spouse": {
+              "18-34": 238.92,
+              "35-49": 334.49,
+              "50-59": 430.06,
+              "60-64": 501.74
+            },
+            "member_children": {
+              "18-34": 195.48,
+              "35-49": 273.68,
+              "50-59": 351.87,
+              "60-64": 410.52
+            },
+            "family": {
+              "18-34": 325.81,
+              "35-49": 456.13,
+              "50-59": 586.45,
+              "60-64": 684.19
+            }
           }
         }
       ]

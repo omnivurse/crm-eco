@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
       .from('plan_rate_sets')
       .select(`
         *,
-        plan:plans!inner(id, name, code, organization_id),
+        plan:plans!inner(id, name, code, organization_id, iua_amount, metadata),
         entries:plan_rate_entries(*),
         fees:plan_fees(*)
       `)
@@ -74,6 +74,7 @@ export async function POST(request: NextRequest) {
       ageBands,
       tobaccoConfig,
       maxDependentsPriced,
+      ageRatingBasis,
       rates,
       fees,
     } = body;
@@ -107,6 +108,7 @@ export async function POST(request: NextRequest) {
           age_bands: ageBands || [],
           tobacco_config: tobaccoConfig || { enabled: false },
           max_dependents_priced: maxDependentsPriced ?? null,
+          ...(ageRatingBasis ? { age_rating_basis: ageRatingBasis } : {}),
         },
         { onConflict: 'plan_id,rate_set_key' }
       )
@@ -137,12 +139,14 @@ export async function POST(request: NextRequest) {
       const feeRows =
         fees.length > 0
           ? fees.map((f: any, i: number) => ({
+              fee_key: f.id || f.fee_key || null,
               label: f.label,
               fee_type: f.type || f.fee_type,
               amount: f.amount,
               applies_to: f.applies_to || 'quote',
               enabled: f.enabled ?? true,
               sort_order: i,
+              meta: f.meta || {},
             }))
           : [];
       const { error: feeErr } = await (supabase as any).rpc('replace_plan_fees', {

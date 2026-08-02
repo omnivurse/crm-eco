@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Button } from '@crm-eco/ui';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { CheckCircle2, Star, ArrowRight } from 'lucide-react';
-import { buildMatrixPreview } from '@crm-eco/rates';
+import { buildMatrixPreview, getPlanOptions } from '@crm-eco/rates';
 import type { RateConfig } from '@crm-eco/rates/types';
 import seedConfig from '@crm-eco/rates/config';
 import { Container, SectionHeading } from '@/components/sections/blocks';
@@ -46,18 +46,35 @@ export async function HomePlanCards() {
     .eq('organization_id', PIFH_ORG_ID)
     .eq('is_active', true)
     .or('hide_from_public.is.null,hide_from_public.eq.false')
-    .order('monthly_share')
+    .like('code', 'PIFH-MSA-%')
+    .order('iua_amount')
     .limit(3);
 
-  const dbPlans = (plans || []) as DbPlan[];
+  let dbPlans = (plans || []) as DbPlan[];
+
+  // Before DB migration: show seed MSA Individual cards so pricing is visible.
+  if (dbPlans.length === 0) {
+    dbPlans = getPlanOptions(rateConfig, 'current')
+      .filter((p) => p.marketSegment === 'individual')
+      .slice(0, 3)
+      .map((p) => ({
+        id: p.planId,
+        name: p.displayName,
+        code: p.planId,
+        monthly_share: null,
+        description: 'Provisional MSA individual sharing program',
+      }));
+  }
 
   const benefitsByPlan = new Map<string, DbBenefit[]>();
-  if (dbPlans.length > 0) {
-    const planIds = dbPlans.map((p) => p.id);
+  const uuidPlanIds = dbPlans
+    .map((p) => p.id)
+    .filter((id) => /^[0-9a-f-]{36}$/i.test(id));
+  if (uuidPlanIds.length > 0) {
     const { data: benefits } = await supabase
       .from('product_benefits')
       .select('id, plan_id, benefit_name')
-      .in('plan_id', planIds)
+      .in('plan_id', uuidPlanIds)
       .order('sort_order');
     for (const b of (benefits || []) as DbBenefit[]) {
       if (!benefitsByPlan.has(b.plan_id)) benefitsByPlan.set(b.plan_id, []);
@@ -75,7 +92,7 @@ export async function HomePlanCards() {
         <SectionHeading
           eyebrow="Membership Programs"
           title="A program for every household and budget"
-          subtitle="Affordable monthly shares with no annual deductible to satisfy. Choose the level of support that fits your family — change or cancel any time."
+          subtitle="Affordable monthly shares with no annual deductible to satisfy. Choose the level of support that fits your family — change or cancel any time. Rates shown are provisional and exclude partnership and wellness lab costs."
         />
 
         <div className="mx-auto mt-14 grid max-w-5xl gap-6 md:grid-cols-3">

@@ -1,27 +1,9 @@
 /**
  * GET /api/cron/activate-pending-members
  *
- * Daily cron that auto-transitions Pending contacts/members to Active when
- * their coverage start date has arrived, then emails the assigned rep.
- *
- * Two passes per invocation (mirrors the age-65 cancellation cron):
- *   1. Activate — scan every contacts/members record in a pending-class status,
- *      resolve its effective coverage start date, and when that date is today
- *      or earlier flip `status` → Active (market/HS-taxonomy aware). The change
- *      is logged to `crm_stage_history` and `data.contact_status` is kept in
- *      sync for the UI.
- *   2. Notify — enqueue one `crm_activation_outbox` row per newly-activated
- *      record and drain unsent rows by emailing the assigned rep via Resend.
- *      A send failure never blocks or rolls back an activation.
- *
- * Start date resolution (first match wins): `current_year_start_date` /
- * `original_start_date` indexed columns, then JSONB keys (start_date,
- * sharing_effective_date, insurance_effective_date, health_insurance_start_date,
- * …) — see resolveEffectiveStartDate.
- *
- * Idempotent — safe to invoke repeatedly. Already-active records are skipped by
- * the pending-status filter; the outbox has a (record_id, activation_date)
- * unique index so a rep is emailed at most once per activation.
+ * Thin adapter: daily cron that auto-transitions Pending contacts/members to
+ * Active when their coverage start date has arrived, then emails the assigned
+ * rep. Activation logic lives in `@/lib/crm/member-activation`.
  *
  * `?dry_run=1` returns counts only and mutates nothing.
  *
@@ -32,16 +14,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
-import {
-  PENDING_CONTACT_STATUSES,
-  resolveActiveStatusForMarket,
-  resolveEffectiveStartDate,
-} from '@/lib/crm/membership-lifecycle';
+import { activateCrmRecordsDue } from '@/lib/crm/member-activation';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
-
-const PAGE_SIZE = 1000;
 
 function authorised(request: NextRequest): boolean {
   if (request.headers.get('x-vercel-cron')) return true;
@@ -50,19 +26,6 @@ function authorised(request: NextRequest): boolean {
   const auth = request.headers.get('authorization');
   return auth === `Bearer ${secret}`;
 }
-
-type PendingRecord = {
-  id: string;
-  status: string | null;
-  market_type: string | null;
-  org_id: string;
-  data: Record<string, unknown> | null;
-  original_start_date: string | null;
-  current_year_start_date: string | null;
-  title: string | null;
-  email: string | null;
-  owner_id: string | null;
-};
 
 type ActivatedRecord = {
   record_id: string;
@@ -86,9 +49,6 @@ interface ActivationOutboxRow {
   rep_email: string | null;
   rep_name: string | null;
 }
-
-const SELECT_COLS =
-  'id, status, market_type, org_id, data, original_start_date, current_year_start_date, title, email, owner_id';
 
 function buildEmail(row: ActivationOutboxRow): { subject: string; html: string; text: string } {
   const name = row.member_name || 'A contact';
@@ -143,114 +103,42 @@ export async function GET(request: NextRequest) {
   const today = new Date().toISOString().slice(0, 10);
   const dryRun = request.nextUrl.searchParams.get('dry_run') === '1';
 
-  const { data: modules, error: moduleError } = await supabase
-    .from('crm_modules')
-    .select('id')
-    .in('key', ['contacts', 'members']);
+  const result = await activateCrmRecordsDue(supabase, today, { dryRun });
 
-  if (moduleError) {
-    console.error('[activate-pending-members] module fetch error:', moduleError);
-    return NextResponse.json({ error: moduleError.message }, { status: 500 });
-  }
-
-  const moduleIds = (modules ?? []).map((m) => m.id);
-  if (moduleIds.length === 0) {
-    return NextResponse.json({ activated: 0, message: 'No contacts/members modules found' });
-  }
-
-  // ── 1. Activation pass (paginated so >PAGE_SIZE pending records are covered) ──
-  const activated: ActivatedRecord[] = [];
-  const errors: string[] = [];
-  let scanned = 0;
-  let eligible = 0;
-  const dryRunSample: Array<{ id: string; status: string | null; start_date: string }> = [];
-
-  for (let from = 0; ; from += PAGE_SIZE) {
-    const { data: page, error: fetchError } = await supabase
-      .from('crm_records')
-      .select(SELECT_COLS)
-      .in('module_id', moduleIds)
-      .in('status', [...PENDING_CONTACT_STATUSES])
-      .order('id', { ascending: true })
-      .range(from, from + PAGE_SIZE - 1);
-
-    if (fetchError) {
-      console.error('[activate-pending-members] fetch error:', fetchError);
-      return NextResponse.json({ error: fetchError.message }, { status: 500 });
+  if (result.error && result.pending_scanned === 0 && result.would_activate === 0) {
+    if (result.error === 'No contacts/members modules found') {
+      return NextResponse.json({ activated: 0, message: result.error });
     }
-    if (!page || page.length === 0) break;
-    scanned += page.length;
-
-    for (const raw of page as PendingRecord[]) {
-      const startDate = resolveEffectiveStartDate(raw);
-      if (!startDate || startDate > today) continue;
-
-      eligible++;
-      const newStatus = resolveActiveStatusForMarket(raw.market_type, raw.status);
-      const oldStatus = raw.status;
-
-      if (dryRun) {
-        if (dryRunSample.length < 25) {
-          dryRunSample.push({ id: raw.id, status: oldStatus, start_date: startDate });
-        }
-        continue;
-      }
-
-      const existingData =
-        raw.data && typeof raw.data === 'object' && !Array.isArray(raw.data) ? raw.data : {};
-
-      const { error: updateError } = await supabase
-        .from('crm_records')
-        .update({
-          status: newStatus,
-          data: { ...existingData, contact_status: newStatus },
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', raw.id);
-
-      if (updateError) {
-        console.error(`[activate-pending-members] update error for ${raw.id}:`, updateError);
-        errors.push(`${raw.id}: ${updateError.message}`);
-        continue;
-      }
-
-      // Best-effort audit; a history failure must not undo the activation.
-      const { error: histError } = await supabase.from('crm_stage_history').insert({
-        record_id: raw.id,
-        org_id: raw.org_id,
-        from_stage: oldStatus,
-        to_stage: newStatus,
-        reason: `Auto-activated: start date ${startDate} has arrived`,
-      });
-      if (histError) {
-        console.error(`[activate-pending-members] stage_history error for ${raw.id}:`, histError);
-      }
-
-      activated.push({
-        record_id: raw.id,
-        org_id: raw.org_id,
-        member_name: raw.title,
-        member_email: raw.email,
-        activation_date: startDate,
-        new_status: newStatus,
-        owner_id: raw.owner_id,
-      });
-    }
-
-    if (page.length < PAGE_SIZE) break;
+    console.error('[activate-pending-members] activation error:', result.error);
+    return NextResponse.json({ error: result.error }, { status: 500 });
   }
 
   if (dryRun) {
     return NextResponse.json({
       dryRun: true,
       today,
-      pending_scanned: scanned,
-      would_activate: eligible,
-      sample: dryRunSample,
+      pending_scanned: result.pending_scanned,
+      would_activate: result.would_activate,
+      sample: result.sample,
     });
   }
 
-  // ── 2. Enqueue notification rows for newly-activated records ──
+  const activated: ActivatedRecord[] = result.activated
+    .filter((a) => a.activated && a.record_id && a.start_date && a.new_status && a.org_id)
+    .map((a) => ({
+      record_id: a.record_id!,
+      org_id: a.org_id!,
+      member_name: a.member_name ?? null,
+      member_email: a.member_email ?? null,
+      activation_date: a.start_date!,
+      new_status: a.new_status!,
+      owner_id: a.owner_id ?? null,
+    }));
+  const errors = result.errors;
+  const scanned = result.pending_scanned;
+  const eligible = result.would_activate;
+
+  // ── Enqueue notification rows for newly-activated records ──
   if (activated.length > 0) {
     const ownerIds = Array.from(
       new Set(activated.map((a) => a.owner_id).filter((id): id is string => Boolean(id))),
@@ -292,7 +180,7 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // ── 3. Drain unsent outbox rows by emailing the assigned rep via Resend ──
+  // ── Drain unsent outbox rows by emailing the assigned rep via Resend ──
   const { data: unsent, error: outboxErr } = await supabase
     .from('crm_activation_outbox')
     .select(
@@ -320,13 +208,7 @@ export async function GET(request: NextRequest) {
     'notifications@payitforwardhealth.com';
   const fromEmail = `${fromName} <${fromAddress}>`;
 
-  // ── Recipient hard-lock (client request, 2026-06-01) ────────────────────────
-  // While activation notifications are piloted, EVERY email is routed to this one
-  // address regardless of the record's owner — so no other rep can receive one
-  // (contacts are never recipients in any case). Records with no owner still send
-  // nothing, keeping the backlog silent. To return to owner-based routing later
-  // (once Wendy owns the org/tenant), set ACTIVATION_NOTIFICATION_TO_OVERRIDE=""
-  // in the crm-core env and remove the literal default below.
+  // Recipient hard-lock (pilot): route every email to override when set.
   const toOverride = (
     process.env.ACTIVATION_NOTIFICATION_TO_OVERRIDE ?? 'wendy@payitforwardstrategies.com'
   ).trim();
@@ -364,19 +246,17 @@ export async function GET(request: NextRequest) {
       continue;
     }
 
-    // Owner presence gates whether we notify (keeps the backlog silent); the
-    // recipient is then forced to the hard-lock address when set.
     const recipient = toOverride || row.rep_email;
     const { subject, html, text } = buildEmail(row);
     try {
-      const result = await resend!.emails.send({
+      const resultSend = await resend!.emails.send({
         from: fromEmail,
         to: recipient,
         subject,
         html,
         text,
       });
-      if (result.error) throw new Error(result.error.message);
+      if (resultSend.error) throw new Error(resultSend.error.message);
 
       await supabase
         .from('crm_activation_outbox')

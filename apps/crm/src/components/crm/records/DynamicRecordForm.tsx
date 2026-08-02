@@ -44,7 +44,12 @@ import { getFieldOptions } from '@/lib/crm/utils';
 import { toDatetimeLocalValue } from '@/lib/crm/datetime-local';
 import { normalizeDateColumnValue } from '@/lib/crm/merge-crm-data-json-to-row';
 import { classifyCarrierValue } from '@/lib/crm/coverage-carriers';
-import { selectCoverageSnapshotPlanFields } from '@/lib/crm/coverage-snapshot-plan-fields';
+import {
+  coerceCoverageSnapshotFieldValue,
+  isCapacityProductValue,
+  selectCoverageSnapshotPlanFields,
+} from '@/lib/crm/coverage-snapshot-plan-fields';
+import { resolveCoverageSnapshotPlanType } from '@/lib/crm/coverage-snapshot-plan-type';
 import { selectHeroSharingField } from '@/lib/crm/coverage-snapshot-identity';
 import {
   isoDateToMaskedDisplay,
@@ -771,15 +776,22 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
 
   // Helper: a single field cell (label + input or read-only renderer)
   const renderFieldCell = useCallback(
-    (field: CrmField, opts?: { row?: boolean; tightLabel?: boolean }) => {
+    (
+      field: CrmField,
+      opts?: { row?: boolean; tightLabel?: boolean; displayValue?: unknown },
+    ) => {
       const denseRow = Boolean(opts?.row) && readOnly;
+      const cellValue =
+        opts && 'displayValue' in opts
+          ? opts.displayValue
+          : defaultValues[field.key];
 
       const valueNode = readOnly ? (
         <div className={cn('text-sm', denseRow ? 'min-h-[20px]' : 'py-0.5 min-h-[24px]')}>
           {inlineEditable ? (
-            <InlineFieldCell field={field} value={defaultValues[field.key]} />
+            <InlineFieldCell field={field} value={cellValue} />
           ) : (
-            <FieldRenderer field={field} value={defaultValues[field.key]} />
+            <FieldRenderer field={field} value={cellValue} />
           )}
         </div>
       ) : (
@@ -914,39 +926,23 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
   // Classify the record's coverage as health-sharing vs insurance so the
   // snapshot shows ONE coherent set of terms — never an insurance Monthly
   // Premium next to a health-share Monthly Contribution — and so the carrier
-  // row is labelled correctly. Priority:
-  //   1. an explicit coverage / product / plan-type field — matches the
-  //      "Product: Insurance" the rep sees, and can't be fooled by an
-  //      unrecognized carrier name;
-  //   2. a recognized carrier value / metadata;
-  //   3. a presence heuristic over fields EXCLUSIVE to one type — never
-  //      `sharing_entity`, which can hold a mis-filed insurer like "Bright
-  //      Health" and would otherwise read as health-sharing.
-  // Falls back to 'unknown' (nothing filtered — real data is never hidden).
+  // row is labelled correctly. Logic lives in resolveCoverageSnapshotPlanType
+  // (conflict override: healthshare market_type + known insurer hero → insurance).
   const recordPlanType = useMemo<'healthshare' | 'insurance' | 'unknown'>(() => {
-    // Indexed market_type is canonical — prefer it over heuristics/aliases.
-    const market = defaultValues.market_type;
-    if (market === 'healthshare') return 'healthshare';
-    if (market === 'traditional_insurance') return 'insurance';
-
-    const norm = (v: unknown) => (typeof v === 'string' ? v.trim().toLowerCase() : '');
-    for (const k of ['coverage_type', 'plan_type', 'product_type', 'product', 'coverage_category']) {
-      const v = norm(defaultValues[k]);
-      if (!v) continue;
-      if (/\b(share|sharing|health.?share|ministry|hcsm)\b/.test(v)) return 'healthshare';
-      if (/\b(insurance|major.?medical|aca|marketplace|traditional|ppo|hmo|epo)\b/.test(v)) return 'insurance';
-    }
-    if (heroSharingField) {
-      const byValue = classifyCarrierValue(defaultValues[heroSharingField.key]);
-      if (byValue !== 'unknown') return byValue;
-      const byMeta = heroSharingField.metadata?.carrier_type;
-      if (byMeta === 'insurance' || byMeta === 'healthshare') return byMeta;
-    }
-    const hasSharing = ['monthly_contribution', 'monthly_share', 'share_amount', 'iua_amount', 'member_tier', 'sharing_status', 'sharing_member_id'].some((k) => hasValue(k));
-    const hasInsurance = ['health_insurance_carrier', 'insurance_carrier', 'monthly_premium', 'health_insurance_plan_name', 'insurance_plan_name', 'health_insurance_premium', 'insurance_premium'].some((k) => hasValue(k));
-    if (hasSharing && !hasInsurance) return 'healthshare';
-    if (hasInsurance && !hasSharing) return 'insurance';
-    return 'unknown';
+    const heroCarrierValue = heroSharingField
+      ? defaultValues[heroSharingField.key]
+      : undefined;
+    const resolved = resolveCoverageSnapshotPlanType({
+      values: defaultValues,
+      heroCarrierValue,
+      hasValue,
+    });
+    // Field metadata can still tip an otherwise-unknown hero when market_type
+    // and product aliases did not decide.
+    if (resolved !== 'unknown' || !heroSharingField) return resolved;
+    const byMeta = heroSharingField.metadata?.carrier_type;
+    if (byMeta === 'insurance' || byMeta === 'healthshare') return byMeta;
+    return resolved;
   }, [heroSharingField, defaultValues, hasValue]);
 
   // Relabel the resolved carrier row so insurance vs health sharing read as
@@ -1026,11 +1022,18 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
 
   /** Omit empty rows in static read-only snapshot; keep placeholders in edit / inline-edit. */
   const heroProductPlanSnapshotFields = useMemo(() => {
+    const hasSnapshotValue = (key: string) => {
+      const display = coerceCoverageSnapshotFieldValue(key, defaultValues[key]);
+      if (display === null || display === undefined || display === '') return false;
+      // Capacity aliases are coerced to null above; keep a belt-and-suspenders check.
+      if (key === 'product' && isCapacityProductValue(defaultValues[key])) return false;
+      return true;
+    };
     if (readOnly && !inlineEditable) {
-      return heroProductPlanFields.filter((f) => hasValue(f.key));
+      return heroProductPlanFields.filter((f) => hasSnapshotValue(f.key));
     }
     return heroProductPlanFields;
-  }, [heroProductPlanFields, hasValue, inlineEditable, readOnly]);
+  }, [heroProductPlanFields, defaultValues, inlineEditable, readOnly]);
 
   /** Referral rows for the snapshot; empty rows dropped in static read-only view. */
   const heroReferralSnapshotFields = useMemo(() => {
@@ -1147,7 +1150,16 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
                     style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}
                   >
                     {heroProductPlanSnapshotFields.map((field) =>
-                      renderFieldCell(field, { row: true, tightLabel: true }),
+                      renderFieldCell(field, {
+                        row: true,
+                        tightLabel: true,
+                        // Capacity aliases ("Health Insurance") must not read as a
+                        // Membership / plan name — show the empty placeholder instead.
+                        displayValue: coerceCoverageSnapshotFieldValue(
+                          field.key,
+                          defaultValues[field.key],
+                        ),
+                      }),
                     )}
                     {showDate &&
                       heroStartDateField &&

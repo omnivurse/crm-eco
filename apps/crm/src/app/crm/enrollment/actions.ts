@@ -1,7 +1,12 @@
 'use server';
 
 import { createServiceRoleClient } from '@crm-eco/lib/supabase/server';
-import { computeEnrollmentWarnings, getRxPricingEstimate, validateMedications } from '@crm-eco/lib';
+import {
+  computeEnrollmentWarnings,
+  getRxPricingEstimate,
+  validateMedications,
+  resolvePendingMemberEffectiveDate,
+} from '@crm-eco/lib';
 import type { MedicationInput, RxPricingResult } from '@crm-eco/lib';
 import type { WizardSnapshot, HouseholdMember, EnrollmentMode } from '@/components/enrollment/wizard';
 import { createClient, verifyCrmAccess } from '@/lib/supabase-server';
@@ -188,6 +193,9 @@ export async function completeIntakeStep(data: IntakeStepData): Promise<ActionRe
 
     // Create new member if needed
     if (data.isNewMember && data.newMember) {
+      const memberEffectiveDate = resolvePendingMemberEffectiveDate(
+        data.requestedEffectiveDate,
+      );
       const { data: newMember, error: memberError } = await supabase
         .from('members')
         .insert({
@@ -202,6 +210,7 @@ export async function completeIntakeStep(data: IntakeStepData): Promise<ActionRe
           postal_code: data.newMember.postalCode || null,
           address_line1: data.newMember.addressLine1 || null,
           status: 'pending',
+          effective_date: memberEffectiveDate,
           advisor_id: data.advisorId || null,
         })
         .select('id, state, date_of_birth')

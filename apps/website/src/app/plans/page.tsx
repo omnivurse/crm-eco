@@ -16,7 +16,7 @@ import {
   Scale,
   Users,
 } from 'lucide-react';
-import { buildMatrixPreview } from '@crm-eco/rates';
+import { buildMatrixPreview, getPlanOptions } from '@crm-eco/rates';
 import type { RateConfig } from '@crm-eco/rates/types';
 import seedConfig from '@crm-eco/rates/config';
 import { Reveal } from '@/components/sections/Reveal';
@@ -73,15 +73,30 @@ function formatCurrency(amount: number | null): string {
 async function getPlansWithBenefits() {
   const supabase = await createServerSupabaseClient();
 
-  const { data: plans } = await supabase
+  const { data: msaPlans } = await supabase
     .from('plans')
     .select('id, name, code, monthly_share, iua_amount, description, tier')
     .eq('organization_id', PIFH_ORG_ID)
     .eq('is_active', true)
     .or('hide_from_public.is.null,hide_from_public.eq.false')
-    .order('monthly_share');
+    .like('code', 'PIFH-MSA-%')
+    .order('iua_amount');
 
-  if (!plans || plans.length === 0) return { plans: [], benefits: [] };
+  let plans = (msaPlans || []) as DbPlan[];
+
+  // Seed fallback so the public site shows MSA matrices before DB migration.
+  if (plans.length === 0) {
+    plans = getPlanOptions(rateConfig, 'current').map((p) => ({
+      id: p.planId,
+      name: p.displayName,
+      code: p.planId,
+      monthly_share: null,
+      iua_amount: p.iuaAmount ?? null,
+      description: `Provisional MSA ${p.marketSegment ?? ''} sharing — partnership & wellness lab costs not included.`,
+      tier: p.marketSegment ?? null,
+    }));
+    return { plans, benefits: [] };
+  }
 
   const planIds = plans.map((p: DbPlan) => p.id);
 
@@ -222,6 +237,10 @@ export default async function PlansPage() {
               title="A program for every household and budget"
               subtitle="Pick the level of support that fits your family. Change or cancel any time — there is no open-enrollment window to wait for."
             />
+            <p className="mx-auto mt-4 max-w-2xl text-center text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
+              Provisional MSA pricing — partnership (doctor/nurse) costs and wellness lab panel are
+              not included yet. Enrollment contribution is separate and adjustable.
+            </p>
           </Reveal>
 
           {plans.length === 0 ? (
