@@ -176,6 +176,22 @@ export interface HouseholdDependentInput {
   ssn_last4?: string;
 }
 
+const DEPENDENT_RELATIONSHIP_LABELS = {
+  spouse: 'Spouse',
+  child: 'Child',
+  dependent: 'Dependent',
+} as const;
+
+/**
+ * Convert wizard relationship values to the title-case labels enforced by the
+ * live dependents table while leaving unknown values unchanged for DB validation.
+ */
+function normalizeDependentRelationship(relationship: string): string {
+  const trimmed = relationship.trim();
+  const key = trimmed.toLowerCase() as keyof typeof DEPENDENT_RELATIONSHIP_LABELS;
+  return DEPENDENT_RELATIONSHIP_LABELS[key] ?? trimmed;
+}
+
 /** Map wizard household rows to dependents table inserts (before enrollment_dependents). */
 export function projectHouseholdToDependentRows(
   organizationId: string,
@@ -188,7 +204,7 @@ export function projectHouseholdToDependentRows(
     first_name: h.first_name.trim(),
     last_name: h.last_name.trim(),
     date_of_birth: h.date_of_birth,
-    relationship: h.relationship,
+    relationship: normalizeDependentRelationship(h.relationship),
     same_address_as_member: h.lives_at_home !== false,
     ssn_last4: h.ssn_last4 ?? null,
     status: 'active',

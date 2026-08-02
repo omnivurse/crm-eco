@@ -57,15 +57,31 @@ describe('adultIntakeProjection', () => {
   it('projects household to dependent rows', () => {
     const rows = projectHouseholdToDependentRows('org-1', 'mem-1', [
       {
+        first_name: 'Partner',
+        last_name: 'Doe',
+        date_of_birth: '1990-01-01',
+        relationship: 'spouse',
+        lives_at_home: true,
+      },
+      {
         first_name: 'Kid',
         last_name: 'Doe',
         date_of_birth: '2015-01-01',
         relationship: 'child',
         lives_at_home: true,
       },
+      {
+        first_name: 'Parent',
+        last_name: 'Doe',
+        date_of_birth: '1960-01-01',
+        relationship: 'dependent',
+        lives_at_home: false,
+      },
     ]);
-    expect(rows).toHaveLength(1);
+    expect(rows).toHaveLength(3);
     expect(rows[0].member_id).toBe('mem-1');
     expect(rows[0].same_address_as_member).toBe(true);
+    expect(rows[2].same_address_as_member).toBe(false);
+    expect(rows.map((row) => row.relationship)).toEqual(['Spouse', 'Child', 'Dependent']);
   });
 });
