@@ -111,9 +111,9 @@ export default function LoginPage() {
     <div className="space-y-8">
       <div className="text-center lg:text-left">
         <Link href="/" className="mb-6 inline-flex items-center">
-          <BrandLogo variant="full" size="lg" tone="white" priority />
+          <BrandLogo variant="full" size="lg" tone="auto" priority />
         </Link>
-        <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-400/90">
+        <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-400/90">
           Admin Enrollment
         </p>
         <h2 className={authForm.title}>Welcome back</h2>
@@ -171,7 +171,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 z-10 -translate-y-1/2 text-white/35 transition-colors hover:text-white/70"
+                className="absolute right-4 top-1/2 z-10 -translate-y-1/2 text-[var(--auth-muted)] transition-colors hover:text-[var(--auth-text)]"
               >
                 {showPassword ? (
                   <EyeSlash weight="light" className="h-5 w-5" />
@@ -236,28 +236,28 @@ export default function LoginPage() {
       <div className="mt-8 space-y-4">
         <div className="flex flex-wrap items-center justify-center gap-3">
           <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5">
-            <ShieldCheck weight="light" className="h-3.5 w-3.5 text-emerald-400" />
-            <span className="text-[11px] font-semibold text-emerald-300">HIPAA-aware</span>
+            <ShieldCheck weight="light" className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+            <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-300">HIPAA-aware</span>
           </div>
           <div className="inline-flex items-center gap-1.5 rounded-full border border-cyan-500/20 bg-cyan-500/10 px-3 py-1.5">
-            <Lock weight="light" className="h-3.5 w-3.5 text-cyan-400" />
-            <span className="text-[11px] font-semibold text-cyan-300">256-bit TLS</span>
+            <Lock weight="light" className="h-3.5 w-3.5 text-cyan-600 dark:text-cyan-400" />
+            <span className="text-[11px] font-semibold text-cyan-700 dark:text-cyan-300">256-bit TLS</span>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center justify-center gap-3 text-[11px] text-white/40">
+        <div className="flex flex-wrap items-center justify-center gap-3 text-[11px] text-[var(--auth-muted)]">
           <span className="inline-flex items-center gap-1">
-            <Pulse weight="light" className="h-3.5 w-3.5 text-emerald-400/80" />
+            <Pulse weight="light" className="h-3.5 w-3.5 text-emerald-600/80 dark:text-emerald-400/80" />
             MFA ready
           </span>
-          <span className="h-1 w-1 rounded-full bg-white/20" />
+          <span className="h-1 w-1 rounded-full bg-[var(--auth-hairline)]" />
           <span className="inline-flex items-center gap-1">
-            <FirstAidKit weight="light" className="h-3.5 w-3.5 text-emerald-400/80" />
+            <FirstAidKit weight="light" className="h-3.5 w-3.5 text-emerald-600/80 dark:text-emerald-400/80" />
             PHI secure
           </span>
-          <span className="h-1 w-1 rounded-full bg-white/20" />
+          <span className="h-1 w-1 rounded-full bg-[var(--auth-hairline)]" />
           <span className="inline-flex items-center gap-1">
-            <ShieldCheck weight="light" className="h-3.5 w-3.5 text-emerald-400/80" />
+            <ShieldCheck weight="light" className="h-3.5 w-3.5 text-emerald-600/80 dark:text-emerald-400/80" />
             Audit logged
           </span>
         </div>

@@ -1,0 +1,102 @@
+/**
+ * Ethereal Glass marketing tokens (CRM + Admin landings / auth).
+ * Namespaced as --lp-* / --auth-* so Admin --adm-* shell tokens stay untouched.
+ * Follows html.light / html.dark from each app's ThemeProvider (light default).
+ */
+
+:root,
+html.light {
+  --lp-void: #f7f8fa;
+  --lp-panel: #ffffff;
+  --lp-fg: #0f172a;
+  --lp-muted: rgba(15, 23, 42, 0.55);
+  --lp-muted-soft: rgba(15, 23, 42, 0.4);
+  --lp-hairline: rgba(15, 23, 42, 0.1);
+  --lp-cyan: #0891b2;
+  --lp-cyan-bright: #06b6d4;
+  --lp-emerald: #059669;
+  --lp-chip-fg: rgba(15, 23, 42, 0.55);
+  --lp-chip-bg: rgba(15, 23, 42, 0.04);
+  --lp-chip-border: rgba(15, 23, 42, 0.08);
+  --lp-bezel-bg: rgba(15, 23, 42, 0.03);
+  --lp-bezel-inner: rgba(255, 255, 255, 0.92);
+  --lp-island-bg: rgba(255, 255, 255, 0.78);
+  --lp-island-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.06),
+    0 12px 40px rgba(15, 23, 42, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  --lp-btn-primary-bg: #050505;
+  --lp-btn-primary-fg: #ffffff;
+  --lp-btn-primary-ico: rgba(255, 255, 255, 0.12);
+  --lp-mesh-1: rgba(6, 182, 212, 0.12);
+  --lp-mesh-2: rgba(5, 150, 105, 0.1);
+  --lp-mesh-3: rgba(8, 145, 178, 0.06);
+  --lp-surface: rgba(15, 23, 42, 0.03);
+  --lp-surface-strong: rgba(255, 255, 255, 0.85);
+  --lp-shadow: 0 20px 50px rgba(15, 23, 42, 0.1), 0 0 40px rgba(6, 182, 212, 0.06);
+  --lp-gradient: linear-gradient(135deg, #0891b2 0%, #059669 100%);
+  --lp-gradient-text: linear-gradient(135deg, #0891b2 0%, #059669 100%);
+  --lp-grain-opacity: 0.03;
+  --lp-ease: cubic-bezier(0.32, 0.72, 0, 1);
+
+  --auth-bg: #f7f8fa;
+  --auth-panel: #ffffff;
+  --auth-text: #0f172a;
+  --auth-muted: rgba(15, 23, 42, 0.55);
+  --auth-accent: #0891b2;
+  --auth-accent-highlight: #06b6d4;
+  --auth-emerald: #059669;
+  --auth-hairline: rgba(15, 23, 42, 0.1);
+  --auth-input-bg: rgba(15, 23, 42, 0.04);
+  --auth-btn-bg: #050505;
+  --auth-btn-fg: #ffffff;
+  --auth-ease: cubic-bezier(0.32, 0.72, 0, 1);
+  --auth-gradient: linear-gradient(135deg, #0891b2 0%, #059669 100%);
+}
+
+html.dark {
+  --lp-void: #050505;
+  --lp-panel: #0a0a0a;
+  --lp-fg: #f4f4f5;
+  --lp-muted: rgba(244, 244, 245, 0.55);
+  --lp-muted-soft: rgba(244, 244, 245, 0.4);
+  --lp-hairline: rgba(255, 255, 255, 0.1);
+  --lp-cyan: #06b6d4;
+  --lp-cyan-bright: #22d3ee;
+  --lp-emerald: #059669;
+  --lp-chip-fg: rgba(255, 255, 255, 0.55);
+  --lp-chip-bg: rgba(255, 255, 255, 0.05);
+  --lp-chip-border: rgba(255, 255, 255, 0.08);
+  --lp-bezel-bg: rgba(255, 255, 255, 0.03);
+  --lp-bezel-inner: rgba(10, 10, 10, 0.85);
+  --lp-island-bg: rgba(10, 10, 10, 0.72);
+  --lp-island-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.4),
+    0 12px 40px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --lp-btn-primary-bg: #ffffff;
+  --lp-btn-primary-fg: #050505;
+  --lp-btn-primary-ico: rgba(0, 0, 0, 0.07);
+  --lp-mesh-1: rgba(6, 182, 212, 0.18);
+  --lp-mesh-2: rgba(5, 150, 105, 0.14);
+  --lp-mesh-3: rgba(8, 145, 178, 0.08);
+  --lp-surface: rgba(255, 255, 255, 0.03);
+  --lp-surface-strong: rgba(10, 10, 10, 0.85);
+  --lp-shadow: 0 20px 50px rgba(0, 0, 0, 0.45), 0 0 40px rgba(6, 182, 212, 0.08);
+  --lp-gradient: linear-gradient(135deg, #06b6d4 0%, #059669 100%);
+  --lp-gradient-text: linear-gradient(135deg, #22d3ee 0%, #34d399 100%);
+  --lp-grain-opacity: 0.04;
+
+  --auth-bg: #050505;
+  --auth-panel: #0a0a0a;
+  --auth-text: #f4f4f5;
+  --auth-muted: rgba(244, 244, 245, 0.55);
+  --auth-accent: #06b6d4;
+  --auth-accent-highlight: #22d3ee;
+  --auth-emerald: #059669;
+  --auth-hairline: rgba(255, 255, 255, 0.1);
+  --auth-input-bg: rgba(255, 255, 255, 0.04);
+  --auth-btn-bg: #ffffff;
+  --auth-btn-fg: #050505;
+  --auth-gradient: linear-gradient(135deg, #06b6d4 0%, #059669 100%);
+}

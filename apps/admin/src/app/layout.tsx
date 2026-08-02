@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Plus_Jakarta_Sans } from 'next/font/google';
 import { brandingToCssText } from '@crm-eco/ui/lib/branding';
+import { createThemeBootScript } from '@crm-eco/ui/lib/theme-boot';
 import { LeadGenQuotePinGate } from '@crm-eco/ui/components/pin-lock-overlay';
 import { ConfirmDialogHost } from '@crm-eco/ui/components/confirm-dialog';
 import { PromptDialogHost } from '@crm-eco/ui/components/prompt-dialog';
@@ -34,17 +35,26 @@ export const metadata: Metadata = {
   },
 };
 
-const themeBootScript = `
-(function(){
-  try {
-    var t = localStorage.getItem('admin-theme');
-    var dark = t === 'dark' || (t === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-    var root = document.documentElement;
-    root.classList.remove('light','dark');
-    root.classList.add(dark ? 'dark' : 'light');
-  } catch (e) {}
-})();
-`;
+/**
+ * The Admin shell's actual canvas — `--adm-void` in globals.css.
+ * Kept in sync with the pre-paint script so there is no flash on load.
+ */
+const ADMIN_CANVAS_LIGHT = '#f6fafb';
+const ADMIN_CANVAS_DARK = '#050505';
+
+/**
+ * Generated from the shared helper, so the Admin console reads the same theme
+ * key as the CRM (migrating the legacy `admin-theme` value on first read).
+ * A user's dark-mode choice now survives switching between consoles.
+ *
+ * `density` stays off here until the Admin console adopts the shared density
+ * tokens in Phase 2 — setting the attribute before anything consumes it would
+ * be a no-op.
+ */
+const themeBootScript = createThemeBootScript({
+  lightBg: ADMIN_CANVAS_LIGHT,
+  darkBg: ADMIN_CANVAS_DARK,
+});
 
 export default async function RootLayout({
   children,

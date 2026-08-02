@@ -1,6 +1,51 @@
 import type { Config } from 'tailwindcss';
 
 /**
+ * Muted Spruce scale — the operator consoles' calming, de-fluoresced teal.
+ * Deep + low-chroma, not neon.
+ *
+ * This lived in `apps/crm/tailwind.config.ts`, which meant `bg-teal-500`
+ * resolved to muted spruce in the CRM and to stock Tailwind teal in the Admin
+ * console — the same class, two different colours, which is why the two
+ * consoles read as unrelated products despite sharing this preset.
+ *
+ * It is exported here (rather than applied in the preset body) deliberately:
+ * the preset also feeds member-portal, advisor-portal, website and
+ * doublehelixhub, which keep the stock palette. Only the two operator consoles
+ * opt in, via `consoleColors` below.
+ */
+export const MUTED_SPRUCE = {
+  50: '#eef4f5',
+  100: '#d7e6e8',
+  200: '#b3d0d4',
+  300: '#84b2b8',
+  400: '#549099',
+  500: '#2f757f',
+  600: '#255f69',
+  700: '#204e57',
+  800: '#1e4048',
+  900: '#1b353c',
+  950: '#0d2126',
+} as const;
+
+/**
+ * Shared colour extension for the CRM + Admin operator consoles.
+ *
+ * Remapping the default `teal`/`cyan` families (and the shared `brand.teal`
+ * scale) onto Muted Spruce softens the ~2k hardcoded `bg-teal-*` /
+ * `text-cyan-*` / `brand-teal-*` call sites in each console automatically,
+ * without editing hundreds of files. This is a bridge, not the destination —
+ * as components bind to the semantic tokens above, the remap can be retired.
+ *
+ * Spread into a console's `theme.extend.colors`; see the app configs.
+ */
+export const consoleColors = {
+  teal: MUTED_SPRUCE,
+  cyan: MUTED_SPRUCE,
+  brand: { teal: MUTED_SPRUCE },
+} as const;
+
+/**
  * Double Helix Hub - Tailwind Preset
  * Shared design tokens for all applications
  */

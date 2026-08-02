@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter, Plus_Jakarta_Sans } from 'next/font/google';
 import { brandingToCssText } from '@crm-eco/ui/lib/branding';
+import { createThemeBootScript } from '@crm-eco/ui/lib/theme-boot';
 import { LeadGenQuotePinGate } from '@crm-eco/ui/components/pin-lock-overlay';
 import { ConfirmDialogHost } from '@crm-eco/ui/components/confirm-dialog';
 import { PromptDialogHost } from '@crm-eco/ui/components/prompt-dialog';
@@ -52,54 +53,39 @@ export const metadata: Metadata = {
 /**
  * Viewport Configuration for PWA
  */
+/**
+ * The CRM shell's actual canvas — `bg-slate-50 dark:bg-slate-950` in CrmShell.
+ *
+ * The pre-paint script and the browser theme-colour must both match these. The
+ * dark value was previously `#0f172a` (slate-900) in both places while the
+ * shell rendered slate-950, so the anti-flash script briefly painted a lighter
+ * navy and then jumped — introducing the flash it exists to prevent.
+ */
+const CRM_CANVAS_LIGHT = '#f8fafc';
+const CRM_CANVAS_DARK = '#020617';
+
 export const viewport: Viewport = {
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
-    { media: '(prefers-color-scheme: dark)', color: '#0f172a' },
+    { media: '(prefers-color-scheme: light)', color: CRM_CANVAS_LIGHT },
+    { media: '(prefers-color-scheme: dark)', color: CRM_CANVAS_DARK },
   ],
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
 };
 
-// Inline script to prevent theme flash - runs synchronously before any paint
-// This MUST be in <head> and run before browser renders anything
-const themeScript = `
-(function() {
-  try {
-    var theme = localStorage.getItem('crm-theme') || 'light';
-    var resolved = theme === 'system'
-      ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
-      : theme;
-    var html = document.documentElement;
-    // Remove any existing theme classes first
-    html.classList.remove('light', 'dark');
-    // Add the resolved theme
-    html.classList.add(resolved);
-    // Set color-scheme for native form controls
-    html.style.colorScheme = resolved;
-    // Set background immediately to prevent white flash
-    document.documentElement.style.backgroundColor = resolved === 'dark' ? '#0f172a' : '#ffffff';
-    // Display density: apply the persisted choice pre-paint so the chrome
-    // tokens (top bar / module bar heights, gutters, section gaps) render at
-    // the chosen scale with no flash. New users with no saved preference get
-    // the power-user dense scale ('compact') out of the box — this is a
-    // data-heavy CRM, so more rows/columns per screen is the default; the
-    // roomier 'default' and 'comfortable' scales remain one click away.
-    var density = localStorage.getItem('crm-density');
-    if (density === 'compact' || density === 'comfortable') {
-      html.setAttribute('data-density', density);
-    } else if (density === 'default') {
-      html.removeAttribute('data-density');
-    } else {
-      html.setAttribute('data-density', 'compact');
-    }
-  } catch (e) {
-    document.documentElement.classList.add('light');
-    document.documentElement.style.backgroundColor = '#ffffff';
-  }
-})();
-`;
+// Inline script to prevent theme flash - runs synchronously before any paint.
+// This MUST be in <head> and run before the browser renders anything.
+//
+// Generated from the shared helper so the CRM and Admin consoles read the same
+// storage key (and migrate their legacy per-app keys identically). `density`
+// applies the persisted display scale pre-paint so the chrome tokens render at
+// the chosen size with no reflow.
+const themeScript = createThemeBootScript({
+  lightBg: CRM_CANVAS_LIGHT,
+  darkBg: CRM_CANVAS_DARK,
+  density: true,
+});
 
 export default async function RootLayout({
   children,

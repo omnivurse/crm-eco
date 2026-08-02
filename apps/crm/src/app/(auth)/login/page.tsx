@@ -72,9 +72,9 @@ export default function LoginPage() {
     <div className="space-y-8">
       <div className="text-center lg:text-left">
         <Link href="/" className="mb-6 inline-flex items-center">
-          <BrandLogo variant="full" size="lg" tone="white" priority />
+          <BrandLogo variant="full" size="lg" tone="auto" priority />
         </Link>
-        <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-400/90">
+        <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-700 dark:text-cyan-400/90">
           CRM Core
         </p>
         <h2 className={authForm.title}>Welcome back</h2>
@@ -130,7 +130,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 z-10 -translate-y-1/2 text-white/35 transition-colors hover:text-white/70"
+                className="absolute right-4 top-1/2 z-10 -translate-y-1/2 text-[var(--auth-muted)] transition-colors hover:text-[var(--auth-text)]"
               >
                 {showPassword ? (
                   <EyeSlash weight="light" className="h-5 w-5" />

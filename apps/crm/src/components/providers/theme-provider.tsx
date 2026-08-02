@@ -1,10 +1,14 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
+import {
+  THEME_STORAGE_KEY,
+  isTheme,
+  readStoredTheme,
+  type Theme,
+} from '@crm-eco/ui/lib/theme-boot';
 import { supabase } from '@/lib/supabase-client';
 import { useClientAuth } from '@/hooks/useClientAuth';
-
-type Theme = 'light' | 'dark' | 'system';
 
 interface ThemeProviderContextValue {
   theme: Theme;
@@ -15,7 +19,8 @@ interface ThemeProviderContextValue {
 
 const ThemeProviderContext = createContext<ThemeProviderContextValue | undefined>(undefined);
 
-const STORAGE_KEY = 'crm-theme';
+/** Shared with the Admin console — see `@crm-eco/ui/lib/theme-boot`. */
+const STORAGE_KEY = THEME_STORAGE_KEY;
 
 interface ThemeProviderProps {
   children: React.ReactNode;
@@ -54,10 +59,16 @@ export function ThemeProvider({
     queueMicrotask(() => setResolvedTheme(resolved));
   }, [getSystemTheme]);
 
-  // Load theme from localStorage first (fast), then from authProfile (authoritative)
+  // Load theme from localStorage first (fast), then from authProfile (authoritative).
+  // readStoredTheme() migrates a legacy `crm-theme` value into the shared key,
+  // so an existing choice survives the switch. A caller that overrides
+  // storageKey opts out of that migration and reads its own key directly.
   useEffect(() => {
-    const storedTheme = localStorage.getItem(storageKey) as Theme | null;
-    if (storedTheme && ['light', 'dark', 'system'].includes(storedTheme)) {
+    const storedTheme =
+      storageKey === THEME_STORAGE_KEY
+        ? readStoredTheme()
+        : (localStorage.getItem(storageKey) as Theme | null);
+    if (isTheme(storedTheme)) {
       applyTheme(storedTheme);
       queueMicrotask(() => {
         setMounted(true);

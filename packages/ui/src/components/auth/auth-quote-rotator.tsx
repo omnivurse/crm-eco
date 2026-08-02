@@ -39,8 +39,8 @@ export function AuthQuoteRotator({ quotes = DEFAULT_QUOTES, intervalMs = 8000 }:
             index === activeIndex ? 'login-quote-active' : 'login-quote-inactive'
           }`}
         >
-          <p className="text-white/90 text-lg italic leading-relaxed">&ldquo;{quote.text}&rdquo;</p>
-          <p className="text-white/60 text-sm mt-2">&mdash; {quote.author}</p>
+          <p className="text-[var(--auth-text)] text-lg italic leading-relaxed opacity-90">&ldquo;{quote.text}&rdquo;</p>
+          <p className="text-[var(--auth-muted)] text-sm mt-2">&mdash; {quote.author}</p>
         </div>
       ))}
     </div>

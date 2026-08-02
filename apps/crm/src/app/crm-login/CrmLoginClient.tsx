@@ -24,6 +24,7 @@ import type { LoginBrandingContext } from '@/lib/login-branding-types';
 import { ACTIVE_ORG_COOKIE } from '@/lib/login-branding-types';
 import { resolveBrandDisplay } from '@crm-eco/ui/lib/branding';
 import { MFAChallenge } from '@/components/auth';
+import { ThemeToggle } from '@/components/crm/shell/ThemeToggle';
 
 export interface CrmLoginClientProps {
   brandingContext: LoginBrandingContext | null;
@@ -179,13 +180,14 @@ export function CrmLoginClient({
   return (
     <AuthSplitLayout
       variant="crm"
+      toolbar={<ThemeToggle variant="icon" className="auth-theme-btn !h-9 !w-9" />}
       hero={
         <AuthHeroPanel
           variant="crm"
           headline={
             <>
               <span className="block">Your book,</span>
-              <span className="block bg-gradient-to-r from-cyan-300 to-emerald-300 bg-clip-text text-transparent">
+              <span className="block bg-gradient-to-r from-cyan-600 to-emerald-600 dark:from-cyan-300 dark:to-emerald-300 bg-clip-text text-transparent">
                 one workspace
               </span>
             </>
@@ -201,7 +203,7 @@ export function CrmLoginClient({
             <TenantBrandLogo
               variant="full"
               size="lg"
-              tone="white"
+              tone="auto"
               priority
               branding={brandingContext?.branding}
               orgName={brandingContext?.orgName}
@@ -260,7 +262,7 @@ export function CrmLoginClient({
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 z-10"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--auth-muted)] hover:text-[var(--auth-text)] z-10"
                 >
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
@@ -321,28 +323,28 @@ export function CrmLoginClient({
         <div className="mt-8 space-y-4">
           <div className="flex items-center justify-center gap-4 flex-wrap">
             <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
-              <Shield className="w-4 h-4 text-emerald-400" />
-              <span className="text-xs font-semibold text-emerald-300">HIPAA Compliant</span>
+              <Shield className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-300">HIPAA Compliant</span>
             </div>
             <div className="flex items-center gap-1.5 px-3 py-1.5 bg-cyan-500/10 border border-cyan-500/20 rounded-full">
-              <Lock className="w-4 h-4 text-cyan-400" />
-              <span className="text-xs font-semibold text-cyan-300">256-bit Encryption</span>
+              <Lock className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+              <span className="text-xs font-semibold text-cyan-700 dark:text-cyan-300">256-bit Encryption</span>
             </div>
           </div>
 
-          <div className="flex items-center justify-center gap-3 text-xs text-slate-500 flex-wrap">
+          <div className="flex items-center justify-center gap-3 text-xs text-[var(--auth-muted)] flex-wrap">
             <span className="flex items-center gap-1">
-              <Activity className="w-3.5 h-3.5 text-cyan-400" />
+              <Activity className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
               MFA Protected
             </span>
-            <span className="w-1 h-1 rounded-full bg-slate-600" />
+            <span className="w-1 h-1 rounded-full bg-[var(--auth-hairline)]" />
             <span className="flex items-center gap-1">
-              <Stethoscope className="w-3.5 h-3.5 text-cyan-400" />
+              <Stethoscope className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
               PHI Secure
             </span>
-            <span className="w-1 h-1 rounded-full bg-slate-600" />
+            <span className="w-1 h-1 rounded-full bg-[var(--auth-hairline)]" />
             <span className="flex items-center gap-1">
-              <Shield className="w-3.5 h-3.5 text-cyan-400" />
+              <Shield className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
               Audit Logging
             </span>
           </div>

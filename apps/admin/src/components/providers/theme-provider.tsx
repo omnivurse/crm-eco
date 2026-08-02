@@ -9,7 +9,12 @@ import {
   useState,
 } from 'react';
 
-type Theme = 'light' | 'dark' | 'system';
+import {
+  THEME_STORAGE_KEY,
+  isTheme,
+  readStoredTheme,
+  type Theme,
+} from '@crm-eco/ui/lib/theme-boot';
 
 interface ThemeProviderContextValue {
   theme: Theme;
@@ -19,7 +24,8 @@ interface ThemeProviderContextValue {
 
 const ThemeProviderContext = createContext<ThemeProviderContextValue | undefined>(undefined);
 
-const STORAGE_KEY = 'admin-theme';
+/** Shared with the CRM console — see `@crm-eco/ui/lib/theme-boot`. */
+const STORAGE_KEY = THEME_STORAGE_KEY;
 
 interface ThemeProviderProps {
   children: React.ReactNode;
@@ -52,9 +58,14 @@ export function ThemeProvider({
   );
 
   useEffect(() => {
-    const stored = localStorage.getItem(storageKey) as Theme | null;
-    const initial =
-      stored && ['light', 'dark', 'system'].includes(stored) ? stored : defaultTheme;
+    // readStoredTheme() migrates a legacy `admin-theme` value into the shared
+    // key, so an existing choice survives the switch. A caller that overrides
+    // storageKey opts out of that migration and reads its own key directly.
+    const stored =
+      storageKey === THEME_STORAGE_KEY
+        ? readStoredTheme()
+        : localStorage.getItem(storageKey);
+    const initial = isTheme(stored) ? stored : defaultTheme;
     setThemeState(initial);
     applyTheme(initial);
   }, [storageKey, defaultTheme, applyTheme]);

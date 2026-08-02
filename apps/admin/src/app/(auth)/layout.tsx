@@ -1,4 +1,7 @@
+'use client';
+
 import { AuthSplitLayout, AuthHeroPanel } from '@crm-eco/ui';
+import { ThemeToggle } from '@/components/layout/ThemeToggle';
 
 const ADMIN_QUOTES = [
   { text: 'Enrollment is an operating system — not a spreadsheet.', author: 'Double Helix Admin' },
@@ -14,6 +17,7 @@ export default function AuthLayout({
   return (
     <AuthSplitLayout
       variant="admin"
+      toolbar={<ThemeToggle variant="icon" className="auth-theme-btn" />}
       hero={
         <AuthHeroPanel
           variant="admin"
@@ -21,7 +25,7 @@ export default function AuthLayout({
           headline={
             <>
               <span className="block">Enrollment</span>
-              <span className="block bg-gradient-to-r from-emerald-300 via-teal-300 to-cyan-300 bg-clip-text text-transparent">
+              <span className="block bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 dark:from-emerald-300 dark:via-teal-300 dark:to-cyan-300 bg-clip-text text-transparent">
                 under control
               </span>
             </>

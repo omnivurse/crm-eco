@@ -1,4 +1,7 @@
+'use client';
+
 import { AuthSplitLayout, AuthHeroPanel } from '@crm-eco/ui';
+import { ThemeToggle } from '@/components/crm/shell/ThemeToggle';
 
 const CRM_QUOTES = [
   { text: 'Pipeline clarity beats pipeline volume.', author: 'Double Helix CRM' },
@@ -14,6 +17,7 @@ export default function AuthLayout({
   return (
     <AuthSplitLayout
       variant="crm"
+      toolbar={<ThemeToggle variant="icon" className="auth-theme-btn !h-9 !w-9" />}
       hero={
         <AuthHeroPanel
           variant="crm"
@@ -21,7 +25,7 @@ export default function AuthLayout({
           headline={
             <>
               <span className="block">Your book,</span>
-              <span className="block bg-gradient-to-r from-cyan-300 to-emerald-300 bg-clip-text text-transparent">
+              <span className="block bg-gradient-to-r from-cyan-600 to-emerald-600 dark:from-cyan-300 dark:to-emerald-300 bg-clip-text text-transparent">
                 one workspace
               </span>
             </>

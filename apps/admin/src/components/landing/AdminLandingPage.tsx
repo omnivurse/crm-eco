@@ -3,6 +3,7 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import Link from 'next/link';
 import { BrandLogo } from '@crm-eco/ui/components/brand-logo';
+import { ThemeToggle } from '@/components/layout/ThemeToggle';
 import '@crm-eco/ui/styles/landing.css';
 
 function ArrowIcon() {
@@ -19,20 +20,20 @@ function PlayIcon() {
 
 const featureIcons = {
   members: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
-  billing: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2"><rect x="1" y="4" width="22" height="16" rx="2"/><path d="M1 10h22"/></svg>,
-  commissions: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>,
+  billing: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0891b2" strokeWidth="2"><rect x="1" y="4" width="22" height="16" rx="2"/><path d="M1 10h22"/></svg>,
+  commissions: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>,
   products: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>,
-  enrollment: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>,
-  compliance: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f43f5e" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
+  enrollment: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0891b2" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>,
+  compliance: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
 };
 
 const features = [
-  { icon: 'enrollment', color: 'amber', title: 'Benefits Enrollment Engine', desc: 'Digital enrollment flows, e-signatures, plan selection, dependent capture, and carrier-ready submissions — from application to active member in one pipeline.' },
+  { icon: 'enrollment', color: 'cyan', title: 'Benefits Enrollment Engine', desc: 'Digital enrollment flows, e-signatures, plan selection, dependent capture, and carrier-ready submissions — from application to active member in one pipeline.' },
   { icon: 'members', color: 'cyan', title: 'Member Management (MMS)', desc: 'The core MMS registry: coverage changes, dependents, terminations, renewals, and member communications — one auditable source of truth.' },
   { icon: 'products', color: 'emerald', title: 'Benefits & Plan Catalog', desc: 'Configure health sharing products, carriers, rate tables, and enrollment rules. Launch new plans and price changes with scheduled effective dates.' },
-  { icon: 'billing', color: 'blue', title: 'Billing & Payments', desc: 'Automated billing runs, NACHA exports, payment processors, invoices, and failure recovery — tied directly to enrolled member coverage.' },
-  { icon: 'commissions', color: 'purple', title: 'Agent Commissions', desc: 'Enrollment-linked commission tiers, accrual runs, payout batches, and agent bill groups — every enrollment tied to compensation.' },
-  { icon: 'compliance', color: 'rose', title: 'HIPAA Compliance & Audit', desc: 'PHI-safe enrollment and member data handling with encrypted storage, role-based access, and full audit logs on every action.' },
+  { icon: 'billing', color: 'cyan', title: 'Billing & Payments', desc: 'Automated billing runs, NACHA exports, payment processors, invoices, and failure recovery — tied directly to enrolled member coverage.' },
+  { icon: 'commissions', color: 'emerald', title: 'Agent Commissions', desc: 'Enrollment-linked commission tiers, accrual runs, payout batches, and agent bill groups — every enrollment tied to compensation.' },
+  { icon: 'compliance', color: 'emerald', title: 'HIPAA Compliance & Audit', desc: 'PHI-safe enrollment and member data handling with encrypted storage, role-based access, and full audit logs on every action.' },
 ];
 
 const showcaseModules = [
@@ -81,16 +82,16 @@ const activities = [
   { text: 'Benefits enrollment approved', color: '#10b981', time: '1m ago' },
   { text: 'Member added to MMS registry', color: '#06b6d4', time: '3m ago' },
   { text: 'Enrollment link submitted', color: '#f59e0b', time: '6m ago' },
-  { text: 'Billing run initiated', color: '#3b82f6', time: '12m ago' },
-  { text: 'Commission accrual posted', color: '#8b5cf6', time: '18m ago' },
+  { text: 'Billing run initiated', color: '#0891b2', time: '12m ago' },
+  { text: 'Commission accrual posted', color: '#059669', time: '18m ago' },
 ];
 
 const members = [
-  { name: 'James Morrison', initials: 'JM', plan: 'Secure HSA 2024', detail: '$487/mo — Current', status: 'Active', statusClass: 'lp-status-active', gradient: 'linear-gradient(135deg, #06b6d4, #3b82f6)' },
-  { name: 'Sarah Rodriguez', initials: 'SR', plan: 'Care Plus 2024', detail: 'Renewal due Apr 15', status: 'Active', statusClass: 'lp-status-active', gradient: 'linear-gradient(135deg, #8b5cf6, #3b82f6)' },
+  { name: 'James Morrison', initials: 'JM', plan: 'Secure HSA 2024', detail: '$487/mo — Current', status: 'Active', statusClass: 'lp-status-active', gradient: 'linear-gradient(135deg, #06b6d4, #059669)' },
+  { name: 'Sarah Rodriguez', initials: 'SR', plan: 'Care Plus 2024', detail: 'Renewal due Apr 15', status: 'Active', statusClass: 'lp-status-active', gradient: 'linear-gradient(135deg, #0891b2, #059669)' },
   { name: 'Kevin Park', initials: 'KP', plan: 'Premium Care', detail: 'Pending approval', status: 'Review', statusClass: 'lp-status-pending', gradient: 'linear-gradient(135deg, #10b981, #06b6d4)' },
-  { name: 'Amanda Liu', initials: 'AL', plan: 'Secure HSA', detail: 'New enrollment', status: 'New', statusClass: 'lp-status-new', gradient: 'linear-gradient(135deg, #f59e0b, #f43f5e)' },
-  { name: 'David Williams', initials: 'DW', plan: 'Care Plus', detail: '$529/mo — Current', status: 'Active', statusClass: 'lp-status-active', gradient: 'linear-gradient(135deg, #3b82f6, #8b5cf6)' },
+  { name: 'Amanda Liu', initials: 'AL', plan: 'Secure HSA', detail: 'New enrollment', status: 'New', statusClass: 'lp-status-new', gradient: 'linear-gradient(135deg, #06b6d4, #0891b2)' },
+  { name: 'David Williams', initials: 'DW', plan: 'Care Plus', detail: '$529/mo — Current', status: 'Active', statusClass: 'lp-status-active', gradient: 'linear-gradient(135deg, #059669, #06b6d4)' },
 ];
 
 const testimonials = [
@@ -166,13 +167,13 @@ function ShowcasePanel({ moduleId, active }: { moduleId: string; active: boolean
     return (
       <div className={`lp-showcase-panel${active ? ' active' : ''}`}>
         <div className="lp-mock-stats">
-          <div className="lp-mock-stat"><div className="lp-mock-stat-label">Accrued</div><div className="lp-mock-stat-value purple">$48,320</div></div>
+          <div className="lp-mock-stat"><div className="lp-mock-stat-label">Accrued</div><div className="lp-mock-stat-value cyan">$48,320</div></div>
           <div className="lp-mock-stat"><div className="lp-mock-stat-label">Agents</div><div className="lp-mock-stat-value cyan">247</div></div>
           <div className="lp-mock-stat"><div className="lp-mock-stat-label">Pending</div><div className="lp-mock-stat-value">$8,412</div></div>
         </div>
         <div className="lp-mock-bar-chart">
           {[65, 45, 80, 55, 90, 70, 85, 60].map((h, i) => (
-            <div key={i} className={`lp-mock-bar${i % 2 ? ' purple' : ''}`} style={{ height: `${h}%`, animationDelay: `${i * 0.1}s` }} />
+            <div key={i} className={`lp-mock-bar${i % 2 ? ' cyan' : ''}`} style={{ height: `${h}%`, animationDelay: `${i * 0.1}s` }} />
           ))}
         </div>
       </div>
@@ -288,7 +289,7 @@ export default function AdminLandingPage() {
           ctx.beginPath();
           ctx.moveTo(x1, y);
           ctx.lineTo(x2, y);
-          ctx.strokeStyle = `rgba(59, 130, 246, ${0.06 + Math.sin(phase) * 0.03})`;
+          ctx.strokeStyle = `rgba(5, 150, 105, ${0.06 + Math.sin(phase) * 0.03})`;
           ctx.lineWidth = 1;
           ctx.stroke();
         }
@@ -300,7 +301,7 @@ export default function AdminLandingPage() {
 
         ctx.beginPath();
         ctx.arc(x2, y, 2.5, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(139, 92, 246, ${0.15 + Math.cos(phase) * 0.1})`;
+        ctx.fillStyle = `rgba(5, 150, 105, ${0.15 + Math.cos(phase) * 0.1})`;
         ctx.fill();
       }
       time++;
@@ -441,29 +442,33 @@ export default function AdminLandingPage() {
 
   return (
     <div className="lp-root">
-      <nav id="lp-navbar" className="lp-nav">
-        <Link href="/" className="lp-nav-brand">
-          <BrandLogo variant="full" size="md" tone="white" priority />
-          <span className="lp-nav-wordmark-sub">MMS</span>
-        </Link>
-        <div className="lp-nav-links">
-          <a href="#features">Features</a>
-          <a href="#enrollment">Enrollment</a>
-          <a href="#enrollment">Platform</a>
-          <a href="#how-it-works">How It Works</a>
-          <a href="#testimonials">Testimonials</a>
-          <a
-            href="https://doublehelixhub.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="lp-nav-platform"
-          >
-            Platform <span aria-hidden="true">↗</span>
-          </a>
-          <Link href="/login" className="lp-nav-link-login">Log In</Link>
-          <Link href="/login" className="lp-nav-cta">Get Started</Link>
-        </div>
-      </nav>
+      <div className="lp-nav-wrap">
+        <nav id="lp-navbar" className="lp-nav" aria-label="Primary">
+          <Link href="/" className="lp-nav-brand">
+            <BrandLogo variant="full" size="sm" tone="auto" priority />
+            <span className="lp-nav-wordmark-sub">MMS</span>
+          </Link>
+          <div className="lp-nav-links">
+            <a href="#features">Features</a>
+            <a href="#enrollment">Enrollment</a>
+            <a href="#how-it-works">How It Works</a>
+            <a href="#testimonials">Testimonials</a>
+            <a
+              href="https://doublehelixhub.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="lp-nav-platform"
+            >
+              Platform <span aria-hidden="true">↗</span>
+            </a>
+          </div>
+          <div className="lp-nav-actions">
+            <ThemeToggle variant="icon" className="lp-theme-btn" />
+            <Link href="/login" className="lp-nav-link-login">Log In</Link>
+            <Link href="/login" className="lp-nav-cta">Get Started</Link>
+          </div>
+        </nav>
+      </div>
 
       <section className="lp-hero">
         <canvas ref={canvasRef} className="lp-helix-canvas" />

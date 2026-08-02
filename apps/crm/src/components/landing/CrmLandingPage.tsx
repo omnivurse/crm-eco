@@ -3,6 +3,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { BrandLogo } from '@crm-eco/ui/components/brand-logo';
+import { ThemeToggle } from '@/components/crm/shell/ThemeToggle';
 import '@crm-eco/ui/styles/landing.css';
 
 // --- Arrow Icon ---
@@ -22,21 +23,21 @@ function PlayIcon() {
 // --- Feature Icon SVGs ---
 const featureIcons = {
   contacts: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
-  enrollment: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>,
-  commissions: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>,
-  workflows: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>,
-  hipaa: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
-  ai: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f43f5e" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
+  enrollment: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>,
+  commissions: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0891b2" strokeWidth="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>,
+  workflows: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>,
+  hipaa: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0891b2" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
+  ai: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
 };
 
 // --- Data ---
 const features = [
   { icon: 'contacts', color: 'cyan', title: 'Contact Management', desc: 'Full lifecycle tracking from lead to active member. Custom fields, smart filters, and bulk operations built for benefits data.' },
-  { icon: 'enrollment', color: 'purple', title: 'Enrollment Engine', desc: 'Branded enrollment pages with QR codes, e-signatures, and real-time carrier submission. From quote to enrolled in minutes.' },
-  { icon: 'commissions', color: 'blue', title: 'Commission Tracking', desc: 'Automated commission calculations, tiered payout structures, and real-time transaction logs. Never miss a dollar.' },
+  { icon: 'enrollment', color: 'emerald', title: 'Enrollment Engine', desc: 'Branded enrollment pages with QR codes, e-signatures, and real-time carrier submission. From quote to enrolled in minutes.' },
+  { icon: 'commissions', color: 'cyan', title: 'Commission Tracking', desc: 'Automated commission calculations, tiered payout structures, and real-time transaction logs. Never miss a dollar.' },
   { icon: 'workflows', color: 'emerald', title: 'Workflow Automation', desc: 'Trigger email sequences, task assignments, and notifications automatically. Set it once, let the system work for you.' },
-  { icon: 'hipaa', color: 'amber', title: 'HIPAA Compliance', desc: 'PHI detection, encrypted data at rest and in transit, audit logs, and role-based access control. Built-in, not bolted on.' },
-  { icon: 'ai', color: 'rose', title: 'AI Ticket Resolution', desc: 'Gemini-powered ticket summarization, smart routing, and draft responses. Resolve member issues faster with AI assist.' },
+  { icon: 'hipaa', color: 'cyan', title: 'HIPAA Compliance', desc: 'PHI detection, encrypted data at rest and in transit, audit logs, and role-based access control. Built-in, not bolted on.' },
+  { icon: 'ai', color: 'cyan', title: 'AI Ticket Resolution', desc: 'Gemini-powered ticket summarization, smart routing, and draft responses. Resolve member issues faster with AI assist.' },
 ];
 
 const tickerItems = [
@@ -52,23 +53,23 @@ const tickerItems = [
 
 const activities = [
   { text: 'New enrollment submitted', color: '#10b981', time: '2m ago' },
-  { text: 'Commission calculated', color: '#3b82f6', time: '5m ago' },
+  { text: 'Commission calculated', color: '#0891b2', time: '5m ago' },
   { text: 'Member status updated', color: '#f59e0b', time: '12m ago' },
-  { text: 'Ticket auto-assigned', color: '#8b5cf6', time: '18m ago' },
+  { text: 'Ticket auto-assigned', color: '#059669', time: '18m ago' },
   { text: 'Workflow triggered', color: '#06b6d4', time: '24m ago' },
 ];
 
 const contacts = [
-  { name: 'James Morrison', initials: 'JM', plan: 'Secure HSA 2024', amount: '$487/mo', status: 'Active', statusClass: 'lp-status-active', gradient: 'linear-gradient(135deg, #06b6d4, #3b82f6)' },
-  { name: 'Sarah Rodriguez', initials: 'SR', plan: 'Care Plus 2024', amount: '$312/mo', status: 'Active', statusClass: 'lp-status-active', gradient: 'linear-gradient(135deg, #8b5cf6, #3b82f6)' },
+  { name: 'James Morrison', initials: 'JM', plan: 'Secure HSA 2024', amount: '$487/mo', status: 'Active', statusClass: 'lp-status-active', gradient: 'linear-gradient(135deg, #06b6d4, #059669)' },
+  { name: 'Sarah Rodriguez', initials: 'SR', plan: 'Care Plus 2024', amount: '$312/mo', status: 'Active', statusClass: 'lp-status-active', gradient: 'linear-gradient(135deg, #0891b2, #059669)' },
   { name: 'Kevin Park', initials: 'KP', plan: 'Premium Care', amount: 'Application submitted', status: 'Pending', statusClass: 'lp-status-pending', gradient: 'linear-gradient(135deg, #10b981, #06b6d4)' },
-  { name: 'Amanda Liu', initials: 'AL', plan: 'Secure HSA', amount: 'Enrollment started', status: 'New', statusClass: 'lp-status-new', gradient: 'linear-gradient(135deg, #f59e0b, #f43f5e)' },
-  { name: 'David Williams', initials: 'DW', plan: 'Care Plus', amount: '$529/mo', status: 'Active', statusClass: 'lp-status-active', gradient: 'linear-gradient(135deg, #3b82f6, #8b5cf6)' },
-  { name: 'Maria Chen', initials: 'MC', plan: 'Secure Care', amount: '$445/mo', status: 'Active', statusClass: 'lp-status-active', gradient: 'linear-gradient(135deg, #10b981, #3b82f6)' },
-  { name: 'Robert Taylor', initials: 'RT', plan: 'HSA Essential', amount: 'Review pending', status: 'Pending', statusClass: 'lp-status-pending', gradient: 'linear-gradient(135deg, #f59e0b, #06b6d4)' },
-  { name: 'Lisa Johnson', initials: 'LJ', plan: 'Premium Plus', amount: '$612/mo', status: 'Active', statusClass: 'lp-status-active', gradient: 'linear-gradient(135deg, #8b5cf6, #f43f5e)' },
+  { name: 'Amanda Liu', initials: 'AL', plan: 'Secure HSA', amount: 'Enrollment started', status: 'New', statusClass: 'lp-status-new', gradient: 'linear-gradient(135deg, #06b6d4, #0891b2)' },
+  { name: 'David Williams', initials: 'DW', plan: 'Care Plus', amount: '$529/mo', status: 'Active', statusClass: 'lp-status-active', gradient: 'linear-gradient(135deg, #059669, #06b6d4)' },
+  { name: 'Maria Chen', initials: 'MC', plan: 'Secure Care', amount: '$445/mo', status: 'Active', statusClass: 'lp-status-active', gradient: 'linear-gradient(135deg, #10b981, #0891b2)' },
+  { name: 'Robert Taylor', initials: 'RT', plan: 'HSA Essential', amount: 'Review pending', status: 'Pending', statusClass: 'lp-status-pending', gradient: 'linear-gradient(135deg, #059669, #06b6d4)' },
+  { name: 'Lisa Johnson', initials: 'LJ', plan: 'Premium Plus', amount: '$612/mo', status: 'Active', statusClass: 'lp-status-active', gradient: 'linear-gradient(135deg, #06b6d4, #10b981)' },
   { name: 'Michael Brown', initials: 'MB', plan: 'Care Plus', amount: 'Docs needed', status: 'New', statusClass: 'lp-status-new', gradient: 'linear-gradient(135deg, #06b6d4, #10b981)' },
-  { name: 'Jennifer Davis', initials: 'JD', plan: 'Secure HSA 2024', amount: '$398/mo', status: 'Active', statusClass: 'lp-status-active', gradient: 'linear-gradient(135deg, #3b82f6, #06b6d4)' },
+  { name: 'Jennifer Davis', initials: 'JD', plan: 'Secure HSA 2024', amount: '$398/mo', status: 'Active', statusClass: 'lp-status-active', gradient: 'linear-gradient(135deg, #0891b2, #06b6d4)' },
 ];
 
 const testimonials = [
@@ -125,7 +126,7 @@ export default function CrmLandingPage() {
           ctx.beginPath();
           ctx.moveTo(x1, y);
           ctx.lineTo(x2, y);
-          ctx.strokeStyle = `rgba(59, 130, 246, ${0.06 + Math.sin(phase) * 0.03})`;
+          ctx.strokeStyle = `rgba(5, 150, 105, ${0.06 + Math.sin(phase) * 0.03})`;
           ctx.lineWidth = 1;
           ctx.stroke();
         }
@@ -137,7 +138,7 @@ export default function CrmLandingPage() {
 
         ctx.beginPath();
         ctx.arc(x2, y, 2.5, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(139, 92, 246, ${0.15 + Math.cos(phase) * 0.1})`;
+        ctx.fillStyle = `rgba(5, 150, 105, ${0.15 + Math.cos(phase) * 0.1})`;
         ctx.fill();
       }
       time++;
@@ -268,29 +269,34 @@ export default function CrmLandingPage() {
 
   return (
     <div className="lp-root">
-      {/* Nav */}
-      <nav id="lp-navbar" className="lp-nav">
-        <Link href="/" className="lp-nav-brand">
-          <BrandLogo variant="full" size="md" tone="white" priority />
-        </Link>
-        <div className="lp-nav-links">
-          <a href="#features">Features</a>
-          <a href="#how-it-works">How It Works</a>
-          <a href="#demo">Platform</a>
-          <a href="#testimonials">Testimonials</a>
-          <a
-            href="https://doublehelix.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="lp-nav-platform"
-            aria-label="Visit the Double Helix platform site"
-          >
-            Platform <span aria-hidden="true">↗</span>
-          </a>
-          <Link href="/crm-login" className="lp-nav-link-login">Log In</Link>
-          <Link href="/crm-login" className="lp-nav-cta">Get Started</Link>
-        </div>
-      </nav>
+      {/* Nav — floating island */}
+      <div className="lp-nav-wrap">
+        <nav id="lp-navbar" className="lp-nav" aria-label="Primary">
+          <Link href="/" className="lp-nav-brand">
+            <BrandLogo variant="full" size="sm" tone="auto" priority />
+          </Link>
+          <div className="lp-nav-links">
+            <a href="#features">Features</a>
+            <a href="#how-it-works">How It Works</a>
+            <a href="#demo">Platform</a>
+            <a href="#testimonials">Testimonials</a>
+            <a
+              href="https://doublehelixhub.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="lp-nav-platform"
+              aria-label="Visit the Double Helix platform site"
+            >
+              Platform <span aria-hidden="true">↗</span>
+            </a>
+          </div>
+          <div className="lp-nav-actions">
+            <ThemeToggle variant="icon" className="lp-theme-btn !h-9 !w-9" />
+            <Link href="/crm-login" className="lp-nav-link-login">Log In</Link>
+            <Link href="/crm-login" className="lp-nav-cta">Get Started</Link>
+          </div>
+        </nav>
+      </div>
 
       {/* Hero */}
       <section className="lp-hero">

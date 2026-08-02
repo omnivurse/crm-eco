@@ -27,7 +27,7 @@ export function ThemeToggle({ className, variant = 'dropdown' }: ThemeToggleProp
         size="icon"
         onClick={() => setTheme(resolvedTheme === 'light' ? 'dark' : 'light')}
         className={cn(
-          'h-8 w-8 rounded-md transition-all',
+          'relative h-8 w-8 rounded-md transition-all',
           'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white',
           'hover:bg-slate-100 dark:hover:bg-white/10',
           className
