@@ -38,13 +38,32 @@ interface ActionResult<T = unknown> {
 }
 
 interface IntakeData {
+  first_name: string;
+  last_name: string;
   email: string;
+  date_of_birth: string;
   phone?: string;
+  phone_home?: string;
+  phone_work?: string;
+  phone_cell?: string;
+  leave_message_home?: boolean;
+  leave_message_work?: boolean;
+  leave_message_cell?: boolean;
+  preferred_contact?: 'home' | 'work' | 'cell';
+  may_contact_email?: boolean;
   address_line1: string;
   address_line2?: string;
   city: string;
   state: string;
   zip_code: string;
+  relationship_status?: string;
+  referral_source?: string;
+  emergency_contact?: {
+    name: string;
+    relationship: string;
+    phone: string;
+    address?: string;
+  };
 }
 
 interface HouseholdMember {
@@ -54,6 +73,7 @@ interface HouseholdMember {
   date_of_birth: string;
   relationship: 'spouse' | 'child' | 'dependent';
   ssn_last4?: string;
+  lives_at_home?: boolean;
 }
 
 interface PlanSelectionData {

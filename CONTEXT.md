@@ -67,6 +67,17 @@ locality) comes from the `/codebase-design` skill; the terms below name the
   `enrollments` with `enrollment_steps` and `enrollment_audit_log`. Terminal
   states: draft → in_progress → submitted → approved/rejected/cancelled.
 
+- **Adult Intake** — health-share demographic overlap collected in the public /
+  self-serve enrollment wizard intake step (`AdultIntake` in
+  `@crm-eco/enrollment`): identity, multi-phone + leave-message consents,
+  preferred contact, email consent, address, emergency contact, relationship
+  status, referral. Persisted via `projectAdultIntakeToMember` /
+  `projectAdultIntakeToCustomFields` onto `members` + enrollment
+  `custom_fields`. Medical overlap (PCP, chronic conditions, meds, tobacco) is
+  **not** on Adult Intake — it seeds the questionnaire template
+  `adult_medical_overlap` (`ADULT_MEDICAL_OVERLAP_QUESTIONS`). Therapy-only
+  clinical packs are out of scope.
+
 - **Membership** — the active ongoing relationship after an approved enrollment
   (`memberships` table: billing_amount, status, effective/end dates).
 

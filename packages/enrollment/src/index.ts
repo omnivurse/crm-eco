@@ -19,6 +19,8 @@ export type {
   StepKey,
   StepConfig,
   ActionResult,
+  AdultIntake,
+  PreferredContactChannel,
   IntakeData,
   PlanSelectionData,
   ComplianceData,
@@ -30,4 +32,4 @@ export type {
   QuestionnaireAnswers,
 } from './types';
 
-export { ENROLLMENT_STEPS } from './types';
+export { ENROLLMENT_STEPS, ADULT_MEDICAL_OVERLAP_QUESTIONS } from './types';

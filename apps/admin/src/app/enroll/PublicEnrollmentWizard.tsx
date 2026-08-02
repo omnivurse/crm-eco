@@ -39,9 +39,8 @@ interface PublicEnrollmentWizardProps {
  * (set by /api/enroll/draft, verified server-side) is the prospect's identity /
  * ownership token. The final submit attaches a reCAPTCHA v3 token.
  *
- * The shared wizard's intake step collects email/phone/address but NOT the primary
- * member's name or DOB, so this gates the wizard behind a small lead-capture form
- * that starts the draft and supplies name/email/phone as prefill.
+ * Lead-capture gate starts the draft (name/email/phone/DOB). The Adult Intake
+ * step is the source of truth for identity + contact on final submit.
  */
 export function PublicEnrollmentWizard({
   plans,
@@ -99,7 +98,16 @@ export function PublicEnrollmentWizard({
 
       completeIntakeStep: async (_enrollmentId: string, data: IntakeData) => {
         draftRef.current.intake = data;
-        const ok = await patchDraft({ intake: data });
+        // Keep gate identity in sync — Adult Intake may refine name/DOB/phone.
+        memberRef.current = {
+          first_name: data.first_name || memberRef.current.first_name,
+          last_name: data.last_name || memberRef.current.last_name,
+          email: data.email || memberRef.current.email,
+          phone: data.phone_cell || data.phone || data.phone_home || memberRef.current.phone,
+          date_of_birth: data.date_of_birth || memberRef.current.date_of_birth,
+        };
+        setMember(memberRef.current);
+        const ok = await patchDraft({ intake: data, member: memberRef.current });
         return ok ? { success: true } : { success: false, error: 'Failed to save' };
       },
 
@@ -144,15 +152,27 @@ export function PublicEnrollmentWizard({
           body: JSON.stringify({
             recaptchaToken,
             member: {
-              first_name: m.first_name,
-              last_name: m.last_name,
-              email: m.email,
-              phone: m.phone || undefined,
-              date_of_birth: m.date_of_birth || undefined,
+              first_name: intake?.first_name || m.first_name,
+              last_name: intake?.last_name || m.last_name,
+              email: intake?.email || m.email,
+              phone: intake?.phone_cell || intake?.phone || m.phone || undefined,
+              phone_cell: intake?.phone_cell,
+              phone_home: intake?.phone_home,
+              phone_work: intake?.phone_work,
+              date_of_birth: intake?.date_of_birth || m.date_of_birth || undefined,
               address_line1: intake?.address_line1,
+              address_line2: intake?.address_line2,
               city: intake?.city,
               state: intake?.state,
               zip_code: intake?.zip_code,
+              preferred_contact: intake?.preferred_contact,
+              may_contact_email: intake?.may_contact_email,
+              leave_message_home: intake?.leave_message_home,
+              leave_message_work: intake?.leave_message_work,
+              leave_message_cell: intake?.leave_message_cell,
+              relationship_status: intake?.relationship_status,
+              referral_source: intake?.referral_source,
+              emergency_contact: intake?.emergency_contact,
             },
             selected_plan_id: plan?.selected_plan_id,
             effective_date: plan?.requested_effective_date,
@@ -161,6 +181,7 @@ export function PublicEnrollmentWizard({
               last_name: h.last_name,
               date_of_birth: h.date_of_birth,
               relationship: h.relationship,
+              lives_at_home: h.lives_at_home,
             })),
             acknowledgments,
           }),

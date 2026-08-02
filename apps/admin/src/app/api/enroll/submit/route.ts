@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
-  pickActiveMemberByName,
   checkEligibility,
   buildEnrollmentApprovalRecord,
   checkEnrollmentApprovalRequired,
   resolvePendingMemberEffectiveDate,
   finalizeEnrollment,
   isEnrollmentCompletionEnabled,
+  findOrCreatePublicMember,
+  createHouseholdDependentsForEnrollment,
+  buildAdultIntakeCustomFields,
+  findEnrollmentByDraftIdempotencyKey,
   type PaymentMethodInput,
   type PaymentBillingAddress,
 } from '@crm-eco/lib';
@@ -68,11 +71,28 @@ interface SubmitBody {
     last_name: string;
     email: string;
     phone?: string;
+    phone_cell?: string;
+    phone_home?: string;
+    phone_work?: string;
     date_of_birth?: string;
     address_line1?: string;
+    address_line2?: string;
     city?: string;
     state?: string;
     zip_code?: string;
+    preferred_contact?: string;
+    may_contact_email?: boolean;
+    leave_message_home?: boolean;
+    leave_message_work?: boolean;
+    leave_message_cell?: boolean;
+    relationship_status?: string;
+    referral_source?: string;
+    emergency_contact?: {
+      name: string;
+      relationship: string;
+      phone: string;
+      address?: string;
+    };
   };
   selected_plan_id?: string;
   effective_date?: string;
@@ -81,6 +101,7 @@ interface SubmitBody {
     last_name: string;
     date_of_birth: string;
     relationship: string;
+    lives_at_home?: boolean;
   }>;
   acknowledgments?: Record<string, boolean>;
   /**
@@ -142,86 +163,43 @@ export async function POST(request: NextRequest) {
       ? draftData.enrollment_source
       : 'website';
 
-  // 1. Find-or-create member (dedup by org + email + NAME so a double-submit reuses
-  //    the existing member; email alone is not unique — families share emails).
-  const normalizedEmail = member.email.toLowerCase().trim();
-  let memberId: string;
-
-  const { data: emailMatches } = await supabase
-    .from('members')
-    .select('id, first_name, last_name, merged_into_id')
-    .eq('organization_id', orgId)
-    .eq('email', normalizedEmail)
-    .is('merged_into_id', null)
-    .order('id', { ascending: true })
-    .limit(200);
-
-  const existingMember = pickActiveMemberByName(
-    emailMatches ?? [],
-    member.first_name,
-    member.last_name,
-  );
-
-  if (existingMember) {
-    memberId = existingMember.id;
-  } else {
-    const memberNumber = `M-${Date.now().toString(36).toUpperCase()}`;
-    const { data: memberRow, error: memberErr } = await supabase
-      .from('members')
-      .insert({
-        organization_id: orgId,
-        member_number: memberNumber,
-        first_name: member.first_name,
-        last_name: member.last_name,
-        email: normalizedEmail,
-        phone: member.phone ?? null,
-        date_of_birth: member.date_of_birth ?? null,
-        address_line1: member.address_line1 ?? null,
-        city: member.city ?? null,
-        state: member.state ?? null,
-        postal_code: member.zip_code ?? null,
-        status: 'pending',
-        effective_date: coverageStart,
-        source: 'website',
-        advisor_id: advisorId,
-      })
-      .select('id')
-      .single();
-
-    if (memberErr || !memberRow) {
-      // Concurrent submit / returning member outside the lookup window can collide
-      // with members_org_email_name_active_uniq — recover instead of 500.
-      if (memberErr?.code === '23505') {
-        const { data: retryMatches } = await supabase
-          .from('members')
-          .select('id, first_name, last_name, merged_into_id')
-          .eq('organization_id', orgId)
-          .eq('email', normalizedEmail)
-          .is('merged_into_id', null)
-          .order('id', { ascending: true })
-          .limit(1000);
-        const recovered = pickActiveMemberByName(
-          retryMatches ?? [],
-          member.first_name,
-          member.last_name,
-        );
-        if (!recovered) {
-          return NextResponse.json(
-            { error: 'member_create_failed', message: memberErr.message },
-            { status: 500 },
-          );
-        }
-        memberId = recovered.id;
-      } else {
-        return NextResponse.json(
-          { error: 'member_create_failed', message: memberErr?.message },
-          { status: 500 },
-        );
-      }
-    } else {
-      memberId = memberRow.id;
-    }
+  // 1. Find-or-create member via Adult Intake projection (shared orchestrator).
+  const memberResult = await findOrCreatePublicMember(supabase, {
+    organizationId: orgId,
+    member,
+    coverageStart,
+    source: 'website',
+    advisorId,
+  });
+  if ('error' in memberResult) {
+    return NextResponse.json(
+      { error: memberResult.error, message: memberResult.message },
+      { status: memberResult.status },
+    );
   }
+  const memberId = memberResult.memberId;
+
+  // Short-circuit retries before inserting dependents (avoids orphan rows).
+  const existingEnrollmentId = await findEnrollmentByDraftIdempotencyKey(
+    supabase,
+    orgId,
+    draft.draftId,
+  );
+  if (existingEnrollmentId) {
+    const replayResponse = NextResponse.json({
+      enrollment_id: existingEnrollmentId,
+      redirect: donePath(draft.slug, existingEnrollmentId),
+    });
+    clearDraftCookie(replayResponse);
+    return replayResponse;
+  }
+
+  // 1b. Persist household as dependents rows (C3) for enrollment_dependents links.
+  const dependentLinks = await createHouseholdDependentsForEnrollment(supabase, {
+    organizationId: orgId,
+    memberId,
+    household: household ?? [],
+  });
 
   // 3. Create enrollment via the atomic RPC
   // 2. Compute the price SERVER-SIDE. Default: plans.monthly_share (never hard-fail).
@@ -323,14 +301,15 @@ export async function POST(request: NextRequest) {
       enrollment_source: enrollmentSource,
       channel: 'web',
       idempotency_key: `enroll_${draft.draftId}`,
-      custom_fields: {
+      custom_fields: buildAdultIntakeCustomFields(member, {
         landing_slug: draft.slug,
         landing_page_id: landingPageId,
         draft_id: draft.draftId,
         recaptcha_score: captcha.score,
         acknowledgments: acknowledgments ?? {},
-      },
-      dependents: [],
+        household: household ?? [],
+      }),
+      dependents: dependentLinks,
     },
   });
 

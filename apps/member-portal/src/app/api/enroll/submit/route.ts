@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
-  pickActiveMemberByName,
   checkEligibility,
   buildEnrollmentApprovalRecord,
   checkEnrollmentApprovalRequired,
   resolvePendingMemberEffectiveDate,
+  findOrCreatePublicMember,
+  createHouseholdDependentsForEnrollment,
+  buildAdultIntakeCustomFields,
+  findEnrollmentByDraftIdempotencyKey,
 } from '@crm-eco/lib';
 import { createServiceRoleClient } from '@crm-eco/lib/supabase/server';
 import {
@@ -68,11 +71,28 @@ interface SubmitBody {
     last_name: string;
     email: string;
     phone?: string;
+    phone_cell?: string;
+    phone_home?: string;
+    phone_work?: string;
     date_of_birth?: string;
     address_line1?: string;
+    address_line2?: string;
     city?: string;
     state?: string;
     zip_code?: string;
+    preferred_contact?: string;
+    may_contact_email?: boolean;
+    leave_message_home?: boolean;
+    leave_message_work?: boolean;
+    leave_message_cell?: boolean;
+    relationship_status?: string;
+    referral_source?: string;
+    emergency_contact?: {
+      name: string;
+      relationship: string;
+      phone: string;
+      address?: string;
+    };
   };
   selected_plan_id?: string;
   effective_date?: string;
@@ -81,6 +101,7 @@ interface SubmitBody {
     last_name: string;
     date_of_birth: string;
     relationship: string;
+    lives_at_home?: boolean;
   }>;
   acknowledgments?: Record<string, boolean>;
 }
@@ -119,89 +140,42 @@ export async function POST(request: NextRequest) {
   const supabase = createServiceRoleClient();
   const orgId = draft.organizationId;
 
-  // 1. Find-or-create member (C2: dedup by org + email + NAME so a double-submit / retry
-  //    reuses the existing member. NOTE: email alone is NOT unique for members — in
-  //    health-benefits, family members legitimately share one email — so we match on
-  //    (email, first_name, last_name) to avoid mis-attaching a relative's enrollment.)
-  const normalizedEmail = member.email.toLowerCase().trim();
-  let memberId: string;
-
-  const { data: emailMatches } = await supabase
-    .from('members')
-    .select('id, first_name, last_name, merged_into_id')
-    .eq('organization_id', orgId)
-    .eq('email', normalizedEmail)
-    .is('merged_into_id', null)
-    .order('id', { ascending: true })
-    .limit(200);
-
-  const existingMember = pickActiveMemberByName(
-    emailMatches ?? [],
-    member.first_name,
-    member.last_name,
-  );
-
-  if (existingMember) {
-    memberId = existingMember.id;
-  } else {
-    const memberNumber = `M-${Date.now().toString(36).toUpperCase()}`;
-    const { data: memberRow, error: memberErr } = await supabase
-      .from('members')
-      .insert({
-        organization_id: orgId,
-        member_number: memberNumber,
-        first_name: member.first_name,
-        last_name: member.last_name,
-        email: normalizedEmail,
-        phone: member.phone ?? null,
-        date_of_birth: member.date_of_birth ?? null,
-        address_line1: member.address_line1 ?? null,
-        city: member.city ?? null,
-        state: member.state ?? null,
-        postal_code: member.zip_code ?? null,
-        status: 'pending',
-        effective_date: coverageStart,
-        source: 'public_wizard',
-      })
-      .select('id')
-      .single();
-
-    if (memberErr || !memberRow) {
-      // A concurrent submit, or a returning member whose row fell outside the lookup
-      // window above (>200 members on one email), can collide with
-      // members_org_email_name_active_uniq. Rather than 500 a legitimate returning
-      // member, recover by reusing the existing active member.
-      if (memberErr?.code === '23505') {
-        const { data: retryMatches } = await supabase
-          .from('members')
-          .select('id, first_name, last_name, merged_into_id')
-          .eq('organization_id', orgId)
-          .eq('email', normalizedEmail)
-          .is('merged_into_id', null)
-          .order('id', { ascending: true })
-          .limit(1000);
-        const recovered = pickActiveMemberByName(
-          retryMatches ?? [],
-          member.first_name,
-          member.last_name,
-        );
-        if (!recovered) {
-          return NextResponse.json(
-            { error: 'member_create_failed', message: memberErr.message },
-            { status: 500 },
-          );
-        }
-        memberId = recovered.id;
-      } else {
-        return NextResponse.json(
-          { error: 'member_create_failed', message: memberErr?.message },
-          { status: 500 },
-        );
-      }
-    } else {
-      memberId = memberRow.id;
-    }
+  // 1. Find-or-create member via Adult Intake projection (shared orchestrator).
+  const memberResult = await findOrCreatePublicMember(supabase, {
+    organizationId: orgId,
+    member,
+    coverageStart,
+    source: 'public_wizard',
+  });
+  if ('error' in memberResult) {
+    return NextResponse.json(
+      { error: memberResult.error, message: memberResult.message },
+      { status: memberResult.status },
+    );
   }
+  const memberId = memberResult.memberId;
+
+  // Short-circuit retries before inserting dependents (avoids orphan rows).
+  const existingEnrollmentId = await findEnrollmentByDraftIdempotencyKey(
+    supabase,
+    orgId,
+    draft.draftId,
+  );
+  if (existingEnrollmentId) {
+    const replayResponse = NextResponse.json({
+      enrollment_id: existingEnrollmentId,
+      redirect: `/enroll/${draft.slug}/done?id=${existingEnrollmentId}`,
+    });
+    clearDraftCookie(replayResponse);
+    return replayResponse;
+  }
+
+  // 1b. Persist household as dependents rows (C3) for enrollment_dependents links.
+  const dependentLinks = await createHouseholdDependentsForEnrollment(supabase, {
+    organizationId: orgId,
+    memberId,
+    household: household ?? [],
+  });
 
   // 3. Create enrollment via the atomic RPC
   // 2. Compute the price SERVER-SIDE (server is the pricing authority).
@@ -320,13 +294,14 @@ export async function POST(request: NextRequest) {
       // C1: stable per-submit key so a retry/double-click of this wizard draft
       // returns the same enrollment instead of creating a duplicate.
       idempotency_key: `enroll_${draft.draftId}`,
-      custom_fields: {
+      custom_fields: buildAdultIntakeCustomFields(member, {
         landing_slug: draft.slug,
         draft_id: draft.draftId,
         recaptcha_score: captcha.score,
         acknowledgments: acknowledgments ?? {},
-      },
-      dependents: [],
+        household: household ?? [],
+      }),
+      dependents: dependentLinks,
     },
   });
 

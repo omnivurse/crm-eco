@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Input, Label, Button, Card, CardContent, Badge } from '@crm-eco/ui';
+import { Input, Label, Button, Card, CardContent, Badge, Checkbox } from '@crm-eco/ui';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@crm-eco/ui';
 import { Loader2, ArrowRight, Plus, Trash2, Users } from 'lucide-react';
 import type { HouseholdMember } from '../../types';
@@ -20,6 +20,7 @@ const emptyMember = (): HouseholdMember => ({
   last_name: '',
   date_of_birth: '',
   relationship: 'spouse',
+  lives_at_home: true,
 });
 
 export function SelfServeHouseholdStep({
@@ -47,7 +48,11 @@ export function SelfServeHouseholdStep({
     });
   };
 
-  const updateMember = (id: string, field: keyof HouseholdMember, value: string) => {
+  const updateMember = (
+    id: string,
+    field: keyof HouseholdMember,
+    value: string | boolean
+  ) => {
     setMembers((prev) =>
       prev.map((m) => (m.id === id ? { ...m, [field]: value } : m))
     );
@@ -119,7 +124,7 @@ export function SelfServeHouseholdStep({
 
       {members.length > 0 && (
         <div className="space-y-4">
-          {members.map((member, index) => (
+          {members.map((member) => (
             <Card key={member.id} className="relative">
               <CardContent className="pt-6">
                 <div className="absolute top-2 right-2 flex items-center gap-2">
@@ -192,6 +197,19 @@ export function SelfServeHouseholdStep({
                         <SelectItem value="dependent">Other Dependent</SelectItem>
                       </SelectContent>
                     </Select>
+                  </div>
+
+                  <div className="flex items-center gap-2 md:col-span-2 pt-1">
+                    <Checkbox
+                      id={`${member.id}-lives-at-home`}
+                      checked={member.lives_at_home !== false}
+                      onCheckedChange={(checked) =>
+                        updateMember(member.id, 'lives_at_home', checked === true)
+                      }
+                    />
+                    <Label htmlFor={`${member.id}-lives-at-home`} className="font-normal">
+                      Lives at the same address
+                    </Label>
                   </div>
                 </div>
               </CardContent>

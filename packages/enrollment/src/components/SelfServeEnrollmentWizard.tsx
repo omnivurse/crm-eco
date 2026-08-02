@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useCallback, useMemo, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Badge } from '@crm-eco/ui';
-import { Check, ChevronLeft, Loader2 } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button } from '@crm-eco/ui';
+import { Check, ChevronLeft } from 'lucide-react';
 import {
   SelfServeIntakeStep,
   SelfServeHouseholdStep,
@@ -18,6 +18,9 @@ import type {
   WizardSnapshot,
   HouseholdMember,
   PrefillData,
+  IntakeData,
+  ComplianceData,
+  PaymentData,
   EnrollmentActions,
   QuestionnaireTemplate,
   QuestionnaireAnswers,
@@ -130,7 +133,6 @@ export function SelfServeEnrollmentWizard({
   completedSteps = [],
   plans,
   prefillData,
-  isAuthenticated,
   actions,
   questionnaireTemplate,
   afterSubmitUrl = '/',
@@ -203,7 +205,7 @@ export function SelfServeEnrollmentWizard({
       }
       setEnrollmentId(result.data.enrollmentId);
       return result.data.enrollmentId;
-    } catch (err) {
+    } catch {
       setError('Failed to create enrollment');
       return null;
     } finally {
@@ -212,7 +214,7 @@ export function SelfServeEnrollmentWizard({
   }, [enrollmentId, actions]);
 
   // Step handlers
-  const handleIntakeComplete = useCallback(async (data: WizardSnapshot['intake']) => {
+  const handleIntakeComplete = useCallback(async (data: IntakeData) => {
     setLoading(true);
     setError(null);
 
@@ -220,7 +222,7 @@ export function SelfServeEnrollmentWizard({
       const eid = await ensureEnrollment();
       if (!eid) return;
 
-      const result = await actions.completeIntakeStep(eid, data as any);
+      const result = await actions.completeIntakeStep(eid, data);
       if (!result.success) {
         setError(result.error || 'Failed to save');
         return;
@@ -229,7 +231,7 @@ export function SelfServeEnrollmentWizard({
       updateSnapshot('intake', data);
       markStepComplete('intake');
       goToNextStep();
-    } catch (err) {
+    } catch {
       setError('An error occurred');
     } finally {
       setLoading(false);
@@ -252,7 +254,7 @@ export function SelfServeEnrollmentWizard({
       updateSnapshot('household', { members });
       markStepComplete('household');
       goToNextStep();
-    } catch (err) {
+    } catch {
       setError('An error occurred');
     } finally {
       setLoading(false);
@@ -288,7 +290,7 @@ export function SelfServeEnrollmentWizard({
       updateSnapshot('questionnaire', { template_id: templateId, answers });
       markStepComplete('questionnaire');
       goToNextStep();
-    } catch (err) {
+    } catch {
       setError('An error occurred');
     } finally {
       setLoading(false);
@@ -315,7 +317,7 @@ export function SelfServeEnrollmentWizard({
       updateSnapshot('plan_selection', data);
       markStepComplete('plan_selection');
       goToNextStep();
-    } catch (err) {
+    } catch {
       setError('An error occurred');
     } finally {
       setLoading(false);
@@ -337,7 +339,7 @@ export function SelfServeEnrollmentWizard({
         rx_pricing_result: result.data,
       });
       return result.data;
-    } catch (err) {
+    } catch {
       setError('Failed to get Rx pricing');
       return null;
     }
@@ -372,7 +374,7 @@ export function SelfServeEnrollmentWizard({
         return { success: false, error: result.error };
       }
       return { success: true, result: result.data };
-    } catch (err) {
+    } catch {
       return { success: false, error: 'Failed to get quote' };
     }
   }, [enrollmentId, actions, snapshot]);
@@ -398,7 +400,7 @@ export function SelfServeEnrollmentWizard({
         return { success: false, error: result.error };
       }
       return { success: true, result: result.data };
-    } catch (err) {
+    } catch {
       return { success: false, error: 'Failed to check eligibility' };
     }
   }, [enrollmentId, actions]);
@@ -410,7 +412,10 @@ export function SelfServeEnrollmentWizard({
     setError(null);
 
     try {
-      const result = await actions.completeComplianceStep(enrollmentId, data as any);
+      const result = await actions.completeComplianceStep(
+        enrollmentId,
+        data as ComplianceData
+      );
       if (!result.success) {
         setError(result.error || 'Failed to save');
         return;
@@ -419,7 +424,7 @@ export function SelfServeEnrollmentWizard({
       updateSnapshot('compliance', data);
       markStepComplete('compliance');
       goToNextStep();
-    } catch (err) {
+    } catch {
       setError('An error occurred');
     } finally {
       setLoading(false);
@@ -433,7 +438,10 @@ export function SelfServeEnrollmentWizard({
     setError(null);
 
     try {
-      const result = await actions.completePaymentStep(enrollmentId, data as any);
+      const result = await actions.completePaymentStep(
+        enrollmentId,
+        data as PaymentData
+      );
       if (!result.success) {
         setError(result.error || 'Failed to save');
         return;
@@ -442,7 +450,7 @@ export function SelfServeEnrollmentWizard({
       updateSnapshot('payment', data);
       markStepComplete('payment');
       goToNextStep();
-    } catch (err) {
+    } catch {
       setError('An error occurred');
     } finally {
       setLoading(false);
@@ -464,7 +472,7 @@ export function SelfServeEnrollmentWizard({
 
       markStepComplete('confirmation');
       setSubmitted(true);
-    } catch (err) {
+    } catch {
       setError('An error occurred');
     } finally {
       setLoading(false);

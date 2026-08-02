@@ -14,17 +14,45 @@ export interface WizardPlan {
   description: string | null;
 }
 
-export interface WizardSnapshot {
-  intake?: {
-    email?: string;
-    phone?: string;
-    address_line1?: string;
-    address_line2?: string;
-    city?: string;
-    state?: string;
-    zip_code?: string;
-    date_of_birth?: string;
+/** Preferred phone channel for membership communications. */
+export type PreferredContactChannel = 'home' | 'work' | 'cell';
+
+/**
+ * Adult Intake — health-share demographic overlap (identity, contact consents,
+ * emergency contact, address). Medical detail stays on the questionnaire step.
+ */
+export interface AdultIntake {
+  first_name: string;
+  last_name: string;
+  email: string;
+  date_of_birth: string;
+  phone_home?: string;
+  phone_work?: string;
+  phone_cell?: string;
+  /** Legacy single phone; mirrored from phone_cell / phone_home when set. */
+  phone?: string;
+  leave_message_home?: boolean;
+  leave_message_work?: boolean;
+  leave_message_cell?: boolean;
+  preferred_contact?: PreferredContactChannel;
+  may_contact_email?: boolean;
+  address_line1: string;
+  address_line2?: string;
+  city: string;
+  state: string;
+  zip_code: string;
+  relationship_status?: string;
+  referral_source?: string;
+  emergency_contact?: {
+    name: string;
+    relationship: string;
+    phone: string;
+    address?: string;
   };
+}
+
+export interface WizardSnapshot {
+  intake?: Partial<AdultIntake>;
   household?: {
     members: HouseholdMember[];
   };
@@ -67,6 +95,8 @@ export interface HouseholdMember {
   date_of_birth: string;
   relationship: 'spouse' | 'child' | 'dependent';
   ssn_last4?: string;
+  /** From Adult Intake children grid — optional. */
+  lives_at_home?: boolean;
 }
 
 export interface PrefillData {
@@ -100,15 +130,8 @@ export interface ActionResult<T = unknown> {
   error?: string;
 }
 
-export interface IntakeData {
-  email: string;
-  phone?: string;
-  address_line1: string;
-  address_line2?: string;
-  city: string;
-  state: string;
-  zip_code: string;
-}
+/** @deprecated Prefer AdultIntake — alias retained for EnrollmentActions callers. */
+export type IntakeData = AdultIntake;
 
 export interface PlanSelectionData {
   selected_plan_id: string;
@@ -251,4 +274,88 @@ export const ENROLLMENT_STEPS: StepConfig[] = [
   { key: 'compliance', title: 'Acknowledgments', description: 'Review and sign' },
   { key: 'payment', title: 'Payment', description: 'Set up billing' },
   { key: 'confirmation', title: 'Confirm', description: 'Submit enrollment' },
+];
+
+/**
+ * Adult Intake medical overlap — seed content for a questionnaire template
+ * (key: `adult_medical_overlap`). Keep AdultIntake demographic; medical stays here.
+ * Seeded live via `202608020010_seed_adult_medical_overlap_questionnaire.sql`.
+ */
+export const ADULT_MEDICAL_OVERLAP_QUESTIONS: QuestionnaireQuestion[] = [
+  {
+    key: 'section_medical',
+    label: 'Medical information',
+    type: 'section',
+    help_text: 'Brief health-share eligibility questions (not a clinical intake).',
+  },
+  {
+    key: 'has_primary_care_physician',
+    label: 'Do you have a primary care physician (PCP)?',
+    type: 'radio',
+    required: true,
+    options: [
+      { value: 'yes', label: 'Yes' },
+      { value: 'no', label: 'No' },
+    ],
+  },
+  {
+    key: 'pcp_name',
+    label: 'Primary care physician name',
+    type: 'text',
+    visible_when: {
+      logic: 'AND',
+      conditions: [{ field: 'has_primary_care_physician', operator: 'eq', value: 'yes' }],
+    },
+  },
+  {
+    key: 'has_chronic_conditions',
+    label: 'Do you have any chronic medical conditions?',
+    type: 'radio',
+    required: true,
+    options: [
+      { value: 'yes', label: 'Yes' },
+      { value: 'no', label: 'No' },
+    ],
+  },
+  {
+    key: 'chronic_conditions_detail',
+    label: 'Please describe your chronic conditions',
+    type: 'text',
+    required: true,
+    visible_when: {
+      logic: 'AND',
+      conditions: [{ field: 'has_chronic_conditions', operator: 'eq', value: 'yes' }],
+    },
+  },
+  {
+    key: 'takes_medications',
+    label: 'Do you currently take any prescription medications?',
+    type: 'radio',
+    required: true,
+    options: [
+      { value: 'yes', label: 'Yes' },
+      { value: 'no', label: 'No' },
+    ],
+  },
+  {
+    key: 'medications_list',
+    label: 'List current medications',
+    type: 'text',
+    help_text: 'Name and dose if known. Detailed Rx pricing can be added on the plan step.',
+    visible_when: {
+      logic: 'AND',
+      conditions: [{ field: 'takes_medications', operator: 'eq', value: 'yes' }],
+    },
+  },
+  {
+    key: 'tobacco_use',
+    label: 'Do you use tobacco products?',
+    type: 'radio',
+    required: true,
+    options: [
+      { value: 'never', label: 'Never' },
+      { value: 'former', label: 'Former' },
+      { value: 'current', label: 'Current' },
+    ],
+  },
 ];
