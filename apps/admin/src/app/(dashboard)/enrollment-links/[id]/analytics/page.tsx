@@ -1,11 +1,9 @@
 'use client';
 
-import { ArrowLeft, Calendar, Clock, DeviceMobile, Eye, Globe, Monitor, TrendUp, Users } from '@phosphor-icons/react';
+import { Calendar, Clock, DeviceMobile, Eye, Globe, Monitor, TrendUp, Users } from '@phosphor-icons/react';
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import Link from 'next/link';
 import { createClient } from '@crm-eco/lib/supabase/client';
-import { Button } from '@crm-eco/ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@crm-eco/ui/components/card';
 import {
   Select,
@@ -14,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@crm-eco/ui/components/select';
+import { EntityPageHeader } from '@/components/ui/EntityPageHeader';
 
 interface LandingPage {
   id: string;
@@ -179,32 +178,25 @@ export default function LandingPageAnalyticsPage() {
 
   return (
     <div className="p-8 space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link href={`/enrollment-links/${id}`}>
-            <Button variant="ghost" size="icon">
-              <ArrowLeft weight="light" className="w-4 h-4" />
-            </Button>
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">Analytics: {landingPage.name}</h1>
-            <p className="text-slate-600">/enroll/{landingPage.slug}</p>
-          </div>
-        </div>
-
-        <Select value={dateRange} onValueChange={setDateRange}>
-          <SelectTrigger className="w-40">
-            <Calendar weight="light" className="w-4 h-4 mr-2" />
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="7d">Last 7 days</SelectItem>
-            <SelectItem value="30d">Last 30 days</SelectItem>
-            <SelectItem value="90d">Last 90 days</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+      <EntityPageHeader
+        backHref={`/enrollment-links/${id}`}
+        backLabel="Landing page"
+        title={`Analytics: ${landingPage.name}`}
+        subtitle={`/enroll/${landingPage.slug}`}
+        secondaryActions={
+          <Select value={dateRange} onValueChange={setDateRange}>
+            <SelectTrigger className="w-40">
+              <Calendar weight="light" className="mr-2 h-4 w-4" aria-hidden />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="7d">Last 7 days</SelectItem>
+              <SelectItem value="30d">Last 30 days</SelectItem>
+              <SelectItem value="90d">Last 90 days</SelectItem>
+            </SelectContent>
+          </Select>
+        }
+      />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

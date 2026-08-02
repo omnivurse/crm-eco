@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Badg
 import Link from 'next/link';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { VendorTable } from '@/components/vendors/VendorTable';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { getActiveTenant } from '@/lib/tenant';
 
 interface VendorStats {
@@ -108,19 +109,18 @@ export default async function VendorsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Vendors</h1>
-          <p className="text-slate-500">Manage vendor integrations and data connections</p>
-        </div>
-        <Link href="/vendors/new">
-          <Button>
-            <Plus weight="light" className="h-4 w-4 mr-2" />
-            Add Vendor
-          </Button>
-        </Link>
-      </div>
+      <PageHeader
+        title="Vendors"
+        description="Manage vendor integrations and data connections"
+        actions={
+          <Link href="/vendors/new">
+            <Button size="sm">
+              <Plus weight="light" className="mr-1.5 h-4 w-4" aria-hidden />
+              Add vendor
+            </Button>
+          </Link>
+        }
+      />
 
       {/* Stats Row */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

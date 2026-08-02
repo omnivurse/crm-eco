@@ -1,6 +1,7 @@
 'use client';
 
-import { ArrowClockwise, ArrowLeft, Buildings, Calendar, CheckCircle, CircleNotch, Clock, CurrencyDollar, DownloadSimple, Eye, FileText, Funnel, MagnifyingGlass, XCircle } from '@phosphor-icons/react';
+import { ArrowClockwise, Buildings, CheckCircle, CircleNotch, Clock, CurrencyDollar, DownloadSimple, Eye, FileText, Funnel, MagnifyingGlass, XCircle } from '@phosphor-icons/react';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import {
@@ -427,32 +428,29 @@ export default function NachaExportPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link href="/billing">
-            <Button variant="ghost" size="icon">
-              <ArrowLeft weight="light" className="w-4 h-4" />
+      <PageHeader
+        backHref="/billing/nacha"
+        backLabel="NACHA / ACH"
+        title="NACHA export"
+        description="Generate ACH batch files for bank submission"
+        icon={<DownloadSimple weight="light" className="w-6 h-6" />}
+        gradient="from-amber-500 to-orange-400"
+        actions={
+          <>
+            <Link href="/billing/nacha/import">
+              <Button variant="outline" size="sm">Go to import</Button>
+            </Link>
+            <Button
+              size="sm"
+              onClick={() => setShowExportModal(true)}
+              disabled={selectedTransactions.size === 0}
+            >
+              <DownloadSimple weight="light" className="w-4 h-4 mr-2" />
+              Create export ({selectedTransactions.size})
             </Button>
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">NACHA Export</h1>
-            <p className="text-slate-500">Generate ACH batch files for bank submission</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Link href="/billing/nacha/import">
-            <Button variant="outline">Go to Import</Button>
-          </Link>
-          <Button
-            onClick={() => setShowExportModal(true)}
-            disabled={selectedTransactions.size === 0}
-          >
-            <DownloadSimple weight="light" className="w-4 h-4 mr-2" />
-            Create Export ({selectedTransactions.size})
-          </Button>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

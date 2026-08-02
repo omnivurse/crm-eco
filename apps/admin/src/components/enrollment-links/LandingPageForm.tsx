@@ -1,14 +1,14 @@
 'use client';
 
-import { ArrowLeft, ArrowSquareOut, Eye, FileText, FloppyDisk, GearSix, Palette, Trash, Users } from '@phosphor-icons/react';
+import { ArrowSquareOut, FileText, FloppyDisk, GearSix, Palette, Trash, Users } from '@phosphor-icons/react';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import Link from 'next/link';
 import { Button } from '@crm-eco/ui/components/button';
+import { EntityPageHeader } from '@/components/ui/EntityPageHeader';
 import { Input } from '@crm-eco/ui/components/input';
 import { Label } from '@crm-eco/ui/components/label';
 import { Textarea } from '@crm-eco/ui/components/textarea';
@@ -278,53 +278,40 @@ export function LandingPageForm({ landingPage }: LandingPageFormProps) {
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link href="/enrollment-links">
-            <Button type="button" variant="ghost" size="icon">
-              <ArrowLeft weight="light" className="w-4 h-4" />
-            </Button>
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">
-              {isEditing ? 'Edit Landing Page' : 'Create Landing Page'}
-            </h1>
-            <p className="text-slate-600">
-              {isEditing ? 'Update your enrollment landing page' : 'Create a new enrollment landing page'}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {isEditing && (
+      <EntityPageHeader
+        backHref="/enrollment-links"
+        backLabel="Enrollment links"
+        title={isEditing ? 'Edit landing page' : 'Create landing page'}
+        description={
+          isEditing
+            ? 'Update your enrollment landing page'
+            : 'Create a new enrollment landing page'
+        }
+        secondaryActions={
+          isEditing ? (
             <>
-              <Button
-                type="button"
-                variant="outline"
-                asChild
-              >
+              <Button type="button" variant="outline" size="sm" asChild>
                 <a
                   href={enrollPublicUrl(landingPage.slug)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="gap-2"
                 >
-                  <ArrowSquareOut weight="light" className="w-4 h-4" />
+                  <ArrowSquareOut weight="light" className="w-4 h-4" aria-hidden />
                   Preview
                 </a>
               </Button>
 
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button type="button" variant="outline" className="text-red-600">
-                    <Trash weight="light" className="w-4 h-4 mr-2" />
+                  <Button type="button" variant="outline" size="sm" className="text-red-600">
+                    <Trash weight="light" className="w-4 h-4 mr-2" aria-hidden />
                     Delete
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Delete Landing Page</AlertDialogTitle>
+                    <AlertDialogTitle>Delete landing page</AlertDialogTitle>
                     <AlertDialogDescription>
                       Are you sure you want to delete this landing page? This action cannot be undone.
                       All analytics data will also be deleted.
@@ -339,14 +326,15 @@ export function LandingPageForm({ landingPage }: LandingPageFormProps) {
                 </AlertDialogContent>
               </AlertDialog>
             </>
-          )}
-
-          <Button type="submit" disabled={saving} className="gap-2">
-            <FloppyDisk weight="light" className="w-4 h-4" />
-            {saving ? 'Saving...' : 'FloppyDisk Page'}
+          ) : undefined
+        }
+        primaryAction={
+          <Button type="submit" disabled={saving} size="sm" className="gap-2">
+            <FloppyDisk weight="light" className="w-4 h-4" aria-hidden />
+            {saving ? 'Saving...' : 'Save'}
           </Button>
-        </div>
-      </div>
+        }
+      />
 
       <Tabs defaultValue="content" className="space-y-6">
         <TabsList>
@@ -360,7 +348,7 @@ export function LandingPageForm({ landingPage }: LandingPageFormProps) {
           </TabsTrigger>
           <TabsTrigger value="settings" className="gap-2">
             <GearSix weight="light" className="w-4 h-4" />
-            GearSix
+            Settings
           </TabsTrigger>
           <TabsTrigger value="plans" className="gap-2">
             <Users weight="light" className="w-4 h-4" />

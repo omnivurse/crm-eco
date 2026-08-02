@@ -2,6 +2,7 @@ import { Percent, Plus, Stack, Users } from '@phosphor-icons/react/dist/ssr';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Badge } from '@crm-eco/ui';
 import Link from 'next/link';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { getActiveTenant } from '@/lib/tenant';
 // Commission tier type (tables may not be in generated types yet)
 interface CommissionTier {
@@ -63,19 +64,18 @@ export default async function CommissionTiersPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Commission Tiers</h1>
-          <p className="text-slate-500">Define commission levels, rates, and qualification thresholds</p>
-        </div>
-        <Link href="/commissions/tiers/new">
-          <Button>
-            <Plus weight="light" className="h-4 w-4 mr-2" />
-            Add Tier
-          </Button>
-        </Link>
-      </div>
+      <PageHeader
+        title="Commission tiers"
+        description="Define commission levels, rates, and qualification thresholds"
+        actions={
+          <Link href="/commissions/tiers/new">
+            <Button size="sm">
+              <Plus weight="light" className="mr-1.5 h-4 w-4" aria-hidden />
+              Add tier
+            </Button>
+          </Link>
+        }
+      />
 
       {/* Tiers Grid */}
       {tiers.length === 0 ? (

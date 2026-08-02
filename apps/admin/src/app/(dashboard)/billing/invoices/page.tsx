@@ -1,6 +1,7 @@
 'use client';
 
-import { ArrowClockwise, ArrowLeft, CircleNotch, DownloadSimple, Eye, FileText, PaperPlaneTilt, Plus } from '@phosphor-icons/react';
+import { ArrowClockwise, CircleNotch, DownloadSimple, Eye, FileText, PaperPlaneTilt, Plus } from '@phosphor-icons/react';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { useState, useEffect } from 'react';
 import {
   Card,
@@ -288,31 +289,26 @@ export default function InvoicesPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" size="sm" asChild>
-            <Link href="/billing">
-              <ArrowLeft weight="light" className="h-4 w-4 mr-2" />
-              Back
-            </Link>
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">Invoices</h1>
-            <p className="text-slate-500">{stats.total} total invoices</p>
-          </div>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={loadInvoices}>
-            <ArrowClockwise weight="light" className="h-4 w-4 mr-2" />
-            Refresh
-          </Button>
-          <Button size="sm" onClick={() => setShowNewInvoice(true)}>
-            <Plus weight="light" className="h-4 w-4 mr-2" />
-            New Invoice
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        backHref="/billing"
+        backLabel="Back to billing"
+        title="Invoices"
+        description={`${stats.total} total invoices`}
+        icon={<FileText weight="light" className="w-6 h-6" />}
+        gradient="from-amber-500 to-orange-400"
+        actions={
+          <>
+            <Button variant="outline" size="sm" onClick={loadInvoices}>
+              <ArrowClockwise weight="light" className="h-4 w-4 mr-2" />
+              Refresh
+            </Button>
+            <Button size="sm" onClick={() => setShowNewInvoice(true)}>
+              <Plus weight="light" className="h-4 w-4 mr-2" />
+              New invoice
+            </Button>
+          </>
+        }
+      />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">

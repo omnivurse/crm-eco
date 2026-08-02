@@ -1,9 +1,9 @@
-import { ArrowLeft, Calendar, CheckCircle, CurrencyDollar, Play, Warning } from '@phosphor-icons/react/dist/ssr';
+import { Calendar, CurrencyDollar, Play } from '@phosphor-icons/react/dist/ssr';
 import { Card, CardContent, CardHeader, CardTitle, Badge, Button } from '@crm-eco/ui';
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { format } from 'date-fns';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
+import { EntityPageHeader } from '@/components/ui/EntityPageHeader';
 import { getActiveTenant } from '@/lib/tenant';
 
 interface PayoutRow {
@@ -70,33 +70,28 @@ export default async function PayoutBatchDetailPage({ params }: { params: Promis
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Link href="/commissions/payouts">
-            <Button variant="ghost" size="sm">
-              <ArrowLeft weight="light" className="mr-2 h-4 w-4" />
-              Back
-            </Button>
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">{advisorName}</h1>
-            <p className="text-sm text-muted-foreground">
-              {format(new Date(payout.period_start), 'MMM d')} – {format(new Date(payout.period_end), 'MMM d, yyyy')}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex gap-2">
-          {payout.status === 'approved' && (
+      <EntityPageHeader
+        backHref="/commissions/payouts"
+        backLabel="Payouts"
+        title={advisorName}
+        subtitle={
+          <>
+            {format(new Date(payout.period_start), 'MMM d')} –{' '}
+            {format(new Date(payout.period_end), 'MMM d, yyyy')}
+          </>
+        }
+        badges={<Badge>{payout.status}</Badge>}
+        primaryAction={
+          payout.status === 'approved' ? (
             <form action={`/api/payouts/${batchId}/process`} method="POST">
               <Button type="submit" size="sm">
-                <Play weight="light" className="mr-2 h-4 w-4" />
-                Process Payment
+                <Play weight="light" className="mr-1.5 h-4 w-4" aria-hidden />
+                Process payment
               </Button>
             </form>
-          )}
-        </div>
-      </div>
+          ) : undefined
+        }
+      />
 
       <div className="grid gap-6 md:grid-cols-3">
         <Card>

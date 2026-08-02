@@ -1,10 +1,11 @@
-import { ArrowClockwise, ArrowLeft, Calendar, DownloadSimple, Signature } from '@phosphor-icons/react/dist/ssr';
+import { ArrowClockwise, Calendar, DownloadSimple, Signature } from '@phosphor-icons/react/dist/ssr';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Badge } from '@crm-eco/ui';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { format } from 'date-fns';
 import { getActiveTenant } from '@/lib/tenant';
+import { EntityPageHeader } from '@/components/ui/EntityPageHeader';
 
 interface AgreementRow {
   id: string;
@@ -90,28 +91,25 @@ export default async function AgreementsPage({ params }: { params: Promise<{ id:
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link href={`/enrollments/${id}`}>
-            <Button variant="ghost" size="sm">
-              <ArrowLeft weight="light" className="mr-2 h-4 w-4" />
-              Back to Enrollment
+      <EntityPageHeader
+        backHref={`/enrollments/${id}`}
+        backLabel="Enrollment"
+        title="Agreements & contracts"
+        subtitle={`${enrollment.enrollment_number ?? id} · ${member?.first_name ?? ''} ${member?.last_name ?? ''}`.trim()}
+        badges={
+          <Badge variant="secondary" className="capitalize">
+            {enrollment.status}
+          </Badge>
+        }
+        secondaryActions={
+          <form action={`/api/enrollments/${id}/regenerate-contract`} method="POST">
+            <Button type="submit" variant="outline" size="sm">
+              <ArrowClockwise weight="light" className="mr-1.5 h-4 w-4" aria-hidden />
+              Regenerate contract
             </Button>
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">Agreements & Contracts</h1>
-            <p className="text-sm text-muted-foreground">
-              {enrollment.enrollment_number ?? id} · {member?.first_name} {member?.last_name}
-            </p>
-          </div>
-        </div>
-        <form action={`/api/enrollments/${id}/regenerate-contract`} method="POST">
-          <Button type="submit" variant="outline" size="sm">
-            <ArrowClockwise weight="light" className="mr-2 h-4 w-4" />
-            Regenerate Contract
-          </Button>
-        </form>
-      </div>
+          </form>
+        }
+      />
 
       <Card>
         <CardHeader>

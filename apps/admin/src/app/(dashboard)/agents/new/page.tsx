@@ -1,7 +1,6 @@
-import { ArrowLeft } from '@phosphor-icons/react/dist/ssr';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@crm-eco/ui';
-import Link from 'next/link';
 import { AgentForm } from '@/components/agents/AgentForm';
+import { EntityPageHeader } from '@/components/ui/EntityPageHeader';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { getActiveTenant } from '@/lib/tenant';
 
@@ -25,18 +24,12 @@ export default async function NewAgentPage() {
 
   return (
     <div className="space-y-6 max-w-3xl">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <Link href="/agents">
-          <button className="p-2 rounded-lg hover:bg-slate-100">
-            <ArrowLeft weight="light" className="h-5 w-5" />
-          </button>
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Add New Agent</h1>
-          <p className="text-slate-500">Create a new agent record</p>
-        </div>
-      </div>
+      <EntityPageHeader
+        backHref="/agents"
+        backLabel="Agents"
+        title="Add new agent"
+        description="Create a new agent record"
+      />
 
       {/* Form */}
       <Card>

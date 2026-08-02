@@ -20,8 +20,8 @@ import {
   DialogTitle,
   Textarea,
 } from '@crm-eco/ui';
-import Link from 'next/link';
 import { createClient } from '@crm-eco/lib/supabase/client';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
@@ -526,27 +526,26 @@ export default function CommissionsListPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Commissions List</h1>
-          <p className="text-muted-foreground">View and manage all commission transactions</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => setShowCopyModal(true)}>
-            <Copy weight="light" className="h-4 w-4 mr-2" />
-            Copy Agent
-          </Button>
-          <Button variant="outline" onClick={() => setShowBonusModal(true)}>
-            <Gift weight="light" className="h-4 w-4 mr-2" />
-            Generate Bonus
-          </Button>
-          <Button variant="outline" onClick={exportCommissions}>
-            <DownloadSimple weight="light" className="h-4 w-4 mr-2" />
-            Export
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Commissions list"
+        description="View and manage all commission transactions"
+        actions={
+          <>
+            <Button variant="outline" size="sm" onClick={() => setShowCopyModal(true)}>
+              <Copy weight="light" className="mr-1.5 h-4 w-4" aria-hidden />
+              Copy agent
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setShowBonusModal(true)}>
+              <Gift weight="light" className="mr-1.5 h-4 w-4" aria-hidden />
+              Generate bonus
+            </Button>
+            <Button variant="outline" size="sm" onClick={exportCommissions}>
+              <DownloadSimple weight="light" className="mr-1.5 h-4 w-4" aria-hidden />
+              Export
+            </Button>
+          </>
+        }
+      />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

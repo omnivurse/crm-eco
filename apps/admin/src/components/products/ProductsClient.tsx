@@ -285,7 +285,7 @@ export function ProductsClient({ products, organizationId, categories }: Product
                           </Button>
                         </Link>
                         <Link href={`/products/${product.id}/edit`}>
-                          <Button variant="ghost" size="icon" title="PencilSimple">
+                          <Button variant="ghost" size="icon" title="Edit">
                             <PencilSimple weight="light" className="h-4 w-4" />
                           </Button>
                         </Link>

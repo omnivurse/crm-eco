@@ -1,8 +1,7 @@
-import { ArrowLeft } from '@phosphor-icons/react/dist/ssr';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@crm-eco/ui';
-import Link from 'next/link';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, Badge } from '@crm-eco/ui';
 import { notFound } from 'next/navigation';
 import { AgentForm } from '@/components/agents/AgentForm';
+import { EntityPageHeader } from '@/components/ui/EntityPageHeader';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { getActiveTenant } from '@/lib/tenant';
 
@@ -66,19 +65,17 @@ export default async function EditAgentPage({ params }: { params: Promise<{ id: 
 
   return (
     <div className="space-y-6 max-w-3xl">
-      <div className="flex items-center gap-4">
-        <Link href={`/agents/${agent.id}`}>
-          <button className="p-2 rounded-lg hover:bg-slate-100">
-            <ArrowLeft weight="light" className="h-5 w-5" />
-          </button>
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Edit Agent</h1>
-          <p className="text-slate-500">
-            {agent.first_name} {agent.last_name}
-          </p>
-        </div>
-      </div>
+      <EntityPageHeader
+        backHref={`/agents/${agent.id}`}
+        backLabel={`${agent.first_name} ${agent.last_name}`}
+        title="Edit agent"
+        subtitle={`${agent.first_name} ${agent.last_name}`}
+        badges={
+          <Badge variant="outline" className="text-xs font-normal capitalize">
+            {agent.status ?? 'pending'}
+          </Badge>
+        }
+      />
 
       <Card>
         <CardHeader>

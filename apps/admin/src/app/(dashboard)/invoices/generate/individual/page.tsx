@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowClockwise, ArrowLeft, Calendar, CheckCircle, CurrencyDollar, FileText, MagnifyingGlass, Plus, Trash, User, Warning } from '@phosphor-icons/react';
+import { ArrowClockwise, Calendar, CheckCircle, CurrencyDollar, FileText, MagnifyingGlass, Plus, Trash, User, Warning } from '@phosphor-icons/react';
 import { useState, useEffect } from 'react';
 import {
   Card,
@@ -19,6 +19,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { toast } from 'sonner';
 import { format, addDays, startOfMonth, endOfMonth } from 'date-fns';
+import { PageHeader } from '@/components/ui/PageHeader';
 
 interface Member {
   id: string;
@@ -296,18 +297,12 @@ export default function GenerateIndividualInvoicePage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <Link href="/invoices">
-          <Button variant="ghost" size="icon">
-            <ArrowLeft weight="light" className="h-4 w-4" />
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold">Generate Individual Invoice</h1>
-          <p className="text-muted-foreground">Create an invoice for a specific member</p>
-        </div>
-      </div>
+      <PageHeader
+        backHref="/invoices"
+        backLabel="Invoices"
+        title="Generate individual invoice"
+        description="Create an invoice for a specific member"
+      />
 
       {generatedInvoice ? (
         <Card className="border-emerald-200 bg-emerald-50">

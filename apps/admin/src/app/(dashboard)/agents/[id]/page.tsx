@@ -1,4 +1,4 @@
-import { ArrowLeft, Calendar, CurrencyDollar, EnvelopeSimple, FileText, Link as LinkIcon, MapPin, Palette, PencilSimple, Phone, ShareNetwork, Users } from '@phosphor-icons/react/dist/ssr';
+import { Calendar, CurrencyDollar, EnvelopeSimple, FileText, Link as LinkIcon, MapPin, Palette, PencilSimple, Phone, ShareNetwork, Users } from '@phosphor-icons/react/dist/ssr';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Badge, Tabs, TabsContent, TabsList, TabsTrigger } from '@crm-eco/ui';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -9,6 +9,7 @@ import { AgentEnrollmentTab } from '@/components/enrollment-links/AgentEnrollmen
 import { AgentLicensingTab } from '@/components/agents/AgentLicensingTab';
 import { ProducerInfoCard } from '@/components/agents/ProducerInfoCard';
 import { DownlineSearch } from '@/components/agents/DownlineSearch';
+import { EntityPageHeader } from '@/components/ui/EntityPageHeader';
 import { getActiveTenant } from '@/lib/tenant';
 
 async function getAgent(id: string) {
@@ -95,35 +96,26 @@ export default async function AgentDetailPage({ params }: PageProps) {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-        <div className="flex items-center gap-4 min-w-0 flex-1">
-          <Link href="/agents" className="shrink-0">
-            <Button variant="ghost" size="icon">
-              <ArrowLeft weight="light" className="h-5 w-5" />
-            </Button>
-          </Link>
-          <div className="min-w-0 flex-1">
-            <h1 className="text-2xl font-bold text-slate-900 break-words">
-              {agent.first_name} {agent.last_name}
-            </h1>
-            <p className="text-slate-500 break-all">{agent.email}</p>
-          </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-2 shrink-0 w-full sm:w-auto sm:justify-end">
+      <EntityPageHeader
+        backHref="/agents"
+        backLabel="Agents"
+        title={`${agent.first_name} ${agent.last_name}`}
+        subtitle={<span className="break-all">{agent.email}</span>}
+        badges={
           <Badge variant={getStatusBadgeVariant(agent.status)}>
             {agent.status.charAt(0).toUpperCase() + agent.status.slice(1)}
           </Badge>
+        }
+        primaryAction={
           <Link href={`/agents/${agent.id}/edit`}>
-            <Button>
-              <PencilSimple weight="light" className="h-4 w-4 mr-2" />
-              PencilSimple Agent
+            <Button size="sm">
+              <PencilSimple weight="light" className="mr-1.5 h-4 w-4" aria-hidden />
+              Edit agent
             </Button>
           </Link>
-        </div>
-      </div>
+        }
+      />
 
-      {/* Tabs */}
       <Tabs defaultValue="producer" className="space-y-6">
         <TabsList>
           <TabsTrigger value="producer">

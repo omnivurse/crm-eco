@@ -1,6 +1,7 @@
 'use client';
 
-import { ArrowClockwise, ArrowLeft, CheckCircle, CircleNotch, Clock, DownloadSimple, XCircle } from '@phosphor-icons/react';
+import { ArrowClockwise, CheckCircle, CircleNotch, Clock, CreditCard, DownloadSimple, XCircle } from '@phosphor-icons/react';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, Button } from '@crm-eco/ui';
 import { createClient } from '@crm-eco/lib/supabase/client';
@@ -217,29 +218,24 @@ export default function TransactionsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" size="sm" asChild>
-            <Link href="/billing">
-              <ArrowLeft weight="light" className="h-4 w-4 mr-2" />
-              Back
-            </Link>
+      <PageHeader
+        backHref="/billing"
+        backLabel="Back to billing"
+        title="Transactions"
+        description="All payment transactions"
+        icon={<CreditCard weight="light" className="w-6 h-6" />}
+        gradient="from-amber-500 to-orange-400"
+        actions={
+          <Button variant="outline" size="sm" onClick={exportToCSV} disabled={exporting}>
+            {exporting ? (
+              <CircleNotch weight="light" className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <DownloadSimple weight="light" className="h-4 w-4 mr-2" />
+            )}
+            Export
           </Button>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">Transactions</h1>
-            <p className="text-slate-500">All payment transactions</p>
-          </div>
-        </div>
-        <Button variant="outline" size="sm" onClick={exportToCSV} disabled={exporting}>
-          {exporting ? (
-            <CircleNotch weight="light" className="h-4 w-4 mr-2 animate-spin" />
-          ) : (
-            <DownloadSimple weight="light" className="h-4 w-4 mr-2" />
-          )}
-          Export
-        </Button>
-      </div>
+        }
+      />
 
       {/* Transactions Table */}
       <Card>

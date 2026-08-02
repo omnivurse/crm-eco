@@ -20,6 +20,7 @@ import {
   DialogFooter,
 } from '@crm-eco/ui';
 import { StatusBadge } from '@crm-eco/ui/components/status-badge';
+import { PageHeader } from '@/components/ui/PageHeader';
 import Link from 'next/link';
 import { format, subDays, startOfMonth, startOfDay, endOfDay } from 'date-fns';
 import { toast } from 'sonner';
@@ -232,30 +233,24 @@ export default function BillingListPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link href="/billing">
-            <Button variant="ghost" size="icon">
-              <CaretLeft weight="light" className="h-5 w-5" />
+      <PageHeader
+        backHref="/billing"
+        backLabel="Back to billing"
+        title="Billing transactions"
+        description="View and search payment transactions"
+        actions={
+          <>
+            <Button variant="outline" size="sm" onClick={() => loadTransactions()} disabled={loading}>
+              <ArrowClockwise weight="light" className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
             </Button>
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">Billing Transactions</h1>
-            <p className="text-slate-500">View and search payment transactions</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => loadTransactions()} disabled={loading}>
-            <ArrowClockwise weight="light" className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
-          <Button variant="outline" onClick={exportToCSV} disabled={exporting || loading}>
-            {exporting ? <CircleNotch weight="light" className="h-4 w-4 mr-2 animate-spin" /> : <DownloadSimple weight="light" className="h-4 w-4 mr-2" />}
-            Export
-          </Button>
-        </div>
-      </div>
+            <Button variant="outline" size="sm" onClick={exportToCSV} disabled={exporting || loading}>
+              {exporting ? <CircleNotch weight="light" className="h-4 w-4 mr-2 animate-spin" /> : <DownloadSimple weight="light" className="h-4 w-4 mr-2" />}
+              Export
+            </Button>
+          </>
+        }
+      />
 
       {/* Date Presets */}
       <div className="flex items-center gap-2 flex-wrap">

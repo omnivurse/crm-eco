@@ -1,9 +1,8 @@
-import { ArrowLeft } from '@phosphor-icons/react/dist/ssr';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@crm-eco/ui';
-import Link from 'next/link';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, Badge } from '@crm-eco/ui';
 import { notFound } from 'next/navigation';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { ProductForm } from '@/components/products/ProductForm';
+import { EntityPageHeader } from '@/components/ui/EntityPageHeader';
 import { getActiveTenant } from '@/lib/tenant';
 
 async function getProduct(id: string) {
@@ -31,20 +30,24 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
 
   return (
     <div className="space-y-6 max-w-5xl">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <Link href={`/products/${id}`}>
-          <button className="p-2 rounded-lg hover:bg-slate-100">
-            <ArrowLeft weight="light" className="h-5 w-5" />
-          </button>
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Edit Product</h1>
-          <p className="text-slate-500">
-            Editing: {product.name} ({product.code})
-          </p>
-        </div>
-      </div>
+      <EntityPageHeader
+        backHref={`/products/${id}`}
+        backLabel={product.name}
+        title="Edit product"
+        subtitle={
+          <span>
+            {product.name}{' '}
+            <span className="font-mono text-[var(--adm-ink)]/80">({product.code})</span>
+          </span>
+        }
+        badges={
+          product.status ? (
+            <Badge variant="outline" className="text-xs font-normal capitalize">
+              {product.status}
+            </Badge>
+          ) : undefined
+        }
+      />
 
       {/* Form */}
       <Card>

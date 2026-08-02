@@ -1,4 +1,4 @@
-import { ArrowClockwise, ArrowLeft, Buildings, Calendar, CaretRight, CheckCircle, Clock, Database, EnvelopeSimple, FileText, GearSix, Globe, Link as LinkIcon, PencilSimple, Phone, Trash, UploadSimple, User, Warning, XCircle } from '@phosphor-icons/react/dist/ssr';
+import { ArrowClockwise, Calendar, CaretRight, CheckCircle, Clock, Database, EnvelopeSimple, FileText, GearSix, Globe, Link as LinkIcon, PencilSimple, Phone, Trash, UploadSimple, User, Warning, XCircle } from '@phosphor-icons/react/dist/ssr';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -16,6 +16,7 @@ import {
 } from '@crm-eco/ui';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { formatDistanceToNow, format } from 'date-fns';
+import { EntityPageHeader } from '@/components/ui/EntityPageHeader';
 import { getActiveTenant } from '@/lib/tenant';
 
 // Fetch vendor with related data
@@ -144,49 +145,33 @@ export default async function VendorDetailPage({
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-        <div className="flex items-center gap-4 min-w-0 flex-1">
-          <Link href="/vendors" className="shrink-0">
-            <Button variant="ghost" size="icon" className="rounded-full">
-              <ArrowLeft weight="light" className="w-5 h-5" />
-            </Button>
-          </Link>
-          <div className="flex items-center gap-4 min-w-0 flex-1">
-            <div className="w-14 h-14 shrink-0 bg-slate-100 rounded-xl border flex items-center justify-center">
-              {vendor.logo_url ? (
-                <img src={vendor.logo_url} alt={vendor.name} className="w-8 h-8" />
-              ) : (
-                <Buildings weight="light" className="w-7 h-7 text-slate-400" />
-              )}
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-3 flex-wrap">
-                <h1 className="text-2xl font-bold text-slate-900 break-words">{vendor.name}</h1>
-                <StatusBadge status={vendor.status} />
-              </div>
-              <p className="text-slate-500 mt-0.5">
-                {vendor.vendor_type.replace('_', ' ')} · {vendor.code}
-              </p>
-            </div>
-          </div>
-        </div>
-        <div className="flex flex-wrap gap-2 shrink-0 w-full sm:w-auto sm:justify-end">
-          <Link href={`/vendors/${vendor.id}/edit`}>
-            <Button variant="outline" className="gap-2">
-              <PencilSimple weight="light" className="w-4 h-4" />
-              PencilSimple
-            </Button>
-          </Link>
-          <Button variant="outline" className="gap-2 text-red-600 hover:text-red-700 hover:bg-red-50">
-            <Trash weight="light" className="w-4 h-4" />
+      <EntityPageHeader
+        backHref="/vendors"
+        backLabel="Vendors"
+        title={vendor.name}
+        subtitle={`${vendor.vendor_type.replace('_', ' ')} · ${vendor.code}`}
+        badges={<StatusBadge status={vendor.status} />}
+        secondaryActions={
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2 text-red-600 hover:bg-red-50 hover:text-red-700"
+          >
+            <Trash weight="light" className="h-4 w-4" aria-hidden />
             Delete
           </Button>
-        </div>
-      </div>
+        }
+        primaryAction={
+          <Link href={`/vendors/${vendor.id}/edit`}>
+            <Button size="sm" className="gap-1.5">
+              <PencilSimple weight="light" className="h-4 w-4" aria-hidden />
+              Edit vendor
+            </Button>
+          </Link>
+        }
+      />
 
-      {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
         {/* Left Sidebar - Vendor Info */}
         <div className="space-y-6">
           {/* Connection Status */}

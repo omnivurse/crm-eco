@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowLeft, FileText, MagnifyingGlass, PaperPlaneTilt, Users } from '@phosphor-icons/react';
+import { FileText, MagnifyingGlass, PaperPlaneTilt, Users } from '@phosphor-icons/react';
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@crm-eco/lib/supabase/client';
@@ -19,6 +19,7 @@ import {
 } from '@crm-eco/ui/components/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@crm-eco/ui/components/tabs';
 import { toast } from 'sonner';
+import { PageHeader } from '@/components/ui/PageHeader';
 
 interface EmailTemplate {
   id: string;
@@ -233,18 +234,13 @@ export default function ComposeEmailPage() {
 
   return (
     <div className="p-8 space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <Link href="/communications">
-          <Button variant="ghost" size="icon">
-            <ArrowLeft weight="light" className="w-4 h-4" />
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Compose Email</h1>
-          <p className="text-slate-600">PaperPlaneTilt an email to a member or contact</p>
-        </div>
-      </div>
+      <PageHeader
+        backHref="/communications"
+        backLabel="Communications"
+        title="Compose email"
+        description="Send an email to a member or contact"
+        icon={<PaperPlaneTilt weight="light" className="h-6 w-6" />}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Form */}

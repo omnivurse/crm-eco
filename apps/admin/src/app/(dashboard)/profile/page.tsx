@@ -29,6 +29,7 @@ import {
   Switch,
 } from '@crm-eco/ui';
 import { toast } from 'sonner';
+import { PageHeader } from '@/components/ui/PageHeader';
 
 interface ProfileData {
   id: string;
@@ -376,23 +377,21 @@ export default function ProfilePage() {
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">My Profile</h1>
-          <p className="text-muted-foreground mt-1">
-            Manage your account settings and preferences
-          </p>
-        </div>
-        <Button onClick={handleSaveProfile} disabled={isSaving || !hasChanges}>
-          {isSaving ? (
-            <CircleNotch weight="light" className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <FloppyDisk weight="light" className="mr-2 h-4 w-4" />
-          )}
-          FloppyDisk Changes
-        </Button>
-      </div>
+      <PageHeader
+        title="My profile"
+        description="Manage your account settings and preferences"
+        icon={<User weight="light" className="h-6 w-6" />}
+        actions={
+          <Button size="sm" onClick={handleSaveProfile} disabled={isSaving || !hasChanges}>
+            {isSaving ? (
+              <CircleNotch weight="light" className="mr-1.5 h-4 w-4 animate-spin" aria-hidden />
+            ) : (
+              <FloppyDisk weight="light" className="mr-1.5 h-4 w-4" aria-hidden />
+            )}
+            Save changes
+          </Button>
+        }
+      />
 
       {/* Profile Header Card */}
       <Card>

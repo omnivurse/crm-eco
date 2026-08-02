@@ -13,6 +13,7 @@ import {
 } from '@crm-eco/ui';
 import Link from 'next/link';
 import { createClient } from '@crm-eco/lib/supabase/client';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 
 interface SummaryStats {
@@ -282,23 +283,26 @@ export default function PayablesSummaryPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Payables Summary</h1>
-          <p className="text-muted-foreground">Overview of accounts payable</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={exportSummary}>
-            <DownloadSimple weight="light" className="h-4 w-4 mr-2" />
-            Export Report
-          </Button>
-          <Button variant="outline" onClick={fetchSummary}>
-            <ArrowClockwise weight="light" className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Payables summary"
+        description="Overview of accounts payable"
+        actions={
+          <>
+            <Button variant="outline" size="sm" onClick={exportSummary}>
+              <DownloadSimple weight="light" className="mr-1.5 h-4 w-4" aria-hidden />
+              Export report
+            </Button>
+            <Button variant="outline" size="sm" onClick={fetchSummary}>
+              <ArrowClockwise
+                weight="light"
+                className={`mr-1.5 h-4 w-4 ${loading ? 'animate-spin' : ''}`}
+                aria-hidden
+              />
+              Refresh
+            </Button>
+          </>
+        }
+      />
 
       {/* Main Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

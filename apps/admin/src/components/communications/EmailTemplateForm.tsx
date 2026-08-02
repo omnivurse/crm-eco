@@ -1,14 +1,14 @@
 'use client';
 
-import { ArrowLeft, Code, Eye, FileText, FloppyDisk, MathOperations, Trash } from '@phosphor-icons/react';
+import { Code, Eye, FileText, FloppyDisk, MathOperations, Trash } from '@phosphor-icons/react';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import Link from 'next/link';
 import { Button } from '@crm-eco/ui/components/button';
+import { EntityPageHeader } from '@/components/ui/EntityPageHeader';
 import { Input } from '@crm-eco/ui/components/input';
 import { Label } from '@crm-eco/ui/components/label';
 import { Textarea } from '@crm-eco/ui/components/textarea';
@@ -287,36 +287,25 @@ export function EmailTemplateForm({ template }: EmailTemplateFormProps) {
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link href="/communications/templates">
-            <Button type="button" variant="ghost" size="icon">
-              <ArrowLeft weight="light" className="w-4 h-4" />
-            </Button>
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">
-              {isEditing ? 'Edit Template' : 'Create Template'}
-            </h1>
-            <p className="text-slate-600">
-              {isEditing ? 'Update your email template' : 'Create a reusable email template'}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {isEditing && !template?.is_system && (
+      <EntityPageHeader
+        backHref="/communications/templates"
+        backLabel="Templates"
+        title={isEditing ? 'Edit template' : 'Create template'}
+        description={
+          isEditing ? 'Update your email template' : 'Create a reusable email template'
+        }
+        secondaryActions={
+          isEditing && !template?.is_system ? (
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button type="button" variant="outline" className="text-red-600">
-                  <Trash weight="light" className="w-4 h-4 mr-2" />
+                <Button type="button" variant="outline" size="sm" className="text-red-600">
+                  <Trash weight="light" className="w-4 h-4 mr-2" aria-hidden />
                   Delete
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Delete Template</AlertDialogTitle>
+                  <AlertDialogTitle>Delete template</AlertDialogTitle>
                   <AlertDialogDescription>
                     Are you sure you want to delete this template? This cannot be undone.
                   </AlertDialogDescription>
@@ -329,14 +318,15 @@ export function EmailTemplateForm({ template }: EmailTemplateFormProps) {
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
-          )}
-
-          <Button type="submit" disabled={saving}>
-            <FloppyDisk weight="light" className="w-4 h-4 mr-2" />
-            {saving ? 'Saving...' : 'FloppyDisk Template'}
+          ) : undefined
+        }
+        primaryAction={
+          <Button type="submit" disabled={saving} size="sm">
+            <FloppyDisk weight="light" className="w-4 h-4 mr-2" aria-hidden />
+            {saving ? 'Saving...' : 'Save'}
           </Button>
-        </div>
-      </div>
+        }
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content */}

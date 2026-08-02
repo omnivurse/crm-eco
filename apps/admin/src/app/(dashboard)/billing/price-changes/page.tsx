@@ -1,5 +1,6 @@
 import { Calendar, Plus, TrendDown, TrendUp } from '@phosphor-icons/react/dist/ssr';
 import { Card, CardContent, CardHeader, CardTitle, Badge, Button } from '@crm-eco/ui';
+import { PageHeader } from '@/components/ui/PageHeader';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
@@ -48,18 +49,20 @@ export default async function PriceChangesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Price Changes</h1>
-          <p className="text-sm text-muted-foreground">Schedule and track plan price changes</p>
-        </div>
-        <Link href="/billing/price-changes/new">
-          <Button>
-            <Plus weight="light" className="mr-2 h-4 w-4" />
-            Schedule Price Change
-          </Button>
-        </Link>
-      </div>
+      <PageHeader
+        title="Price changes"
+        description="Schedule and track plan price changes"
+        icon={<TrendUp weight="light" className="w-6 h-6" />}
+        gradient="from-amber-500 to-orange-400"
+        actions={
+          <Link href="/billing/price-changes/new">
+            <Button size="sm">
+              <Plus weight="light" className="mr-2 h-4 w-4" />
+              Schedule price change
+            </Button>
+          </Link>
+        }
+      />
 
       <Card>
         <CardHeader>

@@ -1,6 +1,7 @@
-import { ArrowLeft, Calendar, ChartBar, CurrencyDollar, GearSix, List, PencilSimple, ShieldCheck, Sparkle, UploadSimple } from '@phosphor-icons/react/dist/ssr';
+import { Calendar, ChartBar, CurrencyDollar, GearSix, List, PencilSimple } from '@phosphor-icons/react/dist/ssr';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Badge } from '@crm-eco/ui';
 import { ProductDetailActions } from '@/components/products/ProductDetailActions';
+import { EntityPageHeader } from '@/components/ui/EntityPageHeader';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
@@ -81,6 +82,27 @@ function formatCurrency(amount: number | null): string {
   }).format(amount);
 }
 
+function MetaField({ label, value }: { label: string; value: string | null | undefined }) {
+  if (!value) return null;
+  return (
+    <div className="min-w-0">
+      <dt className="text-xs font-medium uppercase tracking-wide text-[var(--adm-muted)]">{label}</dt>
+      <dd className="mt-1 text-sm font-medium text-[var(--adm-ink)] break-words">{value}</dd>
+    </div>
+  );
+}
+
+function MetricCell({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-[var(--adm-hairline)] bg-[var(--adm-void)]/60 px-3 py-3">
+      <p className="text-xs font-medium text-[var(--adm-muted)]">{label}</p>
+      <p className="mt-1 text-lg font-semibold tabular-nums tracking-tight text-[var(--adm-ink)]">
+        {value}
+      </p>
+    </div>
+  );
+}
+
 export default async function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const result = await getProduct(id);
@@ -102,147 +124,141 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   const benefits = benefitsResult.status === 'fulfilled' ? benefitsResult.value : [];
   const extraCosts = extraCostsResult.status === 'fulfilled' ? extraCostsResult.value : [];
 
+  const rateConfig = seedConfig as unknown as RateConfig;
+  const preview = buildMatrixPreview(rateConfig, product.code, 'current');
+  const fmt = (n: number) =>
+    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
+
+  const metaFields = [
+    { label: 'Product line', value: product.product_line as string | null },
+    { label: 'Category', value: product.coverage_category as string | null },
+    { label: 'Provider', value: product.provider as string | null },
+    { label: 'Tier', value: product.tier as string | null },
+  ].filter((f) => Boolean(f.value));
+
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link href="/products">
-            <Button variant="ghost" size="icon">
-              <ArrowLeft weight="light" className="h-5 w-5" />
-            </Button>
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">{product.name}</h1>
-            <p className="text-slate-500 font-mono">{product.code}</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className="text-xs">
-            {product.rating_model === 'additive_person' ? 'Additive Person' : 'Tiered Household'}
-          </Badge>
-          <Badge variant={product.is_active ? 'default' : 'secondary'}>
-            {product.is_active ? 'Active' : 'Inactive'}
-          </Badge>
+      <EntityPageHeader
+        backHref="/products"
+        backLabel="Products"
+        title={product.name}
+        subtitle={<span className="font-mono text-[var(--adm-ink)]/80">{product.code}</span>}
+        description={product.description || undefined}
+        badges={
+          <>
+            <Badge variant="outline" className="text-xs font-normal">
+              {product.rating_model === 'additive_person' ? 'Additive person' : 'Tiered household'}
+            </Badge>
+            <Badge variant={product.is_active ? 'default' : 'secondary'} className="text-xs">
+              {product.is_active ? 'Active' : 'Inactive'}
+            </Badge>
+          </>
+        }
+        secondaryActions={
           <ProductDetailActions
             productId={product.id}
             productName={product.name}
             organizationId={organizationId}
           />
-          <Link href={`/products/${product.id}/pricing`}>
-            <Button variant="outline">
-              <CurrencyDollar weight="light" className="h-4 w-4 mr-2" />
-              Pricing Matrix
-            </Button>
-          </Link>
-          <Link href={`/products/${product.id}/questionnaire`}>
-            <Button variant="outline">
-              <List weight="light" className="h-4 w-4 mr-2" />
-              Questionnaire
-            </Button>
-          </Link>
+        }
+        primaryAction={
           <Link href={`/products/${product.id}/edit`}>
-            <Button>
-              <PencilSimple weight="light" className="h-4 w-4 mr-2" />
-              PencilSimple Product
+            <Button size="sm">
+              <PencilSimple weight="light" className="mr-1.5 h-4 w-4" aria-hidden />
+              Edit product
             </Button>
           </Link>
-        </div>
-      </div>
+        }
+      />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Info */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Basic Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Product Information</CardTitle>
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
+        <div className="space-y-6 xl:col-span-8">
+          <Card className="border-[var(--adm-hairline)] shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Overview</CardTitle>
+              <CardDescription>Core product identity and classification</CardDescription>
             </CardHeader>
-            <CardContent className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-slate-500">Name</p>
-                <p className="font-medium">{product.name}</p>
-              </div>
-              <div>
-                <p className="text-sm text-slate-500">Code</p>
-                <p className="font-mono font-medium">{product.code}</p>
-              </div>
-              <div>
-                <p className="text-sm text-slate-500">Product Line</p>
-                <p className="font-medium">{product.product_line || '—'}</p>
-              </div>
-              <div>
-                <p className="text-sm text-slate-500">Category</p>
-                <p className="font-medium">{product.coverage_category || '—'}</p>
-              </div>
-              <div>
-                <p className="text-sm text-slate-500">Provider</p>
-                <p className="font-medium">{product.provider || '—'}</p>
-              </div>
-              <div>
-                <p className="text-sm text-slate-500">Tier</p>
-                <p className="font-medium">{product.tier || '—'}</p>
-              </div>
-              {product.description && (
-                <div className="col-span-2">
-                  <p className="text-sm text-slate-500">Description</p>
-                  <p className="font-medium">{product.description}</p>
+            <CardContent>
+              <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="min-w-0">
+                  <dt className="text-xs font-medium uppercase tracking-wide text-[var(--adm-muted)]">
+                    Name
+                  </dt>
+                  <dd className="mt-1 text-sm font-medium text-[var(--adm-ink)]">{product.name}</dd>
                 </div>
+                <div className="min-w-0">
+                  <dt className="text-xs font-medium uppercase tracking-wide text-[var(--adm-muted)]">
+                    Code
+                  </dt>
+                  <dd className="mt-1 font-mono text-sm font-medium text-[var(--adm-ink)]">
+                    {product.code}
+                  </dd>
+                </div>
+                {metaFields.map((field) => (
+                  <MetaField key={field.label} label={field.label} value={field.value} />
+                ))}
+              </dl>
+              {metaFields.length === 0 && !product.description && (
+                <p className="mt-2 text-sm text-[var(--adm-muted)]">
+                  No line, category, provider, or tier set yet.{' '}
+                  <Link
+                    href={`/products/${product.id}/edit`}
+                    className="font-medium text-[var(--adm-teal)] underline-offset-2 hover:underline"
+                  >
+                    Edit product
+                  </Link>{' '}
+                  to fill these in.
+                </p>
               )}
             </CardContent>
           </Card>
 
-          {/* Pricing */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CurrencyDollar weight="light" className="h-5 w-5" />
-                Pricing
+          <Card className="border-[var(--adm-hairline)] shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <CurrencyDollar weight="light" className="h-4 w-4 text-[var(--adm-teal)]" aria-hidden />
+                Pricing snapshot
               </CardTitle>
+              <CardDescription>Headline amounts stored on the product record</CardDescription>
             </CardHeader>
-            <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div>
-                <p className="text-sm text-slate-500">Monthly Share</p>
-                <p className="text-xl font-bold">{formatCurrency(product.monthly_share)}</p>
-              </div>
-              <div>
-                <p className="text-sm text-slate-500">Enrollment Fee</p>
-                <p className="text-xl font-bold">{formatCurrency(product.enrollment_fee)}</p>
-              </div>
-              <div>
-                <p className="text-sm text-slate-500">IUA Amount</p>
-                <p className="text-xl font-bold">{formatCurrency(product.iua_amount)}</p>
-              </div>
-              <div>
-                <p className="text-sm text-slate-500">Max Annual Share</p>
-                <p className="text-xl font-bold">{formatCurrency(product.max_annual_share)}</p>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                <MetricCell label="Monthly share" value={formatCurrency(product.monthly_share)} />
+                <MetricCell label="Enrollment fee" value={formatCurrency(product.enrollment_fee)} />
+                <MetricCell label="IUA amount" value={formatCurrency(product.iua_amount)} />
+                <MetricCell label="Max annual share" value={formatCurrency(product.max_annual_share)} />
               </div>
             </CardContent>
           </Card>
 
-          {/* IUA Levels */}
-          <Card>
-            <CardHeader>
-              <CardTitle>IUA Levels</CardTitle>
-              <CardDescription>
-                Initial Unshared Amount options for this product
-              </CardDescription>
+          <Card className="border-[var(--adm-hairline)] shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">IUA levels</CardTitle>
+              <CardDescription>Initial Unshared Amount options for this product</CardDescription>
             </CardHeader>
             <CardContent>
               {iuaLevels.length === 0 ? (
-                <p className="text-sm text-slate-500 py-4 text-center">
-                  No IUA levels configured
+                <p className="py-2 text-sm text-[var(--adm-muted)]">
+                  No IUA levels configured.{' '}
+                  <Link
+                    href={`/products/${product.id}/pricing`}
+                    className="font-medium text-[var(--adm-teal)] underline-offset-2 hover:underline"
+                  >
+                    Open pricing matrix
+                  </Link>
                 </p>
               ) : (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {iuaLevels.map((level: any) => (
+                <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                  {iuaLevels.map((level: { id: string; amount: number; label?: string | null }) => (
                     <div
                       key={level.id}
-                      className="p-3 rounded-lg border bg-slate-50 text-center"
+                      className="rounded-xl border border-[var(--adm-hairline)] bg-[var(--adm-void)]/60 px-3 py-3 text-center"
                     >
-                      <p className="text-lg font-bold">{formatCurrency(level.amount)}</p>
+                      <p className="text-base font-semibold tabular-nums">
+                        {formatCurrency(level.amount)}
+                      </p>
                       {level.label && (
-                        <p className="text-xs text-slate-500">{level.label}</p>
+                        <p className="mt-0.5 text-xs text-[var(--adm-muted)]">{level.label}</p>
                       )}
                     </div>
                   ))}
@@ -251,96 +267,108 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
             </CardContent>
           </Card>
 
-          {/* Age Brackets */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Age Brackets</CardTitle>
-              <CardDescription>
-                Age-based pricing tiers
-              </CardDescription>
+          <Card className="border-[var(--adm-hairline)] shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Age brackets</CardTitle>
+              <CardDescription>Age-based pricing tiers</CardDescription>
             </CardHeader>
             <CardContent>
               {ageBrackets.length === 0 ? (
-                <p className="text-sm text-slate-500 py-4 text-center">
-                  No age brackets configured
-                </p>
+                <p className="py-2 text-sm text-[var(--adm-muted)]">No age brackets configured</p>
               ) : (
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {ageBrackets.map((bracket: any) => (
-                    <div
-                      key={bracket.id}
-                      className="p-3 rounded-lg border bg-slate-50"
-                    >
-                      <p className="font-bold">
-                        {bracket.min_age} - {bracket.max_age} years
-                      </p>
-                      {bracket.label && (
-                        <p className="text-xs text-slate-500">{bracket.label}</p>
-                      )}
-                    </div>
-                  ))}
+                <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+                  {ageBrackets.map(
+                    (bracket: {
+                      id: string;
+                      min_age: number;
+                      max_age: number;
+                      label?: string | null;
+                    }) => (
+                      <div
+                        key={bracket.id}
+                        className="rounded-xl border border-[var(--adm-hairline)] bg-[var(--adm-void)]/60 px-3 py-3"
+                      >
+                        <p className="text-sm font-semibold tabular-nums">
+                          {bracket.min_age}–{bracket.max_age} years
+                        </p>
+                        {bracket.label && (
+                          <p className="mt-0.5 text-xs text-[var(--adm-muted)]">{bracket.label}</p>
+                        )}
+                      </div>
+                    )
+                  )}
                 </div>
               )}
             </CardContent>
           </Card>
 
-          {/* Benefits */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <List weight="light" className="h-5 w-5" />
-                Product Benefits
+          <Card className="border-[var(--adm-hairline)] shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <List weight="light" className="h-4 w-4 text-[var(--adm-teal)]" aria-hidden />
+                Benefits
               </CardTitle>
-              <CardDescription>
-                Features and benefits included in this product
-              </CardDescription>
+              <CardDescription>Features included with this product</CardDescription>
             </CardHeader>
             <CardContent>
               {benefits.length === 0 ? (
-                <p className="text-sm text-slate-500 py-4 text-center">
-                  No benefits configured
-                </p>
+                <p className="py-2 text-sm text-[var(--adm-muted)]">No benefits configured</p>
               ) : (
-                <div className="space-y-3">
-                  {benefits.map((benefit: any) => (
-                    <div key={benefit.id} className="flex gap-3">
-                      <div className="w-2 h-2 rounded-full bg-blue-600 mt-2 shrink-0" />
-                      <div>
-                        <p className="font-medium">{benefit.benefit_name}</p>
-                        {benefit.description && (
-                          <p className="text-sm text-slate-500">{benefit.description}</p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <ul className="space-y-3">
+                  {benefits.map(
+                    (benefit: {
+                      id: string;
+                      benefit_name: string;
+                      description?: string | null;
+                    }) => (
+                      <li key={benefit.id} className="flex gap-3">
+                        <span
+                          className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--adm-teal)]"
+                          aria-hidden
+                        />
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-[var(--adm-ink)]">
+                            {benefit.benefit_name}
+                          </p>
+                          {benefit.description && (
+                            <p className="mt-0.5 text-sm text-[var(--adm-muted)]">
+                              {benefit.description}
+                            </p>
+                          )}
+                        </div>
+                      </li>
+                    )
+                  )}
+                </ul>
               )}
             </CardContent>
           </Card>
         </div>
 
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Effective Dates */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar weight="light" className="h-5 w-5" />
-                Effective Dates
+        <aside className="space-y-6 xl:col-span-4">
+          <Card className="border-[var(--adm-hairline)] shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Calendar weight="light" className="h-4 w-4 text-[var(--adm-teal)]" aria-hidden />
+                Effective dates
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div>
-                <p className="text-sm text-slate-500">Start Date</p>
-                <p className="font-medium">
+                <p className="text-xs font-medium uppercase tracking-wide text-[var(--adm-muted)]">
+                  Start
+                </p>
+                <p className="mt-1 text-sm font-medium">
                   {product.effective_start_date
                     ? format(new Date(product.effective_start_date), 'MMMM d, yyyy')
                     : '—'}
                 </p>
               </div>
               <div>
-                <p className="text-sm text-slate-500">End Date</p>
-                <p className="font-medium">
+                <p className="text-xs font-medium uppercase tracking-wide text-[var(--adm-muted)]">
+                  End
+                </p>
+                <p className="mt-1 text-sm font-medium">
                   {product.effective_end_date
                     ? format(new Date(product.effective_end_date), 'MMMM d, yyyy')
                     : 'No end date'}
@@ -349,23 +377,22 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
             </CardContent>
           </Card>
 
-          {/* GearSix */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <GearSix weight="light" className="h-5 w-5" />
-                GearSix
+          <Card className="border-[var(--adm-hairline)] shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <GearSix weight="light" className="h-4 w-4 text-[var(--adm-teal)]" aria-hidden />
+                Settings
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Requires Dependent Info</span>
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sm text-[var(--adm-ink)]">Requires dependent info</span>
                 <Badge variant={product.require_dependent_info ? 'default' : 'outline'}>
                   {product.require_dependent_info ? 'Yes' : 'No'}
                 </Badge>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Hidden from Public</span>
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sm text-[var(--adm-ink)]">Hidden from public</span>
                 <Badge variant={product.hide_from_public ? 'destructive' : 'outline'}>
                   {product.hide_from_public ? 'Yes' : 'No'}
                 </Badge>
@@ -373,93 +400,80 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
             </CardContent>
           </Card>
 
-          {/* Extra Costs */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Extra Costs</CardTitle>
-              <CardDescription>
-                Additional fees and surcharges
-              </CardDescription>
+          <Card className="border-[var(--adm-hairline)] shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Extra costs</CardTitle>
+              <CardDescription>Additional fees and surcharges</CardDescription>
             </CardHeader>
             <CardContent>
               {extraCosts.length === 0 ? (
-                <p className="text-sm text-slate-500">No extra costs configured</p>
+                <p className="text-sm text-[var(--adm-muted)]">No extra costs configured</p>
               ) : (
-                <div className="space-y-2">
-                  {extraCosts.map((cost: any) => (
-                    <div
-                      key={cost.id}
-                      className="flex items-center justify-between p-2 rounded border"
-                    >
-                      <div>
-                        <p className="font-medium text-sm">{cost.name}</p>
-                        <p className="text-xs text-slate-500">{cost.frequency}</p>
-                      </div>
-                      <p className="font-bold text-sm">{formatCurrency(cost.amount)}</p>
-                    </div>
-                  ))}
-                </div>
+                <ul className="space-y-2">
+                  {extraCosts.map((cost) => (
+                      <li
+                        key={cost.id}
+                        className="flex items-center justify-between gap-3 rounded-lg border border-[var(--adm-hairline)] px-3 py-2"
+                      >
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium">{cost.name}</p>
+                          <p className="text-xs text-[var(--adm-muted)]">{cost.frequency ?? '—'}</p>
+                        </div>
+                        <p className="shrink-0 text-sm font-semibold tabular-nums">
+                          {formatCurrency(cost.amount)}
+                        </p>
+                      </li>
+                    ))}
+                </ul>
               )}
             </CardContent>
           </Card>
 
-          {/* E123 Pricing Preview */}
-          {(() => {
-            const rateConfig = seedConfig as unknown as RateConfig;
-            const preview = buildMatrixPreview(rateConfig, product.code, 'current');
-            if (!preview) return null;
-            const fmt = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
-            return (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <ChartBar weight="light" className="h-5 w-5" />
-                    Rate Preview
-                  </CardTitle>
-                  <CardDescription>
-                    Member-only rates from current rate set
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {preview.ageBands.map((band) => (
-                      <div key={band.id} className="flex items-center justify-between text-sm">
-                        <span className="text-slate-600">{band.label}</span>
-                        <span className="font-bold tabular-nums">
-                          {fmt(preview.matrix.member?.[band.id] ?? 0)}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="mt-3 pt-3 border-t">
-                    <Link href={`/products/${product.id}/pricing`}>
-                      <Button variant="outline" size="sm" className="w-full">
-                        <CurrencyDollar weight="light" className="h-4 w-4 mr-2" />
-                        Full Pricing Matrix
-                      </Button>
-                    </Link>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })()}
+          {preview && (
+            <Card className="border-[var(--adm-hairline)] shadow-sm">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <ChartBar weight="light" className="h-4 w-4 text-[var(--adm-teal)]" aria-hidden />
+                  Rate preview
+                </CardTitle>
+                <CardDescription>Member-only rates from the current rate set</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {preview.ageBands.map((band) => (
+                    <div key={band.id} className="flex items-center justify-between gap-3 text-sm">
+                      <span className="text-[var(--adm-muted)]">{band.label}</span>
+                      <span className="font-semibold tabular-nums">
+                        {fmt(preview.matrix.member?.[band.id] ?? 0)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-3 border-t border-[var(--adm-hairline)] pt-3">
+                  <Link href={`/products/${product.id}/pricing`}>
+                    <Button variant="outline" size="sm" className="w-full">
+                      <CurrencyDollar weight="light" className="mr-2 h-4 w-4" aria-hidden />
+                      Full pricing matrix
+                    </Button>
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
-          {/* Metadata */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Record Info</CardTitle>
+          <Card className="border-[var(--adm-hairline)] shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Record info</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
-              <div className="flex items-center gap-2 text-slate-500">
-                <Calendar weight="light" className="h-4 w-4" />
-                <span>
-                  Created {format(new Date(product.created_at), 'MMM d, yyyy')}
-                </span>
+              <div className="flex items-center gap-2 text-[var(--adm-muted)]">
+                <Calendar weight="light" className="h-4 w-4 shrink-0" aria-hidden />
+                <span>Created {format(new Date(product.created_at), 'MMM d, yyyy')}</span>
               </div>
-              <p className="text-slate-400 font-mono text-xs">{product.id}</p>
+              <p className="break-all font-mono text-xs text-[var(--adm-muted)]/80">{product.id}</p>
             </CardContent>
           </Card>
-        </div>
+        </aside>
       </div>
     </div>
   );

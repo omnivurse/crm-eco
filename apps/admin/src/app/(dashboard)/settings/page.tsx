@@ -16,6 +16,7 @@ import {
 } from '@crm-eco/ui';
 import { toast } from 'sonner';
 import { saveOrgBranding, getOrgBranding } from './actions';
+import { PageHeader } from '@/components/ui/PageHeader';
 
 interface AdminSettings {
   id?: string;
@@ -236,22 +237,20 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Settings</h1>
-          <p className="text-muted-foreground">
-            Configure your organization&apos;s admin portal settings.
-          </p>
-        </div>
-        <Button onClick={handleSave} disabled={isSaving}>
-          {isSaving ? (
-            <CircleNotch weight="light" className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <FloppyDisk weight="light" className="mr-2 h-4 w-4" />
-          )}
-          FloppyDisk Changes
-        </Button>
-      </div>
+      <PageHeader
+        title="Settings"
+        description="Configure your organization's admin portal settings"
+        actions={
+          <Button size="sm" onClick={handleSave} disabled={isSaving}>
+            {isSaving ? (
+              <CircleNotch weight="light" className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <FloppyDisk weight="light" className="mr-2 h-4 w-4" />
+            )}
+            Save changes
+          </Button>
+        }
+      />
 
       {/* Branding Section */}
       <Card>

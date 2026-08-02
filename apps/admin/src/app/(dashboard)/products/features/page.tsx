@@ -1,6 +1,6 @@
 'use client';
 
-import { Baby, CaretLeft, CircleNotch, Eye, Heart, List, MagnifyingGlass, PencilSimple, Pill, Plus, Pulse, ShieldCheck, Smiley, Sparkle, Trash } from '@phosphor-icons/react';
+import { Baby, CircleNotch, Eye, Heart, List, MagnifyingGlass, PencilSimple, Pill, Plus, Pulse, ShieldCheck, Smiley, Sparkle, Trash } from '@phosphor-icons/react';
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
@@ -22,8 +22,8 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@crm-eco/ui';
-import Link from 'next/link';
 import { toast } from 'sonner';
+import { PageHeader } from '@/components/ui/PageHeader';
 
 interface Feature {
   id: string;
@@ -217,22 +217,18 @@ export default function FeaturesLibraryPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <Link href="/products">
-          <Button variant="ghost" size="icon">
-            <CaretLeft weight="light" className="h-5 w-5" />
+      <PageHeader
+        backHref="/products"
+        backLabel="Products"
+        title="Features library"
+        description="Manage the features catalog for your products"
+        actions={
+          <Button size="sm" onClick={() => setShowNewFeature(true)}>
+            <Plus weight="light" className="h-4 w-4 mr-2" />
+            New feature
           </Button>
-        </Link>
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold text-slate-900">Features Library</h1>
-          <p className="text-slate-500">Manage the features catalog for your products</p>
-        </div>
-        <Button onClick={() => setShowNewFeature(true)}>
-          <Plus weight="light" className="h-4 w-4 mr-2" />
-          New Feature
-        </Button>
-      </div>
+        }
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

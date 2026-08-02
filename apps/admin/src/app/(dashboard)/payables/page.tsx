@@ -12,6 +12,7 @@ import {
   XCircle,
   ArrowClockwise,
 } from '@phosphor-icons/react';
+import { PageHeader } from '@/components/ui/PageHeader';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { format } from 'date-fns';
@@ -345,7 +346,7 @@ export default function PayablesPage() {
 
     return {
       resource: 'payables',
-      title: 'Payables',
+      title: '',
       getRowId: (row) => row.id,
       searchPlaceholder: 'Search payables…',
       pageSize: 25,
@@ -360,19 +361,7 @@ export default function PayablesPage() {
           </Button>
         ),
       },
-      toolbar: (
-        <>
-          <Link href="/payables/summary">
-            <Button variant="outline" size="sm">
-              View Summary
-            </Button>
-          </Link>
-          <Button size="sm" onClick={() => setShowCreateModal(true)}>
-            <Plus weight="light" className="mr-1 h-4 w-4" />
-            New Payable
-          </Button>
-        </>
-      ),
+      toolbar: undefined,
       filters: [
         {
           key: 'status',
@@ -529,6 +518,26 @@ export default function PayablesPage() {
 
   return (
     <div className="space-y-6">
+      <PageHeader
+        title="Payables"
+        description="Track and manage accounts payable — vendors, agents, and providers"
+        icon={<CurrencyDollar weight="light" className="h-6 w-6" />}
+        gradient="from-[var(--adm-teal)] to-[var(--adm-cyan)]"
+        actions={
+          <>
+            <Link href="/payables/summary">
+              <Button variant="outline" size="sm">
+                View summary
+              </Button>
+            </Link>
+            <Button size="sm" onClick={() => setShowCreateModal(true)}>
+              <Plus weight="light" className="mr-1 h-4 w-4" aria-hidden />
+              New payable
+            </Button>
+          </>
+        }
+      />
+
       <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
         <Card>
           <CardContent className="pt-6">

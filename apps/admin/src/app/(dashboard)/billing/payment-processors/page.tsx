@@ -1,6 +1,7 @@
 'use client';
 
-import { ArrowClockwise, Buildings, CheckCircle, CreditCard, Eye, EyeSlash, GearSix, PencilSimple, Plus, ShieldCheck, Star, Trash, Warning, XCircle } from '@phosphor-icons/react';
+import { ArrowClockwise, Buildings, CheckCircle, CreditCard, Eye, EyeSlash, PencilSimple, Plus, ShieldCheck, Star, Trash, Warning, XCircle } from '@phosphor-icons/react';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { useState, useEffect } from 'react';
 import {
   Card,
@@ -353,17 +354,18 @@ export default function PaymentProcessorsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Payment Processors</h1>
-          <p className="text-muted-foreground">Configure payment gateway integrations</p>
-        </div>
-        <Button onClick={openCreateModal}>
-          <Plus weight="light" className="h-4 w-4 mr-2" />
-          Add Processor
-        </Button>
-      </div>
+      <PageHeader
+        title="Payment processors"
+        description="Configure payment gateway integrations"
+        icon={<CreditCard weight="light" className="w-6 h-6" />}
+        gradient="from-amber-500 to-orange-400"
+        actions={
+          <Button size="sm" onClick={openCreateModal}>
+            <Plus weight="light" className="h-4 w-4 mr-2" />
+            Add processor
+          </Button>
+        }
+      />
 
       {/* Processors List */}
       {loading ? (
@@ -473,7 +475,7 @@ export default function PaymentProcessorsPage() {
                     <Button variant="outline" size="sm" onClick={() => toggleActive(processor)}>
                       {processor.is_active ? 'Deactivate' : 'Activate'}
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => openEditModal(processor)}>
+                    <Button variant="ghost" size="icon" onClick={() => openEditModal(processor)} title="Edit">
                       <PencilSimple weight="light" className="h-4 w-4" />
                     </Button>
                     <Button
@@ -509,11 +511,11 @@ export default function PaymentProcessorsPage() {
         </CardContent>
       </Card>
 
-      {/* Create/PencilSimple Modal */}
+      {/* Create/Edit modal */}
       <Dialog open={showModal} onOpenChange={setShowModal}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{editingProcessor ? 'PencilSimple Payment Processor' : 'Add Payment Processor'}</DialogTitle>
+            <DialogTitle>{editingProcessor ? 'Edit payment processor' : 'Add payment processor'}</DialogTitle>
             <DialogDescription>
               Configure your payment gateway credentials. All sensitive data is encrypted.
             </DialogDescription>

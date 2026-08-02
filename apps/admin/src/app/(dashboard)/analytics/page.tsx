@@ -4,6 +4,7 @@ import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import Link from 'next/link';
 import { format, subDays, startOfMonth, endOfMonth } from 'date-fns';
 import { getActiveTenant } from '@/lib/tenant';
+import { PageHeader } from '@/components/ui/PageHeader';
 
 interface EnrollmentStats {
   total: number;
@@ -245,21 +246,19 @@ export default async function AnalyticsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Analytics</h1>
-          <p className="text-slate-500">Enrollment and revenue insights</p>
-        </div>
-        <div className="flex items-center gap-2">
+      <PageHeader
+        title="Analytics"
+        description="Enrollment and revenue insights"
+        icon={<ChartBar weight="light" className="h-6 w-6" />}
+        actions={
           <Link href="/analytics/enrollments">
             <Badge variant="outline" className="cursor-pointer hover:bg-slate-100">
-              <ChartBar weight="light" className="w-3 h-3 mr-1" />
-              Detailed Reports
+              <ChartBar weight="light" className="mr-1 h-3 w-3" aria-hidden />
+              Detailed reports
             </Badge>
           </Link>
-        </div>
-      </div>
+        }
+      />
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

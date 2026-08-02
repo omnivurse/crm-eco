@@ -1,60 +1,47 @@
-import { ArrowLeft, GearSix } from '@phosphor-icons/react/dist/ssr';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button } from '@crm-eco/ui';
-import Link from 'next/link';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@crm-eco/ui';
 import { ActiveRateSetControl } from '@/components/products/ActiveRateSetControl';
 import { RateQuoteCalculator } from '@/components/products/RateQuoteCalculator';
+import { EntityPageHeader } from '@/components/ui/EntityPageHeader';
 
 export default function RateSettingsPage() {
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <Link href="/products">
-          <Button variant="ghost" size="icon">
-            <ArrowLeft weight="light" className="h-5 w-5" />
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Rate GearSix</h1>
-          <p className="text-slate-500">
-            Manage rate set overrides and test the rate engine
-          </p>
-        </div>
-      </div>
+      <EntityPageHeader
+        backHref="/products"
+        backLabel="Products"
+        title="Rate settings"
+        description="Manage rate set overrides and test the rate engine"
+      />
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        {/* Left: GearSix */}
-        <div className="xl:col-span-2 space-y-6">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+        <div className="space-y-6 xl:col-span-2">
           <ActiveRateSetControl />
 
-          {/* Info Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle>E123 Rate Engine</CardTitle>
-              <CardDescription>
-                How the pricing system works
-              </CardDescription>
+          <Card className="border-[var(--adm-hairline)] shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">E123 rate engine</CardTitle>
+              <CardDescription>How the pricing system works</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3 text-sm text-slate-600">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-4 rounded-lg bg-slate-50 border">
-                  <h4 className="font-semibold text-slate-900 mb-2">Tiered Household</h4>
+            <CardContent className="space-y-3 text-sm text-[var(--adm-muted)]">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="rounded-xl border border-[var(--adm-hairline)] bg-[var(--adm-void)]/60 p-4">
+                  <h4 className="mb-2 font-semibold text-[var(--adm-ink)]">Tiered household</h4>
                   <p>
-                    One flat rate per coverage tier (Member, Member+Spouse, Member+Children, Family) 
+                    One flat rate per coverage tier (Member, Member+Spouse, Member+Children, Family)
                     and age band. Simple table lookup.
                   </p>
                 </div>
-                <div className="p-4 rounded-lg bg-slate-50 border">
-                  <h4 className="font-semibold text-slate-900 mb-2">Additive Person</h4>
+                <div className="rounded-xl border border-[var(--adm-hairline)] bg-[var(--adm-void)]/60 p-4">
+                  <h4 className="mb-2 font-semibold text-[var(--adm-ink)]">Additive person</h4>
                   <p>
-                    Subscriber base rate + spouse adder + per-dependent adder. 
-                    Each component can be age-banded or flat. Total = sum of all components.
+                    Subscriber base rate + spouse adder + per-dependent adder. Each component can be
+                    age-banded or flat. Total = sum of all components.
                   </p>
                 </div>
               </div>
-              <div className="p-4 rounded-lg bg-blue-50 border border-blue-100">
-                <h4 className="font-semibold text-blue-900 mb-1">Rate Set Selection Logic</h4>
-                <ol className="list-decimal list-inside space-y-1 text-blue-800">
+              <div className="rounded-xl border border-cyan-100 bg-cyan-50/80 p-4">
+                <h4 className="mb-1 font-semibold text-cyan-950">Rate set selection</h4>
+                <ol className="list-inside list-decimal space-y-1 text-cyan-900">
                   <li>If admin override is set → use that rate set</li>
                   <li>Else if coverage start date ≥ Jan 1, 2026 → use 2026 rates</li>
                   <li>Otherwise → use current rates</li>
@@ -64,7 +51,6 @@ export default function RateSettingsPage() {
           </Card>
         </div>
 
-        {/* Right: Calculator */}
         <div>
           <RateQuoteCalculator />
         </div>

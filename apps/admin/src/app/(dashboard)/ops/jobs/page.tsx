@@ -31,6 +31,7 @@ import {
 } from '@crm-eco/ui';
 import { format, formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
+import { PageHeader } from '@/components/ui/PageHeader';
 
 interface JobRun {
   id: string;
@@ -302,19 +303,16 @@ export default function JobsPage() {
   return (
     <>
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">Job History</h1>
-            <p className="text-slate-500">View and manage job runs</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={fetchJobs}>
+        <PageHeader
+          title="Job history"
+          description="View and manage job runs"
+          actions={
+            <Button variant="outline" size="sm" onClick={fetchJobs}>
               <ArrowClockwise weight="light" className="w-4 h-4 mr-2" />
               Refresh
             </Button>
-          </div>
-        </div>
+          }
+        />
 
         {/* Filters */}
         <Card>

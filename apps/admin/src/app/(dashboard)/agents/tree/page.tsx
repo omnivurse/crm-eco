@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowLeft, ArrowsOut, Buildings, CaretDown, CaretRight, CircleNotch, EnvelopeSimple, MagnifyingGlass, MagnifyingGlassMinus, MagnifyingGlassPlus, Phone, User, Users } from '@phosphor-icons/react';
+import { ArrowsOut, Buildings, CaretDown, CaretRight, CircleNotch, EnvelopeSimple, MagnifyingGlass, MagnifyingGlassMinus, MagnifyingGlassPlus, Phone, User, Users } from '@phosphor-icons/react';
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import {
@@ -13,6 +13,7 @@ import {
   Badge,
 } from '@crm-eco/ui';
 import Link from 'next/link';
+import { PageHeader } from '@/components/ui/PageHeader';
 
 interface Agent {
   id: string;
@@ -287,20 +288,12 @@ export default function AgentTreePage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link href="/agents">
-            <Button variant="ghost" size="icon">
-              <ArrowLeft weight="light" className="w-4 h-4" />
-            </Button>
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">Agent Tree</h1>
-            <p className="text-slate-500">View agent hierarchy and relationships</p>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        backHref="/agents"
+        backLabel="Agents"
+        title="Agent tree"
+        description="View agent hierarchy and relationships"
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Tree View */}

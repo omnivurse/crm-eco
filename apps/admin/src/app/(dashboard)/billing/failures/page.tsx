@@ -1,6 +1,7 @@
 'use client';
 
-import { ArrowClockwise, ArrowLeft, CheckCircle, CircleNotch, EnvelopeSimple, Warning, XCircle } from '@phosphor-icons/react';
+import { ArrowClockwise, CheckCircle, CircleNotch, EnvelopeSimple, Warning, XCircle } from '@phosphor-icons/react';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, Button, Badge } from '@crm-eco/ui';
 import { createClient } from '@crm-eco/lib/supabase/client';
@@ -164,27 +165,18 @@ export default function FailedPaymentsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" size="sm" asChild>
-            <Link href="/billing">
-              <ArrowLeft weight="light" className="h-4 w-4 mr-2" />
-              Back
-            </Link>
+      <PageHeader
+        backHref="/billing"
+        backLabel="Back to billing"
+        title="Failed payments"
+        description={`${failures.length} unresolved payment${failures.length !== 1 ? 's' : ''} requiring attention`}
+        actions={
+          <Button variant="outline" size="sm" onClick={loadFailures}>
+            <ArrowClockwise weight="light" className="h-4 w-4 mr-2" />
+            Refresh
           </Button>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">Failed Payments</h1>
-            <p className="text-slate-500">
-              {failures.length} unresolved payment{failures.length !== 1 ? 's' : ''} requiring attention
-            </p>
-          </div>
-        </div>
-        <Button variant="outline" size="sm" onClick={loadFailures}>
-          <ArrowClockwise weight="light" className="h-4 w-4 mr-2" />
-          Refresh
-        </Button>
-      </div>
+        }
+      />
 
       {/* Failures List */}
       {failures.length > 0 ? (

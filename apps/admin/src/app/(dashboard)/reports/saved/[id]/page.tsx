@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowLeft, ChartBar, CircleNotch, Clock, ClockCounterClockwise, FloppyDisk, GearSix, Play, Star, Table, Trash, WarningCircle } from '@phosphor-icons/react';
+import { CaretLeft, ChartBar, CircleNotch, Clock, ClockCounterClockwise, FloppyDisk, Play, Star, Table, Trash, WarningCircle } from '@phosphor-icons/react';
 import { useState, useEffect } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -21,6 +21,7 @@ import {
 import { ExportButton, type ExportFormat } from '@crm-eco/ui/components/export-button';
 import { DateRangePicker, type DateRange } from '@crm-eco/ui/components/date-range-picker';
 import { exportData, downloadExport } from '@crm-eco/shared';
+import { EntityPageHeader } from '@/components/ui/EntityPageHeader';
 
 interface SavedReport {
   id: string;
@@ -229,14 +230,14 @@ export default function AdminSavedReportDetailPage() {
     return (
       <div className="text-center py-16">
         <WarningCircle weight="light" className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-        <h1 className="text-xl font-bold text-slate-900 mb-2">Report Not Found</h1>
+        <h1 className="mb-2 text-xl font-semibold text-slate-900">Report not found</h1>
         <p className="text-slate-500 mb-4">
           The report you're looking for doesn't exist.
         </p>
         <Link href="/reports/saved">
           <Button variant="outline">
-            <ArrowLeft weight="light" className="w-4 h-4 mr-2" />
-            Back to Saved Reports
+            <CaretLeft weight="light" className="mr-1.5 h-4 w-4" aria-hidden />
+            Back to saved reports
           </Button>
         </Link>
       </div>
@@ -245,70 +246,63 @@ export default function AdminSavedReportDetailPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
-        <div>
-          <Link
-            href="/reports/saved"
-            className="flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 mb-2"
-          >
-            <ArrowLeft weight="light" className="w-4 h-4" />
-            Back to Saved Reports
-          </Link>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold text-slate-900">{report.name}</h1>
-            {report.is_favorite && (
-              <Star weight="light" className="w-5 h-5 text-amber-500 fill-current" />
-            )}
-          </div>
-          {report.description && (
-            <p className="text-slate-600 mt-0.5">{report.description}</p>
-          )}
-          <div className="flex items-center gap-4 text-sm text-slate-500 mt-2">
+      <EntityPageHeader
+        backHref="/reports/saved"
+        backLabel="Saved reports"
+        title={report.name}
+        description={report.description}
+        subtitle={
+          <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500">
             <span className="flex items-center gap-1">
-              <ChartBar weight="light" className="w-4 h-4" />
+              <ChartBar weight="light" className="h-4 w-4" aria-hidden />
               {report.data_source}
             </span>
             {report.run_count !== undefined && (
               <span className="flex items-center gap-1">
-                <Play weight="light" className="w-4 h-4" />
+                <Play weight="light" className="h-4 w-4" aria-hidden />
                 {report.run_count} runs
               </span>
             )}
             {report.last_run_at && (
               <span className="flex items-center gap-1">
-                <Clock weight="light" className="w-4 h-4" />
+                <Clock weight="light" className="h-4 w-4" aria-hidden />
                 Last run {new Date(report.last_run_at).toLocaleDateString()}
               </span>
             )}
           </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            onClick={handleToggleFavorite}
-            className={report.is_favorite ? 'text-amber-500' : ''}
-          >
-            <Star weight="light" className={`w-4 h-4 ${report.is_favorite ? 'fill-current' : ''}`} />
-          </Button>
-          <Button
-            onClick={handleRunReport}
-            disabled={isRunning}
-          >
+        }
+        badges={
+          report.is_favorite ? (
+            <Star weight="light" className="h-5 w-5 text-amber-500 fill-current" aria-label="Favorite" />
+          ) : undefined
+        }
+        secondaryActions={
+          <>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleToggleFavorite}
+              className={report.is_favorite ? 'text-amber-500' : ''}
+            >
+              <Star weight="light" className={`h-4 w-4 ${report.is_favorite ? 'fill-current' : ''}`} aria-hidden />
+            </Button>
+            <ExportButton onExport={handleExport} disabled={results.length === 0} />
+            <Button variant="outline" size="sm" onClick={handleDelete} className="text-red-600">
+              <Trash weight="light" className="h-4 w-4" aria-hidden />
+            </Button>
+          </>
+        }
+        primaryAction={
+          <Button size="sm" onClick={handleRunReport} disabled={isRunning}>
             {isRunning ? (
-              <CircleNotch weight="light" className="w-4 h-4 mr-2 animate-spin" />
+              <CircleNotch weight="light" className="mr-1.5 h-4 w-4 animate-spin" aria-hidden />
             ) : (
-              <Play weight="light" className="w-4 h-4 mr-2" />
+              <Play weight="light" className="mr-1.5 h-4 w-4" aria-hidden />
             )}
-            {isRunning ? 'Running...' : 'Run Report'}
+            {isRunning ? 'Running...' : 'Run report'}
           </Button>
-          <ExportButton onExport={handleExport} disabled={results.length === 0} />
-          <Button variant="outline" onClick={handleDelete} className="text-red-600">
-            <Trash weight="light" className="w-4 h-4" />
-          </Button>
-        </div>
-      </div>
+        }
+      />
 
       {/* Error Alert */}
       {error && (
@@ -339,11 +333,10 @@ export default function AdminSavedReportDetailPage() {
           </TabsTrigger>
           <TabsTrigger value="history" className="flex items-center gap-2">
             <ClockCounterClockwise weight="light" className="w-4 h-4" />
-            ClockCounterClockwise
+            History
           </TabsTrigger>
           <TabsTrigger value="settings" className="flex items-center gap-2">
-            <GearSix weight="light" className="w-4 h-4" />
-            GearSix
+            Settings
           </TabsTrigger>
         </TabsList>
 
@@ -464,14 +457,14 @@ export default function AdminSavedReportDetailPage() {
         <TabsContent value="history" className="mt-4">
           <div className="bg-white rounded-xl p-6 border border-slate-200 text-center">
             <ClockCounterClockwise weight="light" className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-            <h3 className="font-semibold text-slate-900 mb-1">Run ClockCounterClockwise</h3>
+            <h3 className="font-semibold text-slate-900 mb-1">Run history</h3>
             <p className="text-sm text-slate-500">Run history will be tracked here</p>
           </div>
         </TabsContent>
 
         <TabsContent value="settings" className="mt-4">
           <div className="bg-white rounded-xl p-6 border border-slate-200 max-w-2xl">
-            <h2 className="text-lg font-semibold text-slate-900 mb-4">Report GearSix</h2>
+            <h2 className="text-lg font-semibold text-slate-900 mb-4">Report settings</h2>
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Report Name</Label>
@@ -499,7 +492,7 @@ export default function AdminSavedReportDetailPage() {
                 ) : (
                   <FloppyDisk weight="light" className="w-4 h-4 mr-2" />
                 )}
-                FloppyDisk Changes
+                Save changes
               </Button>
             </div>
           </div>

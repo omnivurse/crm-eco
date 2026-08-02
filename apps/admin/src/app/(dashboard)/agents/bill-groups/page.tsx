@@ -1,6 +1,6 @@
 'use client';
 
-import { Buildings, CaretLeft, ChartBar, CircleNotch, CurrencyDollar, MagnifyingGlass, MapPin, PencilSimple, Plus, Trash, UserPlus, Users, X } from '@phosphor-icons/react';
+import { Buildings, ChartBar, CircleNotch, CurrencyDollar, MagnifyingGlass, MapPin, PencilSimple, Plus, Trash, UserPlus, Users, X } from '@phosphor-icons/react';
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import {
@@ -21,8 +21,8 @@ import {
   DialogFooter,
   Checkbox,
 } from '@crm-eco/ui';
-import Link from 'next/link';
 import { toast } from 'sonner';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { format } from 'date-fns';
 
 interface BillGroup {
@@ -359,22 +359,18 @@ export default function BillGroupsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <Link href="/agents">
-          <Button variant="ghost" size="icon">
-            <CaretLeft weight="light" className="h-5 w-5" />
+      <PageHeader
+        backHref="/agents"
+        backLabel="Agents"
+        title="Bill groups"
+        description="Organize agents into groups for billing, commissions, and reporting"
+        actions={
+          <Button size="sm" onClick={handleNewGroup}>
+            <Plus weight="light" className="h-4 w-4 mr-2" />
+            New group
           </Button>
-        </Link>
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold text-slate-900">Bill Groups</h1>
-          <p className="text-slate-500">Organize agents into groups for billing, commissions, and reporting</p>
-        </div>
-        <Button onClick={handleNewGroup}>
-          <Plus weight="light" className="h-4 w-4 mr-2" />
-          New Group
-        </Button>
-      </div>
+        }
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

@@ -2,10 +2,11 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, EnvelopeSimple, PaperPlaneTilt, Spinner } from '@phosphor-icons/react';
+import { EnvelopeSimple, PaperPlaneTilt, Spinner } from '@phosphor-icons/react';
 import { Button } from '@crm-eco/ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@crm-eco/ui/components/card';
 import { cn } from '@crm-eco/ui/lib/utils';
+import { PageHeader } from '@/components/ui/PageHeader';
 
 interface InboxConversation {
   id: string;
@@ -75,25 +76,24 @@ export default function AdminInboxPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Inbox</h1>
-          <p className="text-sm text-slate-500">
-            Incoming mail to @payitforwardhealth.com (support, billing, contact, etc.)
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={loadConversations}>
-            Refresh
-          </Button>
-          <Button asChild size="sm">
-            <Link href="/communications/compose">
-              <PaperPlaneTilt className="mr-2 h-4 w-4" />
-              Compose
-            </Link>
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Inbox"
+        description="Incoming mail to @payitforwardhealth.com (support, billing, contact, etc.)"
+        icon={<EnvelopeSimple weight="light" className="h-6 w-6" />}
+        actions={
+          <>
+            <Button variant="outline" size="sm" onClick={loadConversations}>
+              Refresh
+            </Button>
+            <Button asChild size="sm">
+              <Link href="/communications/compose">
+                <PaperPlaneTilt className="mr-1.5 h-4 w-4" aria-hidden />
+                Compose
+              </Link>
+            </Button>
+          </>
+        }
+      />
 
       <div className="grid gap-4 lg:grid-cols-[320px_1fr] min-h-[560px]">
         <Card className="overflow-hidden">

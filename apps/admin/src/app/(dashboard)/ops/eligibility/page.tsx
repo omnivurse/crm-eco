@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowClockwise, ArrowLeft, Buildings, Calendar, CheckCircle, CircleNotch, Clock, File, Play, TrendDown, TrendUp, Users, Warning, XCircle } from '@phosphor-icons/react';
+import { ArrowClockwise, Buildings, Calendar, CheckCircle, CircleNotch, Clock, File, Play, TrendDown, TrendUp, Users, Warning, XCircle } from '@phosphor-icons/react';
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import {
@@ -27,6 +27,7 @@ import {
 import { format, formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 import Link from 'next/link';
+import { PageHeader } from '@/components/ui/PageHeader';
 
 interface Vendor {
   id: string;
@@ -256,33 +257,27 @@ export default function EligibilityPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link href="/ops">
-            <Button variant="ghost" size="icon">
-              <ArrowLeft weight="light" className="w-4 h-4" />
-            </Button>
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">Eligibility Management</h1>
-            <p className="text-slate-500">Check and manage member eligibility across vendors</p>
-          </div>
-        </div>
-        <Button onClick={runAllChecks} disabled={runningJobs.size > 0}>
-          {runningJobs.size > 0 ? (
-            <>
-              <CircleNotch weight="light" className="w-4 h-4 mr-2 animate-spin" />
-              Running ({runningJobs.size})
-            </>
-          ) : (
-            <>
-              <Play weight="light" className="w-4 h-4 mr-2" />
-              Run All Checks
-            </>
-          )}
-        </Button>
-      </div>
+      <PageHeader
+        backHref="/ops"
+        backLabel="Operations"
+        title="Eligibility management"
+        description="Check and manage member eligibility across vendors"
+        actions={
+          <Button size="sm" onClick={runAllChecks} disabled={runningJobs.size > 0}>
+            {runningJobs.size > 0 ? (
+              <>
+                <CircleNotch weight="light" className="w-4 h-4 mr-2 animate-spin" />
+                Running ({runningJobs.size})
+              </>
+            ) : (
+              <>
+                <Play weight="light" className="w-4 h-4 mr-2" />
+                Run all checks
+              </>
+            )}
+          </Button>
+        }
+      />
 
       {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

@@ -21,8 +21,8 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@crm-eco/ui';
-import Link from 'next/link';
 import { toast } from 'sonner';
+import { PageHeader } from '@/components/ui/PageHeader';
 
 interface AutomationRule {
   id: string;
@@ -75,7 +75,7 @@ interface RuleRun {
 const TRIGGER_TYPES = [
   { value: 'event', label: 'Event Trigger', icon: GitBranch, description: 'Trigger when a record changes' },
   { value: 'schedule', label: 'Schedule', icon: Calendar, description: 'Run on a schedule (cron)' },
-  { value: 'webhook', label: 'WebhooksLogo', icon: WebhooksLogo, description: 'Trigger via external webhook' },
+  { value: 'webhook', label: 'Webhook', icon: WebhooksLogo, description: 'Trigger via external webhook' },
 ];
 
 const EVENT_TYPES = [
@@ -372,22 +372,18 @@ export default function AutomationsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <Link href="/settings">
-          <Button variant="ghost" size="icon">
-            <CaretLeft weight="light" className="h-5 w-5" />
+      <PageHeader
+        backHref="/settings"
+        backLabel="Settings"
+        title="Automations"
+        description="Create workflow automations triggered by events or schedules"
+        actions={
+          <Button size="sm" onClick={handleNewRule}>
+            <Plus weight="light" className="h-4 w-4 mr-2" />
+            New automation
           </Button>
-        </Link>
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold text-slate-900">Automations</h1>
-          <p className="text-slate-500">Create workflow automations triggered by events or schedules</p>
-        </div>
-        <Button onClick={handleNewRule}>
-          <Plus weight="light" className="h-4 w-4 mr-2" />
-          New Automation
-        </Button>
-      </div>
+        }
+      />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

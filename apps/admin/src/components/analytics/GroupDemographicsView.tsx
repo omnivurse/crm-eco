@@ -2,6 +2,7 @@
 
 import { CaretDown, CaretUp, FileText, Heart, Pulse, ShieldCheck, TrendUp, UserCheck, Users, Warning } from '@phosphor-icons/react';
 import { useState } from 'react';
+import { PageHeader } from '@/components/ui/PageHeader';
 import {
   BarChart,
   Bar,
@@ -570,14 +571,10 @@ export function GroupDemographicsView({ data }: { data: DemographicsData }) {
 
   return (
     <div className="space-y-8 pb-8">
-      {/* Page header */}
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Group Demographics</h1>
-        <p className="text-sm text-slate-500 mt-1">
-          Aggregated, de-identified data — no individual PII is displayed.
-          <span className="ml-2 text-slate-400">Generated {generatedDate}</span>
-        </p>
-      </div>
+      <PageHeader
+        title="Group demographics"
+        description={`Aggregated, de-identified data — no individual PII is displayed. Generated ${generatedDate}`}
+      />
 
       {/* De-identification badge */}
       <div className="flex items-center gap-2 px-4 py-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-sm text-emerald-800">

@@ -21,6 +21,7 @@ import {
 import { StatusBadge } from '@crm-eco/ui/components/status-badge';
 import Link from 'next/link';
 import { createClient } from '@crm-eco/lib/supabase/client';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
@@ -266,37 +267,36 @@ export default function InvoicesPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold">Invoices</h1>
-          <p className="text-sm sm:text-base text-muted-foreground">Manage and generate member invoices</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
-          <Link href="/invoices/groups">
-            <Button variant="outline" size="sm">
-              <Users weight="light" className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Groups</span>
+      <PageHeader
+        title="Invoices"
+        description="Manage and generate member invoices"
+        actions={
+          <>
+            <Link href="/invoices/groups">
+              <Button variant="outline" size="sm">
+                <Users weight="light" className="h-4 w-4 sm:mr-1.5" aria-hidden />
+                <span className="hidden sm:inline">Groups</span>
+              </Button>
+            </Link>
+            <Button variant="outline" size="sm" onClick={exportInvoices}>
+              <DownloadSimple weight="light" className="h-4 w-4 sm:mr-1.5" aria-hidden />
+              <span className="hidden sm:inline">Export</span>
             </Button>
-          </Link>
-          <Button variant="outline" size="sm" onClick={exportInvoices}>
-            <DownloadSimple weight="light" className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">Export</span>
-          </Button>
-          <Link href="/invoices/generate/group">
-            <Button variant="outline" size="sm">
-              <Users weight="light" className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Gen Group</span>
-            </Button>
-          </Link>
-          <Link href="/invoices/generate/individual">
-            <Button size="sm">
-              <Plus weight="light" className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Generate</span>
-            </Button>
-          </Link>
-        </div>
-      </div>
+            <Link href="/invoices/generate/group">
+              <Button variant="outline" size="sm">
+                <Users weight="light" className="h-4 w-4 sm:mr-1.5" aria-hidden />
+                <span className="hidden sm:inline">Generate group</span>
+              </Button>
+            </Link>
+            <Link href="/invoices/generate/individual">
+              <Button size="sm">
+                <Plus weight="light" className="h-4 w-4 sm:mr-1.5" aria-hidden />
+                <span className="hidden sm:inline">Generate</span>
+              </Button>
+            </Link>
+          </>
+        }
+      />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

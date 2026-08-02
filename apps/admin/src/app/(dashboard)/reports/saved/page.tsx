@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowLeft, Clock, DotsThreeVertical, FileText, MagnifyingGlass, PencilSimple, Play, Plus, Star, Trash } from '@phosphor-icons/react';
+import { Clock, DotsThreeVertical, FileText, MagnifyingGlass, PencilSimple, Play, Plus, Star, Trash } from '@phosphor-icons/react';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@crm-eco/ui/components/select';
+import { PageHeader } from '@/components/ui/PageHeader';
 
 interface SavedReport {
   id: string;
@@ -105,31 +106,21 @@ export default function AdminSavedReportsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <div>
-          <Link
-            href="/reports"
-            className="flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 mb-2"
-          >
-            <ArrowLeft weight="light" className="w-4 h-4" />
-            Back to Reports
-          </Link>
-          <h1 className="text-2xl font-bold text-slate-900">Saved Reports</h1>
-          <p className="text-slate-600 mt-0.5">
-            Manage your saved reports and run history
-          </p>
-        </div>
-
-        <div className="flex items-center gap-3">
+      <PageHeader
+        backHref="/reports"
+        backLabel="Reports"
+        title="Saved reports"
+        description="Manage your saved reports and run history"
+        icon={<FileText weight="light" className="h-6 w-6" />}
+        actions={
           <Link href="/reports/templates">
-            <Button>
-              <Plus weight="light" className="w-4 h-4 mr-2" />
-              New Report
+            <Button size="sm">
+              <Plus weight="light" className="mr-1.5 h-4 w-4" aria-hidden />
+              New report
             </Button>
           </Link>
-        </div>
-      </div>
+        }
+      />
 
       {/* Filters */}
       <div className="flex flex-col md:flex-row gap-4">
@@ -263,7 +254,7 @@ export default function AdminSavedReportsPage() {
                       <DropdownMenuItem asChild>
                         <Link href={`/reports/saved/${report.id}`}>
                           <PencilSimple weight="light" className="w-4 h-4 mr-2" />
-                          PencilSimple
+                          Edit
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />

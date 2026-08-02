@@ -21,7 +21,7 @@ export default async function EditLandingPagePage({ params }: PageProps) {
   }
 
   return (
-    <div className="p-8">
+    <div className="space-y-6">
       <LandingPageForm landingPage={landingPage} />
     </div>
   );

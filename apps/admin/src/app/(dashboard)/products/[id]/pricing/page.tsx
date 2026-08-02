@@ -1,10 +1,9 @@
-import { ArrowLeft } from '@phosphor-icons/react/dist/ssr';
-import { Badge, Button } from '@crm-eco/ui';
-import Link from 'next/link';
+import { Badge } from '@crm-eco/ui';
 import { notFound } from 'next/navigation';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { E123PricingMatrix } from '@/components/products/E123PricingMatrix';
 import { RateQuoteCalculator } from '@/components/products/RateQuoteCalculator';
+import { EntityPageHeader } from '@/components/ui/EntityPageHeader';
 import { getActiveTenant } from '@/lib/tenant';
 
 async function getProduct(id: string) {
@@ -34,28 +33,24 @@ export default async function ProductPricingPage({ params }: { params: Promise<{
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <Link href={`/products/${product.id}`}>
-          <Button variant="ghost" size="icon">
-            <ArrowLeft weight="light" className="h-5 w-5" />
-          </Button>
-        </Link>
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-slate-900">Pricing Matrix</h1>
-            <Badge variant="outline" className="text-xs">
-              {product.rating_model === 'additive_person' ? 'Additive Person' : 'Tiered Household'}
-            </Badge>
-          </div>
-          <p className="text-slate-500">
-            {product.name} <span className="font-mono">({product.code})</span>
-          </p>
-        </div>
-      </div>
+      <EntityPageHeader
+        backHref={`/products/${product.id}`}
+        backLabel={product.name}
+        title="Pricing matrix"
+        subtitle={
+          <span>
+            {product.name}{' '}
+            <span className="font-mono text-[var(--adm-ink)]/80">({product.code})</span>
+          </span>
+        }
+        badges={
+          <Badge variant="outline" className="text-xs font-normal">
+            {product.rating_model === 'additive_person' ? 'Additive person' : 'Tiered household'}
+          </Badge>
+        }
+      />
 
-      {/* Two-column layout: Matrix + Calculator */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         <div className="xl:col-span-2">
           <E123PricingMatrix
             productId={id}

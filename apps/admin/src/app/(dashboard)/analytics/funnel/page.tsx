@@ -3,6 +3,7 @@ import { Suspense } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Badge } from '@crm-eco/ui';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { getActiveTenant } from '@/lib/tenant';
+import { PageHeader } from '@/components/ui/PageHeader';
 
 // ---------------------------------------------------------------------------
 // SLICE E3 — enrollment FUNNEL (apps/admin /analytics/funnel).
@@ -116,19 +117,17 @@ async function FunnelContent() {
 
   return (
     <div className="space-y-6 pb-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Enrollment Funnel</h1>
-          <p className="text-slate-500">
-            Cohort of enrollments created in the last {months} months — stage progression, conversion, and time-in-stage.
-          </p>
-        </div>
-        <Badge variant="outline" className="whitespace-nowrap">
-          <Funnel weight="light" className="w-3 h-3 mr-1" />
-          Last {months} months
-        </Badge>
-      </div>
+      <PageHeader
+        title="Enrollment funnel"
+        description={`Cohort of enrollments created in the last ${months} months — stage progression, conversion, and time-in-stage.`}
+        icon={<Funnel weight="light" className="h-6 w-6" />}
+        actions={
+          <Badge variant="outline" className="whitespace-nowrap">
+            <Funnel weight="light" className="mr-1 h-3 w-3" aria-hidden />
+            Last {months} months
+          </Badge>
+        }
+      />
 
       {error && (
         <Card className="border-amber-200 bg-amber-50">

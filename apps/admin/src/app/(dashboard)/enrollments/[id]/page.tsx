@@ -1,10 +1,11 @@
-import { ArrowLeft, Calendar, Chat, CheckCircle, ClipboardText, Clock, CreditCard, CurrencyDollar, FileText, ShieldCheck, UserPlus, Users, Warning, XCircle } from '@phosphor-icons/react/dist/ssr';
+import { Calendar, Chat, CheckCircle, ClipboardText, Clock, CreditCard, CurrencyDollar, FileText, ShieldCheck, UserPlus, Users, Warning, XCircle } from '@phosphor-icons/react/dist/ssr';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Badge } from '@crm-eco/ui';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { format } from 'date-fns';
 import { EnrollmentActions } from '@/components/enrollments/EnrollmentActions';
+import { EntityPageHeader } from '@/components/ui/EntityPageHeader';
 import { getActiveTenant } from '@/lib/tenant';
 
 async function getEnrollment(id: string) {
@@ -286,32 +287,26 @@ export default async function EnrollmentDetailPage({ params }: { params: Promise
   const billingSchedules = billingResult.status === 'fulfilled' ? billingResult.value : [];
   const quote = quoteResult.status === 'fulfilled' ? quoteResult.value : null;
 
+  const memberName = [enrollment.primary_member?.first_name, enrollment.primary_member?.last_name]
+    .filter(Boolean)
+    .join(' ');
+
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link href="/enrollments" prefetch={false}>
-            <Button variant="ghost" size="icon">
-              <ArrowLeft weight="light" className="h-5 w-5" />
-            </Button>
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">
-              Enrollment {enrollment.enrollment_number || enrollment.id.slice(0, 8)}
-            </h1>
-            <p className="text-slate-500">
-              {enrollment.primary_member?.first_name} {enrollment.primary_member?.last_name}
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
+      <EntityPageHeader
+        backHref="/enrollments"
+        backLabel="Enrollments"
+        title={`Enrollment ${enrollment.enrollment_number || enrollment.id.slice(0, 8)}`}
+        subtitle={memberName || undefined}
+        badges={
           <Badge variant={getStatusBadgeVariant(enrollment.status)} className="text-sm">
             {getStatusLabel(enrollment.status)}
           </Badge>
+        }
+        primaryAction={
           <EnrollmentActions enrollmentId={enrollment.id} currentStatus={enrollment.status} />
-        </div>
-      </div>
+        }
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content */}

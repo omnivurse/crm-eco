@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowClockwise, ArrowDown, ArrowLeft, ArrowUp, Calendar, CaretLeft, CaretRight, CheckCircle, CircleNotch, Clock, DownloadSimple, FileText, MagnifyingGlass, Play, TrendUp, User, Users, Warning, WarningCircle, XCircle } from '@phosphor-icons/react';
+import { ArrowClockwise, ArrowDown, ArrowUp, Calendar, CaretLeft, CaretRight, CheckCircle, CircleNotch, Clock, DownloadSimple, FileText, MagnifyingGlass, Play, TrendUp, User, Users, Warning, WarningCircle, XCircle } from '@phosphor-icons/react';
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import {
@@ -37,7 +37,7 @@ import {
 } from '@crm-eco/ui';
 import { format, formatDistanceToNow, differenceInDays, addDays } from 'date-fns';
 import { toast } from 'sonner';
-import Link from 'next/link';
+import { PageHeader } from '@/components/ui/PageHeader';
 
 interface AgeUpOutResult {
   id: string;
@@ -339,28 +339,24 @@ export default function AgeUpOutPage() {
   return (
     <>
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link href="/ops" className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
-              <ArrowLeft weight="light" className="w-5 h-5 text-slate-500" />
-            </Link>
-            <div>
-              <h1 className="text-2xl font-bold text-slate-900">Age Up/Out Report</h1>
-              <p className="text-slate-500">Sedera member age tracking and tier transitions</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={exportToCSV}>
-              <DownloadSimple weight="light" className="w-4 h-4 mr-2" />
-              Export CSV
-            </Button>
-            <Button onClick={() => setIsRunModalOpen(true)}>
-              <Play weight="light" className="w-4 h-4 mr-2" />
-              Run Report
-            </Button>
-          </div>
-        </div>
+        <PageHeader
+          backHref="/ops"
+          backLabel="Operations"
+          title="Age up/out report"
+          description="Sedera member age tracking and tier transitions"
+          actions={
+            <>
+              <Button variant="outline" size="sm" onClick={exportToCSV}>
+                <DownloadSimple weight="light" className="w-4 h-4 mr-2" />
+                Export CSV
+              </Button>
+              <Button size="sm" onClick={() => setIsRunModalOpen(true)}>
+                <Play weight="light" className="w-4 h-4 mr-2" />
+                Run report
+              </Button>
+            </>
+          }
+        />
 
         {/* Warning Banner */}
         <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-3">

@@ -2,6 +2,7 @@ import { Suspense } from 'react';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { CarrierManagement } from '@/components/carriers/CarrierManagement';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { getActiveTenant } from '@/lib/tenant';
 
 async function getCarriers() {
@@ -26,10 +27,10 @@ export default async function CarriersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Carriers</h1>
-        <p className="text-sm text-slate-500 mt-1">Manage insurance carriers and HealthShare programs</p>
-      </div>
+      <PageHeader
+        title="Carriers"
+        description="Manage insurance carriers and HealthShare programs"
+      />
       <Suspense fallback={<div className="p-8 text-center text-slate-400">Loading...</div>}>
         <CarrierManagement initialCarriers={carriers} orgId={orgId} />
       </Suspense>

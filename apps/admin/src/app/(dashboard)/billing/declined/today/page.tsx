@@ -20,6 +20,7 @@ import {
 } from '@crm-eco/ui';
 import Link from 'next/link';
 import { createClient } from '@crm-eco/lib/supabase/client';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { toast } from 'sonner';
 
 interface DeclinedTransaction {
@@ -306,25 +307,24 @@ export default function DeclinedTodayPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Today's Declined Payments</h1>
-          <p className="text-muted-foreground">
-            {filteredTransactions.length} declined transactions totaling {formatCurrency(totalDeclinedAmount)}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={exportDeclines}>
-            <DownloadSimple weight="light" className="h-4 w-4 mr-2" />
-            Export CSV
-          </Button>
-          <Button variant="outline" onClick={fetchDeclinedToday}>
-            <ArrowClockwise weight="light" className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Today's declined payments"
+        description={`${filteredTransactions.length} declined transactions totaling ${formatCurrency(totalDeclinedAmount)}`}
+        icon={<XCircle weight="light" className="w-6 h-6" />}
+        gradient="from-red-500 to-orange-400"
+        actions={
+          <>
+            <Button variant="outline" size="sm" onClick={exportDeclines}>
+              <DownloadSimple weight="light" className="h-4 w-4 mr-2" />
+              Export CSV
+            </Button>
+            <Button variant="outline" size="sm" onClick={fetchDeclinedToday}>
+              <ArrowClockwise weight="light" className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </>
+        }
+      />
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">

@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowClockwise, ArrowLeft, Calendar, CaretLeft, CaretRight, Clock, ClockCounterClockwise, DownloadSimple, Eye, FileText, MagnifyingGlass, User, Users, Warning } from '@phosphor-icons/react';
+import { ArrowClockwise, Calendar, CaretLeft, CaretRight, Clock, ClockCounterClockwise, DownloadSimple, Eye, FileText, MagnifyingGlass, User, Users, Warning } from '@phosphor-icons/react';
 import { useState, useEffect } from 'react';
 import {
   Card,
@@ -24,6 +24,7 @@ import Link from 'next/link';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { PageHeader } from '@/components/ui/PageHeader';
 
 interface RetroInvoice {
   id: string;
@@ -258,38 +259,32 @@ export default function RetroInvoicingPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link href="/invoices">
-            <Button variant="ghost" size="icon">
-              <ArrowLeft weight="light" className="h-4 w-4" />
+      <PageHeader
+        backHref="/invoices"
+        backLabel="Invoices"
+        title="Retro invoicing"
+        description="Manage retroactive invoices and audit trail"
+        actions={
+          <>
+            <Button variant="outline" size="sm" onClick={exportRetroInvoices}>
+              <DownloadSimple weight="light" className="mr-1.5 h-4 w-4" aria-hidden />
+              Export
             </Button>
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold">Retro Invoicing</h1>
-            <p className="text-muted-foreground">Manage retroactive invoices and audit trail</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={exportRetroInvoices}>
-            <DownloadSimple weight="light" className="h-4 w-4 mr-2" />
-            Export
-          </Button>
-          <Link href="/invoices/generate/individual">
-            <Button variant="outline">
-              <User weight="light" className="h-4 w-4 mr-2" />
-              Individual Retro
-            </Button>
-          </Link>
-          <Link href="/invoices/generate/group">
-            <Button>
-              <Users weight="light" className="h-4 w-4 mr-2" />
-              Group Retro
-            </Button>
-          </Link>
-        </div>
-      </div>
+            <Link href="/invoices/generate/individual">
+              <Button variant="outline" size="sm">
+                <User weight="light" className="mr-1.5 h-4 w-4" aria-hidden />
+                Individual retro
+              </Button>
+            </Link>
+            <Link href="/invoices/generate/group">
+              <Button size="sm">
+                <Users weight="light" className="mr-1.5 h-4 w-4" aria-hidden />
+                Group retro
+              </Button>
+            </Link>
+          </>
+        }
+      />
 
       {/* Warning Banner */}
       <Card className="border-amber-200 bg-amber-50">

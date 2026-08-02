@@ -1,10 +1,10 @@
 'use client';
 
-import { ArrowLeft } from '@phosphor-icons/react';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, Button, Input, Label } from '@crm-eco/ui';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { createClient } from '@crm-eco/lib/supabase/client';
 
 interface PlanRow {
@@ -81,15 +81,12 @@ export default function NewPriceChangePage() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      <div className="flex items-center gap-3">
-        <Link href="/billing/price-changes">
-          <Button variant="ghost" size="sm">
-            <ArrowLeft weight="light" className="mr-2 h-4 w-4" />
-            Back
-          </Button>
-        </Link>
-        <h1 className="text-2xl font-bold tracking-tight">Schedule Price Change</h1>
-      </div>
+      <PageHeader
+        backHref="/billing/price-changes"
+        backLabel="Price changes"
+        title="Schedule price change"
+        description="Set a future date and new amount for a plan"
+      />
 
       <Card>
         <CardHeader>

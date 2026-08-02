@@ -31,6 +31,7 @@ import {
 } from '@crm-eco/ui';
 import { format, formatDistanceToNow, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, addMonths, subMonths, isSameDay, getDay, startOfWeek, endOfWeek } from 'date-fns';
 import { toast } from 'sonner';
+import { PageHeader } from '@/components/ui/PageHeader';
 
 interface JobDefinition {
   id: string;
@@ -419,33 +420,34 @@ export default function SchedulerPage() {
   return (
     <>
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">Job Scheduler</h1>
-            <p className="text-slate-500">Configure scheduled jobs and automation</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center border rounded-lg p-1">
-              <button
-                onClick={() => setViewMode('list')}
-                className={`p-2 rounded ${viewMode === 'list' ? 'bg-slate-100' : 'hover:bg-slate-50'}`}
-              >
-                <List weight="light" className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setViewMode('calendar')}
-                className={`p-2 rounded ${viewMode === 'calendar' ? 'bg-slate-100' : 'hover:bg-slate-50'}`}
-              >
-                <GridNine weight="light" className="w-4 h-4" />
-              </button>
-            </div>
-            <Button onClick={openCreateModal}>
-              <Plus weight="light" className="w-4 h-4 mr-2" />
-              New Schedule
-            </Button>
-          </div>
-        </div>
+        <PageHeader
+          title="Job scheduler"
+          description="Configure scheduled jobs and automation"
+          actions={
+            <>
+              <div className="flex items-center border rounded-lg p-1">
+                <button
+                  type="button"
+                  onClick={() => setViewMode('list')}
+                  className={`p-2 rounded ${viewMode === 'list' ? 'bg-slate-100' : 'hover:bg-slate-50'}`}
+                >
+                  <List weight="light" className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode('calendar')}
+                  className={`p-2 rounded ${viewMode === 'calendar' ? 'bg-slate-100' : 'hover:bg-slate-50'}`}
+                >
+                  <GridNine weight="light" className="w-4 h-4" />
+                </button>
+              </div>
+              <Button size="sm" onClick={openCreateModal}>
+                <Plus weight="light" className="w-4 h-4 mr-2" />
+                New schedule
+              </Button>
+            </>
+          }
+        />
 
         {/* View Content */}
         {loading ? (

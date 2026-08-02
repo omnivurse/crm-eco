@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from '@crm-eco/ui';
 import { format } from 'date-fns';
+import { PageHeader } from '@/components/ui/PageHeader';
 // Commission payout type (tables may not be in generated types yet)
 interface CommissionPayout {
   id: string;
@@ -300,23 +301,20 @@ export default function CommissionPayoutsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Commission Payouts</h1>
-          <p className="text-slate-500">
-            Generate and process agent commission payouts
-          </p>
-        </div>
-        <Button onClick={generatePayouts} disabled={generating}>
-          {generating ? (
-            <CircleNotch weight="light" className="h-4 w-4 mr-2 animate-spin" />
-          ) : (
-            <Plus weight="light" className="h-4 w-4 mr-2" />
-          )}
-          Generate Payouts
-        </Button>
-      </div>
+      <PageHeader
+        title="Commission payouts"
+        description="Generate and process agent commission payouts"
+        actions={
+          <Button size="sm" onClick={generatePayouts} disabled={generating}>
+            {generating ? (
+              <CircleNotch weight="light" className="mr-1.5 h-4 w-4 animate-spin" aria-hidden />
+            ) : (
+              <Plus weight="light" className="mr-1.5 h-4 w-4" aria-hidden />
+            )}
+            Generate payouts
+          </Button>
+        }
+      />
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

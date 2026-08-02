@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowLeft, ChartBar, CircleNotch, FloppyDisk, GearSix, Play, Table, WarningCircle } from '@phosphor-icons/react';
+import { CaretLeft, ChartBar, CircleNotch, FloppyDisk, GearSix, Play, Table, WarningCircle } from '@phosphor-icons/react';
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -19,6 +19,7 @@ import {
 import { ExportButton, type ExportFormat } from '@crm-eco/ui/components/export-button';
 import { DateRangePicker, type DateRange } from '@crm-eco/ui/components/date-range-picker';
 import { getTemplateById, exportData, downloadExport } from '@crm-eco/shared';
+import { EntityPageHeader } from '@/components/ui/EntityPageHeader';
 
 export default function AdminTemplateDetailPage() {
   const params = useParams();
@@ -46,14 +47,14 @@ export default function AdminTemplateDetailPage() {
     return (
       <div className="text-center py-16">
         <WarningCircle weight="light" className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-        <h1 className="text-xl font-bold text-slate-900 mb-2">Template Not Found</h1>
+        <h1 className="mb-2 text-xl font-semibold text-slate-900">Template not found</h1>
         <p className="text-slate-500 mb-4">
           The template you're looking for doesn't exist.
         </p>
         <Link href="/reports/templates">
           <Button variant="outline">
-            <ArrowLeft weight="light" className="w-4 h-4 mr-2" />
-            Back to Templates
+            <CaretLeft weight="light" className="mr-1.5 h-4 w-4" aria-hidden />
+            Back to templates
           </Button>
         </Link>
       </div>
@@ -165,51 +166,45 @@ export default function AdminTemplateDetailPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
-        <div>
-          <Link
-            href="/reports/templates"
-            className="flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 mb-2"
-          >
-            <ArrowLeft weight="light" className="w-4 h-4" />
-            Back to Templates
-          </Link>
-          <h1 className="text-2xl font-bold text-slate-900">{template.name}</h1>
-          <p className="text-slate-600 mt-0.5">{template.description}</p>
-          <div className="flex items-center gap-2 mt-2">
-            <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+      <EntityPageHeader
+        backHref="/reports/templates"
+        backLabel="Templates"
+        title={template.name}
+        description={template.description}
+        badges={
+          <>
+            <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 capitalize">
               {template.category}
             </span>
             <span className="text-xs px-2 py-0.5 rounded-full bg-[#0891b2]/10 text-[#0891b2]">
               {template.dataSource}
             </span>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <Button
-            onClick={handleRunReport}
-            disabled={isRunning}
-          >
+          </>
+        }
+        secondaryActions={
+          <>
+            <ExportButton onExport={handleExport} disabled={results.length === 0} />
+            <Button variant="outline" size="sm" onClick={handleSaveReport} disabled={isSaving}>
+              {isSaving ? (
+                <CircleNotch weight="light" className="mr-1.5 h-4 w-4 animate-spin" aria-hidden />
+              ) : (
+                <FloppyDisk weight="light" className="mr-1.5 h-4 w-4" aria-hidden />
+              )}
+              Save report
+            </Button>
+          </>
+        }
+        primaryAction={
+          <Button size="sm" onClick={handleRunReport} disabled={isRunning}>
             {isRunning ? (
-              <CircleNotch weight="light" className="w-4 h-4 mr-2 animate-spin" />
+              <CircleNotch weight="light" className="mr-1.5 h-4 w-4 animate-spin" aria-hidden />
             ) : (
-              <Play weight="light" className="w-4 h-4 mr-2" />
+              <Play weight="light" className="mr-1.5 h-4 w-4" aria-hidden />
             )}
-            {isRunning ? 'Running...' : 'Run Report'}
+            {isRunning ? 'Running...' : 'Run report'}
           </Button>
-          <ExportButton onExport={handleExport} disabled={results.length === 0} />
-          <Button variant="outline" onClick={handleSaveReport} disabled={isSaving}>
-            {isSaving ? (
-              <CircleNotch weight="light" className="w-4 h-4 mr-2 animate-spin" />
-            ) : (
-              <FloppyDisk weight="light" className="w-4 h-4 mr-2" />
-            )}
-            FloppyDisk Report
-          </Button>
-        </div>
-      </div>
+        }
+      />
 
       {/* Error Alert */}
       {error && (

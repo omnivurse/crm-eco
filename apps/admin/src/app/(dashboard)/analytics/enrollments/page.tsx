@@ -3,6 +3,7 @@ import { Suspense } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Badge } from '@crm-eco/ui';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { getActiveTenant } from '@/lib/tenant';
+import { PageHeader } from '@/components/ui/PageHeader';
 
 // ---------------------------------------------------------------------------
 // Enrollment analytics (apps/admin /analytics/enrollments).
@@ -166,19 +167,17 @@ async function EnrollmentsContent() {
 
   return (
     <div className="space-y-6 pb-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Enrollment Analytics</h1>
-          <p className="text-slate-500">
-            Enrollments created in the last {MONTHS} months — volume by month, status breakdown, and conversion.
-          </p>
-        </div>
-        <Badge variant="outline" className="whitespace-nowrap">
-          <CalendarBlank weight="light" className="w-3 h-3 mr-1" />
-          Last {MONTHS} months
-        </Badge>
-      </div>
+      <PageHeader
+        title="Enrollment analytics"
+        description={`Enrollments created in the last ${MONTHS} months — volume by month, status breakdown, and conversion.`}
+        icon={<ChartBar weight="light" className="h-6 w-6" />}
+        actions={
+          <Badge variant="outline" className="whitespace-nowrap">
+            <CalendarBlank weight="light" className="mr-1 h-3 w-3" aria-hidden />
+            Last {MONTHS} months
+          </Badge>
+        }
+      />
 
       {error && (
         <Card className="border-amber-200 bg-amber-50">

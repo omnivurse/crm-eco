@@ -28,6 +28,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@crm-eco/ui/components/dialog';
+import { PageHeader } from '@/components/ui/PageHeader';
 
 interface SentEmail {
   id: string;
@@ -155,19 +156,17 @@ export default function EmailHistoryPage() {
 
   return (
     <div className="p-8 space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">Email History</h1>
-          <p className="text-slate-600 mt-1">
-            View all sent emails and their delivery status
-          </p>
-        </div>
-        <Button variant="outline" onClick={loadEmails}>
-          <ArrowClockwise weight="light" className="w-4 h-4 mr-2" />
-          Refresh
-        </Button>
-      </div>
+      <PageHeader
+        title="Email history"
+        description="View all sent emails and their delivery status"
+        icon={<EnvelopeSimple weight="light" className="h-6 w-6" />}
+        actions={
+          <Button variant="outline" size="sm" onClick={loadEmails}>
+            <ArrowClockwise weight="light" className="mr-1.5 h-4 w-4" aria-hidden />
+            Refresh
+          </Button>
+        }
+      />
 
       {/* Filters */}
       <div className="flex gap-4">

@@ -1,10 +1,11 @@
-import { ArrowLeft, EnvelopeSimple, PencilSimple } from '@phosphor-icons/react/dist/ssr';
+import { EnvelopeSimple, PencilSimple } from '@phosphor-icons/react/dist/ssr';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { Button } from '@crm-eco/ui/components/button';
 import { Badge } from '@crm-eco/ui/components/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@crm-eco/ui/components/card';
+import { EntityPageHeader } from '@/components/ui/EntityPageHeader';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -40,18 +41,13 @@ export default async function PreviewTemplatePage({ params }: PageProps) {
 
   return (
     <div className="p-8 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="space-y-1">
-          <Link
-            href="/communications/templates"
-            className="inline-flex items-center text-sm text-slate-500 hover:text-slate-700"
-          >
-            <ArrowLeft weight="light" className="w-4 h-4 mr-1" />
-            Back to Templates
-          </Link>
-          <div className="flex items-center gap-2">
-            <h1 className="text-3xl font-bold text-slate-900">{template.name}</h1>
+      <EntityPageHeader
+        backHref="/communications/templates"
+        backLabel="Templates"
+        title={template.name}
+        subtitle={<span className="font-mono">{template.slug}</span>}
+        badges={
+          <>
             {template.is_system && (
               <Badge variant="outline" className="text-xs">
                 System
@@ -60,16 +56,17 @@ export default async function PreviewTemplatePage({ params }: PageProps) {
             <Badge variant={template.is_active ? 'default' : 'outline'}>
               {template.is_active ? 'Active' : 'Inactive'}
             </Badge>
-          </div>
-          <p className="text-sm text-slate-500 font-mono">{template.slug}</p>
-        </div>
-        <Link href={`/communications/templates/${id}`}>
-          <Button variant="outline">
-            <PencilSimple weight="light" className="w-4 h-4 mr-2" />
-            PencilSimple
-          </Button>
-        </Link>
-      </div>
+          </>
+        }
+        primaryAction={
+          <Link href={`/communications/templates/${id}`}>
+            <Button variant="outline" size="sm">
+              <PencilSimple weight="light" className="mr-1.5 h-4 w-4" aria-hidden />
+              Edit
+            </Button>
+          </Link>
+        }
+      />
 
       {/* Email envelope metadata */}
       <Card>

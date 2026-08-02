@@ -18,6 +18,7 @@ import {
 } from '@crm-eco/ui/components/table';
 import { toast } from 'sonner';
 import { enrollPublicBaseUrl } from '@/lib/enroll-url';
+import { PageHeader } from '@/components/ui/PageHeader';
 
 interface Agent {
   id: string;
@@ -176,15 +177,13 @@ export default function AgentLinksPage() {
 
   return (
     <div className="p-8 space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">Agent Enrollment Links</h1>
-          <p className="text-slate-600 mt-1">
-            Manage unique enrollment links for each agent
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        backHref="/enrollment-links"
+        backLabel="Enrollment links"
+        title="Agent enrollment links"
+        description="Manage unique enrollment links for each agent"
+        icon={<Users weight="light" className="h-6 w-6" />}
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

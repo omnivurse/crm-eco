@@ -1,9 +1,7 @@
-import { ArrowLeft } from '@phosphor-icons/react/dist/ssr';
 import { notFound } from 'next/navigation';
-import Link from 'next/link';
-import { Button } from '@crm-eco/ui';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { VendorForm } from '@/components/vendors/VendorForm';
+import { EntityPageHeader } from '@/components/ui/EntityPageHeader';
 import { getActiveTenant } from '@/lib/tenant';
 
 async function getVendor(id: string) {
@@ -35,20 +33,12 @@ export default async function EditVendorPage({
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <Link href={`/vendors/${vendor.id}`}>
-          <Button variant="ghost" size="icon" className="rounded-full">
-            <ArrowLeft weight="light" className="w-5 h-5" />
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Edit Vendor</h1>
-          <p className="text-slate-500 mt-0.5">
-            Update {vendor.name} settings
-          </p>
-        </div>
-      </div>
+      <EntityPageHeader
+        backHref={`/vendors/${vendor.id}`}
+        backLabel={vendor.name}
+        title="Edit vendor"
+        description={`Update ${vendor.name} settings`}
+      />
 
       {/* Form */}
       <VendorForm initialData={vendor} />

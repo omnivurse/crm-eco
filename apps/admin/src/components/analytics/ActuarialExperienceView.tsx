@@ -2,6 +2,8 @@
 
 import { CaretDown, CaretUp, CurrencyDollar, DownloadSimple, FileText, Heart, Pulse, ShieldCheck, TrendUp, Users, Warning } from '@phosphor-icons/react';
 import { useState, useCallback } from 'react';
+import { Button } from '@crm-eco/ui/components/button';
+import { PageHeader } from '@/components/ui/PageHeader';
 import {
   BarChart,
   Bar,
@@ -590,23 +592,16 @@ export function ActuarialExperienceView({ data }: { data: ActuarialData }) {
 
   return (
     <div className="space-y-8 pb-8">
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Actuarial Experience Data</h1>
-          <p className="text-sm text-slate-500 mt-1">
-            De-identified, aggregated financial experience -- {data.periodMonths}-month lookback.
-            <span className="ml-2 text-slate-400">Generated {generatedDate}</span>
-          </p>
-        </div>
-        <button
-          onClick={exportAll}
-          className="flex items-center gap-2 px-4 py-2.5 bg-slate-800 text-white text-sm font-semibold rounded-xl hover:bg-slate-700 transition-colors shadow-sm"
-        >
-          <DownloadSimple weight="light" className="w-4 h-4" />
-          Export All CSVs
-        </button>
-      </div>
+      <PageHeader
+        title="Actuarial experience data"
+        description={`De-identified, aggregated financial experience — ${data.periodMonths}-month lookback. Generated ${generatedDate}`}
+        actions={
+          <Button type="button" size="sm" onClick={exportAll}>
+            <DownloadSimple weight="light" className="w-4 h-4 mr-2" aria-hidden />
+            Export all CSVs
+          </Button>
+        }
+      />
 
       {/* Privacy badge */}
       <div className="flex items-center gap-2 px-4 py-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-sm text-emerald-800">

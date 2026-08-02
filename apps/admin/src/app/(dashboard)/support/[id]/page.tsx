@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { CaretLeft, Lock } from '@phosphor-icons/react/dist/ssr';
+import { Lock } from '@phosphor-icons/react/dist/ssr';
 import { format } from 'date-fns';
 import {
   Badge,
@@ -19,6 +19,7 @@ import {
 } from '@crm-eco/lib';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { getActiveTenant } from '@/lib/tenant';
+import { EntityPageHeader } from '@/components/ui/EntityPageHeader';
 import { AdminTicketReplyForm } from './AdminTicketReplyForm';
 import { AdminTicketStatusForm } from './AdminTicketStatusForm';
 
@@ -81,47 +82,46 @@ export default async function AdminSupportTicketPage({
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 p-6">
-      <Link
-        href="/support"
-        className="inline-flex items-center text-sm text-[var(--adm-cyan)] hover:underline"
-      >
-        <CaretLeft weight="light" className="mr-1 h-4 w-4" />
-        Back to support queue
-      </Link>
-
-      <div className="space-y-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{ticket.subject}</h1>
-          <Badge variant="secondary">
-            {getTicketCategoryLabel(ticket.category as TicketCategory)}
-          </Badge>
-          <Badge>{getTicketStatusLabel(ticket.status as TicketStatus)}</Badge>
-          <Badge variant="outline">
-            {getTicketPriorityLabel(ticket.priority as TicketPriority)}
-          </Badge>
-        </div>
-        <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-slate-500">
-          <span>
-            Opened{' '}
-            {ticket.created_at
-              ? format(new Date(ticket.created_at), 'MMM d, yyyy h:mm a')
-              : '—'}
-          </span>
-          {member && ticket.member_id && (
+      <EntityPageHeader
+        backHref="/support"
+        backLabel="Support queue"
+        title={ticket.subject}
+        subtitle={
+          <div className="flex flex-wrap gap-x-6 gap-y-1">
             <span>
-              Member:{' '}
-              <Link
-                href={`/members/${ticket.member_id}?tab=support`}
-                className="text-[var(--adm-cyan)] hover:underline"
-              >
-                {memberName}
-              </Link>
-              {member.email ? ` · ${member.email}` : ''}
+              Opened{' '}
+              {ticket.created_at
+                ? format(new Date(ticket.created_at), 'MMM d, yyyy h:mm a')
+                : '—'}
             </span>
-          )}
-        </div>
-        <AdminTicketStatusForm ticketId={ticket.id} status={ticket.status} />
-      </div>
+            {member && ticket.member_id && (
+              <span>
+                Member:{' '}
+                <Link
+                  href={`/members/${ticket.member_id}?tab=support`}
+                  className="text-[var(--adm-cyan)] hover:underline"
+                >
+                  {memberName}
+                </Link>
+                {member.email ? ` · ${member.email}` : ''}
+              </span>
+            )}
+          </div>
+        }
+        badges={
+          <>
+            <Badge variant="secondary">
+              {getTicketCategoryLabel(ticket.category as TicketCategory)}
+            </Badge>
+            <Badge>{getTicketStatusLabel(ticket.status as TicketStatus)}</Badge>
+            <Badge variant="outline">
+              {getTicketPriorityLabel(ticket.priority as TicketPriority)}
+            </Badge>
+          </>
+        }
+      />
+
+      <AdminTicketStatusForm ticketId={ticket.id} status={ticket.status} />
 
       <Card>
         <CardHeader>

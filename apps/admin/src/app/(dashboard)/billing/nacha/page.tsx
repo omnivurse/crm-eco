@@ -1,6 +1,7 @@
 'use client';
 
-import { ArrowClockwise, ArrowLeft, Buildings, Calendar, CheckCircle, CircleNotch, Clock, CurrencyDollar, DownloadSimple, FileText, UploadSimple, Warning, XCircle } from '@phosphor-icons/react';
+import { ArrowClockwise, Buildings, Calendar, CheckCircle, CircleNotch, Clock, CurrencyDollar, DownloadSimple, FileText, UploadSimple, Warning, XCircle } from '@phosphor-icons/react';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import {
@@ -37,7 +38,6 @@ import {
 } from '@crm-eco/ui';
 import { format, formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
-import Link from 'next/link';
 
 interface NachaFile {
   id: string;
@@ -488,30 +488,26 @@ export default function NachaPage() {
   return (
     <>
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link href="/billing">
-              <Button variant="ghost" size="icon">
-                <ArrowLeft weight="light" className="w-4 h-4" />
+        <PageHeader
+          backHref="/billing"
+          backLabel="Back to billing"
+          title="NACHA / ACH"
+          description="Export and import ACH batch files"
+          icon={<Buildings weight="light" className="w-6 h-6" />}
+          gradient="from-amber-500 to-orange-400"
+          actions={
+            <>
+              <Button variant="outline" size="sm" onClick={() => setShowImportModal(true)}>
+                <UploadSimple weight="light" className="w-4 h-4 mr-2" />
+                Import return file
               </Button>
-            </Link>
-            <div>
-              <h1 className="text-2xl font-bold text-slate-900">NACHA / ACH</h1>
-              <p className="text-slate-500">Export and import ACH batch files</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => setShowImportModal(true)}>
-              <UploadSimple weight="light" className="w-4 h-4 mr-2" />
-              Import Return File
-            </Button>
-            <Button onClick={() => setShowExportModal(true)}>
-              <DownloadSimple weight="light" className="w-4 h-4 mr-2" />
-              Export NACHA
-            </Button>
-          </div>
-        </div>
+              <Button size="sm" onClick={() => setShowExportModal(true)}>
+                <DownloadSimple weight="light" className="w-4 h-4 mr-2" />
+                Export NACHA
+              </Button>
+            </>
+          }
+        />
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList>

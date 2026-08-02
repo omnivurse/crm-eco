@@ -1,9 +1,8 @@
 'use client';
 
-import { ArrowLeft, ArrowSquareOut, Copy, DownloadSimple, Palette } from '@phosphor-icons/react';
+import { ArrowSquareOut, Copy, DownloadSimple, Palette } from '@phosphor-icons/react';
 import { useEffect, useState, useRef } from 'react';
 import { useParams } from 'next/navigation';
-import Link from 'next/link';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { QRCodeSVG } from 'qrcode.react';
 import { Button } from '@crm-eco/ui/components/button';
@@ -19,6 +18,7 @@ import {
 } from '@crm-eco/ui/components/select';
 import { toast } from 'sonner';
 import { enrollPublicUrl } from '@/lib/enroll-url';
+import { EntityPageHeader } from '@/components/ui/EntityPageHeader';
 
 interface LandingPage {
   id: string;
@@ -139,18 +139,12 @@ export default function QRCodePage() {
 
   return (
     <div className="p-8 space-y-8">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <Link href={`/enrollment-links/${id}`}>
-          <Button variant="ghost" size="icon">
-            <ArrowLeft weight="light" className="w-4 h-4" />
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">QR Code: {landingPage.name}</h1>
-          <p className="text-slate-600">Generate and customize a QR code for your enrollment link</p>
-        </div>
-      </div>
+      <EntityPageHeader
+        backHref={`/enrollment-links/${id}`}
+        backLabel="Landing page"
+        title={`QR code: ${landingPage.name}`}
+        description="Generate and customize a QR code for your enrollment link"
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* QR Code Preview */}

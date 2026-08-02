@@ -701,7 +701,7 @@ function IuaLevelDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{level ? 'PencilSimple IUA Level' : 'Add IUA Level'}</DialogTitle>
+          <DialogTitle>{level ? 'Edit IUA level' : 'Add IUA level'}</DialogTitle>
           <DialogDescription>
             Configure the Initial Unshareable Amount option
           </DialogDescription>
@@ -812,7 +812,7 @@ function AgeBracketDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{bracket ? 'PencilSimple Age Bracket' : 'Add Age Bracket'}</DialogTitle>
+          <DialogTitle>{bracket ? 'Edit age bracket' : 'Add age bracket'}</DialogTitle>
           <DialogDescription>
             Configure age-based pricing tier
           </DialogDescription>
@@ -931,7 +931,7 @@ function BenefitTypeDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{benefit ? 'PencilSimple Benefit' : 'Add Benefit'}</DialogTitle>
+          <DialogTitle>{benefit ? 'Edit benefit' : 'Add benefit'}</DialogTitle>
           <DialogDescription>
             Configure product benefit coverage
           </DialogDescription>

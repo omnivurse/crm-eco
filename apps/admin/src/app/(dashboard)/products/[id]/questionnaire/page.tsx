@@ -1,9 +1,8 @@
-import { ArrowLeft } from '@phosphor-icons/react/dist/ssr';
-import { Badge, Button } from '@crm-eco/ui';
-import Link from 'next/link';
+import { Badge } from '@crm-eco/ui';
 import { notFound } from 'next/navigation';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { QuestionnaireBuilder } from '@/components/products/QuestionnaireBuilder';
+import { EntityPageHeader } from '@/components/ui/EntityPageHeader';
 import { getActiveTenant } from '@/lib/tenant';
 
 async function getProduct(id: string) {
@@ -37,27 +36,24 @@ export default async function ProductQuestionnairePage({
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <Link href={`/products/${product.id}`}>
-          <Button variant="ghost" size="icon">
-            <ArrowLeft weight="light" className="h-5 w-5" />
-          </Button>
-        </Link>
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-slate-900">Questionnaire</h1>
-            {product.questionnaire_template_id && (
-              <Badge variant="default" className="text-xs">
-                Linked to a template
-              </Badge>
-            )}
-          </div>
-          <p className="text-slate-500">
-            {product.name} <span className="font-mono">({product.code})</span>
-          </p>
-        </div>
-      </div>
+      <EntityPageHeader
+        backHref={`/products/${product.id}`}
+        backLabel={product.name}
+        title="Questionnaire"
+        subtitle={
+          <span>
+            {product.name}{' '}
+            <span className="font-mono text-[var(--adm-ink)]/80">({product.code})</span>
+          </span>
+        }
+        badges={
+          product.questionnaire_template_id ? (
+            <Badge variant="default" className="text-xs">
+              Linked to a template
+            </Badge>
+          ) : undefined
+        }
+      />
 
       <QuestionnaireBuilder
         organizationId={organizationId}

@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowClockwise, ArrowCounterClockwise, ArrowLeft, Buildings, Calendar, CaretLeft, CaretRight, CheckCircle, CircleNotch, Clock, Database, Eye, EyeSlash, GearSix, Key, PencilSimple, Play, Plus, ShieldCheck, Trash, Users, Warning, XCircle } from '@phosphor-icons/react';
+import { ArrowClockwise, ArrowCounterClockwise, Buildings, Calendar, CaretLeft, CaretRight, CheckCircle, CircleNotch, Clock, Database, Eye, EyeSlash, GearSix, Key, PencilSimple, Play, Plus, ShieldCheck, Trash, Users, Warning, XCircle } from '@phosphor-icons/react';
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { createClient } from '@crm-eco/lib/supabase/client';
@@ -39,7 +39,7 @@ import {
 } from '@crm-eco/ui';
 import { format, formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
-import Link from 'next/link';
+import { EntityPageHeader } from '@/components/ui/EntityPageHeader';
 
 interface VendorRun {
   id: string;
@@ -136,7 +136,6 @@ export default function VendorOpsPage() {
   const params = useParams();
   const vendorCode = params.vendor as string;
   const vendor = vendorInfo[vendorCode] || { name: vendorCode?.toUpperCase() || 'Unknown', icon: Database, color: 'bg-slate-100 text-slate-600', description: 'Vendor integration' };
-  const VendorIcon = vendor.icon;
 
   const [runs, setRuns] = useState<VendorRun[]>([]);
   const [configs, setConfigs] = useState<VendorConfig[]>([]);
@@ -575,25 +574,18 @@ export default function VendorOpsPage() {
   return (
     <>
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link href="/ops" className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
-              <ArrowLeft weight="light" className="w-5 h-5 text-slate-500" />
-            </Link>
-            <div className={`p-3 rounded-xl ${vendor.color}`}>
-              <VendorIcon className="w-6 h-6" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-slate-900">{vendor.name}</h1>
-              <p className="text-slate-500">{vendor.description}</p>
-            </div>
-          </div>
-          <Button onClick={() => setIsRunModalOpen(true)}>
-            <Play weight="light" className="w-4 h-4 mr-2" />
-            Run Now
-          </Button>
-        </div>
+        <EntityPageHeader
+          backHref="/ops"
+          backLabel="Operations"
+          title={vendor.name}
+          description={vendor.description}
+          primaryAction={
+            <Button size="sm" onClick={() => setIsRunModalOpen(true)}>
+              <Play weight="light" className="w-4 h-4 mr-2" />
+              Run now
+            </Button>
+          }
+        />
 
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -665,7 +657,7 @@ export default function VendorOpsPage() {
             </TabsTrigger>
             <TabsTrigger value="configs">
               <GearSix weight="light" className="w-4 h-4 mr-2" />
-              Configurations
+              Settings
             </TabsTrigger>
             <TabsTrigger value="credentials">
               <Key weight="light" className="w-4 h-4 mr-2" />

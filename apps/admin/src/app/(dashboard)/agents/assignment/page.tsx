@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowClockwise, ArrowRight, CaretLeft, ChartBar, Check, CircleNotch, DotsSixVertical, Eye, MagnifyingGlass, MapPin, PencilSimple, Plus, Target, Trash, Users, X } from '@phosphor-icons/react';
+import { ArrowClockwise, ArrowRight, ChartBar, Check, CircleNotch, DotsSixVertical, Eye, MagnifyingGlass, MapPin, PencilSimple, Plus, Target, Trash, Users, X } from '@phosphor-icons/react';
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import {
@@ -22,9 +22,9 @@ import {
   DialogFooter,
   Checkbox,
 } from '@crm-eco/ui';
-import Link from 'next/link';
 import { toast } from 'sonner';
 import { AssignmentPreview } from '@/components/agents';
+import { PageHeader } from '@/components/ui/PageHeader';
 
 interface AssignmentRule {
   id: string;
@@ -326,22 +326,18 @@ export default function AgentAssignmentPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <Link href="/agents">
-          <Button variant="ghost" size="icon">
-            <CaretLeft weight="light" className="h-5 w-5" />
+      <PageHeader
+        backHref="/agents"
+        backLabel="Agents"
+        title="Agent assignment rules"
+        description="Configure how leads and enrollments are automatically assigned to agents"
+        actions={
+          <Button size="sm" onClick={handleNewRule}>
+            <Plus weight="light" className="h-4 w-4 mr-2" />
+            New rule
           </Button>
-        </Link>
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold text-slate-900">Agent Assignment Rules</h1>
-          <p className="text-slate-500">Configure how leads and enrollments are automatically assigned to agents</p>
-        </div>
-        <Button onClick={handleNewRule}>
-          <Plus weight="light" className="h-4 w-4 mr-2" />
-          New Rule
-        </Button>
-      </div>
+        }
+      />
 
       {/* Info Banner */}
       <Card className="bg-blue-50 border-blue-200">

@@ -1,6 +1,7 @@
 'use client';
 
-import { ArrowClockwise, ArrowLeft, CheckCircle, CircleNotch, DownloadSimple, Eye, FileText, UploadSimple, Warning, XCircle } from '@phosphor-icons/react';
+import { ArrowClockwise, CheckCircle, CircleNotch, Eye, FileText, UploadSimple, Warning, XCircle } from '@phosphor-icons/react';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import {
@@ -323,29 +324,25 @@ export default function NachaImportPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link href="/billing">
-            <Button variant="ghost" size="icon">
-              <ArrowLeft weight="light" className="w-4 h-4" />
+      <PageHeader
+        backHref="/billing/nacha"
+        backLabel="NACHA / ACH"
+        title="NACHA import"
+        description="Process ACH return files from your bank"
+        icon={<UploadSimple weight="light" className="w-6 h-6" />}
+        gradient="from-amber-500 to-orange-400"
+        actions={
+          <>
+            <Link href="/billing/nacha/export">
+              <Button variant="outline" size="sm">Go to export</Button>
+            </Link>
+            <Button size="sm" onClick={() => setShowImportModal(true)}>
+              <UploadSimple weight="light" className="w-4 h-4 mr-2" />
+              Import return file
             </Button>
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">NACHA Import</h1>
-            <p className="text-slate-500">Process ACH return files from your bank</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Link href="/billing/nacha/export">
-            <Button variant="outline">Go to Export</Button>
-          </Link>
-          <Button onClick={() => setShowImportModal(true)}>
-            <UploadSimple weight="light" className="w-4 h-4 mr-2" />
-            Import Return File
-          </Button>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

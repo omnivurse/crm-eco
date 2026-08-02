@@ -1,12 +1,10 @@
 'use client';
 
-import { ArrowLeft } from '@phosphor-icons/react';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { ImportWizard } from '@/components/imports';
-import { Button } from '@crm-eco/ui';
-import Link from 'next/link';
+import { PageHeader } from '@/components/ui/PageHeader';
 
 export default function AgentsImportPage() {
   const router = useRouter();
@@ -50,17 +48,12 @@ export default function AgentsImportPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Link href="/agents">
-          <Button variant="ghost" size="icon">
-            <ArrowLeft weight="light" className="w-4 h-4" />
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Import Agents</h1>
-          <p className="text-slate-500">Upload and import agent data from CSV</p>
-        </div>
-      </div>
+      <PageHeader
+        backHref="/agents"
+        backLabel="Agents"
+        title="Import agents"
+        description="Upload and import agent data from CSV"
+      />
 
       <ImportWizard
         importType="agent"

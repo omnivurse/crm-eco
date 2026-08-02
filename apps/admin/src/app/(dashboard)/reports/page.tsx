@@ -13,6 +13,7 @@ import {
   getTemplatesByCategory,
   type TemplateCategory,
 } from '@crm-eco/shared';
+import { PageHeader } from '@/components/ui/PageHeader';
 
 function QuickStatCard({
   title,
@@ -265,27 +266,24 @@ export default function AdminReportsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Reports & Analytics</h1>
-          <p className="text-slate-600 mt-0.5">
-            Run reports, analyze data, and export insights
-          </p>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <Link href="/reports/templates">
-            <Button>
-              <Plus weight="light" className="w-4 h-4 mr-2" />
-              Create Report
+      <PageHeader
+        title="Reports & analytics"
+        description="Run reports, analyze data, and export insights"
+        icon={<ChartBar weight="light" className="h-6 w-6" />}
+        actions={
+          <>
+            <Link href="/reports/templates">
+              <Button size="sm">
+                <Plus weight="light" className="mr-1.5 h-4 w-4" aria-hidden />
+                Create report
+              </Button>
+            </Link>
+            <Button variant="outline" size="sm">
+              <ArrowClockwise weight="light" className="h-4 w-4" aria-hidden />
             </Button>
-          </Link>
-          <Button variant="outline">
-            <ArrowClockwise weight="light" className="w-4 h-4" />
-          </Button>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {/* Quick Stats Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">

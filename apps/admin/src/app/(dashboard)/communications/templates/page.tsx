@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from '@crm-eco/ui/components/select';
 import { toast } from 'sonner';
+import { PageHeader } from '@/components/ui/PageHeader';
 
 interface EmailTemplate {
   id: string;
@@ -206,21 +207,19 @@ export default function EmailTemplatesPage() {
 
   return (
     <div className="p-8 space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">Email Templates</h1>
-          <p className="text-slate-600 mt-1">
-            Create and manage reusable email templates
-          </p>
-        </div>
-        <Link href="/communications/templates/new">
-          <Button>
-            <Plus weight="light" className="w-4 h-4 mr-2" />
-            Create Template
-          </Button>
-        </Link>
-      </div>
+      <PageHeader
+        title="Email templates"
+        description="Create and manage reusable email templates"
+        icon={<FileText weight="light" className="h-6 w-6" />}
+        actions={
+          <Link href="/communications/templates/new">
+            <Button size="sm">
+              <Plus weight="light" className="mr-1.5 h-4 w-4" aria-hidden />
+              Create template
+            </Button>
+          </Link>
+        }
+      />
 
       {/* Filters */}
       <div className="flex gap-4">
@@ -293,7 +292,7 @@ export default function EmailTemplatesPage() {
                       <DropdownMenuItem asChild>
                         <Link href={`/communications/templates/${template.id}`}>
                           <PencilSimple weight="light" className="w-4 h-4 mr-2" />
-                          PencilSimple
+                          Edit
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>

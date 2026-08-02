@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { Button } from '@crm-eco/ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@crm-eco/ui/components/card';
+import { PageHeader } from '@/components/ui/PageHeader';
 
 interface EmailStats {
   totalSent: number;
@@ -132,29 +133,27 @@ export default function CommunicationsPage() {
 
   return (
     <div className="p-8 space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">Communications</h1>
-          <p className="text-slate-600 mt-1">
-            Manage email templates and track sent communications
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Link href="/communications/templates">
-            <Button variant="outline">
-              <FileText weight="light" className="w-4 h-4 mr-2" />
-              Templates
-            </Button>
-          </Link>
-          <Link href="/communications/compose">
-            <Button>
-              <EnvelopeSimple weight="light" className="w-4 h-4 mr-2" />
-              Compose Email
-            </Button>
-          </Link>
-        </div>
-      </div>
+      <PageHeader
+        title="Communications"
+        description="Manage email templates and track sent communications"
+        icon={<EnvelopeSimple weight="light" className="h-6 w-6" />}
+        actions={
+          <>
+            <Link href="/communications/templates">
+              <Button variant="outline" size="sm">
+                <FileText weight="light" className="mr-1.5 h-4 w-4" aria-hidden />
+                Templates
+              </Button>
+            </Link>
+            <Link href="/communications/compose">
+              <Button size="sm">
+                <EnvelopeSimple weight="light" className="mr-1.5 h-4 w-4" aria-hidden />
+                Compose email
+              </Button>
+            </Link>
+          </>
+        }
+      />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">

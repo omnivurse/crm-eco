@@ -15,6 +15,7 @@ import {
 } from '@crm-eco/ui/components/dropdown-menu';
 import { toast } from 'sonner';
 import { enrollPublicUrl } from '@/lib/enroll-url';
+import { PageHeader } from '@/components/ui/PageHeader';
 
 interface LandingPage {
   id: string;
@@ -134,21 +135,19 @@ export default function EnrollmentLinksPage() {
 
   return (
     <div className="p-8 space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">Enrollment Links</h1>
-          <p className="text-slate-600 mt-1">
-            Create and manage enrollment landing pages for agents and campaigns
-          </p>
-        </div>
-        <Link href="/enrollment-links/new">
-          <Button className="gap-2">
-            <Plus weight="light" className="w-4 h-4" />
-            Create Landing Page
-          </Button>
-        </Link>
-      </div>
+      <PageHeader
+        title="Enrollment links"
+        description="Create and manage enrollment landing pages for agents and campaigns"
+        icon={<Globe weight="light" className="h-6 w-6" />}
+        actions={
+          <Link href="/enrollment-links/new">
+            <Button size="sm">
+              <Plus weight="light" className="mr-1.5 h-4 w-4" aria-hidden />
+              Create landing page
+            </Button>
+          </Link>
+        }
+      />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

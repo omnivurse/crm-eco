@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowClockwise, ArrowLeft, Calendar, CheckCircle, CurrencyDollar, FileText, Play, Users, Warning } from '@phosphor-icons/react';
+import { ArrowClockwise, Calendar, CheckCircle, CurrencyDollar, FileText, Play, Users, Warning } from '@phosphor-icons/react';
 import { useState, useEffect } from 'react';
 import {
   Card,
@@ -20,6 +20,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { toast } from 'sonner';
 import { format, addDays, startOfMonth, endOfMonth } from 'date-fns';
+import { PageHeader } from '@/components/ui/PageHeader';
 
 interface InvoiceGroup {
   id: string;
@@ -295,18 +296,12 @@ export default function GenerateGroupInvoicePage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <Link href="/invoices">
-          <Button variant="ghost" size="icon">
-            <ArrowLeft weight="light" className="h-4 w-4" />
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold">Generate Group Invoices</h1>
-          <p className="text-muted-foreground">Generate invoices for all members in an invoice group</p>
-        </div>
-      </div>
+      <PageHeader
+        backHref="/invoices"
+        backLabel="Invoices"
+        title="Generate group invoices"
+        description="Generate invoices for all members in an invoice group"
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Form */}

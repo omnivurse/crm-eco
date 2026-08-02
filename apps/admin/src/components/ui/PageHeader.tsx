@@ -71,8 +71,8 @@ export function PageHeader({
           <>
             <h1
               className={cn(
-                'font-bold tracking-tight text-[var(--adm-ink)] break-words min-w-0',
-                size === 'large' ? 'text-3xl' : size === 'small' ? 'text-xl' : 'text-2xl',
+                'font-semibold tracking-tight text-[var(--adm-ink)] break-words min-w-0',
+                size === 'large' ? 'text-2xl sm:text-3xl' : size === 'small' ? 'text-lg' : 'text-xl sm:text-2xl',
               )}
             >
               {title}

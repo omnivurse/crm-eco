@@ -13,6 +13,7 @@ import {
 } from '@crm-eco/ui/components/audit-log-filters';
 import { ExportButton } from '@crm-eco/ui/components/export-button';
 import { Button } from '@crm-eco/ui/components/button';
+import { PageHeader } from '@/components/ui/PageHeader';
 import {
   Sheet,
   SheetContent,
@@ -134,52 +135,47 @@ export function AuditLogsClient({ initialLogs, users, profile }: AuditLogsClient
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Audit Logs</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Track system activity and security events
-          </p>
-        </div>
+      <PageHeader
+        title="Audit logs"
+        description="Track system activity and security events"
+        actions={
+          <>
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-500/10 rounded-lg border border-emerald-200 dark:border-emerald-500/20">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75 animate-ping" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+              </span>
+              <span className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
+                Live
+              </span>
+            </div>
 
-        <div className="flex items-center gap-3">
-          {/* Live indicator */}
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-500/10 rounded-lg border border-emerald-200 dark:border-emerald-500/20">
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75 animate-ping" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-            </span>
-            <span className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
-              Live
-            </span>
-          </div>
+            <Button variant="outline" size="sm" onClick={() => auditFeed.refresh()}>
+              <ArrowClockwise weight="light" className="w-4 h-4 mr-2" />
+              Refresh
+            </Button>
 
-          <Button variant="outline" size="sm" onClick={() => auditFeed.refresh()}>
-            <ArrowClockwise weight="light" className="w-4 h-4 mr-2" />
-            Refresh
-          </Button>
-
-          <ExportButton
-            onExport={handleExport}
-            disabled={isExporting}
-            options={[
-              {
-                format: 'csv',
-                label: 'CSV',
-                description: 'Spreadsheet format',
-                icon: <FileXls weight="light" className="w-4 h-4" />,
-              },
-              {
-                format: 'json',
-                label: 'JSON',
-                description: 'Raw data format',
-                icon: <File weight="light" className="w-4 h-4" />,
-              },
-            ]}
-          />
-        </div>
-      </div>
+            <ExportButton
+              onExport={handleExport}
+              disabled={isExporting}
+              options={[
+                {
+                  format: 'csv',
+                  label: 'CSV',
+                  description: 'Spreadsheet format',
+                  icon: <FileXls weight="light" className="w-4 h-4" />,
+                },
+                {
+                  format: 'json',
+                  label: 'JSON',
+                  description: 'Raw data format',
+                  icon: <File weight="light" className="w-4 h-4" />,
+                },
+              ]}
+            />
+          </>
+        }
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

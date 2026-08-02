@@ -21,7 +21,7 @@ export default async function EditTemplatePage({ params }: PageProps) {
   }
 
   return (
-    <div className="p-8">
+    <div className="space-y-6">
       <EmailTemplateForm template={template} />
     </div>
   );

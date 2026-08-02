@@ -6,6 +6,7 @@ import { createClient } from '@crm-eco/lib/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle, Badge, Button } from '@crm-eco/ui';
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
+import { PageHeader } from '@/components/ui/PageHeader';
 
 interface OpsStats {
   totalJobs: number;
@@ -142,27 +143,26 @@ export default function OpsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Operations</h1>
-          <p className="text-slate-500">Monitor and manage system operations</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Link href="/ops/scheduler">
-            <Button variant="outline">
-              <Calendar weight="light" className="w-4 h-4 mr-2" />
-              Scheduler
-            </Button>
-          </Link>
-          <Link href="/ops/jobs">
-            <Button>
-              <Clock weight="light" className="w-4 h-4 mr-2" />
-              View Jobs
-            </Button>
-          </Link>
-        </div>
-      </div>
+      <PageHeader
+        title="Operations"
+        description="Monitor and manage system operations"
+        actions={
+          <>
+            <Link href="/ops/scheduler">
+              <Button variant="outline" size="sm">
+                <Calendar weight="light" className="w-4 h-4 mr-2" />
+                Scheduler
+              </Button>
+            </Link>
+            <Link href="/ops/jobs">
+              <Button size="sm">
+                <Clock weight="light" className="w-4 h-4 mr-2" />
+                View jobs
+              </Button>
+            </Link>
+          </>
+        }
+      />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

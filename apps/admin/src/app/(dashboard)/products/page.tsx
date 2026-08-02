@@ -1,8 +1,9 @@
 import { CurrencyDollar, Package, Plus, Pulse, Sparkle, Tag } from '@phosphor-icons/react/dist/ssr';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Badge } from '@crm-eco/ui';
+import { Card, CardContent, Button } from '@crm-eco/ui';
 import Link from 'next/link';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { ProductsClient } from '@/components/products/ProductsClient';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { getActiveTenant } from '@/lib/tenant';
 
 async function getProducts() {
@@ -40,89 +41,86 @@ export default async function ProductsPage() {
   const categories = Array.from(new Set(products.map((p: { coverage_category: string | null }) => p.coverage_category).filter(Boolean)));
   const totalMonthlyValue = products.reduce((sum: number, p: { monthly_share: number | null }) => sum + (p.monthly_share || 0), 0);
 
+  const avgMonthly =
+    products.length > 0 ? Math.round(totalMonthlyValue / products.length) : 0;
+
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Products</h1>
-          <p className="text-sm sm:text-base text-slate-500">Manage health plans, pricing, and features</p>
-        </div>
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <Link href="/products/rate-settings" className="flex-1 sm:flex-none">
-            <Button variant="outline" className="w-full sm:w-auto">
-              <CurrencyDollar weight="light" className="h-4 w-4 mr-2" />
-              <span className="hidden xs:inline">Rate Settings</span>
-            </Button>
-          </Link>
-          <Link href="/products/features" className="flex-1 sm:flex-none">
-            <Button variant="outline" className="w-full sm:w-auto">
-              <Sparkle weight="light" className="h-4 w-4 mr-2" />
-              <span className="hidden xs:inline">Features</span>
-            </Button>
-          </Link>
-          <Link href="/products/new" className="flex-1 sm:flex-none">
-            <Button className="w-full sm:w-auto">
-              <Plus weight="light" className="h-4 w-4 mr-2" />
-              Add Product
-            </Button>
-          </Link>
-        </div>
-      </div>
+      <PageHeader
+        title="Products"
+        description="Manage health plans, pricing, and features"
+        icon={<Package weight="light" className="h-6 w-6" />}
+        gradient="from-[var(--adm-teal)] to-[var(--adm-cyan)]"
+        actions={
+          <>
+            <Link href="/products/rate-settings">
+              <Button variant="outline" size="sm">
+                <CurrencyDollar weight="light" className="mr-1.5 h-4 w-4" aria-hidden />
+                Rate settings
+              </Button>
+            </Link>
+            <Link href="/products/features">
+              <Button variant="outline" size="sm">
+                <Sparkle weight="light" className="mr-1.5 h-4 w-4" aria-hidden />
+                Features
+              </Button>
+            </Link>
+            <Link href="/products/new">
+              <Button size="sm">
+                <Plus weight="light" className="mr-1.5 h-4 w-4" aria-hidden />
+                Add product
+              </Button>
+            </Link>
+          </>
+        }
+      />
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
-                <Package weight="light" className="h-5 w-5 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{products.length}</p>
-                <p className="text-sm text-muted-foreground">Total Products</p>
-              </div>
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <Card className="border-[var(--adm-hairline)] shadow-sm">
+          <CardContent className="flex items-center gap-3 pt-5 pb-5">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-50">
+              <Package weight="light" className="h-5 w-5 text-[var(--adm-teal)]" aria-hidden />
+            </div>
+            <div>
+              <p className="text-xl font-semibold tabular-nums tracking-tight">{products.length}</p>
+              <p className="text-xs text-[var(--adm-muted)]">Total</p>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center">
-                <Pulse weight="light" className="h-5 w-5 text-green-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{activeProducts.length}</p>
-                <p className="text-sm text-muted-foreground">Active Products</p>
-              </div>
+        <Card className="border-[var(--adm-hairline)] shadow-sm">
+          <CardContent className="flex items-center gap-3 pt-5 pb-5">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50">
+              <Pulse weight="light" className="h-5 w-5 text-emerald-600" aria-hidden />
+            </div>
+            <div>
+              <p className="text-xl font-semibold tabular-nums tracking-tight">
+                {activeProducts.length}
+              </p>
+              <p className="text-xs text-[var(--adm-muted)]">Active</p>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center">
-                <Tag weight="light" className="h-5 w-5 text-purple-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{categories.length}</p>
-                <p className="text-sm text-muted-foreground">Categories</p>
-              </div>
+        <Card className="border-[var(--adm-hairline)] shadow-sm">
+          <CardContent className="flex items-center gap-3 pt-5 pb-5">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100">
+              <Tag weight="light" className="h-5 w-5 text-slate-600" aria-hidden />
+            </div>
+            <div>
+              <p className="text-xl font-semibold tabular-nums tracking-tight">
+                {categories.length}
+              </p>
+              <p className="text-xs text-[var(--adm-muted)]">Categories</p>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-teal-50 flex items-center justify-center">
-                <CurrencyDollar weight="light" className="h-5 w-5 text-teal-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">
-                  ${(totalMonthlyValue / products.length || 0).toFixed(0)}
-                </p>
-                <p className="text-sm text-muted-foreground">Avg Monthly</p>
-              </div>
+        <Card className="border-[var(--adm-hairline)] shadow-sm">
+          <CardContent className="flex items-center gap-3 pt-5 pb-5">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-50">
+              <CurrencyDollar weight="light" className="h-5 w-5 text-teal-700" aria-hidden />
+            </div>
+            <div>
+              <p className="text-xl font-semibold tabular-nums tracking-tight">${avgMonthly}</p>
+              <p className="text-xs text-[var(--adm-muted)]">Avg monthly</p>
             </div>
           </CardContent>
         </Card>

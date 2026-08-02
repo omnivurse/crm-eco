@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowLeft, ArrowUpRight, Calendar, ChartBar, CurrencyDollar, FileText, GearSix, Lightning, MagnifyingGlass, SquaresFour, Target, TrendUp, Users, Wallet } from '@phosphor-icons/react';
+import { ArrowUpRight, Calendar, ChartBar, CurrencyDollar, FileText, GearSix, Lightning, MagnifyingGlass, SquaresFour, Target, TrendUp, Users, Wallet } from '@phosphor-icons/react';
 import { useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@crm-eco/ui/components/button';
@@ -12,6 +12,7 @@ import {
   getTemplatesByCategory,
   type TemplateCategory,
 } from '@crm-eco/shared';
+import { PageHeader } from '@/components/ui/PageHeader';
 
 const categoryIcons: Record<string, React.ElementType> = {
   all: SquaresFour,
@@ -116,32 +117,24 @@ export default function AdminTemplatesPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <div>
-          <Link
-            href="/reports"
-            className="flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 mb-2"
-          >
-            <ArrowLeft weight="light" className="w-4 h-4" />
-            Back to Reports
-          </Link>
-          <h1 className="text-2xl font-bold text-slate-900">Report Templates</h1>
-          <p className="text-slate-600 mt-0.5">
-            Browse and run pre-built report templates
-          </p>
-        </div>
-
-        <div className="relative">
-          <MagnifyingGlass weight="light" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <Input
-            placeholder="MagnifyingGlass templates..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 w-72"
-          />
-        </div>
-      </div>
+      <PageHeader
+        backHref="/reports"
+        backLabel="Reports"
+        title="Report templates"
+        description="Browse and run pre-built report templates"
+        icon={<ChartBar weight="light" className="h-6 w-6" />}
+        actions={
+          <div className="relative">
+            <MagnifyingGlass weight="light" className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" aria-hidden />
+            <Input
+              placeholder="Search templates..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 w-72"
+            />
+          </div>
+        }
+      />
 
       {/* Category Tabs */}
       <Tabs value={activeCategory} onValueChange={(v) => setActiveCategory(v as TemplateCategory)}>

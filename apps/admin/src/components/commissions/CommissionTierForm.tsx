@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowLeft, CircleNotch, FloppyDisk } from '@phosphor-icons/react';
+import { CircleNotch, FloppyDisk } from '@phosphor-icons/react';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@crm-eco/lib/supabase/client';
@@ -20,7 +20,7 @@ import {
   Label,
   Switch,
 } from '@crm-eco/ui';
-import Link from 'next/link';
+import { EntityPageHeader } from '@/components/ui/EntityPageHeader';
 // Commission tier type (tables may not be in generated types yet)
 interface CommissionTier {
   id: string;
@@ -198,42 +198,37 @@ export function CommissionTierForm({ tier, organizationId }: CommissionTierFormP
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link href="/commissions/tiers">
-            <Button variant="ghost" size="icon">
-              <ArrowLeft weight="light" className="h-5 w-5" />
-            </Button>
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">
-              {isEdit ? 'Edit Commission Tier' : 'New Commission Tier'}
-            </h1>
-            <p className="text-slate-500">
-              {isEdit ? `Editing ${tier.name}` : 'Define a new commission level'}
-            </p>
-          </div>
-        </div>
-        <div className="flex gap-2">
-          {isEdit && (
+      <EntityPageHeader
+        backHref="/commissions/tiers"
+        backLabel="Commission tiers"
+        title={isEdit ? 'Edit commission tier' : 'New commission tier'}
+        description={isEdit ? `Editing ${tier.name}` : 'Define a new commission level'}
+        secondaryActions={
+          isEdit ? (
             <Button
               type="button"
               variant="destructive"
+              size="sm"
               onClick={handleDelete}
               disabled={deleting || saving}
             >
-              {deleting && <CircleNotch weight="light" className="h-4 w-4 mr-2 animate-spin" />}
+              {deleting && (
+                <CircleNotch weight="light" className="h-4 w-4 mr-2 animate-spin" aria-hidden />
+              )}
               Delete
             </Button>
-          )}
-          <Button type="submit" disabled={saving}>
-            {saving && <CircleNotch weight="light" className="h-4 w-4 mr-2 animate-spin" />}
-            <FloppyDisk weight="light" className="h-4 w-4 mr-2" />
-            {isEdit ? 'FloppyDisk Changes' : 'Create Tier'}
+          ) : undefined
+        }
+        primaryAction={
+          <Button type="submit" disabled={saving} size="sm">
+            {saving && (
+              <CircleNotch weight="light" className="h-4 w-4 mr-2 animate-spin" aria-hidden />
+            )}
+            <FloppyDisk weight="light" className="h-4 w-4 mr-2" aria-hidden />
+            {isEdit ? 'Save changes' : 'Create tier'}
           </Button>
-        </div>
-      </div>
+        }
+      />
 
       {/* Basic Information */}
       <Card>

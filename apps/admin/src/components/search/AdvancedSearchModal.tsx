@@ -397,7 +397,7 @@ export function AdvancedSearchModal({
             Add Funnel
           </Button>
 
-          {/* FloppyDisk MagnifyingGlass */}
+          {/* Save search */}
           {showSaveInput ? (
             <div className="flex items-center gap-2 pt-2">
               <Input
@@ -422,7 +422,7 @@ export function AdvancedSearchModal({
               className="text-slate-500"
             >
               <FloppyDisk weight="light" className="w-4 h-4 mr-1" />
-              FloppyDisk this search
+              Save this search
             </Button>
           )}
         </div>

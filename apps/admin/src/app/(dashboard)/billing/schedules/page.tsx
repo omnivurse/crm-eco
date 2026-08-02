@@ -1,6 +1,7 @@
 'use client';
 
-import { ArrowClockwise, ArrowLeft, Calendar, CircleNotch, CreditCard, CurrencyDollar, Pause, Play, XCircle } from '@phosphor-icons/react';
+import { ArrowClockwise, Calendar, CircleNotch, CreditCard, CurrencyDollar, Pause, Play, XCircle } from '@phosphor-icons/react';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, Button } from '@crm-eco/ui';
 import { StatusBadge } from '@crm-eco/ui/components/status-badge';
@@ -216,25 +217,20 @@ export default function BillingSchedulesPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" size="sm" asChild>
-            <Link href="/billing">
-              <ArrowLeft weight="light" className="h-4 w-4 mr-2" />
-              Back
-            </Link>
+      <PageHeader
+        backHref="/billing"
+        backLabel="Back to billing"
+        title="Billing schedules"
+        description="Manage recurring billing for members"
+        icon={<Calendar weight="light" className="w-6 h-6" />}
+        gradient="from-amber-500 to-orange-400"
+        actions={
+          <Button variant="outline" size="sm" onClick={loadSchedules}>
+            <ArrowClockwise weight="light" className="h-4 w-4 mr-2" />
+            Refresh
           </Button>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">Billing Schedules</h1>
-            <p className="text-slate-500">Manage recurring billing for members</p>
-          </div>
-        </div>
-        <Button variant="outline" size="sm" onClick={loadSchedules}>
-          <ArrowClockwise weight="light" className="h-4 w-4 mr-2" />
-          Refresh
-        </Button>
-      </div>
+        }
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

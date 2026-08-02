@@ -1,5 +1,6 @@
-import { ArrowLeft, Calendar, Play, X } from '@phosphor-icons/react/dist/ssr';
+import { Calendar, Play, X } from '@phosphor-icons/react/dist/ssr';
 import { Card, CardContent, CardHeader, CardTitle, Badge, Button } from '@crm-eco/ui';
+import { EntityPageHeader } from '@/components/ui/EntityPageHeader';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { format } from 'date-fns';
@@ -28,6 +29,17 @@ interface AuditRow {
   old_amount: number | null;
   new_amount: number | null;
   applied_at: string;
+}
+
+function statusBadge(status: string) {
+  switch (status) {
+    case 'pending':    return <Badge variant="secondary">Pending</Badge>;
+    case 'processing': return <Badge variant="secondary">Processing</Badge>;
+    case 'completed':  return <Badge>Completed</Badge>;
+    case 'failed':     return <Badge variant="destructive">Failed</Badge>;
+    case 'cancelled':  return <Badge variant="outline">Cancelled</Badge>;
+    default:           return <Badge variant="outline">{status}</Badge>;
+  }
 }
 
 async function getSchedule(id: string): Promise<ScheduleRow | null> {
@@ -73,37 +85,33 @@ export default async function PriceChangeDetailPage({ params }: { params: Promis
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Link href="/billing/price-changes">
-            <Button variant="ghost" size="sm">
-              <ArrowLeft weight="light" className="mr-2 h-4 w-4" />
-              Back
-            </Button>
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">Price Change</h1>
-            <p className="text-sm text-muted-foreground">{schedule.plans?.name ?? 'Unknown plan'}</p>
-          </div>
-        </div>
-
-        {schedule.status === 'pending' && (
-          <div className="flex gap-2">
+      <EntityPageHeader
+        backHref="/billing/price-changes"
+        backLabel="Price changes"
+        title="Price change"
+        subtitle={schedule.plans?.name ?? 'Unknown plan'}
+        badges={statusBadge(schedule.status)}
+        primaryAction={
+          schedule.status === 'pending' ? (
             <form action={`/api/price-changes/${id}/execute`} method="POST">
               <Button type="submit" size="sm">
                 <Play weight="light" className="mr-2 h-4 w-4" />
-                Execute Now
+                Execute now
               </Button>
             </form>
+          ) : undefined
+        }
+        secondaryActions={
+          schedule.status === 'pending' ? (
             <form action={`/api/price-changes/${id}/cancel`} method="POST">
               <Button type="submit" variant="outline" size="sm">
                 <X weight="light" className="mr-2 h-4 w-4" />
                 Cancel
               </Button>
             </form>
-          </div>
-        )}
-      </div>
+          ) : undefined
+        }
+      />
 
       <div className="grid gap-6 md:grid-cols-2">
         <Card>

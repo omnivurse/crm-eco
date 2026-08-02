@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from '@crm-eco/ui';
 import { format, formatDistanceToNow } from 'date-fns';
+import { PageHeader } from '@/components/ui/PageHeader';
 // Commission transaction type (tables may not be in generated types yet)
 interface CommissionTransaction {
   id: string;
@@ -256,15 +257,10 @@ export default function CommissionTransactionsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Commission Transactions</h1>
-          <p className="text-slate-500">
-            Review and manage individual commission transactions
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title="Commission transactions"
+        description="Review and manage individual commission transactions"
+      />
 
       {/* Filters & Bulk Actions */}
       <Card>

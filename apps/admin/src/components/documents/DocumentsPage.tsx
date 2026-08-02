@@ -3,6 +3,7 @@
 import { CaretRight, ClipboardText, FileText, Star, Trash } from '@phosphor-icons/react';
 import { useState, useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { useAdminAuth } from './useAdminAuth';
 import { supabase } from './useAdminAuth';
 import type { ViewMode, SortField, SortDir, ActiveTab } from './types';
@@ -250,8 +251,8 @@ export function DocumentsPage() {
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
-        <div>
-          <h1 className="text-xl font-semibold">Documents</h1>
+        <div className="min-w-0 flex-1">
+          <PageHeader title="Documents" size="small" className="mb-0" />
           {activeTab === 'files' && (
             <nav className="flex items-center gap-1 text-sm text-gray-500 mt-0.5">
               {breadcrumbs.map((crumb, i) => (

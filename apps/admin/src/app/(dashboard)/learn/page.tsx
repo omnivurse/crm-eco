@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Input } from '@crm-eco/ui/components/input';
 import { Button } from '@crm-eco/ui/components/button';
 import { cn } from '@crm-eco/ui';
+import { PageHeader } from '@/components/ui/PageHeader';
 const CATEGORIES = [
   {
     id: 'getting-started',
@@ -146,35 +147,21 @@ export default function LearnPage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
-      {/* Hero Section */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#0891b2] via-[#06b6d4] to-[#059669] p-8 md:p-12">
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute -top-20 -right-20 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
-          <div className="absolute -bottom-20 -left-20 w-48 h-48 bg-white/10 rounded-full blur-2xl" />
-        </div>
+      <PageHeader
+        title="Learning center"
+        description="Learn how to manage members, process enrollments, handle billing, and more with step-by-step guides and expert tips."
+        icon={<BookOpen weight="light" className="h-6 w-6" />}
+        size="large"
+      />
 
-        <div className="relative z-10">
-          <div className="flex items-center gap-2 mb-4">
-            <BookOpen weight="light" className="w-8 h-8 text-white" />
-            <span className="text-white/80 font-medium">Learning Center</span>
-          </div>
-          <h1 className="text-3xl md:text-4xl font-bold text-white mb-4">
-            Master the Admin Portal
-          </h1>
-          <p className="text-lg text-white/80 max-w-2xl mb-8">
-            Learn how to manage members, process enrollments, handle billing, and more with step-by-step guides and expert tips.
-          </p>
-
-          <div className="relative max-w-xl">
-            <MagnifyingGlass weight="light" className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-            <Input
-              placeholder="MagnifyingGlass tutorials, guides, and features..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-12 h-14 text-lg bg-white/95 border-0 shadow-xl"
-            />
-          </div>
-        </div>
+      <div className="relative max-w-xl">
+        <MagnifyingGlass weight="light" className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" aria-hidden />
+        <Input
+          placeholder="Search tutorials, guides, and features..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pl-12 h-12"
+        />
       </div>
 
       {/* Quick Links */}

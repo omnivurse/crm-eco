@@ -1,6 +1,6 @@
 'use client';
 
-import { CaretLeft, Check, CircleNotch, Key, Lock, MagnifyingGlass, PencilSimple, ShieldCheck, Trash, UserPlus, Users, X } from '@phosphor-icons/react';
+import { Check, CircleNotch, Key, Lock, MagnifyingGlass, PencilSimple, ShieldCheck, Trash, UserPlus, Users, X } from '@phosphor-icons/react';
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import {
@@ -20,9 +20,9 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@crm-eco/ui';
-import Link from 'next/link';
 import { toast } from 'sonner';
 import { inviteStaffUser } from './actions';
+import { PageHeader } from '@/components/ui/PageHeader';
 
 interface User {
   id: string;
@@ -230,22 +230,18 @@ export default function SecuritySettingsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <Link href="/settings">
-          <Button variant="ghost" size="icon">
-            <CaretLeft weight="light" className="h-5 w-5" />
+      <PageHeader
+        backHref="/settings"
+        backLabel="Settings"
+        title="User security"
+        description="Manage users, roles, and permissions"
+        actions={
+          <Button size="sm" onClick={() => setIsInviteModalOpen(true)}>
+            <UserPlus weight="light" className="h-4 w-4 mr-2" />
+            Invite user
           </Button>
-        </Link>
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold text-slate-900">User Security</h1>
-          <p className="text-slate-500">Manage users, roles, and permissions</p>
-        </div>
-        <Button onClick={() => setIsInviteModalOpen(true)}>
-          <UserPlus weight="light" className="h-4 w-4 mr-2" />
-          Invite User
-        </Button>
-      </div>
+        }
+      />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

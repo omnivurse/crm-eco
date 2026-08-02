@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowClockwise, ArrowLeft, Calendar, CheckCircle, Eye, MagnifyingGlass, PencilSimple, Plus, Trash, UserMinus, UserPlus, Users, XCircle } from '@phosphor-icons/react';
+import { ArrowClockwise, Calendar, CheckCircle, Eye, MagnifyingGlass, PencilSimple, Plus, Trash, UserMinus, UserPlus, Users, XCircle } from '@phosphor-icons/react';
 import { useState, useEffect } from 'react';
 import {
   Card,
@@ -25,6 +25,7 @@ import { createClient } from '@crm-eco/lib/supabase/client';
 import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { PageHeader } from '@/components/ui/PageHeader';
 
 interface InvoiceGroup {
   id: string;
@@ -367,24 +368,18 @@ export default function InvoiceGroupsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link href="/invoices">
-            <Button variant="ghost" size="icon">
-              <ArrowLeft weight="light" className="h-4 w-4" />
-            </Button>
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold">Invoice Groups</h1>
-            <p className="text-muted-foreground">Manage groups for batch invoice generation</p>
-          </div>
-        </div>
-        <Button onClick={openCreateModal}>
-          <Plus weight="light" className="h-4 w-4 mr-2" />
-          New Group
-        </Button>
-      </div>
+      <PageHeader
+        backHref="/invoices"
+        backLabel="Invoices"
+        title="Invoice groups"
+        description="Manage groups for batch invoice generation"
+        actions={
+          <Button size="sm" onClick={openCreateModal}>
+            <Plus weight="light" className="mr-1.5 h-4 w-4" aria-hidden />
+            New group
+          </Button>
+        }
+      />
 
       {/* Groups List */}
       {loading ? (
@@ -495,11 +490,11 @@ export default function InvoiceGroupsPage() {
         </div>
       )}
 
-      {/* Create/PencilSimple Modal */}
+      {/* Create/Edit modal */}
       <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{editingGroup ? 'PencilSimple Invoice Group' : 'Create Invoice Group'}</DialogTitle>
+            <DialogTitle>{editingGroup ? 'Edit invoice group' : 'Create invoice group'}</DialogTitle>
             <DialogDescription>Configure the invoice group settings</DialogDescription>
           </DialogHeader>
 
