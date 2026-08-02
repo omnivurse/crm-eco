@@ -7,6 +7,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { pickActiveMemberByName } from '../members/memberDedup';
+import type { Json } from '../types/database';
 import {
   projectAdultIntakeToMember,
   projectAdultIntakeToCustomFields,
@@ -178,8 +179,8 @@ export async function createHouseholdDependentsForEnrollment(
 
 export function buildAdultIntakeCustomFields(
   member: AdultIntakeProjectionInput,
-  base: Record<string, unknown> = {}
-): Record<string, unknown> {
+  base: Record<string, Json | undefined> = {}
+): Record<string, Json | undefined> {
   return {
     ...base,
     ...projectAdultIntakeToCustomFields(member),

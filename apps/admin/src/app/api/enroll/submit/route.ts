@@ -498,7 +498,7 @@ export async function POST(request: NextRequest) {
         organizationId: orgId,
         enrollmentId,
         memberId,
-        email: normalizedEmail,
+        email: member.email.toLowerCase().trim(),
         firstName: member.first_name,
         lastName: member.last_name,
         phone: member.phone ?? '',

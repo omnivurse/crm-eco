@@ -3,6 +3,8 @@
  * data onto members columns, enrollment snapshot, and custom_fields.
  */
 
+import type { Json } from '../types/database';
+
 export interface AdultIntakeProjectionInput {
   first_name: string;
   last_name: string;
@@ -145,8 +147,8 @@ export function projectAdultIntakeToSnapshot(
 /** Contact / emergency metadata for enrollments.custom_fields. */
 export function projectAdultIntakeToCustomFields(
   input: AdultIntakeProjectionInput
-): Record<string, unknown> {
-  const out: Record<string, unknown> = {};
+): Record<string, Json | undefined> {
+  const out: Record<string, Json | undefined> = {};
   if (input.preferred_contact) out.preferred_contact = input.preferred_contact;
   if (input.may_contact_email != null) out.may_contact_email = input.may_contact_email;
   if (input.leave_message_home != null) out.leave_message_home = input.leave_message_home;
