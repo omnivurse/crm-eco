@@ -337,6 +337,7 @@ export default function CrmLandingPage() {
       {/* Dashboard Preview */}
       <div className="lp-dashboard-preview">
         <div className="lp-dashboard-frame">
+          <div className="lp-bezel-inner">
           <div className="lp-dashboard-topbar">
             <span className="lp-dot-r" /><span className="lp-dot-y" /><span className="lp-dot-g" />
             <span className="lp-dashboard-url">crm.doublehelix.com/dashboard</span>
@@ -396,6 +397,7 @@ export default function CrmLandingPage() {
               </div>
             </div>
           </div>
+          </div>
         </div>
       </div>
 
@@ -418,11 +420,13 @@ export default function CrmLandingPage() {
         <div className="lp-features-grid">
           {features.map((f, i) => (
             <div key={f.title} className="lp-feature-card" data-delay={i * 100}>
-              <div className={`lp-feature-icon ${f.color}`}>
-                {featureIcons[f.icon as keyof typeof featureIcons]}
+              <div className="lp-bezel-inner">
+                <div className={`lp-feature-icon ${f.color}`}>
+                  {featureIcons[f.icon as keyof typeof featureIcons]}
+                </div>
+                <h3>{f.title}</h3>
+                <p>{f.desc}</p>
               </div>
-              <h3>{f.title}</h3>
-              <p>{f.desc}</p>
             </div>
           ))}
         </div>
@@ -459,9 +463,11 @@ export default function CrmLandingPage() {
             { n: '3', title: 'Scale & Optimize', desc: 'Track commissions in real-time, monitor retention metrics, and use AI-powered insights to grow your book of business.' },
           ].map((s, i) => (
             <div key={s.n} className="lp-workflow-step" data-delay={i * 200}>
-              <div className={`lp-step-number step-${s.n}`}>{s.n}</div>
-              <h3>{s.title}</h3>
-              <p>{s.desc}</p>
+              <div className="lp-bezel-inner">
+                <div className={`lp-step-number step-${s.n}`}>{s.n}</div>
+                <h3>{s.title}</h3>
+                <p>{s.desc}</p>
+              </div>
             </div>
           ))}
         </div>
@@ -491,21 +497,23 @@ export default function CrmLandingPage() {
           </div>
 
           <div className="lp-demo-visual lp-reveal" data-delay="200">
-            <div className="lp-demo-panel-header">
-              <span className="lp-demo-panel-title">Contact Manager</span>
-              <span className="lp-demo-panel-badge">Live</span>
-            </div>
-            <div ref={contactPanelRef} className="lp-demo-panel-body">
-              {contacts.slice(0, 5).map(c => (
-                <div key={c.initials} className="lp-contact-card">
-                  <div className="lp-contact-avatar" style={{ background: c.gradient }}>{c.initials}</div>
-                  <div className="lp-contact-info">
-                    <div className="lp-contact-name">{c.name}</div>
-                    <div className="lp-contact-meta">{c.plan} — {c.amount}</div>
+            <div className="lp-bezel-inner">
+              <div className="lp-demo-panel-header">
+                <span className="lp-demo-panel-title">Contact Manager</span>
+                <span className="lp-demo-panel-badge">Live</span>
+              </div>
+              <div ref={contactPanelRef} className="lp-demo-panel-body">
+                {contacts.slice(0, 5).map(c => (
+                  <div key={c.initials} className="lp-contact-card">
+                    <div className="lp-contact-avatar" style={{ background: c.gradient }}>{c.initials}</div>
+                    <div className="lp-contact-info">
+                      <div className="lp-contact-name">{c.name}</div>
+                      <div className="lp-contact-meta">{c.plan} — {c.amount}</div>
+                    </div>
+                    <span className={`lp-contact-status ${c.statusClass}`}>{c.status}</span>
                   </div>
-                  <span className={`lp-contact-status ${c.statusClass}`}>{c.status}</span>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -520,13 +528,15 @@ export default function CrmLandingPage() {
         <div className="lp-testimonials-grid">
           {testimonials.map((t, i) => (
             <div key={t.initials} className="lp-testimonial-card" data-delay={i * 150}>
-              <div className="lp-testimonial-stars">{'★★★★★'}</div>
-              <div className="lp-testimonial-text">{t.text}</div>
-              <div className="lp-testimonial-author">
-                <div className="lp-testimonial-avatar">{t.initials}</div>
-                <div>
-                  <div className="lp-testimonial-name">{t.name}</div>
-                  <div className="lp-testimonial-role">{t.role}</div>
+              <div className="lp-bezel-inner">
+                <div className="lp-testimonial-stars">{'★★★★★'}</div>
+                <div className="lp-testimonial-text">{t.text}</div>
+                <div className="lp-testimonial-author">
+                  <div className="lp-testimonial-avatar">{t.initials}</div>
+                  <div>
+                    <div className="lp-testimonial-name">{t.name}</div>
+                    <div className="lp-testimonial-role">{t.role}</div>
+                  </div>
                 </div>
               </div>
             </div>

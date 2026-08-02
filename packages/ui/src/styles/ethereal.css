@@ -9,8 +9,8 @@ html.light {
   --lp-void: #f7f8fa;
   --lp-panel: #ffffff;
   --lp-fg: #0f172a;
-  --lp-muted: rgba(15, 23, 42, 0.55);
-  --lp-muted-soft: rgba(15, 23, 42, 0.4);
+  --lp-muted: rgba(15, 23, 42, 0.62);
+  --lp-muted-soft: rgba(15, 23, 42, 0.48);
   --lp-hairline: rgba(15, 23, 42, 0.1);
   --lp-cyan: #0891b2;
   --lp-cyan-bright: #06b6d4;
