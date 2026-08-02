@@ -158,24 +158,24 @@ function WorkflowBuilderContent() {
   return (
     <div className="h-screen flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-4 py-3 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 sm:gap-4">
+        <div className="flex items-center gap-4 min-w-0 flex-1">
+          <Button variant="ghost" size="icon" className="shrink-0" asChild>
             <Link href="/crm/settings/automations">
               <ArrowLeft className="w-4 h-4" />
             </Link>
           </Button>
-          <div>
+          <div className="min-w-0 flex-1">
             <button
               onClick={() => {
                 setTempName(workflowName);
                 setNameDialogOpen(true);
               }}
-              className="font-semibold text-slate-900 dark:text-white hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
+              className="font-semibold text-slate-900 dark:text-white hover:text-teal-600 dark:hover:text-teal-400 transition-colors break-words text-left"
             >
               {workflowName}
             </button>
-            <div className="flex items-center gap-2 mt-0.5">
+            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
               <span className={`px-2 py-0.5 text-xs rounded-full ${
                 workflowStatus === 'active'
                   ? 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400'
@@ -192,7 +192,7 @@ function WorkflowBuilderContent() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 shrink-0 w-full sm:w-auto sm:justify-end">
           {workflowStatus === 'active' ? (
             <Button variant="outline" onClick={handleToggleStatus}>
               <Pause className="w-4 h-4 mr-2" />

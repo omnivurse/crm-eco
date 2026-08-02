@@ -148,9 +148,9 @@ export default function AgentReportsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-900">Reports & Analytics</h1>
-        <div className="flex gap-2">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+        <h1 className="text-2xl font-bold text-slate-900 min-w-0 flex-1">Reports & Analytics</h1>
+        <div className="flex flex-wrap gap-2 shrink-0 w-full sm:w-auto sm:justify-end">
           <Select value={period} onValueChange={setPeriod}>
             <SelectTrigger className="w-[150px]">
               <Calendar weight="light" className="h-4 w-4 mr-2" />

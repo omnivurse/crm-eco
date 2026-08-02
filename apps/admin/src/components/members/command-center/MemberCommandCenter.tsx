@@ -112,23 +112,23 @@ export function MemberCommandCenter({
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-4">
-          <Link href="/members">
+        <div className="flex items-center gap-4 min-w-0 flex-1">
+          <Link href="/members" className="shrink-0">
             <Button variant="ghost" size="icon" type="button">
               <ArrowLeft weight="light" className="h-5 w-5" />
             </Button>
           </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-2xl font-bold text-slate-900 break-words">
               {member.first_name} {member.last_name}
             </h1>
-            <p className="text-slate-500">
+            <p className="text-slate-500 break-all">
               {member.email}
               {member.member_number ? ` · #${member.member_number}` : ''}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap shrink-0 w-full sm:w-auto sm:justify-end">
           <Badge variant={statusBadgeVariant(member.status)}>
             {member.status.charAt(0).toUpperCase() + member.status.slice(1)}
           </Badge>

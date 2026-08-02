@@ -51,6 +51,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
+import { IdentityActionsHeader } from '@crm-eco/ui/components/identity-actions-header';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@crm-eco/ui/components/tabs';
 import { Badge } from '@crm-eco/ui/components/badge';
 import { Input } from '@crm-eco/ui/components/input';
@@ -1238,15 +1239,24 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
             </div>
             )}
 
-            {/* Title row */}
-            <div className={cn('flex items-start justify-between gap-4', headerCompact && 'items-center')}>
-              <div className={cn('flex items-start gap-4 min-w-0', headerCompact && 'items-center gap-2.5')}>
+            {/* Title row — IdentityActionsHeader owns overflow-safe flex. */}
+            <IdentityActionsHeader
+              breakpoint="xl"
+              align={headerCompact ? 'center' : 'start'}
+              className={cn(headerCompact && 'gap-2')}
+              actionsClassName={cn(
+                'min-w-0 xl:max-w-[min(100%,36rem)]',
+                headerCompact && 'gap-1',
+              )}
+              leading={
                 <RecordAvatarTile
                   name={getRecordDisplayName(record)}
                   moduleKey={module.key}
                   size={headerCompact ? 'sm' : 'lg'}
                 />
-                <div className="min-w-0 flex-1">
+              }
+              identity={
+                <>
                   <h1
                     className={cn(
                       'font-bold text-slate-900 dark:text-white flex flex-wrap items-center gap-x-2 gap-y-0 min-w-0',
@@ -1263,6 +1273,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                       validate={(v) =>
                         v.trim().length === 0 ? 'Title cannot be empty' : null
                       }
+                      className="min-w-0 max-w-full"
                       inputClassName={headerCompact ? 'text-base font-bold' : 'text-2xl font-bold'}
                     />
                     {!headerCompact && (
@@ -1281,9 +1292,9 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                   />
                   )}
                   {/* Meta row: email, phone, status, badges — always visible when sticky */}
-                  <div className={cn('flex items-center gap-3 flex-wrap', headerCompact ? 'mt-0.5' : 'mt-2')}>
-                    <span className="group flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400">
-                      <Mail className="w-3.5 h-3.5" />
+                  <div className={cn('flex items-center gap-x-3 gap-y-1.5 flex-wrap', headerCompact ? 'mt-0.5' : 'mt-2')}>
+                    <span className="group inline-flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400 min-w-0 max-w-full">
+                      <Mail className="w-3.5 h-3.5 shrink-0" />
                       <InlineFieldEditor
                         field="email"
                         value={record.email || ''}
@@ -1298,12 +1309,13 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                             ? null
                             : 'Invalid email';
                         }}
+                        className="min-w-0"
                         display={(v) =>
                           v ? (
                             <a
                               href={`mailto:${v}`}
                               onClick={(e) => e.stopPropagation()}
-                              className="hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
+                              className="hover:text-teal-600 dark:hover:text-teal-400 transition-colors break-all"
                             >
                               {v}
                             </a>
@@ -1312,8 +1324,8 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                       />
                       {record.email && <HeaderCopyButton value={record.email} />}
                     </span>
-                    <span className="group flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400">
-                      <Phone className="w-3.5 h-3.5" />
+                    <span className="group inline-flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400 whitespace-nowrap shrink-0">
+                      <Phone className="w-3.5 h-3.5 shrink-0" />
                       <InlineFieldEditor
                         field="phone"
                         value={record.phone || ''}
@@ -1322,12 +1334,13 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                         ariaLabel="Record phone"
                         onEditStart={() => void setPresenceIntent('editing')}
                         onEditEnd={() => void setPresenceIntent('viewing')}
+                        className="whitespace-nowrap"
                         display={(v) =>
                           v ? (
                             <a
                               href={`tel:${v}`}
                               onClick={(e) => e.stopPropagation()}
-                              className="hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
+                              className="hover:text-teal-600 dark:hover:text-teal-400 transition-colors whitespace-nowrap"
                             >
                               {v}
                             </a>
@@ -1410,11 +1423,10 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                       </Link>
                     )}
                   </div>
-                </div>
-              </div>
-
-              {/* Header Actions — compact mode keeps only high-frequency actions */}
-              <div className={cn('flex flex-wrap items-center gap-2 justify-end shrink-0 min-w-0', headerCompact && 'gap-1')}>
+                </>
+              }
+              actions={
+                <>
                 {!headerCompact && (
                 <PresenceStack
                   participants={presenceParticipants}
@@ -1429,7 +1441,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                     type="button"
                     aria-label="Convert lead to contact"
                     onClick={() => setShowConvertDialog(true)}
-                    className="inline-flex shrink-0 border-emerald-300 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 font-medium"
+                    className="inline-flex shrink-0 border-teal-300 dark:border-teal-500/40 text-teal-800 dark:text-teal-200 hover:bg-teal-50 dark:hover:bg-teal-500/10 font-medium"
                   >
                     <UserCheck className="w-4 h-4 shrink-0 sm:mr-1.5" />
                     <span className="text-xs sm:text-sm">Convert to Contact</span>
@@ -1442,6 +1454,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                     marketType={recordMarketType}
                     effectiveStartDate={recordEffectiveStartDate}
                     showContactAlternative={isLeads}
+                    size="sm"
                   />
                 )}
 
@@ -1698,8 +1711,9 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-              </div>
-            </div>
+                </>
+              }
+            />
 
             {/* Top tabs: Overview / Timeline / Data Privacy */}
             <div className={cn('-mb-px', headerCompact ? 'mt-2' : 'mt-3')}>

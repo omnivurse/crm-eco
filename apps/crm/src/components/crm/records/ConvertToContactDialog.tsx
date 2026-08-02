@@ -234,7 +234,7 @@ export function ConvertToContactDialog({
             <AlertDialogFooter>
               {leadAlreadyConverted && linkedContactId ? (
                 <>
-                  <Button asChild className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white">
+                  <Button asChild className="bg-brand-accent text-white hover:opacity-95">
                     <Link href={`/crm/r/${linkedContactId}`}>
                       View Contact
                       <ArrowRight className="w-4 h-4 ml-2" />
@@ -263,7 +263,7 @@ export function ConvertToContactDialog({
                   event.preventDefault();
                   void handleConvert();
                 }}
-                className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white"
+                className="bg-brand-accent text-white hover:opacity-95"
               >
                 {isConverting ? (
                   <>
@@ -330,7 +330,7 @@ export function ConvertToContactDialog({
             </AlertDialogHeader>
             <AlertDialogFooter className="justify-center sm:justify-center gap-2">
               {result.success && result.contactId && (
-                <Button asChild className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white">
+                <Button asChild className="bg-brand-accent text-white hover:opacity-95">
                   <Link href={`/crm/r/${result.contactId}`}>
                     {result.alreadyConverted ? 'Open Contact' : 'View Contact'}
                     <ArrowRight className="w-4 h-4 ml-2" />

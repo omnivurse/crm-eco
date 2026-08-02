@@ -96,21 +96,21 @@ export default async function AgentDetailPage({ params }: PageProps) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link href="/agents">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+        <div className="flex items-center gap-4 min-w-0 flex-1">
+          <Link href="/agents" className="shrink-0">
             <Button variant="ghost" size="icon">
               <ArrowLeft weight="light" className="h-5 w-5" />
             </Button>
           </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-2xl font-bold text-slate-900 break-words">
               {agent.first_name} {agent.last_name}
             </h1>
-            <p className="text-slate-500">{agent.email}</p>
+            <p className="text-slate-500 break-all">{agent.email}</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 shrink-0 w-full sm:w-auto sm:justify-end">
           <Badge variant={getStatusBadgeVariant(agent.status)}>
             {agent.status.charAt(0).toUpperCase() + agent.status.slice(1)}
           </Badge>

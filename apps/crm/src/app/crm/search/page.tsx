@@ -4,6 +4,7 @@ import { Search, ArrowLeft, User, UserPlus, Building2, DollarSign } from 'lucide
 import { getCurrentProfile } from '@/lib/crm/queries';
 import { createClient } from '@/lib/supabase-server';
 import { notFound } from 'next/navigation';
+import { moduleChipClass } from '@/components/crm/records/v2/tokens';
 
 interface PageProps {
   searchParams: Promise<{ q?: string; module?: string }>;
@@ -16,12 +17,6 @@ const MODULE_ICONS: Record<string, React.ReactNode> = {
   deals: <DollarSign className="w-4 h-4" />,
 };
 
-const MODULE_COLORS: Record<string, string> = {
-  contacts: 'bg-teal-100 text-teal-700 dark:bg-teal-500/20 dark:text-teal-400',
-  leads: 'bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-400',
-  accounts: 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400',
-  deals: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400',
-};
 
 interface SearchRecord {
   id: string;
@@ -108,7 +103,7 @@ async function SearchResults({ query, moduleFilter }: { query: string; moduleFil
       {Object.entries(grouped).map(([moduleKey, moduleRecords]) => {
         const mod = moduleRecords[0]?.crm_modules;
         const moduleName = mod?.name_plural || mod?.name || moduleKey;
-        const colorClass = MODULE_COLORS[moduleKey] || 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300';
+        const colorClass = moduleChipClass(moduleKey);
         const icon = MODULE_ICONS[moduleKey] || <Search className="w-4 h-4" />;
 
         return (

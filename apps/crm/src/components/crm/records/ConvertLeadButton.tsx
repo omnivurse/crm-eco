@@ -29,6 +29,8 @@ interface ConvertLeadButtonProps {
   effectiveStartDate?: string | null;
   /** When true, show Contact-vs-enrollment guidance (lead records). */
   showContactAlternative?: boolean;
+  /** Match sibling header actions (default sm in record headers). */
+  size?: 'default' | 'sm' | 'lg' | 'icon';
 }
 
 function isFutureDate(isoDate?: string | null): boolean {
@@ -47,6 +49,7 @@ export function ConvertLeadButton({
   marketType,
   effectiveStartDate,
   showContactAlternative = true,
+  size = 'sm',
 }: ConvertLeadButtonProps) {
   const convertLabel = getConvertActionLabel(marketType);
   const noun = getMemberNoun(marketType);
@@ -99,12 +102,13 @@ export function ConvertLeadButton({
   return (
     <>
       <Button
+        size={size}
         onClick={() => setShowConfirm(true)}
         disabled={disabled || isConverting}
-        className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white"
+        className="inline-flex shrink-0 bg-brand-accent text-white shadow-sm hover:opacity-95"
       >
-        <UserCheck className="w-4 h-4 mr-2" />
-        {convertLabel}
+        <UserCheck className="w-4 h-4 shrink-0 sm:mr-1.5" />
+        <span className="text-xs font-medium sm:text-sm">{convertLabel}</span>
       </Button>
 
       <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
@@ -149,7 +153,7 @@ export function ConvertLeadButton({
                 <AlertDialogAction
                   onClick={handleConvert}
                   disabled={isConverting}
-                  className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white"
+                  className="bg-brand-accent text-white hover:opacity-95"
                 >
                   {isConverting ? (
                     <>

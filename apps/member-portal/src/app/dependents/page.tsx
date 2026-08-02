@@ -416,13 +416,13 @@ export default function DependentsPage() {
           {dependents.map((dependent) => (
             <Card key={dependent.id}>
               <CardContent className="pt-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-4 min-w-0 flex-1">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-slate-100">
                       <User weight="light" className="h-6 w-6 text-slate-600" aria-hidden />
                     </div>
-                    <div>
-                      <h3 className="font-semibold text-slate-900">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-semibold text-slate-900 break-words">
                         {dependent.first_name} {dependent.last_name}
                       </h3>
                       <div className="flex items-center gap-2 mt-1">

@@ -15,6 +15,7 @@ export * from './components/date-range-picker';
 export * from './components/dialog';
 export * from './components/dropdown-menu';
 export * from './components/export-button';
+export * from './components/identity-actions-header';
 export * from './components/input';
 export * from './components/label';
 export * from './components/popover';

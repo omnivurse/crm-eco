@@ -22,6 +22,7 @@ import {
 import { Button } from '@crm-eco/ui/components/button';
 import { Progress } from '@crm-eco/ui/components/progress';
 import type { CrmModule, CrmField } from '@/lib/crm/types';
+import { resolveModulePalette } from '@/components/crm/records/v2/tokens';
 
 interface ImportWizardProps {
   modules: CrmModule[];
@@ -58,12 +59,6 @@ const MODULE_ICONS: Record<string, React.ReactNode> = {
   accounts: <Building2 className="w-5 h-5" />,
 };
 
-const MODULE_COLORS: Record<string, { text: string; bg: string; border: string }> = {
-  contacts: { text: 'text-teal-600 dark:text-teal-400', bg: 'bg-teal-500/10', border: 'border-teal-500/30' },
-  leads: { text: 'text-violet-600 dark:text-violet-400', bg: 'bg-violet-500/10', border: 'border-violet-500/30' },
-  deals: { text: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30' },
-  accounts: { text: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/30' },
-};
 
 const STEP_LABELS: Record<WizardStep, string> = {
   module: 'Select Module',
@@ -573,7 +568,7 @@ export function ImportWizard({ modules, organizationId, preselectedModule, smart
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {modules.map((module) => {
                 const icon = MODULE_ICONS[module.key] || <FileText className="w-5 h-5" />;
-                const colors = MODULE_COLORS[module.key] || { text: 'text-slate-600 dark:text-slate-400', bg: 'bg-slate-500/10', border: 'border-slate-500/30' };
+                const colors = resolveModulePalette(module.key);
 
                 return (
                   <button

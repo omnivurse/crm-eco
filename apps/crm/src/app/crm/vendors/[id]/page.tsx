@@ -192,24 +192,24 @@ export default function VendorDetailPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" className="rounded-full" asChild>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+        <div className="flex items-center gap-4 min-w-0 flex-1">
+          <Button variant="ghost" size="icon" className="rounded-full shrink-0" asChild>
             <Link href="/crm/vendors">
               <ArrowLeft className="w-5 h-5" />
             </Link>
           </Button>
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 bg-white dark:bg-slate-700 rounded-xl border border-slate-200 dark:border-slate-600 flex items-center justify-center overflow-hidden">
+          <div className="flex items-center gap-4 min-w-0 flex-1">
+            <div className="w-14 h-14 shrink-0 bg-white dark:bg-slate-700 rounded-xl border border-slate-200 dark:border-slate-600 flex items-center justify-center overflow-hidden">
               {vendor.logo_url ? (
                 <Image src={vendor.logo_url} alt={vendor.name} width={40} height={40} className="object-contain" />
               ) : (
                 <Building2 className="w-8 h-8 text-slate-400" />
               )}
             </div>
-            <div>
-              <div className="flex items-center gap-3">
-                <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{vendor.name}</h1>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-3 flex-wrap">
+                <h1 className="text-2xl font-bold text-slate-900 dark:text-white break-words">{vendor.name}</h1>
                 <StatusBadge status={vendor.status} />
               </div>
               <p className="text-slate-500 dark:text-slate-400 mt-0.5">
@@ -218,7 +218,7 @@ export default function VendorDetailPage() {
             </div>
           </div>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3 shrink-0 w-full sm:w-auto sm:justify-end">
           <Button variant="outline" className="gap-2" asChild>
             <Link href={`/crm/vendors/upload?vendor=${vendorId}`}>
               <Upload className="w-4 h-4" />

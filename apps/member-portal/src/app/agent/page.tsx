@@ -128,17 +128,17 @@ export default async function AgentDashboardPage() {
   return (
     <div className="space-y-6">
       {/* Welcome Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-2xl font-bold text-slate-900 break-words">
             Welcome back, {agent.first_name}!
           </h1>
           <p className="text-slate-600">
             Here's what's happening with your enrollments today.
           </p>
         </div>
-        <Link href={`/enroll/${agent.enrollment_code}`} target="_blank">
-          <Button className="gap-2">
+        <Link href={`/enroll/${agent.enrollment_code}`} target="_blank" className="shrink-0 w-full sm:w-auto">
+          <Button className="gap-2 w-full sm:w-auto">
             <FileText weight="light" className="h-4 w-4" />
             New Enrollment
           </Button>

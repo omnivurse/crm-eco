@@ -3,7 +3,9 @@
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@crm-eco/ui/components/button';
+import { IdentityActionsHeader } from '@crm-eco/ui/components/identity-actions-header';
 import { cn } from '@crm-eco/ui/lib/utils';
+import { resolveModulePalette } from '@/components/crm/records/v2/tokens';
 import {
   Plus,
   Upload,
@@ -48,14 +50,6 @@ const MODULE_ICONS: Record<string, React.ReactNode> = {
   tasks: <CheckSquare className="w-5 h-5" />,
 };
 
-const MODULE_COLORS: Record<string, { text: string; bg: string; border: string }> = {
-  contacts: { text: 'text-teal-600 dark:text-teal-400', bg: 'bg-teal-500/10', border: 'border-teal-500/30' },
-  leads: { text: 'text-violet-600 dark:text-violet-400', bg: 'bg-violet-500/10', border: 'border-violet-500/30' },
-  deals: { text: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30' },
-  accounts: { text: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/30' },
-  tasks: { text: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/30' },
-};
-
 export function ModuleHeader({
   module,
   totalCount,
@@ -68,13 +62,12 @@ export function ModuleHeader({
   const router = useRouter();
   const searchParams = useSearchParams();
   const icon = MODULE_ICONS[module.key] || <Users className="w-5 h-5" />;
-  const colors = MODULE_COLORS[module.key] || MODULE_COLORS.contacts;
+  const colors = resolveModulePalette(module.key);
 
   // Check if tree view is currently active
   const currentViewMode = searchParams.get('viewMode');
   const currentTreeGroupBy = searchParams.get('treeGroupBy');
   const isAdvisorTree = currentViewMode === 'tree' && currentTreeGroupBy === 'advisor';
-  const isAgentTree = currentViewMode === 'tree' && currentTreeGroupBy === 'agent';
 
   // Toggle tree view mode for "By Advisor" / "By Agent" buttons
   const handleTreeToggle = (groupBy: 'advisor' | 'agent') => {
@@ -124,146 +117,142 @@ export function ModuleHeader({
 
   return (
     <div className={cn('flex flex-col', className)}>
-      {/* Title Row — the module name lives here and in the tab bar; the old
-          "CRM › Module" breadcrumb was a third redundant echo and a wasted row,
-          so it's dropped on the module list to reclaim vertical space. */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className={cn('p-2 rounded-xl', colors.bg, colors.text)}>
-            {icon}
-          </div>
-          <div className="flex items-baseline gap-2.5">
-            <h1 className="text-xl font-bold text-slate-900 dark:text-white">
+      <IdentityActionsHeader
+        breakpoint="lg"
+        align="center"
+        leading={
+          <div className={cn('p-2 rounded-xl', colors.bg, colors.text)}>{icon}</div>
+        }
+        identity={
+          <div className="flex items-baseline gap-2.5 min-w-0 flex-wrap">
+            <h1 className="text-xl font-bold text-slate-900 dark:text-white truncate">
               {module.name_plural || module.name}
             </h1>
-            <span className="text-sm text-slate-500 dark:text-slate-400 tabular-nums">
+            <span className="text-sm text-slate-500 dark:text-slate-400 tabular-nums shrink-0">
               {totalCount.toLocaleString()} {totalCount === 1 ? 'record' : 'records'}
             </span>
           </div>
-        </div>
-
-        {/* Actions */}
-        <div className="flex items-center gap-2">
-          {/* Quick sort by Advisor / Agent — only for contacts & leads */}
-          {(module.key === 'contacts' || module.key === 'leads') && (
-            <>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleTreeToggle('advisor')}
-                title="Group records by assigned Advisor"
-                className={cn(
-                  'h-9',
-                  isAdvisorTree
-                    ? 'border-teal-300 bg-teal-50 text-teal-700 dark:border-teal-700 dark:bg-teal-950/50 dark:text-teal-300'
-                    : 'border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/5'
-                )}
-              >
-                <UserCheck className="w-4 h-4 mr-1.5" />
-                By Advisor
-              </Button>
-
-              <div className="w-px h-6 bg-slate-200 dark:bg-white/10" />
-            </>
-          )}
-
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-9 border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/5"
-            asChild
-          >
-            <Link href={`/crm/import?module=${module.key}`}>
-              <Upload className="w-4 h-4 mr-1.5" />
-              Import
-            </Link>
-          </Button>
-
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-9 border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/5"
-            onClick={onExport}
-          >
-            <Download className="w-4 h-4 mr-1.5" />
-            Export
-          </Button>
-
-          <Button
-            size="sm"
-            className="h-9 shadow-sm"
-            asChild
-          >
-            <Link href={`/crm/modules/${module.key}/new`}>
-              <Plus className="w-4 h-4 mr-1.5" />
-              New {module.name}
-            </Link>
-          </Button>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9 text-slate-500 hover:text-slate-900 dark:hover:text-white"
-              >
-                <MoreHorizontal className="w-4 h-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48 bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10">
-              <DropdownMenuItem
-                onClick={handleManageFields}
-                className="text-slate-700 dark:text-slate-300 cursor-pointer gap-2"
-              >
-                <Settings className="w-4 h-4" />
-                Manage Fields
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={handleManageViews}
-                className="text-slate-700 dark:text-slate-300 cursor-pointer gap-2"
-              >
-                <LayoutGrid className="w-4 h-4" />
-                Manage Views
-              </DropdownMenuItem>
-              <DropdownMenuSeparator className="bg-slate-200 dark:bg-white/10" />
-              <DropdownMenuItem asChild className="cursor-pointer gap-2">
-                <Link
-                  href={`/crm/imports/update?module=${module.key}`}
-                  prefetch={false}
-                  className="flex items-center gap-2 w-full text-slate-700 dark:text-slate-300"
+        }
+        actions={
+          <>
+            {(module.key === 'contacts' || module.key === 'leads') && (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleTreeToggle('advisor')}
+                  title="Group records by assigned Advisor"
+                  className={cn(
+                    'h-9',
+                    isAdvisorTree
+                      ? 'border-teal-300 bg-teal-50 text-teal-700 dark:border-teal-700 dark:bg-teal-950/50 dark:text-teal-300'
+                      : 'border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/5',
+                  )}
                 >
-                  <RefreshCw className="w-4 h-4" />
-                  Update from CSV
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={handleBulkUpdate}
-                className="text-slate-700 dark:text-slate-300 cursor-pointer gap-2"
+                  <UserCheck className="w-4 h-4 mr-1.5" />
+                  By Advisor
+                </Button>
+                <div className="w-px h-6 bg-slate-200 dark:bg-white/10" />
+              </>
+            )}
+
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-9 border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/5"
+              asChild
+            >
+              <Link href={`/crm/import?module=${module.key}`}>
+                <Upload className="w-4 h-4 mr-1.5" />
+                Import
+              </Link>
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-9 border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/5"
+              onClick={onExport}
+            >
+              <Download className="w-4 h-4 mr-1.5" />
+              Export
+            </Button>
+
+            <Button size="sm" className="h-9 shadow-sm" asChild>
+              <Link href={`/crm/modules/${module.key}/new`}>
+                <Plus className="w-4 h-4 mr-1.5" />
+                New {module.name}
+              </Link>
+            </Button>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                >
+                  <MoreHorizontal className="w-4 h-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="w-48 bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10"
               >
-                <Pencil className="w-4 h-4" />
-                Bulk Update
-                {selectedCount > 0 && (
-                  <span className="ml-auto text-xs bg-teal-100 dark:bg-teal-500/20 text-teal-700 dark:text-teal-300 px-1.5 py-0.5 rounded">
-                    {selectedCount}
-                  </span>
-                )}
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={handleMassDelete}
-                className="text-red-600 dark:text-red-400 cursor-pointer gap-2 focus:text-red-600 dark:focus:text-red-400"
-              >
-                <Trash2 className="w-4 h-4" />
-                Mass Delete
-                {selectedCount > 0 && (
-                  <span className="ml-auto text-xs bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300 px-1.5 py-0.5 rounded">
-                    {selectedCount}
-                  </span>
-                )}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
+                <DropdownMenuItem
+                  onClick={handleManageFields}
+                  className="text-slate-700 dark:text-slate-300 cursor-pointer gap-2"
+                >
+                  <Settings className="w-4 h-4" />
+                  Manage Fields
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={handleManageViews}
+                  className="text-slate-700 dark:text-slate-300 cursor-pointer gap-2"
+                >
+                  <LayoutGrid className="w-4 h-4" />
+                  Manage Views
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="bg-slate-200 dark:bg-white/10" />
+                <DropdownMenuItem asChild className="cursor-pointer gap-2">
+                  <Link
+                    href={`/crm/imports/update?module=${module.key}`}
+                    prefetch={false}
+                    className="flex items-center gap-2 w-full text-slate-700 dark:text-slate-300"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    Update from CSV
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={handleBulkUpdate}
+                  className="text-slate-700 dark:text-slate-300 cursor-pointer gap-2"
+                >
+                  <Pencil className="w-4 h-4" />
+                  Bulk Update
+                  {selectedCount > 0 && (
+                    <span className="ml-auto text-xs bg-teal-100 dark:bg-teal-500/20 text-teal-700 dark:text-teal-300 px-1.5 py-0.5 rounded">
+                      {selectedCount}
+                    </span>
+                  )}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={handleMassDelete}
+                  className="text-red-600 dark:text-red-400 cursor-pointer gap-2 focus:text-red-600 dark:focus:text-red-400"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Mass Delete
+                  {selectedCount > 0 && (
+                    <span className="ml-auto text-xs bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300 px-1.5 py-0.5 rounded">
+                      {selectedCount}
+                    </span>
+                  )}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </>
+        }
+      />
     </div>
   );
 }

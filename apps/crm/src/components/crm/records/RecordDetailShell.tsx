@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
+import { IdentityActionsHeader } from '@crm-eco/ui/components/identity-actions-header';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@crm-eco/ui/components/tabs';
 import { Badge } from '@crm-eco/ui/components/badge';
 import { Input } from '@crm-eco/ui/components/input';
@@ -73,6 +74,7 @@ import {
 import { MergeRecordDialog } from '@/components/crm/records/MergeRecordDialog';
 import { CapacityBadges } from '@/components/shared/capacity-badge';
 import { getRecordDisplayName } from '@/lib/crm/display-name';
+import { resolveModulePalette } from './v2/tokens';
 import { getNoteAuthorDisplay } from '@/lib/crm/note-sanitize';
 import { FollowUpReminderDialog } from './FollowUpReminderDialog';
 import { FollowUpBanner } from './FollowUpBanner';
@@ -114,12 +116,6 @@ const MODULE_ICONS: Record<string, React.ReactNode> = {
   accounts: <Building2 className="w-5 h-5" />,
 };
 
-const MODULE_COLORS: Record<string, { text: string; bg: string; border: string }> = {
-  contacts: { text: 'text-teal-400', bg: 'bg-teal-500/10', border: 'border-teal-500/30' },
-  leads: { text: 'text-violet-400', bg: 'bg-violet-500/10', border: 'border-violet-500/30' },
-  deals: { text: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30' },
-  accounts: { text: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/30' },
-};
 
 function HeaderCopyButton({ value }: { value: string }) {
   const [copied, setCopied] = useState(false);
@@ -255,7 +251,7 @@ export const RecordDetailShell = memo(function RecordDetailShell({
   const showComposer = activeTab === 'timeline';
 
   const icon = MODULE_ICONS[module.key] || <UserCircle className="w-5 h-5" />;
-  const colors = MODULE_COLORS[module.key] || MODULE_COLORS.contacts;
+  const colors = resolveModulePalette(module.key);
 
   const backUrl = `/crm/modules/${module.key}`;
   const isDeals = module.key === 'deals';
@@ -431,36 +427,40 @@ export const RecordDetailShell = memo(function RecordDetailShell({
               <RecordToolbarGlobalSearch currentRecordId={record.id} />
             </div>
 
-            {/* Title Row */}
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex items-center gap-4">
+            <IdentityActionsHeader
+              breakpoint="xl"
+              align="start"
+              actionsClassName="xl:max-w-[min(100%,36rem)]"
+              leading={
                 <div className={cn('p-3 rounded-xl', colors.bg, colors.text)}>
                   {icon}
                 </div>
-                <div>
-                  <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+              }
+              identity={
+                <>
+                  <h1 className="text-2xl font-bold text-slate-900 dark:text-white break-words min-w-0">
                     {getRecordDisplayName(record)}
                   </h1>
-                  <div className="flex items-center gap-3 mt-1">
+                  <div className="flex items-center gap-x-3 gap-y-1.5 mt-1 flex-wrap">
                     {record.email && (
-                      <span className="group flex items-center gap-1">
+                      <span className="group inline-flex items-center gap-1 min-w-0 max-w-full">
                         <a 
                           href={`mailto:${record.email}`}
-                          className="flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
+                          className="inline-flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors min-w-0"
                         >
-                          <Mail className="w-3.5 h-3.5" />
-                          {record.email}
+                          <Mail className="w-3.5 h-3.5 shrink-0" />
+                          <span className="break-all">{record.email}</span>
                         </a>
                         <HeaderCopyButton value={record.email} />
                       </span>
                     )}
                     {record.phone && (
-                      <span className="group flex items-center gap-1">
+                      <span className="group inline-flex items-center gap-1 whitespace-nowrap shrink-0">
                         <a 
                           href={`tel:${record.phone}`}
-                          className="flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
+                          className="inline-flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors whitespace-nowrap"
                         >
-                          <Phone className="w-3.5 h-3.5" />
+                          <Phone className="w-3.5 h-3.5 shrink-0" />
                           {record.phone}
                         </a>
                         <HeaderCopyButton value={record.phone} />
@@ -557,18 +557,17 @@ export const RecordDetailShell = memo(function RecordDetailShell({
                       </Link>
                     )}
                   </div>
-                </div>
-              </div>
-
-              {/* Header Actions */}
-              <div className="flex flex-wrap items-center gap-2 shrink-0 justify-end">
+                </>
+              }
+              actions={
+                <>
                 {canConvertToContact && (
                   <Button
                     variant="outline"
                     size="sm"
                     type="button"
                     aria-label="Convert lead to contact"
-                    className="border-emerald-300 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 shrink-0"
+                    className="border-teal-300 dark:border-teal-500/40 text-teal-800 dark:text-teal-200 hover:bg-teal-50 dark:hover:bg-teal-500/10 shrink-0"
                     onClick={() => setShowConvertDialog(true)}
                   >
                     <UserCheck className="w-4 h-4 shrink-0 sm:mr-1.5" />
@@ -672,8 +671,9 @@ export const RecordDetailShell = memo(function RecordDetailShell({
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-              </div>
-            </div>
+                </>
+              }
+            />
 
             {/* Stage Progress (for Deals) */}
             {isDeals && stages.length > 0 && (

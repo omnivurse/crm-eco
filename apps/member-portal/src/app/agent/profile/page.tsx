@@ -131,9 +131,9 @@ export default function AgentProfilePage() {
 
   return (
     <div className="space-y-6 max-w-4xl">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-900">My Profile</h1>
-        <Button onClick={handleSave} disabled={saving} className="gap-2">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+        <h1 className="text-2xl font-bold text-slate-900 min-w-0 flex-1">My Profile</h1>
+        <Button onClick={handleSave} disabled={saving} className="gap-2 shrink-0 w-full sm:w-auto">
           <FloppyDisk weight="light" className="h-4 w-4" />
           {saving ? 'Saving...' : 'Save Changes'}
         </Button>

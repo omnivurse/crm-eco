@@ -17,8 +17,25 @@ export interface ModulePalette {
   text: string;
   /** Inset ring colour for the subtle border. */
   ring: string;
+  /**
+   * Border colour aligned with `ring` (ring-* → border-*).
+   * Derived in `resolveModulePalette` so callers don't keep parallel MODULE_COLORS maps.
+   */
+  border: string;
   /** Optional stronger accent (e.g. badge text on solid bg). */
   accent?: string;
+}
+
+/** Turn a Tailwind `ring-*` class fragment into the matching `border-*`. */
+function ringToBorder(ring: string): string {
+  return ring.replace(/\bring-/g, 'border-');
+}
+
+function withBorder(palette: Omit<ModulePalette, 'border'> & { border?: string }): ModulePalette {
+  return {
+    ...palette,
+    border: palette.border ?? ringToBorder(palette.ring),
+  };
 }
 
 /**
@@ -30,7 +47,7 @@ export interface ModulePalette {
  * step (dark) and rings to a full 300 step / 40% alpha, so the tile, tags and
  * module chips read with clear contrast instead of the old washed-out pastels.
  */
-export const MODULE_PALETTES: Record<string, ModulePalette> = {
+const RAW_MODULE_PALETTES: Record<string, Omit<ModulePalette, 'border'>> = {
   leads: {
     bg: 'bg-violet-100 dark:bg-violet-500/20',
     text: 'text-violet-800 dark:text-violet-200',
@@ -75,11 +92,15 @@ export const MODULE_PALETTES: Record<string, ModulePalette> = {
   },
 };
 
+export const MODULE_PALETTES: Record<string, ModulePalette> = Object.fromEntries(
+  Object.entries(RAW_MODULE_PALETTES).map(([key, value]) => [key, withBorder(value)]),
+);
+
 /**
  * Fallback palettes for modules without a canonical color. Selected via a
  * deterministic hash so the same record name always gets the same color.
  */
-export const FALLBACK_PALETTES: ModulePalette[] = [
+const RAW_FALLBACK_PALETTES: Omit<ModulePalette, 'border'>[] = [
   {
     bg: 'bg-slate-100 dark:bg-slate-500/20',
     text: 'text-slate-800 dark:text-slate-200',
@@ -102,6 +123,8 @@ export const FALLBACK_PALETTES: ModulePalette[] = [
   },
 ];
 
+export const FALLBACK_PALETTES: ModulePalette[] = RAW_FALLBACK_PALETTES.map(withBorder);
+
 /**
  * Resolve a palette by module key, falling back to a deterministic hash on
  * `seed` (typically the record name).
@@ -116,6 +139,18 @@ export function resolveModulePalette(
     hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
   }
   return FALLBACK_PALETTES[hash % FALLBACK_PALETTES.length];
+}
+
+/**
+ * Compact chip classes used by search overlays / list badges
+ * (`bg-* text-*` on one string).
+ */
+export function moduleChipClass(
+  moduleKey: string | undefined | null,
+  seed: string = '',
+): string {
+  const p = resolveModulePalette(moduleKey, seed);
+  return `${p.bg} ${p.text}`;
 }
 
 /**

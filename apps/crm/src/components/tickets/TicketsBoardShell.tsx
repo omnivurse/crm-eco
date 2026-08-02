@@ -351,11 +351,11 @@ export const TicketsBoardShell = memo(function TicketsBoardShell({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+        <div className="min-w-0 flex-1">
           <p className="text-slate-500">Manage support tickets and service requests</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 shrink-0 w-full sm:w-auto sm:justify-end">
           {/* My Views Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

@@ -69,6 +69,12 @@ locality) comes from the `/codebase-design` skill; the terms below name the
   documents, activity, audit, notes, tasks). See
   `apps/admin/src/components/members/` and `lib/member-command/types.ts`.
 
+- **IdentityActionsHeader** — the shared layout module in `@crm-eco/ui` for entity
+  and page chrome: identity (title/meta) on the left, actions on the right, with an
+  overflow-safe flex contract (`min-w-0 flex-1` identity, wrap-under-breakpoint
+  actions). App PageHeaders and record detail shells are thin branded adapters over
+  this seam. Not a domain entity — platform chrome.
+
 - **Module** (domain sense) — a top-level navigable area: Members, Agents, Billing,
   Commissions, Payables, Invoices, Ops, Reports, Communications, Documents,
   Notifications, Enrollments, Products, Organizations, Settings. (Distinct from the

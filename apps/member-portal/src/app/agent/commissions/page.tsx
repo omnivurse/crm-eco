@@ -173,9 +173,9 @@ export default function AgentCommissionsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-900">My Commissions</h1>
-        <Button variant="outline" className="gap-2">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+        <h1 className="text-2xl font-bold text-slate-900 min-w-0 flex-1">My Commissions</h1>
+        <Button variant="outline" className="gap-2 shrink-0 w-full sm:w-auto">
           <Download weight="light" className="h-4 w-4" />
           Export
         </Button>

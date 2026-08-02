@@ -367,29 +367,29 @@ export default function NeedDetailPage() {
   return (
     <div className="w-full space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" asChild>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+        <div className="flex items-center gap-4 min-w-0 flex-1">
+          <Button variant="ghost" size="sm" className="shrink-0" asChild>
             <Link href="/crm/needs">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back
             </Link>
           </Button>
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-rose-500/10 rounded-lg">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <div className="p-2 bg-rose-500/10 rounded-lg shrink-0">
               <HeartHandshake className="w-5 h-5 text-rose-400" />
             </div>
-            <div>
-              <h1 className="text-xl font-bold text-slate-900 dark:text-white">
+            <div className="min-w-0 flex-1">
+              <h1 className="text-xl font-bold text-slate-900 dark:text-white break-words">
                 {need.title}
               </h1>
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-slate-500 truncate">
                 {need.data.member_name} • {need.data.member_id}
               </p>
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 shrink-0 w-full sm:w-auto sm:justify-end">
           <Select value={need.status} onValueChange={handleStatusChange}>
             <SelectTrigger className="w-40">
               <SelectValue />

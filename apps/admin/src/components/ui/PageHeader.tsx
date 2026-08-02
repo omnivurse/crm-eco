@@ -3,6 +3,7 @@
 import { ReactNode } from 'react';
 import { CaretLeft } from '@phosphor-icons/react';
 import { useRouter } from 'next/navigation';
+import { IdentityActionsHeader } from '@crm-eco/ui/components/identity-actions-header';
 import { cn } from '@crm-eco/ui';
 
 interface PageHeaderProps {
@@ -40,7 +41,6 @@ export function PageHeader({
 
   return (
     <div className={cn('mb-6', className)}>
-      {/* Back button */}
       {backHref !== undefined && (
         <button
           onClick={handleBack}
@@ -51,27 +51,28 @@ export function PageHeader({
         </button>
       )}
 
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-4">
-          {/* Icon */}
-          {icon && (
+      <IdentityActionsHeader
+        breakpoint="sm"
+        align="center"
+        leading={
+          icon ? (
             <div
               className={cn(
-                'flex-shrink-0 rounded-xl bg-gradient-to-br',
+                'rounded-xl bg-gradient-to-br',
                 gradient,
-                size === 'large' ? 'p-4' : size === 'small' ? 'p-2' : 'p-3'
+                size === 'large' ? 'p-4' : size === 'small' ? 'p-2' : 'p-3',
               )}
             >
               <div className="text-white">{icon}</div>
             </div>
-          )}
-
-          {/* Title and description */}
-          <div>
+          ) : undefined
+        }
+        identity={
+          <>
             <h1
               className={cn(
-                'font-bold tracking-tight text-[var(--adm-ink)]',
-                size === 'large' ? 'text-3xl' : size === 'small' ? 'text-xl' : 'text-2xl'
+                'font-bold tracking-tight text-[var(--adm-ink)] break-words min-w-0',
+                size === 'large' ? 'text-3xl' : size === 'small' ? 'text-xl' : 'text-2xl',
               )}
             >
               {title}
@@ -79,26 +80,22 @@ export function PageHeader({
             {description && (
               <p
                 className={cn(
-                  'mt-1 text-[var(--adm-muted)]',
-                  size === 'large' ? 'text-base' : 'text-sm'
+                  'mt-1 text-[var(--adm-muted)] break-words',
+                  size === 'large' ? 'text-base' : 'text-sm',
                 )}
               >
                 {description}
               </p>
             )}
-          </div>
-        </div>
-
-        {/* Actions */}
-        {actions && (
-          <div className="flex items-center gap-3 flex-shrink-0">{actions}</div>
-        )}
-      </div>
+          </>
+        }
+        actions={actions}
+        actionsClassName="gap-3"
+      />
     </div>
   );
 }
 
-// Variant for section headers within pages
 interface SectionHeaderProps {
   title: string;
   description?: string;
@@ -113,24 +110,23 @@ export function SectionHeader({
   className,
 }: SectionHeaderProps) {
   return (
-    <div
-      className={cn(
-        'flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-4 border-b border-[var(--adm-hairline)]',
-        className
-      )}
-    >
-      <div>
-        <h2 className="text-lg font-semibold text-[var(--adm-ink)]">{title}</h2>
-        {description && (
-          <p className="mt-0.5 text-sm text-[var(--adm-muted)]">{description}</p>
-        )}
-      </div>
-      {actions && <div className="flex items-center gap-2">{actions}</div>}
-    </div>
+    <IdentityActionsHeader
+      breakpoint="sm"
+      align="center"
+      className={cn('pb-4 border-b border-[var(--adm-hairline)]', className)}
+      identity={
+        <>
+          <h2 className="text-lg font-semibold text-[var(--adm-ink)] break-words">{title}</h2>
+          {description && (
+            <p className="mt-0.5 text-sm text-[var(--adm-muted)] break-words">{description}</p>
+          )}
+        </>
+      }
+      actions={actions}
+    />
   );
 }
 
-// Card header variant
 interface CardHeaderTitleProps {
   title: string;
   description?: string;
@@ -149,26 +145,26 @@ export function CardHeaderTitle({
   className,
 }: CardHeaderTitleProps) {
   return (
-    <div
-      className={cn(
-        'flex items-center justify-between p-6 border-b border-[var(--adm-hairline)]',
-        className
-      )}
-    >
-      <div className="flex items-center gap-3">
-        {icon && (
+    <IdentityActionsHeader
+      breakpoint="sm"
+      align="center"
+      className={cn('p-6 border-b border-[var(--adm-hairline)]', className)}
+      leading={
+        icon ? (
           <div className={cn('p-2.5 rounded-xl', iconBg)}>
             <div className="text-white">{icon}</div>
           </div>
-        )}
-        <div>
-          <h3 className="text-lg font-bold text-[var(--adm-ink)]">{title}</h3>
+        ) : undefined
+      }
+      identity={
+        <>
+          <h3 className="text-lg font-bold text-[var(--adm-ink)] break-words">{title}</h3>
           {description && (
-            <p className="text-sm text-[var(--adm-muted)]">{description}</p>
+            <p className="text-sm text-[var(--adm-muted)] break-words">{description}</p>
           )}
-        </div>
-      </div>
-      {actions}
-    </div>
+        </>
+      }
+      actions={actions}
+    />
   );
 }

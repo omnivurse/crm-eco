@@ -16,6 +16,7 @@ import { VisuallyHidden } from '@crm-eco/ui';
 import { Input } from '@crm-eco/ui/components/input';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { CRM_SPOTLIGHT_SEARCH_LIMIT } from '@/lib/crm/search-limits';
+import { moduleChipClass } from '@/components/crm/records/v2/tokens';
 import {
   shouldClearEphemeralSearchOnOpenChange,
   useEphemeralSearchWhenClosed,
@@ -53,12 +54,6 @@ const MODULE_ICONS: Record<string, React.ReactNode> = {
   accounts: <Building2 className="w-4 h-4" />,
 };
 
-const MODULE_COLORS: Record<string, string> = {
-  contacts: 'bg-teal-100 text-teal-600 dark:bg-teal-500/20 dark:text-teal-400',
-  leads: 'bg-violet-100 text-violet-600 dark:bg-violet-500/20 dark:text-violet-400',
-  deals: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400',
-  accounts: 'bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400',
-};
 
 export function GlobalSearchOverlay({ open, onOpenChange }: GlobalSearchOverlayProps) {
   const router = useRouter();
@@ -260,7 +255,7 @@ export function GlobalSearchOverlay({ open, onOpenChange }: GlobalSearchOverlayP
                       >
                         <div className={cn(
                           'flex items-center justify-center w-8 h-8 rounded-lg',
-                          MODULE_COLORS[module] || MODULE_COLORS.contacts
+                          moduleChipClass(module)
                         )}>
                           {MODULE_ICONS[module] || <Users className="w-4 h-4" />}
                         </div>

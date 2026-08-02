@@ -11,6 +11,7 @@ import { useRouter } from 'next/navigation';
 import { Search, Loader2, X, ArrowRight, Users, UserPlus, Building2, DollarSign } from 'lucide-react';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { CRM_SPOTLIGHT_SEARCH_LIMIT } from '@/lib/crm/search-limits';
+import { moduleChipClass } from '@/components/crm/records/v2/tokens';
 
 const MODULE_ICONS: Record<string, React.ReactNode> = {
   contacts: <Users className="w-3.5 h-3.5" />,
@@ -19,12 +20,6 @@ const MODULE_ICONS: Record<string, React.ReactNode> = {
   accounts: <Building2 className="w-3.5 h-3.5" />,
 };
 
-const MODULE_COLORS: Record<string, string> = {
-  contacts: 'bg-teal-100 text-teal-600 dark:bg-teal-500/20 dark:text-teal-400',
-  leads: 'bg-violet-100 text-violet-600 dark:bg-violet-500/20 dark:text-violet-400',
-  deals: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400',
-  accounts: 'bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400',
-};
 
 type Result = {
   id: string;
@@ -212,7 +207,7 @@ export function RecordToolbarGlobalSearch({ currentRecordId }: { currentRecordId
                         <div
                           className={cn(
                             'flex items-center justify-center w-6 h-6 rounded-md shrink-0',
-                            MODULE_COLORS[mod] || MODULE_COLORS.contacts,
+                            moduleChipClass(mod),
                           )}
                         >
                           {MODULE_ICONS[mod] || <Users className="w-3.5 h-3.5" />}

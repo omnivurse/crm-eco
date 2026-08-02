@@ -343,29 +343,29 @@ export const MessageThread = React.memo(function MessageThread({
     <>
       {/* Header */}
       <div className="p-3 lg:p-4 border-b border-slate-200 dark:border-slate-700">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 lg:gap-3 min-w-0">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
+          <div className="flex items-center gap-2 lg:gap-3 min-w-0 flex-1">
             <button
               onClick={onBackToList}
-              className="lg:hidden p-2 -ml-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors flex-shrink-0"
+              className="lg:hidden p-2 -ml-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors shrink-0"
             >
               <ChevronLeft className="w-5 h-5 text-slate-600 dark:text-slate-400" />
             </button>
-            <Avatar className="w-10 h-10 lg:w-12 lg:h-12 flex-shrink-0">
+            <Avatar className="w-10 h-10 lg:w-12 lg:h-12 shrink-0">
               <AvatarFallback className={cn('text-xs lg:text-sm font-medium', CHANNEL_COLORS[conversation.channel])}>
                 {getInitials(conversation.contact_name)}
               </AvatarFallback>
             </Avatar>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <h3 className="font-semibold text-slate-900 dark:text-white truncate text-sm lg:text-base">
                 {conversation.contact_name || 'Unknown Contact'}
               </h3>
-              <p className="text-xs lg:text-sm text-slate-500 truncate">
+              <p className="text-xs lg:text-sm text-slate-500 truncate whitespace-nowrap">
                 {conversation.contact_email || conversation.contact_phone}
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-1 lg:gap-2 flex-shrink-0">
+          <div className="flex items-center gap-1 lg:gap-2 shrink-0 w-full sm:w-auto sm:justify-end">
             <Select
               value={conversation.status}
               onValueChange={(value) => onStatusChange(conversation.id, value as ConversationStatus)}

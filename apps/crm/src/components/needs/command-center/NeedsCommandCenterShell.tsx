@@ -327,8 +327,8 @@ export function NeedsCommandCenterShell({
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div className="flex items-start justify-between">
-        <div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+        <div className="min-w-0 flex-1">
           <h1 className="text-2xl font-bold text-slate-900">Needs Command Center</h1>
           <p className="text-slate-500 mt-1">
             SLA-driven queue for Needs and sharing operations
@@ -336,7 +336,7 @@ export function NeedsCommandCenterShell({
         </div>
         
         {/* My Views & Save View */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 shrink-0 w-full sm:w-auto sm:justify-end">
           {/* My Views Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

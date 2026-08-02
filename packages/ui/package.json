@@ -9,6 +9,7 @@
     ".": "./src/index.ts",
     "./data-table": "./src/data-table/index.ts",
     "./components/*": "./src/components/*.tsx",
+    "./components/identity-actions-header": "./src/components/identity-actions-header.tsx",
     "./components/sonner": "./src/components/sonner.tsx",
     "./lib/utils": "./src/lib/utils.ts",
     "./lib/branding": "./src/lib/branding.ts",

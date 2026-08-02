@@ -38,6 +38,7 @@ import {
 import { cn } from '@crm-eco/ui/lib/utils';
 import { toast } from 'sonner';
 import type { CrmLinkedRecord } from '@/lib/crm/types';
+import { resolveModulePalette } from '@/components/crm/records/v2/tokens';
 
 /** Minimal row used in “link record” search (also returned by global CRM search API). */
 export interface LinkCandidate {
@@ -77,14 +78,6 @@ const MODULE_ICONS: Record<string, React.ReactNode> = {
   prospects: <UserPlus className="w-4 h-4" />,
 };
 
-const MODULE_COLORS: Record<string, { text: string; bg: string }> = {
-  contacts: { text: 'text-teal-400', bg: 'bg-teal-500/10' },
-  leads: { text: 'text-violet-400', bg: 'bg-violet-500/10' },
-  deals: { text: 'text-emerald-400', bg: 'bg-emerald-500/10' },
-  accounts: { text: 'text-amber-400', bg: 'bg-amber-500/10' },
-  members: { text: 'text-sky-400', bg: 'bg-sky-500/10' },
-  prospects: { text: 'text-blue-400', bg: 'bg-blue-500/10' },
-};
 
 const PERSON_MODULES = new Set(['contacts', 'members', 'leads', 'prospects']);
 
@@ -104,7 +97,7 @@ function RecordAvatar({
   moduleKey: string;
   title: string | null | undefined;
 }) {
-  const colors = MODULE_COLORS[moduleKey] || { text: 'text-slate-400', bg: 'bg-slate-500/10' };
+  const colors = resolveModulePalette(moduleKey);
   return (
     <div
       className={cn(
@@ -183,10 +176,7 @@ function LinkedRecordCard({
   const [isUpdating, setIsUpdating] = useState(false);
 
   const icon = MODULE_ICONS[record.record_module_key] || <Link2 className="w-4 h-4" />;
-  const colors = MODULE_COLORS[record.record_module_key] || {
-    text: 'text-slate-400',
-    bg: 'bg-slate-500/10',
-  };
+  const colors = resolveModulePalette(record.record_module_key);
 
   const handleUnlink = async () => {
     if (!onUnlink) return;
@@ -623,10 +613,7 @@ export function RelatedRecordsPanel({
       {Object.entries(recordsByModule).length > 0 ? (
         Object.entries(recordsByModule).map(([moduleKey, records]) => {
           const icon = MODULE_ICONS[moduleKey] || <Link2 className="w-4 h-4" />;
-          const colors = MODULE_COLORS[moduleKey] || {
-            text: 'text-slate-400',
-            bg: 'bg-slate-500/10',
-          };
+          const colors = resolveModulePalette(moduleKey);
           const moduleName = records[0]?.record_module_name || moduleKey;
 
           return (
