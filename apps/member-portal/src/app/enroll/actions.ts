@@ -1215,7 +1215,6 @@ export async function submitSelfServeEnrollment(
           const { data: fin } = await service.rpc('finalize_member_enrollment_tx', {
             p_org_id: enrollment.organization_id,
             p_enrollment_id: enrollmentId,
-            p_payment_profile_id: null,
             p_effective_date: coverageStart,
             p_charged_first_month: false,
           });
