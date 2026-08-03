@@ -351,6 +351,10 @@ export function CrmLoginClient({
 
           <p className={authForm.footer}>
             © 2026 {tenantLabel ?? 'Double Helix Hub'}. All rights reserved.
+            {' · '}
+            <Link href="/legal/sms-privacy" className={authForm.link}>
+              SMS Privacy
+            </Link>
           </p>
         </div>
       </div>

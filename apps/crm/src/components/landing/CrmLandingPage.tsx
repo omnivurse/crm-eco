@@ -601,8 +601,9 @@ export default function CrmLandingPage() {
             <h4>Company</h4>
             <a href="https://doublehelix.com" target="_blank" rel="noopener noreferrer">About</a>
             <a href="https://doublehelix.com/contact" target="_blank" rel="noopener noreferrer">Contact sales</a>
-            <a href="https://doublehelix.com/legal/privacy" target="_blank" rel="noopener noreferrer">Privacy</a>
-            <a href="https://doublehelix.com/legal/terms" target="_blank" rel="noopener noreferrer">Terms</a>
+            <a href="/legal/sms-privacy">SMS Privacy</a>
+            <a href="https://doublehelixhub.com/legal/privacy" target="_blank" rel="noopener noreferrer">Privacy</a>
+            <a href="https://doublehelixhub.com/legal/terms" target="_blank" rel="noopener noreferrer">Terms</a>
           </div>
         </div>
         <div className="lp-footer-bottom">

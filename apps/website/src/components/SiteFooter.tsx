@@ -139,6 +139,7 @@ export function SiteFooter() {
               <li><Link href="/enroll" className="text-sm text-white/65 transition-colors hover:text-white">Become a Member</Link></li>
               <li><Link href="/contact" className="text-sm text-white/65 transition-colors hover:text-white">Contact Us</Link></li>
               <li><Link href="/legal/privacy" className="text-sm text-white/65 transition-colors hover:text-white">Privacy Policy</Link></li>
+              <li><Link href="/legal/sms-privacy" className="text-sm text-white/65 transition-colors hover:text-white">SMS Privacy Policy</Link></li>
               <li><Link href="/legal/terms" className="text-sm text-white/65 transition-colors hover:text-white">Terms of Service</Link></li>
             </ul>
           </div>

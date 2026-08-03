@@ -202,7 +202,13 @@ export default function LoginPage() {
           <ShieldCheck weight="light" className="h-3.5 w-3.5" />
           <span>Org-isolated · Encrypted in transit</span>
         </div>
-        <p className={authForm.footer}>© 2026 Double Helix Hub. All rights reserved.</p>
+        <p className={authForm.footer}>
+          © 2026 Double Helix Hub. All rights reserved.
+          {' · '}
+          <Link href="/legal/sms-privacy" className={authForm.link}>
+            SMS Privacy
+          </Link>
+        </p>
       </div>
     </div>
   );

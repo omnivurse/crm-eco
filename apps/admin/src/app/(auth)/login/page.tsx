@@ -262,7 +262,13 @@ export default function LoginPage() {
           </span>
         </div>
 
-        <p className={authForm.footer}>© 2026 Double Helix Hub. All rights reserved.</p>
+        <p className={authForm.footer}>
+          © 2026 Double Helix Hub. All rights reserved.
+          {' · '}
+          <Link href="/legal/sms-privacy" className={authForm.link}>
+            SMS Privacy
+          </Link>
+        </p>
       </div>
     </div>
   );

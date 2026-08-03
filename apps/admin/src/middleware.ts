@@ -15,7 +15,13 @@ import { createServerClient } from '@supabase/ssr';
 
 const ADMIN_ROLES = ['owner', 'super_admin', 'admin', 'staff'];
 
-const PUBLIC_ROUTES = ['/login', '/access-denied', '/reset-password', '/update-password'];
+const PUBLIC_ROUTES = [
+  '/login',
+  '/access-denied',
+  '/reset-password',
+  '/update-password',
+  '/legal',
+];
 const AUTH_ONLY_ROUTES: string[] = [];
 
 const ACTIVE_ORG_COOKIE = 'dh_active_org';

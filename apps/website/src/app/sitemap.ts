@@ -15,6 +15,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     '/enroll',
     '/legal/terms',
     '/legal/privacy',
+    '/legal/sms-privacy',
     '/legal/sharing-guidelines',
   ];
 

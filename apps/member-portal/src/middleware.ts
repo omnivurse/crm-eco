@@ -42,6 +42,7 @@ export async function middleware(request: NextRequest) {
     '/update-password',
     '/access-denied',
     '/enroll',
+    '/legal',
   ];
 
   const isPublicRoute = publicRoutes.some(route => 

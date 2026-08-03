@@ -275,8 +275,12 @@ export function SignInForm() {
         <p className="text-center text-xs text-slate-500">
           By signing in you agree to our{' '}
           <a href={`${LEGAL_BASE}/legal/terms`} className="text-[#5ec8d8] hover:underline" target="_blank" rel="noopener noreferrer">Terms</a>
-          {' '}and{' '}
+          {', '}
           <a href={`${LEGAL_BASE}/legal/privacy`} className="text-[#5ec8d8] hover:underline" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
+          {', and '}
+          <Link href="/legal/sms-privacy" className="text-[#5ec8d8] hover:underline">
+            SMS Privacy Policy
+          </Link>
         </p>
       </div>
     </div>

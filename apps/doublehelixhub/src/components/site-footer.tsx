@@ -46,6 +46,7 @@ export function SiteFooter() {
                 <h4 className="mb-4 text-[10px] font-semibold uppercase tracking-[0.18em] text-foreground/80">Legal</h4>
                 <ul className="space-y-3 text-sm text-muted-foreground">
                   <li><Link href="/legal/privacy" className="transition-colors hover:text-foreground">Privacy</Link></li>
+                  <li><Link href="/legal/sms-privacy" className="transition-colors hover:text-foreground">SMS Privacy</Link></li>
                   <li><Link href="/legal/terms" className="transition-colors hover:text-foreground">Terms</Link></li>
                 </ul>
               </div>

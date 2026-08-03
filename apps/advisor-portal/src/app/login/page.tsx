@@ -123,7 +123,13 @@ function LoginForm() {
         </button>
       </form>
 
-      <p className={authForm.footer}>Need help? Contact your administrator</p>
+      <p className={authForm.footer}>
+        Need help? Contact your administrator
+        {' · '}
+        <Link href="/legal/sms-privacy" className={authForm.link}>
+          SMS Privacy
+        </Link>
+      </p>
     </div>
   );
 }

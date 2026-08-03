@@ -196,6 +196,7 @@ export async function middleware(request: NextRequest) {
       '/reset-password',
       '/update-password',
       '/accept-invite',
+      '/legal',
     ];
     const isPublicRoute =
       pathname === '/' || publicPrefixes.some((prefix) => pathname.startsWith(prefix));
@@ -238,6 +239,7 @@ export async function middleware(request: NextRequest) {
     '/reset-password',
     '/update-password',
     '/accept-invite',
+    '/legal',
   ];
   const isPublicRoute =
     pathname === '/' || publicPrefixes.some(prefix => pathname.startsWith(prefix));

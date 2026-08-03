@@ -14,6 +14,8 @@
     "./lib/utils": "./src/lib/utils.ts",
     "./lib/branding": "./src/lib/branding.ts",
     "./lib/theme-boot": "./src/lib/theme-boot.ts",
+    "./lib/sms-privacy-policy": "./src/lib/sms-privacy-policy.ts",
+    "./components/sms-privacy-policy": "./src/components/sms-privacy-policy.tsx",
     "./styles/theme.css": "./src/styles/theme.css",
     "./styles/ethereal.css": "./src/styles/ethereal.css",
     "./styles/auth.css": "./src/styles/auth.css",

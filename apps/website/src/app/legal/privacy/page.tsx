@@ -217,6 +217,13 @@ export default function PrivacyPolicyPage() {
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
+                href="/legal/sms-privacy"
+                className="inline-flex items-center gap-1.5 text-sm font-semibold text-pif-teal-700 transition-colors hover:text-pif-green-600"
+              >
+                SMS Privacy Policy
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+              <Link
                 href="/legal/sharing-guidelines"
                 className="inline-flex items-center gap-1.5 text-sm font-semibold text-pif-teal-700 transition-colors hover:text-pif-green-600"
               >

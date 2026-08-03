@@ -808,6 +808,7 @@ export default function AdminLandingPage() {
             <h4>Company</h4>
             <a href="https://doublehelixhub.com" target="_blank" rel="noopener noreferrer">About</a>
             <a href="mailto:support@doublehelixhub.com">Contact</a>
+            <a href="/legal/sms-privacy">SMS Privacy</a>
             <a href="https://doublehelixhub.com/legal/privacy" target="_blank" rel="noopener noreferrer">Privacy</a>
             <a href="https://doublehelixhub.com/legal/terms" target="_blank" rel="noopener noreferrer">Terms</a>
           </div>
