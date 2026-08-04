@@ -5,6 +5,7 @@ import { executeMatchingWorkflows } from '@/lib/automation';
 import type { CrmRecord } from '@/lib/crm/types';
 import type { CrmWebform } from '@/lib/automation/types';
 import { rateLimitDurable, getRateLimitHeaders } from '@crm-eco/lib/rate-limit';
+import { SAFE_DATA_JSON_KEY } from '@/lib/crm/record-search';
 import {
   buildNormalizedRecordWrite,
   pickUpdateMirrorColumns,
@@ -126,16 +127,49 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    // Merge with hidden fields
+    // ALLOWLIST the posted payload against the form's own declared fields.
+    //
+    // This endpoint is unauthenticated. Previously every posted key was accepted:
+    // anything matching `systemFields` was written straight onto indexed columns
+    // (including `status` and `stage`), and everything else was stuffed into the
+    // `data` JSONB, which buildNormalizedRecordWrite then mirrors onto further
+    // indexed columns. An anonymous poster could therefore set arbitrary record
+    // state on a tenant's CRM.
+    //
+    // Only keys the org actually put on the form are accepted. `hidden_fields`
+    // is org-controlled (set in the form builder, not by the poster), so it stays
+    // trusted and is applied on top.
+    const declaredFieldKeys = new Set(
+      (typedWebform.layout?.sections ?? []).flatMap((section) =>
+        (section.fields ?? []).map((field) => field.fieldKey),
+      ),
+    );
+
+    const rejectedKeys: string[] = [];
+    const acceptedSubmission: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(submissionData)) {
+      if (declaredFieldKeys.has(key)) acceptedSubmission[key] = value;
+      else rejectedKeys.push(key);
+    }
+
+    if (rejectedKeys.length > 0) {
+      console.warn(
+        `[webform ${typedWebform.slug}] ignored ${rejectedKeys.length} undeclared field(s):`,
+        rejectedKeys.join(', '),
+      );
+    }
+
     const recordData = {
-      ...typedWebform.hidden_fields,
-      ...submissionData,
+      ...acceptedSubmission,
+      ...typedWebform.hidden_fields, // org-controlled: wins over poster input
       _webform_id: typedWebform.id,
       _webform_submitted_at: new Date().toISOString(),
     };
 
-    // Extract system fields
-    const systemFields = ['title', 'status', 'stage', 'email', 'phone'];
+    // Fields a submission may map onto indexed columns. `title` is derived below
+    // and `status`/`stage` are deliberately NOT here — lifecycle state is set by
+    // the module default or by the org via hidden_fields, never by the poster.
+    const systemFields = ['email', 'phone'];
     const dataFields: Record<string, unknown> = {};
     const extractedSystem: Record<string, unknown> = {};
 
@@ -174,8 +208,16 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         if (value) {
           if (systemFields.includes(field)) {
             query = query.eq(field, value);
-          } else {
+          } else if (SAFE_DATA_JSON_KEY.test(field)) {
             query = query.eq(`data->>${field}`, value);
+          } else {
+            // dedupe_config is org-admin controlled rather than poster-controlled,
+            // so this is defense in depth — but it is the one place in the CRM
+            // that built a `data->>` filter path without the shared guard.
+            console.warn(
+              `[webform ${typedWebform.slug}] skipping unsafe dedupe field key:`,
+              field,
+            );
           }
         }
       }
@@ -248,10 +290,12 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       const { data: created, error: createError } = await supabase
         .from('crm_records')
         .insert({
-          org_id: org.id,
-          module_id: typedWebform.module_id,
           ...norm.columns,
           ...extractedSystem,
+          // Tenancy and module last: these are server-derived from the URL slugs
+          // and must never be shadowed by a spread above them.
+          org_id: org.id,
+          module_id: typedWebform.module_id,
           data: norm.data,
           system: {
             source: 'webform',

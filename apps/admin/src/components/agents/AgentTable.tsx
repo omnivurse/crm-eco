@@ -172,19 +172,19 @@ export function AgentTable({ agents }: AgentTableProps) {
           <tbody>
             {agents.map((agent) => (
               <tr key={agent.id} className="border-b hover:bg-slate-50">
-                <td className="py-3">
+                <td className="py-[var(--ui-cell-py)]">
                   <p className="text-sm font-medium">
                     {agent.first_name} {agent.last_name}
                   </p>
                 </td>
-                <td className="py-3 text-sm">{agent.email}</td>
-                <td className="py-3 text-sm">
+                <td className="py-[var(--ui-cell-py)] text-sm">{agent.email}</td>
+                <td className="py-[var(--ui-cell-py)] text-sm">
                   {agent.phone || <span className="text-slate-400">—</span>}
                 </td>
-                <td className="py-3 text-sm font-mono">
+                <td className="py-[var(--ui-cell-py)] text-sm font-mono">
                   {agent.license_number || <span className="text-slate-400">—</span>}
                 </td>
-                <td className="py-3 text-sm">
+                <td className="py-[var(--ui-cell-py)] text-sm">
                   {agent.license_states && agent.license_states.length > 0 ? (
                     <div className="flex flex-wrap gap-1">
                       {agent.license_states.slice(0, 3).map((state) => (
@@ -202,25 +202,25 @@ export function AgentTable({ agents }: AgentTableProps) {
                     <span className="text-slate-400">—</span>
                   )}
                 </td>
-                <td className="py-3 text-sm">
+                <td className="py-[var(--ui-cell-py)] text-sm">
                   {agent.parent_advisor ? (
                     `${agent.parent_advisor.first_name} ${agent.parent_advisor.last_name}`
                   ) : (
                     <span className="text-slate-400">—</span>
                   )}
                 </td>
-                <td className="py-3 text-sm">
+                <td className="py-[var(--ui-cell-py)] text-sm">
                   {agent.commission_tier || <span className="text-slate-400">—</span>}
                 </td>
-                <td className="py-3">
+                <td className="py-[var(--ui-cell-py)]">
                   <Badge variant={getStatusBadgeVariant(agent.status)}>
                     {getStatusLabel(agent.status)}
                   </Badge>
                 </td>
-                <td className="py-3 text-sm text-slate-500">
+                <td className="py-[var(--ui-cell-py)] text-sm text-slate-500">
                   {format(new Date(agent.created_at), 'MMM d, yyyy')}
                 </td>
-                <td className="py-3">
+                <td className="py-[var(--ui-cell-py)]">
                   <Link href={`/agents/${agent.id}`}>
                     <Button variant="ghost" size="sm">
                       <Eye weight="light" className="h-4 w-4" />

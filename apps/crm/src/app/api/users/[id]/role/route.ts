@@ -7,6 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, getAuthProfile } from '@/lib/supabase-server';
+import { requireActiveOrgCrmRoles } from '@/lib/crm/require-crm-role';
 import { logAuditEvent, AuditActions } from '@crm-eco/lib/audit';
 import { revokeUserSessions } from '@/lib/security/revoke-sessions';
 import type { CrmRole } from '@/lib/crm/types';
@@ -37,6 +38,21 @@ export async function PATCH(
     // Only crm_admin can manage CRM roles
     if (currentProfile.crm_role !== 'crm_admin') {
       return NextResponse.json({ error: 'Only CRM admins can manage roles' }, { status: 403 });
+    }
+
+    // Defense in depth. The check above reads the profile role, which
+    // getAuthProfile now downgrades to the ACTIVE org's rights — but this
+    // handler escalates to a service-role client below, so RLS is NOT a
+    // backstop. Re-assert against the database (has_crm_role) so a stale role
+    // can never be the only thing between a caller and role escalation inside a
+    // tenant they merely belong to.
+    const activeOrgGate = await requireActiveOrgCrmRoles(
+      supabase,
+      currentProfile.organization_id,
+      ['crm_admin'],
+    );
+    if (!activeOrgGate.ok) {
+      return NextResponse.json({ error: activeOrgGate.error }, { status: activeOrgGate.status });
     }
 
     // Get the target user profile

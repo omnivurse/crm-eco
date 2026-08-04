@@ -12,51 +12,61 @@
   --primary-foreground: 0 0% 100%;
   --ring: 192 85% 34%;
   --background: 192 33% 97%;
-  --adm-void: #f6fafb;
-  --adm-panel: #ffffff;
-  --adm-ink: #0b1220;
-  --adm-muted: #64748b;
-  --adm-cyan: #0891b2;
-  --adm-teal: #0b6d85;
-  --adm-emerald: #059669;
-  --adm-amber: #d97706;
-  --adm-rose: #e11d48;
-  --adm-hairline: rgba(11, 109, 133, 0.10);
+  /* --- --adm-* is now an ALIAS layer over the shared semantic tokens -------
+     These were a private 18-token colour system that duplicated the shared
+     layer rather than deliberately diverging from it: --adm-ink was declared
+     as #0b1220, which is byte-identical to the shared --foreground.
+
+     Aliasing (rather than rewriting ~170 call sites at once) keeps every
+     existing `text-[var(--adm-ink)]` working while making the shared tokens
+     the single source of truth. The aliases are the migration path: call
+     sites move to `text-foreground` etc. incrementally, and this block is
+     deleted when the last one is gone.
+
+     Theme-dependent values are NOT restated in .dark below — they resolve
+     through the shared tokens, which already define both themes. */
+  --adm-void: hsl(var(--background));
+  --adm-panel: hsl(var(--card));
+  --adm-ink: hsl(var(--foreground));
+  --adm-muted: hsl(var(--muted-foreground));
+  --adm-cyan: hsl(var(--primary));
+  --adm-teal: hsl(var(--brand-teal-700));
+  --adm-emerald: hsl(var(--success));
+  --adm-amber: hsl(var(--warning));
+  --adm-rose: hsl(var(--destructive));
+  --adm-hairline: hsl(var(--border));
+  --adm-glass: var(--glass-bg);
+  --adm-glass-inner: hsl(var(--card));
+  --adm-shadow: var(--shadow-md);
+  /* Easing promoted to the shared layer; aliased for existing call sites. */
+  --adm-ease: var(--ease);
+  --adm-ease-out: var(--ease-out);
+  /* Canvas mesh gradients — decorative, scheduled for removal in Phase 4
+     (they reduce effective text contrast on data surfaces). Left in place so
+     this phase changes tokens only, not the visual thesis. */
   --adm-mesh-1: rgba(11, 109, 133, 0.08);
   --adm-mesh-2: rgba(8, 145, 178, 0.06);
   --adm-mesh-3: rgba(5, 150, 105, 0.05);
-  --adm-glass: rgba(255, 255, 255, 0.78);
-  --adm-glass-inner: #ffffff;
-  --adm-ease: cubic-bezier(0.32, 0.72, 0, 1);
-  --adm-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
-  --adm-shadow:
-    0 1px 2px rgba(11, 18, 32, 0.04),
-    0 12px 40px rgba(11, 109, 133, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
 /* Dark Ethereal OLED */
 .dark {
-  --background: 0 0% 2%;
-  --adm-void: #050505;
-  --adm-panel: #0a0a0a;
-  --adm-ink: #f4f4f5;
-  --adm-muted: #a1a1aa;
-  --adm-cyan: #22d3ee;
-  --adm-teal: #0b6d85;
-  --adm-emerald: #34d399;
-  --adm-amber: #fbbf24;
-  --adm-rose: #fb7185;
-  --adm-hairline: rgba(255, 255, 255, 0.08);
+  /* --background / --card are NOT overridden here any more. The Admin console
+     used #050505 / #0a0a0a (neutral OLED black) while the CRM used slate-950;
+     both now inherit the one settled navy ground from the shared theme.
+
+     The --adm-* aliases in :root are NOT restated here on purpose. They
+     resolve through the shared tokens (--background, --card, --foreground …),
+     which already define both themes, so the alias follows the theme
+     automatically. Re-declaring a literal here would win the cascade and
+     freeze the Admin console's dark mode against the shared system — exactly
+     the drift this phase removes.
+
+     Mesh gradients are decorative and theme-specific; they stay literal until
+     Phase 4 removes them. */
   --adm-mesh-1: rgba(34, 211, 238, 0.10);
   --adm-mesh-2: rgba(11, 109, 133, 0.12);
   --adm-mesh-3: rgba(52, 211, 153, 0.07);
-  --adm-glass: rgba(10, 10, 10, 0.72);
-  --adm-glass-inner: rgba(10, 10, 10, 0.85);
-  --adm-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.4),
-    0 16px 48px rgba(0, 0, 0, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 @layer base {

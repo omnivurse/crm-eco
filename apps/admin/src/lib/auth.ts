@@ -6,11 +6,23 @@ export type AdminRole = 'owner' | 'admin' | 'staff';
 export const ADMIN_ROLES: AdminRole[] = ['owner', 'admin', 'staff'];
 
 /** Roles within an organization that are considered admin-tier. */
-const ADMIN_TENANT_ROLES = new Set([
+export const ADMIN_TENANT_ROLES = new Set([
   'owner',
   'super_admin',
   'admin',
   'staff',
+]);
+
+/**
+ * Roles permitted to move money or apply irreversible financial state
+ * (payout dispatch, price-change execution). Deliberately excludes `staff`
+ * and `read_only`. Mirrors FINANCIAL_ROLES in
+ * `supabase/functions/_shared/org-auth.ts` — keep the two in sync.
+ */
+export const FINANCIAL_TENANT_ROLES = new Set([
+  'owner',
+  'super_admin',
+  'admin',
 ]);
 
 export function isAdminRole(role: string): role is AdminRole {
@@ -31,6 +43,7 @@ export function isAdminRole(role: string): role is AdminRole {
  */
 export async function requireAdminRole(
   supabase: any,
+  allowedRoles: Set<string> = ADMIN_TENANT_ROLES,
 ): Promise<
   | {
       profile: {
@@ -65,7 +78,7 @@ export async function requireAdminRole(
     };
   }
 
-  if (!ADMIN_TENANT_ROLES.has(tenant.role)) {
+  if (!allowedRoles.has(tenant.role)) {
     return {
       profile: null,
       error: NextResponse.json({ error: 'Forbidden' }, { status: 403 }),

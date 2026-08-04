@@ -18,6 +18,10 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import {
+  authorizeInternalEdgeRequest,
+  unauthorizedResponse,
+} from '../_shared/cron-auth.ts';
 
 // ─── CORS ────────────────────────────────────────────────────────────────────
 
@@ -93,6 +97,13 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
+
+  // Fail closed. Service-role key (RLS bypassed), no caller check previously —
+  // it writes commission_transactions across organizations. `verify_jwt` accepts
+  // the public anon key, so it authenticates nothing on its own. Invoked by
+  // apps/admin /api/cron/{process-commissions,commissions-accrual} via
+  // createServiceRoleClient(), which forwards the bearer this accepts.
+  if (!authorizeInternalEdgeRequest(req)) return unauthorizedResponse(corsHeaders);
 
   const headers = { ...corsHeaders, 'Content-Type': 'application/json' };
 

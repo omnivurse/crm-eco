@@ -4,6 +4,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { nameDobKey } from './csv-update';
+import { DedupLookupError, fetchAllForDedup } from './paged-lookup';
 import type {
   CsvUpdateWriteTarget,
   CsvUpdateWriter,
@@ -25,30 +26,41 @@ export function createSupabaseRecordLookup(input: {
   return {
     async findByZohoIds(ids) {
       if (ids.length === 0) return [];
-      const { data, error } = await supabase
-        .from('crm_records')
-        .select(RECORD_SELECT)
-        .eq('org_id', orgId)
-        .eq('module_id', moduleId)
-        .in('data->>zoho_id', ids);
-      if (error && error.code !== 'PGRST204') {
-        throw new Error(`zoho_id lookup failed: ${error.message}`);
+      // Paged: an unbounded select silently stops at db.max_rows, and a
+      // truncated match set makes existing records look unmatched — the update
+      // is then skipped rather than applied.
+      try {
+        return await fetchAllForDedup<MatchableRecord>('zoho_id', (from, to) =>
+          supabase
+            .from('crm_records')
+            .select(RECORD_SELECT)
+            .eq('org_id', orgId)
+            .eq('module_id', moduleId)
+            .in('data->>zoho_id', ids)
+            .order('id', { ascending: true })
+            .range(from, to),
+        );
+      } catch (err) {
+        // PGRST204 was tolerated here before paging; keep that behaviour so a
+        // module without zoho_id still falls through to the email/phone/name
+        // matchers instead of failing the whole run.
+        if (err instanceof DedupLookupError && err.code === 'PGRST204') return [];
+        throw err;
       }
-      return (data || []) as MatchableRecord[];
     },
 
     async findByEmails(emails) {
       if (emails.length === 0) return [];
-      const { data, error } = await supabase
-        .from('crm_records')
-        .select(RECORD_SELECT)
-        .eq('org_id', orgId)
-        .eq('module_id', moduleId)
-        .in('email', dedupeCaseVariants(emails));
-      if (error) {
-        throw new Error(`email lookup failed: ${error.message}`);
-      }
-      return (data || []) as MatchableRecord[];
+      return fetchAllForDedup<MatchableRecord>('email', (from, to) =>
+        supabase
+          .from('crm_records')
+          .select(RECORD_SELECT)
+          .eq('org_id', orgId)
+          .eq('module_id', moduleId)
+          .in('email', dedupeCaseVariants(emails))
+          .order('id', { ascending: true })
+          .range(from, to),
+      );
     },
 
     async findByPhones(phones) {
@@ -87,21 +99,23 @@ export function createSupabaseRecordLookup(input: {
     async findByNameDobs(nameDobKeys) {
       if (nameDobKeys.length === 0) return [];
       // Fetch candidates that have DOB in JSONB for this module, then filter in JS
-      // with the same normalize rules as extractMatchKeys.
-      const { data, error } = await supabase
-        .from('crm_records')
-        .select(RECORD_SELECT)
-        .eq('org_id', orgId)
-        .eq('module_id', moduleId)
-        .not('data->>date_of_birth', 'is', null);
-
-      if (error) {
-        throw new Error(`name_dob lookup failed: ${error.message}`);
-      }
+      // with the same normalize rules as extractMatchKeys. Paged: an unbounded
+      // select silently stops at db.max_rows, which would make records past the
+      // first page look unmatched and silently skip their updates.
+      const data = await fetchAllForDedup<MatchableRecord>('name_dob', (from, to) =>
+        supabase
+          .from('crm_records')
+          .select(RECORD_SELECT)
+          .eq('org_id', orgId)
+          .eq('module_id', moduleId)
+          .not('data->>date_of_birth', 'is', null)
+          .order('id', { ascending: true })
+          .range(from, to),
+      );
 
       const wanted = new Set(nameDobKeys);
       const matched: MatchableRecord[] = [];
-      for (const rec of (data || []) as MatchableRecord[]) {
+      for (const rec of data) {
         const d = (rec.data || {}) as Record<string, unknown>;
         const key = nameDobKey(d.first_name, d.last_name, d.date_of_birth);
         if (key && wanted.has(key)) {
@@ -166,19 +180,37 @@ export function createSupabaseCsvUpdateWriter(input: {
       skippedCount,
       writeAttemptCount,
     }) {
+      // Three terminal states, not two. The previous rule marked a run 'failed'
+      // ONLY when every write failed, so 999 failures out of 1000 reported
+      // 'completed' and nobody noticed.
+      //
+      // Requires migration 202608030002 (adds 'completed_with_errors' to the
+      // crm_import_jobs.status CHECK). That migration must be applied BEFORE
+      // this code deploys, or the update violates the constraint and the job is
+      // stranded in 'processing'.
+      const status =
+        errorCount === 0
+          ? 'completed'
+          : errorCount === writeAttemptCount && writeAttemptCount > 0
+            ? 'failed'
+            : 'completed_with_errors';
+
       await supabase
         .from('crm_import_jobs')
         .update({
-          status: errorCount === writeAttemptCount && writeAttemptCount > 0
-            ? 'failed'
-            : 'completed',
+          status,
           processed_rows: writeAttemptCount,
           updated_count: updated,
           error_count: errorCount,
           skipped_count: skippedCount,
+          error_message:
+            errorCount > 0
+              ? `${errorCount} of ${writeAttemptCount} row(s) failed to write`
+              : null,
           completed_at: new Date().toISOString(),
         })
-        .eq('id', jobId);
+        .eq('id', jobId)
+        .eq('org_id', orgId);
     },
 
     async audit({ jobId, target }) {

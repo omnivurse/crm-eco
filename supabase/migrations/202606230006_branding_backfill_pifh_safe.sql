@@ -1,6 +1,12 @@
 -- Phase 0 / Branding: admin_settings → organizations.branding BACKFILL (PIFH-SAFE).
 -- Project: sffisarikcreyyjzdjvb
--- Status:  DRAFT — not applied. Run the READ-ONLY verification block (bottom) FIRST,
+-- Status:  APPLIED (header corrected 2026-08-02 — previously read "DRAFT — not applied").
+--          Verified against the live project: organizations.branding is POPULATED
+--          (colors, company_name) for pay-it-forward-health and still '{}' for the other
+--          three orgs — exactly the backfill-PIFH / skip-the-rest outcome this migration
+--          documents. DO NOT move this file to supabase/drafts/ — it is part of
+--          production history and a rebuild must include it.
+--          Originally: run the READ-ONLY verification block (bottom) FIRST,
 --          confirm the would-backfill / would-skip counts, then run the single UPDATE.
 -- Risk:    LOW. Additive + idempotent: writes only orgs whose branding is still '{}'
 --          AND which customized AWAY from the admin_settings seed defaults. No DDL,

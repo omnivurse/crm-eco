@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { EventWebhook, EventWebhookHeader } from '@sendgrid/eventwebhook';
 import { mapSendGridEventToStatus, shouldUpdateStatus } from '@/lib/comms/providers/sendgrid';
 import type { SendGridWebhookEvent } from '@/lib/comms/types';
 
@@ -17,22 +18,44 @@ function getServiceClient() {
  */
 export async function POST(request: NextRequest) {
   try {
-    // Verify SendGrid webhook signature
-    const signature = request.headers.get('x-twilio-email-event-webhook-signature');
-    const timestamp = request.headers.get('x-twilio-email-event-webhook-timestamp');
-    const webhookKey = process.env.SENDGRID_WEBHOOK_VERIFICATION_KEY;
-
-    if (webhookKey) {
-      if (!signature || !timestamp) {
-        console.warn('[SendGrid Webhook] Missing signature headers');
-        return NextResponse.json({ error: 'Missing signature' }, { status: 401 });
-      }
-      // Note: Full ECDSA verification requires @sendgrid/eventwebhook library
-      // For now, require the headers exist when verification key is configured
+    // Cryptographically verify the SendGrid signature (ECDSA over the RAW body).
+    //
+    // This block previously only checked that the two headers were *present* —
+    // any non-empty value passed — and skipped entirely when the verification key
+    // was unset. Anyone could therefore POST forged delivery/bounce/spam events,
+    // which are then written with the service-role client below. The correct
+    // implementation already existed at /api/webhooks/email/sendgrid; this is the
+    // same verification, using the @sendgrid/eventwebhook dependency the project
+    // already carries.
+    const verificationKey = process.env.SENDGRID_WEBHOOK_VERIFICATION_KEY;
+    if (!verificationKey) {
+      console.error('[SendGrid Webhook] SENDGRID_WEBHOOK_VERIFICATION_KEY is not configured');
+      return NextResponse.json(
+        { error: 'Webhook verification key not configured' },
+        { status: 500 },
+      );
     }
 
-    // Parse webhook payload
-    const events: SendGridWebhookEvent[] = await request.json();
+    const signature = request.headers.get(EventWebhookHeader.SIGNATURE());
+    const timestamp = request.headers.get(EventWebhookHeader.TIMESTAMP());
+
+    if (!signature || !timestamp) {
+      console.warn('[SendGrid Webhook] Missing signature headers');
+      return NextResponse.json({ error: 'Missing webhook signature headers' }, { status: 401 });
+    }
+
+    // Must read the raw text: ECDSA verifies the exact bytes SendGrid signed, so
+    // `request.json()` (which reserializes) would break verification.
+    const rawBody = await request.text();
+
+    const eventWebhook = new EventWebhook();
+    const ecPublicKey = eventWebhook.convertPublicKeyToECDSA(verificationKey);
+    if (!eventWebhook.verifySignature(ecPublicKey, rawBody, signature, timestamp)) {
+      console.warn('[SendGrid Webhook] Invalid signature');
+      return NextResponse.json({ error: 'Invalid webhook signature' }, { status: 401 });
+    }
+
+    const events: SendGridWebhookEvent[] = JSON.parse(rawBody);
 
     if (!Array.isArray(events)) {
       return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });

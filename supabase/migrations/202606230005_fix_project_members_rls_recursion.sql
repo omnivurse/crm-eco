@@ -1,5 +1,10 @@
 -- Fix: break the infinite RLS recursion between public.projects and public.project_members.
--- Status: DRAFT — not applied. Separate from the files-tenancy Phase 0 set; found during local
+-- Status: APPLIED (header corrected 2026-08-02 — previously read "DRAFT — not applied").
+--         Verified against the live project: the three helpers this migration creates —
+--         is_project_owner / is_project_member / is_project_editor — all resolve via RPC
+--         (no PGRST202). DO NOT move this file to supabase/drafts/ — it is part of
+--         production history and a rebuild must include it.
+--         Separate from the files-tenancy Phase 0 set; found during local
 --         validation of Phase 0 (any authenticated SELECT on files via the 'Users can read team
 --         files' policy raised 42P17 'infinite recursion detected in policy for relation
 --         "project_members"').

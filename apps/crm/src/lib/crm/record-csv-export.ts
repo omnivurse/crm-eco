@@ -1,19 +1,11 @@
 import type { CrmRecord } from '@/lib/crm/types';
 
-/** Excel-friendly UTF-8 */
-export const CSV_UTF8_BOM = '\uFEFF';
+// The escaper and BOM moved to @crm-eco/lib/csv/escape so all four CSV
+// producers share one implementation (they had drifted; one omitted `\r` and
+// produced corrupt output). Re-exported here to keep existing importers working.
+export { CSV_UTF8_BOM, escapeCsvCell } from '@crm-eco/lib/csv/escape';
 
-/**
- * Escape a single value for CSV (RFC-style quoting when needed).
- */
-export function escapeCsvCell(value: unknown): string {
-  if (value === null || value === undefined) return '';
-  const str = typeof value === 'object' ? JSON.stringify(value) : String(value);
-  if (/[",\n\r]/.test(str)) {
-    return `"${str.replace(/"/g, '""')}"`;
-  }
-  return str;
-}
+import { escapeCsvCell } from '@crm-eco/lib/csv/escape';
 
 /**
  * One data line for the given column keys (system columns + `data` JSONB).

@@ -64,23 +64,23 @@ export function ProductTable({ products }: ProductTableProps) {
         <tbody>
           {products.map((product) => (
             <tr key={product.id} className="border-b hover:bg-slate-50">
-              <td className="py-3">
+              <td className="py-[var(--ui-cell-py)]">
                 <p className="text-sm font-medium">{product.name}</p>
               </td>
-              <td className="py-3 text-sm font-mono">{product.code}</td>
-              <td className="py-3 text-sm">
+              <td className="py-[var(--ui-cell-py)] text-sm font-mono">{product.code}</td>
+              <td className="py-[var(--ui-cell-py)] text-sm">
                 {product.product_line || <span className="text-slate-400">—</span>}
               </td>
-              <td className="py-3 text-sm">
+              <td className="py-[var(--ui-cell-py)] text-sm">
                 {product.coverage_category || <span className="text-slate-400">—</span>}
               </td>
-              <td className="py-3 text-sm font-medium">
+              <td className="py-[var(--ui-cell-py)] text-sm font-medium">
                 {formatCurrency(product.monthly_share)}
               </td>
-              <td className="py-3 text-sm">
+              <td className="py-[var(--ui-cell-py)] text-sm">
                 {formatCurrency(product.iua_amount)}
               </td>
-              <td className="py-3 text-sm">
+              <td className="py-[var(--ui-cell-py)] text-sm">
                 {product.effective_start_date ? (
                   <span>
                     {format(new Date(product.effective_start_date), 'MMM d, yyyy')}
@@ -92,12 +92,12 @@ export function ProductTable({ products }: ProductTableProps) {
                   <span className="text-slate-400">—</span>
                 )}
               </td>
-              <td className="py-3">
+              <td className="py-[var(--ui-cell-py)]">
                 <Badge variant={product.is_active ? 'default' : 'secondary'}>
                   {product.is_active ? 'Active' : 'Inactive'}
                 </Badge>
               </td>
-              <td className="py-3">
+              <td className="py-[var(--ui-cell-py)]">
                 <Link href={`/products/${product.id}`}>
                   <Button variant="ghost" size="sm">
                     <Eye weight="light" className="h-4 w-4" />

@@ -90,6 +90,23 @@
   --glass-shadow: 0 8px 32px rgba(15, 23, 42, 0.1);
   --glass-blur: 16px;
 
+  /* Elevation — two-layer soft shadows (a tight contact shadow plus a wide
+     ambient one), never a single heavy drop. DESIGN_MEMORY.md documented this
+     --shadow-sm/md/lg scale but it was never actually defined here, so the
+     Admin console grew its own --adm-shadow. `md` is that well-tuned Admin
+     shadow, promoted. */
+  --shadow-sm:
+    0 1px 2px rgba(11, 18, 32, 0.04),
+    0 4px 12px rgba(11, 109, 133, 0.05);
+  --shadow-md:
+    0 1px 2px rgba(11, 18, 32, 0.04),
+    0 12px 40px rgba(11, 109, 133, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  --shadow-lg:
+    0 2px 4px rgba(11, 18, 32, 0.06),
+    0 24px 64px rgba(11, 109, 133, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+
   /* Auth + shell — Ethereal Glass (void / cyan-emerald) */
   --auth-bg: #050505;
   --auth-panel: #0a0a0a;
@@ -119,8 +136,13 @@
 }
 
 .dark {
-  /* Surfaces - Deep navy gradient base */
-  --background: 222 47% 4%;           /* Deep navy-black */
+  /* Surfaces - Deep navy gradient base.
+     THE dark ground for the suite. There were three competing values: the
+     Admin console's #050505 (neutral OLED black), the CRM shell's slate-950
+     #020617 (a Tailwind default nobody chose), and this one. Settled on the
+     cool navy documented in DESIGN_MEMORY.md — the only one that was an
+     actual brand decision. Consoles must not override it. */
+  --background: 221 57% 5.5%;         /* #060b16 */
   --foreground: 210 40% 98%;          /* #F8FAFC */
   --card: 222 45% 7%;
   --card-foreground: 210 40% 98%;
@@ -166,6 +188,20 @@
   --glass-border: rgba(255, 255, 255, 0.08);
   --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
   --glass-blur: 20px;
+
+  /* Elevation — dark. Shadow carries less on a dark ground, so the inset
+     top highlight does the work of lifting a panel off the canvas. */
+  --shadow-sm:
+    0 1px 2px rgba(0, 0, 0, 0.4),
+    0 4px 16px rgba(0, 0, 0, 0.35);
+  --shadow-md:
+    0 1px 2px rgba(0, 0, 0, 0.4),
+    0 16px 48px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --shadow-lg:
+    0 2px 4px rgba(0, 0, 0, 0.5),
+    0 28px 72px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
 
   /* Semantic status tones — dark variants. */
   --tone-neutral-fg:#94a3b8;   --tone-neutral-bg:#94a3b81f;   --tone-neutral-border:#94a3b840;
@@ -564,4 +600,71 @@ button:focus-visible {
 
 .click-bounce:active {
   transform: scale(0.97);
+}
+
+/* ============================================================
+   DENSITY SCALE — shared by the CRM and Admin operator consoles
+   ============================================================
+   Promoted out of apps/crm/globals.css. The CRM had three working
+   density modes; the Admin console had none at all — despite owning
+   the densest surfaces in the suite (billing runs, NACHA batches,
+   commission transactions). One scale now serves both.
+
+   `html[data-density]` is set PRE-PAINT by the shared boot script
+   (see @crm-eco/ui/lib/theme-boot) and persisted in localStorage, so
+   the chrome renders at the chosen scale with no reflow. 'default'
+   sets no attribute.
+
+   --ui-chrome-h is DERIVED from the two bar heights so a consumer's
+   sticky offset can never drift out of sync with them. `calc()` over
+   custom properties resolves at computed-value time on the same
+   element, so the derived value tracks the density overrides below
+   without being restated in each mode.
+
+   Consumers must not hardcode these numbers. Apps may alias them
+   into an app-local name for back-compat (see the CRM's --crm-*).
+   ------------------------------------------------------------ */
+/* Motion easing — promoted from the Admin console's --adm-ease/--adm-ease-out,
+   which were the best-tuned curves in the suite. One set for both consoles. */
+:root {
+  --ease: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+:root {
+  --ui-row-h: 40px;
+  --ui-toolbar-h: 48px;
+  --ui-topbar-h: 44px;
+  --ui-navbar-h: 38px;
+  --ui-chrome-h: calc(var(--ui-topbar-h) + var(--ui-navbar-h) + 1px);
+  --ui-gutter: 20px;
+  --ui-section-gap: 24px;
+  --ui-cell-py: 8px;
+  /* Viewport offset for scroll-container max-heights (record tables and
+     views), approximating chrome + module header + toolbar so a table body
+     fills the space below without overflowing the shell. Density-aware: a
+     compact power-user gets more rows for free. */
+  --ui-view-offset: 220px;
+}
+
+:root[data-density='compact'] {
+  --ui-row-h: 34px;
+  --ui-toolbar-h: 42px;
+  --ui-topbar-h: 38px;
+  --ui-navbar-h: 32px;
+  --ui-gutter: 14px;
+  --ui-section-gap: 16px;
+  --ui-cell-py: 5px;
+  --ui-view-offset: 184px;
+}
+
+:root[data-density='comfortable'] {
+  --ui-row-h: 52px;
+  --ui-toolbar-h: 56px;
+  --ui-topbar-h: 52px;
+  --ui-navbar-h: 44px;
+  --ui-gutter: 28px;
+  --ui-section-gap: 32px;
+  --ui-cell-py: 12px;
+  --ui-view-offset: 248px;
 }

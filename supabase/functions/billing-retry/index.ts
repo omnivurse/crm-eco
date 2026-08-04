@@ -9,6 +9,10 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import {
+  authorizeInternalEdgeRequest,
+  unauthorizedResponse,
+} from '../_shared/cron-auth.ts';
 
 const ALLOWED_ORIGINS = (Deno.env.get('ALLOWED_ORIGINS') || '*').split(',').map(s => s.trim());
 
@@ -39,6 +43,12 @@ interface RetryResult {
 serve(async (req) => {
   const corsHeaders = getCorsHeaders(req);
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+
+  // Fail closed. Service-role key (RLS bypassed), no caller check previously —
+  // it re-attempts card charges. `verify_jwt` accepts the public anon key, so it
+  // authenticates nothing on its own. Invoked by apps/admin /api/cron/billing-retry
+  // via createServiceRoleClient(), which forwards the bearer this accepts.
+  if (!authorizeInternalEdgeRequest(req)) return unauthorizedResponse(corsHeaders);
 
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,

@@ -165,27 +165,13 @@ export async function updateRecord(input: UpdateRecordInput): Promise<CrmRecord>
   return result.record;
 }
 
-export async function deleteRecord(recordId: string): Promise<void> {
-  const supabase = await createCrmClient();
-  
-  const { error } = await supabase
-    .from('crm_records')
-    .delete()
-    .eq('id', recordId);
-
-  if (error) throw error;
-}
-
-export async function bulkDeleteRecords(recordIds: string[]): Promise<void> {
-  const supabase = await createCrmClient();
-  
-  const { error } = await supabase
-    .from('crm_records')
-    .delete()
-    .in('id', recordIds);
-
-  if (error) throw error;
-}
+// `deleteRecord` / `bulkDeleteRecords` were removed here. They issued a hard
+// `.delete()` on crm_records with no org predicate and had zero callers, while
+// the rest of the system deletes softly (`deleted_at`) so records stay
+// recoverable from Trash and merges stay reversible. Deleting a record goes
+// through DELETE /api/crm/records/[id], which role-gates, honours approval
+// rules, and soft-deletes; permanent removal is POST
+// /api/crm/records/[id]/purge. Do not reintroduce a raw delete helper.
 
 export async function bulkUpdateRecords(
   recordIds: string[],

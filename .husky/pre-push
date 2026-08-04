@@ -27,5 +27,7 @@ echo "Checking workspace hygiene (nested repo guard)..."
 npm run workspace:hygiene || exit 1
 
 echo "Running type check before push..."
-npm run typecheck:crm || exit 1
+# Every workspace that defines a `typecheck` script, not just CRM. apps/admin had
+# no typecheck script at all, so admin type regressions were pushable.
+npx turbo typecheck || exit 1
 echo "Type check passed - safe to push"

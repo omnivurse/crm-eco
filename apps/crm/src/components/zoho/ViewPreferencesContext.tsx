@@ -4,7 +4,8 @@ import { createContext, useContext, useState, useCallback, useEffect, type React
 import type { ViewMode } from '@/lib/crm/types';
 import { emitHabitSignal } from '@/lib/crm/habits/beacon';
 
-export type Density = 'compact' | 'default' | 'comfortable';
+/** Single definition, shared with the Admin console. */
+export type { Density } from '@crm-eco/ui/lib/density';
 
 export interface ViewPreferences {
   viewId: string | null;

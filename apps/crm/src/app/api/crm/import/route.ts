@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { createClient, getAuthProfile } from '@/lib/supabase-server';
+import { MAX_CSV_ROWS } from '@/lib/imports/csv-update';
 import {
   buildNormalizedRecordWrite,
   mergeCrmDataJsonIntoRowColumns,
@@ -7,30 +9,40 @@ import {
   sanitizeCrmDataJsonPatch,
 } from '@/lib/crm/merge-crm-data-json-to-row';
 import { requireActiveOrgCrmRoles } from '@/lib/crm/require-crm-role';
+import { fetchAllForDedup } from '@/lib/imports/paged-lookup';
 
 
-interface ColumnMapping {
-  sourceColumn: string;
-  targetField: string | null;
-}
+/**
+ * Request schema. This route previously did `const body: ImportRequest = await
+ * request.json()` — a bare cast that validated nothing and, critically, put no
+ * ceiling on `data.length`. A Next route handler has no default body limit, so
+ * a single request could pin the server's memory. Its sibling
+ * `POST /api/crm/imports/update` already validated with zod; this matches it,
+ * including the shared `MAX_CSV_ROWS` ceiling.
+ */
+const columnMappingSchema = z.object({
+  sourceColumn: z.string(),
+  targetField: z.string().nullable(),
+});
 
-interface ImportRequest {
-  moduleId: string;
-  organizationId: string;
-  mappings: ColumnMapping[];
-  data: Record<string, string>[];
-  fileName?: string;
-  saveMappingAs?: string; // Optional: save mapping template for reuse
-  skipDuplicates?: boolean; // Skip records that already exist (by email/phone)
+const importRequestSchema = z.object({
+  moduleId: z.string().uuid(),
+  organizationId: z.string().uuid(),
+  mappings: z.array(columnMappingSchema),
+  data: z.array(z.record(z.string(), z.string())).min(1).max(MAX_CSV_ROWS),
+  fileName: z.string().optional(),
+  /** Optional: save mapping template for reuse. */
+  saveMappingAs: z.string().optional(),
+  /** Skip records that already exist (by email/phone/name+DOB). */
+  skipDuplicates: z.boolean().default(true),
   /**
    * What to do when an incoming row matches an existing record:
    *   - 'skip'   (default) — leave the existing record untouched.
-   *   - 'update' — merge the row's mapped fields into the existing record
-   *                (upsert). Only non-empty mapped values are written, and
-   *                out-of-band-owned columns are never reverted.
+   *   - 'update' — moved to POST /api/crm/imports/update (Entity Reupload);
+   *                rejected with 410 below so match/merge logic cannot diverge.
    */
-  onDuplicate?: 'skip' | 'update';
-}
+  onDuplicate: z.enum(['skip', 'update']).default('skip'),
+});
 
 // ── Market type classification for CSV imports ──
 const HEALTHSHARE_PATTERNS = /health\s*share|sharing|ministry|impact|knew\s*health|oneshare|sedera|liberty|zion|aliera|medishare|medi-share|samaritan|mpowering|mpb\b|mpower|jericho|unite\s*health|chr\b/i;
@@ -114,7 +126,7 @@ function normalizePhoneDigits(value: unknown): string | null {
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
-  
+
   const profile = await getAuthProfile();
   if (!profile) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -128,9 +140,21 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
   }
 
+  // Hoisted so the catch can close out a job that was already created. Without
+  // this, any throw after job creation (e.g. a dedup lookup failure) left the
+  // row stuck in 'processing' forever with no reaper.
+  let createdJobId: string | null = null;
+
   try {
-    const body: ImportRequest = await request.json();
-    const { moduleId, organizationId, mappings, data, fileName, saveMappingAs, skipDuplicates = true, onDuplicate = 'skip' } = body;
+    const parsed = importRequestSchema.safeParse(await request.json());
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: 'Invalid request', details: parsed.error.flatten() },
+        { status: 400 },
+      );
+    }
+    const { moduleId, organizationId, mappings, data, fileName, saveMappingAs, skipDuplicates, onDuplicate } =
+      parsed.data;
 
     // Entity Reupload (update-only + dry-run) lives at POST /api/crm/imports/update.
     // The wizard's "Update existing" mode calls that path; this route no longer
@@ -261,6 +285,7 @@ export async function POST(request: NextRequest) {
     if (jobError) {
       return NextResponse.json({ error: jobError.message }, { status: 500 });
     }
+    createdJobId = importJob.id as string;
 
     // Build mapping lookup
     const fieldMappings = new Map<string, string>();
@@ -331,19 +356,25 @@ export async function POST(request: NextRequest) {
         .map(r => r.email?.toLowerCase())
         .filter((e): e is string => !!e);
 
-      // Batch check emails (case-insensitive via lowercase comparison)
+      // Batch check emails (case-insensitive via lowercase comparison).
+      // Paged: an unbounded select silently stops at db.max_rows.
       if (emailsToCheck.length > 0) {
-        // Query all existing emails for this org+module, then compare lowercased
-        const { data: existingByEmail } = await supabase
-          .from('crm_records')
-          .select('id, email')
-          .eq('org_id', organizationId)
-          .eq('module_id', moduleId)
-          .not('email', 'is', null);
+        const existingByEmail = await fetchAllForDedup<{ id: string; email: string | null }>(
+          'email',
+          (from, to) =>
+            supabase
+              .from('crm_records')
+              .select('id, email')
+              .eq('org_id', organizationId)
+              .eq('module_id', moduleId)
+              .not('email', 'is', null)
+              .order('id', { ascending: true })
+              .range(from, to),
+        );
 
-        for (const r of existingByEmail ?? []) {
-          const key = (r.email as string | null)?.toLowerCase();
-          if (key) emailToId.set(key, r.id as string);
+        for (const r of existingByEmail) {
+          const key = r.email?.toLowerCase();
+          if (key) emailToId.set(key, r.id);
         }
       }
 
@@ -354,16 +385,22 @@ export async function POST(request: NextRequest) {
         (r) => !r.email && normalizePhoneDigits(r.phone),
       );
       if (hasPhoneCandidates) {
-        const { data: existingByPhone } = await supabase
-          .from('crm_records')
-          .select('id, phone')
-          .eq('org_id', organizationId)
-          .eq('module_id', moduleId)
-          .not('phone', 'is', null);
+        const existingByPhone = await fetchAllForDedup<{ id: string; phone: string | null }>(
+          'phone',
+          (from, to) =>
+            supabase
+              .from('crm_records')
+              .select('id, phone')
+              .eq('org_id', organizationId)
+              .eq('module_id', moduleId)
+              .not('phone', 'is', null)
+              .order('id', { ascending: true })
+              .range(from, to),
+        );
 
-        for (const r of existingByPhone ?? []) {
+        for (const r of existingByPhone) {
           const key = normalizePhoneDigits(r.phone);
-          if (key) phoneToId.set(key, r.id as string);
+          if (key) phoneToId.set(key, r.id);
         }
       }
 
@@ -376,21 +413,27 @@ export async function POST(request: NextRequest) {
       );
 
       if (hasNameDobCandidates) {
-        const { data: existingByNameDob, error: nameDobError } = await supabase
-          .from('crm_records')
-          .select('id, fn:data->>first_name, ln:data->>last_name, dob:data->>date_of_birth')
-          .eq('org_id', organizationId)
-          .eq('module_id', moduleId);
+        // Throws on error (see fetchAllForDedup). A failed lookup here used to be
+        // logged and swallowed, which silently disabled the name+DOB guard and
+        // let its duplicates through as inserts — fail the import instead.
+        const existingByNameDob = await fetchAllForDedup<{
+          id: string;
+          fn: string | null;
+          ln: string | null;
+          dob: string | null;
+        }>('name+dob', (from, to) =>
+          supabase
+            .from('crm_records')
+            .select('id, fn:data->>first_name, ln:data->>last_name, dob:data->>date_of_birth')
+            .eq('org_id', organizationId)
+            .eq('module_id', moduleId)
+            .order('id', { ascending: true })
+            .range(from, to),
+        );
 
-        if (nameDobError) {
-          // Surface rather than swallow: a PostgREST/schema regression here must
-          // not silently disable the name+DOB guard and let duplicates back in.
-          console.error('Import name+DOB dedup lookup failed:', nameDobError.message);
-        } else {
-          for (const r of (existingByNameDob ?? []) as Array<{ id: string; fn: string | null; ln: string | null; dob: string | null }>) {
-            const key = nameDobKey(r.fn, r.ln, r.dob);
-            if (key) nameDobToId.set(key, r.id);
-          }
+        for (const r of existingByNameDob) {
+          const key = nameDobKey(r.fn, r.ln, r.dob);
+          if (key) nameDobToId.set(key, r.id);
         }
       }
     }
@@ -681,6 +724,26 @@ export async function POST(request: NextRequest) {
     });
   } catch (err) {
     console.error('Import error:', err);
+
+    // Close out the job so it does not sit in 'processing' indefinitely. Best
+    // effort — if this write also fails we still want to return the original
+    // error, which is the one that explains what went wrong.
+    if (createdJobId) {
+      const { error: closeError } = await supabase
+        .from('crm_import_jobs')
+        .update({
+          status: 'failed',
+          error_message: err instanceof Error ? err.message : 'Import failed',
+          completed_at: new Date().toISOString(),
+        })
+        .eq('id', createdJobId)
+        .eq('org_id', profile.organization_id);
+
+      if (closeError) {
+        console.error('Import error: failed to mark job failed:', closeError.message);
+      }
+    }
+
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Import failed' },
       { status: 500 }

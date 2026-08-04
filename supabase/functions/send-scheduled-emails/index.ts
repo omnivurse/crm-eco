@@ -17,6 +17,10 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import {
+  authorizeInternalEdgeRequest,
+  unauthorizedResponse,
+} from '../_shared/cron-auth.ts';
 
 async function getOrgEmailConfig(supabaseClient: any, organizationId: string) {
   const { data: settings } = await supabaseClient
@@ -42,6 +46,13 @@ serve(async (req) => {
       headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*' },
     });
   }
+
+  // Fail closed. Service-role key (RLS bypassed), no caller check previously —
+  // it sends queued mail for every organization. `verify_jwt` accepts the public
+  // anon key, so it authenticates nothing on its own. Both documented callers
+  // (the pg_cron job above and apps/admin /api/cron/send-scheduled-emails) send
+  // the service-role bearer this accepts.
+  if (!authorizeInternalEdgeRequest(req)) return unauthorizedResponse();
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;

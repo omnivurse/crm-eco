@@ -245,29 +245,29 @@ export function MemberTable({ members, orgId }: MemberTableProps) {
                 key={member.id}
                 className={`border-b hover:bg-slate-50 ${selectedIds.has(member.id) ? 'bg-primary/5' : ''}`}
               >
-                <td className="py-3 pl-1 pr-3">
+                <td className="py-[var(--ui-cell-py)] pl-1 pr-3">
                   <Checkbox
                     checked={selectedIds.has(member.id)}
                     onCheckedChange={() => toggleOne(member.id)}
                     aria-label={`Select ${member.first_name} ${member.last_name}`}
                   />
                 </td>
-                <td className="py-3">
+                <td className="py-[var(--ui-cell-py)]">
                   <p className="text-sm font-medium">
                     {member.first_name} {member.last_name}
                   </p>
                 </td>
-                <td className="py-3 text-sm">{member.email}</td>
-                <td className="py-3 text-sm">
+                <td className="py-[var(--ui-cell-py)] text-sm">{member.email}</td>
+                <td className="py-[var(--ui-cell-py)] text-sm">
                   {member.phone || <span className="text-slate-400">—</span>}
                 </td>
-                <td className="py-3 text-sm">
+                <td className="py-[var(--ui-cell-py)] text-sm">
                   {member.state || <span className="text-slate-400">—</span>}
                 </td>
-                <td className="py-3 text-sm">
+                <td className="py-[var(--ui-cell-py)] text-sm">
                   {member.plan_name || <span className="text-slate-400">—</span>}
                 </td>
-                <td className="py-3 text-sm">
+                <td className="py-[var(--ui-cell-py)] text-sm">
                   {(() => {
                     const m = getMarketBadge(member);
                     if (m.label === '—') {
@@ -280,12 +280,12 @@ export function MemberTable({ members, orgId }: MemberTableProps) {
                     );
                   })()}
                 </td>
-                <td className="py-3 text-sm text-slate-700">
+                <td className="py-[var(--ui-cell-py)] text-sm text-slate-700">
                   {member.is_smoker === true && <span className="text-amber-800">Yes</span>}
                   {member.is_smoker === false && <span className="text-slate-600">No</span>}
                   {member.is_smoker == null && <span className="text-slate-400">—</span>}
                 </td>
-                <td className="py-3 text-sm">
+                <td className="py-[var(--ui-cell-py)] text-sm">
                   {member.advisor ? (
                     <span>
                       {member.advisor.first_name} {member.advisor.last_name}
@@ -294,13 +294,13 @@ export function MemberTable({ members, orgId }: MemberTableProps) {
                     <span className="text-slate-400">—</span>
                   )}
                 </td>
-                <td className="py-3">
+                <td className="py-[var(--ui-cell-py)]">
                   <StatusBadge status={member.status} label={getStatusLabel(member.status)} />
                 </td>
-                <td className="py-3 text-sm text-slate-500">
+                <td className="py-[var(--ui-cell-py)] text-sm text-slate-500">
                   {format(new Date(member.created_at), 'MMM d, yyyy')}
                 </td>
-                <td className="py-3">
+                <td className="py-[var(--ui-cell-py)]">
                   <Link href={`/members/${member.id}`}>
                     <Button variant="ghost" size="sm">
                       <Eye weight="light" className="h-4 w-4" />

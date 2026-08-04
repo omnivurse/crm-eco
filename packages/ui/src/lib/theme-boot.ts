@@ -22,8 +22,11 @@ export const THEME_STORAGE_KEY = 'dhh-theme';
  */
 export const LEGACY_THEME_STORAGE_KEYS = ['crm-theme', 'admin-theme'] as const;
 
-/** Density key. Owned by the CRM today; the Admin console adopts it in Phase 2. */
-export const DENSITY_STORAGE_KEY = 'crm-density';
+/** The single density key both consoles read and write. */
+export const DENSITY_STORAGE_KEY = 'dhh-density';
+
+/** Per-app density keys migrated on first read (the CRM owned density alone). */
+export const LEGACY_DENSITY_STORAGE_KEYS = ['crm-density'] as const;
 
 export function isTheme(value: unknown): value is Theme {
   return value === 'light' || value === 'dark' || value === 'system';
@@ -129,12 +132,28 @@ export function createThemeBootScript({
 ${
   density
     ? `
-    var d = localStorage.getItem(${JSON.stringify(DENSITY_STORAGE_KEY)});
+    var DKEY = ${JSON.stringify(DENSITY_STORAGE_KEY)};
+    var DLEGACY = [${LEGACY_DENSITY_STORAGE_KEYS.map((k) => JSON.stringify(k)).join(',')}];
+    var dValid = function(v) { return v === 'compact' || v === 'default' || v === 'comfortable'; };
+    var d = localStorage.getItem(DKEY);
+    if (!dValid(d)) {
+      d = null;
+      for (var j = 0; j < DLEGACY.length; j++) {
+        var dLegacy = localStorage.getItem(DLEGACY[j]);
+        if (dValid(dLegacy)) {
+          d = dLegacy;
+          try { localStorage.setItem(DKEY, dLegacy); } catch (e) {}
+          break;
+        }
+      }
+    }
     if (d === 'compact' || d === 'comfortable') {
       html.setAttribute('data-density', d);
     } else if (d === 'default') {
       html.removeAttribute('data-density');
     } else {
+      // No saved preference: these are data-heavy consoles, so more rows per
+      // screen is the right out-of-box default.
       html.setAttribute('data-density', 'compact');
     }`
     : ''

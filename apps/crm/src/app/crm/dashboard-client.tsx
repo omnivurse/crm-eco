@@ -279,6 +279,12 @@ export function DashboardClient({
                       className={
                         job.status === 'completed'
                           ? 'bg-brand-emerald-100 text-brand-emerald-700'
+                          : // Widened to string on purpose: migration 202608030002 adds
+                            // 'completed_with_errors' to the crm_import_jobs status CHECK, but the
+                            // generated DB types still predate it. Drop the cast after
+                            // `npm run db:generate-types` picks the new value up.
+                            (job.status as string) === 'completed_with_errors'
+                          ? 'bg-amber-100 text-amber-700'
                           : job.status === 'failed'
                           ? 'bg-destructive/10 text-destructive'
                           : job.status === 'processing'

@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.1"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       _enterprise_verification: {
@@ -2472,6 +2447,10 @@ export type Database = {
           crm_owner: boolean | null
           current_month_commissions: number | null
           custom_fields: Json | null
+          delete_batch_id: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          deleted_origin: string | null
           email: string
           enrollment_code: string | null
           first_name: string
@@ -2539,6 +2518,10 @@ export type Database = {
           crm_owner?: boolean | null
           current_month_commissions?: number | null
           custom_fields?: Json | null
+          delete_batch_id?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_origin?: string | null
           email: string
           enrollment_code?: string | null
           first_name: string
@@ -2606,6 +2589,10 @@ export type Database = {
           crm_owner?: boolean | null
           current_month_commissions?: number | null
           custom_fields?: Json | null
+          delete_batch_id?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_origin?: string | null
           email?: string
           enrollment_code?: string | null
           first_name?: string
@@ -5139,13 +5126,6 @@ export type Database = {
             referencedRelation: "payment_profiles"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "fk_billing_schedules_enrollment"
-            columns: ["enrollment_id"]
-            isOneToOne: false
-            referencedRelation: "enrollments"
-            referencedColumns: ["id"]
-          },
         ]
       }
       billing_transactions: {
@@ -6067,6 +6047,10 @@ export type Database = {
           created_at: string
           custom_link: string | null
           custom_link_label: string | null
+          delete_batch_id: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          deleted_origin: string | null
           email: string | null
           id: string
           is_primary: boolean
@@ -6090,6 +6074,10 @@ export type Database = {
           created_at?: string
           custom_link?: string | null
           custom_link_label?: string | null
+          delete_batch_id?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_origin?: string | null
           email?: string | null
           id?: string
           is_primary?: boolean
@@ -6113,6 +6101,10 @@ export type Database = {
           created_at?: string
           custom_link?: string | null
           custom_link_label?: string | null
+          delete_batch_id?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_origin?: string | null
           email?: string | null
           id?: string
           is_primary?: boolean
@@ -9530,6 +9522,10 @@ export type Database = {
           bucket_path: string | null
           created_at: string | null
           created_by: string | null
+          delete_batch_id: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          deleted_origin: string | null
           description: string | null
           file_name: string
           file_path: string
@@ -9547,6 +9543,10 @@ export type Database = {
           bucket_path?: string | null
           created_at?: string | null
           created_by?: string | null
+          delete_batch_id?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_origin?: string | null
           description?: string | null
           file_name: string
           file_path: string
@@ -9564,6 +9564,10 @@ export type Database = {
           bucket_path?: string | null
           created_at?: string | null
           created_by?: string | null
+          delete_batch_id?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_origin?: string | null
           description?: string | null
           file_name?: string
           file_path?: string
@@ -10311,6 +10315,10 @@ export type Database = {
           color: string
           created_at: string
           created_by: string | null
+          delete_batch_id: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          deleted_origin: string | null
           description: string | null
           display_order: number
           group_name: string
@@ -10326,6 +10334,10 @@ export type Database = {
           color?: string
           created_at?: string
           created_by?: string | null
+          delete_batch_id?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_origin?: string | null
           description?: string | null
           display_order?: number
           group_name: string
@@ -10341,6 +10353,10 @@ export type Database = {
           color?: string
           created_at?: string
           created_by?: string | null
+          delete_batch_id?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_origin?: string | null
           description?: string | null
           display_order?: number
           group_name?: string
@@ -11793,6 +11809,58 @@ export type Database = {
           },
         ]
       }
+      crm_layout_orphan_cleanup_20260720: {
+        Row: {
+          cleaned_at: string
+          config_before: Json
+          layout_id: string
+        }
+        Insert: {
+          cleaned_at?: string
+          config_before: Json
+          layout_id: string
+        }
+        Update: {
+          cleaned_at?: string
+          config_before?: Json
+          layout_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_layout_orphan_cleanup_20260720_layout_id_fkey"
+            columns: ["layout_id"]
+            isOneToOne: true
+            referencedRelation: "crm_layouts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_layout_section_sync_backup_20260720: {
+        Row: {
+          config_before: Json
+          layout_id: string
+          synced_at: string
+        }
+        Insert: {
+          config_before: Json
+          layout_id: string
+          synced_at?: string
+        }
+        Update: {
+          config_before?: Json
+          layout_id?: string
+          synced_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_layout_section_sync_backup_20260720_layout_id_fkey"
+            columns: ["layout_id"]
+            isOneToOne: true
+            referencedRelation: "crm_layouts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_layouts: {
         Row: {
           config: Json
@@ -12788,8 +12856,13 @@ export type Database = {
           body: string
           created_at: string | null
           created_by: string | null
+          delete_batch_id: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          deleted_origin: string | null
           id: string
           is_pinned: boolean | null
+          note_date: string | null
           org_id: string
           organization_id: string | null
           record_id: string
@@ -12799,8 +12872,13 @@ export type Database = {
           body: string
           created_at?: string | null
           created_by?: string | null
+          delete_batch_id?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_origin?: string | null
           id?: string
           is_pinned?: boolean | null
+          note_date?: string | null
           org_id: string
           organization_id?: string | null
           record_id: string
@@ -12810,8 +12888,13 @@ export type Database = {
           body?: string
           created_at?: string | null
           created_by?: string | null
+          delete_batch_id?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_origin?: string | null
           id?: string
           is_pinned?: boolean | null
+          note_date?: string | null
           org_id?: string
           organization_id?: string | null
           record_id?: string
@@ -13199,6 +13282,10 @@ export type Database = {
         Row: {
           created_at: string | null
           created_by: string | null
+          delete_batch_id: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          deleted_origin: string | null
           id: string
           is_primary: boolean | null
           link_type: string
@@ -13211,6 +13298,10 @@ export type Database = {
         Insert: {
           created_at?: string | null
           created_by?: string | null
+          delete_batch_id?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_origin?: string | null
           id?: string
           is_primary?: boolean | null
           link_type: string
@@ -13223,6 +13314,10 @@ export type Database = {
         Update: {
           created_at?: string | null
           created_by?: string | null
+          delete_batch_id?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_origin?: string | null
           id?: string
           is_primary?: boolean | null
           link_type?: string
@@ -13493,6 +13588,10 @@ export type Database = {
           created_by: string | null
           current_year_start_date: string | null
           data: Json | null
+          delete_batch_id: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          deleted_origin: string | null
           email: string | null
           estimated_age: number | null
           group_name: string | null
@@ -13538,6 +13637,10 @@ export type Database = {
           created_by?: string | null
           current_year_start_date?: string | null
           data?: Json | null
+          delete_batch_id?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_origin?: string | null
           email?: string | null
           estimated_age?: number | null
           group_name?: string | null
@@ -13583,6 +13686,10 @@ export type Database = {
           created_by?: string | null
           current_year_start_date?: string | null
           data?: Json | null
+          delete_batch_id?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_origin?: string | null
           email?: string | null
           estimated_age?: number | null
           group_name?: string | null
@@ -15232,6 +15339,10 @@ export type Database = {
           completed_at: string | null
           created_at: string | null
           created_by: string | null
+          delete_batch_id: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          deleted_origin: string | null
           description: string | null
           due_at: string | null
           follow_up_note: string | null
@@ -15259,6 +15370,10 @@ export type Database = {
           completed_at?: string | null
           created_at?: string | null
           created_by?: string | null
+          delete_batch_id?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_origin?: string | null
           description?: string | null
           due_at?: string | null
           follow_up_note?: string | null
@@ -15286,6 +15401,10 @@ export type Database = {
           completed_at?: string | null
           created_at?: string | null
           created_by?: string | null
+          delete_batch_id?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_origin?: string | null
           description?: string | null
           due_at?: string | null
           follow_up_note?: string | null
@@ -15469,6 +15588,48 @@ export type Database = {
           },
         ]
       }
+      crm_trash_batches: {
+        Row: {
+          actor_id: string | null
+          deleted_at: string
+          id: string
+          item_count: number
+          organization_id: string
+          origin: string | null
+          purge_after: string
+          purged_at: string | null
+          restored_at: string | null
+          root_ids: string[]
+          root_table: string
+        }
+        Insert: {
+          actor_id?: string | null
+          deleted_at?: string
+          id?: string
+          item_count?: number
+          organization_id: string
+          origin?: string | null
+          purge_after?: string
+          purged_at?: string | null
+          restored_at?: string | null
+          root_ids: string[]
+          root_table: string
+        }
+        Update: {
+          actor_id?: string | null
+          deleted_at?: string
+          id?: string
+          item_count?: number
+          organization_id?: string
+          origin?: string | null
+          purge_after?: string
+          purged_at?: string | null
+          restored_at?: string | null
+          root_ids?: string[]
+          root_table?: string
+        }
+        Relationships: []
+      }
       crm_trusted_domains: {
         Row: {
           added_by: string | null
@@ -15628,6 +15789,54 @@ export type Database = {
             columns: ["role_id"]
             isOneToOne: false
             referencedRelation: "crm_roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_user_signals: {
+        Row: {
+          created_at: string
+          entity_id: string | null
+          id: string
+          meta: Json
+          module_key: string | null
+          organization_id: string
+          signal_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          entity_id?: string | null
+          id?: string
+          meta?: Json
+          module_key?: string | null
+          organization_id: string
+          signal_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          entity_id?: string | null
+          id?: string
+          meta?: Json
+          module_key?: string | null
+          organization_id?: string
+          signal_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_user_signals_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "my_organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_user_signals_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -17209,6 +17418,10 @@ export type Database = {
           coverage_role: string | null
           created_at: string | null
           date_of_birth: string
+          delete_batch_id: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          deleted_origin: string | null
           email: string | null
           existing_condition: boolean | null
           existing_condition_description: string | null
@@ -17245,6 +17458,10 @@ export type Database = {
           coverage_role?: string | null
           created_at?: string | null
           date_of_birth: string
+          delete_batch_id?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_origin?: string | null
           email?: string | null
           existing_condition?: boolean | null
           existing_condition_description?: string | null
@@ -17281,6 +17498,10 @@ export type Database = {
           coverage_role?: string | null
           created_at?: string | null
           date_of_birth?: string
+          delete_batch_id?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_origin?: string | null
           email?: string | null
           existing_condition?: boolean | null
           existing_condition_description?: string | null
@@ -21079,6 +21300,10 @@ export type Database = {
           created_at: string | null
           created_by: string | null
           custom_fields: Json | null
+          delete_batch_id: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          deleted_origin: string | null
           effective_date: string | null
           end_date: string | null
           enroller_id: string | null
@@ -21234,6 +21459,10 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           custom_fields?: Json | null
+          delete_batch_id?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_origin?: string | null
           effective_date?: string | null
           end_date?: string | null
           enroller_id?: string | null
@@ -21389,6 +21618,10 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           custom_fields?: Json | null
+          delete_batch_id?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_origin?: string | null
           effective_date?: string | null
           end_date?: string | null
           enroller_id?: string | null
@@ -24042,6 +24275,7 @@ export type Database = {
           linked_account_id: string | null
           linked_deal_id: string | null
           linked_lead_id: string | null
+          mailbox_address: string | null
           message_count: number
           metadata: Json
           org_id: string
@@ -24075,6 +24309,7 @@ export type Database = {
           linked_account_id?: string | null
           linked_deal_id?: string | null
           linked_lead_id?: string | null
+          mailbox_address?: string | null
           message_count?: number
           metadata?: Json
           org_id: string
@@ -24108,6 +24343,7 @@ export type Database = {
           linked_account_id?: string | null
           linked_deal_id?: string | null
           linked_lead_id?: string | null
+          mailbox_address?: string | null
           message_count?: number
           metadata?: Json
           org_id?: string
@@ -26503,6 +26739,45 @@ export type Database = {
           },
         ]
       }
+      known_devices: {
+        Row: {
+          device_hash: string
+          first_seen_at: string
+          id: string
+          label: string | null
+          last_ip: string | null
+          last_seen_at: string
+          revoked_at: string | null
+          trusted_at: string | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          device_hash: string
+          first_seen_at?: string
+          id?: string
+          label?: string | null
+          last_ip?: string | null
+          last_seen_at?: string
+          revoked_at?: string | null
+          trusted_at?: string | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          device_hash?: string
+          first_seen_at?: string
+          id?: string
+          label?: string | null
+          last_ip?: string | null
+          last_seen_at?: string
+          revoked_at?: string | null
+          trusted_at?: string | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       landing_page_events: {
         Row: {
           created_at: string | null
@@ -27369,6 +27644,10 @@ export type Database = {
           customer_profile_id: string | null
           date_of_birth: string | null
           default_payment_profile_id: string | null
+          delete_batch_id: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          deleted_origin: string | null
           department: string | null
           disability: string | null
           division: string | null
@@ -27464,6 +27743,10 @@ export type Database = {
           customer_profile_id?: string | null
           date_of_birth?: string | null
           default_payment_profile_id?: string | null
+          delete_batch_id?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_origin?: string | null
           department?: string | null
           disability?: string | null
           division?: string | null
@@ -27559,6 +27842,10 @@ export type Database = {
           customer_profile_id?: string | null
           date_of_birth?: string | null
           default_payment_profile_id?: string | null
+          delete_batch_id?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_origin?: string | null
           department?: string | null
           disability?: string | null
           division?: string | null
@@ -27658,6 +27945,13 @@ export type Database = {
             referencedColumns: ["advisor_id"]
           },
           {
+            foreignKeyName: "members_default_payment_profile_id_fkey"
+            columns: ["default_payment_profile_id"]
+            isOneToOne: false
+            referencedRelation: "payment_profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "members_merged_into_id_fkey"
             columns: ["merged_into_id"]
             isOneToOne: false
@@ -27691,6 +27985,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "pricing_lookup_mv"
             referencedColumns: ["plan_id"]
+          },
+          {
+            foreignKeyName: "members_primary_enrollment_id_fkey"
+            columns: ["primary_enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "enrollments"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -28053,6 +28354,10 @@ export type Database = {
       need_attachments: {
         Row: {
           created_at: string
+          delete_batch_id: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          deleted_origin: string | null
           file_name: string
           id: string
           mime_type: string | null
@@ -28064,6 +28369,10 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          delete_batch_id?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_origin?: string | null
           file_name: string
           id?: string
           mime_type?: string | null
@@ -28075,6 +28384,10 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          delete_batch_id?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_origin?: string | null
           file_name?: string
           id?: string
           mime_type?: string | null
@@ -28296,6 +28609,10 @@ export type Database = {
           billed_amount: number | null
           created_at: string | null
           custom_fields: Json | null
+          delete_batch_id: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          deleted_origin: string | null
           description: string
           eligible_amount: number | null
           facility_name: string | null
@@ -28334,6 +28651,10 @@ export type Database = {
           billed_amount?: number | null
           created_at?: string | null
           custom_fields?: Json | null
+          delete_batch_id?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_origin?: string | null
           description: string
           eligible_amount?: number | null
           facility_name?: string | null
@@ -28372,6 +28693,10 @@ export type Database = {
           billed_amount?: number | null
           created_at?: string | null
           custom_fields?: Json | null
+          delete_batch_id?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_origin?: string | null
           description?: string
           eligible_amount?: number | null
           facility_name?: string | null
@@ -28619,6 +28944,10 @@ export type Database = {
           content: string | null
           content_rich: string | null
           created_at: string
+          delete_batch_id: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          deleted_origin: string | null
           folder: string | null
           id: string
           is_pinned: boolean | null
@@ -28639,6 +28968,10 @@ export type Database = {
           content?: string | null
           content_rich?: string | null
           created_at?: string
+          delete_batch_id?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_origin?: string | null
           folder?: string | null
           id?: string
           is_pinned?: boolean | null
@@ -28659,6 +28992,10 @@ export type Database = {
           content?: string | null
           content_rich?: string | null
           created_at?: string
+          delete_batch_id?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_origin?: string | null
           folder?: string | null
           id?: string
           is_pinned?: boolean | null
@@ -30987,9 +31324,11 @@ export type Database = {
           applies_to: string
           created_at: string | null
           enabled: boolean
+          fee_key: string | null
           fee_type: string
           id: string
           label: string
+          meta: Json | null
           rate_set_id: string
           sort_order: number | null
         }
@@ -30998,9 +31337,11 @@ export type Database = {
           applies_to?: string
           created_at?: string | null
           enabled?: boolean
+          fee_key?: string | null
           fee_type: string
           id?: string
           label: string
+          meta?: Json | null
           rate_set_id: string
           sort_order?: number | null
         }
@@ -31009,9 +31350,11 @@ export type Database = {
           applies_to?: string
           created_at?: string | null
           enabled?: boolean
+          fee_key?: string | null
           fee_type?: string
           id?: string
           label?: string
+          meta?: Json | null
           rate_set_id?: string
           sort_order?: number | null
         }
@@ -31212,6 +31555,7 @@ export type Database = {
       plan_rate_sets: {
         Row: {
           age_bands: Json
+          age_rating_basis: string | null
           created_at: string | null
           effective_date: string
           id: string
@@ -31225,6 +31569,7 @@ export type Database = {
         }
         Insert: {
           age_bands?: Json
+          age_rating_basis?: string | null
           created_at?: string | null
           effective_date: string
           id?: string
@@ -31238,6 +31583,7 @@ export type Database = {
         }
         Update: {
           age_bands?: Json
+          age_rating_basis?: string | null
           created_at?: string | null
           effective_date?: string
           id?: string
@@ -35631,6 +35977,10 @@ export type Database = {
         Row: {
           context: string
           created_at: string
+          delete_batch_id: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          deleted_origin: string | null
           filters: Json
           id: string
           is_default: boolean
@@ -35644,6 +35994,10 @@ export type Database = {
         Insert: {
           context: string
           created_at?: string
+          delete_batch_id?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_origin?: string | null
           filters?: Json
           id?: string
           is_default?: boolean
@@ -35657,6 +36011,10 @@ export type Database = {
         Update: {
           context?: string
           created_at?: string
+          delete_batch_id?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_origin?: string | null
           filters?: Json
           id?: string
           is_default?: boolean
@@ -36141,6 +36499,30 @@ export type Database = {
           resource?: string
           role?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      security_rate_limits: {
+        Row: {
+          expires_at: string
+          hits: number
+          key: string
+          updated_at: string
+          window_started_at: string
+        }
+        Insert: {
+          expires_at: string
+          hits?: number
+          key: string
+          updated_at?: string
+          window_started_at?: string
+        }
+        Update: {
+          expires_at?: string
+          hits?: number
+          key?: string
+          updated_at?: string
+          window_started_at?: string
         }
         Relationships: []
       }
@@ -42211,6 +42593,10 @@ export type Database = {
       _demographics_enrollments: { Args: { p_org_id: string }; Returns: Json }
       _demographics_health: { Args: { p_org_id: string }; Returns: Json }
       _demographics_members: { Args: { p_org_id: string }; Returns: Json }
+      _org_role_implies_permission: {
+        Args: { p_org_id: string; p_permission_key: string }
+        Returns: boolean
+      }
       _parse_import_boolean: { Args: { bool_str: string }; Returns: boolean }
       _parse_import_date: { Args: { date_str: string }; Returns: string }
       _parse_import_datetime: { Args: { dt_str: string }; Returns: string }
@@ -42515,6 +42901,14 @@ export type Database = {
         Args: { p_effective_date: string }
         Returns: string
       }
+      consume_rate_limit: {
+        Args: { p_key: string; p_max: number; p_window_seconds: number }
+        Returns: {
+          allowed: boolean
+          hits: number
+          retry_after_seconds: number
+        }[]
+      }
       convert_lead_to_contact: {
         Args: {
           p_lead_record_id: string
@@ -42620,6 +43014,9 @@ export type Database = {
           title: string
         }[]
       }
+      crm_purge_record: { Args: { p_record_id: string }; Returns: boolean }
+      crm_restore_batch: { Args: { p_batch_id: string }; Returns: number }
+      crm_restore_record: { Args: { p_record_id: string }; Returns: boolean }
       crm_smart_search: {
         Args: {
           p_limit?: number
@@ -42642,6 +43039,14 @@ export type Database = {
           status: string
           title: string
         }[]
+      }
+      crm_soft_delete_record: {
+        Args: { p_origin?: string; p_record_id: string }
+        Returns: string
+      }
+      crm_soft_delete_records_bulk: {
+        Args: { p_origin?: string; p_record_ids: string[] }
+        Returns: string
       }
       current_profile_id: { Args: never; Returns: string }
       deactivate_team_member: {
@@ -42741,16 +43146,6 @@ export type Database = {
         }
         Returns: Json
       }
-      finalize_member_enrollment_tx: {
-        Args: {
-          p_charged_first_month?: boolean
-          p_effective_date?: string
-          p_enrollment_id: string
-          p_org_id: string
-          p_payment_profile_id?: string
-        }
-        Returns: Json
-      }
       filter_records_by_related: {
         Args: {
           p_activity_type?: string
@@ -42768,6 +43163,16 @@ export type Database = {
           p_value?: string
         }
         Returns: string[]
+      }
+      finalize_member_enrollment_tx: {
+        Args: {
+          p_charged_first_month?: boolean
+          p_effective_date?: string
+          p_enrollment_id: string
+          p_org_id: string
+          p_payment_profile_id?: string
+        }
+        Returns: Json
       }
       find_cheapest_in_network_provider: {
         Args: {
@@ -42902,9 +43307,20 @@ export type Database = {
         }
         Returns: undefined
       }
+      fn_rollback_import: {
+        Args: { p_job_id: string }
+        Returns: {
+          deleted_count: number
+          error_message: string
+        }[]
+      }
       fn_uninstall_extension: {
         Args: { p_extension_id: string; p_org_id: string }
         Returns: boolean
+      }
+      gc_security_rate_limits: {
+        Args: { p_older_than_seconds?: number }
+        Returns: number
       }
       generate_invitation_token: { Args: never; Returns: string }
       generate_invoice_number: { Args: { org_id: string }; Returns: string }
@@ -42981,6 +43397,10 @@ export type Database = {
           crm_owner: boolean | null
           current_month_commissions: number | null
           custom_fields: Json | null
+          delete_batch_id: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          deleted_origin: string | null
           email: string
           enrollment_code: string | null
           first_name: string
@@ -43886,6 +44306,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      has_org_permission: {
+        Args: { p_org_id: string; p_permission_key: string }
+        Returns: boolean
+      }
       has_pending_approval: { Args: { p_record_id: string }; Returns: boolean }
       has_permission: { Args: { p_permission_key: string }; Returns: boolean }
       has_role:
@@ -43911,6 +44335,13 @@ export type Database = {
           errors: number
           imported: number
           skipped: number
+        }[]
+      }
+      inbox_unread_by_mailbox: {
+        Args: never
+        Returns: {
+          mailbox: string
+          unread_conversations: number
         }[]
       }
       increment_landing_page_views: {
@@ -43967,6 +44398,7 @@ export type Database = {
       is_session_valid: { Args: { p_session_token: string }; Returns: boolean }
       is_staff_or_admin: { Args: never; Returns: boolean }
       is_super_admin: { Args: never; Returns: boolean }
+      list_org_permissions: { Args: { p_org_id: string }; Returns: string[] }
       log_activity: {
         Args: {
           p_action: string
@@ -44125,6 +44557,7 @@ export type Database = {
         }
         Returns: string
       }
+      map_member_status_to_crm: { Args: { p_status: string }; Returns: string }
       map_role_from_groups: {
         Args: { groups: string[] }
         Returns: Database["public"]["Enums"]["user_role"]
@@ -44155,6 +44588,15 @@ export type Database = {
         }
         Returns: Json
       }
+      merge_members_tx: {
+        Args: {
+          p_actor_profile_id?: string
+          p_keeper_id: string
+          p_org_id: string
+          p_secondary_id: string
+        }
+        Returns: Json
+      }
       preview_round_robin_assignments: {
         Args: { p_count?: number; p_rule_id: string }
         Returns: {
@@ -44179,6 +44621,10 @@ export type Database = {
       reactivate_team_member: {
         Args: { p_profile_id: string }
         Returns: boolean
+      }
+      reap_stalled_import_jobs: {
+        Args: { p_older_than?: string }
+        Returns: number
       }
       recalc_crm_commission_summary: {
         Args: { p_member_id: string; p_org_id: string }
@@ -44280,6 +44726,7 @@ export type Database = {
         Args: { p_invitation_id: string }
         Returns: boolean
       }
+      revoke_user_sessions: { Args: { p_user_id: string }; Returns: number }
       role_at_least:
         | { Args: { min_role: string; u: string }; Returns: boolean }
         | {
@@ -44445,6 +44892,19 @@ export type Database = {
       shift_sequence_steps: {
         Args: { p_from_order: number; p_sequence_id: string }
         Returns: undefined
+      }
+      touch_known_device: {
+        Args: {
+          p_device_hash: string
+          p_ip?: string
+          p_user_agent?: string
+          p_user_id: string
+        }
+        Returns: {
+          is_new_device: boolean
+          revoked: boolean
+          trusted: boolean
+        }[]
       }
       track_link_visit: {
         Args: {
@@ -44804,9 +45264,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       agent_status: ["available", "busy", "away", "dnd", "offline"],

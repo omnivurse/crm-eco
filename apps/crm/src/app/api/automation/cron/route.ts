@@ -1,29 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { timingSafeEqual } from 'crypto';
 import { createServerClient } from '@supabase/ssr';
 import {
   processPendingCadenceSteps,
   processScheduledJobs,
   processScheduledWorkflows,
 } from '@/lib/automation';
-
-function verifyCronSecret(request: NextRequest): NextResponse | null {
-  const authHeader = request.headers.get('authorization') || '';
-  const cronSecret = process.env.CRON_SECRET;
-
-  if (!cronSecret) {
-    console.error('[automation/cron] CRON_SECRET env var is not configured — rejecting request');
-    return NextResponse.json({ error: 'CRON_SECRET not configured' }, { status: 500 });
-  }
-
-  const expected = Buffer.from(`Bearer ${cronSecret}`);
-  const actual = Buffer.from(authHeader);
-  if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  return null;
-}
+// This route's original (correct, fail-closed) implementation was promoted to
+// the shared helper so the other three cron routes stop fail-opening.
+import { verifyCronSecret } from '@/lib/security/verify-cron-secret';
 
 /**
  * Creates a service role client for cron operations

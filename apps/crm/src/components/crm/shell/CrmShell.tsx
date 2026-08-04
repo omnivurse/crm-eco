@@ -80,7 +80,9 @@ export function CrmShell({
     <ModuleProvider>
       <ModulePathSync />
       <GizmoProvider profileId={profile.id}>
-        <div className="relative flex flex-col h-screen overflow-hidden bg-slate-50 dark:bg-slate-950 [scrollbar-gutter:stable]">
+        {/* Canvas binds to the shared --background token instead of raw
+            slate-50/slate-950, so both consoles sit on one ground. */}
+        <div className="relative flex flex-col h-screen overflow-hidden bg-background [scrollbar-gutter:stable]">
           {/* Content Container */}
           <div className="relative flex flex-col w-full h-full min-h-0">
             {/* Offline banner — sits above the topbar so the user
