@@ -1,6 +1,6 @@
 -- Revoke anon (unauthenticated) API access on reporting views and products.
 -- Project: sffisarikcreyyjzdjvb
--- Status:  NOT YET APPLIED — awaiting approval gate.
+-- Status:  APPLIED 2026-08-04 via Supabase MCP (schema_migrations version 20260804110056).
 -- Risk:    LOW. GRANTS ONLY. No policy bodies, no DDL, no data. Revoking a grant
 --          that was never made is a no-op, so this is safe to re-run.
 --

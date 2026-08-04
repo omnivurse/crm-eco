@@ -1,6 +1,6 @@
 -- Import jobs: honest partial-failure status + a reaper for abandoned runs.
 -- Project: sffisarikcreyyjzdjvb
--- Status: NOT YET APPLIED — awaiting approval gate.
+-- Status: APPLIED 2026-08-04 via Supabase MCP (schema_migrations version 20260804110101).
 -- Risk:   LOW. Widens a CHECK constraint (strictly permissive) and adds one
 --         function. No data is modified by this migration itself.
 --
