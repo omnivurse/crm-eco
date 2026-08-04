@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter, Fraunces } from 'next/font/google';
 import './globals.css';
-import { LeadGenQuotePinGate } from '@crm-eco/ui/components/pin-lock-overlay';
+import { WebsitePinGate } from '@/components/WebsitePinGate';
 import { SiteHeader } from '@/components/SiteHeader';
 import { SiteFooter } from '@/components/SiteFooter';
 
@@ -75,7 +75,7 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${fraunces.variable} font-sans antialiased`}
       >
-        <LeadGenQuotePinGate />
+        <WebsitePinGate />
         <div className="min-h-screen flex flex-col">
           <SiteHeader />
           <main className="flex-1">{children}</main>
