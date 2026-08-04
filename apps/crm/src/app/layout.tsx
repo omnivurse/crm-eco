@@ -54,15 +54,16 @@ export const metadata: Metadata = {
  * Viewport Configuration for PWA
  */
 /**
- * The CRM shell's actual canvas — `bg-slate-50 dark:bg-slate-950` in CrmShell.
+ * The CRM shell's actual canvas — now `bg-background` in CrmShell, i.e. the
+ * shared `--background` token, so these mirror that token's resolved value.
  *
- * The pre-paint script and the browser theme-colour must both match these. The
- * dark value was previously `#0f172a` (slate-900) in both places while the
- * shell rendered slate-950, so the anti-flash script briefly painted a lighter
- * navy and then jumped — introducing the flash it exists to prevent.
+ * The pre-paint script and the browser theme-colour must both match the real
+ * canvas. The dark value was previously `#0f172a` (slate-900) in both places
+ * while the shell rendered slate-950, so the anti-flash script briefly painted
+ * a lighter navy and then jumped — introducing the flash it exists to prevent.
  */
-const CRM_CANVAS_LIGHT = '#f8fafc';
-const CRM_CANVAS_DARK = '#020617';
+const CRM_CANVAS_LIGHT = '#f2f5f8'; /* --background light: 210 30% 96% */
+const CRM_CANVAS_DARK = '#060b16'; /* --background dark: 221 57% 5.5% */
 
 export const viewport: Viewport = {
   themeColor: [

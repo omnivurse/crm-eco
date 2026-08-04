@@ -326,26 +326,26 @@
   --tone-danger-fg:#b91c1c;    --tone-danger-bg:#b91c1c24;    --tone-danger-border:#b91c1c80;
   --tone-special-fg:#be185d;   --tone-special-bg:#be185d24;   --tone-special-border:#be185d80;
 
-  /* --- Density-aware spacing/size scale (comfortable-dense default)
-     Consumed by shell / tables / toolbars in later phases. ------- */
-  --crm-row-h: 40px;
-  --crm-toolbar-h: 48px;
-  /* App-shell top chrome — consumed by CrmTopBar (height), CrmModuleTabBar
-     (link height + sticky offset), and the mobile nav drawer offset.
-     --crm-chrome-h is DERIVED from the two bars so the drawer offset can never
-     drift out of sync with them. The +1px accounts for the module bar's
-     border-b (the top bar's own border sits inside its border-box height). */
-  --crm-topbar-h: 44px;
-  --crm-modulebar-h: 38px;
-  --crm-chrome-h: calc(var(--crm-topbar-h) + var(--crm-modulebar-h) + 1px);
-  --crm-gutter: 20px;
-  --crm-section-gap: 24px;
-  --crm-cell-py: 8px;
-  /* Viewport offset for scroll-container max-heights (records table + views).
-     Approximates chrome + module header + toolbar so the table body fills the
-     space below without overflowing the shell. Density-aware: compact chrome +
-     header are shorter, so a compact power-user gets more rows for free. */
-  --crm-view-offset: 220px;
+  /* --- Density-aware spacing/size scale --------------------------
+     The scale itself now lives in @crm-eco/ui/styles/theme.css as --ui-*,
+     shared with the Admin console. These are back-compat aliases so the
+     existing --crm-* call sites across the CRM keep working unchanged.
+
+     They must stay aliases: a literal value here would re-declare the token
+     at equal specificity but LATER in the cascade than theme.css, silently
+     overriding the density modes and freezing the CRM at one size.
+
+     var() resolves at computed-value time on :root, so these track the
+     :root[data-density='…'] overrides without being restated per mode. */
+  --crm-row-h: var(--ui-row-h);
+  --crm-toolbar-h: var(--ui-toolbar-h);
+  --crm-topbar-h: var(--ui-topbar-h);
+  --crm-modulebar-h: var(--ui-navbar-h);
+  --crm-chrome-h: var(--ui-chrome-h);
+  --crm-gutter: var(--ui-gutter);
+  --crm-section-gap: var(--ui-section-gap);
+  --crm-cell-py: var(--ui-cell-py);
+  --crm-view-offset: var(--ui-view-offset);
 }
 
 .dark {
@@ -383,21 +383,11 @@
   --tone-special-fg:#f9a8d4;   --tone-special-bg:#f9a8d424;   --tone-special-border:#f9a8d459;
 }
 
-/* Density modes — html[data-density] is set pre-paint by the layout.tsx theme
-   script and persisted in localStorage 'crm-density' (see lib/crm/density.ts,
-   useCrmDensity, driven by the DensityToggle). 'default' = no attribute. */
-:root[data-density='compact'] {
-  --crm-row-h: 34px; --crm-toolbar-h: 42px;
-  --crm-topbar-h: 38px; --crm-modulebar-h: 32px;
-  --crm-gutter: 14px; --crm-section-gap: 16px; --crm-cell-py: 5px;
-  --crm-view-offset: 184px;
-}
-:root[data-density='comfortable'] {
-  --crm-row-h: 52px; --crm-toolbar-h: 56px;
-  --crm-topbar-h: 52px; --crm-modulebar-h: 44px;
-  --crm-gutter: 28px; --crm-section-gap: 32px; --crm-cell-py: 12px;
-  --crm-view-offset: 248px;
-}
+/* Density modes now live in @crm-eco/ui/styles/theme.css (:root[data-density])
+   so the Admin console shares them. html[data-density] is still set pre-paint
+   by the shared boot script and persisted in localStorage 'crm-density'
+   (see lib/crm/density.ts, useCrmDensity, driven by the DensityToggle).
+   The --crm-* aliases in :root above track those modes automatically. */
 
 /* ============================================================
    PER-MODULE COLOR-CODING — refresh 2026-07 (scoped to apps/crm)

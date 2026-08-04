@@ -36,24 +36,24 @@ export const metadata: Metadata = {
 };
 
 /**
- * The Admin shell's actual canvas — `--adm-void` in globals.css.
- * Kept in sync with the pre-paint script so there is no flash on load.
+ * The Admin shell's actual canvas — `--adm-void`, now an alias for the shared
+ * `--background` token. Kept in sync with the pre-paint script so there is no
+ * flash on load. The dark value is the one settled ground for the suite; it
+ * was #050505 (neutral OLED black) before.
  */
-const ADMIN_CANVAS_LIGHT = '#f6fafb';
-const ADMIN_CANVAS_DARK = '#050505';
+const ADMIN_CANVAS_LIGHT = '#f5f9fa'; /* --background light: 192 33% 97% */
+const ADMIN_CANVAS_DARK = '#060b16'; /* --background dark: 221 57% 5.5% */
 
 /**
  * Generated from the shared helper, so the Admin console reads the same theme
- * key as the CRM (migrating the legacy `admin-theme` value on first read).
- * A user's dark-mode choice now survives switching between consoles.
- *
- * `density` stays off here until the Admin console adopts the shared density
- * tokens in Phase 2 — setting the attribute before anything consumes it would
- * be a no-op.
+ * and density keys as the CRM (migrating the legacy `admin-theme` value on
+ * first read). A user's dark-mode and density choices now survive switching
+ * between consoles.
  */
 const themeBootScript = createThemeBootScript({
   lightBg: ADMIN_CANVAS_LIGHT,
   darkBg: ADMIN_CANVAS_DARK,
+  density: true,
 });
 
 export default async function RootLayout({

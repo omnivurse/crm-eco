@@ -67,7 +67,17 @@ export function AdminShell({
     <div className="adm-atmosphere relative flex h-[100dvh] flex-col overflow-hidden">
       <div className="adm-grain" aria-hidden="true" />
 
-      <div className="relative z-10 mx-auto flex h-full w-full max-w-[92rem] flex-col gap-3 px-3 pb-3 pt-3 sm:px-4 lg:px-6">
+      {/* Gutters and the shell gap ride the shared density scale, so a compact
+          operator gets measurably more rows per screen on the billing and
+          commission tables — the densest surfaces in the suite. */}
+      <div
+        className="relative z-10 mx-auto flex h-full w-full max-w-[92rem] flex-col"
+        style={{
+          gap: 'calc(var(--ui-section-gap) * 0.5)',
+          paddingInline: 'var(--ui-gutter)',
+          paddingBlock: 'calc(var(--ui-gutter) * 0.6)',
+        }}
+      >
         <AdminTopNav
           profile={profile}
           userId={userId}

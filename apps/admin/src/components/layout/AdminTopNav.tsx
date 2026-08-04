@@ -39,6 +39,8 @@ import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { OrganizationSwitcher, type SwitcherTenant } from './OrganizationSwitcher';
 import { ThemeToggle } from './ThemeToggle';
+import { DensityToggle } from '@crm-eco/ui/components/density-toggle';
+import { useDensity } from '@crm-eco/ui/lib/density';
 import Link from 'next/link';
 
 interface Notification {
@@ -114,6 +116,7 @@ export function AdminTopNav({
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
+  const { density, setDensity } = useDensity();
 
   // Online/offline detection
   useEffect(() => {
@@ -360,6 +363,13 @@ export function AdminTopNav({
               }
             }}
           />
+        </div>
+
+        {/* Display density — shared with the CRM console, so an operator's
+            choice carries across both. Hidden on narrow widths where the
+            density scale has little room to matter. */}
+        <div className="hidden md:block">
+          <DensityToggle value={density} onChange={setDensity} />
         </div>
 
         <ThemeToggle />
