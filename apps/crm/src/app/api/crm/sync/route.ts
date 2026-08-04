@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { createClient, getAuthProfile } from '@/lib/supabase-server';
+import { requireActiveOrgCrmRoles } from '@/lib/crm/require-crm-role';
 
 // Create admin client for sync (bypasses RLS)
 function createAdminClient() {
@@ -35,6 +36,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { success: false, error: 'Only admins can perform sync operations' },
         { status: 403 }
+      );
+    }
+
+    // Defense in depth. The check above reads the profile role, which
+    // getAuthProfile now downgrades to the ACTIVE org's rights — but
+    // createAdminClient() below bypasses RLS entirely, so this gate is the only
+    // control on a mass record backfill. Re-assert against the database.
+    const activeOrgGate = await requireActiveOrgCrmRoles(supabase, profile.organization_id, [
+      'crm_admin',
+    ]);
+    if (!activeOrgGate.ok) {
+      return NextResponse.json(
+        { success: false, error: activeOrgGate.error },
+        { status: activeOrgGate.status },
       );
     }
 

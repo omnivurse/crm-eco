@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { timingSafeEqual } from 'crypto';
 import { processScheduledJobs, processScheduledWorkflows } from '@/lib/automation';
+import { verifyCronSecret } from '@/lib/security/verify-cron-secret';
 
 /**
  * POST /api/crm/scheduler/tick
@@ -12,18 +12,11 @@ import { processScheduledJobs, processScheduledWorkflows } from '@/lib/automatio
  */
 export async function POST(request: NextRequest) {
   try {
-    // Verify cron secret (timing-safe)
-    const authHeader = request.headers.get('authorization') || '';
-    const cronSecret = process.env.CRON_SECRET;
-
-    if (cronSecret) {
-      const expected = `Bearer ${cronSecret}`;
-      const a = Buffer.from(authHeader);
-      const b = Buffer.from(expected);
-      if (a.length !== b.length || !timingSafeEqual(a, b)) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-      }
-    }
+    // Fail closed: a missing CRON_SECRET now rejects instead of allowing
+    // everyone through. This route runs scheduled jobs and workflows under the
+    // service role.
+    const unauthorized = verifyCronSecret(request);
+    if (unauthorized) return unauthorized;
 
     // Parse optional parameters from body
     let limit = 100;

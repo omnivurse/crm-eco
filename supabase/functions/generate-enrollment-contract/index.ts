@@ -10,6 +10,7 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { callerMayAccessOrg } from '../_shared/org-auth.ts';
 import {
   PDFDocument,
   StandardFonts,
@@ -322,6 +323,26 @@ serve(async (req) => {
     if (enrollmentError || !enrollment) {
       console.error(`[CONTRACT] Enrollment not found: ${enrollmentError?.message}`);
       return respond({ error: 'Enrollment not found' }, 404);
+    }
+
+    // AUTHORIZATION. This function holds the service-role key, so RLS is not a
+    // backstop, and it previously inspected no caller at all — any request could
+    // render and return any tenant's enrollment contract (a PHI document).
+    // The platform `verify_jwt` gate does not help: Supabase accepts the public
+    // anon key, which ships in every browser bundle.
+    //
+    // Anchored to the enrollment row's OWN organization_id, never a body field,
+    // so the check cannot be circular. No role floor: the member portal invokes
+    // this as the enrolling member (tenanted via profiles.organization_id, with
+    // no organization_members row), and the admin console invokes it as staff.
+    //
+    // Residual gap, deliberately out of scope here: this authorizes at ORG
+    // granularity, so one member of an org could regenerate another member's
+    // contract. Narrowing to per-member ownership needs member_id resolution
+    // from the JWT and belongs with the member-portal work.
+    if (!(await callerMayAccessOrg(supabase, req, enrollment.organization_id))) {
+      console.warn(`[CONTRACT] Unauthorized attempt on enrollment ${enrollment_id}`);
+      return respond({ error: 'Unauthorized' }, 401);
     }
 
     const member = enrollment.members;

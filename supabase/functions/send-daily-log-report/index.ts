@@ -1,4 +1,8 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import {
+  authorizeInternalEdgeRequest,
+  unauthorizedResponse,
+} from "../_shared/cron-auth.ts";
 
 const ALLOWED_ORIGINS = (Deno.env.get("ALLOWED_ORIGINS") || "*").split(",").map(s => s.trim());
 
@@ -88,6 +92,11 @@ Deno.serve(async (req: Request) => {
       headers: corsHeaders,
     });
   }
+
+  // Fail closed. Service-role key (RLS bypassed), no caller check previously —
+  // triggering it exfiltrates daily logs by email. `verify_jwt` accepts the
+  // public anon key, so it authenticates nothing on its own.
+  if (!authorizeInternalEdgeRequest(req)) return unauthorizedResponse(corsHeaders);
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;

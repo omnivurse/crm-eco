@@ -47,7 +47,11 @@ interface ImportJob {
   /** Derived from `stats.module_key` (no DB column). */
   module_key: string;
   file_name: string;
-  status: 'pending' | 'processing' | 'completed' | 'failed';
+  /**
+   * `completed_with_errors` means the run finished but some rows failed to
+   * write — see error_count. Previously such runs reported plain `completed`.
+   */
+  status: 'pending' | 'processing' | 'completed' | 'completed_with_errors' | 'failed';
   total_rows: number;
   processed_rows: number;
   /** Combined inserted_count + updated_count (the DB has no success_count). */
@@ -277,6 +281,8 @@ function ImportsPageContent() {
     switch (status) {
       case 'completed':
         return <CheckCircle2 className="w-5 h-5 text-green-500" />;
+      case 'completed_with_errors':
+        return <AlertCircle className="w-5 h-5 text-amber-500" />;
       case 'processing':
         return <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />;
       case 'failed':
@@ -287,15 +293,24 @@ function ImportsPageContent() {
   };
 
   const getStatusBadge = (status: ImportJob['status']) => {
-    const styles = {
+    const styles: Record<ImportJob['status'], string> = {
       completed: 'bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-400',
+      completed_with_errors:
+        'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400',
       processing: 'bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400',
       failed: 'bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400',
       pending: 'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400',
     };
+    const labels: Record<ImportJob['status'], string> = {
+      completed: 'Completed',
+      completed_with_errors: 'Completed with errors',
+      processing: 'Processing',
+      failed: 'Failed',
+      pending: 'Pending',
+    };
     return (
       <span className={`px-2 py-1 text-xs font-medium rounded-full ${styles[status]}`}>
-        {status.charAt(0).toUpperCase() + status.slice(1)}
+        {labels[status]}
       </span>
     );
   };
@@ -560,7 +575,7 @@ function ImportsPageContent() {
                 </div>
                 <div className="text-right">
                   {getStatusBadge(job.status)}
-                  {job.status === 'completed' && (
+                  {(job.status === 'completed' || job.status === 'completed_with_errors') && (
                     <p className="text-xs text-slate-500 mt-1">
                       {job.success_count} imported
                       {job.error_count > 0 && `, ${job.error_count} errors`}

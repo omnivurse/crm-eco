@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
-import { getActiveTenant } from '@/lib/tenant';
+import { requireAdminRole } from '@/lib/auth';
 
 /**
  * POST /api/enrollments/[id]/regenerate-contract
@@ -13,17 +13,19 @@ export async function POST(
 ) {
   const { id } = await params;
   const supabase = await createServerSupabaseClient();
-  const tenant = await getActiveTenant();
 
-  if (!tenant) {
-    return NextResponse.redirect(new URL('/login', _request.url));
-  }
+  // Regenerating a contract reissues a signed member document. This route
+  // previously checked only that an active tenant existed, so any authenticated
+  // member — including `read_only` — could reissue one. Admin-tier (which
+  // includes staff, who legitimately handle enrollment paperwork).
+  const { profile, error: authError } = await requireAdminRole(supabase);
+  if (authError) return authError;
 
   const { data: enrollment } = await supabase
     .from('enrollments')
     .select('id')
     .eq('id', id)
-    .eq('organization_id', tenant.organizationId)
+    .eq('organization_id', profile.organization_id)
     .single();
 
   if (!enrollment) {

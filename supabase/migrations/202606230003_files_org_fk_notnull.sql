@@ -1,6 +1,10 @@
 -- Phase 0 / Tenancy: promote files.organization_id to FK + NOT NULL (deferred). [A3 of 3]
 -- Project: sffisarikcreyyjzdjvb
--- Status: DRAFT — not applied.
+-- Status: APPLIED (header corrected 2026-08-02 — previously read "DRAFT — not applied").
+--         Verified against the live project: public.files.organization_id is NOT NULL, and
+--         this is the only migration in the repo that sets it (202606230001 adds the column
+--         nullable). DO NOT move this file to supabase/drafts/ — it is part of production
+--         history and a rebuild must include it.
 -- PRE-REQ: V1 (audit Q4) returns 0 NULL/orphan rows across the verification window. Behind gate.
 -- DEVIATION FLAGGED FOR OWNER: every other org FK in the schema is ON DELETE CASCADE
 --   (e.g. L62945, L64585, L65697). This uses ON DELETE RESTRICT because files are

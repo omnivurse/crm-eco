@@ -1,4 +1,8 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import {
+  authorizeInternalEdgeRequest,
+  unauthorizedResponse,
+} from "../_shared/cron-auth.ts";
 const ALLOWED_ORIGINS = (Deno.env.get("ALLOWED_ORIGINS") || Deno.env.get("ALLOWED_ORIGIN") || "*").split(",").map(s => s.trim());
 
 function getCorsHeaders(req: Request): Record<string, string> {
@@ -55,6 +59,18 @@ Deno.serve(async (req: Request) => {
       headers: corsHeaders,
     });
   }
+
+  // Fail closed. Service-role key (RLS bypassed), no caller check previously —
+  // it reads a ticket and emails its contents, so an open endpoint leaks support
+  // correspondence. `verify_jwt` accepts the public anon key, so it
+  // authenticates nothing on its own.
+  //
+  // NOTE: this function has NO caller anywhere in the repo (apps, packages,
+  // migrations all searched). If it turns out to be invoked from a UI path with
+  // a user JWT rather than a DB trigger / service-role caller, swap this for
+  // callerMayAccessOrg() anchored to the ticket's organization_id — the lookup
+  // already happens below.
+  if (!authorizeInternalEdgeRequest(req)) return unauthorizedResponse(corsHeaders);
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;

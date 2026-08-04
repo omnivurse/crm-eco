@@ -20,6 +20,7 @@
     "./audit": "./src/audit/index.ts",
     "./data-table": "./src/data-table/index.ts",
     "./permissions": "./src/permissions/index.ts",
+    "./csv/escape": "./src/csv/escape.ts",
     "./rate-limit": "./src/rate-limit.ts",
     "./security/captcha": "./src/security/captcha.ts"
   },

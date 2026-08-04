@@ -16,10 +16,11 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import {
-  authorizeInternalEdgeRequest,
-  unauthorizedResponse,
-} from '../_shared/cron-auth.ts';
+import { unauthorizedResponse } from '../_shared/cron-auth.ts';
+// callerMayAccessOrg was extracted from this file into _shared/org-auth.ts so
+// other service-role functions can reuse it. Behaviour here is unchanged: no
+// `requiredRoles` is passed, so any active member of the org still qualifies.
+import { callerMayAccessOrg } from '../_shared/org-auth.ts';
 
 const ALLOWED_ORIGINS = (Deno.env.get('ALLOWED_ORIGINS') || '*').split(',').map((s) => s.trim());
 
@@ -33,45 +34,6 @@ function getCorsHeaders(req: Request): Record<string, string> {
     'Access-Control-Allow-Headers':
       'authorization, x-client-info, apikey, content-type, x-cron-secret',
   };
-}
-
-async function callerMayAccessOrg(
-  service: ReturnType<typeof createClient>,
-  req: Request,
-  organizationId: string,
-): Promise<boolean> {
-  if (authorizeInternalEdgeRequest(req)) return true;
-
-  const auth = req.headers.get('authorization') ?? '';
-  if (!auth.startsWith('Bearer ')) return false;
-
-  const anonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-  const userClient = createClient(Deno.env.get('SUPABASE_URL')!, anonKey, {
-    global: { headers: { Authorization: auth } },
-  });
-  const { data: { user }, error } = await userClient.auth.getUser();
-  if (error || !user) return false;
-
-  const { data: profile } = await service
-    .from('profiles')
-    .select('id, organization_id')
-    .eq('user_id', user.id)
-    .maybeSingle();
-
-  if (profile?.organization_id === organizationId) return true;
-
-  if (profile?.id) {
-    const { data: membership } = await service
-      .from('organization_members')
-      .select('id')
-      .eq('organization_id', organizationId)
-      .or(`user_id.eq.${user.id},profile_id.eq.${profile.id}`)
-      .limit(1)
-      .maybeSingle();
-    if (membership) return true;
-  }
-
-  return false;
 }
 
 serve(async (req) => {

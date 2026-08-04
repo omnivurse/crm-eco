@@ -12,6 +12,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createServerClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
 import { createClient, getAuthProfile } from '@/lib/supabase-server';
+import { requireActiveOrgCrmRoles } from '@/lib/crm/require-crm-role';
 import { rateLimitDurable, getRateLimitHeaders } from '@crm-eco/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
@@ -45,6 +46,21 @@ export async function POST(
     // Only crm_admin can send password resets
     if (currentProfile.crm_role !== 'crm_admin') {
       return NextResponse.json({ error: 'Only CRM admins can reset passwords' }, { status: 403 });
+    }
+
+    // Defense in depth. The check above reads the profile role, which
+    // getAuthProfile now downgrades to the ACTIVE org's rights — but this
+    // handler escalates to a service-role client below, so RLS is NOT a
+    // backstop. Re-assert against the database (has_crm_role) so a stale role
+    // can never be the only thing between a caller and the ability to generate
+    // password-reset links for another tenant's users.
+    const activeOrgGate = await requireActiveOrgCrmRoles(
+      supabase,
+      currentProfile.organization_id,
+      ['crm_admin'],
+    );
+    if (!activeOrgGate.ok) {
+      return NextResponse.json({ error: activeOrgGate.error }, { status: activeOrgGate.status });
     }
 
     // Get the target user profile (need their email via user_id)

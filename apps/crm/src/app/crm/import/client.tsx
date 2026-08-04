@@ -644,7 +644,7 @@ export function ImportWizardClient({
                   <div className="flex justify-center gap-4">
                     <Button
                       variant="outline"
-                      onClick={() => router.push(`/modules/${selectedModule?.key}`)}
+                      onClick={() => router.push(`/crm/modules/${selectedModule?.key}`)}
                     >
                       View Records
                     </Button>

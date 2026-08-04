@@ -72,7 +72,7 @@ export default async function SalesReportPage() {
   // Use cached profile lookup (single request, memoized)
   const profile = await getCurrentProfile();
   if (!profile) {
-    redirect('/auth/login');
+    redirect('/crm-login');
   }
 
   const supabase = await createServerSupabaseClient();

@@ -1,6 +1,12 @@
 -- Phase 0 / Tenancy: public.files backfill + org-isolated RLS. [A2 of 3]
 -- Project: sffisarikcreyyjzdjvb
--- Status: DRAFT — not applied. PRE-REQ: A1 (202606230001) applied first.
+-- Status: APPLIED (header corrected 2026-08-02 — previously read "DRAFT — not applied").
+--         Verified against the live project: A3 (202606230003) demonstrably ran, and
+--         files.organization_id is NOT NULL in production. A3's own PRE-REQ is this
+--         file's backfill leaving zero NULL/orphan rows, so this ran first.
+--         PRE-REQ: A1 (202606230001) applied first.
+--         DO NOT move this file to supabase/drafts/ — it is part of production history
+--         and a rebuild must include it.
 -- Risk: MEDIUM. Backfill is idempotent (WHERE organization_id IS NULL) and resumable.
 --        Includes the single policy REPLACE that closes the cross-tenant SELECT leak (5.2).
 -- Rollback: see end of file.

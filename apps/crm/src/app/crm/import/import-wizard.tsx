@@ -25,6 +25,7 @@ import type { CrmModule, CrmField } from '@/lib/crm/types';
 import { resolveModulePalette } from '@/components/crm/records/v2/tokens';
 import {
   DEFAULT_MATCH_PRIORITY,
+  MAX_CSV_BYTES,
   MAX_CSV_ROWS,
 } from '@/lib/imports/csv-update';
 import type { CsvUpdateResult } from '@/lib/imports/run-csv-update';
@@ -342,6 +343,18 @@ export function ImportWizard({ modules, organizationId, preselectedModule, smart
     setFileName(file.name);
     setError(null);
 
+    // Reject oversized files before reading them into memory. Both limits are
+    // also enforced server-side (POST /api/crm/import validates with zod and
+    // caps at MAX_CSV_ROWS) — this is purely so the user gets a clear message
+    // instead of uploading megabytes only to be rejected.
+    if (file.size > MAX_CSV_BYTES) {
+      setError(
+        `File is too large (${(file.size / 1024 / 1024).toFixed(1)} MB). ` +
+          `Maximum is ${Math.round(MAX_CSV_BYTES / 1024 / 1024)} MB — split it into smaller files.`,
+      );
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = (event) => {
       try {
@@ -350,6 +363,14 @@ export function ImportWizard({ modules, organizationId, preselectedModule, smart
 
         if (lines.length < 2) {
           setError('CSV must have at least a header row and one data row');
+          return;
+        }
+
+        if (lines.length - 1 > MAX_CSV_ROWS) {
+          setError(
+            `Too many rows (${(lines.length - 1).toLocaleString()}). ` +
+              `Maximum is ${MAX_CSV_ROWS.toLocaleString()} per import — split the file.`,
+          );
           return;
         }
 
@@ -803,7 +824,10 @@ export function ImportWizard({ modules, organizationId, preselectedModule, smart
                 {dragActive ? 'Drop your file here' : 'Click to upload CSV'}
               </span>
               <span className="text-slate-500 text-sm mt-1">or drag and drop</span>
-              <span className="text-slate-500 dark:text-slate-600 text-xs mt-3">Supports .csv files up to 50MB</span>
+              <span className="text-slate-500 dark:text-slate-600 text-xs mt-3">
+                .csv up to {Math.round(MAX_CSV_BYTES / 1024 / 1024)} MB and{' '}
+                {MAX_CSV_ROWS.toLocaleString()} rows
+              </span>
               <input
                 type="file"
                 accept=".csv"

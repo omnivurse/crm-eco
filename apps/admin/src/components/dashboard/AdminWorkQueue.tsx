@@ -25,7 +25,7 @@ const typeConfig: Record<
     icon: Cpu,
     label: 'System',
     badgeClass: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20',
-    href: '/settings/automation',
+    href: '/settings/automations',
   },
   enrollment_review: {
     icon: ClipboardText,

@@ -112,7 +112,22 @@ Deno.serve(async (req: Request) => {
         },
       });
 
+      // The response status was never checked (0 occurrences of
+      // `userResponse.ok` in this file). On an invalid or expired token Supabase
+      // returns an error body rather than a user, so `user.id` silently became
+      // undefined — OAuth tokens were written with `user_id: undefined`, and the
+      // cleanup queries filtered on `user_id=eq.undefined`. The header was only
+      // ever checked for PRESENCE, so any value got this far.
+      // onedrive-sync already validates this way; these two paths did not.
+      if (!userResponse.ok) {
+        throw new Error("Invalid authentication token");
+      }
+
       const user = await userResponse.json();
+
+      if (!user?.id) {
+        throw new Error("Invalid authentication token");
+      }
 
       const encryptResponse = await fetch(`${supabaseUrl}/rest/v1/rpc/encrypt_token`, {
         method: "POST",
@@ -207,7 +222,22 @@ Deno.serve(async (req: Request) => {
         },
       });
 
+      // The response status was never checked (0 occurrences of
+      // `userResponse.ok` in this file). On an invalid or expired token Supabase
+      // returns an error body rather than a user, so `user.id` silently became
+      // undefined — OAuth tokens were written with `user_id: undefined`, and the
+      // cleanup queries filtered on `user_id=eq.undefined`. The header was only
+      // ever checked for PRESENCE, so any value got this far.
+      // onedrive-sync already validates this way; these two paths did not.
+      if (!userResponse.ok) {
+        throw new Error("Invalid authentication token");
+      }
+
       const user = await userResponse.json();
+
+      if (!user?.id) {
+        throw new Error("Invalid authentication token");
+      }
 
       await fetch(`${supabaseUrl}/rest/v1/oauth_tokens?user_id=eq.${user.id}&provider=eq.onedrive`, {
         method: "DELETE",

@@ -20,7 +20,12 @@ export function escapeIlikePattern(value: string): string {
 }
 
 /** Safe `data->>` path segment for PostgREST filter strings */
-const SAFE_DATA_JSON_KEY = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
+/**
+ * A JSONB key safe to interpolate into a PostgREST `data->>key` filter path.
+ * Exported so every site that builds such a path uses the same guard rather
+ * than re-deriving (or forgetting) it.
+ */
+export const SAFE_DATA_JSON_KEY = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
 
 /**
  * Load field keys for a module so list search can target `data->>key` without casts.

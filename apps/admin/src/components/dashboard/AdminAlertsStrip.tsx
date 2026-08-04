@@ -57,7 +57,7 @@ function deriveAlerts(stats: AdminConsoleStats): AlertItem[] {
       icon: Cpu,
       message: `${stats.systemStats.failedJobs24h} Job${stats.systemStats.failedJobs24h > 1 ? 's' : ''} Failed (24h)`,
       count: stats.systemStats.failedJobs24h,
-      href: '/settings/automation',
+      href: '/settings/automations',
     });
   }
 

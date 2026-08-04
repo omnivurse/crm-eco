@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createClient, getAuthProfile } from '@/lib/supabase-server';
 import { requireActiveOrgCrmRoles } from '@/lib/crm/require-crm-role';
+import { escapeCsvCell } from '@crm-eco/lib/csv/escape';
 
 export const dynamic = 'force-dynamic';
 
@@ -91,6 +92,18 @@ export async function GET(request: NextRequest) {
     const supabase = await createClient();
     const profile = await getAuthProfile();
     if (!profile) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    // Creating an export is admin/manager-only (see POST below), but LISTING
+    // them was open to any org member — and each row's `file_url` is a base64
+    // data: URI holding up to 10,000 full records. A crm_viewer could therefore
+    // download every export an admin had ever run. Same gate as POST.
+    const roleGate = await requireActiveOrgCrmRoles(supabase, profile.organization_id, [
+      'crm_admin',
+      'crm_manager',
+    ]);
+    if (!roleGate.ok) {
+      return NextResponse.json({ error: 'Forbidden — admin/manager only' }, { status: 403 });
+    }
 
     const status = request.nextUrl.searchParams.get('status');
     const limit = parseInt(request.nextUrl.searchParams.get('limit') || '50', 10);
@@ -357,20 +370,16 @@ function recordsToCsv(
       ? columns
       : [...new Set(rows.flatMap((r) => Object.keys(r)))];
 
-  const header = keys.map(escapeCsvField).join(',');
-  const csvRows = rows.map((row) =>
-    keys.map((k) => escapeCsvField(String(row[k] ?? ''))).join(',')
-  );
+  const header = keys.map(escapeCsvCell).join(',');
+  const csvRows = rows.map((row) => keys.map((k) => escapeCsvCell(row[k] ?? '')).join(','));
 
   return [header, ...csvRows].join('\n');
 }
 
-function escapeCsvField(value: string): string {
-  if (value.includes(',') || value.includes('"') || value.includes('\n')) {
-    return `"${value.replace(/"/g, '""')}"`;
-  }
-  return value;
-}
+// escapeCsvField was removed. It checked only `,` `"` and `\n` — omitting `\r`,
+// so any field containing a CRLF (routine in notes and pasted addresses) was
+// emitted unquoted and broke the row for every downstream parser. It also did
+// not neutralise formula injection. Both are handled by the shared escaper.
 
 // ---------------------------------------------------------------------------
 // DELETE /api/crm/export?id=<uuid>

@@ -315,7 +315,7 @@ const logoutCommand: Command = {
   description: 'Sign out of the system',
   category: 'system',
   handler: (_args, context) => {
-    context.navigate('/auth/login');
+    context.navigate('/crm-login');
     return { type: 'warning', message: '◈ INITIATING LOGOUT SEQUENCE ◈' };
   },
 };

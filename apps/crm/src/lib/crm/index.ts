@@ -15,8 +15,6 @@ export * from './queries';
 export {
   createRecord,
   updateRecord,
-  deleteRecord,
-  bulkDeleteRecords,
   bulkUpdateRecords,
   createNote,
   updateNote,

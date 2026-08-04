@@ -1,16 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, getAuthProfile } from '@/lib/supabase-server';
+import { escapeCsvCell } from '@crm-eco/lib/csv/escape';
 
 export const dynamic = 'force-dynamic';
 
 const MAX_EXPORT_ROWS = 10_000;
 
-function csvEscape(value: unknown): string {
-  if (value == null) return '';
-  const s = String(value);
-  if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
-  return s;
-}
+// Was a local copy; now the shared escaper, which additionally neutralises
+// formula injection (`=`, `+`, `-`, `@` prefixes) so an export opened in Excel
+// cannot execute attacker-controlled record content.
+const csvEscape = escapeCsvCell;
 
 /**
  * GET /api/commissions/export

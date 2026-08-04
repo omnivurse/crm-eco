@@ -15,6 +15,7 @@ import { cookies } from 'next/headers';
 import { cache } from 'react';
 import type { User } from '@supabase/supabase-js';
 import { getActiveTenant } from './tenant';
+import { crmRoleForTenantRole } from './crm/tenant-role-mapping';
 
 // Types for better type safety
 interface CachedAuthResult {
@@ -127,12 +128,20 @@ export const getAuthProfile = cache(async (): Promise<CachedProfile | null> => {
     // If the user has resolved an active tenant via organization_members,
     // override organization_id so every existing call site that reads
     // profile.organization_id automatically scopes to the active tenant.
-    // The user's primary profile (and crm_role) are unchanged.
     const tenant = await getActiveTenant();
     if (tenant && tenant.organizationId !== profile.organization_id) {
+      // `role` and `crm_role` MUST be downgraded to the active org's rights too.
+      // Previously only organization_id was swapped, so a user who is crm_admin
+      // at home kept crm_admin while operating inside a foreign tenant. For the
+      // ~49 routes that gate on `profile.crm_role` and hold a service-role
+      // client (users/[id]/password, users/[id]/role, crm/sync, …) RLS is not a
+      // backstop, so that stale value was the only gate — a cross-tenant
+      // takeover. See lib/crm/require-crm-role.ts.
       return {
         ...profile,
         organization_id: tenant.organizationId,
+        role: tenant.role,
+        crm_role: crmRoleForTenantRole(tenant.role),
         active_tenant_role: tenant.role,
       };
     }
