@@ -206,19 +206,23 @@ export const RecordRelatedListChips = memo(function RecordRelatedListChips({
 
   const visibleItems = items.filter((i) => i.available || i.id === activeId);
 
-  // Keep the active chip visible. We use scrollIntoView with `inline: 'center'`
-  // so the selected tab feels centered on mobile even after long scrolls.
+  const chipScrollerRef = useRef<HTMLDivElement>(null);
+
+  // Keep the active chip visible horizontally only. Avoid scrollIntoView —
+  // Chromium/Brave can still scroll ancestor overflow-y containers and jerk
+  // the record page when the chips live inside the sticky header.
   useEffect(() => {
-    if (!activeChipRef.current) return;
-    activeChipRef.current.scrollIntoView({
-      inline: 'center',
-      block: 'nearest',
-      behavior: 'smooth',
-    });
+    const chip = activeChipRef.current;
+    const scroller = chipScrollerRef.current;
+    if (!chip || !scroller) return;
+    const target =
+      chip.offsetLeft - (scroller.clientWidth - chip.offsetWidth) / 2;
+    scroller.scrollTo({ left: Math.max(0, target), behavior: 'smooth' });
   }, [activeId]);
 
   return (
     <div
+      ref={chipScrollerRef}
       role="tablist"
       aria-label="Record sections"
       style={style}

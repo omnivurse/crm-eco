@@ -20,7 +20,7 @@
  *   └────────────┴──────────────────────────────┴──────────────────────┘
  */
 
-import { useState, useEffect, useMemo, useCallback, memo, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useMemo, useCallback, memo, useRef } from 'react';
 import { queuedSend } from '@/lib/offline/queued-send';
 import { cachedFetch } from '@/lib/offline/cached-fetch';
 import { trackRecentRecord } from '@/lib/offline/recent-records';
@@ -351,6 +351,8 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
   /** Scroll container for scrolling `[data-field]` / notes pane into view after find */
   const recordMainScrollRef = useRef<HTMLElement | null>(null);
   const recordStickyHeaderRef = useRef<HTMLDivElement | null>(null);
+  /** Last measured sticky-header height — used to re-anchor scroll when compact toggles. */
+  const prevStickyHeaderHeightRef = useRef<number | null>(null);
   const [headerCompact, setHeaderCompact] = useState(false);
 
   // When the Command Palette lands here with `?ai=email`, request a fresh AI
@@ -628,19 +630,37 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
     return () => root.removeEventListener('scroll', onScroll);
   }, [record.id]);
 
-  // Sync sticky offset for the related-list rail with measured header height.
-  useEffect(() => {
+  // Don't compensate against the previous record's header height on navigation.
+  useLayoutEffect(() => {
+    prevStickyHeaderHeightRef.current = null;
+    setHeaderCompact(false);
+  }, [record.id]);
+
+  // When the sticky header height changes (compact toggle, tab strip, chips),
+  // Chromium/Brave leave scrollTop alone while the in-flow header shrinks —
+  // content skips under the fold. Re-anchor before paint (same idea as
+  // RecordTable density re-anchor) and keep --record-sticky-offset in sync.
+  useLayoutEffect(() => {
     const root = recordMainScrollRef.current;
     const header = recordStickyHeaderRef.current;
     if (!root || !header) return;
 
-    const syncOffset = () => {
-      const h = header.getBoundingClientRect().height;
-      root.style.setProperty('--record-sticky-offset', `${Math.ceil(h + 12)}px`);
+    const syncOffsetAndAnchor = () => {
+      const nextH = header.getBoundingClientRect().height;
+      const prevH = prevStickyHeaderHeightRef.current;
+      prevStickyHeaderHeightRef.current = nextH;
+      root.style.setProperty('--record-sticky-offset', `${Math.ceil(nextH + 12)}px`);
+
+      if (prevH == null) return;
+      const delta = nextH - prevH;
+      if (Math.abs(delta) < 1) return;
+      // Header shrunk → content jumps up (skip ahead); reduce scrollTop.
+      // Header grew → content pushes down; increase scrollTop.
+      root.scrollTop = Math.max(0, root.scrollTop + delta);
     };
 
-    syncOffset();
-    const ro = new ResizeObserver(syncOffset);
+    syncOffsetAndAnchor();
+    const ro = new ResizeObserver(syncOffsetAndAnchor);
     ro.observe(header);
     return () => ro.disconnect();
   }, [record.id, headerCompact, topTab]);
@@ -1197,13 +1217,19 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
       releaseFieldLock={releaseFieldLock}
     >
     <RecordAiContextProvider recordId={record.id} enabled>
-    <div className={cn('flex h-full', className)}>
-      <main ref={recordMainScrollRef} className="flex-1 overflow-y-auto" data-record-find-root>
+    <div className={cn('flex h-full min-h-0', className)}>
+      <main
+        ref={recordMainScrollRef}
+        className="flex-1 min-h-0 overflow-y-auto [scrollbar-gutter:stable] [overflow-anchor:none]"
+        data-record-find-root
+      >
         {/* Sticky header — compacts on scroll so title + key fields stay visible */}
         <div
           ref={recordStickyHeaderRef}
           className={cn(
-            'sticky top-0 z-10 bg-white/90 dark:bg-slate-950/90 backdrop-blur-xl border-b border-slate-200 dark:border-white/5 transition-[padding,box-shadow] duration-200',
+            // No padding/height transition: animating sticky height fights scroll
+            // anchoring and reads as shake/skip (esp. Brave/Chromium).
+            'sticky top-0 z-10 bg-white/90 dark:bg-slate-950/90 backdrop-blur-xl border-b border-slate-200 dark:border-white/5 transition-shadow duration-200 [overflow-anchor:none]',
             headerCompact && 'shadow-md shadow-slate-200/50 dark:shadow-black/20',
           )}
         >
