@@ -69,6 +69,59 @@ async function fetchContactModuleCandidates(
   return (data ?? []) as RecordRow[];
 }
 
+/** Collect alternate emails stored on already-fetched twins (email2 / secondary). */
+function alternateEmailsFromRows(rows: RecordRow[], exclude: Set<string>): string[] {
+  const out: string[] = [];
+  const seen = new Set(exclude);
+  for (const row of rows) {
+    const data = row.data && typeof row.data === 'object' ? row.data : {};
+    for (const key of ['email2', 'secondary_email', 'email'] as const) {
+      const raw = data[key];
+      if (typeof raw !== 'string') continue;
+      const normalized = raw.trim().toLowerCase();
+      if (!normalized || seen.has(normalized)) continue;
+      seen.add(normalized);
+      out.push(normalized);
+    }
+    const indexed = (row.email ?? '').trim().toLowerCase();
+    if (indexed && !seen.has(indexed)) {
+      seen.add(indexed);
+      out.push(indexed);
+    }
+  }
+  return out;
+}
+
+/**
+ * Enrollment twins often store the Zoho/work email as `email2` while billing
+ * `members.email` is a portal address. Expand the candidate set using those
+ * alternate emails so pickBest can prefer the rich Zoho contact.
+ */
+async function expandCandidatesViaAlternateEmails(
+  supabase: SupabaseClient,
+  orgId: string,
+  seedRows: RecordRow[],
+  knownEmails: Set<string>,
+): Promise<RecordRow[]> {
+  const alternates = alternateEmailsFromRows(seedRows, knownEmails);
+  if (alternates.length === 0) return [];
+
+  const expanded: RecordRow[] = [];
+  for (const email of alternates) {
+    expanded.push(
+      ...(await fetchContactModuleCandidates(supabase, orgId, (query) =>
+        query.ilike('email', email),
+      )),
+    );
+    expanded.push(
+      ...(await fetchContactModuleCandidates(supabase, orgId, (query) =>
+        query.eq('data->>secondary_email', email),
+      )),
+    );
+  }
+  return expanded;
+}
+
 /** Resolve the best CRM record for one enrollment member using targeted lookups. */
 export async function resolveMemberCrmRecordId(
   supabase: SupabaseClient,
@@ -93,7 +146,9 @@ export async function resolveMemberCrmRecordId(
   }
 
   const email = member.email?.trim();
+  const knownEmails = new Set<string>();
   if (email) {
+    knownEmails.add(email.toLowerCase());
     rows.push(
       ...(await fetchContactModuleCandidates(supabase, orgId, (query) =>
         query.ilike('email', email),
@@ -104,7 +159,18 @@ export async function resolveMemberCrmRecordId(
         query.eq('data->>secondary_email', email),
       )),
     );
+    // Portal/hushmail primary on billing can match Zoho contact via email2 on
+    // the members-module twin, or secondary_email on the Zoho contact after link.
+    rows.push(
+      ...(await fetchContactModuleCandidates(supabase, orgId, (query) =>
+        query.eq('data->>email2', email),
+      )),
+    );
   }
+
+  rows.push(
+    ...(await expandCandidatesViaAlternateEmails(supabase, orgId, rows, knownEmails)),
+  );
 
   const best = pickBestMemberCrmRecord(member, dedupeCandidates(rows));
   return best?.id ?? null;
@@ -156,8 +222,22 @@ export async function resolveMemberCrmRecordIds(
           query.eq('data->>secondary_email', email),
         )),
       );
+      rows.push(
+        ...(await fetchContactModuleCandidates(supabase, orgId, (query) =>
+          query.eq('data->>email2', email),
+        )),
+      );
     }
   }
+
+  rows.push(
+    ...(await expandCandidatesViaAlternateEmails(
+      supabase,
+      orgId,
+      rows,
+      new Set(emails),
+    )),
+  );
 
   const candidates = dedupeCandidates(rows);
   for (const member of members) {

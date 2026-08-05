@@ -80,4 +80,60 @@ describe('pickBestMemberCrmRecord', () => {
     expect(scoreMemberCrmRecordCoverage(zoho)).toBeGreaterThan(scoreMemberCrmRecordCoverage(stub));
     expect(pickBestMemberCrmRecord(member, [stub, zoho])?.id).toBe(zoho.id);
   });
+
+  it('bridges Adam Davis Zoho contact via members-twin email2 when billing email differs', () => {
+    const adamMember = {
+      id: 'ecd41227-2d2c-408f-aefe-c0b5e6ac6075',
+      first_name: 'Adam',
+      last_name: 'Davis',
+      email: 'adamwilliamdavis@hushmail.com',
+      phone: '4844690124',
+      member_number: '676898454',
+    };
+    const enrollmentStub = {
+      id: '7edaaf3a-f444-4a66-aaae-4fceffe3eea9',
+      email: 'adamwilliamdavis@hushmail.com',
+      module_key: 'contacts',
+      data: {
+        first_name: 'Adam',
+        last_name: 'Davis',
+        linked_member_id: adamMember.id,
+        member_number: '676898454',
+        source: 'enrollment_sync',
+      },
+    };
+    const membersTwin = {
+      id: '564792a8-d76b-418e-a0b0-f11b1f002f46',
+      email: 'adamwilliamdavis@hushmail.com',
+      module_key: 'members',
+      data: {
+        first_name: 'Adam',
+        last_name: 'Davis',
+        member_number: '676898454',
+        email2: 'adamwilliamdavis@gmail.com',
+        address_line1: '2272 Nicholl Street East',
+      },
+    };
+    const zoho = {
+      id: '21f09b29-b53d-4042-8748-d2aa45311eab',
+      email: 'adamwilliamdavis@gmail.com',
+      source_record_id: 'zcrm_1579374000056599004',
+      market_type: 'healthshare',
+      module_key: 'contacts',
+      data: {
+        first_name: 'Adam',
+        last_name: 'Davis',
+        zoho_record_id: 'zcrm_1579374000056599004',
+        product: 'Care Plus 2024 (42464)',
+        coverage_option: 'Member Only',
+        monthly_premium: '281.19',
+        iua_amount: '1250',
+        mailing_street: '105 Lansdowne Court',
+      },
+    };
+
+    expect(pickBestMemberCrmRecord(adamMember, [enrollmentStub, membersTwin, zoho])?.id).toBe(
+      zoho.id,
+    );
+  });
 });

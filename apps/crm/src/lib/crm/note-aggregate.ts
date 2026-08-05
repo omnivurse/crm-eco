@@ -111,6 +111,63 @@ function applyZohoPersonLineageFromData(
 }
 
 /**
+ * Members-module twins often use a portal/hushmail primary email while Zoho notes
+ * live on a contacts row under a different email. Pull those contacts in when
+ * `member_number` matches (same org, contacts module only).
+ */
+export async function addSameMemberNumberContactSiblings(
+  supabase: SupabaseClient,
+  orgId: string | null | undefined,
+  memberNumber: string | null | undefined,
+  excludeId: string,
+  into: Set<string>,
+): Promise<void> {
+  const org = parseUuidLoose(orgId);
+  const exclude = parseUuidLoose(excludeId);
+  const number = (memberNumber ?? '').trim();
+  if (!org || !exclude || !number) return;
+
+  const { data: siblings, error } = await supabase
+    .from('crm_records')
+    .select('id, crm_modules!inner(key)')
+    .eq('org_id', org)
+    .eq('data->>member_number', number)
+    .eq('crm_modules.key', 'contacts')
+    .is('deleted_at' as never, null)
+    .neq('id', exclude);
+
+  if (error || !siblings?.length) return;
+
+  for (const row of siblings) {
+    const joined = (row as { crm_modules?: unknown }).crm_modules;
+    if (normalizeModuleKey(moduleKeyFromJoinedRelation(joined)) !== 'contacts') {
+      continue;
+    }
+    const id = parseUuidLoose(row.id);
+    if (id) into.add(id);
+  }
+}
+
+function emailsFromPersonRecord(record: NoteAggregateRecord): string[] {
+  const data = (record.data || {}) as Record<string, unknown>;
+  const candidates = [
+    record.email,
+    typeof data.email === 'string' ? data.email : null,
+    typeof data.email2 === 'string' ? data.email2 : null,
+    typeof data.secondary_email === 'string' ? data.secondary_email : null,
+  ];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const raw of candidates) {
+    const normalized = normalizeEmailForNoteAggregate(raw);
+    if (!normalized || seen.has(normalized)) continue;
+    seen.add(normalized);
+    out.push(normalized);
+  }
+  return out;
+}
+
+/**
  * Adds every `lead_to_contact` edge touching any of `seedPersonIds` (both endpoints),
  * so lead + contact + any linked pair are all included in one round-trip.
  */
@@ -205,12 +262,39 @@ async function resolvePersonNoteSources(
   applyZohoPersonLineageFromData(ids, record.data as Record<string, unknown> | undefined);
   await addLeadContactNeighborhood(supabase, [root], ids);
 
-  // Same-email Zoho duplicate contacts — contacts module only.
-  if (normalizeModuleKey(moduleKey) === 'contacts') {
+  const mk = normalizeModuleKey(moduleKey);
+
+  // Same-email Zoho duplicate contacts — contacts module.
+  if (mk === 'contacts') {
     await addSameEmailContactSiblings(
       supabase,
       record.org_id,
       record.email,
+      root,
+      ids,
+    );
+  }
+
+  // Members twins: also pull contact notes via alternate emails + member_number.
+  // Enrollment sync often creates a hushmail/portal primary while Zoho history
+  // stays on the gmail (or other) contacts row.
+  if (mk === 'members') {
+    for (const email of emailsFromPersonRecord(record)) {
+      await addSameEmailContactSiblings(
+        supabase,
+        record.org_id,
+        email,
+        root,
+        ids,
+      );
+    }
+    const data = (record.data || {}) as Record<string, unknown>;
+    const memberNumber =
+      typeof data.member_number === 'string' ? data.member_number : null;
+    await addSameMemberNumberContactSiblings(
+      supabase,
+      record.org_id,
+      memberNumber,
       root,
       ids,
     );

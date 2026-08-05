@@ -101,6 +101,9 @@ function emailsForRecord(candidate: MemberCrmRecordCandidate): Set<string> {
     typeof data.secondary_email === 'string' ? data.secondary_email : null,
   );
   if (secondary) out.add(secondary);
+  // Members-module / portal twins often store the Zoho email as email2.
+  const email2 = normalizeEmail(typeof data.email2 === 'string' ? data.email2 : null);
+  if (email2) out.add(email2);
   return out;
 }
 
@@ -123,7 +126,8 @@ export type MemberCrmMatchReason =
   | 'member_number'
   | 'email'
   | 'secondary_email'
-  | 'phone_name';
+  | 'phone_name'
+  | 'email_via_twin';
 
 /** True when the candidate plausibly represents the same person as the member row. */
 export function memberMatchesCrmRecord(
@@ -166,6 +170,50 @@ export function memberMatchesCrmRecord(
   return { matched: false };
 }
 
+type ScoredMatch = {
+  candidate: MemberCrmRecordCandidate;
+  matched: boolean;
+  reason?: MemberCrmMatchReason;
+};
+
+/**
+ * After direct matches (linked id / member # / billing email), also accept
+ * candidates that share an email with a verified twin — e.g. members-module
+ * row has email2=gmail while Zoho contact primary is gmail.
+ */
+function bridgeMatchesViaTwinEmails(
+  candidates: MemberCrmRecordCandidate[],
+  directMatches: ScoredMatch[],
+): ScoredMatch[] {
+  if (directMatches.length === 0) return [];
+
+  const bridgeEmails = new Set<string>();
+  for (const match of directMatches) {
+    for (const email of emailsForRecord(match.candidate)) {
+      bridgeEmails.add(email);
+    }
+  }
+  if (bridgeEmails.size === 0) return [];
+
+  const directIds = new Set(directMatches.map((m) => m.candidate.id));
+  const bridged: ScoredMatch[] = [];
+  for (const candidate of candidates) {
+    if (directIds.has(candidate.id)) continue;
+    const emails = emailsForRecord(candidate);
+    let hit = false;
+    for (const email of emails) {
+      if (bridgeEmails.has(email)) {
+        hit = true;
+        break;
+      }
+    }
+    if (hit) {
+      bridged.push({ candidate, matched: true, reason: 'email_via_twin' });
+    }
+  }
+  return bridged;
+}
+
 /**
  * Pick the best CRM record for an enrollment member. When multiple contacts
  * match (common after Zoho import + enrollment_sync stub), prefer the record
@@ -175,12 +223,17 @@ export function pickBestMemberCrmRecord(
   member: MemberCrmLookupInput,
   candidates: MemberCrmRecordCandidate[],
 ): MemberCrmRecordCandidate | null {
-  const matches = candidates
+  const directMatches = candidates
     .map((candidate) => ({
       candidate,
       ...memberMatchesCrmRecord(member, candidate),
     }))
     .filter((entry) => entry.matched);
+
+  const matches: ScoredMatch[] = [
+    ...directMatches,
+    ...bridgeMatchesViaTwinEmails(candidates, directMatches),
+  ];
 
   if (matches.length === 0) return null;
 

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   addSameEmailContactSiblings,
+  addSameMemberNumberContactSiblings,
   normalizeEmailForNoteAggregate,
   resolveNoteSourceRecordIdsWithClient,
   type NoteAggregateRecord,
@@ -183,6 +184,54 @@ describe('resolveNoteSourceRecordIdsWithClient', () => {
       'email',
       'janebaby311@gmail.com',
     );
+  });
+
+  it('members module pulls contact notes via email2 and member_number', async () => {
+    const linksChain = createChainMock({ data: [], error: null });
+    const recordsChain = createChainMock({
+      data: [{ id: CONTACT_B, crm_modules: { key: 'contacts' } }],
+      error: null,
+    });
+    const from = vi.fn((table: string) => {
+      if (table === 'crm_record_links') return linksChain;
+      if (table === 'crm_records') return recordsChain;
+      throw new Error(`Unexpected table: ${table}`);
+    });
+    const supabase = { from } as unknown as SupabaseClient;
+    const record: NoteAggregateRecord = {
+      id: CONTACT_A,
+      org_id: ORG_A,
+      email: 'adamwilliamdavis@hushmail.com',
+      data: {
+        email2: 'adamwilliamdavis@gmail.com',
+        member_number: '676898454',
+      },
+    };
+
+    const ids = await resolveNoteSourceRecordIdsWithClient(
+      supabase,
+      record,
+      'members',
+    );
+
+    expect(ids).toContain(CONTACT_A);
+    expect(ids).toContain(CONTACT_B);
+    expect(recordsChain.ilike).toHaveBeenCalledWith(
+      'email',
+      'adamwilliamdavis@gmail.com',
+    );
+    expect(recordsChain.eq).toHaveBeenCalledWith(
+      'data->>member_number',
+      '676898454',
+    );
+  });
+
+  it('addSameMemberNumberContactSiblings skips empty member numbers', async () => {
+    const from = vi.fn();
+    const supabase = { from } as unknown as SupabaseClient;
+    const into = new Set<string>([CONTACT_A]);
+    await addSameMemberNumberContactSiblings(supabase, ORG_A, '  ', CONTACT_A, into);
+    expect(from).not.toHaveBeenCalled();
   });
 
   it('does not include siblings when org differs (query scoped to record.org_id)', async () => {
