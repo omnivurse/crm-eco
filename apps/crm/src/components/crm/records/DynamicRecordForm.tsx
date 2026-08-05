@@ -812,7 +812,9 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
           <div
             key={field.key}
             className={cn(
-              'flex items-baseline gap-3 border-b border-border/40 py-1.5',
+              // min-w-0: grid/flex children default to min-width:auto and otherwise
+              // let long select pills overflow into the next column.
+              'flex min-w-0 items-baseline gap-3 border-b border-border/40 py-1.5',
               field.width === 'full' && 'md:col-span-2',
             )}
           >
@@ -834,7 +836,10 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
       }
 
       return (
-        <div key={field.key} className={cn(field.width === 'full' && 'md:col-span-2')}>
+        <div
+          key={field.key}
+          className={cn('min-w-0', field.width === 'full' && 'md:col-span-2')}
+        >
           <Label
             htmlFor={field.key}
             className="mb-1 block text-muted-foreground text-xs uppercase tracking-wider"
@@ -843,7 +848,7 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
             {field.label}
             {!readOnly && field.required && <span className="text-destructive ml-1">*</span>}
           </Label>
-          {valueNode}
+          <div className="min-w-0 max-w-full">{valueNode}</div>
           {field.tooltip && (
             <p className="mt-1 text-[11px] leading-snug text-muted-foreground/90">
               {field.tooltip}

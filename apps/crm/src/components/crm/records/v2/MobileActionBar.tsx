@@ -44,7 +44,7 @@ export const MobileActionBar = memo(function MobileActionBar({
         // Bottom-fixed on narrow viewports; invisible on desktop where the
         // header buttons + right rail already cover these actions.
         'lg:hidden fixed bottom-0 inset-x-0 z-30',
-        'border-t border-slate-200 dark:border-white/5 bg-white/95 dark:bg-slate-950/95 backdrop-blur',
+        'border-t border-slate-200 dark:border-white/5 bg-white dark:bg-slate-950',
         'pb-[env(safe-area-inset-bottom)]',
         className,
       )}

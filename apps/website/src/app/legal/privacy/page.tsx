@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { ArrowLeft, ArrowRight, ShieldCheck } from 'lucide-react';
 import { Container, Eyebrow, CTABand } from '@/components/sections/blocks';
 import { Reveal } from '@/components/sections/Reveal';
-import { BRAND } from '@/lib/site';
+import { BRAND, PHONE, EMAIL, ADDRESS } from '@/lib/site';
 
 export const metadata: Metadata = {
   title: 'Privacy Policy',
@@ -195,8 +195,22 @@ export default function PrivacyPolicyPage() {
                 </h2>
                 <p className="mt-4">
                   For questions about this Privacy Policy or our data practices,
-                  please contact us at privacy@payitforwardhealth.com or through
-                  our Contact page. Our privacy team will respond to your inquiry
+                  please contact us at{' '}
+                  <a
+                    href={`mailto:${EMAIL.privacy}`}
+                    className="font-semibold text-pif-teal-700 hover:text-pif-green-600"
+                  >
+                    {EMAIL.privacy}
+                  </a>
+                  , call{' '}
+                  <a
+                    href={`tel:${PHONE.tel}`}
+                    className="font-semibold text-pif-teal-700 hover:text-pif-green-600"
+                  >
+                    {PHONE.display}
+                  </a>
+                  , or reach us through our Contact page. Mail may be sent to{' '}
+                  {ADDRESS.display}. Our privacy team will respond to your inquiry
                   as promptly as possible.
                 </p>
                 <p className="mt-4">

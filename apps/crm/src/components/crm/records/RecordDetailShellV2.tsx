@@ -166,6 +166,10 @@ import {
 } from '@/lib/crm/record-field-search';
 import { setRecordCommandContext } from '@/lib/crm/record-command-context';
 
+/** ScrollY where the hero collapses / expands — wide hysteresis avoids bounce. */
+const HEADER_COMPACT_ENTER = 72;
+const HEADER_COMPACT_EXIT = 12;
+
 export interface RecordDetailShellV2Props {
   record: CrmRecord;
   module: CrmModule;
@@ -353,6 +357,12 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
   const recordStickyHeaderRef = useRef<HTMLDivElement | null>(null);
   /** Last measured sticky-header height — used to re-anchor scroll when compact toggles. */
   const prevStickyHeaderHeightRef = useRef<number | null>(null);
+  /**
+   * Compact toggle direction for the next sticky-height sync. Re-anchoring
+   * scrollTop without this clamp can cross enter/exit thresholds and flicker
+   * the header (shrink → scroll drops → expand → scroll rises → shrink…).
+   */
+  const compactTransitionRef = useRef<'none' | 'compacting' | 'expanding'>('none');
   const [headerCompact, setHeaderCompact] = useState(false);
 
   // When the Command Palette lands here with `?ai=email`, request a fresh AI
@@ -620,8 +630,14 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
     const onScroll = () => {
       const y = root.scrollTop;
       setHeaderCompact((prev) => {
-        if (!prev && y > 64) return true;
-        if (prev && y <= 8) return false;
+        if (!prev && y > HEADER_COMPACT_ENTER) {
+          compactTransitionRef.current = 'compacting';
+          return true;
+        }
+        if (prev && y <= HEADER_COMPACT_EXIT) {
+          compactTransitionRef.current = 'expanding';
+          return false;
+        }
         return prev;
       });
     };
@@ -633,6 +649,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
   // Don't compensate against the previous record's header height on navigation.
   useLayoutEffect(() => {
     prevStickyHeaderHeightRef.current = null;
+    compactTransitionRef.current = 'none';
     setHeaderCompact(false);
   }, [record.id]);
 
@@ -653,9 +670,25 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
 
       if (prevH == null) return;
       const delta = nextH - prevH;
+      // Keep compactTransitionRef until a real height delta arrives — the first
+      // measure after setState can still match prevH before layout settles.
       if (Math.abs(delta) < 1) return;
-      // Header shrunk → content jumps up (skip ahead); reduce scrollTop.
-      // Header grew → content pushes down; increase scrollTop.
+
+      const transition = compactTransitionRef.current;
+      compactTransitionRef.current = 'none';
+
+      if (transition === 'compacting') {
+        // Stay above the expand threshold so re-anchor cannot un-compact.
+        root.scrollTop = Math.max(HEADER_COMPACT_EXIT + 1, root.scrollTop + delta);
+        return;
+      }
+      if (transition === 'expanding') {
+        // User reached the top — park at 0 so grow compensation cannot re-compact.
+        root.scrollTop = 0;
+        return;
+      }
+
+      // Non-compact resize (tabs / chips / wrap): keep the same content under the fold.
       root.scrollTop = Math.max(0, root.scrollTop + delta);
     };
 
@@ -1227,9 +1260,11 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
         <div
           ref={recordStickyHeaderRef}
           className={cn(
-            // No padding/height transition: animating sticky height fights scroll
-            // anchoring and reads as shake/skip (esp. Brave/Chromium).
-            'sticky top-0 z-10 bg-white/90 dark:bg-slate-950/90 backdrop-blur-xl border-b border-slate-200 dark:border-white/5 transition-shadow duration-200 [overflow-anchor:none]',
+            // Opaque sticky paint (no backdrop-blur / alpha): translucent sticky
+            // layers composite content underneath and read as top-half flicker
+            // in Chromium/Brave. No padding/height transition either — that
+            // fights scroll anchoring and looks like shake/skip.
+            'sticky top-0 z-10 isolate bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-white/5 transition-shadow duration-200 [overflow-anchor:none]',
             headerCompact && 'shadow-md shadow-slate-200/50 dark:shadow-black/20',
           )}
         >
@@ -1784,13 +1819,13 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
               Lives inside the measured sticky header so --record-sticky-offset
               accounts for it and the section jump bar pins directly beneath. */}
           {topTab === 'overview' && (
-            <div className="flex items-stretch border-t border-slate-200 dark:border-white/5 bg-white/80 dark:bg-slate-950/80 backdrop-blur">
+            <div className="flex items-stretch border-t border-slate-200 dark:border-white/5 bg-white dark:bg-slate-950">
               <RecordRelatedListChips
                 items={navItems}
                 activeId={overviewPane}
                 onSelect={(id) => setOverviewPane(id as OverviewPane)}
                 onMore={() => setShowCustomizeDialog(true)}
-                className="flex-1 border-b-0 bg-transparent dark:bg-transparent backdrop-blur-none"
+                className="flex-1 border-b-0 bg-transparent dark:bg-transparent"
               />
               <div className="flex items-center border-l border-slate-200 dark:border-white/5 px-1">
                 <DropdownMenu>
@@ -1895,7 +1930,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                 <button
                   type="button"
                   onClick={() => setInsightsCollapsed(false)}
-                  className="hidden xl:flex sticky self-start items-center gap-1 px-1 py-3 rounded-l-lg border border-r-0 border-slate-200 dark:border-white/10 bg-white/60 dark:bg-slate-900/60 text-slate-500 hover:text-teal-600 transition-colors"
+                  className="hidden xl:flex sticky self-start items-center gap-1 px-1 py-3 rounded-l-lg border border-r-0 border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 text-slate-500 hover:text-teal-600 transition-colors"
                   style={{ top: 'var(--record-sticky-offset, 11rem)' }}
                   aria-label="Expand insights panel"
                   title="Show insights"

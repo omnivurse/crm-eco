@@ -18,6 +18,7 @@ import {
 import {
   Mail,
   Phone,
+  MapPin,
   Clock,
   LifeBuoy,
   Send,
@@ -34,7 +35,7 @@ import {
   IconChip,
   CTABand,
 } from '@/components/sections/blocks';
-import { PHONE, EMAIL, PORTAL_URL } from '@/lib/site';
+import { PHONE, EMAIL, ADDRESS, PORTAL_URL } from '@/lib/site';
 
 const SUBJECT_OPTIONS = [
   'General Inquiry',
@@ -122,6 +123,14 @@ export default function ContactPage() {
       value: PHONE.display,
       href: `tel:${PHONE.tel}`,
       note: 'Real people, ready to help with enrollment and sharing questions.',
+    },
+    {
+      icon: MapPin,
+      label: 'Mailing address',
+      value: ADDRESS.display,
+      href: ADDRESS.mapsUrl,
+      note: 'Correspondence and member mail for Pay It Forward Health.',
+      external: true,
     },
     {
       icon: Mail,
@@ -312,6 +321,9 @@ export default function ContactPage() {
                     <a
                       key={d.label}
                       href={d.href}
+                      {...('external' in d && d.external
+                        ? { target: '_blank', rel: 'noopener noreferrer' }
+                        : {})}
                       className="group flex gap-4 rounded-2xl border border-pif-navy-100 bg-white p-5 shadow-sm ring-1 ring-pif-navy/5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-pif-navy/10"
                     >
                       <IconChip icon={d.icon} variant="soft" className="flex-shrink-0" />

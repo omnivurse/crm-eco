@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { Phone, Mail, ArrowRight } from 'lucide-react';
-import { BRAND, PORTAL_URL, PHONE, EMAIL, SOCIAL } from '@/lib/site';
+import { Phone, Mail, MapPin, ArrowRight } from 'lucide-react';
+import { BRAND, PORTAL_URL, PHONE, EMAIL, ADDRESS, SOCIAL } from '@/lib/site';
 
 const columns = [
   {
@@ -87,12 +87,27 @@ export function SiteFooter() {
             </p>
             <div className="space-y-2 text-sm">
               <a href={`tel:${PHONE.tel}`} className="flex items-center gap-2 text-white/80 hover:text-white">
-                <Phone className="h-4 w-4 text-pif-teal-200" />
+                <Phone className="h-4 w-4 shrink-0 text-pif-teal-200" />
                 {PHONE.display}
               </a>
               <a href={`mailto:${EMAIL.general}`} className="flex items-center gap-2 text-white/80 hover:text-white">
-                <Mail className="h-4 w-4 text-pif-teal-200" />
+                <Mail className="h-4 w-4 shrink-0 text-pif-teal-200" />
                 {EMAIL.general}
+              </a>
+              <a
+                href={ADDRESS.mapsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-start gap-2 text-white/80 hover:text-white"
+              >
+                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-pif-teal-200" />
+                <span>
+                  {ADDRESS.lines.map((line) => (
+                    <span key={line} className="block">
+                      {line}
+                    </span>
+                  ))}
+                </span>
               </a>
             </div>
             <div className="mt-6 flex items-center gap-3">

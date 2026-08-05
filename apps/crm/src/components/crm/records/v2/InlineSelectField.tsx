@@ -92,16 +92,19 @@ export const InlineSelectField = memo(function InlineSelectField({
   if (readOnly || lockOwner) {
     return (
       <span
-        className={cn('inline-flex items-center gap-1.5', className)}
+        className={cn('inline-flex max-w-full min-w-0 items-center gap-1.5', className)}
         data-field={field}
         title={
           lockOwner
             ? `${lockOwner.fullName || lockOwner.email || 'Someone'} is editing this field`
-            : undefined
+            : serverLabel || undefined
         }
       >
         {serverLabel ? (
-          <Badge variant="secondary" className="font-normal">
+          <Badge
+            variant="secondary"
+            className="min-w-0 max-w-full truncate font-normal"
+          >
             {serverLabel}
           </Badge>
         ) : (
@@ -125,36 +128,41 @@ export const InlineSelectField = memo(function InlineSelectField({
   return (
     <span
       className={cn(
-        'relative inline-flex items-center gap-1 rounded-md px-1 -mx-1',
+        'relative flex w-full min-w-0 max-w-full items-center gap-1 rounded-md px-1 -mx-1',
         'hover:bg-slate-100/70 dark:hover:bg-white/5 transition-colors',
         state?.status === 'error' && 'ring-1 ring-rose-300',
         className
       )}
       data-no-hotkeys
       data-field={field}
-      title={state?.status === 'error' ? state.error : undefined}
+      title={state?.status === 'error' ? state.error : pickLabel || undefined}
     >
       {pickLabel ? (
-        <Badge variant="secondary" className="font-normal pointer-events-none">
+        <Badge
+          variant="secondary"
+          className="min-w-0 flex-1 truncate font-normal pointer-events-none"
+        >
           {pickLabel}
         </Badge>
       ) : (
-        <span className="text-sm text-slate-400 italic pointer-events-none">{placeholder}</span>
+        <span className="min-w-0 truncate text-sm text-slate-400 italic pointer-events-none">
+          {placeholder}
+        </span>
       )}
       {/* Clear button — visible when a value is set */}
       {pick && (
         <button
           type="button"
           onClick={handleClear}
-          className="relative z-10 rounded p-0.5 text-slate-400 hover:text-rose-500 hover:bg-slate-200/60 dark:hover:bg-white/10 transition-colors"
+          className="relative z-10 shrink-0 rounded p-0.5 text-slate-400 hover:text-rose-500 hover:bg-slate-200/60 dark:hover:bg-white/10 transition-colors"
           aria-label="Clear selection"
         >
           <X className="w-3 h-3" />
         </button>
       )}
-      <ChevronDown className="w-3 h-3 text-slate-400 pointer-events-none" />
+      <ChevronDown className="h-3 w-3 shrink-0 text-slate-400 pointer-events-none" />
       <select
-        className="absolute inset-0 opacity-0 cursor-pointer"
+        className="absolute inset-0 cursor-pointer opacity-0"
         value={pick ?? ''}
         onChange={handleChange}
         onFocus={() => {
@@ -175,11 +183,11 @@ export const InlineSelectField = memo(function InlineSelectField({
         ))}
       </select>
       {state?.status === 'saving' || state?.status === 'pending' ? (
-        <Loader2 className="w-3 h-3 text-teal-500 animate-spin" />
+        <Loader2 className="h-3 w-3 shrink-0 animate-spin text-teal-500" />
       ) : state?.status === 'error' ? (
-        <AlertTriangle className="w-3 h-3 text-rose-500" />
+        <AlertTriangle className="h-3 w-3 shrink-0 text-rose-500" />
       ) : state?.status === 'saved' ? (
-        <Check className="w-3 h-3 text-emerald-500" />
+        <Check className="h-3 w-3 shrink-0 text-emerald-500" />
       ) : null}
     </span>
   );

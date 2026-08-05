@@ -227,7 +227,7 @@ export const RecordRelatedListChips = memo(function RecordRelatedListChips({
       aria-label="Record sections"
       style={style}
       className={cn(
-        'relative flex items-center gap-1.5 overflow-x-auto scrollbar-thin px-4 py-2 border-b border-slate-200 dark:border-white/5 bg-white/80 dark:bg-slate-950/80 backdrop-blur',
+        'relative flex items-center gap-1.5 overflow-x-auto scrollbar-thin px-4 py-2 border-b border-slate-200 dark:border-white/5 bg-white dark:bg-slate-950',
         className,
       )}
     >

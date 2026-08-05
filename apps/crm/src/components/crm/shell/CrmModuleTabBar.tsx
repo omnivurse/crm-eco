@@ -48,7 +48,7 @@ export function CrmModuleTabBar() {
   };
 
   return (
-    <div className="sticky top-[var(--crm-topbar-h)] z-[35] shrink-0 border-b border-slate-200/80 bg-white/95 backdrop-blur-md dark:border-white/5 dark:bg-slate-950/95">
+    <div className="sticky top-[var(--crm-topbar-h)] z-[35] isolate shrink-0 border-b border-slate-200/80 bg-white dark:border-white/5 dark:bg-slate-950">
       <div className="flex items-center gap-0 overflow-x-auto scrollbar-thin px-2 sm:px-4 lg:px-5">
         {TOP_MODULES.map((module) => {
           const Icon = getIcon(module.icon);

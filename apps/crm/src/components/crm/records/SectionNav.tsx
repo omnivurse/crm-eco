@@ -66,7 +66,9 @@ export function SectionNav({
   return (
     <div
       className={cn(
-        'sticky z-[5] -mx-1 border-b border-slate-200 bg-white/95 px-1 backdrop-blur-lg dark:border-white/5 dark:bg-slate-950/95',
+        // Opaque sticky bar — alpha + backdrop-blur under the record header
+        // ghosts field content through the chip/section strip (top-half flicker).
+        'sticky z-[5] isolate -mx-1 border-b border-slate-200 bg-white px-1 dark:border-white/5 dark:bg-slate-950',
         compact ? 'shadow-none' : 'shadow-sm',
       )}
       style={{ top: 'var(--record-sticky-offset, 180px)' }}

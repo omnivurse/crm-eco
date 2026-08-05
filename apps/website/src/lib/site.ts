@@ -2,9 +2,6 @@
  * Pay It Forward Health — central site configuration.
  * One place for brand identity, contact details, navigation and the portal URL,
  * so every page/section stays consistent.
- *
- * NOTE: phone uses the reserved fictional 555-01xx range as a PLACEHOLDER —
- * replace `PHONE` with the real member line before launch.
  */
 
 export const BRAND = {
@@ -25,8 +22,29 @@ export const PIFH_ORG_ID =
   process.env.NEXT_PUBLIC_PIFH_ORG_ID || '00000000-0000-0000-0000-000000000001';
 
 export const PHONE = {
-  display: '(800) 555-0100', // PLACEHOLDER — replace with real member line
-  tel: '18005550100',
+  display: '303-970-2200',
+  tel: '13039702200',
+} as const;
+
+export const ADDRESS = {
+  street: '357 S. McCaslin Blvd.',
+  suite: 'Suite 200, PMB 3000',
+  city: 'Louisville',
+  state: 'Colorado',
+  stateAbbr: 'CO',
+  zip: '80027',
+  /** Single-line display for footers, contact cards, and legal copy. */
+  display: '357 S. McCaslin Blvd., Suite 200, PMB 3000, Louisville, Colorado 80027',
+  /** Multi-line blocks (footer / contact). */
+  lines: [
+    '357 S. McCaslin Blvd., Suite 200, PMB 3000',
+    'Louisville, Colorado 80027',
+  ] as const,
+  mapsUrl:
+    'https://www.google.com/maps/search/?api=1&query=' +
+    encodeURIComponent(
+      '357 S. McCaslin Blvd., Suite 200, PMB 3000, Louisville, CO 80027',
+    ),
 } as const;
 
 export const EMAIL = {

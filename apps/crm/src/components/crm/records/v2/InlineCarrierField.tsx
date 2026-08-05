@@ -381,16 +381,16 @@ export const InlineCarrierField = memo(function InlineCarrierField({
   if (readOnly || lockOwner) {
     return (
       <span
-        className={cn('inline-flex items-center gap-1.5', className)}
+        className={cn('inline-flex max-w-full min-w-0 items-center gap-1.5', className)}
         data-field={field}
         title={
           lockOwner
             ? `${lockOwner.fullName || lockOwner.email || 'Someone'} is editing this field`
-            : undefined
+            : currentLabel || undefined
         }
       >
         {currentLabel ? (
-          <Badge variant="secondary" className="font-normal">
+          <Badge variant="secondary" className="max-w-full min-w-0 truncate font-normal">
             {currentLabel}
           </Badge>
         ) : value ? (
@@ -407,29 +407,29 @@ export const InlineCarrierField = memo(function InlineCarrierField({
     <span
       ref={containerRef}
       className={cn(
-        'relative inline-flex items-center gap-1 rounded-md px-1 -mx-1',
+        'relative flex w-full min-w-0 max-w-full items-center gap-1 rounded-md px-1 -mx-1',
         'hover:bg-slate-100/70 dark:hover:bg-white/5 transition-colors',
         state?.status === 'error' && 'ring-1 ring-rose-300',
         className,
       )}
       data-no-hotkeys
       data-field={field}
-      title={state?.status === 'error' ? state.error : undefined}
+      title={state?.status === 'error' ? state.error : currentLabel || undefined}
     >
       <button
         type="button"
         onClick={openPicker}
         aria-label={ariaLabel ?? field}
-        className="inline-flex items-center gap-1 text-sm text-slate-700 dark:text-slate-200"
+        className="inline-flex min-w-0 flex-1 items-center gap-1 text-sm text-slate-700 dark:text-slate-200"
       >
         {currentLabel ? (
-          <Badge variant="secondary" className="font-normal">
+          <Badge variant="secondary" className="min-w-0 flex-1 truncate font-normal">
             {currentLabel}
           </Badge>
         ) : (
-          <span className="text-slate-400 italic">{placeholder}</span>
+          <span className="truncate text-slate-400 italic">{placeholder}</span>
         )}
-        <ChevronDown className="w-3 h-3 text-slate-400" />
+        <ChevronDown className="h-3 w-3 shrink-0 text-slate-400" />
       </button>
       {value && !open ? (
         <button
@@ -438,19 +438,19 @@ export const InlineCarrierField = memo(function InlineCarrierField({
             e.stopPropagation();
             void pick(null);
           }}
-          className="inline-flex items-center justify-center rounded-sm text-slate-400 hover:text-rose-500"
+          className="inline-flex shrink-0 items-center justify-center rounded-sm text-slate-400 hover:text-rose-500"
           aria-label="Clear"
         >
-          <X className="w-3 h-3" />
+          <X className="h-3 w-3" />
         </button>
       ) : null}
 
       {state?.status === 'saving' || state?.status === 'pending' ? (
-        <Loader2 className="w-3 h-3 text-teal-500 animate-spin" />
+        <Loader2 className="h-3 w-3 shrink-0 animate-spin text-teal-500" />
       ) : state?.status === 'error' ? (
-        <AlertTriangle className="w-3 h-3 text-rose-500" />
+        <AlertTriangle className="h-3 w-3 shrink-0 text-rose-500" />
       ) : state?.status === 'saved' ? (
-        <Check className="w-3 h-3 text-emerald-500" />
+        <Check className="h-3 w-3 shrink-0 text-emerald-500" />
       ) : null}
 
       {open ? (
