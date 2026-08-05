@@ -100,7 +100,21 @@
       "Bash(npx supabase functions deploy email-intake)",
       "Bash(npx supabase secrets set INTAKE_MODE=inbox DEFAULT_ORG_ID='')",
       "Bash(npx supabase functions deploy send-scheduled-emails --no-verify-jwt)",
-      "Bash(npx supabase functions deploy email-intake --no-verify-jwt)"
+      "Bash(npx supabase functions deploy email-intake --no-verify-jwt)",
+      "Bash(node -e \"const p=require\\('./apps/admin/package.json'\\); console.log\\(Object.keys\\(p.scripts\\).join\\(', '\\)\\)\")",
+      "Bash(npx tsc *)",
+      "Bash(npm run *)",
+      "Bash(npx eslint *)",
+      "Bash(echo \"--- exit: $? ---\")",
+      "Bash(git check-ignore *)",
+      "Bash(echo \"TSC EXIT: $?\")",
+      "Bash(echo \"LINT EXIT: $?\")",
+      "Bash(npx vitest *)",
+      "Bash(node --input-type=module -e ' *)",
+      "Bash(git diff *)",
+      "Bash(node -e \"console.log\\(JSON.stringify\\(JSON.parse\\(require\\('fs'\\).readFileSync\\('apps/admin/package.json','utf8'\\)\\).scripts,null,2\\)\\)\")",
+      "Bash(npx turbo *)",
+      "Bash(node \"C:/Users/User/AppData/Local/Temp/claude/c--Users-User-Documents-GitHub-crm-eco/0662ee74-885f-4ade-bb09-d6e237073533/scratchpad/dead-links.mjs\")"
     ],
     "additionalDirectories": [
       "c:\\Users\\User\\Documents\\GitHub\\crm-eco\\apps\\crm\\public",
