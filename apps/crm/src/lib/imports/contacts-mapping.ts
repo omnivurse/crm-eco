@@ -97,6 +97,7 @@ export const CONTACTS_FIELD_MAPPING: FieldMapping[] = [
   { csvColumn: 'Mailing City', crmKey: 'mailing_city', type: 'text', section: 'address' },
   { csvColumn: 'Mailing State', crmKey: 'mailing_state', type: 'text', section: 'address' },
   { csvColumn: 'Mailing Zip', crmKey: 'mailing_zip', type: 'text', section: 'address' },
+  { csvColumn: 'County', crmKey: 'county', type: 'text', section: 'address' },
 
   // Spouse
   { csvColumn: 'Spouse', crmKey: 'spouse', type: 'text', section: 'family_spouse' },

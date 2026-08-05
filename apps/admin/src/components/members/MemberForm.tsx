@@ -45,6 +45,7 @@ interface MemberFormProps {
     city: string | null;
     state: string | null;
     postal_code: string | null;
+    county: string | null;
     advisor_id: string | null;
     market_type: string | null;
     status: string;
@@ -83,6 +84,7 @@ export function MemberForm({ agents, initialData }: MemberFormProps) {
     city: initialData?.city ?? '',
     state: initialData?.state ?? '',
     zip_code: initialData?.postal_code ?? '',
+    county: initialData?.county ?? '',
     advisor_id: initialData?.advisor_id ?? '',
     market_type: initialData?.market_type ?? '',
     status: initialData?.status ?? 'pending',
@@ -130,6 +132,7 @@ export function MemberForm({ agents, initialData }: MemberFormProps) {
         city: next.city || null,
         state: next.state || null,
         postal_code: zip_code || null,
+        county: next.county || null,
         effective_date: nextRest.effective_date || null,
         existing_condition_description: next.existing_condition
           ? next.existing_condition_description || null
@@ -219,6 +222,7 @@ export function MemberForm({ agents, initialData }: MemberFormProps) {
       city: formData.city || null,
       state: formData.state || null,
       postal_code: zip_code || null,
+      county: formData.county || null,
       effective_date: formRest.effective_date || null,
       existing_condition_description: formData.existing_condition
         ? formData.existing_condition_description || null
@@ -423,6 +427,21 @@ export function MemberForm({ agents, initialData }: MemberFormProps) {
               className="h-11 sm:h-10"
             />
           </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="county">County</Label>
+          <Input
+            id="county"
+            value={formData.county}
+            onChange={(e) => setFormData({ ...formData, county: e.target.value })}
+            disabled={loading}
+            placeholder="e.g. Denver, Jefferson, El Paso"
+            className="h-11 sm:h-10"
+          />
+          <p className="text-xs text-slate-500">
+            Needed for Colorado exchange (Connect for Health) plan tracking.
+          </p>
         </div>
       </div>
 

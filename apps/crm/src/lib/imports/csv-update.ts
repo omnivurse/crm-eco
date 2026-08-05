@@ -68,6 +68,7 @@ const HEADER_ALIASES: Record<string, string> = {
   'zip': 'mailing_zip',
   'zip code': 'mailing_zip',
   'postal code': 'mailing_zip',
+  'county': 'county',
   'country': 'mailing_country',
 };
 

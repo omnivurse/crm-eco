@@ -409,6 +409,18 @@ export function AddMemberDialog() {
                     />
                   </div>
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="county">County</Label>
+                  <Input
+                    id="county"
+                    value={formData.county}
+                    onChange={(e) => setFormData({ ...formData, county: e.target.value })}
+                    placeholder="e.g. Denver, Jefferson, El Paso"
+                  />
+                  <p className="text-xs text-slate-500">
+                    Needed for Colorado exchange (Connect for Health) plan tracking.
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -507,20 +519,12 @@ export function AddMemberDialog() {
                 <AccordionContent className="pb-4">
                   <div className="grid gap-4">
                     <div className="grid grid-cols-3 gap-4">
-                      <div className="space-y-2 col-span-2">
+                      <div className="space-y-2">
                         <Label>Phone 1 Extension</Label>
                         <Input
                           value={formData.phoneExt}
                           onChange={(e) => setFormData({ ...formData, phoneExt: e.target.value })}
                           placeholder="Ext"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>County</Label>
-                        <Input
-                          value={formData.county}
-                          onChange={(e) => setFormData({ ...formData, county: e.target.value })}
-                          placeholder="County"
                         />
                       </div>
                     </div>

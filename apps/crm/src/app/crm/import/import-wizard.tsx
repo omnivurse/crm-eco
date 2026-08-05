@@ -234,6 +234,7 @@ export function ImportWizard({ modules, organizationId, preselectedModule, smart
       'mailing_city': ['city', 'town'],
       'mailing_state': ['state', 'province', 'region'],
       'mailing_zip': ['zip', 'zip code', 'postal code', 'postcode'],
+      'county': ['county'],
       'contact_status': ['status', 'contact status'],
       'lead_status': ['status', 'lead status'],
       'lead_source': ['source', 'lead source'],

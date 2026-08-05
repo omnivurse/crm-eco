@@ -100,6 +100,7 @@ export function MemberCommandCenter({
     city: (member.city as string | null) ?? null,
     state: (member.state as string | null) ?? null,
     postal_code: (member.postal_code as string | null) ?? null,
+    county: (member.county as string | null) ?? null,
     advisor_id: (member.advisor_id as string | null) ?? null,
     market_type: (member.market_type as string | null) ?? null,
     status: member.status,

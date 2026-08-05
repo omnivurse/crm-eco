@@ -131,7 +131,7 @@ export default function FieldsPage() {
           Every contact comes with these standard fields:
         </p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          {['First Name', 'Last Name', 'Email', 'Phone', 'Company', 'Title', 'Address', 'City', 'State', 'Country', 'Notes', 'Owner'].map((field) => (
+          {['First Name', 'Last Name', 'Email', 'Phone', 'Company', 'Title', 'Address', 'City', 'State', 'County', 'Country', 'Notes', 'Owner'].map((field) => (
             <div
               key={field}
               className="flex items-center gap-2 p-3 rounded-lg bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700"

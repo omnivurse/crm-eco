@@ -38,6 +38,7 @@ const DEFAULT_FIELDS: Record<string, Array<{ key: string; label: string; type: s
     { key: 'contact_status', label: 'Status', type: 'select', is_system: true, display_order: 5, section: 'main', options: ['Active', 'Inactive', 'Prospect'] },
     { key: 'mailing_city', label: 'City', type: 'text', display_order: 10, section: 'address' },
     { key: 'mailing_state', label: 'State', type: 'text', display_order: 11, section: 'address' },
+    { key: 'county', label: 'County', type: 'text', display_order: 12, section: 'address' },
     { key: 'agency', label: 'Agency', type: 'text', display_order: 17, section: 'relationships' },
     { key: 'partners', label: 'Partners', type: 'textarea', display_order: 18, section: 'relationships' },
     { key: 'support_team', label: 'Support Team', type: 'text', display_order: 19, section: 'relationships' },
@@ -53,6 +54,7 @@ const DEFAULT_FIELDS: Record<string, Array<{ key: string; label: string; type: s
     { key: 'agency', label: 'Agency', type: 'text', display_order: 8, section: 'relationships' },
     { key: 'partners', label: 'Partners', type: 'textarea', display_order: 9, section: 'relationships' },
     { key: 'support_team', label: 'Support Team', type: 'text', display_order: 10, section: 'relationships' },
+    { key: 'county', label: 'County', type: 'text', display_order: 16, section: 'address' },
   ],
   deals: [
     { key: 'member_name', label: 'Member Name', type: 'text', required: true, is_system: true, is_title_field: true, display_order: 1, section: 'main' },
@@ -81,6 +83,7 @@ const DEFAULT_FIELDS: Record<string, Array<{ key: string; label: string; type: s
     { key: 'carrier', label: 'Carrier', type: 'text', display_order: 6, section: 'main' },
     { key: 'mailing_city', label: 'City', type: 'text', display_order: 10, section: 'address' },
     { key: 'mailing_state', label: 'State', type: 'text', display_order: 11, section: 'address' },
+    { key: 'county', label: 'County', type: 'text', display_order: 12, section: 'address' },
   ],
 };
 

@@ -818,7 +818,7 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
           >
             <Label
               htmlFor={field.key}
-              title={field.label}
+              title={field.tooltip || field.label}
               className={cn(
                 // Fixed width + truncate so long labels (e.g. "Max out-of-pocket")
                 // never spill into / overlap the editable value column.
@@ -838,11 +838,17 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
           <Label
             htmlFor={field.key}
             className="mb-1 block text-muted-foreground text-xs uppercase tracking-wider"
+            title={field.tooltip || undefined}
           >
             {field.label}
             {!readOnly && field.required && <span className="text-destructive ml-1">*</span>}
           </Label>
           {valueNode}
+          {field.tooltip && (
+            <p className="mt-1 text-[11px] leading-snug text-muted-foreground/90">
+              {field.tooltip}
+            </p>
+          )}
         </div>
       );
     },

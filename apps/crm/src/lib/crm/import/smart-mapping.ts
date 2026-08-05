@@ -89,6 +89,7 @@ const ALIAS_INDEX: Map<string, string> = (() => {
     'zip': 'mailing_zip',
     'zip code': 'mailing_zip',
     'postal code': 'mailing_zip',
+    'county': 'county',
     'country': 'mailing_country',
     'lead owner': 'owner',
     'contact owner': 'owner',

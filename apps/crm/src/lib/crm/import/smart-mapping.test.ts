@@ -28,6 +28,7 @@ const CONTACT_FIELDS: CrmField[] = [
   field('mobile', 'Mobile'),
   field('mailing_zip', 'Mailing Zip'),
   field('mailing_city', 'Mailing City'),
+  field('county', 'County'),
   field('date_of_birth', 'Date of Birth', 'date'),
   field('referring_member', 'Referring Member'),
   field('referral_source', 'Referral Source'),
@@ -57,7 +58,7 @@ describe('suggestSmartMappings', () => {
   });
 
   it('handles Zoho formatting noise (case / punctuation / synonyms)', () => {
-    const headers = ['e-mail', 'ZIP CODE', 'Cell Phone', 'DOB', 'Referred By'];
+    const headers = ['e-mail', 'ZIP CODE', 'Cell Phone', 'DOB', 'Referred By', 'County'];
     const byCol = Object.fromEntries(
       suggestSmartMappings(headers, CONTACT_FIELDS).map((m) => [m.sourceColumn, m.targetField]),
     );
@@ -66,6 +67,7 @@ describe('suggestSmartMappings', () => {
     expect(byCol['Cell Phone']).toBe('mobile');
     expect(byCol['DOB']).toBe('date_of_birth');
     expect(byCol['Referred By']).toBe('referring_member');
+    expect(byCol['County']).toBe('county');
   });
 
   it('skips Zoho system/export columns', () => {
