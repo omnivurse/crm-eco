@@ -9,7 +9,7 @@ export const SMS_PRIVACY_POLICY_PATH = '/legal/sms-privacy';
 
 export const SMS_PRIVACY_POLICY_TITLE = 'SMS Privacy Policy';
 
-export const SMS_PRIVACY_POLICY_UPDATED = 'August 2, 2026';
+export const SMS_PRIVACY_POLICY_UPDATED = 'August 5, 2026';
 
 export interface SmsPrivacyPolicyBrand {
   companyName: string;
@@ -67,7 +67,7 @@ export function buildSmsPrivacySections(brand: SmsPrivacyPolicyBrand): SmsPrivac
       id: 'sharing',
       title: '4. Sharing Your Information',
       paragraphs: [
-        'We will not share, sell, or rent your personal information to any third party unless required by law or with your explicit consent.',
+        'Mobile information will not be shared with third parties/affiliates for marketing/promotional purposes. All the above categories exclude text messaging originator opt-in data and consent; this information will not be shared with any third parties.',
       ],
     },
     {
