@@ -22,10 +22,7 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { authorizeInternalEdgeRequest } from './cron-auth.ts';
-import {
-  decideProfileAccess,
-  membershipAllowsAccess,
-} from './org-auth-policy.ts';
+import { decideProfileAccess, membershipAllowsAccess } from './org-auth-policy.ts';
 
 type ServiceClient = ReturnType<typeof createClient>;
 
@@ -41,7 +38,7 @@ export async function callerMayAccessOrg(
   service: ServiceClient,
   req: Request,
   organizationId: string,
-  opts: OrgAccessOptions = {},
+  opts: OrgAccessOptions = {}
 ): Promise<boolean> {
   if (!organizationId) return false;
 

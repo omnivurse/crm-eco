@@ -22,14 +22,11 @@ function roleIsAllowed(role: string | null, requiredRoles?: string[]): boolean {
 export function decideProfileAccess(
   profile: OrgAuthProfile | null | undefined,
   organizationId: string,
-  requiredRoles?: string[],
+  requiredRoles?: string[]
 ): ProfileAccessDecision {
   if (!profile || profile.is_active === false) return 'deny';
 
-  if (
-    profile.organization_id === organizationId &&
-    roleIsAllowed(profile.role, requiredRoles)
-  ) {
+  if (profile.organization_id === organizationId && roleIsAllowed(profile.role, requiredRoles)) {
     return 'allow';
   }
 
@@ -39,7 +36,7 @@ export function decideProfileAccess(
 /** Require an explicitly active membership and, when supplied, an allowed tenant role. */
 export function membershipAllowsAccess(
   membership: OrgAuthMembership | null | undefined,
-  requiredRoles?: string[],
+  requiredRoles?: string[]
 ): boolean {
   return membership?.is_active === true && roleIsAllowed(membership.role, requiredRoles);
 }

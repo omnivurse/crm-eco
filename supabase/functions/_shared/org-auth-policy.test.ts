@@ -1,10 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import {
-  decideProfileAccess,
-  membershipAllowsAccess,
-} from './org-auth-policy.ts';
+import { decideProfileAccess, membershipAllowsAccess } from './org-auth-policy.ts';
 
 describe('decideProfileAccess', () => {
   it('denies a deactivated profile even when its home-org role matches', () => {
@@ -16,9 +13,9 @@ describe('decideProfileAccess', () => {
           is_active: false,
         },
         'org-a',
-        ['admin'],
+        ['admin']
       ),
-      'deny',
+      'deny'
     );
   });
 
@@ -31,9 +28,9 @@ describe('decideProfileAccess', () => {
           is_active: null,
         },
         'org-a',
-        ['admin'],
+        ['admin']
       ),
-      'allow',
+      'allow'
     );
   });
 
@@ -46,9 +43,9 @@ describe('decideProfileAccess', () => {
           is_active: true,
         },
         'org-b',
-        ['owner', 'admin'],
+        ['owner', 'admin']
       ),
-      'check_membership',
+      'check_membership'
     );
   });
 });
@@ -61,20 +58,20 @@ describe('membershipAllowsAccess', () => {
           role: 'admin',
           is_active: true,
         },
-        ['owner', 'admin'],
+        ['owner', 'admin']
       ),
-      true,
+      true
     );
   });
 
   it('denies inactive memberships and disallowed roles', () => {
     assert.equal(
       membershipAllowsAccess({ role: 'admin', is_active: false }, ['owner', 'admin']),
-      false,
+      false
     );
     assert.equal(
       membershipAllowsAccess({ role: 'staff', is_active: true }, ['owner', 'admin']),
-      false,
+      false
     );
   });
 });
