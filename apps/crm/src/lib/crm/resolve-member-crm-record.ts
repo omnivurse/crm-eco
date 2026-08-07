@@ -182,6 +182,7 @@ type ScoredMatch = {
  * row has email2=gmail while Zoho contact primary is gmail.
  */
 function bridgeMatchesViaTwinEmails(
+  member: MemberCrmLookupInput,
   candidates: MemberCrmRecordCandidate[],
   directMatches: ScoredMatch[],
 ): ScoredMatch[] {
@@ -207,7 +208,21 @@ function bridgeMatchesViaTwinEmails(
         break;
       }
     }
-    if (hit) {
+    // Alternate emails are frequently shared by spouses or households. An
+    // email overlap alone must not redirect one member to another person's
+    // richer CRM record; require a second same-person signal.
+    const data = recordData(candidate);
+    const memberNumber = (member.member_number ?? '').trim();
+    const candidateMemberNumber =
+      typeof data.member_number === 'string' ? data.member_number.trim() : '';
+    const identityCorroborated =
+      (typeof data.linked_member_id === 'string' && data.linked_member_id === member.id) ||
+      (memberNumber !== '' &&
+        candidateMemberNumber !== '' &&
+        memberNumber === candidateMemberNumber) ||
+      namesMatch(member, candidate);
+
+    if (hit && identityCorroborated) {
       bridged.push({ candidate, matched: true, reason: 'email_via_twin' });
     }
   }
@@ -232,7 +247,7 @@ export function pickBestMemberCrmRecord(
 
   const matches: ScoredMatch[] = [
     ...directMatches,
-    ...bridgeMatchesViaTwinEmails(candidates, directMatches),
+    ...bridgeMatchesViaTwinEmails(member, candidates, directMatches),
   ];
 
   if (matches.length === 0) return null;

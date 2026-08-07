@@ -136,4 +136,53 @@ describe('pickBestMemberCrmRecord', () => {
       zoho.id,
     );
   });
+
+  it("does not bridge a member to a spouse's richer contact through a shared email", () => {
+    const johnMember = {
+      id: 'e45283c1-b9e1-4851-9ded-f512c42d36f6',
+      first_name: 'John',
+      last_name: 'Smith',
+      email: 'john@hushmail.com',
+      member_number: '111',
+    };
+    const johnStub = {
+      id: '68be4dba-ee26-4dca-9cd0-f5ccf36af57f',
+      email: 'john@hushmail.com',
+      module_key: 'contacts',
+      data: {
+        first_name: 'John',
+        last_name: 'Smith',
+        linked_member_id: johnMember.id,
+      },
+    };
+    const johnTwin = {
+      id: '6a644b13-0e06-42bd-b298-5804972ed2fc',
+      email: 'john@hushmail.com',
+      module_key: 'members',
+      data: {
+        first_name: 'John',
+        last_name: 'Smith',
+        member_number: '111',
+        email2: 'family@gmail.com',
+      },
+    };
+    const janeZohoContact = {
+      id: '287ff80f-fbc2-4829-b422-182d0fe429a8',
+      email: 'family@gmail.com',
+      source_record_id: 'zcrm_jane',
+      market_type: 'healthshare',
+      module_key: 'contacts',
+      data: {
+        first_name: 'Jane',
+        last_name: 'Smith',
+        carrier: 'Zion Health',
+        product: 'Direct Membership',
+        monthly_premium: '450.00',
+      },
+    };
+
+    expect(
+      pickBestMemberCrmRecord(johnMember, [johnStub, johnTwin, janeZohoContact])?.id,
+    ).toBe(johnStub.id);
+  });
 });
