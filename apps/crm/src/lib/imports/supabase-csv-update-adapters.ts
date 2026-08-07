@@ -4,6 +4,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { nameDobKey } from './csv-update';
+import { summarizeImportJobCompletion } from './import-job-status';
 import { DedupLookupError, fetchAllForDedup } from './paged-lookup';
 import type {
   CsvUpdateWriteTarget,
@@ -188,25 +189,17 @@ export function createSupabaseCsvUpdateWriter(input: {
       // crm_import_jobs.status CHECK). That migration must be applied BEFORE
       // this code deploys, or the update violates the constraint and the job is
       // stranded in 'processing'.
-      const status =
-        errorCount === 0
-          ? 'completed'
-          : errorCount === writeAttemptCount && writeAttemptCount > 0
-            ? 'failed'
-            : 'completed_with_errors';
+      const completion = summarizeImportJobCompletion(errorCount, writeAttemptCount);
 
       await supabase
         .from('crm_import_jobs')
         .update({
-          status,
+          status: completion.status,
           processed_rows: writeAttemptCount,
           updated_count: updated,
           error_count: errorCount,
           skipped_count: skippedCount,
-          error_message:
-            errorCount > 0
-              ? `${errorCount} of ${writeAttemptCount} row(s) failed to write`
-              : null,
+          error_message: completion.errorMessage,
           completed_at: new Date().toISOString(),
         })
         .eq('id', jobId)

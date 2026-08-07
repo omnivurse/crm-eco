@@ -189,12 +189,18 @@ async function dispatchPayment(
         headers: {
           'Authorization': `Bearer ${stripeKey}`,
           'Content-Type': 'application/x-www-form-urlencoded',
+          // The database claim prevents concurrent workers, but it cannot make
+          // the external transfer + local status update atomic. Reusing the
+          // payout id lets Stripe return the original transfer when a worker
+          // succeeds remotely and then crashes before persisting `paid`.
+          'Idempotency-Key': `commission-payout:${payout.id}`,
         },
         body: new URLSearchParams({
           amount: String(amountCents),
           currency: 'usd',
           destination: accountId,
-          metadata: JSON.stringify({ payout_id: payout.id }),
+          // Stripe form-encoded map parameters use bracket notation.
+          'metadata[payout_id]': payout.id,
         }),
       });
       const data = await response.json();
