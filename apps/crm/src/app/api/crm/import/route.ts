@@ -9,6 +9,7 @@ import {
   sanitizeCrmDataJsonPatch,
 } from '@/lib/crm/merge-crm-data-json-to-row';
 import { requireActiveOrgCrmRoles } from '@/lib/crm/require-crm-role';
+import { summarizeImportJobCompletion } from '@/lib/imports/import-job-status';
 import { fetchAllForDedup } from '@/lib/imports/paged-lookup';
 
 
@@ -654,16 +655,22 @@ export async function POST(request: NextRequest) {
       await supabase.from('crm_import_rows').insert(batch);
     }
 
+    // Skipped duplicates are expected no-ops, so only actual insert/update
+    // attempts determine whether the job partially or completely failed.
+    const writeAttemptCount = success + updated + errors;
+    const completion = summarizeImportJobCompletion(errors, writeAttemptCount);
+
     // Update import job status
     await supabase
       .from('crm_import_jobs')
       .update({
-        status: 'completed',
+        status: completion.status,
         processed_rows: data.length,
         inserted_count: success,
         updated_count: updated,
         skipped_count: skipped,
         error_count: errors,
+        error_message: completion.errorMessage,
         completed_at: new Date().toISOString(),
       })
       .eq('id', importJob.id);
