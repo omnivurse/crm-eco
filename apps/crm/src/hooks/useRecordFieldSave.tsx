@@ -57,7 +57,19 @@ export interface FieldSaveOptions {
    * PATCH service silently drops unknown top-level keys.
    */
   target?: FieldSaveTarget;
+  /**
+   * Whether a 409 should be retried with the server's newest concurrency
+   * token. Disable this for read-modify-write values such as arrays: replaying
+   * a stale aggregate can overwrite another user's newly-added entries.
+   */
+  retryOnConflict?: boolean;
 }
+
+export type FieldSaveResult =
+  | { status: 'saved' }
+  | { status: 'queued'; mutationId: string }
+  | { status: 'error'; error: string }
+  | { status: 'superseded' };
 
 /** Public shape consumed by `UnsavedChangesPill` and friends. */
 export interface RecordFieldSaveContextValue {
@@ -71,14 +83,15 @@ export interface RecordFieldSaveContextValue {
   lastError: string | null;
   /**
    * Queue a save for the given field. Debounces per-field (250ms) and
-   * returns a Promise that resolves when the save settles (successful
-   * or failed).
+   * returns a Promise with the durable outcome. Existing inline editors may
+   * ignore the result; multi-step workflows must inspect it before starting a
+   * dependent side effect.
    */
   save: (
     field: string,
     value: unknown,
     options?: FieldSaveOptions,
-  ) => Promise<void>;
+  ) => Promise<FieldSaveResult>;
   /**
    * Flush any debounced pending saves immediately. Useful when the user
    * navigates away or the presence "editing" intent ends.
@@ -118,8 +131,9 @@ interface PendingEntry {
   field: string;
   value: unknown;
   target: FieldSaveTarget;
+  retryOnConflict: boolean;
   timer: ReturnType<typeof setTimeout>;
-  resolve: () => void;
+  resolve: (result: FieldSaveResult) => void;
 }
 
 export function RecordFieldSaveProvider({
@@ -145,7 +159,7 @@ export function RecordFieldSaveProvider({
   // silently errored. Result: partial save (some fields persist, others
   // drop). Chaining each dispatchSave behind the previous one trades a
   // little latency for atomicity from the user's perspective.
-  const saveChainRef = useRef<Promise<void>>(Promise.resolve());
+  const saveChainRef = useRef<Promise<unknown>>(Promise.resolve());
 
   useEffect(() => {
     updatedAtRef.current = initialUpdatedAt ?? updatedAtRef.current;
@@ -162,7 +176,12 @@ export function RecordFieldSaveProvider({
   );
 
   const dispatchSave = useCallback(
-    async (field: string, value: unknown, target: FieldSaveTarget) => {
+    async (
+      field: string,
+      value: unknown,
+      target: FieldSaveTarget,
+      retryOnConflict: boolean,
+    ): Promise<FieldSaveResult> => {
       // Cancel any in-flight save for this field.
       const existing = controllersRef.current.get(field);
       if (existing) existing.abort();
@@ -253,7 +272,7 @@ export function RecordFieldSaveProvider({
               lastValue: value,
             });
             onSaved?.(field, value);
-            return;
+            return { status: 'saved' };
           }
 
           // Non-OK response — read body once for both the 409 retry
@@ -278,24 +297,42 @@ export function RecordFieldSaveProvider({
                 ? 'Record was updated elsewhere — reload to retry'
                 : lastMessage,
             });
-            return;
+            return {
+              status: 'error',
+              error:
+                res.status === 409
+                  ? 'Record was updated elsewhere — reload to retry'
+                  : lastMessage,
+            };
           }
 
-          // 409: refresh our token from the server, give the chain a
-          // tick to settle, then retry. We notify on the first retry
-          // only so the conflict callback isn't spammed for ride-out
-          // races.
-          updatedAtRef.current = currentUpdatedAt;
+          // Notify once. Aggregate read-modify-write values opt out of retry:
+          // replaying their stale snapshot with the fresh token would silently
+          // overwrite the concurrent writer's entries.
           if (attempt === 1) {
             onConflict?.({ field, currentUpdatedAt, value });
           }
-
-          if (attempt >= MAX_409_ATTEMPTS) {
+          if (!retryOnConflict) {
+            const conflictError =
+              'Record was updated elsewhere — reload before retrying';
             updateField(field, {
               status: 'error',
-              error: 'Record is being edited by someone else — reload to retry',
+              error: conflictError,
             });
-            return;
+            return { status: 'error', error: conflictError };
+          }
+
+          // Scalar fields can safely refresh the token and retry.
+          updatedAtRef.current = currentUpdatedAt;
+
+          if (attempt >= MAX_409_ATTEMPTS) {
+            const conflictError =
+              'Record is being edited by someone else — reload to retry';
+            updateField(field, {
+              status: 'error',
+              error: conflictError,
+            });
+            return { status: 'error', error: conflictError };
           }
 
           const backoff = RETRY_BACKOFF_MS[attempt - 1] ?? 500;
@@ -307,7 +344,7 @@ export function RecordFieldSaveProvider({
           // from "attempt timed out" (only the per-attempt controller
           // fired). When the parent is aborted, just return — a newer
           // save for the same field is already in flight.
-          if (controller.signal.aborted) return;
+          if (controller.signal.aborted) return { status: 'superseded' };
           // Timeout — fall through to the queue path below so the
           // user's value isn't lost.
         }
@@ -324,7 +361,7 @@ export function RecordFieldSaveProvider({
           'Idempotency-Key': idempotencyKey,
         };
         if (updatedAtRef.current) headers['X-If-Updated-At'] = updatedAtRef.current;
-        mutationQueue.enqueue({
+        const queued = mutationQueue.enqueue({
           method: 'PATCH',
           url: `/api/crm/records/${recordId}`,
           body: payload,
@@ -340,6 +377,7 @@ export function RecordFieldSaveProvider({
           lastValue: value,
         });
         onSaved?.(field, value);
+        return { status: 'queued', mutationId: queued.id };
       } finally {
         controllersRef.current.delete(field);
       }
@@ -351,10 +389,15 @@ export function RecordFieldSaveProvider({
   // dispatches never carry the same stale `If-Match`. This is what stops
   // partial-save races when the user edits several fields in quick succession.
   const enqueueDispatch = useCallback(
-    (field: string, value: unknown, target: FieldSaveTarget) => {
+    (
+      field: string,
+      value: unknown,
+      target: FieldSaveTarget,
+      retryOnConflict: boolean,
+    ) => {
       const next = saveChainRef.current.then(
-        () => dispatchSave(field, value, target),
-        () => dispatchSave(field, value, target),
+        () => dispatchSave(field, value, target, retryOnConflict),
+        () => dispatchSave(field, value, target, retryOnConflict),
       );
       saveChainRef.current = next;
       return next;
@@ -366,27 +409,34 @@ export function RecordFieldSaveProvider({
     (field, value, options) => {
       const target: FieldSaveTarget =
         options?.target ?? resolveFieldSaveTarget(field);
+      const retryOnConflict = options?.retryOnConflict ?? true;
       // Mark pending immediately so the pill lights up while typing.
       updateField(field, { status: 'pending', error: undefined });
 
-      return new Promise<void>((resolve) => {
+      return new Promise<FieldSaveResult>((resolve) => {
         // Cancel any queued save for this field.
         const prior = pendingRef.current.get(field);
         if (prior) {
           clearTimeout(prior.timer);
-          prior.resolve();
+          prior.resolve({ status: 'superseded' });
         }
 
         const timer = setTimeout(async () => {
           pendingRef.current.delete(field);
-          await enqueueDispatch(field, value, target);
-          resolve();
+          const result = await enqueueDispatch(
+            field,
+            value,
+            target,
+            retryOnConflict,
+          );
+          resolve(result);
         }, debounceMs);
 
         pendingRef.current.set(field, {
           field,
           value,
           target,
+          retryOnConflict,
           timer,
           resolve,
         });
@@ -401,8 +451,13 @@ export function RecordFieldSaveProvider({
     // Sequential, not Promise.all — see saveChainRef comment for why.
     for (const entry of entries) {
       clearTimeout(entry.timer);
-      await enqueueDispatch(entry.field, entry.value, entry.target);
-      entry.resolve();
+      const result = await enqueueDispatch(
+        entry.field,
+        entry.value,
+        entry.target,
+        entry.retryOnConflict,
+      );
+      entry.resolve(result);
     }
   }, [enqueueDispatch]);
 
