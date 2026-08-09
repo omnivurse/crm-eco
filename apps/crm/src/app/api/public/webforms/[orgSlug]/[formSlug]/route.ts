@@ -10,6 +10,7 @@ import {
   buildNormalizedRecordWrite,
   pickUpdateMirrorColumns,
 } from '@/lib/crm/merge-crm-data-json-to-row';
+import { resolveWebformDedupeFilters } from '@/lib/crm/webform-dedupe';
 
 /**
  * Creates a service role client for public webform submissions
@@ -169,12 +170,12 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     // Fields a submission may map onto indexed columns. `title` is derived below
     // and `status`/`stage` are deliberately NOT here — lifecycle state is set by
     // the module default or by the org via hidden_fields, never by the poster.
-    const systemFields = ['email', 'phone'];
+    const systemFields = new Set(['email', 'phone']);
     const dataFields: Record<string, unknown> = {};
     const extractedSystem: Record<string, unknown> = {};
 
     for (const [key, value] of Object.entries(recordData)) {
-      if (systemFields.includes(key)) {
+      if (systemFields.has(key)) {
         extractedSystem[key] = value;
       } else {
         dataFields[key] = value;
@@ -196,34 +197,46 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const dedupeConfig = typedWebform.dedupe_config;
 
     if (dedupeConfig?.enabled && dedupeConfig.fields?.length > 0) {
-      // Build dedupe query
-      let query = supabase
-        .from('crm_records')
-        .select('*')
-        .eq('org_id', org.id)
-        .eq('module_id', typedWebform.module_id);
+      const filters = resolveWebformDedupeFilters(
+        dedupeConfig.fields,
+        systemFields,
+        extractedSystem,
+        dataFields,
+        (field) => SAFE_DATA_JSON_KEY.test(field),
+      );
 
-      for (const field of dedupeConfig.fields) {
-        const value = extractedSystem[field] || dataFields[field];
-        if (value) {
-          if (systemFields.includes(field)) {
-            query = query.eq(field, value);
-          } else if (SAFE_DATA_JSON_KEY.test(field)) {
-            query = query.eq(`data->>${field}`, value);
-          } else {
-            // dedupe_config is org-admin controlled rather than poster-controlled,
-            // so this is defense in depth — but it is the one place in the CRM
-            // that built a `data->>` filter path without the shared guard.
-            console.warn(
-              `[webform ${typedWebform.slug}] skipping unsafe dedupe field key:`,
-              field,
-            );
-          }
+      if (!filters) {
+        // Missing or unsafe composite-key values must never degrade into an
+        // org/module-only query: update-mode forms would overwrite the first
+        // unrelated record returned by that broad lookup.
+        console.warn(
+          `[webform ${typedWebform.slug}] skipped dedupe lookup because the submission ` +
+            'did not contain a complete, safe dedupe key',
+        );
+      } else {
+        let query = supabase
+          .from('crm_records')
+          .select('*')
+          .eq('org_id', org.id)
+          .eq('module_id', typedWebform.module_id);
+
+        for (const filter of filters) {
+          query =
+            filter.source === 'column'
+              ? query.eq(filter.field, filter.value)
+              : query.eq(`data->>${filter.field}`, filter.value);
         }
-      }
 
-      const { data: duplicates } = await query.limit(1);
-      existingRecord = duplicates?.[0] as CrmRecord | null;
+        const { data: duplicates, error: duplicateError } = await query.limit(1);
+        if (duplicateError) {
+          console.error('Failed to check webform duplicates:', duplicateError);
+          return NextResponse.json(
+            { success: false, error: 'Failed to process submission' },
+            { status: 500, headers: corsHeaders },
+          );
+        }
+        existingRecord = duplicates?.[0] as CrmRecord | null;
+      }
     }
 
     let record: CrmRecord;
