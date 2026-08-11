@@ -38,6 +38,7 @@ import { moduleKeyFromJoinedRelation, resolveNoteSourceRecordIdsWithClient } fro
 import { applyCrmRecordTextSearch, applyHideConvertedLeadsFilter, isConvertedLeadRow } from './record-search';
 import { alignMisalignedRecordModule } from './align-record-module';
 import { resolveCrmRecordFilterField } from './report-field-path';
+import { scopeProfileToActiveTenant } from './tenant-role-mapping';
 
 // ============================================================================
 // Date Range Helper Functions
@@ -224,17 +225,12 @@ export async function getCurrentProfile(): Promise<CrmProfile | null> {
 
     if (!profile) return null;
 
-    // Override organization_id with the active tenant when the user has
-    // switched orgs via organization_members. Mirrors the same pattern in
-    // apps/crm/src/lib/supabase-server.ts so every CRM call site that reads
-    // profile.organization_id auto-scopes to the active tenant.
+    // Scope organization and effective roles together. Updating only
+    // organization_id carries a home-org crm_admin role into a staff/read-only
+    // tenant and defeats route-level authorization.
     const { getActiveTenant } = await import('@/lib/tenant');
     const tenant = await getActiveTenant();
-    if (tenant && tenant.organizationId !== profile.organization_id) {
-      return { ...profile, organization_id: tenant.organizationId } as CrmProfile;
-    }
-
-    return profile as CrmProfile;
+    return scopeProfileToActiveTenant(profile, tenant) as CrmProfile;
   } catch (error) {
     console.error('[CRM] getCurrentProfile failed:', error);
     return null; // Return null instead of throwing — callers check for null
