@@ -409,6 +409,8 @@ export interface CrmRecord {
   territory_id?: string | null;
   source_record_id?: string | null;
   import_batch_id?: string | null;
+  /** Migration wave this record arrived in, e.g. '2_legacy_zoho'. Derived. */
+  record_origin?: string | null;
   system: Record<string, unknown>;
   data: Record<string, unknown>;
   created_by: string | null;

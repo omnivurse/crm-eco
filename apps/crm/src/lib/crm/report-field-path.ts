@@ -32,6 +32,11 @@ const CRM_RECORD_SYSTEM_FIELDS = new Set([
   'current_year_start_date',
   'cancellation_date',
   'group_name',
+  // Migration wave (see 20260811223000_crm_record_origin_tier). Listing it as a
+  // system field is what makes it sortable and filterable in list views and
+  // reports — without it the resolver would look for a `data->>record_origin`
+  // JSONB key that does not exist.
+  'record_origin',
 ]);
 
 /** Legacy JSONB-only fields that reports often filter/sort by name. */

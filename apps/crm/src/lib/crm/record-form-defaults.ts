@@ -37,6 +37,9 @@ export const CRM_ROW_FIELDS_MERGED_INTO_FORM = [
   'current_year_start_date',
   'cancellation_date',
   'group_name',
+  // Migration wave — read into the form so the record page can show which
+  // import a record came from when the same person exists in several.
+  'record_origin',
 ] as const;
 
 /**

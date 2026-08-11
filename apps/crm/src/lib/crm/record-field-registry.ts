@@ -29,6 +29,9 @@ export const CRM_RECORD_ROW_COLUMN_KEYS = [
   'current_year_start_date',
   'cancellation_date',
   'group_name',
+  // Derived migration wave — a real column, so inline edits and PATCH must
+  // route it to the row rather than writing a shadow copy into `data`.
+  'record_origin',
 ] as const;
 
 export type CrmRecordRowColumnKey = (typeof CRM_RECORD_ROW_COLUMN_KEYS)[number];
