@@ -17,9 +17,13 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import OpenAI from 'openai';
 import { createClient, getAuthProfile } from '@/lib/supabase-server';
 import { loadAiRecordContext, formatAiContextBlock } from '@/lib/crm/ai-context';
+import {
+  CrmAiBudgetExceededError,
+  CrmAiNotConfiguredError,
+  invokeCrmAi,
+} from '@/lib/crm/ai';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,16 +49,6 @@ provided context as grounding. Rules:
 - Never include PHI beyond what's already in the context.`;
 
 export async function POST(request: NextRequest) {
-  if (!process.env.OPENAI_API_KEY) {
-    return NextResponse.json(
-      {
-        error: 'AI features are not configured',
-        code: 'AI_NOT_CONFIGURED',
-      },
-      { status: 503 },
-    );
-  }
-
   try {
     const profile = await getAuthProfile();
     if (!profile) {
@@ -100,27 +94,36 @@ export async function POST(request: NextRequest) {
       .filter(Boolean)
       .join('\n');
 
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-    const completion = await openai.chat.completions.create({
+    const result = await invokeCrmAi({
+      purpose: 'field_suggest',
+      system: SYSTEM,
+      user: userPrompt,
       model: DEFAULT_MODEL,
-      messages: [
-        { role: 'system', content: SYSTEM },
-        { role: 'user', content: userPrompt },
-      ],
       temperature: 0.3,
-      max_tokens: fieldType === 'textarea' ? 400 : 120,
+      maxTokens: fieldType === 'textarea' ? 400 : 120,
+      orgId: profile.organization_id,
+      actorId: profile.id,
+      recordId,
+      supabase,
     });
 
-    const raw = completion.choices[0]?.message?.content ?? '';
-    const suggestion = raw.trim().replace(/^"|"$/g, '');
-
-    return NextResponse.json({ suggestion, model: DEFAULT_MODEL });
+    const suggestion = result.text.trim().replace(/^"|"$/g, '');
+    return NextResponse.json({ suggestion, model: result.model });
   } catch (err) {
+    if (err instanceof CrmAiNotConfiguredError) {
+      return NextResponse.json(
+        { error: 'AI features are not configured', code: 'AI_NOT_CONFIGURED' },
+        { status: 503 },
+      );
+    }
+    if (err instanceof CrmAiBudgetExceededError) {
+      return NextResponse.json(
+        { error: 'AI budget exceeded', code: 'AI_BUDGET_EXCEEDED' },
+        { status: 429 },
+      );
+    }
     const message = err instanceof Error ? err.message : 'Unknown error';
     console.error('[ai/field-suggest] error', err);
-    return NextResponse.json(
-      { error: 'AI request failed', details: message },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

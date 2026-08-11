@@ -115,6 +115,7 @@ import { RecordRelatedListChips } from './v2/RecordRelatedListChips';
 import { MobileActionBar } from './v2/MobileActionBar';
 import { RecordInsightsPanel } from './v2/RecordInsightsPanel';
 import { HabitNextBestActions } from '@/components/crm/habits/HabitNextBestActions';
+import { RecordBriefingCard } from './v2/RecordBriefingCard';
 import { InlineRecordSearch, type NavigateToMatchArgs } from './v2/InlineRecordSearch';
 import { SendEmailDialog } from './v2/SendEmailDialog';
 import {
@@ -2070,6 +2071,27 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                 ]}
                 extras={
                   <>
+                    <RecordBriefingCard
+                      recordId={record.id}
+                      onCall={() => {
+                        window.dispatchEvent(
+                          new CustomEvent('crm:quick-action', { detail: 'call' }),
+                        );
+                      }}
+                      onEmail={() => {
+                        if (record.email) setShowSendEmailDialog(true);
+                      }}
+                      onTask={handleAddTask}
+                      onFillField={(fieldKey) => {
+                        handleNavigateToMatch({ type: 'field', fieldKey });
+                      }}
+                      onReviewCoverage={() => {
+                        handleNavigateToMatch({
+                          type: 'field',
+                          fieldKey: 'sharing_entity',
+                        });
+                      }}
+                    />
                     <HabitNextBestActions
                       moduleKey={module?.key}
                       stage={
@@ -2588,6 +2610,28 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                 },
               ]}
               extras={
+                <>
+                <RecordBriefingCard
+                  recordId={record.id}
+                  onCall={() => {
+                    window.dispatchEvent(
+                      new CustomEvent('crm:quick-action', { detail: 'call' }),
+                    );
+                  }}
+                  onEmail={() => {
+                    if (record.email) setShowSendEmailDialog(true);
+                  }}
+                  onTask={handleAddTask}
+                  onFillField={(fieldKey) => {
+                    handleNavigateToMatch({ type: 'field', fieldKey });
+                  }}
+                  onReviewCoverage={() => {
+                    handleNavigateToMatch({
+                      type: 'field',
+                      fieldKey: 'sharing_entity',
+                    });
+                  }}
+                />
                 <AiFollowUpEmailButton
                   recordId={record.id}
                   hasRecipient={Boolean(record.email)}
@@ -2597,6 +2641,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                     setShowSendEmailDialog(true);
                   }}
                 />
+                </>
               }
             />
           </div>

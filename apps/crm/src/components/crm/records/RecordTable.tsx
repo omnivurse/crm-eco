@@ -71,6 +71,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { MarketTypeBadge, NormalizationBadge, OwnershipDisplay } from '@/components/shared/crm-lane-badges';
+import { NeedsAttentionChip } from './NeedsAttentionChip';
 import { mergeCrmRecordRowIntoFormDefaults } from '@/lib/crm/record-form-defaults';
 import {
   formatCurrencyInputValue,
@@ -399,6 +400,7 @@ const RecordCard = memo(function RecordCard({
             )}
             <MarketTypeBadge marketType={(record as any).market_type} size="sm" />
             <NormalizationBadge status={(record as any).normalization_status} size="sm" />
+            <NeedsAttentionChip record={record} moduleKey={moduleKey} />
             <RecordQueuedBadge recordId={record.id} />
           </div>
         </div>
@@ -1504,6 +1506,7 @@ export const RecordTable = memo(function RecordTable({
                       {colIndex === 0 ? (
                         <div className="flex items-center gap-1.5 min-w-0">
                           <RecordQueuedBadge recordId={record.id} compact />
+                          <NeedsAttentionChip record={record} moduleKey={moduleKey} />
                           <div className="min-w-0 flex-1 truncate">
                             {renderCellValue(record, col)}
                           </div>

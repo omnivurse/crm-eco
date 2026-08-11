@@ -14,9 +14,13 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import OpenAI from 'openai';
 import { createClient, getAuthProfile } from '@/lib/supabase-server';
 import { loadAiRecordContext, formatAiContextBlock } from '@/lib/crm/ai-context';
+import {
+  CrmAiBudgetExceededError,
+  CrmAiNotConfiguredError,
+  invokeCrmAi,
+} from '@/lib/crm/ai';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,13 +44,6 @@ on a record. Return a JSON object exactly matching:
 - Never include PHI beyond what's already in the context.`;
 
 export async function POST(request: NextRequest) {
-  if (!process.env.OPENAI_API_KEY) {
-    return NextResponse.json(
-      { error: 'AI features are not configured', code: 'AI_NOT_CONFIGURED' },
-      { status: 503 },
-    );
-  }
-
   try {
     const profile = await getAuthProfile();
     if (!profile) {
@@ -85,19 +82,21 @@ export async function POST(request: NextRequest) {
       `Draft the email now and return only the JSON object.`,
     ].join('\n');
 
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-    const completion = await openai.chat.completions.create({
+    const result = await invokeCrmAi({
+      purpose: 'email_draft',
+      system: SYSTEM,
+      user: userPrompt,
       model: DEFAULT_MODEL,
-      messages: [
-        { role: 'system', content: SYSTEM },
-        { role: 'user', content: userPrompt },
-      ],
       temperature: 0.5,
-      max_tokens: 600,
-      response_format: { type: 'json_object' },
+      maxTokens: 600,
+      json: true,
+      orgId: profile.organization_id,
+      actorId: profile.id,
+      recordId,
+      supabase,
     });
 
-    const raw = completion.choices[0]?.message?.content ?? '{}';
+    const raw = result.text || '{}';
     let subject = '';
     let body = '';
     try {
@@ -105,9 +104,6 @@ export async function POST(request: NextRequest) {
       subject = (parsedOut.subject ?? '').trim();
       body = (parsedOut.body ?? '').trim();
     } catch {
-      // Fall back to treating the whole output as body text if the model
-      // drifted from JSON — better than a 500 when the user pressed the
-      // button in good faith.
       body = raw;
     }
 
@@ -115,8 +111,20 @@ export async function POST(request: NextRequest) {
       subject = ctx.record.title ? `Follow-up on ${ctx.record.title}` : 'Quick follow-up';
     }
 
-    return NextResponse.json({ subject, body, model: DEFAULT_MODEL });
+    return NextResponse.json({ subject, body, model: result.model });
   } catch (err) {
+    if (err instanceof CrmAiNotConfiguredError) {
+      return NextResponse.json(
+        { error: 'AI features are not configured', code: 'AI_NOT_CONFIGURED' },
+        { status: 503 },
+      );
+    }
+    if (err instanceof CrmAiBudgetExceededError) {
+      return NextResponse.json(
+        { error: 'AI budget exceeded', code: 'AI_BUDGET_EXCEEDED' },
+        { status: 429 },
+      );
+    }
     const message = err instanceof Error ? err.message : 'Unknown error';
     console.error('[ai/email-draft] error', err);
     return NextResponse.json(
