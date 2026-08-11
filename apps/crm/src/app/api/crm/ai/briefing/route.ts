@@ -1,7 +1,8 @@
 /**
  * POST /api/crm/ai/briefing
  * Body: { recordId: uuid, preferLlm?: boolean }
- * Returns RecordBriefing (rules path always; LLM when configured).
+ * Returns RecordBriefing. Deterministic rules are the default; set
+ * preferLlm: true to opt into LLM rephrase/rank of the closed signal pack.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -39,7 +40,7 @@ export async function POST(request: NextRequest) {
       orgId: profile.organization_id,
       recordId: parsed.data.recordId,
       actorId: profile.id,
-      preferLlm: parsed.data.preferLlm !== false,
+      preferLlm: parsed.data.preferLlm === true,
     });
 
     if (!briefing) {

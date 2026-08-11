@@ -2078,8 +2078,15 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                           new CustomEvent('crm:quick-action', { detail: 'call' }),
                         );
                       }}
-                      onEmail={() => {
-                        if (record.email) setShowSendEmailDialog(true);
+                      onEmail={(goal) => {
+                        if (!record.email) return;
+                        if (goal) {
+                          setAiEmailDraft({
+                            subject: '',
+                            body: `[Next move] ${goal}\n\n`,
+                          });
+                        }
+                        setShowSendEmailDialog(true);
                       }}
                       onTask={handleAddTask}
                       onFillField={(fieldKey) => {
@@ -2618,8 +2625,15 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                       new CustomEvent('crm:quick-action', { detail: 'call' }),
                     );
                   }}
-                  onEmail={() => {
-                    if (record.email) setShowSendEmailDialog(true);
+                  onEmail={(goal) => {
+                    if (!record.email) return;
+                    if (goal) {
+                      setAiEmailDraft({
+                        subject: '',
+                        body: `[Next move] ${goal}\n\n`,
+                      });
+                    }
+                    setShowSendEmailDialog(true);
                   }}
                   onTask={handleAddTask}
                   onFillField={(fieldKey) => {

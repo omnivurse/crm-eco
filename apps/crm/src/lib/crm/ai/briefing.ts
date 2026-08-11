@@ -1,6 +1,7 @@
 /**
  * getRecordBriefing — deep module entrypoint.
- * Rules path is always available; LLM only phrases/ranks a closed signal pack.
+ * Deterministic rules are the default product path. LLM only phrases/ranks
+ * the same closed signal pack when preferLlm === true and AI is configured.
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -118,7 +119,8 @@ export async function getRecordBriefing(
     allClear,
   };
 
-  if (allClear || args.preferLlm === false || !isAiConfigured()) {
+  // Deterministic by default — LLM only when the caller opts in AND AI is configured.
+  if (allClear || args.preferLlm !== true || !isAiConfigured()) {
     return base;
   }
 

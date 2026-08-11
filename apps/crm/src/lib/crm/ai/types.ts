@@ -74,6 +74,9 @@ export interface GetRecordBriefingArgs {
   orgId: string;
   recordId: string;
   actorId: string;
-  /** Prefer LLM phrasing when configured; still fail-closed to rules. */
+  /**
+   * Opt into LLM phrasing/ranking when configured.
+   * Default is deterministic rules only; still fail-closed to rules if LLM fails.
+   */
   preferLlm?: boolean;
 }
