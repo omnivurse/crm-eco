@@ -104,6 +104,32 @@ export async function loadAiRecordContext({
  * Deliberately text-only (no JSON) so the model treats it as background
  * rather than data to echo verbatim.
  */
+/**
+ * Never send these to the model: bookkeeping with no bearing on a summary, and
+ * Zoho import/web-tracking metadata that only burns the entry budget.
+ */
+const AI_CONTEXT_EXCLUDED_KEYS = new Set([
+  'notes_history', 'tags', 'privacy',
+  'last_activity_time', 'change_log_time', 'record_id', 'created_by',
+  'modified_by', 'zoho_module', 'created_time', 'created_by_id',
+  'modified_time', 'modified_by_id', 'lead_owner_id', 'external_username',
+  'first_visit', 'most_recent_visit', 'visitor_score', 'number_of_chats',
+  'days_visited', 'first_page_visited', 'average_time_spent_minutes',
+  'referrer', 'imported_at', 'import_batch', 'row_number', 'layout',
+  'membership_changes', 'scheduled_plan_change', 'dependents_json',
+]);
+
+/** Fields most worth spending the 12-entry budget on. */
+const AI_CONTEXT_PRIORITY = new Map(
+  [
+    'sharing_entity', 'carrier', 'product', 'plan_name', 'member_tier',
+    'monthly_contribution', 'monthly_premium', 'iua_amount',
+    'sharing_status', 'sharing_member_id', 'member_number',
+    'sharing_effective_date', 'start_date', 'cancellation_reason',
+    'do_not_call', 'advisor_name', 'city', 'state',
+  ].map((k, i) => [k, i] as const),
+);
+
 export function formatAiContextBlock(ctx: AiRecordContext): string {
   const { record, moduleName, recentNotes, recentTasks } = ctx;
   const lines: string[] = [];
@@ -115,15 +141,22 @@ export function formatAiContextBlock(ctx: AiRecordContext): string {
   if (record.phone) lines.push(`Phone: ${record.phone}`);
 
   const data = (record.data ?? {}) as Record<string, unknown>;
-  const interesting: Array<[string, unknown]> = Object.entries(data).filter(
-    ([k, v]) =>
-      v != null &&
-      v !== '' &&
-      !k.startsWith('_') &&
-      k !== 'notes_history' &&
-      k !== 'tags' &&
-      k !== 'privacy',
-  );
+  const interesting: Array<[string, unknown]> = Object.entries(data)
+    .filter(
+      ([k, v]) =>
+        v != null &&
+        v !== '' &&
+        !k.startsWith('_') &&
+        !AI_CONTEXT_EXCLUDED_KEYS.has(k),
+    )
+    // Only 12 entries reach the model, and Zoho-era rows carry ~40 audit keys
+    // that would otherwise crowd out the fields a summary actually needs.
+    // Surface the substantive ones first.
+    .sort((a, b) => {
+      const ra = AI_CONTEXT_PRIORITY.get(a[0]) ?? Number.MAX_SAFE_INTEGER;
+      const rb = AI_CONTEXT_PRIORITY.get(b[0]) ?? Number.MAX_SAFE_INTEGER;
+      return ra !== rb ? ra - rb : a[0].localeCompare(b[0]);
+    });
   if (interesting.length > 0) {
     lines.push('Key fields:');
     for (const [k, v] of interesting.slice(0, 12)) {

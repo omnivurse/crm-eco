@@ -31,6 +31,27 @@ export const SAFE_DATA_JSON_KEY = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
  * Load field keys for a module so list search can target `data->>key` without casts.
  * Capped to keep `.or()` filter strings within PostgREST URL limits.
  */
+/**
+ * Keys a rep is most likely to search a person by. Sorted to the front of the
+ * capped set so they are ALWAYS searchable — before this, the cap sliced an
+ * unordered query result, so which fields were searchable was arbitrary and
+ * shifted whenever field definitions were added.
+ */
+const SEARCH_KEY_PRIORITY = [
+  'first_name', 'last_name', 'middle_name', 'preferred_name', 'contact_name',
+  'member_number', 'sharing_member_id', 'e123_member_id', 'internal_id',
+  'email', 'email2', 'secondary_email',
+  'mobile', 'phone2', 'work_phone', 'home_phone', 'cell',
+  'city', 'state', 'zip_code', 'mailing_city', 'mailing_state', 'mailing_zip',
+  'address_line1', 'mailing_street',
+  'company', 'company_name',
+  'sharing_entity', 'carrier', 'product', 'plan_name',
+  'advisor_name', 'advisor_code', 'producer_name',
+  'lead_status', 'contact_status',
+];
+
+const PRIORITY_RANK = new Map(SEARCH_KEY_PRIORITY.map((k, i) => [k, i]));
+
 export async function fetchModuleDataJsonKeysForSearch(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   supabase: any,
@@ -45,6 +66,13 @@ export async function fetchModuleDataJsonKeysForSearch(
   return (data as { key: string }[])
     .map((r) => r.key)
     .filter((k) => typeof k === 'string' && SAFE_DATA_JSON_KEY.test(k))
+    // Deterministic: high-value keys first, then alphabetical so the searched
+    // set is stable across deploys instead of depending on row order.
+    .sort((a, b) => {
+      const ra = PRIORITY_RANK.get(a) ?? Number.MAX_SAFE_INTEGER;
+      const rb = PRIORITY_RANK.get(b) ?? Number.MAX_SAFE_INTEGER;
+      return ra !== rb ? ra - rb : a.localeCompare(b);
+    })
     .slice(0, maxKeys);
 }
 
@@ -101,8 +129,20 @@ const JSON_PHONE_FIELD_KEYS = [
 export const CORE_GLOBAL_SEARCH_JSON_KEYS = [
   'first_name',
   'last_name',
+  // Identifiers reps look people up by. The global-search tsvector does not
+  // cover these, so without them a member number finds nothing.
   'member_number',
+  'sharing_member_id',
+  'e123_member_id',
+  // Address — contacts store the plain names, leads store the mailing_* ones.
+  'city',
+  'state',
+  'mailing_city',
+  'mailing_state',
+  'company',
   'company_name',
+  'email2',
+  'secondary_email',
   'lead_status',
   'contact_status',
   ...JSON_PHONE_FIELD_KEYS,

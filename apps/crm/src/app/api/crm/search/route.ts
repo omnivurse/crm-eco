@@ -240,7 +240,25 @@ async function smartSearch(
   });
 
   if (!error && Array.isArray(data)) {
-    return data as SmartSearchRow[];
+    const rows = data as SmartSearchRow[];
+
+    // The RPC matches on `crm_records.search`, a GENERATED tsvector whose
+    // expression covers names/phone/email but NOT the identifier and address
+    // keys Zoho-era rows are actually looked up by — searching a real member
+    // number returned zero results. When the RPC comes back (near-)empty, run
+    // the JSONB ilike pass, which does cover those keys, and merge.
+    // Only on a thin result set, so ordinary name searches cost one query.
+    if (rows.length >= SUPPLEMENT_BELOW) return rows;
+
+    const supplement = await ilikeFallback(supabase, orgId, opts).catch((e) => {
+      console.warn('[search] identifier supplement failed:', e);
+      return [] as SmartSearchRow[];
+    });
+    if (supplement.length === 0) return rows;
+
+    const seen = new Set(rows.map((r) => r.id));
+    // RPC hits keep their ranking and stay first; supplement fills in behind.
+    return [...rows, ...supplement.filter((r) => !seen.has(r.id))].slice(0, opts.limit);
   }
 
   if (error) {
@@ -252,6 +270,12 @@ async function smartSearch(
 
   return ilikeFallback(supabase, orgId, opts);
 }
+
+/**
+ * Below this many RPC hits we also run the identifier/address ilike pass.
+ * A name search that already returns a full page skips the extra query.
+ */
+const SUPPLEMENT_BELOW = 5;
 
 /**
  * Phone search.
