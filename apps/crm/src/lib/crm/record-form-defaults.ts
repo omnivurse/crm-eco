@@ -83,11 +83,16 @@ export function mergeCrmRecordRowIntoFormDefaults(
       ? { ...raw }
       : {};
 
-  // Indexed columns override JSONB when present on the row (source of truth)
+  // Indexed columns override JSONB when they carry a real value (source of truth
+  // for filters/RPCs). Do NOT overlay null/undefined/'' — Zoho-era rows often
+  // have populated JSONB while the indexed column was never backfilled; treating
+  // "column exists and is NULL" as authoritative wiped visible form data.
   for (const key of CRM_ROW_FIELDS_MERGED_INTO_FORM) {
-    if (Object.prototype.hasOwnProperty.call(row, key)) {
-      base[key] = (row as Record<string, unknown>)[key];
-    }
+    if (!Object.prototype.hasOwnProperty.call(row, key)) continue;
+    const value = (row as Record<string, unknown>)[key];
+    if (value === null || value === undefined) continue;
+    if (typeof value === 'string' && value.trim() === '') continue;
+    base[key] = value;
   }
 
   if (row.email != null && row.email !== '' && base.email == null) {
