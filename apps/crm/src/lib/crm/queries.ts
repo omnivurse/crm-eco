@@ -35,6 +35,8 @@ import type {
   CrmTerritory,
 } from './types';
 import { moduleKeyFromJoinedRelation, resolveNoteSourceRecordIdsWithClient } from './note-aggregate';
+import { buildTwinLookup, pickRicherTwin, type TwinSourceRow } from './resolve-record-twin';
+import type { MemberCrmRecordCandidate } from './resolve-member-crm-record';
 import { applyCrmRecordTextSearch, applyHideConvertedLeadsFilter, isConvertedLeadRow } from './record-search';
 import { alignMisalignedRecordModule } from './align-record-module';
 import { resolveCrmRecordFilterField } from './report-field-path';
@@ -908,6 +910,81 @@ export async function getRecordWithModule(recordId: string): Promise<{ record: C
     record: recordData as CrmRecord,
     module: moduleData as CrmModule,
   };
+}
+
+/**
+ * JSONB of the same person's record in a richer module, or null.
+ *
+ * The Jan–Mar 2026 import left ~1,060 Members-module rows that are strict
+ * subsets of a Contacts-module row for the same person (avg 67 fewer populated
+ * fields). This surfaces the fuller profile as a read-only fallback layer —
+ * nothing is written, so no second copy of the data is created.
+ *
+ * Scoped to the caller's organization and executed through the RLS-bound CRM
+ * client, so it can never reach across tenants.
+ */
+export async function getTwinDataForRecord(
+  record: CrmRecord,
+  moduleKey: string,
+): Promise<Record<string, unknown> | null> {
+  // Only the Members module has a known thinner-twin population. Widening this
+  // needs the same evidence (a measured fill-rate deficit), not a guess.
+  if (moduleKey !== 'members') return null;
+
+  const profile = await getCachedCurrentProfile();
+  if (!profile?.organization_id) return null;
+
+  const row = record as unknown as TwinSourceRow;
+  const lookup = buildTwinLookup(row);
+  if (!lookup) return null;
+
+  const supabase = await createCrmClient();
+  const columns = 'id, email, phone, data, market_type, updated_at, source_record_id';
+
+  // Two targeted queries instead of one `.or(...)` string: PostgREST or-filters
+  // are parsed from raw text, so interpolating record-supplied email / member
+  // number into one would be a filter-injection vector.
+  const lookups: PromiseLike<{ data: unknown[] | null }>[] = [];
+  if (lookup.email) {
+    lookups.push(
+      supabase
+        .from('crm_records')
+        .select(columns)
+        .eq('organization_id', profile.organization_id)
+        .is('deleted_at' as never, null)
+        .neq('id', record.id)
+        .ilike('email', lookup.email)
+        .limit(20),
+    );
+  }
+  if (lookup.member_number) {
+    lookups.push(
+      supabase
+        .from('crm_records')
+        .select(columns)
+        .eq('organization_id', profile.organization_id)
+        .is('deleted_at' as never, null)
+        .neq('id', record.id)
+        .eq('data->>member_number' as never, lookup.member_number)
+        .limit(20),
+    );
+  }
+  if (lookups.length === 0) return null;
+
+  const settled = await Promise.allSettled(lookups);
+  const byId = new Map<string, MemberCrmRecordCandidate>();
+  for (const result of settled) {
+    if (result.status !== 'fulfilled') continue;
+    for (const candidate of (result.value.data ?? []) as MemberCrmRecordCandidate[]) {
+      if (candidate?.id) byId.set(candidate.id, candidate);
+    }
+  }
+
+  const twin = pickRicherTwin(row, [...byId.values()]);
+  const twinData = twin?.data;
+  return twinData && typeof twinData === 'object' && !Array.isArray(twinData)
+    ? (twinData as Record<string, unknown>)
+    : null;
 }
 
 // ============================================================================

@@ -5,6 +5,7 @@ import {
   getFieldsForModule,
   getDefaultLayout,
   getNotesForRecordAggregated,
+  getTwinDataForRecord,
   getTimelineForRecordAggregated,
   getRecordLinks,
   getAttachmentsForRecord,
@@ -156,6 +157,7 @@ async function RecordDetailContent({ params }: PageProps) {
     stagesResult,
     layoutV2Result,
     insightsResult,
+    twinResult,
   ] = await Promise.allSettled([
     getFieldsForModule(module.id),
     getDefaultLayout(module.id),
@@ -163,6 +165,7 @@ async function RecordDetailContent({ params }: PageProps) {
     module.key === 'deals' ? getDealStages(profile.organization_id) : Promise.resolve([]),
     isLayoutV2Enabled(profile),
     getRecordInsights(recordId),
+    getTwinDataForRecord(record, module.key),
   ]);
 
   const fields = fieldsResult.status === 'fulfilled' ? fieldsResult.value : [];
@@ -172,6 +175,9 @@ async function RecordDetailContent({ params }: PageProps) {
   const useLayoutV2 = layoutV2Result.status === 'fulfilled' ? layoutV2Result.value : false;
   const insights =
     insightsResult.status === 'fulfilled' ? insightsResult.value : emptyRecordInsights();
+  // Fuller profile for the same person in another module, used to fill blanks
+  // only. A failed lookup degrades to the record's own data rather than erroring.
+  const twinData = twinResult.status === 'fulfilled' ? twinResult.value : null;
 
   // Merge JSONB `data` with indexed `crm_records` columns (source of truth for lane/filters)
   const defaultValues = mergeCrmRecordRowIntoFormDefaults(
@@ -181,7 +187,7 @@ async function RecordDetailContent({ params }: PageProps) {
       phone?: string | null;
       status?: string | null;
     },
-    { moduleKey: module.key },
+    { moduleKey: module.key, twinData },
   );
 
   // Section pill counts are computed client-side in RecordOverviewPanel so

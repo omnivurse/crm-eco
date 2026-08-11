@@ -43,6 +43,58 @@ export const KNOWN_SHARING_ENTITIES = [
 ] as const;
 
 /**
+ * Distinctive stems matched as substrings AFTER the exact lists above miss.
+ *
+ * The exact lists were seeded from `crm_fields.options`, but reps and the Zoho
+ * import write free text, so live `data->>'carrier'` holds variants the exact
+ * sets never match: "BC/BS", "BCBSFL", "Anthem BCBS - Georgia", "Coventry",
+ * "CO Health OP", "Ambetter", "Sedera HealthShare", "Liberty HealthShare".
+ *
+ * Before these stems existed, an unmatched insurer fell through
+ * `bridgeLegacyCarrierToSharingEntity` and was displayed as a health-share
+ * "Sharing Entity" — mislabeling ~246 major-medical records as ministries.
+ *
+ * Keep stems long enough to be unambiguous: `libertyhealthshare`, not
+ * `liberty` (which would swallow Liberty Mutual).
+ */
+const INSURANCE_STEMS = [
+  'bcbs',
+  'bluecross',
+  'blueshield',
+  'anthem',
+  'cigna',
+  'aetna',
+  'humana',
+  'kaiser',
+  'unitedhealth',
+  'molina',
+  'ambetter',
+  'centene',
+  'coventry',
+  'oscar',
+  'brighthealth',
+  'floridablue',
+  'selecthealth',
+  'rmhp',
+  'healthop',
+] as const;
+
+const SHARING_STEMS = [
+  'sedera',
+  'zionhealth',
+  'libertyhealthshare',
+  'mpowering',
+  'mpb',
+  'knewhealth',
+  'altrua',
+  'oneshare',
+  'solidarity',
+  'samaritan',
+  'christianhealthcare',
+  'chministries',
+] as const;
+
+/**
  * Collapse case, whitespace, and punctuation so free-text variants match the
  * canonical lists (e.g. "United Healthcare" ≡ "UnitedHealthcare").
  */
@@ -64,13 +116,23 @@ const SHARING_SET = new Set<string>(
 /** True when the value matches a known major-medical insurance carrier. */
 export function isKnownInsuranceCarrier(value: unknown): boolean {
   const n = normalizeCarrierMatchKey(value);
-  return n.length > 0 && INSURANCE_SET.has(n);
+  if (n.length === 0) return false;
+  if (INSURANCE_SET.has(n)) return true;
+  // Free-text variant ("BC/BS", "Anthem BCBS - Georgia") — fall back to stems,
+  // but never claim a value the sharing list already owns exactly.
+  if (SHARING_SET.has(n)) return false;
+  return INSURANCE_STEMS.some((stem) => n.includes(stem));
 }
 
 /** True when the value matches a known health-sharing ministry. */
 export function isKnownSharingEntity(value: unknown): boolean {
   const n = normalizeCarrierMatchKey(value);
-  return n.length > 0 && SHARING_SET.has(n);
+  if (n.length === 0) return false;
+  if (SHARING_SET.has(n)) return true;
+  if (INSURANCE_SET.has(n)) return false;
+  // Insurance stems win ties so "Anthem BCBS" never reads as a ministry.
+  if (INSURANCE_STEMS.some((stem) => n.includes(stem))) return false;
+  return SHARING_STEMS.some((stem) => n.includes(stem));
 }
 
 export type CarrierClass = 'insurance' | 'healthshare' | 'unknown';
@@ -85,5 +147,7 @@ export function classifyCarrierValue(value: unknown): CarrierClass {
   if (!n) return 'unknown';
   if (INSURANCE_SET.has(n)) return 'insurance';
   if (SHARING_SET.has(n)) return 'healthshare';
+  if (isKnownInsuranceCarrier(value)) return 'insurance';
+  if (isKnownSharingEntity(value)) return 'healthshare';
   return 'unknown';
 }

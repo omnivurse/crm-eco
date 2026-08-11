@@ -4,6 +4,8 @@ import {
 } from '@/lib/crm/merge-crm-data-json-to-row';
 import { bridgeSharingEntityReadPaths } from '@/lib/crm/lead-contact-sharing-fields';
 import { bridgeHealthInsuranceReadPaths } from '@/lib/crm/health-insurance-fields';
+import { overlayTwinData } from '@/lib/crm/resolve-record-twin';
+import { projectLegacyKeys } from '@/lib/crm/legacy-key-projection';
 
 /**
  * CRM record forms primarily edit JSONB `data`, but many important fields live on
@@ -65,8 +67,14 @@ export const CRM_DATA_JSONB_KEYS_SYNCED_TO_ROW_ON_PATCH: readonly string[] = [
 
 /**
  * Build the object used to initialize record edit forms and read-only field views:
- * start from JSONB `data`, then overlay indexed columns (authoritative), then
- * common top-level mirrors (email/phone/status).
+ * start from JSONB `data`, then a cross-module twin (blanks only), then overlay
+ * indexed columns (authoritative), then common top-level mirrors (email/phone/status).
+ *
+ * `twinData` is the JSONB of the same person's record in another module — see
+ * `resolve-record-twin.ts`. It is applied FIRST and fills only blanks, so every
+ * later layer (indexed columns, canonical status, this row's own values) wins
+ * over it. Passing it is optional; omitting it preserves the prior behavior
+ * exactly.
  */
 export function mergeCrmRecordRowIntoFormDefaults(
   row: Record<string, unknown> & {
@@ -75,13 +83,19 @@ export function mergeCrmRecordRowIntoFormDefaults(
     phone?: string | null;
     status?: string | null;
   },
-  options?: { moduleKey?: string | null },
+  options?: { moduleKey?: string | null; twinData?: Record<string, unknown> | null },
 ): Record<string, unknown> {
   const raw = row.data;
-  const base =
+  const own =
     raw && typeof raw === 'object' && !Array.isArray(raw)
       ? { ...raw }
       : {};
+
+  // Fill gaps from the cross-module twin before anything else. overlayTwinData
+  // never replaces a populated key and skips record-scoped provenance keys.
+  const base = options?.twinData
+    ? overlayTwinData(own, options.twinData)
+    : own;
 
   // Indexed columns override JSONB when they carry a real value (source of truth
   // for filters/RPCs). Do NOT overlay null/undefined/'' — Zoho-era rows often
@@ -139,6 +153,11 @@ export function mergeCrmRecordRowIntoFormDefaults(
   // those authoritative columns still feed sharing/insurance read paths.
   bridgeSharingEntityReadPaths(base, options?.moduleKey);
   bridgeHealthInsuranceReadPaths(base, options?.moduleKey);
+
+  // General (non-health-share) legacy families: Zoho-era address, gender,
+  // company, secondary email and source keys that have no field definition of
+  // their own but do have a defined canonical twin.
+  projectLegacyKeys(base, options?.moduleKey);
 
   return base;
 }
