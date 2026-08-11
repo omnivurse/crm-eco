@@ -400,7 +400,7 @@ const RecordCard = memo(function RecordCard({
             )}
             <MarketTypeBadge marketType={(record as any).market_type} size="sm" />
             <NormalizationBadge status={(record as any).normalization_status} size="sm" />
-            <NeedsAttentionChip record={record} moduleKey={moduleKey} />
+            <NeedsAttentionChip record={record} moduleKey={moduleKey} compact />
             <RecordQueuedBadge recordId={record.id} />
           </div>
         </div>
@@ -1506,7 +1506,10 @@ export const RecordTable = memo(function RecordTable({
                       {colIndex === 0 ? (
                         <div className="flex items-center gap-1.5 min-w-0">
                           <RecordQueuedBadge recordId={record.id} compact />
-                          <NeedsAttentionChip record={record} moduleKey={moduleKey} />
+                          {/* Icon-only flag — never inline the full signal
+                              label here (it was replacing first names with
+                              "Coverage incomplete…" yellow pills). */}
+                          <NeedsAttentionChip record={record} moduleKey={moduleKey} compact />
                           <div className="min-w-0 flex-1 truncate">
                             {renderCellValue(record, col)}
                           </div>
@@ -1514,6 +1517,7 @@ export const RecordTable = memo(function RecordTable({
                       ) : (
                         renderCellValue(record, col)
                       )}
+
                     </TableCell>
                   ))}
                   <TableCell onClick={(e) => e.stopPropagation()} className="w-28 flex-shrink-0 flex items-center !py-[var(--crm-cell-py)]" style={{ width: 112, minWidth: 112, maxWidth: 112 }}>
