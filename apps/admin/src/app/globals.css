@@ -11,7 +11,6 @@
   --primary: 192 85% 28%;
   --primary-foreground: 0 0% 100%;
   --ring: 192 85% 34%;
-  --background: 192 33% 97%;
   /* --- --adm-* is now an ALIAS layer over the shared semantic tokens -------
      These were a private 18-token colour system that duplicated the shared
      layer rather than deliberately diverging from it: --adm-ink was declared
@@ -49,11 +48,16 @@
   --adm-mesh-3: rgba(5, 150, 105, 0.05);
 }
 
+/* Light canvas only — must NOT live in :root. :root and theme.css .dark both
+   match html.dark at equal specificity; a later :root --background would win
+   and leave a light canvas around dark chrome (same bug CRM had). */
+html:not(.dark) {
+  --background: 192 33% 97%;
+}
+
 /* Dark Ethereal OLED */
 .dark {
-  /* --background / --card are NOT overridden here any more. The Admin console
-     used #050505 / #0a0a0a (neutral OLED black) while the CRM used slate-950;
-     both now inherit the one settled navy ground from the shared theme.
+  /* --background / --card inherit the settled navy ground from theme.css.
 
      The --adm-* aliases in :root are NOT restated here on purpose. They
      resolve through the shared tokens (--background, --card, --foreground …),

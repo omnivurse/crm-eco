@@ -358,10 +358,20 @@
   --success: 160 48% 44%;
   --warning: 38 78% 52%;
 
+  /* Canvas MUST be restated here. CRM :root sets a light --background later
+     than theme.css .dark; :root and .dark both match html.dark at equal
+     specificity, so the light value wins unless .dark re-declares it.
+     Without this, the shell gutters stay white while chrome/cards go dark. */
+  --background: 221 57% 5.5%;         /* #060b16 — matches CRM_CANVAS_DARK */
+  --foreground: 210 40% 98%;
+  --muted-foreground: 215 25% 65%;
+
   /* Delineation on dark: lift cards/popovers off the near-black canvas and
      darken borders/inputs up a step so panels and dividers stay visible. */
   --card: 222 40% 9%;
+  --card-foreground: 210 40% 98%;
   --popover: 222 40% 12%;
+  --popover-foreground: 210 40% 98%;
   --muted: 220 28% 15%;
   --border: 220 22% 24%;
   --input: 220 22% 22%;

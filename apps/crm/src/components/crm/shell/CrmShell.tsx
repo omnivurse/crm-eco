@@ -132,8 +132,10 @@ export function CrmShell({
                 onMobileClose={handleMobileClose}
               />
 
-              <main className="flex-1 min-w-0 min-h-0 overflow-auto [scrollbar-gutter:stable] px-2 py-1.5 sm:px-3 sm:py-1.5 lg:px-5 lg:py-2 scrollbar-thin">
-                <div className="w-full max-w-[1920px] mx-auto pb-10">
+              <main className="flex-1 min-w-0 min-h-0 overflow-auto [scrollbar-gutter:stable] px-2 py-1.5 sm:px-3 sm:py-1.5 lg:px-4 lg:py-2 scrollbar-thin">
+                {/* Full-bleed within the shell — no ultrawide max-width cap.
+                    Page-level max-w is reserved for reading/forms only. */}
+                <div className="w-full pb-10">
                   {children}
                 </div>
               </main>

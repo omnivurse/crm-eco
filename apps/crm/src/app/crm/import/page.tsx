@@ -29,7 +29,7 @@ async function ImportPageContent({ searchParams }: PageProps) {
   const modules = await getModules(profile.organization_id);
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="w-full space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
         <Link
@@ -134,7 +134,7 @@ export default function ImportPage(props: PageProps) {
 
 function ImportSkeleton() {
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="w-full space-y-6">
       {/* Header skeleton */}
       <div className="flex items-center gap-4">
         <div className="w-10 h-10 bg-slate-200 dark:bg-slate-800/50 rounded-lg animate-pulse" />

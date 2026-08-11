@@ -318,7 +318,7 @@ function ImportsPageContent() {
   const selectedModuleInfo = IMPORT_MODULES.find((m) => m.key === selectedModule);
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="w-full space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" asChild>
