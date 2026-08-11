@@ -297,6 +297,45 @@ describe('section-utils person coverage visibility', () => {
     expect(meta.find((s) => s.key === 'start_date')).toBeUndefined();
   });
 
+  it('credits email/phone toward Contact section fill counts on person modules', () => {
+    const meta = getSectionMeta(
+      [
+        field('mobile_2', 'contact'),
+        field('email', 'core'),
+        field('phone', 'core'),
+        field('first_name', 'core'),
+      ],
+      {
+        id: 'layout',
+        org_id: 'org',
+        module_id: 'mod',
+        name: 'Default',
+        is_default: true,
+        config: {
+          sections: [
+            { key: 'core', label: 'Name', columns: 2 },
+            { key: 'contact', label: 'Contact', columns: 2 },
+          ],
+        },
+        created_at: '',
+        updated_at: '',
+      },
+      {
+        first_name: 'David',
+        email: 'DaveLung@Da2Ventures.com',
+        phone: '970-779-4782',
+      },
+      'contacts',
+      { inlineEditable: true },
+    );
+
+    const contact = meta.find((s) => s.key === 'contact');
+    expect(contact).toBeDefined();
+    // mobile_2 empty + email/phone populated among identity extras
+    expect(contact!.filledCount).toBeGreaterThanOrEqual(2);
+    expect(contact!.fieldCount).toBeGreaterThan(1);
+  });
+
   it('hides every live PIF orphan layout band from nav in inline-edit mode', () => {
     // Live default layouts still declare these sections with zero assigned fields.
     const orphanKeys = [

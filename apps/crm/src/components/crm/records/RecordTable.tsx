@@ -71,6 +71,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { MarketTypeBadge, NormalizationBadge, OwnershipDisplay } from '@/components/shared/crm-lane-badges';
+import { mergeCrmRecordRowIntoFormDefaults } from '@/lib/crm/record-form-defaults';
 import {
   formatCurrencyInputValue,
   fieldUsesDecimalMoney,
@@ -904,7 +905,33 @@ export const RecordTable = memo(function RecordTable({
     return fieldMap[col]?.label || col.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
   };
 
+  // Per-row projected JSONB (legacy Zoho → canonical HS keys) so list columns
+  // like sharing_member_id show stored truth before/without DB backfill.
+  const projectedDataByRecordId = useMemo(() => {
+    const map = new Map<string, Record<string, unknown>>();
+    for (const record of records) {
+      map.set(
+        record.id,
+        mergeCrmRecordRowIntoFormDefaults(
+          record as unknown as Record<string, unknown> & {
+            data?: Record<string, unknown> | null;
+            email?: string | null;
+            phone?: string | null;
+            status?: string | null;
+          },
+          { moduleKey },
+        ),
+      );
+    }
+    return map;
+  }, [records, moduleKey]);
+
+  const getProjectedData = (record: CrmRecord): Record<string, unknown> =>
+    projectedDataByRecordId.get(record.id) ??
+    ((record.data as Record<string, unknown> | undefined) ?? {});
+
   const renderCellValue = (record: CrmRecord, col: string): React.ReactNode => {
+    const projected = getProjectedData(record);
     // Check if this cell is being edited
     const isEditing = editingCell?.recordId === record.id && editingCell?.field === col;
 
@@ -1073,15 +1100,15 @@ export const RecordTable = memo(function RecordTable({
       );
     }
 
-    // Custom fields from data
+    // Custom fields from data (projected so legacy Zoho keys surface as canonical)
     const field = fieldMap[col];
     if (!field) {
-      const value = record.data?.[col];
+      const value = projected[col] ?? record.data?.[col];
       if (!value) return <span className="text-slate-400 dark:text-slate-600">—</span>;
       return <span className="text-slate-700 dark:text-slate-300 truncate">{String(value)}</span>;
     }
 
-    const value = record.data?.[col];
+    const value = projected[col] ?? record.data?.[col];
     return <FieldRenderer field={field} value={value} />;
   };
 

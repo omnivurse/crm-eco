@@ -29,6 +29,7 @@
     "db:audit:records:strict": "node scripts/run-db-audit-records.mjs --strict",
     "db:health": "node scripts/run-db-health.mjs",
     "verify:coverage-fields": "node scripts/verify-coverage-field-parity.mjs",
+    "verify:hs-canonical-drift": "psql \"$PIFH_SUPABASE_DB_URL\" -v ON_ERROR_STOP=1 -f scripts/sql/assert-healthshare-canonical-drift.sql",
     "pifh:gate": "node scripts/pifh-deploy-gate.mjs",
     "resend:setup": "node scripts/resend-domain-setup.mjs",
     "migrate:zoho-contacts": "tsx scripts/migrate-zoho-contacts.ts",

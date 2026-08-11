@@ -503,6 +503,34 @@ function isPopulated(value: unknown): boolean {
 }
 
 /**
+ * Identity contact channels that often live in `core` while the Contact section
+ * only defines sparse extras (e.g. `mobile_2`). Credit these toward the Contact
+ * pill so "Contact: 0" never appears when the header already shows email/phone.
+ */
+export const CONTACT_SECTION_IDENTITY_KEYS = [
+  'email',
+  'phone',
+  'mobile',
+  'secondary_email',
+  'work_phone',
+] as const;
+
+function contactSectionIdentityFill(
+  recordData: Record<string, unknown> | null | undefined,
+  sectionFieldKeys: Set<string>,
+): { extraFilled: number; extraFields: number } {
+  if (!recordData) return { extraFilled: 0, extraFields: 0 };
+  let extraFilled = 0;
+  let extraFields = 0;
+  for (const key of CONTACT_SECTION_IDENTITY_KEYS) {
+    if (sectionFieldKeys.has(key)) continue;
+    extraFields += 1;
+    if (isPopulated(recordData[key])) extraFilled += 1;
+  }
+  return { extraFilled, extraFields };
+}
+
+/**
  * Compute section metadata from fields + layout.
  * Returns the list of sections with field counts, filtering out empty ones.
  *
@@ -557,10 +585,21 @@ export function getSectionMeta(
     )
     .map((s) => {
       const sectionFields = grouped[s.key] ?? [];
-      const fieldCount = sectionFields.length;
-      const filledCount = recordData
+      let fieldCount = sectionFields.length;
+      let filledCount = recordData
         ? sectionFields.filter((f) => isPopulated(recordData[f.key])).length
         : fieldCount;
+      // Contact pill honesty: email/phone usually live in `core` ("Name"), so the
+      // Contact section would otherwise show "0 of 1" on long-time members.
+      if (s.key === 'contact' && isPersonModuleKey(moduleKey)) {
+        const { extraFilled, extraFields } = contactSectionIdentityFill(
+          recordData,
+          new Set(sectionFields.map((f) => f.key)),
+        );
+        fieldCount += extraFields;
+        if (recordData) filledCount += extraFilled;
+        else filledCount = fieldCount;
+      }
       const navGroup = getSectionNavGroup(s.key);
       // Notes-group pills always open the Notes tab (canonical crm_notes +
       // legacy history). When noteCount is provided, the badge mirrors that

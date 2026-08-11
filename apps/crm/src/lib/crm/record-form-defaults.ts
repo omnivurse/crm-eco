@@ -96,6 +96,11 @@ export function mergeCrmRecordRowIntoFormDefaults(
   if (row.phone != null && row.phone !== '' && base.phone == null) {
     base.phone = row.phone;
   }
+
+  // Capture Zoho-era contact_status ("Active HS Member") into sharing_status
+  // BEFORE indexed status overwrites contact_status with the short lane value.
+  bridgeSharingEntityReadPaths(base, options?.moduleKey);
+
   // Indexed `status` is canonical. Always overlay onto the module status key so
   // edit/autosave cannot resurrect a stale JSONB value after Kanban/list writes.
   if (row.status != null && row.status !== '') {
@@ -125,6 +130,8 @@ export function mergeCrmRecordRowIntoFormDefaults(
     }
   }
 
+  // Re-run bridges after indexed overlays (carrier_id, market_type, dates) so
+  // those authoritative columns still feed sharing/insurance read paths.
   bridgeSharingEntityReadPaths(base, options?.moduleKey);
   bridgeHealthInsuranceReadPaths(base, options?.moduleKey);
 
