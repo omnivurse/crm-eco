@@ -288,8 +288,9 @@ export const InlineLookupField = memo(function InlineLookupField({
     <span
       ref={containerRef}
       className={cn(
-        'relative inline-flex items-center gap-1 rounded-md px-1 -mx-1',
+        'relative z-10 flex w-full min-w-0 max-w-full items-center gap-1 rounded-md px-1.5 py-0.5 -mx-1',
         'hover:bg-slate-100/70 dark:hover:bg-white/5 transition-colors',
+        open && 'z-30',
         state?.status === 'error' && 'ring-1 ring-rose-300',
         className,
       )}
@@ -301,17 +302,21 @@ export const InlineLookupField = memo(function InlineLookupField({
       <button
         type="button"
         onClick={openPicker}
-        className="group inline-flex items-center gap-1 text-sm text-slate-700 dark:text-slate-200"
+        className="group flex min-w-0 flex-1 items-center gap-1 text-sm text-slate-700 dark:text-slate-200"
       >
         {label ? (
-          <span className="truncate max-w-[16rem]">{label}</span>
+          <span className="min-w-0 flex-1 truncate">{label}</span>
         ) : value ? (
-          <span className="text-slate-500">{String(value).slice(0, 8)}…</span>
+          <span className="min-w-0 flex-1 truncate text-slate-500">
+            {String(value).slice(0, 8)}…
+          </span>
         ) : (
-          <span className="text-slate-400 italic">{placeholder}</span>
+          <span className="min-w-0 flex-1 truncate text-slate-400 italic">
+            {placeholder}
+          </span>
         )}
-        <ChevronDown className="w-3 h-3 text-slate-400" />
-        <Pencil className="w-3 h-3 text-slate-300 dark:text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+        <ChevronDown className="w-3 h-3 shrink-0 text-slate-400" />
+        <Pencil className="w-3 h-3 shrink-0 text-slate-300 dark:text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity" />
       </button>
       {value && !open ? (
         <button

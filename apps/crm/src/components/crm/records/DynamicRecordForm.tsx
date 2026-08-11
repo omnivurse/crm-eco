@@ -72,6 +72,10 @@ import {
   isRecordFormExcludedField,
   shouldAlwaysShowEmptySection,
 } from './section-utils';
+import {
+  INLINE_EDIT_GRID_CLASS,
+  shouldUseDenseFieldRow,
+} from './field-layout';
 import { getSectionCardAccent } from './section-accent-tokens';
 import {
   getPersistedExpandedSections,
@@ -80,7 +84,7 @@ import {
 import {
   shouldShowEndDateFieldInSection,
 } from '@/lib/crm/coverage-end-date-fields';
-import { ChevronDown, ChevronRight, Loader2, ShieldCheck, Heart, Shield } from 'lucide-react';
+import { CalendarClock, ChevronDown, ChevronRight, Loader2, ShieldCheck, Heart, Shield } from 'lucide-react';
 
 // Section accent palette — see section-accent-tokens.ts (shared with SectionNav).
 
@@ -780,14 +784,27 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
       field: CrmField,
       opts?: { row?: boolean; tightLabel?: boolean; displayValue?: unknown },
     ) => {
-      const denseRow = Boolean(opts?.row) && readOnly;
+      // Dense side-by-side rows only for static read-only (no click-to-edit).
+      // Inline-edit mode must use stacked label→value cells: auto-fit ~220px
+      // columns left ~60px for the value after a w-40 label, so "Add …" inputs
+      // and native <select> overlays spilled into the next column.
+      const denseRow = shouldUseDenseFieldRow({
+        row: opts?.row,
+        readOnly,
+        inlineEditable,
+      });
       const cellValue =
         opts && 'displayValue' in opts
           ? opts.displayValue
           : defaultValues[field.key];
 
       const valueNode = readOnly ? (
-        <div className={cn('text-sm', denseRow ? 'min-h-[20px]' : 'py-0.5 min-h-[24px]')}>
+        <div
+          className={cn(
+            'text-sm min-w-0 max-w-full',
+            denseRow ? 'min-h-[20px]' : 'py-0.5 min-h-[28px]',
+          )}
+        >
           {inlineEditable ? (
             <InlineFieldCell field={field} value={cellValue} />
           ) : (
@@ -804,17 +821,13 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
         />
       );
 
-      // Dense "line" layout for read-only records: label on the left, value on
-      // the right, hairline separators, minimal vertical rhythm. Packs far more
-      // fields per screen so reps scan and find things without scrolling.
+      // Dense "line" layout for static read-only: label left, value right.
       if (denseRow) {
         return (
           <div
             key={field.key}
             className={cn(
-              // min-w-0: grid/flex children default to min-width:auto and otherwise
-              // let long select pills overflow into the next column.
-              'flex min-w-0 items-baseline gap-3 border-b border-border/40 py-1.5',
+              'flex min-w-0 items-baseline gap-3 border-b border-border/40 py-1.5 overflow-hidden',
               field.width === 'full' && 'md:col-span-2',
             )}
           >
@@ -822,34 +835,38 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
               htmlFor={field.key}
               title={field.tooltip || field.label}
               className={cn(
-                // Fixed width + truncate so long labels (e.g. "Max out-of-pocket")
-                // never spill into / overlap the editable value column.
                 'shrink-0 truncate text-muted-foreground text-[11px] font-medium uppercase leading-snug tracking-wide',
                 opts?.tightLabel ? 'w-32' : 'w-40',
               )}
             >
               {field.label}
             </Label>
-            <div className="min-w-0 flex-1">{valueNode}</div>
+            <div className="min-w-0 flex-1 overflow-hidden">{valueNode}</div>
           </div>
         );
       }
 
+      // Stacked cell — edit forms + inline-editable overview. Comfortable
+      // breathing room; value stays contained so editors never collide.
       return (
         <div
           key={field.key}
-          className={cn('min-w-0', field.width === 'full' && 'md:col-span-2')}
+          className={cn(
+            'relative min-w-0 max-w-full rounded-md',
+            inlineEditable && 'focus-within:z-20',
+            field.width === 'full' && 'md:col-span-2',
+          )}
         >
           <Label
             htmlFor={field.key}
-            className="mb-1 block text-muted-foreground text-xs uppercase tracking-wider"
-            title={field.tooltip || undefined}
+            className="mb-1.5 block truncate text-muted-foreground text-[11px] font-medium uppercase tracking-wider"
+            title={field.tooltip || field.label}
           >
             {field.label}
             {!readOnly && field.required && <span className="text-destructive ml-1">*</span>}
           </Label>
           <div className="min-w-0 max-w-full">{valueNode}</div>
-          {field.tooltip && (
+          {field.tooltip && !inlineEditable && (
             <p className="mt-1 text-[11px] leading-snug text-muted-foreground/90">
               {field.tooltip}
             </p>
@@ -1140,6 +1157,21 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
                   <p className="text-sm text-muted-foreground">Not set</p>
                 )}
               </div>
+              {(() => {
+                // Read-only chip for a pending scheduled plan change (CRM-only
+                // records; consumed by the apply-scheduled-plan-changes cron).
+                const spc = record?.data?.scheduled_plan_change as
+                  | { to_plan?: string; effective_date?: string }
+                  | null
+                  | undefined;
+                if (!spc || typeof spc !== 'object' || !spc.effective_date) return null;
+                return (
+                  <span className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-300">
+                    <CalendarClock className="h-3.5 w-3.5" />
+                    Upcoming: {spc.to_plan || 'plan change'} · starts {spc.effective_date}
+                  </span>
+                );
+              })()}
             </div>
           </div>
 
@@ -1157,8 +1189,11 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
                 <>
                   {divider}
                   <div
-                    className="grid flex-1 gap-x-6 gap-y-0 border-t border-dashed pt-3 lg:border-0 lg:pt-0"
-                    style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}
+                    className="grid flex-1 gap-x-8 gap-y-2 border-t border-dashed pt-3 lg:border-0 lg:pt-0"
+                    style={{
+                      gridTemplateColumns:
+                        'repeat(auto-fill, minmax(min(100%, 16rem), 1fr))',
+                    }}
                   >
                     {heroProductPlanSnapshotFields.map((field) =>
                       renderFieldCell(field, {
@@ -1297,19 +1332,32 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
               <CardContent className={readOnly ? 'pt-3 pb-3 px-4' : undefined}>
                 {isHero ? (
                   // ──────────────────────────────────────────────────────────
-                  // HERO LAYOUT — the section's own fields (Name, etc.) now get
-                  // the full width. The coverage summary that used to sit in a
-                  // narrow right sidebar here has moved to renderCoverageSnapshot()
-                  // (the full-width banner pinned to the top of the record).
-                  // Auto-pack into as many ~220px columns as the width allows.
+                  // HERO LAYOUT — Name/core fields. Inline-edit uses a capped
+                  // 2-col stacked grid so inputs never collide. Static read-only
+                  // may pack denser for scan.
                   // ──────────────────────────────────────────────────────────
                   <div
-                    className={cn('grid', readOnly ? 'gap-x-6' : 'gap-x-5 gap-y-3')}
-                    style={{
-                      gridTemplateColumns: readOnly
-                        ? 'repeat(auto-fit, minmax(220px, 1fr))'
-                        : 'repeat(auto-fit, minmax(230px, 1fr))',
-                    }}
+                    className={cn(
+                      'grid',
+                      inlineEditable
+                        ? INLINE_EDIT_GRID_CLASS
+                        : readOnly
+                          ? 'gap-x-8 gap-y-1'
+                          : 'gap-x-5 gap-y-3',
+                    )}
+                    style={
+                      !inlineEditable && readOnly
+                        ? {
+                            gridTemplateColumns:
+                              'repeat(auto-fill, minmax(min(100%, 18rem), 1fr))',
+                          }
+                        : !readOnly
+                          ? {
+                              gridTemplateColumns:
+                                'repeat(auto-fill, minmax(min(100%, 16rem), 1fr))',
+                            }
+                          : undefined
+                    }
                   >
                     {sectionFields.map((f) => renderFieldCell(f, { row: true }))}
                   </div>
@@ -1325,15 +1373,21 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
                   <div
                     className={cn(
                       'grid',
-                      readOnly
-                        ? 'gap-x-6'
-                        : 'gap-4',
+                      inlineEditable
+                        ? INLINE_EDIT_GRID_CLASS
+                        : readOnly
+                          ? 'gap-x-8 gap-y-1'
+                          : 'gap-4',
                       !readOnly &&
+                        !inlineEditable &&
                         (section.columns === 2 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'),
                     )}
                     style={
-                      readOnly
-                        ? { gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }
+                      readOnly && !inlineEditable
+                        ? {
+                            gridTemplateColumns:
+                              'repeat(auto-fill, minmax(min(100%, 18rem), 1fr))',
+                          }
                         : undefined
                     }
                   >

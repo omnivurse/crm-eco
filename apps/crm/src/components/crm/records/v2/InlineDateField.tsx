@@ -221,7 +221,10 @@ export const InlineDateField = memo(function InlineDateField({
   if (editing) {
     return (
       <span
-        className={cn('inline-flex flex-col gap-1 min-w-[10rem]', className)}
+        className={cn(
+          'relative z-20 flex w-full min-w-0 max-w-full flex-col gap-1',
+          className,
+        )}
         data-no-hotkeys
         data-field={field}
       >
@@ -308,7 +311,7 @@ export const InlineDateField = memo(function InlineDateField({
       type="button"
       onClick={startEditing}
       className={cn(
-        'inline-flex items-center gap-1 rounded-md px-1 -mx-1 text-left',
+        'flex w-full min-w-0 max-w-full items-center gap-1 rounded-md px-1.5 py-0.5 -mx-1 text-left',
         'hover:bg-slate-100/70 dark:hover:bg-white/5 transition-colors cursor-pointer',
         className,
       )}
@@ -318,9 +321,13 @@ export const InlineDateField = memo(function InlineDateField({
     >
       <CalendarDays className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
       {displayLabel ? (
-        <span className="text-sm text-slate-700 dark:text-slate-200">{displayLabel}</span>
+        <span className="min-w-0 flex-1 truncate text-sm text-slate-700 dark:text-slate-200">
+          {displayLabel}
+        </span>
       ) : (
-        <span className="text-sm text-slate-400 italic">{placeholder}</span>
+        <span className="min-w-0 flex-1 truncate text-sm text-slate-400 italic">
+          {placeholder}
+        </span>
       )}
       {state?.status === 'error' ? (
         <AlertTriangle className="w-3 h-3 text-rose-500" />

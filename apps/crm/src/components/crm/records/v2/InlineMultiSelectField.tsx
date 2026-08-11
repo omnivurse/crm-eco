@@ -134,8 +134,9 @@ export const InlineMultiSelectField = memo(function InlineMultiSelectField({
     <span
       ref={containerRef}
       className={cn(
-        'relative inline-flex flex-wrap items-center gap-1 rounded-md px-1 -mx-1',
+        'relative z-10 flex w-full min-w-0 max-w-full flex-wrap items-center gap-1 rounded-md px-1.5 py-0.5 -mx-1',
         'hover:bg-slate-100/70 dark:hover:bg-white/5 transition-colors',
+        open && 'z-30',
         state?.status === 'error' && 'ring-1 ring-rose-300',
         className,
       )}
@@ -144,7 +145,7 @@ export const InlineMultiSelectField = memo(function InlineMultiSelectField({
       title={state?.status === 'error' ? state.error : undefined}
     >
       {selected.length === 0 ? (
-        <span className="text-sm text-slate-400 italic">{placeholder}</span>
+        <span className="min-w-0 truncate text-sm text-slate-400 italic">{placeholder}</span>
       ) : (
         selected.map((v) => (
           <Badge

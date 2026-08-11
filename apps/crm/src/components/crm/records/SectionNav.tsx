@@ -75,7 +75,9 @@ export function SectionNav({
     >
       <div
         className={cn(
-          'flex overflow-x-auto scrollbar-thin',
+          // Horizontal scroll + snap — never squash section pills into each other.
+          'flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain scrollbar-thin',
+          '[scrollbar-gutter:stable]',
           compact ? 'items-stretch gap-1 py-1' : 'items-center gap-2 py-2.5',
         )}
         role="tablist"

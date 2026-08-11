@@ -277,7 +277,9 @@ export const InlineFieldEditor = memo(function InlineFieldEditor({
         }}
         aria-label={`Edit ${ariaLabel ?? field}`}
         className={cn(
-          'group inline-flex items-center gap-1 rounded-md px-1 -mx-1 pr-px cursor-text',
+          // Block + full width so overview grid cells don't let the control
+          // expand into the neighboring column when the placeholder is long.
+          'group flex w-full min-w-0 max-w-full items-center gap-1 rounded-md px-1.5 py-0.5 -mx-1 cursor-text',
           'hover:bg-slate-100/70 dark:hover:bg-white/5 transition-colors',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500',
           (isSaving || isPending) && 'opacity-80',
@@ -287,7 +289,9 @@ export const InlineFieldEditor = memo(function InlineFieldEditor({
         data-field={field}
         title={externalError ?? undefined}
       >
-        {display ? display(displayValue) : <DisplayValue value={displayValue} placeholder={placeholder} />}
+        <span className="min-w-0 flex-1 truncate">
+          {display ? display(displayValue) : <DisplayValue value={displayValue} placeholder={placeholder} />}
+        </span>
         {isSaving || isPending ? (
           <Loader2 className="w-3 h-3 text-teal-500 animate-spin shrink-0" />
         ) : externalError ? (
@@ -325,7 +329,8 @@ export const InlineFieldEditor = memo(function InlineFieldEditor({
   return (
     <span
       className={cn(
-        isTextarea ? 'flex flex-col gap-1' : 'inline-flex items-center gap-1',
+        'relative z-20 flex w-full min-w-0 max-w-full',
+        isTextarea ? 'flex-col gap-1' : 'items-center gap-1',
         className,
       )}
       data-no-hotkeys
@@ -351,7 +356,7 @@ export const InlineFieldEditor = memo(function InlineFieldEditor({
           {...sharedEditProps}
           placeholder={moneyDecimals != null ? '$0.00' : placeholder}
           className={cn(
-            'min-w-0 rounded-md border border-teal-400 dark:border-teal-500/60 bg-white dark:bg-slate-900',
+            'min-w-0 w-full rounded-md border border-teal-400 dark:border-teal-500/60 bg-white dark:bg-slate-900',
             'px-1.5 py-0.5 text-sm text-slate-900 dark:text-slate-100',
             'shadow-sm outline-none ring-2 ring-teal-500/20',
             inputClassName,

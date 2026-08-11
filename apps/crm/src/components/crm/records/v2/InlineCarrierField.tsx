@@ -407,8 +407,9 @@ export const InlineCarrierField = memo(function InlineCarrierField({
     <span
       ref={containerRef}
       className={cn(
-        'relative flex w-full min-w-0 max-w-full items-center gap-1 rounded-md px-1 -mx-1',
+        'relative z-10 flex w-full min-w-0 max-w-full items-center gap-1 rounded-md px-1.5 py-0.5 -mx-1',
         'hover:bg-slate-100/70 dark:hover:bg-white/5 transition-colors',
+        open && 'z-30',
         state?.status === 'error' && 'ring-1 ring-rose-300',
         className,
       )}
