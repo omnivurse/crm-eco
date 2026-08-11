@@ -7,7 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createClient, getAuthProfile } from '@/lib/supabase-server';
-import { getRecordBriefing } from '@/lib/crm/ai';
+import { getRecordBriefing } from '@/lib/crm/ai/server';
 
 export const dynamic = 'force-dynamic';
 

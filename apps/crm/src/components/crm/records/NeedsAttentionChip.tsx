@@ -7,12 +7,9 @@
 import { memo, useMemo } from 'react';
 import { cn } from '@crm-eco/ui/lib/utils';
 import type { CrmRecord } from '@/lib/crm/types';
-// Import from the signals module directly, NOT the `@/lib/crm/ai` barrel.
-// The barrel also re-exports `getRecordBriefing`, which reaches
-// record-insights -> queries.ts -> next/headers. Pulling that into a client
-// component breaks the production build ("You're importing a component that
-// needs next/headers"), while `tsc` still passes — so it only surfaces at
-// deploy time. `./ai/signals` is pure and safe for the browser.
+// Prefer the pure signals module (also re-exported from the client-safe
+// `@/lib/crm/ai` barrel). Server-only `getRecordBriefing` lives in
+// `@/lib/crm/ai/server` so it never enters the client bundle.
 import {
   attentionScore,
   computeRecordSignals,

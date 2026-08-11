@@ -36,6 +36,13 @@ describe('briefing fail-closed contracts', () => {
     expect(src).not.toMatch(/console\.(info|log|warn).*args\.system/);
   });
 
+  it('client barrel does not re-export server briefing/invoke', () => {
+    const src = readFileSync(join(__dirname, 'index.ts'), 'utf8');
+    expect(src).not.toMatch(/from ['"]\.\/briefing['"]/);
+    expect(src).not.toMatch(/from ['"]\.\/invoke['"]/);
+    expect(src).toContain("from '@/lib/crm/ai/server'");
+  });
+
   it('audit migration enables RLS', () => {
     const src = readFileSync(
       join(

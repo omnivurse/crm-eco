@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import { cn } from '@crm-eco/ui/lib/utils';
-import type { BriefingAction, RecordBriefing } from '@/lib/crm/ai';
+import type { BriefingAction, RecordBriefing } from '@/lib/crm/ai/types';
 import { useRecordAiContext } from './RecordAiContext';
 
 export interface RecordBriefingCardProps {

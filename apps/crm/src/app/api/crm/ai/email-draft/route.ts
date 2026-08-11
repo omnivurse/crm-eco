@@ -20,7 +20,7 @@ import {
   CrmAiBudgetExceededError,
   CrmAiNotConfiguredError,
   invokeCrmAi,
-} from '@/lib/crm/ai';
+} from '@/lib/crm/ai/server';
 
 export const dynamic = 'force-dynamic';
 

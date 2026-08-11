@@ -1,3 +1,13 @@
+/**
+ * Client-safe CRM AI surface.
+ *
+ * Do NOT re-export server modules (briefing / invoke) from this barrel —
+ * client components like NeedsAttentionChip import here, and pulling in
+ * `next/headers` via queries → record-insights breaks the production build.
+ *
+ * Server routes: `import { … } from '@/lib/crm/ai/server'`
+ */
+
 export type {
   BriefingAction,
   BriefingActionKind,
@@ -10,7 +20,6 @@ export type {
   SignalInput,
 } from './types';
 
-export { getRecordBriefing } from './briefing';
 export {
   attentionScore,
   buildRulesSummary,
@@ -21,12 +30,3 @@ export {
 } from './signals';
 export { validateRecommendations, collectCitationIds } from './citations';
 export { playbookWeights, signalPriority, staleTouchDays } from './playbooks';
-export {
-  invokeCrmAi,
-  isAiConfigured,
-  CrmAiNotConfiguredError,
-  CrmAiBudgetExceededError,
-  type CrmAiPurpose,
-  type InvokeCrmAiArgs,
-  type InvokeCrmAiResult,
-} from './invoke';
