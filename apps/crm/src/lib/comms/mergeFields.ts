@@ -4,6 +4,7 @@
  */
 
 import type { MergeFieldContext } from './types';
+import { mergeCrmRecordRowIntoFormDefaults } from '@/lib/crm/record-form-defaults';
 
 // ============================================================================
 // Merge Field Patterns
@@ -247,9 +248,25 @@ export function buildMergeContext(
     owner?: MergeFieldContext['owner'];
     member?: MergeFieldContext['member'];
     custom?: Record<string, unknown>;
+    /** Module key — enables legacy-key projection for `{{data.*}}` tokens. */
+    moduleKey?: string | null;
   }
 ): MergeFieldContext {
   const systemContext = buildSystemContext();
+
+  // Templates address JSONB through `{{data.<key>}}`. Project legacy Zoho keys
+  // onto their canonical twins first, so a token like {{data.sharing_entity}}
+  // resolves for imported members instead of rendering blank in a real email
+  // or SMS. Blank-fill only — an explicitly populated key always wins.
+  const projectedData = mergeCrmRecordRowIntoFormDefaults(
+    record as Record<string, unknown> & {
+      data?: Record<string, unknown> | null;
+      email?: string | null;
+      phone?: string | null;
+      status?: string | null;
+    },
+    { moduleKey: options?.moduleKey },
+  );
   
   return {
     system: {
@@ -267,7 +284,7 @@ export function buildMergeContext(
       created_at: record.created_at,
       updated_at: record.updated_at,
     },
-    data: (record.data as Record<string, unknown>) || {},
+    data: projectedData,
     owner: options?.owner,
     member: options?.member,
     custom: options?.custom,

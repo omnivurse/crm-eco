@@ -104,7 +104,7 @@ export async function loadMemberCommandCenterData(
       .from('memberships')
       .select(
         `
-        id, status, billing_amount, effective_date, end_date, membership_number,
+        id, status, billing_amount, effective_date, end_date, membership_number, custom_fields,
         plans:plan_id (id, name, code, plan_type, monthly_share)
       `,
       )

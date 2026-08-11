@@ -35,6 +35,8 @@ export type InlineRecordSearchHit = {
 interface InlineRecordSearchProps {
   record: CrmRecord;
   fields: CrmField[];
+  /** Drives legacy-key projection so search matches what the page displays */
+  moduleKey?: string | null;
   /** Note bodies searched when the user loads note content on this shell */
   noteBodies?: string[];
   /** Switch tabs/panes and scroll targets — implemented by RecordDetailShellV2 */
@@ -44,6 +46,7 @@ interface InlineRecordSearchProps {
 export function InlineRecordSearch({
   record,
   fields,
+  moduleKey,
   noteBodies = [],
   onNavigateToMatch,
 }: InlineRecordSearchProps) {
@@ -59,8 +62,8 @@ export function InlineRecordSearch({
   );
 
   const searchableRows = useMemo(
-    () => buildRecordSearchableRows(record, fields),
-    [record, fields],
+    () => buildRecordSearchableRows(record, fields, moduleKey),
+    [record, fields, moduleKey],
   );
 
   const results = useMemo(

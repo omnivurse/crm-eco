@@ -119,7 +119,13 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       submissionData = await request.json();
     } else if (contentType.includes('application/x-www-form-urlencoded')) {
       const formData = await request.formData();
-      submissionData = Object.fromEntries(formData.entries());
+      // Strip framework-internal fields ($ACTION_ID_*, $ACTION_REF_*) that React
+      // server-action forms append. The field allowlist below already rejects
+      // them, but a handful reached `data` on legacy rows and rendered as junk
+      // keys on the record, so drop them at the door too.
+      submissionData = Object.fromEntries(
+        [...formData.entries()].filter(([key]) => !key.startsWith('$ACTION')),
+      );
     } else {
       return NextResponse.json(
         { success: false, error: 'Unsupported content type' },

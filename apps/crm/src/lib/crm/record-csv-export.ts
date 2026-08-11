@@ -10,9 +10,20 @@ import { escapeCsvCell } from '@crm-eco/lib/csv/escape';
 /**
  * One data line for the given column keys (system columns + `data` JSONB).
  */
-export function formatCsvDataLine(record: CrmRecord, columns: string[]): string {
+/**
+ * `projectedData` is the legacy-projected view of `record.data` (see
+ * `mergeCrmRecordRowIntoFormDefaults`). Exports must contain what the CRM
+ * displays — without it, a Zoho-era value the rep can see on screen exports as
+ * an empty cell, which silently under-reports during data reconciliation.
+ */
+export function formatCsvDataLine(
+  record: CrmRecord,
+  columns: string[],
+  projectedData?: Record<string, unknown> | null,
+): string {
   const recordData = record as unknown as Record<string, unknown>;
-  const dataJson = (record.data ?? null) as Record<string, unknown> | null;
+  const dataJson = (projectedData ??
+    (record.data ?? null)) as Record<string, unknown> | null;
   return columns
     .map((col) => {
       const v = recordData[col] ?? dataJson?.[col];

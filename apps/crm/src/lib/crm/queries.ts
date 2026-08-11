@@ -6,6 +6,7 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { cache } from 'react';
 import { getAuthUser as getCachedAuthUser } from '../supabase-server';
+import { mergeCrmRecordRowIntoFormDefaults } from '@/lib/crm/record-form-defaults';
 import type {
   CrmModule,
   CrmField,
@@ -862,11 +863,38 @@ export async function getRecords(options: RecordQueryOptions): Promise<RecordQue
   });
 
   return {
-    records,
+    // Project legacy Zoho keys onto their canonical twins for EVERY consumer of
+    // the list query — the 7 view components (list/kanban/chart/timeline/
+    // calendar/split/tree), RecordTable, the streaming CSV export route and
+    // ModuleShell's client-side "export selected". Each of those reads
+    // `record.data` directly, so projecting once here is what keeps the list,
+    // the record page and the exports showing the same values.
+    // Idempotent: the bridges only fill blanks, so components that project
+    // again (e.g. RecordTable) are unaffected.
+    records: records.map((r) => withProjectedRecordData(r, moduleKey)),
     total: includeCount ? count || 0 : 0,
     page,
     pageSize,
     totalPages: includeCount ? Math.ceil((count || 0) / pageSize) : 0,
+  };
+}
+
+/** Replace `record.data` with its legacy-projected view, preserving the row shape. */
+function withProjectedRecordData<T extends { data?: Record<string, unknown> | null }>(
+  record: T,
+  moduleKey?: string | null,
+): T {
+  return {
+    ...record,
+    data: mergeCrmRecordRowIntoFormDefaults(
+      record as unknown as Record<string, unknown> & {
+        data?: Record<string, unknown> | null;
+        email?: string | null;
+        phone?: string | null;
+        status?: string | null;
+      },
+      { moduleKey },
+    ),
   };
 }
 
@@ -907,7 +935,10 @@ export async function getRecordWithModule(recordId: string): Promise<{ record: C
   if (!moduleData) return null;
 
   return {
-    record: recordData as CrmRecord,
+    record: withProjectedRecordData(
+      recordData as CrmRecord,
+      (moduleData as CrmModule).key,
+    ),
     module: moduleData as CrmModule,
   };
 }

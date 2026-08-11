@@ -49,6 +49,7 @@ import { format, parseISO } from 'date-fns';
 import { useRecordFieldSaveOptional } from '@/hooks/useRecordFieldSave';
 import {
   buildPlanChangeFollowUpTask,
+  localTodayIso,
   shouldCreatePlanChangeFollowUp,
 } from '@/lib/crm/plan-change-follow-up';
 
@@ -78,7 +79,17 @@ export interface MembershipChange {
   created_by?: string;
   /** Linked follow-up task created for a future/today effective date. */
   follow_up_task_id?: string;
+  /**
+   * Scheduled-change lifecycle: 'scheduled' entries carry a matching
+   * data.scheduled_plan_change object that the apply-scheduled-plan-changes
+   * cron consumes on the effective date, flipping the record's flat plan
+   * fields and marking the entry 'applied'.
+   */
+  change_status?: 'scheduled' | 'applied';
+  applied_at?: string;
 }
+
+const SCHEDULABLE_TYPES: MembershipChangeType[] = ['upgrade', 'downgrade', 'lateral'];
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -199,6 +210,22 @@ function ChangeEntry({
             <CalendarDays className="w-3 h-3" />
             {formatDate(change.date)}
           </span>
+          {change.change_status === 'scheduled' && (
+            <Badge
+              variant="outline"
+              className="text-[10px] font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400 border-amber-500/30 bg-amber-500/10"
+            >
+              Scheduled — applies {formatDate(change.date)}
+            </Badge>
+          )}
+          {change.change_status === 'applied' && (
+            <Badge
+              variant="outline"
+              className="text-[10px] font-semibold uppercase tracking-wide text-teal-600 dark:text-teal-400 border-teal-500/30 bg-teal-500/10"
+            >
+              Applied {change.applied_at ? formatDate(change.applied_at) : ''}
+            </Badge>
+          )}
           {change.follow_up_task_id && (
             <span
               className="text-xs text-teal-600 dark:text-teal-400 flex items-center gap-1"
@@ -325,6 +352,7 @@ function ChangeFormDialog({
   onSave,
   initial,
   currentData,
+  syncedToMms,
 }: {
   open: boolean;
   onClose: () => void;
@@ -332,6 +360,7 @@ function ChangeFormDialog({
   initial?: MembershipChange | null;
   /** Current record data to auto-populate "from" fields */
   currentData?: Record<string, unknown> | null;
+  syncedToMms?: boolean;
 }) {
   const [form, setForm] = useState<ChangeFormState>(() => {
     if (initial) {
@@ -407,6 +436,10 @@ function ChangeFormDialog({
         ...(initial?.follow_up_task_id && {
           follow_up_task_id: initial.follow_up_task_id,
         }),
+        // Carry the scheduled-change lifecycle through edits — dropping it
+        // would orphan the data.scheduled_plan_change key on de-scheduling.
+        ...(initial?.change_status && { change_status: initial.change_status }),
+        ...(initial?.applied_at && { applied_at: initial.applied_at }),
       };
       await onSave(change, {
         createFollowUp: createFollowUp && followUpEligible,
@@ -559,6 +592,22 @@ function ChangeFormDialog({
             />
           </div>
 
+          {form.date > localTodayIso() && (
+            syncedToMms ? (
+              <p className="text-xs rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 px-3 py-2.5 text-slate-600 dark:text-slate-300">
+                This member is managed in the enrollment system. To keep the current
+                plan and switch automatically on the date, schedule the change from the
+                Member Command Center — this entry only logs history.
+              </p>
+            ) : (
+              <p className="text-xs rounded-lg border border-amber-200 dark:border-amber-500/30 bg-amber-50/80 dark:bg-amber-500/10 px-3 py-2.5 text-slate-700 dark:text-slate-200">
+                <span className="font-semibold">Scheduled change:</span> the record keeps
+                its current plan until {formatDate(form.date)}, then Product, IUA and
+                monthly update automatically.
+              </p>
+            )
+          )}
+
           {followUpEligible ? (
             <label className="flex items-start gap-2.5 rounded-lg border border-teal-200 dark:border-teal-500/30 bg-teal-50/80 dark:bg-teal-500/10 px-3 py-2.5 cursor-pointer">
               <input
@@ -621,6 +670,13 @@ export interface MembershipChangeHistoryProps {
   recordId: string;
   /** Display name for the follow-up task title */
   recordTitle: string;
+  /**
+   * True when this record is projected from a members row
+   * (system.synced) — its `data` is replaced wholesale by the member sync,
+   * so scheduled changes must be made in the Member Command Center instead
+   * of via data.scheduled_plan_change.
+   */
+  syncedToMms?: boolean;
   readOnly?: boolean;
   className?: string;
 }
@@ -629,30 +685,48 @@ export const MembershipChangeHistory = memo(function MembershipChangeHistory({
   data,
   recordId,
   recordTitle,
+  syncedToMms,
   readOnly,
   className,
 }: MembershipChangeHistoryProps) {
   const saveCtx = useRecordFieldSaveOptional();
 
-  const changes = useMemo<MembershipChange[]>(() => {
+  // Local mirrors of the two persisted fields. The V2 shell does NOT refresh
+  // the `data` prop after inline saves, so rebuilding from the prop alone
+  // would clobber entries saved earlier in the same page view. `undefined`
+  // means "not touched this session — trust the prop".
+  const [localChanges, setLocalChanges] = useState<MembershipChange[] | undefined>(undefined);
+  const [localSpc, setLocalSpc] = useState<Record<string, unknown> | null | undefined>(undefined);
+
+  const sourceChanges = useMemo<MembershipChange[]>(() => {
+    if (localChanges) return localChanges;
     const raw = (data?.membership_changes ?? []) as MembershipChange[];
-    if (!Array.isArray(raw)) return [];
+    return Array.isArray(raw) ? raw : [];
+  }, [data, localChanges]);
+
+  const currentSpc = (
+    localSpc !== undefined ? localSpc : (data?.scheduled_plan_change ?? null)
+  ) as { change_id?: string } | null;
+
+  const changes = useMemo<MembershipChange[]>(() => {
     // Sort newest first
-    return [...raw].sort((a, b) => {
+    return [...sourceChanges].sort((a, b) => {
       const da = new Date(a.date).getTime();
       const db = new Date(b.date).getTime();
       return db - da;
     });
-  }, [data]);
+  }, [sourceChanges]);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<MembershipChange | null>(null);
   const [collapsed, setCollapsed] = useState(changes.length > 4);
 
-  // Persist changes array back to the record
+  // Persist changes array back to the record (local mirror updates first so
+  // subsequent edits in this page view never rebuild from the stale prop).
   const persistChanges = useCallback(
     async (next: MembershipChange[]) => {
       if (!saveCtx) return;
+      setLocalChanges(next);
       await saveCtx.save('membership_changes', next);
     },
     [saveCtx],
@@ -705,29 +779,104 @@ export const MembershipChangeHistory = memo(function MembershipChangeHistory({
         toast.success('Plan change logged');
       }
 
-      const existing = (data?.membership_changes ?? []) as MembershipChange[];
-      const arr = Array.isArray(existing) ? [...existing] : [];
+      // Scheduled-change lane (CRM-only records): a strictly-future plan
+      // change stores a machine-readable data.scheduled_plan_change that the
+      // apply cron consumes on the effective date — no manual field flip.
+      // Member-synced records are excluded: the member sync replaces `data`
+      // wholesale, so their changes are scheduled in the Member Command Center.
+      const schedulable =
+        !syncedToMms &&
+        SCHEDULABLE_TYPES.includes(nextChange.type) &&
+        nextChange.date > localTodayIso() &&
+        Boolean(saveCtx);
+      const wasScheduled = nextChange.change_status === 'scheduled';
+
+      if (schedulable) {
+        nextChange = { ...nextChange, change_status: 'scheduled' };
+      } else if (wasScheduled && nextChange.change_status !== 'applied') {
+        // Edited a scheduled entry to a today/past date — it is no longer
+        // automated; drop the marker and the scheduled key below.
+        const { change_status: _drop, ...rest } = nextChange;
+        nextChange = rest as MembershipChange;
+      }
+
+      let arr = [...sourceChanges];
       const idx = arr.findIndex((c) => c.id === nextChange.id);
       if (idx >= 0) {
         arr[idx] = nextChange;
       } else {
         arr.push(nextChange);
       }
+      if (schedulable) {
+        // Only ONE change can be scheduled (the key fires one change) — strip
+        // the marker from any other still-scheduled entry so it cannot claim
+        // it will auto-apply after this save re-points the key.
+        arr = arr.map((c) =>
+          c.id !== nextChange.id && c.change_status === 'scheduled'
+            ? (({ change_status: _drop, ...rest }) => rest as MembershipChange)(c)
+            : c,
+        );
+      }
       await persistChanges(arr);
+
+      if (saveCtx) {
+        if (schedulable) {
+          setLocalSpc({ change_id: nextChange.id, effective_date: nextChange.date });
+          await saveCtx.save('scheduled_plan_change', {
+            change_id: nextChange.id,
+            effective_date: nextChange.date,
+            ...(nextChange.to_plan && { to_plan: nextChange.to_plan }),
+            ...(nextChange.to_iua && { to_iua: nextChange.to_iua }),
+            ...(nextChange.to_monthly && { to_monthly: nextChange.to_monthly }),
+            ...(nextChange.from_plan && { from_plan: nextChange.from_plan }),
+            ...(nextChange.from_iua && { from_iua: nextChange.from_iua }),
+            ...(nextChange.from_monthly && { from_monthly: nextChange.from_monthly }),
+            scheduled_at: new Date().toISOString(),
+          });
+          toast.success('Plan change scheduled', {
+            description: `Product, IUA and monthly update automatically on ${formatDate(nextChange.date)}.`,
+          });
+        } else if (wasScheduled && currentSpc?.change_id === nextChange.id) {
+          setLocalSpc(null);
+          await saveCtx.save('scheduled_plan_change', null);
+        }
+      }
+
       setDialogOpen(false);
       setEditing(null);
     },
-    [data, persistChanges, recordId, recordTitle],
+    [sourceChanges, currentSpc, persistChanges, recordId, recordTitle, saveCtx, syncedToMms],
   );
 
   const handleDelete = useCallback(
     async (id: string) => {
-      const existing = (data?.membership_changes ?? []) as MembershipChange[];
-      const arr = Array.isArray(existing) ? existing.filter((c) => c.id !== id) : [];
-      await persistChanges(arr);
+      await persistChanges(sourceChanges.filter((c) => c.id !== id));
+
+      // Deleting the entry behind a pending scheduled change cancels it.
+      if (saveCtx && currentSpc?.change_id === id) {
+        setLocalSpc(null);
+        await saveCtx.save('scheduled_plan_change', null);
+        toast.success('Scheduled plan change cancelled');
+      }
     },
-    [data, persistChanges],
+    [sourceChanges, currentSpc, persistChanges, saveCtx],
   );
+
+  // A scheduled key whose timeline entry is missing (e.g. a partial save) —
+  // surface it so it is visible and cancellable instead of silently firing.
+  const orphanSpc =
+    currentSpc &&
+    typeof currentSpc === 'object' &&
+    !changes.some((c) => c.id === currentSpc.change_id)
+      ? (currentSpc as { change_id?: string; effective_date?: string; to_plan?: string })
+      : null;
+
+  const cancelOrphanSpc = useCallback(async () => {
+    if (!saveCtx) return;
+    setLocalSpc(null);
+    await saveCtx.save('scheduled_plan_change', null);
+    toast.success('Scheduled plan change cancelled');
+  }, [saveCtx]);
 
   const visibleChanges = collapsed ? changes.slice(0, 3) : changes;
 
@@ -767,6 +916,25 @@ export const MembershipChangeHistory = memo(function MembershipChangeHistory({
 
       {/* Body */}
       <div className="px-4 py-3">
+        {orphanSpc && (
+          <div className="mb-3 flex items-center justify-between gap-2 rounded-lg border border-amber-200 dark:border-amber-500/30 bg-amber-50/80 dark:bg-amber-500/10 px-3 py-2">
+            <p className="text-xs text-slate-700 dark:text-slate-200">
+              <span className="font-semibold">Scheduled plan change</span>
+              {orphanSpc.to_plan ? ` to ${orphanSpc.to_plan}` : ''} — applies{' '}
+              {orphanSpc.effective_date ? formatDate(orphanSpc.effective_date) : 'soon'}.
+            </p>
+            {!readOnly && saveCtx && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => void cancelOrphanSpc()}
+                className="h-6 shrink-0 text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10"
+              >
+                Cancel
+              </Button>
+            )}
+          </div>
+        )}
         {changes.length === 0 ? (
           <div className="text-center py-6">
             <ChevronsUpDown className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
@@ -833,6 +1001,7 @@ export const MembershipChangeHistory = memo(function MembershipChangeHistory({
           onSave={handleSave}
           initial={editing}
           currentData={data}
+          syncedToMms={syncedToMms}
         />
       )}
     </div>

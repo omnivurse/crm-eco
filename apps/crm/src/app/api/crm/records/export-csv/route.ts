@@ -13,6 +13,7 @@ import {
   formatCsvDataLine,
   sanitizeExportFilenamePart,
 } from '@/lib/crm/record-csv-export';
+import { mergeCrmRecordRowIntoFormDefaults } from '@/lib/crm/record-form-defaults';
 import { format } from 'date-fns';
 
 export const dynamic = 'force-dynamic';
@@ -195,7 +196,18 @@ export async function GET(request: NextRequest) {
               controller.close();
               return;
             }
-            controller.enqueue(encoder.encode(formatCsvDataLine(record, columns) + '\n'));
+            const projectedData = mergeCrmRecordRowIntoFormDefaults(
+              record as unknown as Record<string, unknown> & {
+                data?: Record<string, unknown> | null;
+                email?: string | null;
+                phone?: string | null;
+                status?: string | null;
+              },
+              { moduleKey: crmModule.key },
+            );
+            controller.enqueue(
+              encoder.encode(formatCsvDataLine(record, columns, projectedData) + '\n'),
+            );
             exported += 1;
           }
 

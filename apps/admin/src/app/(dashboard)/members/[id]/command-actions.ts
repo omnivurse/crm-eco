@@ -12,6 +12,8 @@ import {
   staffAssignPlan,
   staffChangePlan,
   staffEndPlan,
+  staffSchedulePlanChange,
+  staffCancelScheduledPlanChange,
   staffCreateEnrollment,
   staffMergeMembers,
   type StaffCoverageContext,
@@ -150,6 +152,26 @@ export async function adminEndPlan(input: Parameters<typeof staffEndPlan>[1]) {
   const staff = await resolveStaffContext();
   if (!staff.ok) return { success: false, error: staff.error };
   const result = await staffEndPlan(staff.ctx, input);
+  if (result.success) revalidateMember(input.member_id);
+  return result;
+}
+
+export async function adminSchedulePlanChange(
+  input: Parameters<typeof staffSchedulePlanChange>[1],
+) {
+  const staff = await resolveStaffContext();
+  if (!staff.ok) return { success: false, error: staff.error };
+  const result = await staffSchedulePlanChange(staff.ctx, input);
+  if (result.success) revalidateMember(input.member_id);
+  return result;
+}
+
+export async function adminCancelScheduledPlanChange(
+  input: Parameters<typeof staffCancelScheduledPlanChange>[1],
+) {
+  const staff = await resolveStaffContext();
+  if (!staff.ok) return { success: false, error: staff.error };
+  const result = await staffCancelScheduledPlanChange(staff.ctx, input);
   if (result.success) revalidateMember(input.member_id);
   return result;
 }

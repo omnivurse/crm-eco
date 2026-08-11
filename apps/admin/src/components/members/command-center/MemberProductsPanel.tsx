@@ -1,11 +1,13 @@
 'use client';
 
-import { ArrowClockwise, CircleNotch, Package, Plus, XCircle } from '@phosphor-icons/react';
+import { ArrowClockwise, CalendarBlank, CircleNotch, Package, Plus, XCircle } from '@phosphor-icons/react';
 /**
  * MemberProductsPanel — staff management of a member's plan/product.
  * Reads memberships (the source of truth) and writes via admin plan actions
  * (command-actions → @crm-eco/lib memberPlan, service-role conduit + recalc).
- * A member has at most one active membership: assign (when none), change, or end.
+ * A member has at most one CURRENT plan, plus optionally one UPCOMING plan —
+ * a pending membership with a future effective date (a scheduled plan change,
+ * activated by the daily cron). Everything else is history.
  */
 
 import { useState } from 'react';
@@ -29,9 +31,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@crm-eco/ui/components/select';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
-import { adminAssignPlan, adminChangePlan, adminEndPlan } from '@/app/(dashboard)/members/[id]/command-actions';
+import {
+  adminAssignPlan,
+  adminChangePlan,
+  adminEndPlan,
+  adminSchedulePlanChange,
+  adminCancelScheduledPlanChange,
+} from '@/app/(dashboard)/members/[id]/command-actions';
 
 type Plan = { id: string; name: string; code: string | null; plan_type: string | null; monthly_share: number | null };
 type Membership = Record<string, unknown> & { id: string; status: string };
@@ -46,10 +54,36 @@ function todayIso() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function tomorrowIso() {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() + 1);
+  return d.toISOString().slice(0, 10);
+}
+
 function fmtMoney(v: unknown) {
   const n = Number(v);
   if (!Number.isFinite(n)) return '—';
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
+}
+
+function fmtDate(v: unknown) {
+  if (!v) return '—';
+  try {
+    // parseISO keeps a date-only string on its calendar day; new Date() would
+    // parse it as UTC midnight and render the PREVIOUS day in US timezones.
+    return format(parseISO(String(v)), 'MMM d, yyyy');
+  } catch {
+    return String(v);
+  }
+}
+
+function membershipPlanName(m: Membership | null) {
+  return ((m?.plans as Record<string, unknown> | null)?.name as string) ?? 'Plan';
+}
+
+function isScheduledChange(m: Membership) {
+  const custom = m.custom_fields as Record<string, unknown> | null;
+  return Boolean(custom && typeof custom === 'object' && (custom as Record<string, unknown>).scheduled_change);
 }
 
 function statusVariant(s: string): 'default' | 'secondary' | 'destructive' | 'outline' {
@@ -67,18 +101,26 @@ function planLabel(p: Plan) {
 export function MemberProductsPanel({ memberId, memberships, availablePlans }: Props) {
   const router = useRouter();
   const active = memberships.find((m) => m.status === 'active') ?? null;
+  const upcoming =
+    memberships.find(
+      (m) => m.status === 'pending' && ((m.effective_date as string) ?? '') > todayIso(),
+    ) ?? null;
 
   const [mode, setMode] = useState<null | 'assign' | 'change' | 'end'>(null);
+  const [when, setWhen] = useState<'now' | 'future'>('now');
   const [planId, setPlanId] = useState('');
   const [effectiveDate, setEffectiveDate] = useState(todayIso());
+  const [changeDate, setChangeDate] = useState('');
   const [endDate, setEndDate] = useState(todayIso());
   const [reason, setReason] = useState('');
   const [saving, setSaving] = useState(false);
 
   function close() {
     setMode(null);
+    setWhen('now');
     setPlanId('');
     setEffectiveDate(todayIso());
+    setChangeDate('');
     setEndDate(todayIso());
     setReason('');
   }
@@ -114,11 +156,48 @@ export function MemberProductsPanel({ memberId, memberships, availablePlans }: P
   async function onChange() {
     if (!active) return;
     if (!planId) return toast.error('Select a plan');
+    if (when === 'future' && !changeDate) return toast.error('Pick the date the new plan starts');
     setSaving(true);
     try {
-      const res = await adminChangePlan({ member_id: memberId, membership_id: active.id, plan_id: planId });
-      if (surface(res, 'Plan changed')) {
-        close();
+      if (when === 'future') {
+        const res = await adminSchedulePlanChange({
+          member_id: memberId,
+          plan_id: planId,
+          effective_date: changeDate,
+          reason: reason || undefined,
+        });
+        if (
+          surface(
+            res,
+            `Plan change scheduled — ${membershipPlanName(active)} runs through ${fmtDate(
+              (res as { data?: { currentEndsOn?: string } }).data?.currentEndsOn,
+            )}, new plan starts ${fmtDate(changeDate)}.`,
+          )
+        ) {
+          close();
+          router.refresh();
+        }
+      } else {
+        const res = await adminChangePlan({ member_id: memberId, membership_id: active.id, plan_id: planId });
+        if (surface(res, 'Plan changed')) {
+          close();
+          router.refresh();
+        }
+      }
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function onCancelScheduled() {
+    if (!upcoming) return;
+    setSaving(true);
+    try {
+      const res = await adminCancelScheduledPlanChange({
+        member_id: memberId,
+        pending_membership_id: upcoming.id,
+      });
+      if (surface(res, 'Scheduled plan change cancelled')) {
         router.refresh();
       }
     } finally {
@@ -140,6 +219,8 @@ export function MemberProductsPanel({ memberId, memberships, availablePlans }: P
     }
   }
 
+  const historyRows = memberships.filter((m) => m.id !== active?.id && m.id !== upcoming?.id);
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-start justify-between gap-3">
@@ -152,7 +233,7 @@ export function MemberProductsPanel({ memberId, memberships, availablePlans }: P
             Source of truth: <code className="text-xs">memberships</code> → <code className="text-xs">plans</code>. Changes recalculate billing.
           </CardDescription>
         </div>
-        {!active && (
+        {!active && !upcoming && (
           <Button size="sm" onClick={() => setMode('assign')} className="gap-2 shrink-0">
             <Plus weight="light" className="h-4 w-4" />
             Assign plan
@@ -160,26 +241,36 @@ export function MemberProductsPanel({ memberId, memberships, availablePlans }: P
         )}
       </CardHeader>
       <CardContent className="space-y-3">
-        {/* Active plan */}
+        {/* Current plan */}
         {active ? (
           <div className="rounded-lg border p-4">
-            <div className="flex items-start justify-between gap-3">
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Current</p>
+            <div className="mt-1 flex items-start justify-between gap-3">
               <div>
-                <p className="font-medium">
-                  {((active.plans as Record<string, unknown> | null)?.name as string) ?? 'Plan'}
-                </p>
+                <p className="font-medium">{membershipPlanName(active)}</p>
                 <p className="text-sm text-slate-500">
-                  Effective {active.effective_date ? format(new Date(active.effective_date as string), 'MMM d, yyyy') : '—'}
-                  {active.end_date ? ` → ${format(new Date(active.end_date as string), 'MMM d, yyyy')}` : ''}
+                  Effective {fmtDate(active.effective_date)}
+                  {active.end_date ? ` → ${fmtDate(active.end_date)}` : ''}
                 </p>
+                {upcoming && (
+                  <p className="mt-1 text-sm text-amber-600">
+                    Ends {fmtDate(active.end_date)} — changing to {membershipPlanName(upcoming)}
+                  </p>
+                )}
               </div>
               <div className="text-right">
                 <Badge variant={statusVariant(active.status)}>{active.status}</Badge>
                 <p className="mt-1 text-sm">{fmtMoney(active.billing_amount)}/mo</p>
               </div>
             </div>
-            <div className="mt-3 flex gap-2">
-              <Button size="sm" variant="outline" className="gap-2" onClick={() => { setPlanId(''); setMode('change'); }}>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-2"
+                disabled={Boolean(upcoming)}
+                onClick={() => { setPlanId(''); setWhen('now'); setMode('change'); }}
+              >
                 <ArrowClockwise weight="light" className="h-4 w-4" />
                 Change plan
               </Button>
@@ -187,35 +278,68 @@ export function MemberProductsPanel({ memberId, memberships, availablePlans }: P
                 <XCircle weight="light" className="h-4 w-4" />
                 End plan
               </Button>
+              {upcoming && (
+                <span className="text-xs text-slate-500">
+                  A change is already scheduled — cancel it to make a different change.
+                </span>
+              )}
             </div>
           </div>
         ) : (
           <p className="rounded-lg border border-dashed p-4 text-sm text-slate-500">
-            No active plan. Use “Assign plan” to add one.
+            {upcoming
+              ? 'No current plan — the upcoming plan below starts automatically on its effective date.'
+              : 'No active plan. Use “Assign plan” to add one.'}
           </p>
         )}
 
-        {/* History (non-active memberships) */}
-        {memberships.filter((m) => m.id !== active?.id).length > 0 && (
+        {/* Upcoming plan (scheduled change or future-dated enrollment) */}
+        {upcoming && (
+          <div className="rounded-lg border border-amber-300 bg-amber-50/50 p-4 dark:border-amber-700 dark:bg-amber-950/20">
+            <p className="text-xs font-medium uppercase tracking-wide text-amber-600">Upcoming</p>
+            <div className="mt-1 flex items-start justify-between gap-3">
+              <div>
+                <p className="font-medium">{membershipPlanName(upcoming)}</p>
+                <p className="text-sm text-slate-500">
+                  <CalendarBlank weight="light" className="mr-1 inline h-4 w-4" />
+                  Starts {fmtDate(upcoming.effective_date)} — activates automatically on that day
+                </p>
+              </div>
+              <div className="text-right">
+                <Badge variant="secondary">scheduled</Badge>
+                <p className="mt-1 text-sm">{fmtMoney(upcoming.billing_amount)}/mo</p>
+              </div>
+            </div>
+            {isScheduledChange(upcoming) && (
+              <div className="mt-3">
+                <Button size="sm" variant="outline" className="gap-2" onClick={onCancelScheduled} disabled={saving}>
+                  {saving && <CircleNotch weight="light" className="h-4 w-4 animate-spin" />}
+                  Cancel scheduled change
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* History (everything that is neither current nor upcoming) */}
+        {historyRows.length > 0 && (
           <div className="space-y-2">
             <p className="text-xs font-medium uppercase tracking-wide text-slate-400">History</p>
-            {memberships
-              .filter((m) => m.id !== active?.id)
-              .map((m) => (
-                <div key={m.id} className="flex items-center justify-between rounded-lg border p-3 text-sm">
-                  <div>
-                    <p className="font-medium">{((m.plans as Record<string, unknown> | null)?.name as string) ?? 'Plan'}</p>
-                    <p className="text-slate-500">
-                      {m.effective_date ? format(new Date(m.effective_date as string), 'MMM d, yyyy') : '—'}
-                      {m.end_date ? ` → ${format(new Date(m.end_date as string), 'MMM d, yyyy')}` : ''}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <Badge variant={statusVariant(m.status)}>{m.status}</Badge>
-                    <p className="mt-1">{fmtMoney(m.billing_amount)}/mo</p>
-                  </div>
+            {historyRows.map((m) => (
+              <div key={m.id} className="flex items-center justify-between rounded-lg border p-3 text-sm">
+                <div>
+                  <p className="font-medium">{membershipPlanName(m)}</p>
+                  <p className="text-slate-500">
+                    {fmtDate(m.effective_date)}
+                    {m.end_date ? ` → ${fmtDate(m.end_date)}` : ''}
+                  </p>
                 </div>
-              ))}
+                <div className="text-right">
+                  <Badge variant={statusVariant(m.status)}>{m.status}</Badge>
+                  <p className="mt-1">{fmtMoney(m.billing_amount)}/mo</p>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </CardContent>
@@ -228,7 +352,9 @@ export function MemberProductsPanel({ memberId, memberships, availablePlans }: P
             <DialogDescription>
               {mode === 'assign'
                 ? 'Create an active membership for this member. Billing recalculates from the plan + covered dependents.'
-                : 'Switch the active membership to a different plan. Billing recalculates.'}
+                : when === 'future'
+                  ? 'Keep the current plan until the change date; the new plan starts (and billing switches) on that date automatically.'
+                  : 'Switch the active membership to a different plan. Billing recalculates.'}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
@@ -255,12 +381,51 @@ export function MemberProductsPanel({ memberId, memberships, availablePlans }: P
                 <Input type="date" value={effectiveDate} onChange={(e) => setEffectiveDate(e.target.value)} />
               </div>
             )}
+            {mode === 'change' && (
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">When</label>
+                <Select value={when} onValueChange={(v) => setWhen(v as 'now' | 'future')}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="now">Immediately</SelectItem>
+                    <SelectItem value="future">On a future date (keep current plan until then)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            {mode === 'change' && when === 'future' && (
+              <>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">New plan starts</label>
+                  <Input
+                    type="date"
+                    min={tomorrowIso()}
+                    value={changeDate}
+                    onChange={(e) => setChangeDate(e.target.value)}
+                  />
+                  {changeDate && (
+                    <p className="text-xs text-slate-500">
+                      Current plan will run through {fmtDate(changeDate ? new Date(new Date(`${changeDate}T00:00:00Z`).getTime() - 86400000).toISOString().slice(0, 10) : null)}.
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">Reason (optional)</label>
+                  <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. member requested upgrade" />
+                </div>
+              </>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={close} disabled={saving}>Cancel</Button>
-            <Button onClick={mode === 'assign' ? onAssign : onChange} disabled={saving || !planId}>
+            <Button
+              onClick={mode === 'assign' ? onAssign : onChange}
+              disabled={saving || !planId || (mode === 'change' && when === 'future' && !changeDate)}
+            >
               {saving && <CircleNotch weight="light" className="mr-2 h-4 w-4 animate-spin" />}
-              {mode === 'assign' ? 'Assign' : 'Change'}
+              {mode === 'assign' ? 'Assign' : when === 'future' ? 'Schedule change' : 'Change'}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -40,8 +40,12 @@
       "schedule": "0 6 * * *"
     },
     {
+      "path": "/api/cron/apply-scheduled-plan-changes",
+      "schedule": "5 6 * * *"
+    },
+    {
       "path": "/api/cron/activate-due-memberships",
-      "schedule": "10 6 * * *"
+      "schedule": "10 0 * * *"
     },
     {
       "path": "/api/cron/cancel-active-members",

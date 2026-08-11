@@ -601,8 +601,8 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
   );
 
   const searchableRows = useMemo(
-    () => buildRecordSearchableRows(record, _fields),
-    [record, _fields],
+    () => buildRecordSearchableRows(record, _fields, module.key),
+    [record, _fields, module.key],
   );
 
   // Expose "jump to field" targets to the global CommandPalette (⌘K).
@@ -1180,6 +1180,11 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                 data={(record.data ?? null) as Record<string, unknown> | null}
                 recordId={record.id}
                 recordTitle={getRecordDisplayName(record)}
+                syncedToMms={
+                  (record.system as Record<string, unknown> | null)?.synced === true ||
+                  (record.system as Record<string, unknown> | null)?.synced === 'true' ||
+                  Boolean(linkedMemberId)
+                }
                 className="mt-4"
               />
             )}
@@ -1293,6 +1298,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                 <InlineRecordSearch
                   record={record}
                   fields={_fields}
+                  moduleKey={module.key}
                   noteBodies={notesProp.map((n) => n.body)}
                   onNavigateToMatch={handleNavigateToMatch}
                 />

@@ -1,19 +1,20 @@
 /**
- * GET /api/cron/activate-due-memberships
+ * GET /api/cron/apply-scheduled-plan-changes
  *
- * Thin adapter: daily cron that activates real coverage on the 1st.
- * Logic lives in `@/lib/crm/member-activation` (billing adapter).
+ * Thin adapter: daily cron that applies due scheduled plan changes on
+ * CRM-only (Zoho-imported) records. Logic lives in
+ * `@/lib/crm/scheduled-plan-change-apply`.
  *
- * Enrollments are intentionally LEFT at 'approved' — flipping them to 'active'
- * would fire trg_enrollment_commission a second time.
+ * Member-synced records are skipped — their plan flip runs through
+ * memberships + activate-due-memberships.
  *
- * Idempotent (status-guarded), `?dry_run=1` mutates nothing.
- * Schedule: daily 06:10 UTC.
+ * Idempotent (the scheduled_plan_change key is consumed on apply),
+ * `?dry_run=1` mutates nothing. Schedule: daily 06:05 UTC.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
-import { activateBillingDue } from '@/lib/crm/member-activation';
+import { applyScheduledPlanChanges } from '@/lib/crm/scheduled-plan-change-apply';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -59,31 +60,8 @@ export async function GET(request: NextRequest) {
     today = todayOverride;
   }
 
-  const sb = serviceClient();
+  const result = await applyScheduledPlanChanges(serviceClient(), today, { dryRun });
 
-  const result = await activateBillingDue(sb, today, { dryRun });
-
-  if (result.error) {
-    return NextResponse.json({ error: result.error }, { status: 500 });
-  }
-
-  if (dryRun) {
-    return NextResponse.json({
-      dry_run: true,
-      today,
-      memberships_to_activate: result.memberships_to_activate,
-      members_to_activate: result.members_to_activate,
-      memberships_to_supersede: result.memberships_to_supersede,
-    });
-  }
-
-  return NextResponse.json({
-    ok: true,
-    today,
-    memberships_activated: result.memberships_activated,
-    members_activated: result.members_activated,
-    memberships_superseded: result.memberships_superseded,
-    schedules_cancelled: result.schedules_cancelled,
-    ...(result.supersede_errors.length > 0 ? { supersede_errors: result.supersede_errors } : {}),
-  });
+  const status = result.errors.length > 0 && result.applied === 0 && !dryRun ? 500 : 200;
+  return NextResponse.json(result, { status });
 }

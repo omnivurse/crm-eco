@@ -41,6 +41,51 @@ function asRecord(value: unknown): Record<string, unknown> {
     : {};
 }
 
+export interface BillingMembershipCandidate {
+  id: string;
+  billing_amount: number | null;
+  enrollment_id: string | null;
+  plan_id: string | null;
+  custom_fields: unknown;
+  status: string;
+  effective_date: string | null;
+}
+
+/**
+ * Pick which membership a billing recalc should target.
+ *
+ * The member's billing must always track the plan that covers TODAY, never a
+ * scheduled future plan: with a scheduled plan change both an `active` row and
+ * a future-dated `pending` row exist, and repricing the current schedules from
+ * the future plan would bill the new price before coverage starts.
+ *
+ * Preference order:
+ *   1. the `active` row (latest effective_date if several),
+ *   2. a `pending` row already due (effective_date <= today) awaiting the
+ *      activation cron,
+ *   3. the earliest future `pending` row — a brand-new enrollment whose only
+ *      membership hasn't started yet, where pre-activation recalc is correct.
+ */
+export function pickBillingMembership(
+  memberships: BillingMembershipCandidate[],
+  today: string = new Date().toISOString().slice(0, 10),
+): BillingMembershipCandidate | null {
+  const byEffectiveDesc = (a: BillingMembershipCandidate, b: BillingMembershipCandidate) =>
+    (b.effective_date ?? '').localeCompare(a.effective_date ?? '');
+
+  const active = memberships.filter((m) => m.status === 'active').sort(byEffectiveDesc);
+  if (active.length > 0) return active[0];
+
+  const pending = memberships.filter((m) => m.status === 'pending');
+  const due = pending
+    .filter((m) => (m.effective_date ?? '') <= today)
+    .sort(byEffectiveDesc);
+  if (due.length > 0) return due[0];
+
+  const future = pending.sort((a, b) => byEffectiveDesc(b, a));
+  return future[0] ?? null;
+}
+
 /**
  * Recompute monthly billing for a member based on who is currently covered.
  */
@@ -57,19 +102,19 @@ export async function recalculateMemberBillingFromCoverage(
     breakdown: [],
   };
 
-  const { data: membership, error: membershipError } = await supabase
+  const { data: membershipRows, error: membershipError } = await supabase
     .from('memberships')
-    .select('id, billing_amount, enrollment_id, plan_id, custom_fields, status')
+    .select('id, billing_amount, enrollment_id, plan_id, custom_fields, status, effective_date')
     .eq('member_id', memberId)
     .eq('organization_id', organizationId)
-    .in('status', ['active', 'pending'])
-    .order('effective_date', { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .in('status', ['active', 'pending']);
 
   if (membershipError) {
     return { ...empty, error: membershipError.message };
   }
+  const membership = pickBillingMembership(
+    (membershipRows ?? []) as BillingMembershipCandidate[],
+  );
   if (!membership) {
     return { ...empty, error: 'No active membership found for billing recalculation' };
   }
@@ -219,12 +264,20 @@ export async function recalculateMemberBillingFromCoverage(
       .eq('id', enrollmentId);
   }
 
-  await supabase
+  // Scope the reprice to the targeted membership's own schedule whenever it has
+  // one; the member-wide fallback exists only for legacy memberships that were
+  // never linked to an enrollment. Without the scoping, a member with two
+  // schedules (e.g. across a plan change) would have BOTH repriced from one plan.
+  let scheduleUpdate = supabase
     .from('billing_schedules')
     .update({ amount: newAmount, updated_at: new Date().toISOString() })
     .eq('member_id', memberId)
     .eq('organization_id', organizationId)
     .eq('status', 'active');
+  if (enrollmentId) {
+    scheduleUpdate = scheduleUpdate.eq('enrollment_id', enrollmentId);
+  }
+  await scheduleUpdate;
 
   return {
     success: true,

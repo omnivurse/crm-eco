@@ -4,6 +4,7 @@
  */
 
 import type { CrmField, CrmRecord } from '@/lib/crm/types';
+import { mergeCrmRecordRowIntoFormDefaults } from '@/lib/crm/record-form-defaults';
 
 export type RecordFieldNavigateTarget =
   | { type: 'field'; fieldKey: string }
@@ -32,8 +33,19 @@ function stringifyValue(val: unknown): string {
   return String(val);
 }
 
-/** Core columns mirrored on CrmRecord; custom fields usually live under `data` only */
-export function recordValueFor(record: CrmRecord, key: string): unknown {
+/**
+ * Core columns mirrored on CrmRecord; custom fields usually live under `data` only.
+ *
+ * `projectedData` is the legacy-projected view of `record.data` (see
+ * `mergeCrmRecordRowIntoFormDefaults`). Find-in-record must search exactly what
+ * the page displays — searching raw `data` made projected Zoho values
+ * unfindable even though the rep could see them on screen.
+ */
+export function recordValueFor(
+  record: CrmRecord,
+  key: string,
+  projectedData?: Record<string, unknown> | null,
+): unknown {
   switch (key) {
     case 'title':
       return record.title;
@@ -46,7 +58,7 @@ export function recordValueFor(record: CrmRecord, key: string): unknown {
     case 'stage':
       return record.stage;
     default:
-      return record.data?.[key];
+      return projectedData ? projectedData[key] : record.data?.[key];
   }
 }
 
@@ -67,7 +79,20 @@ function snippetAround(text: string, queryLower: string, maxLen = 96): string {
 export function buildRecordSearchableRows(
   record: CrmRecord,
   fields: CrmField[],
+  moduleKey?: string | null,
 ): Array<{ fieldKey: string; label: string; text: string }> {
+  // Search the SAME projected values the detail page renders, so a Zoho-era
+  // value surfaced through projection is also findable via ⌘K.
+  const projectedData = mergeCrmRecordRowIntoFormDefaults(
+    record as unknown as Record<string, unknown> & {
+      data?: Record<string, unknown> | null;
+      email?: string | null;
+      phone?: string | null;
+      status?: string | null;
+    },
+    { moduleKey },
+  );
+
   const sortedFields = [...fields].sort((a, b) => a.display_order - b.display_order);
   const rows: Array<{ fieldKey: string; label: string; text: string }> = [];
   const seen = new Set<string>();
@@ -75,7 +100,7 @@ export function buildRecordSearchableRows(
   for (const f of sortedFields) {
     if (seen.has(f.key)) continue;
     seen.add(f.key);
-    const text = stringifyValue(recordValueFor(record, f.key));
+    const text = stringifyValue(recordValueFor(record, f.key, projectedData));
     if (text.trim()) {
       rows.push({ fieldKey: f.key, label: f.label, text });
     }
