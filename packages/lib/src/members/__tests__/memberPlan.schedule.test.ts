@@ -20,7 +20,11 @@ vi.mock('../membershipBillingRecalc', async (importOriginal) => {
   };
 });
 
-import { staffSchedulePlanChange, staffCancelScheduledPlanChange } from '../memberPlan';
+import {
+  staffSchedulePlanChange,
+  staffCancelScheduledPlanChange,
+  staffEndPlan,
+} from '../memberPlan';
 import type { StaffCoverageContext } from '../staffDependentCoverage';
 
 type Op = {
@@ -270,5 +274,43 @@ describe('staffCancelScheduledPlanChange', () => {
 
     expect(result.success).toBe(false);
     expect(ops.some((o) => o.kind === 'delete')).toBe(false);
+  });
+});
+
+describe('staffEndPlan', () => {
+  it('blocks ending the current plan while a due scheduled change is still pending', async () => {
+    const { supabase, ops } = makeSupabase({
+      memberships: [
+        { data: { id: 'mem-old' }, error: null }, // ownership check
+        {
+          data: {
+            id: 'mem-new',
+            effective_date: '2020-01-01',
+            custom_fields: {
+              scheduled_change: { from_membership_id: 'mem-old' },
+            },
+          },
+          error: null,
+        },
+      ],
+    });
+
+    const result = await staffEndPlan(ctx(supabase), {
+      member_id: 'member-1',
+      membership_id: 'mem-old',
+      end_date: '2020-01-01',
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/scheduled/i);
+    expect(ops.some((op) => op.kind === 'update')).toBe(false);
+
+    const pendingLookup = ops[1];
+    expect(pendingLookup?.filters).toContainEqual({
+      method: 'eq',
+      column: 'status',
+      value: 'pending',
+    });
+    expect(pendingLookup?.filters.some((filter) => filter.method === 'gt')).toBe(false);
   });
 });
