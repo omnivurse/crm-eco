@@ -5,6 +5,7 @@ import { format } from 'date-fns';
 import { Badge } from '@crm-eco/ui/components/badge';
 import { cn } from '@crm-eco/ui/lib/utils';
 import type { CrmField } from '@/lib/crm/types';
+import { formatPhoneOwnerLabel } from '@/lib/crm/phone-owner';
 import { Mail, Phone, ExternalLink, Check, X, Copy } from 'lucide-react';
 import DOMPurify from 'dompurify';
 
@@ -161,10 +162,20 @@ interface FieldRendererProps {
   field: CrmField;
   value: unknown;
   className?: string;
+  /**
+   * Sibling field values (usually merged record.data + column mirrors).
+   * Used to show phone ownership badges without stuffing names into digits.
+   */
+  relatedValues?: Record<string, unknown> | null;
 }
 
 // Memoized component to prevent unnecessary re-renders in table cells
-export const FieldRenderer = memo(function FieldRenderer({ field, value, className }: FieldRendererProps) {
+export const FieldRenderer = memo(function FieldRenderer({
+  field,
+  value,
+  className,
+  relatedValues,
+}: FieldRendererProps) {
   if (value === null || value === undefined || value === '') {
     return <span className={cn('text-muted-foreground', className)}>—</span>;
   }
@@ -209,7 +220,8 @@ export const FieldRenderer = memo(function FieldRenderer({ field, value, classNa
         </span>
       );
 
-    case 'phone':
+    case 'phone': {
+      const ownerLabel = formatPhoneOwnerLabel(field.key, relatedValues);
       return (
         <span className="inline-flex flex-col">
           <span className="group inline-flex items-center gap-0">
@@ -222,11 +234,16 @@ export const FieldRenderer = memo(function FieldRenderer({ field, value, classNa
             </a>
             <CopyButton value={String(value)} />
           </span>
-          {field.tooltip && (
+          {ownerLabel ? (
+            <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+              {ownerLabel}
+            </span>
+          ) : field.tooltip ? (
             <span className="text-[10px] text-slate-400 mt-0.5">{field.tooltip}</span>
-          )}
+          ) : null}
         </span>
       );
+    }
 
     case 'url':
       return (

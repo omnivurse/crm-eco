@@ -592,7 +592,29 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
           break;
 
         case 'phone':
-          fieldSchema = z.string();
+          // Digits-only; empty → null so optional phones don't fail regex.
+          // Names/initials belong in *_owner / *_owner_name companion fields.
+          fieldSchema = z.preprocess(
+            (v) => {
+              if (v === undefined || v === null) return null;
+              if (typeof v === 'string' && v.trim() === '') return null;
+              return typeof v === 'string' ? v.trim() : v;
+            },
+            field.required
+              ? z
+                  .string({ required_error: `${field.label} is required` })
+                  .regex(
+                    /^[\d\s\-\+\(\)]+$/,
+                    'Invalid phone number — use digits only (put names in Owner Name)',
+                  )
+              : z
+                  .string()
+                  .regex(
+                    /^[\d\s\-\+\(\)]+$/,
+                    'Invalid phone number — use digits only (put names in Owner Name)',
+                  )
+                  .nullable(),
+          );
           break;
 
         case 'url':
@@ -676,6 +698,8 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
             },
             z.string().uuid().nullable(),
           );
+        } else if (field.type === 'phone') {
+          // Already empty→null + nullable inside the phone case above.
         } else {
           fieldSchema = fieldSchema.optional().nullable();
         }
@@ -806,9 +830,17 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
           )}
         >
           {inlineEditable ? (
-            <InlineFieldCell field={field} value={cellValue} />
+            <InlineFieldCell
+              field={field}
+              value={cellValue}
+              relatedValues={defaultValues}
+            />
           ) : (
-            <FieldRenderer field={field} value={cellValue} />
+            <FieldRenderer
+              field={field}
+              value={cellValue}
+              relatedValues={defaultValues}
+            />
           )}
         </div>
       ) : (

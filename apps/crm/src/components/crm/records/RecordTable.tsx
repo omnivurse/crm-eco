@@ -1111,7 +1111,15 @@ export const RecordTable = memo(function RecordTable({
     }
 
     const value = projected[col] ?? record.data?.[col];
-    return <FieldRenderer field={field} value={value} />;
+    const relatedValues = {
+      ...((record.data ?? {}) as Record<string, unknown>),
+      ...projected,
+      phone: record.phone,
+      email: record.email,
+    };
+    return (
+      <FieldRenderer field={field} value={value} relatedValues={relatedValues} />
+    );
   };
 
   if (isLoading) {

@@ -15,6 +15,7 @@
 import { memo, useMemo, type ReactNode } from 'react';
 import type { CrmField } from '@/lib/crm/types';
 import { getFieldOptions } from '@/lib/crm/utils';
+import { formatPhoneOwnerLabel, isCleanPhoneValue } from '@/lib/crm/phone-owner';
 import type { FieldSaveTarget } from '@/hooks/useRecordFieldSave';
 import { FieldRenderer } from '../FieldRenderer';
 import { InlineFieldEditor } from './InlineFieldEditor';
@@ -56,6 +57,8 @@ export interface InlineFieldCellProps {
   onEditStart?: () => void;
   onEditEnd?: () => void;
   className?: string;
+  /** Sibling values for phone owner badges (merged record data). */
+  relatedValues?: Record<string, unknown> | null;
 }
 
 export const InlineFieldCell = memo(function InlineFieldCell({
@@ -66,6 +69,7 @@ export const InlineFieldCell = memo(function InlineFieldCell({
   onEditStart,
   onEditEnd,
   className,
+  relatedValues,
 }: InlineFieldCellProps) {
   const selectOptions = useMemo(() => {
     if (field.type !== 'select' && field.type !== 'picklist') return [];
@@ -78,7 +82,7 @@ export const InlineFieldCell = memo(function InlineFieldCell({
   if (field.key === 'notes_history') {
     return (
       <span className={className}>
-        <FieldRenderer field={field} value={value} />
+        <FieldRenderer field={field} value={value} relatedValues={relatedValues} />
       </span>
     );
   }
@@ -209,15 +213,30 @@ export const InlineFieldCell = memo(function InlineFieldCell({
         />
       );
 
-    case 'phone':
+    case 'phone': {
+      const ownerLabel = formatPhoneOwnerLabel(field.key, relatedValues);
       return (
-        <InlineFieldEditor
-          {...common}
-          value={value == null ? '' : String(value)}
-          type="tel"
-          placeholder={`Add ${field.label.toLowerCase()}`}
-        />
+        <span className="inline-flex flex-col min-w-0 w-full">
+          <InlineFieldEditor
+            {...common}
+            value={value == null ? '' : String(value)}
+            type="tel"
+            placeholder={`Add ${field.label.toLowerCase()}`}
+            validate={(v) => {
+              if (!v) return null;
+              return isCleanPhoneValue(v)
+                ? null
+                : 'Digits only — put names in Owner Name';
+            }}
+          />
+          {ownerLabel ? (
+            <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+              {ownerLabel}
+            </span>
+          ) : null}
+        </span>
       );
+    }
 
     case 'url':
       return (

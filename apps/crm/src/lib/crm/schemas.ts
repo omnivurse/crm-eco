@@ -260,7 +260,14 @@ export function createFieldValueSchema(
       break;
 
     case 'phone':
-      schema = z.string().regex(/^[\d\s\-\+\(\)]+$/, 'Invalid phone number');
+      // Digits and common phone punctuation only — names/initials belong in
+      // companion *_owner / *_owner_name fields (see phone-owner.ts).
+      schema = z
+        .string()
+        .regex(
+          /^[\d\s\-\+\(\)]+$/,
+          'Invalid phone number — use digits only (put names in Owner Name)',
+        );
       break;
 
     case 'url':
