@@ -98,6 +98,30 @@ beforeEach(() => {
 });
 
 describe('immediate plan date guards', () => {
+  it('still assigns a plan effective today', async () => {
+    const today = new Date().toISOString().slice(0, 10);
+    const { supabase, ops } = makeSupabase({
+      members: [MEMBER],
+      plans: [PLAN],
+      memberships: [
+        { data: null, error: null }, // no existing active membership
+        { data: { id: 'mem-new' }, error: null }, // insert result
+      ],
+    });
+
+    const result = await staffAssignPlan(ctx(supabase), {
+      member_id: 'member-1',
+      plan_id: 'plan-premium',
+      effective_date: today,
+    });
+
+    expect(result.success).toBe(true);
+    expect(ops.find((op) => op.kind === 'insert')?.values).toMatchObject({
+      status: 'active',
+      effective_date: today,
+    });
+  });
+
   it('rejects a future assignment before creating an active membership', async () => {
     const { supabase, ops } = makeSupabase({});
 
@@ -124,6 +148,29 @@ describe('immediate plan date guards', () => {
     expect(result.success).toBe(false);
     expect(result.error).toMatch(/cannot be ended before its end date/i);
     expect(ops).toHaveLength(0);
+  });
+
+  it('still terminates a plan ending today', async () => {
+    const today = new Date().toISOString().slice(0, 10);
+    const { supabase, ops } = makeSupabase({
+      memberships: [
+        { data: { id: 'mem-old' }, error: null }, // ownership check
+        { data: null, error: null }, // no scheduled pending membership
+        { data: null, error: null }, // termination update
+      ],
+    });
+
+    const result = await staffEndPlan(ctx(supabase), {
+      member_id: 'member-1',
+      membership_id: 'mem-old',
+      end_date: today,
+    });
+
+    expect(result.success).toBe(true);
+    expect(ops.find((op) => op.kind === 'update')?.values).toMatchObject({
+      status: 'terminated',
+      end_date: today,
+    });
   });
 });
 
