@@ -23,6 +23,7 @@ vi.mock('../membershipBillingRecalc', async (importOriginal) => {
 import {
   staffAssignPlan,
   staffCancelScheduledPlanChange,
+  staffChangePlan,
   staffEndPlan,
   staffSchedulePlanChange,
 } from '../memberPlan';
@@ -170,6 +171,52 @@ describe('immediate plan date guards', () => {
     expect(ops.find((op) => op.kind === 'update')?.values).toMatchObject({
       status: 'terminated',
       end_date: today,
+    });
+  });
+
+  it('rejects an immediate change while another plan is pending', async () => {
+    const { supabase, ops } = makeSupabase({
+      memberships: [
+        { data: { id: 'mem-old' }, error: null }, // ownership check
+        {
+          data: { id: 'mem-pending', effective_date: FUTURE },
+          error: null,
+        },
+      ],
+    });
+
+    const result = await staffChangePlan(ctx(supabase), {
+      member_id: 'member-1',
+      membership_id: 'mem-old',
+      plan_id: 'plan-premium',
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/already has a pending plan/i);
+    expect(ops.some((op) => op.kind === 'update')).toBe(false);
+  });
+
+  it('still changes the active plan when nothing is pending', async () => {
+    const { supabase, ops } = makeSupabase({
+      memberships: [
+        { data: { id: 'mem-old' }, error: null }, // ownership check
+        { data: null, error: null }, // no pending membership
+        { data: null, error: null }, // plan update
+      ],
+      plans: [PLAN],
+    });
+
+    const result = await staffChangePlan(ctx(supabase), {
+      member_id: 'member-1',
+      membership_id: 'mem-old',
+      plan_id: 'plan-premium',
+    });
+
+    expect(result.success).toBe(true);
+    expect(ops.find((op) => op.kind === 'update')?.values).toMatchObject({
+      plan_id: 'plan-premium',
+      status: 'active',
+      end_date: null,
     });
   });
 });
