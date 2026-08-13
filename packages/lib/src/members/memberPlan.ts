@@ -89,6 +89,13 @@ export async function staffAssignPlan(
 ): Promise<StaffActionResult<{ membershipId: string }>> {
   if (!input.plan_id) return { success: false, error: 'A plan is required' };
   if (!input.effective_date) return { success: false, error: 'An effective date is required' };
+  if (input.effective_date > todayIso()) {
+    return {
+      success: false,
+      error:
+        'A plan cannot be assigned before its effective date. Use today or an earlier date.',
+    };
+  }
 
   const memberCheck = await assertMemberInOrg(ctx, input.member_id);
   if (!memberCheck.success) return { success: false, error: memberCheck.error };
@@ -383,6 +390,13 @@ export async function staffEndPlan(
   input: { member_id: string; membership_id: string; end_date: string; reason?: string },
 ): Promise<StaffActionResult> {
   if (!input.end_date) return { success: false, error: 'An end date is required' };
+  if (input.end_date > todayIso()) {
+    return {
+      success: false,
+      error:
+        'A plan cannot be ended before its end date. Use today or an earlier date.',
+    };
+  }
 
   const memCheck = await getMembershipForMember(ctx, input.membership_id, input.member_id);
   if (!memCheck.success) return { success: false, error: memCheck.error };

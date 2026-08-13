@@ -20,7 +20,12 @@ vi.mock('../membershipBillingRecalc', async (importOriginal) => {
   };
 });
 
-import { staffSchedulePlanChange, staffCancelScheduledPlanChange } from '../memberPlan';
+import {
+  staffAssignPlan,
+  staffCancelScheduledPlanChange,
+  staffEndPlan,
+  staffSchedulePlanChange,
+} from '../memberPlan';
 import type { StaffCoverageContext } from '../staffDependentCoverage';
 
 type Op = {
@@ -90,6 +95,36 @@ const CURRENT_ACTIVE = { data: { id: 'mem-old', plan_id: 'plan-care', end_date: 
 
 beforeEach(() => {
   vi.clearAllMocks();
+});
+
+describe('immediate plan date guards', () => {
+  it('rejects a future assignment before creating an active membership', async () => {
+    const { supabase, ops } = makeSupabase({});
+
+    const result = await staffAssignPlan(ctx(supabase), {
+      member_id: 'member-1',
+      plan_id: 'plan-premium',
+      effective_date: FUTURE,
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/cannot be assigned before its effective date/i);
+    expect(ops).toHaveLength(0);
+  });
+
+  it('rejects a future end date before terminating an active membership', async () => {
+    const { supabase, ops } = makeSupabase({});
+
+    const result = await staffEndPlan(ctx(supabase), {
+      member_id: 'member-1',
+      membership_id: 'mem-old',
+      end_date: FUTURE,
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/cannot be ended before its end date/i);
+    expect(ops).toHaveLength(0);
+  });
 });
 
 describe('staffSchedulePlanChange', () => {
