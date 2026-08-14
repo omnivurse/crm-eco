@@ -61,6 +61,7 @@ export const CRM_RECORD_PATCH_CANONICAL_KEYS = [
   'current_year_start_date',
   'cancellation_date',
   'group_name',
+  'record_origin',
 ] as const;
 
 export const CRM_RECORD_DATE_COLUMN_KEYS = new Set<string>([

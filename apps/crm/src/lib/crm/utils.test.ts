@@ -13,6 +13,22 @@ describe('getFieldOptions', () => {
     expect(getFieldOptions(undefined)).toEqual([]);
   });
 
+  it('extracts stored values from labelled database options', () => {
+    const options = [
+      { label: 'Legacy — Zoho', value: '2_legacy_zoho' },
+      { label: 'Enrollment', value: '4_enrollment' },
+    ];
+
+    expect(getFieldOptions(options, 'record_origin')).toEqual([
+      '2_legacy_zoho',
+      '4_enrollment',
+    ]);
+    expect(getFieldOptions(JSON.stringify(options), 'record_origin')).toEqual([
+      '2_legacy_zoho',
+      '4_enrollment',
+    ]);
+  });
+
   it('forces Male/Female for gender field keys even when options are wider', () => {
     expect(
       getFieldOptions(['Male', 'Female', 'Other', 'Prefer not to say'], 'gender'),
