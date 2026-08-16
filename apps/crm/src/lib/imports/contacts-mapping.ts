@@ -165,6 +165,7 @@ export const CONTACTS_FIELD_MAPPING: FieldMapping[] = [
   { csvColumn: 'IUA Amount', crmKey: 'iua_amount', type: 'currency', section: 'insurance', transform: parseNumber },
   { csvColumn: 'Vision', crmKey: 'vision', type: 'text', section: 'insurance' },
   { csvColumn: 'Dental', crmKey: 'dental', type: 'text', section: 'insurance' },
+  { csvColumn: 'Dental Member ID', crmKey: 'dental_member_id', type: 'text', section: 'dental_coverage' },
   { csvColumn: 'Add on Product', crmKey: 'add_on_product', type: 'text', section: 'insurance' },
 
   // Payment

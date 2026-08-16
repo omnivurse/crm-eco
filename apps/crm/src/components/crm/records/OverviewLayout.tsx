@@ -6,6 +6,10 @@ import {
   getPersistedActiveSection,
   persistActiveSection,
 } from '@/lib/crm/record-section-persistence';
+import {
+  getRecordScrollRoot,
+  isSectionJumpSuppressed,
+} from '@/lib/crm/record-section-scroll';
 
 interface OverviewLayoutProps {
   recordId: string;
@@ -47,7 +51,9 @@ export function OverviewLayout({
     persistActiveSection(recordId, activeSectionKey);
   }, [recordId, activeSectionKey]);
 
-  // Observe which section is currently in view and update the active pill
+  // Observe which section is currently in view and update the active pill.
+  // Root must be the record <main> scroller (not the viewport), otherwise the
+  // top sticky chrome section always "wins" and snaps the pill after a jump.
   useEffect(() => {
     if (sections.length <= 1) return;
 
@@ -57,8 +63,21 @@ export function OverviewLayout({
 
     if (sectionEls.length === 0) return;
 
+    const scrollRoot = getRecordScrollRoot();
+    const stickyPx = scrollRoot
+      ? Math.round(
+          Number.parseFloat(
+            getComputedStyle(scrollRoot)
+              .getPropertyValue('--record-sticky-offset')
+              .trim(),
+          ) || 180,
+        )
+      : 180;
+
     const observer = new IntersectionObserver(
       (entries) => {
+        if (isSectionJumpSuppressed()) return;
+
         let topEntry: IntersectionObserverEntry | null = null;
         for (const entry of entries) {
           if (entry.isIntersecting) {
@@ -76,7 +95,9 @@ export function OverviewLayout({
         }
       },
       {
-        rootMargin: '-180px 0px -60% 0px',
+        root: scrollRoot,
+        // Top band = sticky header + nav; bottom band keeps "active" near top.
+        rootMargin: `-${stickyPx}px 0px -55% 0px`,
         threshold: 0.1,
       },
     );

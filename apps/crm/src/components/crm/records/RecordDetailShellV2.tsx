@@ -154,6 +154,11 @@ import {
   consumePersistedScrollTop,
   persistRecordScrollTop,
 } from '@/lib/crm/record-section-persistence';
+import {
+  scrollRecordFieldIntoView,
+  scrollRecordTargetIntoView,
+} from '@/lib/crm/record-section-scroll';
+import { CRM_SECTION_NAV_EVENT } from './section-utils';
 import { useRecordHotkeys } from '@/hooks/useRecordHotkeys';
 import { useRecordPresence } from '@/hooks/useRecordPresence';
 import { useRecentlyViewedTracker } from '@/hooks/useRecentlyViewedTracker';
@@ -575,26 +580,33 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
     if (args.type === 'notes') {
       setOverviewPane('notes');
       window.setTimeout(() => {
-        recordMainScrollRef.current
-          ?.querySelector('[data-record-notes-pane]')
-          ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const el = recordMainScrollRef.current?.querySelector(
+          '[data-record-notes-pane]',
+        );
+        scrollRecordTargetIntoView(el, {
+          scrollRoot: recordMainScrollRef.current,
+          block: 'center',
+        });
       }, 150);
       return;
     }
 
     setOverviewPane('details');
-    window.setTimeout(() => {
-      const fk =
-        typeof CSS !== 'undefined' && typeof CSS.escape === 'function'
-          ? CSS.escape(args.fieldKey)
-          : args.fieldKey.replace(/"/g, '\\"');
-      const selector = `[data-field="${fk}"]`;
-      const el =
-        recordMainScrollRef.current?.querySelector(selector) ??
-        document.querySelector(selector);
-      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }, 150);
-  }, []);
+    // Expand the field's section first so collapsed coverage cards have height.
+    const fieldSection = _fields.find((f) => f.key === args.fieldKey)?.section;
+    if (fieldSection) {
+      window.dispatchEvent(
+        new CustomEvent(CRM_SECTION_NAV_EVENT, {
+          bubbles: true,
+          detail: { key: fieldSection },
+        }),
+      );
+    }
+    scrollRecordFieldIntoView(args.fieldKey, {
+      scrollRoot: recordMainScrollRef.current,
+      block: 'center',
+    });
+  }, [_fields]);
 
   const noteBodiesForSearch = useMemo(
     () => notesProp.map((n) => n.body),

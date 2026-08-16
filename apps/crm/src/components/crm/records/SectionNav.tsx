@@ -5,6 +5,7 @@ import { cn } from '@crm-eco/ui/lib/utils';
 import type { SectionMeta } from './section-utils';
 import { CRM_SECTION_NAV_EVENT, getSectionNavGroupLabel } from './section-utils';
 import { getSectionCompactNavAccent, getSectionNavAccent } from './section-accent-tokens';
+import { scrollRecordSectionAfterExpand } from '@/lib/crm/record-section-scroll';
 
 export type { SectionMeta };
 
@@ -47,16 +48,8 @@ export function SectionNav({
         }),
       );
 
-      const scrollToTarget = () => {
-        const el = document.getElementById(`section-${key}`);
-        if (el) {
-          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-      };
-
-      window.setTimeout(() => {
-        requestAnimationFrame(scrollToTarget);
-      }, 100);
+      // Expand (async React) then scroll the record <main>, not the viewport.
+      scrollRecordSectionAfterExpand(key);
     },
     [onSectionClick],
   );
