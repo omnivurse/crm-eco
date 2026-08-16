@@ -1,5 +1,9 @@
 -- ============================================================================
 -- Phone ownership on Leads & Contacts
+-- Project: sffisarikcreyyjzdjvb
+-- Status:  APPLIED via Supabase MCP (schema_migrations version 20260812024310).
+--          Filename matches the live ledger so Hawkeye + Supabase Preview
+--          do not report remote/local drift.
 --
 -- Adds gender-neutral "Whose number?" selects (+ optional owner name) next to
 -- phone/mobile/phone2/work_phone/mobile_2 so reps stop stuffing initials into

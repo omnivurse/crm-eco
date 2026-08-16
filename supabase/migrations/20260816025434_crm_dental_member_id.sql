@@ -1,5 +1,9 @@
 -- ============================================================================
 -- Dental Member ID # on person modules (contacts, leads, members)
+-- Project: sffisarikcreyyjzdjvb
+-- Status:  APPLIED via Supabase MCP (schema_migrations version 20260816025434).
+--          Filename matches the live ledger so Hawkeye + Supabase Preview
+--          do not report remote/local drift.
 --
 -- Adds dental_member_id under dental_coverage so reps can store the plan
 -- member ID next to Dental Provider / Plan / dates — mirroring sharing_member_id
