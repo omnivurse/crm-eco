@@ -17,6 +17,13 @@ import { Input } from '@crm-eco/ui/components/input';
 import { Badge } from '@crm-eco/ui/components/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@crm-eco/ui/components/tabs';
 import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@crm-eco/ui/components/dialog';
+import {
   ArrowLeft,
   Building2,
   Heart,
@@ -204,6 +211,12 @@ function CarrierTab({ tab, returnTo }: CarrierTabProps) {
   const [myList, setMyList] = useState<AdvisorCarrierWithCarrier[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createName, setCreateName] = useState('');
+  const [createWebsite, setCreateWebsite] = useState('');
+  const [createPhone, setCreatePhone] = useState('');
+  const [createEmail, setCreateEmail] = useState('');
+  const [creating, setCreating] = useState(false);
 
   const fetchMyList = useCallback(async () => {
     setLoading(true);
@@ -252,6 +265,61 @@ function CarrierTab({ tab, returnTo }: CarrierTabProps) {
     [fetchMyList, myList.length],
   );
 
+  const openCreate = useCallback((presetName = '') => {
+    setCreateName(presetName);
+    setCreateWebsite('');
+    setCreatePhone('');
+    setCreateEmail('');
+    setCreateOpen(true);
+  }, []);
+
+  const handleCreate = useCallback(async () => {
+    const name = createName.trim();
+    if (!name) {
+      toast.error(`${terms.singular} name is required`);
+      return;
+    }
+    setCreating(true);
+    try {
+      const create: Record<string, string> = {
+        carrier_name: name,
+        carrier_type: tab.value,
+      };
+      const website = normalizeOptionalUrl(createWebsite);
+      const phone = createPhone.trim();
+      const email = createEmail.trim();
+      if (website) create.website = website;
+      if (phone) create.phone = phone;
+      if (email) create.email = email;
+
+      // One request: insert insurance_carriers (org directory) then upsert
+      // crm_advisor_carriers (this advisor's list).
+      const res = await fetch('/api/crm/advisor-carriers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ create, sort_order: myList.length }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(
+          typeof json.error === 'string' ? json.error : `Failed to create ${terms.singularLower}`,
+        );
+      }
+      const createdName =
+        json.data?.carrier?.carrier_name ||
+        (Array.isArray(json.data?.carrier) ? json.data.carrier[0]?.carrier_name : null) ||
+        name;
+      toast.success(`${createdName} added to your list`);
+      setCreateOpen(false);
+      await fetchMyList();
+    } catch (err) {
+      console.error(err);
+      toast.error(err instanceof Error ? err.message : `Failed to create ${terms.singularLower}`);
+    } finally {
+      setCreating(false);
+    }
+  }, [createName, createWebsite, createPhone, createEmail, tab.value, terms, myList.length, fetchMyList]);
+
   const handleRemove = useCallback(
     async (row: AdvisorCarrierWithCarrier) => {
       setSavingId(row.carrier_id);
@@ -289,13 +357,26 @@ function CarrierTab({ tab, returnTo }: CarrierTabProps) {
         </Badge>
       </div>
 
-      {/* Add new */}
-      <CarrierTypeahead
-        carrierType={tab.value}
-        excludeIds={myIds}
-        onPick={handleAdd}
-        savingId={savingId}
-      />
+      {/* Add existing from directory, or create a new one */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+        <div className="flex-1 min-w-0">
+          <CarrierTypeahead
+            carrierType={tab.value}
+            excludeIds={myIds}
+            onPick={handleAdd}
+            onCreate={(name) => openCreate(name)}
+            savingId={savingId}
+          />
+        </div>
+        <Button
+          type="button"
+          onClick={() => openCreate('')}
+          className="shrink-0"
+        >
+          <Plus className="w-4 h-4 mr-1.5" />
+          Add {terms.singular}
+        </Button>
+      </div>
 
       {/* My list */}
       <div className="mt-6">
@@ -314,7 +395,7 @@ function CarrierTab({ tab, returnTo }: CarrierTabProps) {
               You haven&rsquo;t added any {terms.pluralLower} yet.
             </p>
             <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">
-              Search above to pick from the org directory.
+              Search the org directory above, or click Add {terms.singular} to create one.
             </p>
           </div>
         ) : (
@@ -364,12 +445,84 @@ function CarrierTab({ tab, returnTo }: CarrierTabProps) {
       </div>
 
       <p className="mt-6 text-xs text-slate-500 dark:text-slate-400">
-        {terms.singular} missing from the directory?{' '}
+        New {terms.pluralLower} you create are added to the org directory and to your list.{' '}
         <Link href={`/crm/settings/carriers${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ''}`} className="text-teal-600 hover:underline">
           Open Carrier & Ministry Directory
         </Link>{' '}
-        (admins can add new {terms.pluralLower}).
+        to edit or archive org-wide entries.
       </p>
+
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10 max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-slate-900 dark:text-white">
+              Add {terms.singular}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 block">
+                Name *
+              </label>
+              <Input
+                value={createName}
+                onChange={(e) => setCreateName(e.target.value)}
+                placeholder={`${terms.singular} name`}
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    void handleCreate();
+                  }
+                }}
+              />
+            </div>
+            <p className="text-xs text-slate-500">
+              This will be saved as a {tab.label.toLowerCase()} {terms.singularLower} and added to your list.
+            </p>
+            <div>
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 block">
+                Website
+              </label>
+              <Input
+                value={createWebsite}
+                onChange={(e) => setCreateWebsite(e.target.value)}
+                placeholder="https://…"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 block">
+                  Phone
+                </label>
+                <Input
+                  value={createPhone}
+                  onChange={(e) => setCreatePhone(e.target.value)}
+                  placeholder="Optional"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 block">
+                  Email
+                </label>
+                <Input
+                  value={createEmail}
+                  onChange={(e) => setCreateEmail(e.target.value)}
+                  placeholder="Optional"
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreateOpen(false)} disabled={creating}>
+              Cancel
+            </Button>
+            <Button onClick={() => void handleCreate()} disabled={creating || !createName.trim()}>
+              {creating ? 'Creating…' : `Create ${terms.singular}`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -377,14 +530,22 @@ function CarrierTab({ tab, returnTo }: CarrierTabProps) {
 // ---------------------------------------------------------------------------
 // Typeahead — searches /api/crm/carriers and lets the advisor add one
 // ---------------------------------------------------------------------------
+function normalizeOptionalUrl(raw: string): string | undefined {
+  const trimmed = raw.trim();
+  if (!trimmed) return undefined;
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  return `https://${trimmed}`;
+}
+
 interface TypeaheadProps {
   carrierType: FieldCarrierType;
   excludeIds: Set<string>;
   onPick: (c: InsuranceCarrier) => void;
+  onCreate: (name: string) => void;
   savingId: string | null;
 }
 
-function CarrierTypeahead({ carrierType, excludeIds, onPick, savingId }: TypeaheadProps) {
+function CarrierTypeahead({ carrierType, excludeIds, onPick, onCreate, savingId }: TypeaheadProps) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<InsuranceCarrier[]>([]);
   const [open, setOpen] = useState(false);
@@ -435,7 +596,7 @@ function CarrierTypeahead({ carrierType, excludeIds, onPick, savingId }: Typeahe
         />
       </div>
 
-      {open && (results.length > 0 || searching) && (
+      {open && (results.length > 0 || searching || query.trim().length > 0) && (
         <div className="absolute z-10 mt-1 w-full max-h-72 overflow-y-auto rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg">
           {searching && results.length === 0 ? (
             <div className="px-4 py-3 text-sm text-slate-500">Searching…</div>
@@ -473,8 +634,24 @@ function CarrierTypeahead({ carrierType, excludeIds, onPick, savingId }: Typeahe
                   </button>
                 </li>
               ))}
-              {results.length === 0 && (
-                <li className="px-4 py-3 text-sm text-slate-500">No matching carriers.</li>
+              {results.length === 0 && query.trim() && (
+                <li className="px-4 py-2 text-sm text-slate-500">No matching directory entries.</li>
+              )}
+              {query.trim() && (
+                <li>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      onCreate(query.trim());
+                      setOpen(false);
+                    }}
+                    className="w-full flex items-center gap-2 px-4 py-2 text-left text-sm font-medium text-teal-700 dark:text-teal-300 hover:bg-teal-50 dark:hover:bg-teal-500/10"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Create “{query.trim()}”
+                  </button>
+                </li>
               )}
             </ul>
           )}

@@ -4,6 +4,7 @@ import {
   createCarrierSchema,
   formatZodError,
 } from '@/lib/crm/carrier-create-schema';
+import { requireActiveOrgCrmRoles } from '@/lib/crm/require-crm-role';
 
 export const dynamic = 'force-dynamic';
 
@@ -84,8 +85,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (!['crm_admin', 'crm_manager'].includes(profile.crm_role || '')) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    const supabase = await createClient();
+    // Advisors need to add missing carriers from My Carriers (not just pick
+    // from the directory). Edit/archive stay admin/manager-only on [id].
+    const gate = await requireActiveOrgCrmRoles(supabase, profile.organization_id, [
+      'crm_admin',
+      'crm_manager',
+      'crm_agent',
+    ]);
+    if (!gate.ok) {
+      return NextResponse.json({ error: gate.error }, { status: gate.status });
     }
 
     const body = await request.json();
@@ -96,7 +105,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: formatZodError(parsed.error) }, { status: 400 });
     }
 
-    const supabase = await createClient();
     const { data, error } = await supabase
       .from('insurance_carriers')
       .insert({

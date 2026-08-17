@@ -21,6 +21,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createClient, getAuthProfile } from '@/lib/supabase-server';
 import type { FieldCarrierType } from '@/lib/crm/types';
+import { createCarrierSchema, formatZodError } from '@/lib/crm/carrier-create-schema';
+import { requireActiveOrgCrmRoles } from '@/lib/crm/require-crm-role';
 
 export const dynamic = 'force-dynamic';
 
@@ -122,13 +124,65 @@ export async function GET(request: NextRequest) {
 }
 
 // ---------------------------------------------------------------------------
-// POST /api/crm/advisor-carriers   { carrier_id, sort_order?, notes? }
+// POST /api/crm/advisor-carriers
+//   { carrier_id, sort_order?, notes? }  → attach an existing directory row
+//   { create: { carrier_name, carrier_type, … }, sort_order?, notes? }
+//     → insert insurance_carriers (org directory) then attach to
+//       crm_advisor_carriers (this advisor's list)
 // ---------------------------------------------------------------------------
-const postSchema = z.object({
+const attachSchema = z.object({
   carrier_id: z.string().uuid(),
   sort_order: z.number().int().min(0).max(9999).optional(),
   notes: z.string().max(2000).optional(),
 });
+
+const createAndAttachSchema = z.object({
+  create: createCarrierSchema,
+  sort_order: z.number().int().min(0).max(9999).optional(),
+  notes: z.string().max(2000).optional(),
+});
+
+const ADVISOR_CARRIER_SELECT = `
+  id,
+  carrier_id,
+  is_active,
+  sort_order,
+  notes,
+  carrier:insurance_carriers!inner (
+    id,
+    carrier_name,
+    carrier_type,
+    logo_url,
+    is_active
+  )
+`;
+
+async function attachCarrierToAdvisor(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  args: {
+    organizationId: string;
+    userId: string;
+    carrierId: string;
+    sortOrder: number;
+    notes?: string | null;
+  },
+) {
+  return supabase
+    .from('crm_advisor_carriers')
+    .upsert(
+      {
+        organization_id: args.organizationId,
+        user_id: args.userId,
+        carrier_id: args.carrierId,
+        is_active: true,
+        sort_order: args.sortOrder,
+        notes: args.notes ?? null,
+      },
+      { onConflict: 'organization_id,user_id,carrier_id' },
+    )
+    .select(ADVISOR_CARRIER_SELECT)
+    .single();
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -138,62 +192,98 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const parsed = postSchema.safeParse(body);
-    if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error.errors }, { status: 400 });
-    }
-
     const supabase = await createClient();
 
-    // Verify the carrier belongs to this org (RLS would reject otherwise; this
-    // gives us a clearer error message).
-    const { data: carrier, error: carrierError } = await supabase
-      .from('insurance_carriers')
-      .select('id, carrier_type, is_active')
-      .eq('id', parsed.data.carrier_id)
-      .eq('organization_id', profile.organization_id)
-      .maybeSingle();
+    let carrierId: string;
+    let sortOrder = 0;
+    let notes: string | undefined;
 
-    if (carrierError) {
-      console.error('[advisor-carriers POST] carrier lookup', carrierError);
-      return NextResponse.json({ error: 'Failed to verify carrier' }, { status: 500 });
-    }
-    if (!carrier) {
-      return NextResponse.json({ error: 'Carrier not found' }, { status: 404 });
-    }
+    const createParsed = createAndAttachSchema.safeParse(body);
+    if (createParsed.success) {
+      const gate = await requireActiveOrgCrmRoles(supabase, profile.organization_id, [
+        'crm_admin',
+        'crm_manager',
+        'crm_agent',
+      ]);
+      if (!gate.ok) {
+        return NextResponse.json({ error: gate.error }, { status: gate.status });
+      }
 
-    // Upsert against the unique (organization_id, user_id, carrier_id) so
-    // re-adding a previously soft-removed entry simply re-activates it.
-    const { data, error } = await supabase
-      .from('crm_advisor_carriers')
-      .upsert(
-        {
+      sortOrder = createParsed.data.sort_order ?? 0;
+      notes = createParsed.data.notes;
+
+      const inserted = await supabase
+        .from('insurance_carriers')
+        .insert({
           organization_id: profile.organization_id,
-          user_id: profile.user_id,
-          carrier_id: parsed.data.carrier_id,
-          is_active: true,
-          sort_order: parsed.data.sort_order ?? 0,
-          notes: parsed.data.notes ?? null,
-        },
-        { onConflict: 'organization_id,user_id,carrier_id' },
-      )
-      .select(
-        `
-          id,
-          carrier_id,
-          is_active,
-          sort_order,
-          notes,
-          carrier:insurance_carriers!inner (
-            id,
-            carrier_name,
-            carrier_type,
-            logo_url,
-            is_active
-          )
-        `,
-      )
-      .single();
+          ...createParsed.data.create,
+        })
+        .select('id')
+        .single();
+
+      if (inserted.error) {
+        if ((inserted.error as { code?: string }).code === '23505') {
+          const existing = await supabase
+            .from('insurance_carriers')
+            .select('id')
+            .eq('organization_id', profile.organization_id)
+            .ilike('carrier_name', createParsed.data.create.carrier_name)
+            .maybeSingle();
+          if (!existing.data?.id) {
+            return NextResponse.json({ error: 'Carrier already exists' }, { status: 409 });
+          }
+          carrierId = existing.data.id;
+        } else {
+          console.error('[advisor-carriers POST] create', inserted.error);
+          return NextResponse.json(
+            { error: inserted.error.message || 'Failed to create carrier' },
+            { status: 500 },
+          );
+        }
+      } else {
+        carrierId = inserted.data.id;
+      }
+    } else {
+      const attachParsed = attachSchema.safeParse(body);
+      if (!attachParsed.success) {
+        if (body && typeof body === 'object' && 'create' in body) {
+          return NextResponse.json(
+            { error: formatZodError(createParsed.error) },
+            { status: 400 },
+          );
+        }
+        return NextResponse.json({ error: attachParsed.error.errors }, { status: 400 });
+      }
+
+      sortOrder = attachParsed.data.sort_order ?? 0;
+      notes = attachParsed.data.notes;
+
+      const { data: carrier, error: carrierError } = await supabase
+        .from('insurance_carriers')
+        .select('id, carrier_type, is_active')
+        .eq('id', attachParsed.data.carrier_id)
+        .eq('organization_id', profile.organization_id)
+        .maybeSingle();
+
+      if (carrierError) {
+        console.error('[advisor-carriers POST] carrier lookup', carrierError);
+        return NextResponse.json({ error: 'Failed to verify carrier' }, { status: 500 });
+      }
+      if (!carrier) {
+        return NextResponse.json({ error: 'Carrier not found' }, { status: 404 });
+      }
+      carrierId = carrier.id;
+    }
+
+    // Upsert against unique (organization_id, user_id, carrier_id) so
+    // re-adding a previously soft-removed entry simply re-activates it.
+    const { data, error } = await attachCarrierToAdvisor(supabase, {
+      organizationId: profile.organization_id,
+      userId: profile.user_id,
+      carrierId,
+      sortOrder,
+      notes,
+    });
 
     if (error) {
       console.error('[advisor-carriers POST]', error);
