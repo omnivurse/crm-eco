@@ -585,6 +585,12 @@ interface DynamicRecordFormProps {
   inlineEditable?: boolean;
   /** Used to keep coverage sections visible on person modules after lead conversion. */
   moduleKey?: string;
+  /**
+   * Optional content rendered between the Coverage Snapshot and the section
+   * cards (record detail V2 puts its plan-change / dependent / support
+   * histories and the recent-notes strip here). Nothing else changes.
+   */
+  beforeSections?: React.ReactNode;
 }
 
 export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicRecordFormProps>(
@@ -604,6 +610,7 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
       onValuesChange,
       inlineEditable = false,
       moduleKey,
+      beforeSections,
     },
     ref
   ) {
@@ -1450,6 +1457,7 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
     return (
     <>
       {renderCoverageSnapshot()}
+      {beforeSections}
       {sections.map((section) => {
         const sectionFields = fieldsBySection[section.key] || [];
         const isHero = section.variant === 'hero';

@@ -20,7 +20,7 @@ import {
   getConvertedContactId,
   isLeadRecordConverted,
 } from '@/lib/crm/lead-conversion-result';
-import { getConvertActionLabel } from '@/lib/crm/member-terminology';
+import { getEnrollActionLabel } from '@/lib/crm/member-terminology';
 
 interface ConvertToContactDialogProps {
   open: boolean;
@@ -39,7 +39,9 @@ export function ConvertToContactDialog({
   recordData,
   marketType,
 }: ConvertToContactDialogProps) {
-  const enrollActionLabel = getConvertActionLabel(marketType);
+  // "Enroll as Member" / "Enroll as Insurance Client" — the same wording as
+  // the shell's Convert… menu, so the hint names the action the rep will see.
+  const enrollActionLabel = getEnrollActionLabel(marketType);
   const [isConverting, setIsConverting] = useState(false);
   const [isMerging, setIsMerging] = useState(false);
   const [result, setResult] = useState<{
@@ -219,12 +221,9 @@ export function ConvertToContactDialog({
                     Health Insurance, etc.) and all notes will be moved to the contact record.
                     The original lead will be preserved and linked.
                   </p>
-                  <p className="text-xs text-amber-600 dark:text-amber-400/90 rounded-md border border-amber-200/80 dark:border-amber-500/30 bg-amber-50/80 dark:bg-amber-950/30 px-2 py-1.5">
-                    <strong className="font-medium">Contact vs enrollment:</strong> this action creates a{' '}
-                    <strong>CRM contact</strong> (someone you track in Contacts). It is not the same as
-                    the green <strong>{enrollActionLabel}</strong> button, which enrolls someone in the member system.
-                    Use this when they should appear in your Contacts list — including future-dated plans that should stay{' '}
-                    <strong>Pending</strong> until the start date.
+                  <p className="text-xs text-amber-600 dark:text-amber-400/90">
+                    Creates a CRM contact only — it does not enroll them in the member system
+                    ({enrollActionLabel} does that).
                   </p>
                   </>
                   )}

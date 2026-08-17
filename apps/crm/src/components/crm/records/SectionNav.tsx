@@ -1,10 +1,15 @@
 'use client';
 
-import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@crm-eco/ui/lib/utils';
 import type { SectionMeta } from './section-utils';
-import { CRM_SECTION_NAV_EVENT, getSectionNavGroupLabel } from './section-utils';
+import {
+  CRM_SECTION_NAV_EVENT,
+  findSectionNavGroupForKey,
+  groupSectionsForNav,
+  type SectionNavGroup,
+} from './section-utils';
 import { getSectionCompactNavAccent, getSectionNavAccent } from './section-accent-tokens';
 import { scrollRecordSectionAfterExpand } from '@/lib/crm/record-section-scroll';
 
@@ -22,6 +27,17 @@ interface SectionNavProps {
   variant?: 'pills' | 'compact';
 }
 
+/**
+ * Section jump bar.
+ *
+ * Top row = one pill per nav GROUP (Profile · Coverage · Location · Admin …)
+ * instead of one per section — a PIFH contact has 27 sections, which drew a
+ * second scrollbar under the record header and buried the useful bands.
+ * Clicking a group jumps to its first section. The per-section pills for the
+ * ACTIVE group only render on a second row, so every section stays one click
+ * away without the 27-pill wall. Records whose sections all share one group
+ * (or single-group modules like deals) fall back to the flat per-section row.
+ */
 export function SectionNav({
   sections,
   activeSectionKey,
@@ -30,9 +46,19 @@ export function SectionNav({
 }: SectionNavProps) {
   const compact = variant === 'compact';
 
-  // The chip strip scrolls horizontally but hides its own scrollbar (with 27
-  // sections it drew a permanent second scrollbar under the record header).
-  // Overflow is measured and surfaced as chevron buttons + edge fades instead.
+  const bands = useMemo(() => groupSectionsForNav(sections), [sections]);
+  const grouped = bands.length > 1;
+  const activeGroup: SectionNavGroup | null = useMemo(
+    () => findSectionNavGroupForKey(bands, activeSectionKey) ?? bands[0]?.group ?? null,
+    [bands, activeSectionKey],
+  );
+  const activeBand = useMemo(
+    () => bands.find((b) => b.group === activeGroup) ?? null,
+    [bands, activeGroup],
+  );
+
+  // The strip scrolls horizontally but hides its own scrollbar. Overflow is
+  // measured and surfaced as chevron buttons + edge fades instead.
   const stripRef = useRef<HTMLDivElement>(null);
   const [overflow, setOverflow] = useState({ left: false, right: false });
 
@@ -59,7 +85,7 @@ export function SectionNav({
       window.removeEventListener('resize', measure);
       ro?.disconnect();
     };
-  }, [sections.length]);
+  }, [sections.length, activeGroup]);
 
   const scrollStrip = useCallback((direction: 'left' | 'right') => {
     const el = stripRef.current;
@@ -94,7 +120,69 @@ export function SectionNav({
     [onSectionClick],
   );
 
+  // Arrow-key roving focus inside a row of pills (WAI-ARIA tabs pattern).
+  const handleRowKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight' && e.key !== 'Home' && e.key !== 'End') return;
+    const row = e.currentTarget;
+    const tabs = Array.from(row.querySelectorAll<HTMLButtonElement>('[role="tab"]'));
+    if (tabs.length === 0) return;
+    const idx = tabs.findIndex((t) => t === document.activeElement);
+    let next = idx;
+    if (e.key === 'ArrowLeft') next = idx <= 0 ? tabs.length - 1 : idx - 1;
+    if (e.key === 'ArrowRight') next = idx >= tabs.length - 1 ? 0 : idx + 1;
+    if (e.key === 'Home') next = 0;
+    if (e.key === 'End') next = tabs.length - 1;
+    e.preventDefault();
+    tabs[next]?.focus();
+  }, []);
+
   if (sections.length <= 1) return null;
+
+  const renderSectionPill = (s: SectionMeta) => {
+    const isActive = s.key === activeSectionKey;
+    const navAccent = getSectionNavAccent(s.accent);
+    const compactAccent = getSectionCompactNavAccent(s.accent);
+    // Notes pills show the real note-record count (mirrors the sidebar);
+    // every other pill shows how many of its fields are filled in.
+    const badgeValue = s.badgeCount ?? s.filledCount;
+    const badgeTitle =
+      s.badgeCount !== undefined
+        ? `${s.badgeCount} note${s.badgeCount === 1 ? '' : 's'}`
+        : `${s.filledCount} of ${s.fieldCount} fields filled in`;
+    return (
+      <button
+        key={s.key}
+        type="button"
+        role="tab"
+        aria-selected={isActive}
+        tabIndex={isActive ? 0 : -1}
+        onClick={() => handleClick(s)}
+        className={cn(
+          'inline-flex shrink-0 snap-start items-center gap-1.5 whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+          compact
+            ? cn(
+                'border-b-2 px-2 py-1 text-xs font-medium',
+                isActive ? compactAccent.active : compactAccent.inactive,
+              )
+            : cn(
+                'rounded-full px-3.5 py-1.5 text-xs font-medium',
+                isActive ? navAccent.active : navAccent.inactive,
+              ),
+        )}
+      >
+        {s.label}
+        <span
+          title={badgeTitle}
+          className={cn(
+            'inline-flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[10px] font-semibold',
+            isActive ? navAccent.activeBadge : navAccent.inactiveBadge,
+          )}
+        >
+          {badgeValue}
+        </span>
+      </button>
+    );
+  };
 
   return (
     <div
@@ -106,6 +194,7 @@ export function SectionNav({
       )}
       style={{ top: 'var(--record-sticky-offset, 180px)' }}
     >
+      {/* Row 1 — group pills (or the flat per-section row when there is one group) */}
       <div className="relative">
       {overflow.left && (
         <>
@@ -142,79 +231,84 @@ export function SectionNav({
       <div
         ref={stripRef}
         className={cn(
-          // Horizontal scroll + snap — never squash section pills into each other.
+          // Horizontal scroll + snap — never squash pills into each other.
           // Own scrollbar hidden: overflow is surfaced via the chevrons/fades above.
           'flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain',
           '[scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
           compact ? 'items-stretch gap-1 py-1' : 'items-center gap-2 py-2.5',
         )}
         role="tablist"
-        aria-label="Record sections"
+        aria-label={grouped ? 'Record section groups' : 'Record sections'}
+        onKeyDown={handleRowKeyDown}
       >
-        {sections.map((s, index) => {
-          const isActive = s.key === activeSectionKey;
-          const navAccent = getSectionNavAccent(s.accent);
-          const compactAccent = getSectionCompactNavAccent(s.accent);
-          // A group divider starts wherever this section's band differs from the
-          // previous section's — computed from the array (no render-time mutation).
-          const showGroupDivider =
-            index > 0 && s.navGroup !== sections[index - 1]?.navGroup;
-
-          // Notes pills show the real note-record count (mirrors the sidebar);
-          // every other pill shows how many of its fields are filled in.
-          const badgeValue = s.badgeCount ?? s.filledCount;
-          const badgeTitle =
-            s.badgeCount !== undefined
-              ? `${s.badgeCount} note${s.badgeCount === 1 ? '' : 's'}`
-              : `${s.filledCount} of ${s.fieldCount} fields filled in`;
-
-          return (
-            <Fragment key={s.key}>
-              {showGroupDivider && (
-                <div
-                  className="flex shrink-0 items-center gap-2 pl-1"
-                  aria-hidden
-                >
-                  <span className="h-4 w-px bg-slate-200 dark:bg-white/10" />
-                  <span className="hidden text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 sm:inline">
-                    {getSectionNavGroupLabel(s.navGroup)}
-                  </span>
-                </div>
-              )}
-              <button
-                type="button"
-                role="tab"
-                aria-selected={isActive}
-                onClick={() => handleClick(s)}
-                className={cn(
-                  'inline-flex shrink-0 snap-start items-center gap-1.5 whitespace-nowrap transition-colors',
-                  compact
-                    ? cn(
-                        'border-b-2 px-2 py-1 text-xs font-medium',
-                        isActive ? compactAccent.active : compactAccent.inactive,
-                      )
-                    : cn(
-                        'rounded-full px-3.5 py-1.5 text-xs font-medium',
-                        isActive ? navAccent.active : navAccent.inactive,
-                      ),
-                )}
-              >
-                {s.label}
-                <span
+        {grouped
+          ? bands.map((band) => {
+              const isActive = band.group === activeGroup;
+              const first = band.sections[0];
+              const navAccent = getSectionNavAccent(first?.accent);
+              const compactAccent = getSectionCompactNavAccent(first?.accent);
+              const badgeValue = band.badgeCount ?? band.filledCount;
+              const badgeTitle =
+                band.badgeCount !== undefined
+                  ? `${band.badgeCount} note${band.badgeCount === 1 ? '' : 's'}`
+                  : `${band.filledCount} of ${band.fieldCount} fields filled in · ${band.sections.length} section${band.sections.length === 1 ? '' : 's'}`;
+              return (
+                <button
+                  key={band.group}
+                  type="button"
+                  role="tab"
+                  aria-selected={isActive}
+                  aria-controls={isActive ? 'record-section-nav-sections' : undefined}
+                  tabIndex={isActive ? 0 : -1}
                   title={badgeTitle}
+                  onClick={() => {
+                    if (first) handleClick(first);
+                  }}
                   className={cn(
-                    'inline-flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[10px] font-semibold',
-                    isActive ? navAccent.activeBadge : navAccent.inactiveBadge,
+                    'inline-flex shrink-0 snap-start items-center gap-1.5 whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                    compact
+                      ? cn(
+                          'border-b-2 px-2.5 py-1 text-xs font-semibold',
+                          isActive ? compactAccent.active : compactAccent.inactive,
+                        )
+                      : cn(
+                          'rounded-full px-3.5 py-1.5 text-xs font-semibold',
+                          isActive ? navAccent.active : navAccent.inactive,
+                        ),
                   )}
                 >
-                  {badgeValue}
-                </span>
-              </button>
-            </Fragment>
-          );
-        })}
+                  {band.label}
+                  <span
+                    className={cn(
+                      'inline-flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[10px] font-semibold',
+                      isActive ? navAccent.activeBadge : navAccent.inactiveBadge,
+                    )}
+                  >
+                    {badgeValue}
+                  </span>
+                </button>
+              );
+            })
+          : sections.map(renderSectionPill)}
       </div>
       </div>
+
+      {/* Row 2 — per-section pills for the active group only. Hidden when the
+          group has a single section (its pill would duplicate the group pill). */}
+      {grouped && activeBand && activeBand.sections.length > 1 && (
+        <div
+          id="record-section-nav-sections"
+          role="tablist"
+          aria-label={`${activeBand.label} sections`}
+          onKeyDown={handleRowKeyDown}
+          className={cn(
+            'flex flex-wrap items-center gap-1 border-t border-slate-100 dark:border-white/5',
+            compact ? 'py-1' : 'py-1.5',
+          )}
+        >
+          {activeBand.sections.map(renderSectionPill)}
+        </div>
+      )}
     </div>
   );
 }

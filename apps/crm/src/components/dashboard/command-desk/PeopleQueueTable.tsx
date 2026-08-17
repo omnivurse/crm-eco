@@ -49,7 +49,10 @@ function EmptyQueue({ counts, degraded }: { counts: PeopleQueueCounts; degraded:
       {counts.pending > 0 ? (
         <p className="text-xs text-muted-foreground">
           {countLabel(counts.pending, 'pending member is', 'pending members are')} waiting on activation.{' '}
-          <Link href={pendingContactsHref()} className="font-medium text-primary hover:underline">
+          <Link
+            href={pendingContactsHref(counts.pendingStatusValues)}
+            className="font-medium text-primary hover:underline"
+          >
             Review pending
           </Link>
         </p>

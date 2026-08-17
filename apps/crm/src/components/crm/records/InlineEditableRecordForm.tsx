@@ -6,7 +6,7 @@
  * server props while `router.refresh()` is in flight.
  */
 
-import { useMemo } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import type { CrmField, CrmLayout, CrmRecord } from '@/lib/crm/types';
 import { useRecordFieldSave } from '@/hooks/useRecordFieldSave';
 import { DynamicRecordForm } from './DynamicRecordForm';
@@ -53,6 +53,8 @@ export interface InlineEditableRecordFormProps {
   layout?: CrmLayout | null;
   defaultValues: Record<string, unknown>;
   moduleKey?: string;
+  /** Content between the Coverage Snapshot and the section cards (see DynamicRecordForm). */
+  beforeSections?: ReactNode;
 }
 
 export function InlineEditableRecordForm({
@@ -61,6 +63,7 @@ export function InlineEditableRecordForm({
   layout,
   defaultValues,
   moduleKey,
+  beforeSections,
 }: InlineEditableRecordFormProps) {
   const { fields: saveFields } = useRecordFieldSave();
 
@@ -106,6 +109,7 @@ export function InlineEditableRecordForm({
       moduleKey={moduleKey}
       readOnly
       inlineEditable
+      beforeSections={beforeSections}
     />
   );
 }

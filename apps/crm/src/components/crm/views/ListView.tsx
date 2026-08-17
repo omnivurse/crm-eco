@@ -1,9 +1,9 @@
 'use client';
 
-import { memo, useCallback, useRef } from 'react';
+import { memo, useCallback, useMemo, useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Checkbox } from '@crm-eco/ui/components/checkbox';
 import { Button } from '@crm-eco/ui/components/button';
 import {
@@ -26,8 +26,114 @@ import {
   Inbox,
   Plus,
   Calendar,
+  SearchX,
+  FileText,
 } from 'lucide-react';
 import type { CrmRecord, CrmField } from '@/lib/crm/types';
+import {
+  readListQueryState,
+  recordNounFromModuleKey,
+  requestClearListState,
+  resolveListEmptyState,
+  type ListEmptyState,
+} from '@/lib/crm/list-empty-state';
+
+// ============================================================================
+// Filter-aware empty state — shared by ListView and RecordTable
+// ============================================================================
+
+/**
+ * Reads the URL-driven list state and decides which empty state applies.
+ * Returns `null` while there are rows so callers can early-out.
+ */
+export function useListEmptyState(recordCount: number, moduleKey: string, totalCount?: number | null): ListEmptyState | null {
+  const searchParams = useSearchParams();
+  return useMemo(() => {
+    if (recordCount > 0) return null;
+    return resolveListEmptyState({
+      recordCount,
+      totalCount,
+      query: readListQueryState(searchParams),
+      recordNoun: recordNounFromModuleKey(moduleKey),
+    });
+  }, [recordCount, totalCount, searchParams, moduleKey]);
+}
+
+/**
+ * The empty panel itself. Clear buttons dispatch `crm:clear-list-state`,
+ * which ModuleShell answers with its existing clear handlers (so the URL,
+ * chips bar and toolbar all stay in sync). Create/Import only render for a
+ * genuinely empty module.
+ */
+export function ListEmptyStatePanel({
+  state,
+  moduleKey,
+  className,
+  compact = false,
+}: {
+  state: ListEmptyState;
+  moduleKey: string;
+  className?: string;
+  compact?: boolean;
+}) {
+  const isNarrowed = state.reason !== 'no-records';
+  const Icon = isNarrowed ? SearchX : Inbox;
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      className={cn(
+        'flex flex-col items-center justify-center text-center',
+        compact ? 'p-8' : 'p-12',
+        className,
+      )}
+    >
+      <div className="p-4 rounded-full bg-slate-100 dark:bg-slate-800/50 mb-4">
+        <Icon className="w-10 h-10 text-slate-400 dark:text-slate-600" aria-hidden />
+      </div>
+      <p className="text-lg font-medium text-slate-900 dark:text-white mb-1 break-words max-w-md">
+        {state.title}
+      </p>
+      <p className="text-sm text-slate-500 dark:text-slate-400 mb-4 max-w-md">{state.description}</p>
+      {state.actions.length > 0 && (
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          {state.actions.map((action, i) => (
+            <Button
+              key={action.id}
+              type="button"
+              size="sm"
+              variant={i === 0 ? 'default' : 'outline'}
+              className={i === 0 ? undefined : 'border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300'}
+              onClick={() => requestClearListState({ moduleKey, target: action.id })}
+            >
+              {action.label}
+            </Button>
+          ))}
+        </div>
+      )}
+      {state.showCreateImport && (
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <Button
+            variant="outline"
+            className="border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
+            asChild
+          >
+            <Link href={`/crm/import?module=${moduleKey}`}>
+              <FileText className="w-4 h-4 mr-2" aria-hidden />
+              Import Data
+            </Link>
+          </Button>
+          <Button asChild>
+            <Link href={`/crm/modules/${moduleKey}/new`}>
+              <Plus className="w-4 h-4 mr-2" aria-hidden />
+              Create Record
+            </Link>
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 const STATUS_STYLES: Record<string, { bg: string; text: string; border: string }> = {
   'Active': { bg: 'bg-emerald-500/10', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-emerald-500/30' },
@@ -270,6 +376,7 @@ export const ListView = memo(function ListView({
 }: ListViewProps) {
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
+  const emptyState = useListEmptyState(records.length, moduleKey);
 
   // eslint-disable-next-line react-hooks/incompatible-library -- @tanstack/react-virtual returns mutable virtualizer by design
   const virtualizer = useVirtualizer({
@@ -307,20 +414,10 @@ export const ListView = memo(function ListView({
     }
   }, [allSelected, records, onSelectionChange]);
 
-  if (records.length === 0) {
+  if (emptyState) {
     return (
-      <div className="glass-card rounded-2xl border border-slate-200 dark:border-white/10 p-12 text-center">
-        <div className="p-4 rounded-full bg-slate-100 dark:bg-slate-800/50 inline-block mb-4">
-          <Inbox className="w-10 h-10 text-slate-400 dark:text-slate-600" />
-        </div>
-        <p className="text-lg font-medium text-slate-900 dark:text-white mb-1">No records found</p>
-        <p className="text-sm text-slate-500 mb-4">Get started by creating a new record.</p>
-        <Button asChild>
-          <Link href={`/crm/modules/${moduleKey}/new`}>
-            <Plus className="w-4 h-4 mr-2" />
-            Create Record
-          </Link>
-        </Button>
+      <div className="glass-card rounded-2xl border border-slate-200 dark:border-white/10">
+        <ListEmptyStatePanel state={emptyState} moduleKey={moduleKey} />
       </div>
     );
   }

@@ -12,6 +12,7 @@ import { serverHasCaughtUp } from './InlineEditableRecordForm';
 import { getSectionMeta, isPersonModuleKey } from './section-utils';
 import { OverviewLayout } from './OverviewLayout';
 import { RecordOverviewFields } from './RecordOverviewFields';
+import { useRecordOverviewSlots } from './RecordOverviewSlots';
 
 export interface RecordOverviewPanelProps {
   recordId: string;
@@ -29,6 +30,12 @@ export interface RecordOverviewPanelProps {
   noteCount?: number;
   /** Optional content below the field stack (e.g. legacy notes). */
   belowFields?: ReactNode;
+  /**
+   * Optional content between the Coverage Snapshot and the section cards.
+   * Falls back to the shell's RecordOverviewSlots context (the V2 shell puts
+   * its histories + recent-notes strip there).
+   */
+  beforeSections?: ReactNode;
 }
 
 function LiveSectionOverview({
@@ -41,8 +48,11 @@ function LiveSectionOverview({
   layoutV2Shell,
   noteCount,
   belowFields,
+  beforeSections: beforeSectionsProp,
 }: RecordOverviewPanelProps) {
   const saveCtx = useRecordFieldSaveOptional();
+  const slots = useRecordOverviewSlots();
+  const beforeSections = beforeSectionsProp ?? slots.beforeSections;
 
   // Live field values = record defaults overlaid with any values the rep has
   // inline-saved this session (tracked in the save context). Derived during
@@ -96,6 +106,7 @@ function LiveSectionOverview({
             moduleKey={moduleKey}
             layoutV2Shell={layoutV2Shell}
             saveProviderWrapped
+            beforeSections={beforeSections}
           />
           {belowFields}
         </>

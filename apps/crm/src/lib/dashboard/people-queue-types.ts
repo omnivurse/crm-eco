@@ -83,6 +83,15 @@ export interface PeopleQueueCounts {
   overdue: number;
   pending: number;
   startingSoon: number;
+  /**
+   * Raw `status` spellings (contacts + members) that bucket to the pending
+   * lane and were counted into `pending` ("Pending", "Approved Pending",
+   * "Pending Activation", …). Every "Review pending" link builds its list
+   * filter from these (command-desk-format `pendingContactsHref`) so the
+   * list a link opens matches the number it sits next to. Optional so mock /
+   * degraded callers still type-check; the server builder always supplies it.
+   */
+  pendingStatusValues?: string[];
 }
 
 export interface PeopleQueue {

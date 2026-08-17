@@ -28,6 +28,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { toast } from 'sonner';
 import { mutationQueue } from '@/lib/offline/mutation-queue';
 import { makeIdempotencyKey } from '@/lib/offline/queued-send';
 import { resolveFieldSaveTarget } from '@/lib/crm/record-field-registry';
@@ -61,6 +62,12 @@ export interface FieldSaveOptions {
    * PATCH service silently drops unknown top-level keys.
    */
   target?: FieldSaveTarget;
+  /**
+   * Human label for the field, used in the failure toast
+   * ("Couldn't save Plan Name — …"). Falls back to the provider's
+   * `fieldLabels` map, then to the raw key.
+   */
+  label?: string;
 }
 
 /** Public shape consumed by `UnsavedChangesPill` and friends. */
@@ -115,6 +122,12 @@ export interface RecordFieldSaveProviderProps {
     currentUpdatedAt: string | null;
     value: unknown;
   }) => void;
+  /**
+   * field key → display label, used by the failure toast. Inline cells that
+   * are scrolled off-screen used to fail silently (red cell state only);
+   * the toast makes every failed save visible and offers a one-click retry.
+   */
+  fieldLabels?: Record<string, string>;
   children: ReactNode;
 }
 
@@ -132,9 +145,42 @@ export function RecordFieldSaveProvider({
   debounceMs = 250,
   initialUpdatedAt = null,
   onConflict,
+  fieldLabels,
   children,
 }: RecordFieldSaveProviderProps) {
   const [fields, setFields] = useState<Record<string, FieldSaveState>>({});
+  // Latest labels without re-creating dispatchSave when the map identity changes.
+  const fieldLabelsRef = useRef<Record<string, string> | undefined>(fieldLabels);
+  useEffect(() => {
+    fieldLabelsRef.current = fieldLabels;
+  }, [fieldLabels]);
+  // Per-save labels passed via `save(field, value, { label })`.
+  const perCallLabelRef = useRef<Map<string, string>>(new Map());
+  // Forward ref so the failure toast's Retry can re-enter `save` (declared later).
+  const saveRef = useRef<RecordFieldSaveContextValue['save'] | null>(null);
+
+  /**
+   * Surface a terminal save failure as a toast with a Retry action. One toast
+   * per field (stable id) — a retry that fails again REPLACES the toast rather
+   * than stacking a second one, so a flaky field never spams the corner.
+   */
+  const notifyFailure = useCallback(
+    (field: string, value: unknown, target: FieldSaveTarget, reason: string) => {
+      const label =
+        perCallLabelRef.current.get(field) ?? fieldLabelsRef.current?.[field] ?? field;
+      toast.error(`Couldn't save ${label} — ${reason}`, {
+        id: `record-field-save-error:${recordId}:${field}`,
+        duration: 8000,
+        action: {
+          label: 'Retry',
+          onClick: () => {
+            void saveRef.current?.(field, value, { target, label });
+          },
+        },
+      });
+    },
+    [recordId],
+  );
   const pendingRef = useRef<Map<string, PendingEntry>>(new Map());
   const controllersRef = useRef<Map<string, AbortController>>(new Map());
   // Optimistic-concurrency token, updated after each successful save.
@@ -287,12 +333,12 @@ export function RecordFieldSaveProvider({
           // Only 409 with a server-supplied currentUpdatedAt is
           // retryable. Anything else (4xx validation, 5xx) bubbles up.
           if (res.status !== 409 || !currentUpdatedAt) {
-            updateField(field, {
-              status: 'error',
-              error: res.status === 409
+            const reason =
+              res.status === 409
                 ? 'Record was updated elsewhere — reload to retry'
-                : lastMessage,
-            });
+                : lastMessage;
+            updateField(field, { status: 'error', error: reason });
+            notifyFailure(field, value, target, reason);
             return;
           }
 
@@ -306,10 +352,9 @@ export function RecordFieldSaveProvider({
           }
 
           if (attempt >= MAX_409_ATTEMPTS) {
-            updateField(field, {
-              status: 'error',
-              error: 'Record is being edited by someone else — reload to retry',
-            });
+            const reason = 'Record is being edited by someone else — reload to retry';
+            updateField(field, { status: 'error', error: reason });
+            notifyFailure(field, value, target, reason);
             return;
           }
 
@@ -360,7 +405,7 @@ export function RecordFieldSaveProvider({
         controllersRef.current.delete(field);
       }
     },
-    [recordId, onSaved, onConflict, updateField],
+    [recordId, onSaved, onConflict, updateField, notifyFailure],
   );
 
   // Chain a save behind whatever's already in flight so two concurrent
@@ -382,6 +427,9 @@ export function RecordFieldSaveProvider({
     (field, value, options) => {
       const target: FieldSaveTarget =
         options?.target ?? resolveFieldSaveTarget(field);
+      if (options?.label) perCallLabelRef.current.set(field, options.label);
+      // A fresh attempt supersedes any earlier failure toast for this field.
+      toast.dismiss(`record-field-save-error:${recordId}:${field}`);
       // Mark pending immediately so the pill lights up while typing.
       updateField(field, { status: 'pending', error: undefined });
 
@@ -408,8 +456,9 @@ export function RecordFieldSaveProvider({
         });
       });
     },
-    [enqueueDispatch, debounceMs, updateField],
+    [enqueueDispatch, debounceMs, updateField, recordId],
   );
+  saveRef.current = save;
 
   const flush = useCallback(async () => {
     const entries = Array.from(pendingRef.current.values());

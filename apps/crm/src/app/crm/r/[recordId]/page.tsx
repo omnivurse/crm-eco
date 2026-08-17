@@ -25,7 +25,6 @@ import { RecordOverviewPanel } from '@/components/crm/records/RecordOverviewPane
 import { CommunicationsTab } from '@/components/crm/records/CommunicationsTab';
 import { mergeCrmRecordRowIntoFormDefaults } from '@/lib/crm/record-form-defaults';
 import { NotesPanel } from './NotesPanel';
-import { NotesOverviewCardClient } from './NotesOverviewCardClient';
 import { LegacyNotesCard } from './LegacyNotesCard';
 import { MergedFromToast } from '@/components/crm/records/MergedFromToast';
 
@@ -247,16 +246,13 @@ async function RecordDetailContent({ params }: PageProps) {
             layoutV2Shell={useLayoutV2}
             noteCount={notes.length + legacyNoteCount}
             belowFields={
-              // Layout V2's overview renders fields only; the classic shell
-              // already surfaces a notes preview in its rail. Restore the
-              // structured-notes preview on the V2 overview so reps see recent
-              // notes at a glance (data unchanged — same aggregated `notes`).
-              useLayoutV2 || legacyNotes ? (
+              // Layout V2 shows a compact "Recent notes" strip ABOVE the field
+              // stack (RecordDetailShellV2 → RecentNotesStrip, same aggregated
+              // `notes`), so the full notes card no longer trails 27 section
+              // cards. Legacy imported notes still render below the fields.
+              legacyNotes ? (
                 <div className="mt-4 space-y-4">
-                  {useLayoutV2 && (
-                    <NotesOverviewCardClient notes={notes} recordId={recordId} />
-                  )}
-                  {legacyNotes && <LegacyNotesCard notesHtml={legacyNotes} />}
+                  <LegacyNotesCard notesHtml={legacyNotes} />
                 </div>
               ) : undefined
             }

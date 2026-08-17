@@ -29,7 +29,15 @@ const COUNT_CLASSES: Record<DeskChip['emphasis'], string> = {
   critical: 'bg-red-500/15 text-red-900 dark:text-red-100',
 };
 
-export function buildDeskChips(counts: PeopleQueueCounts): DeskChip[] {
+/**
+ * Counts plus (optionally) the raw pending-lane spellings the queue counted,
+ * so the "Pending members" chip links to exactly the rows it counts. The
+ * server builder (lib/dashboard/people-queue.ts) always supplies them; the
+ * field is optional so mock/legacy callers still type-check.
+ */
+export type DeskChipCounts = PeopleQueueCounts & { pendingStatusValues?: readonly string[] | null };
+
+export function buildDeskChips(counts: DeskChipCounts): DeskChip[] {
   return [
     {
       id: 'tasks-today',
@@ -51,7 +59,7 @@ export function buildDeskChips(counts: PeopleQueueCounts): DeskChip[] {
       id: 'pending',
       label: 'Pending members',
       count: counts.pending,
-      href: pendingContactsHref(),
+      href: pendingContactsHref(counts.pendingStatusValues),
       icon: Hourglass,
       emphasis: 'default',
     },
@@ -67,7 +75,7 @@ export function buildDeskChips(counts: PeopleQueueCounts): DeskChip[] {
 }
 
 /** Four count chips under the command bar — each is a real link. */
-export function DeskChips({ counts, className }: { counts: PeopleQueueCounts; className?: string }) {
+export function DeskChips({ counts, className }: { counts: DeskChipCounts; className?: string }) {
   const chips = buildDeskChips(counts);
   return (
     <ul

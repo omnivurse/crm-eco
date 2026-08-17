@@ -5,6 +5,7 @@
  * the save provider when the classic shell is active (V2 shell already owns it).
  */
 
+import type { ReactNode } from 'react';
 import type { CrmField, CrmLayout, CrmRecord } from '@/lib/crm/types';
 import { RecordFieldSaveProvider } from '@/hooks/useRecordFieldSave';
 import { isPersonModuleKey } from './section-utils';
@@ -21,6 +22,8 @@ export interface RecordOverviewFieldsProps {
   layoutV2Shell: boolean;
   /** When true, {@link RecordOverviewPanel} already wraps the tree in a save provider. */
   saveProviderWrapped?: boolean;
+  /** Content between the Coverage Snapshot and the section cards (see DynamicRecordForm). */
+  beforeSections?: ReactNode;
 }
 
 export function RecordOverviewFields({
@@ -31,6 +34,7 @@ export function RecordOverviewFields({
   moduleKey,
   layoutV2Shell,
   saveProviderWrapped = false,
+  beforeSections,
 }: RecordOverviewFieldsProps) {
   const inlineEditable = layoutV2Shell || isPersonModuleKey(moduleKey);
 
@@ -41,6 +45,7 @@ export function RecordOverviewFields({
       layout={layout}
       defaultValues={defaultValues}
       moduleKey={moduleKey}
+      beforeSections={beforeSections}
     />
   ) : (
     <DynamicRecordForm
@@ -50,6 +55,7 @@ export function RecordOverviewFields({
       defaultValues={defaultValues}
       moduleKey={moduleKey}
       readOnly
+      beforeSections={beforeSections}
     />
   );
 

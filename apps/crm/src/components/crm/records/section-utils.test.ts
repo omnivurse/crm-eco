@@ -3,12 +3,15 @@ import {
   buildEffectiveSections,
   compareSectionOrder,
   fallbackSectionHeadingFromFieldSection,
+  findSectionNavGroupForKey,
   getSectionMeta,
   getSectionNavGroup,
+  groupSectionsForNav,
   isPersonCoverageSectionKey,
   isPersonModuleKey,
   resolveSectionAccent,
   shouldAlwaysShowEmptySection,
+  type SectionMeta,
 } from './section-utils';
 import type { CrmField } from '@/lib/crm/types';
 
@@ -373,5 +376,67 @@ describe('section-utils person coverage visibility', () => {
       expect(meta.find((s) => s.key === key)).toBeUndefined();
       expect(shouldAlwaysShowEmptySection('contacts', key, true)).toBe(false);
     }
+  });
+});
+
+describe('groupSectionsForNav', () => {
+  const meta = (
+    key: string,
+    filled: number,
+    total: number,
+    extra: Partial<SectionMeta> = {},
+  ): SectionMeta => ({
+    key,
+    label: key,
+    fieldCount: total,
+    filledCount: filled,
+    navGroup: getSectionNavGroup(key),
+    ...extra,
+  });
+
+  it('collapses sections into ordered group bands and sums counts', () => {
+    const bands = groupSectionsForNav([
+      meta('core', 3, 4),
+      meta('contact', 1, 2),
+      meta('health_sharing', 5, 9),
+      meta('address', 2, 6),
+      meta('family', 0, 4),
+      meta('advisor', 1, 1),
+      meta('mystery', 0, 2),
+    ]);
+    expect(bands.map((b) => b.group)).toEqual([
+      'identity',
+      'coverage',
+      'location',
+      'admin',
+      'other',
+    ]);
+    expect(bands[0]).toMatchObject({ label: 'Profile', filledCount: 4, fieldCount: 6 });
+    expect(bands[0].sections.map((s) => s.key)).toEqual(['core', 'contact']);
+    expect(bands[2].sections.map((s) => s.key)).toEqual(['address', 'family']);
+    expect(bands[2]).toMatchObject({ filledCount: 2, fieldCount: 10 });
+    expect(bands[4].label).toBe('More');
+  });
+
+  it('carries the note badge onto the notes band', () => {
+    const bands = groupSectionsForNav([
+      meta('core', 1, 1),
+      meta('notes_history', 0, 0, { badgeCount: 7, navAction: 'open-notes' }),
+    ]);
+    const notes = bands.find((b) => b.group === 'notes');
+    expect(notes?.badgeCount).toBe(7);
+    expect(notes?.sections[0].navAction).toBe('open-notes');
+  });
+
+  it('keeps a single band when every section shares a group', () => {
+    const bands = groupSectionsForNav([meta('core', 1, 1), meta('personal', 2, 2)]);
+    expect(bands).toHaveLength(1);
+    expect(bands[0].sections).toHaveLength(2);
+  });
+
+  it('resolves the owning group for a section key', () => {
+    const bands = groupSectionsForNav([meta('core', 1, 1), meta('address', 1, 1)]);
+    expect(findSectionNavGroupForKey(bands, 'address')).toBe('location');
+    expect(findSectionNavGroupForKey(bands, 'nope')).toBeNull();
   });
 });

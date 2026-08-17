@@ -10,9 +10,19 @@
  *      record_id, due before end of today (UTC). Overdue = due before start of
  *      today; today = within today. Org-wide (3 profiles share one desk today);
  *      counts are org-wide too. LIMIT 30. → overdue_task / task_today.
- *   2. crm_records pending — contacts + members modules where
- *      data->>contact_status / data->>sharing_status / status ILIKE 'pending'.
- *      Newest updated first, LIMIT 40; chip count via HEAD count. → pending.
+ *   2. crm_records pending — contacts + members modules whose row `status`
+ *      is in the PENDING LANE (lib/crm/status-lanes): the module's distinct
+ *      raw statuses are read first (execute_report_aggregation, one call per
+ *      module) and the ones that bucket to `pending` ("Pending", "Approved
+ *      Pending", "Pending Activation", …) become `status IN (...)`. Row
+ *      `status` only — `contact_status` is a display alias of that column in
+ *      the list query (report-field-path.ts), so the chip count, the list the
+ *      chip opens, and the queue all agree; JSONB copies are not consulted.
+ *      Oldest CREATED first (waiting longest), LIMIT 40; chip count via HEAD
+ *      count; the raw values ride along as counts.pendingStatusValues so the
+ *      chip href filters on the same set. Falls back to the legacy
+ *      `ILIKE 'pending'` predicate (and flags degraded) if the aggregation
+ *      call fails. → pending.
  *   3. crm_records starting soon — contacts + members + leads where any of
  *      data->>sharing_effective_date / start_date / effective_date falls in
  *      [today, today+30] (ISO strings compare lexicographically; PostgREST
@@ -33,6 +43,11 @@
 
 import { createCrmClient, getCachedModules } from '@/lib/crm/queries';
 import { isConvertedLeadRow } from '@/lib/crm/record-search';
+import {
+  laneValues,
+  parseStatusValuesRpcResult,
+  statusValuesRpcArgs,
+} from '@/lib/crm/status-lanes';
 import type { PeopleQueue, PeopleQueueCounts } from './people-queue-types';
 import {
   assemblePeopleQueue,
@@ -48,6 +63,16 @@ export interface PeopleQueueProfile {
   crm_role?: string | null;
   /** auth.users.id — crm_recently_viewed.user_id. Looked up when omitted. */
   user_id?: string | null;
+}
+
+/** Queue counts + the raw pending-lane spellings behind `counts.pending`. */
+export interface PeopleQueueCountsWithLanes extends PeopleQueueCounts {
+  /** Raw `status` values (contacts + members) that bucket to the pending lane. */
+  pendingStatusValues: string[];
+}
+
+export interface PeopleQueueResult extends PeopleQueue {
+  counts: PeopleQueueCountsWithLanes;
 }
 
 export interface BuildPeopleQueueOptions {
@@ -94,7 +119,7 @@ function addDays(d: Date, days: number): Date {
 export async function buildPeopleQueue(
   profile: PeopleQueueProfile,
   opts: BuildPeopleQueueOptions = {},
-): Promise<PeopleQueue> {
+): Promise<PeopleQueueResult> {
   const limit = opts.limit ?? 12;
   const recentLimit = opts.recentLimit ?? 6;
   const now = opts.now ?? new Date();
@@ -106,9 +131,9 @@ export async function buildPeopleQueue(
   const windowEnd = isoDay(addDays(now, WINDOW_DAYS));
   const windowStartTs = addDays(now, -WINDOW_DAYS).toISOString();
 
-  const empty: PeopleQueue = {
+  const empty: PeopleQueueResult = {
     items: [],
-    counts: { tasksToday: 0, overdue: 0, pending: 0, startingSoon: 0 },
+    counts: { tasksToday: 0, overdue: 0, pending: 0, startingSoon: 0, pendingStatusValues: [] },
     recentlyViewed: [],
     degraded: false,
   };
@@ -148,7 +173,13 @@ export async function buildPeopleQueue(
 
   const records = new Map<string, { row: PeopleQueueRecordRow; moduleKey: string }>();
   const hits: PeopleQueueHit[] = [];
-  const counts: PeopleQueueCounts = { tasksToday: 0, overdue: 0, pending: 0, startingSoon: 0 };
+  const counts: PeopleQueueCountsWithLanes = {
+    tasksToday: 0,
+    overdue: 0,
+    pending: 0,
+    startingSoon: 0,
+    pendingStatusValues: [],
+  };
 
   const remember = (rows: PeopleQueueRecordRow[] | null | undefined): PeopleQueueRecordRow[] => {
     const kept: PeopleQueueRecordRow[] = [];
@@ -170,8 +201,57 @@ export async function buildPeopleQueue(
   const startingSoonOr = STARTING_SOON_KEYS.map(
     (k) => `and(data->>${k}.gte.${today},data->>${k}.lte.${windowEnd})`,
   ).join(',');
-  const pendingOr =
+  // -- Pending lane values (must resolve before the pending queries) --------
+  // One aggregation per people module (contacts, members): distinct raw
+  // statuses + counts, trashed rows excluded. Same RPC/args as
+  // GET /api/crm/records/status-values so the list chips count identically.
+  const LEGACY_PENDING_OR =
     'data->>contact_status.ilike.pending,data->>sharing_status.ilike.pending,status.ilike.pending';
+  let pendingValues: string[] | null = null;
+  if (pendingModuleIds.length) {
+    const laneRes = await Promise.allSettled(
+      pendingModuleIds.map((moduleId) =>
+        supabase.rpc('execute_report_aggregation', statusValuesRpcArgs(orgId, moduleId)),
+      ),
+    );
+    const raw: string[] = [];
+    let anyOk = false;
+    for (const r of laneRes) {
+      if (r.status === 'fulfilled' && !r.value.error) {
+        anyOk = true;
+        for (const v of parseStatusValuesRpcResult(r.value.data)) raw.push(v.value);
+      } else {
+        fail('pending lane values', r.status === 'rejected' ? r.reason : r.value.error);
+      }
+    }
+    if (anyOk) pendingValues = laneValues('pending', raw);
+  }
+  counts.pendingStatusValues = pendingValues ?? [];
+  // Lane resolved but nothing in it → nobody is pending; skip the queries.
+  const pendingIsEmpty = pendingValues !== null && pendingValues.length === 0;
+  const pendingRowsQuery = () => {
+    const base = supabase
+      .from('crm_records')
+      .select(RECORD_COLUMNS)
+      .eq('org_id', orgId)
+      .in('module_id', pendingModuleIds)
+      .is('deleted_at' as never, null);
+    return (pendingValues ? base.in('status', pendingValues) : base.or(LEGACY_PENDING_OR))
+      // Oldest-CREATED first: the ranker surfaces the longest-waiting
+      // pending people, so the LIMIT must keep those rows, not the newest.
+      // (created_at, not updated_at — an edit must not reset the clock.)
+      .order('created_at', { ascending: true })
+      .limit(SOURCE_LIMIT);
+  };
+  const pendingCountQuery = () => {
+    const base = supabase
+      .from('crm_records')
+      .select('id', { count: 'exact', head: true })
+      .eq('org_id', orgId)
+      .in('module_id', pendingModuleIds)
+      .is('deleted_at' as never, null);
+    return pendingValues ? base.in('status', pendingValues) : base.or(LEGACY_PENDING_OR);
+  };
 
   // -- Fire every source in parallel; each settles independently ------------
   const [
@@ -214,28 +294,12 @@ export async function buildPeopleQueue(
       .neq('status', 'cancelled')
       .gte('due_at', startOfToday)
       .lt('due_at', endOfToday),
-    // 2. pending people
-    pendingModuleIds.length
-      ? supabase
-          .from('crm_records')
-          .select(RECORD_COLUMNS)
-          .eq('org_id', orgId)
-          .in('module_id', pendingModuleIds)
-          .is('deleted_at' as never, null)
-          .or(pendingOr)
-          // Oldest-updated first: the ranker surfaces the longest-waiting
-          // pending people, so the LIMIT must keep those rows, not the newest.
-          .order('updated_at', { ascending: true })
-          .limit(SOURCE_LIMIT)
+    // 2. pending people (status in the pending lane)
+    pendingModuleIds.length && !pendingIsEmpty
+      ? pendingRowsQuery()
       : Promise.resolve({ data: [], error: null, count: null }),
-    pendingModuleIds.length
-      ? supabase
-          .from('crm_records')
-          .select('id', { count: 'exact', head: true })
-          .eq('org_id', orgId)
-          .in('module_id', pendingModuleIds)
-          .is('deleted_at' as never, null)
-          .or(pendingOr)
+    pendingModuleIds.length && !pendingIsEmpty
+      ? pendingCountQuery()
       : Promise.resolve({ data: null, error: null, count: 0 }),
     // 3. starting soon
     peopleModuleIds.length

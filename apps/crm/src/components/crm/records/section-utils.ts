@@ -622,3 +622,58 @@ export function getSectionMeta(
       };
     });
 }
+
+/**
+ * A top-level band in the section jump bar: one pill per nav group instead of
+ * one per section (27 pills on a PIFH contact). Groups appear in the order the
+ * sections do, so the module's display order still drives the bar.
+ */
+export interface SectionNavGroupBand {
+  group: SectionNavGroup;
+  label: string;
+  /** Sections in this band, in display order (first one is the jump target). */
+  sections: SectionMeta[];
+  /** Sum of filled fields across the band (notes bands use the note badge). */
+  filledCount: number;
+  /** Sum of configured fields across the band. */
+  fieldCount: number;
+  /** Real note-record count when this is the notes band. */
+  badgeCount?: number;
+}
+
+export function groupSectionsForNav(sections: SectionMeta[]): SectionNavGroupBand[] {
+  const bands: SectionNavGroupBand[] = [];
+  const byGroup = new Map<SectionNavGroup, SectionNavGroupBand>();
+  for (const s of sections) {
+    let band = byGroup.get(s.navGroup);
+    if (!band) {
+      band = {
+        group: s.navGroup,
+        label: getSectionNavGroupLabel(s.navGroup),
+        sections: [],
+        filledCount: 0,
+        fieldCount: 0,
+      };
+      byGroup.set(s.navGroup, band);
+      bands.push(band);
+    }
+    band.sections.push(s);
+    band.filledCount += s.filledCount;
+    band.fieldCount += s.fieldCount;
+    if (s.badgeCount !== undefined) {
+      band.badgeCount = (band.badgeCount ?? 0) + s.badgeCount;
+    }
+  }
+  return bands;
+}
+
+/** Group band that owns `sectionKey`, or null when the key isn't in the nav. */
+export function findSectionNavGroupForKey(
+  bands: SectionNavGroupBand[],
+  sectionKey: string,
+): SectionNavGroup | null {
+  for (const band of bands) {
+    if (band.sections.some((s) => s.key === sectionKey)) return band.group;
+  }
+  return null;
+}

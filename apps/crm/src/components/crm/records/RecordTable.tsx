@@ -53,6 +53,7 @@ import {
   type ColumnWidthsResetDetail,
 } from '@/components/zoho/ColumnsButton';
 import { prefetchRecordForDrawer } from '@/lib/prefetch';
+import { ListEmptyStatePanel, useListEmptyState } from '@/components/crm/views/ListView';
 import type { CrmRecord, CrmField, CrmView } from '@/lib/crm/types';
 import {
   MoreHorizontal,
@@ -63,9 +64,6 @@ import {
   ChevronDown,
   ArrowUpDown,
   User,
-  Inbox,
-  FileText,
-  Plus,
   Phone,
   Mail,
   CheckSquare,
@@ -565,6 +563,9 @@ export const RecordTable = memo(function RecordTable({
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const prefetchTimerRef = useRef<NodeJS.Timeout | null>(null);
   const router = useRouter();
+  // Filter-aware empty state — reads the URL list state so a search/filter
+  // miss never says "create your first record".
+  const emptyState = useListEmptyState(records.length, moduleKey);
 
   // Prefetch record data on row hover for instant drawer opens
   const handleRowMouseEnter = useCallback((recordId: string) => {
@@ -1280,23 +1281,9 @@ export const RecordTable = memo(function RecordTable({
     <>
       {/* Mobile Card View */}
       <div className="md:hidden">
-        {records.length === 0 ? (
-          <div className="bg-white dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-white/10 p-8 text-center">
-            <div className="p-4 rounded-full bg-slate-100 dark:bg-slate-800/50 inline-block mb-4">
-              <Inbox className="w-10 h-10 text-slate-400 dark:text-slate-600" />
-            </div>
-            <p className="text-lg font-medium text-slate-900 dark:text-white mb-1">No records found</p>
-            <p className="text-sm text-slate-500 mb-4">
-              Get started by creating a new record.
-            </p>
-            <Button
-              asChild
-            >
-              <Link href={`/crm/modules/${moduleKey}/new`}>
-                <Plus className="w-4 h-4 mr-2" />
-                Create Record
-              </Link>
-            </Button>
+        {emptyState ? (
+          <div className="bg-white dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-white/10">
+            <ListEmptyStatePanel state={emptyState} moduleKey={moduleKey} compact />
           </div>
         ) : (
           <div className="space-y-3">
@@ -1437,38 +1424,10 @@ export const RecordTable = memo(function RecordTable({
             minWidth: totalMinWidth,
           }}
         >
-          {records.length === 0 ? (
+          {emptyState ? (
             <TableRow style={{ display: 'table', width: '100%', tableLayout: 'fixed' }}>
               <TableCell colSpan={visibleColumns.length + 2} className="h-64">
-                <div className="flex flex-col items-center justify-center text-center">
-                  <div className="p-4 rounded-full bg-slate-100 dark:bg-slate-800/50 mb-4">
-                    <Inbox className="w-10 h-10 text-slate-400 dark:text-slate-600" />
-                  </div>
-                  <p className="text-lg font-medium text-slate-900 dark:text-white mb-1">No records found</p>
-                  <p className="text-sm text-slate-500 mb-4">
-                    Get started by creating a new record or importing data.
-                  </p>
-                  <div className="flex items-center gap-3">
-                    <Button
-                      variant="outline"
-                      className="border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
-                      asChild
-                    >
-                      <Link href={`/crm/import?module=${moduleKey}`}>
-                        <FileText className="w-4 h-4 mr-2" />
-                        Import Data
-                      </Link>
-                    </Button>
-                    <Button
-                      asChild
-                    >
-                      <Link href={`/crm/modules/${moduleKey}/new`}>
-                        <Plus className="w-4 h-4 mr-2" />
-                        Create Record
-                      </Link>
-                    </Button>
-                  </div>
-                </div>
+                <ListEmptyStatePanel state={emptyState} moduleKey={moduleKey} compact />
               </TableCell>
             </TableRow>
           ) : (

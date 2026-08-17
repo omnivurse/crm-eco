@@ -14,7 +14,7 @@ import {
   AlertDialogTitle,
 } from '@crm-eco/ui/components/alert-dialog';
 import { UserCheck, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
-import { getConvertActionLabel, getMemberNoun } from '@/lib/crm/member-terminology';
+import { getConvertActionLabel, getMemberNoun, getMemberNounTitle } from '@/lib/crm/member-terminology';
 
 interface ConvertLeadButtonProps {
   recordId: string;
@@ -31,6 +31,15 @@ interface ConvertLeadButtonProps {
   showContactAlternative?: boolean;
   /** Match sibling header actions (default sm in record headers). */
   size?: 'default' | 'sm' | 'lg' | 'icon';
+  /**
+   * Controlled open state for the confirm dialog. Lets a parent menu (e.g.
+   * the record header's Convert… dropdown) open the SAME dialog without
+   * rendering this component's own trigger button.
+   */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  /** Hide the built-in trigger (use with `open` / `onOpenChange`). */
+  hideTrigger?: boolean;
 }
 
 function isFutureDate(isoDate?: string | null): boolean {
@@ -50,12 +59,21 @@ export function ConvertLeadButton({
   effectiveStartDate,
   showContactAlternative = true,
   size = 'sm',
+  open,
+  onOpenChange,
+  hideTrigger = false,
 }: ConvertLeadButtonProps) {
   const convertLabel = getConvertActionLabel(marketType);
   const noun = getMemberNoun(marketType);
-  const nounTitle = noun.replace(/\b\w/g, (c) => c.toUpperCase());
+  const nounTitle = getMemberNounTitle(marketType);
   const futureStart = isFutureDate(effectiveStartDate);
-  const [showConfirm, setShowConfirm] = useState(false);
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const isControlled = open !== undefined;
+  const showConfirm = isControlled ? open : uncontrolledOpen;
+  const setShowConfirm = (next: boolean) => {
+    if (!isControlled) setUncontrolledOpen(next);
+    onOpenChange?.(next);
+  };
   const [isConverting, setIsConverting] = useState(false);
   const [result, setResult] = useState<{ success: boolean; message: string; memberId?: string } | null>(null);
   const router = useRouter();
@@ -101,15 +119,17 @@ export function ConvertLeadButton({
 
   return (
     <>
-      <Button
-        size={size}
-        onClick={() => setShowConfirm(true)}
-        disabled={disabled || isConverting}
-        className="inline-flex shrink-0 bg-brand-accent text-white shadow-sm hover:opacity-95"
-      >
-        <UserCheck className="w-4 h-4 shrink-0 sm:mr-1.5" />
-        <span className="text-xs font-medium sm:text-sm">{convertLabel}</span>
-      </Button>
+      {!hideTrigger && (
+        <Button
+          size={size}
+          onClick={() => setShowConfirm(true)}
+          disabled={disabled || isConverting}
+          className="inline-flex shrink-0 bg-brand-accent text-white shadow-sm hover:opacity-95"
+        >
+          <UserCheck className="w-4 h-4 shrink-0 sm:mr-1.5" />
+          <span className="text-xs font-medium sm:text-sm">{convertLabel}</span>
+        </Button>
+      )}
 
       <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
         <AlertDialogContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10">
@@ -117,7 +137,7 @@ export function ConvertLeadButton({
             <>
               <AlertDialogHeader>
                 <AlertDialogTitle className="text-slate-900 dark:text-white">
-                  Convert Lead to {nounTitle}?
+                  Enroll {recordTitle} as {nounTitle}?
                 </AlertDialogTitle>
                 <AlertDialogDescription className="text-slate-500 space-y-2">
                   <span className="block">
@@ -125,20 +145,10 @@ export function ConvertLeadButton({
                     <strong>{noun}</strong> and marks this lead as converted.
                   </span>
                   {showContactAlternative && (
-                    <span className="block text-amber-700 dark:text-amber-400/90 rounded-md border border-amber-200/80 dark:border-amber-500/30 bg-amber-50/80 dark:bg-amber-950/30 px-2 py-1.5 text-xs">
-                      {futureStart ? (
-                        <>
-                          Coverage starts <strong>{effectiveStartDate}</strong> (still in the future).
-                          If they should appear in <strong>Contacts</strong> as{' '}
-                          <strong>Pending</strong> until that date, cancel and use{' '}
-                          <strong>Convert to Contact</strong> instead.
-                        </>
-                      ) : (
-                        <>
-                          To add them to the CRM <strong>Contacts</strong> module only (e.g. Pending
-                          until a future plan start), use <strong>Convert to Contact</strong> instead.
-                        </>
-                      )}
+                    <span className="block text-xs text-amber-700 dark:text-amber-400/90">
+                      {futureStart
+                        ? `Coverage starts ${effectiveStartDate}. Only want them in Contacts as Pending until then? Use Add as Contact instead.`
+                        : 'Only want them in Contacts (no enrollment)? Use Add as Contact instead.'}
                     </span>
                   )}
                 </AlertDialogDescription>

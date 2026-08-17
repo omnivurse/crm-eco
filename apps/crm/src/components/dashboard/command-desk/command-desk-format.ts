@@ -5,6 +5,8 @@
  * components and unit-tested in command-desk-format.test.ts.
  */
 
+import { laneFilter, statusLane, type StatusLane } from '@/lib/crm/status-lanes';
+
 export const NOT_ON_FILE = 'Not on file';
 
 const DAY_MS = 86_400_000;
@@ -146,25 +148,57 @@ export function recordHref(
   return opts?.pane ? `${base}?pane=${opts.pane}` : base;
 }
 
-/** Contacts list pre-filtered to Pending members (ModulePage `filters` JSON). */
-export function pendingContactsHref(): string {
-  const filters = JSON.stringify([
-    { field: 'contact_status', operator: 'equals', value: 'Pending' },
-  ]);
-  return `/crm/modules/contacts?filters=${encodeURIComponent(filters)}`;
+/**
+ * Contacts list pre-filtered to the PENDING lane (ModulePage `filters` JSON),
+ * oldest-created first so "waiting longest" is one click.
+ *
+ * `pendingStatusValues` are the raw spellings the dashboard's people queue
+ * counted (`status IN (...)` — see lib/dashboard/people-queue.ts), so the
+ * "Pending members" chip and the list it opens agree exactly. Without them
+ * (older callers) the filter falls back to the canonical crm_fields option
+ * "Pending" only, which is honest but narrower than the chip.
+ */
+export function pendingContactsHref(pendingStatusValues?: readonly string[] | null): string {
+  const values = pendingStatusValues && pendingStatusValues.length > 0
+    ? [...pendingStatusValues]
+    : ['Pending'];
+  const filters = JSON.stringify([laneFilter('pending', values, 'contact_status')]);
+  const params = new URLSearchParams({
+    filters,
+    sortField: 'created_at',
+    sortDirection: 'asc',
+  });
+  return `/crm/modules/contacts?${params.toString()}`;
 }
 
 export type StatusTone = 'active' | 'pending' | 'prospect' | 'inactive' | 'lost' | 'neutral';
 
-/** Coarse tone bucket for arbitrary CRM status strings ("Active HS Member", "Pending", …). */
+const LANE_TONE: Record<StatusLane, StatusTone> = {
+  active: 'active',
+  pending: 'pending',
+  in_process: 'pending',
+  new: 'prospect',
+  inactive: 'inactive',
+  cancelled: 'lost',
+  other: 'neutral',
+};
+
+/**
+ * Coarse tone bucket for arbitrary CRM status strings ("Active HS Member",
+ * "Pending", …). Lanes (lib/crm/status-lanes) decide first so the desk
+ * colours agree with the list chips; the regex tail only handles lead-funnel
+ * words the lanes leave in `other` (contacted, qualified, working, …).
+ */
 export function statusTone(status: string | null | undefined): StatusTone {
   const s = (status ?? '').toLowerCase();
   if (!s) return 'neutral';
-  if (/pending|awaiting|hold/.test(s)) return 'pending';
-  if (/cancel|lost|terminated|declined|closed lost/.test(s)) return 'lost';
-  if (/in-?active|dormant|expired/.test(s)) return 'inactive';
-  if (/active|converted|won|enrolled|member/.test(s)) return 'active';
-  if (/prospect|new|contacted|qualified|working|lead/.test(s)) return 'prospect';
+  const lane = statusLane(s);
+  if (lane !== 'other') return LANE_TONE[lane];
+  if (/awaiting|hold/.test(s)) return 'pending';
+  if (/lost|declined|closed lost/.test(s)) return 'lost';
+  if (/dormant|expired/.test(s)) return 'inactive';
+  if (/converted|won|member/.test(s)) return 'active';
+  if (/contacted|qualified|working|lead/.test(s)) return 'prospect';
   return 'neutral';
 }
 

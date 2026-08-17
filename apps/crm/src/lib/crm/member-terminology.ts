@@ -57,6 +57,16 @@ export function getMemberNoun(marketType?: string | null): string {
   return isInsuranceMarket(marketType) ? 'insurance client' : 'member';
 }
 
+/** Title-cased noun for headings / menu items: "Member", "Insurance Client". */
+export function getMemberNounTitle(marketType?: string | null): string {
+  return getMemberNoun(marketType).replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+/** The enrollment action label, market-aware: "Enroll as Member" / "Enroll as Insurance Client". */
+export function getEnrollActionLabel(marketType?: string | null): string {
+  return `Enroll as ${getMemberNounTitle(marketType)}`;
+}
+
 /** Core status options shown in the record header picker. */
 export function getCoreStatusPickerItems(marketType?: string | null): string[] {
   if (isInsuranceMarket(marketType)) {

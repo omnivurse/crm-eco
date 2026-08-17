@@ -205,7 +205,7 @@ export const RecordDetailShell = memo(function RecordDetailShell({
   const noteTotal = noteCount ?? notesProp.length;
   const [activeTab, setActiveTab] = useState('overview');
 
-  // Listen for tab switch events from child components (e.g., NotesOverviewCard "View All")
+  // Listen for tab switch events from child components (e.g., SectionNav "Notes" jump, the notes strip "View all")
   useEffect(() => {
     const handler = (e: Event) => setActiveTab((e as CustomEvent).detail);
     window.addEventListener('crm:switch-tab', handler);

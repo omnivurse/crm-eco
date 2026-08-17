@@ -9,6 +9,9 @@
  * `available`. "Coming soon" entries are dropped on mobile — the customize
  * dialog remains the canonical surface for turning them on later.
  *
+ * Counts: a chip only shows a count badge when it is > 0 — a "0" next to
+ * Campaigns/Cadences (empty tables org-wide) reads as content that isn't there.
+ *
  * Scroll behavior: auto-scrolls the active chip into view when it changes,
  * so programmatic tab switches (e.g., from the command palette) don't
  * leave the user staring at a chip that's off-screen.
@@ -220,11 +223,29 @@ export const RecordRelatedListChips = memo(function RecordRelatedListChips({
     scroller.scrollTo({ left: Math.max(0, target), behavior: 'smooth' });
   }, [activeId]);
 
+  // Arrow-key roving focus (WAI-ARIA tabs). Enter/Space activate via onClick.
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return;
+    const tabs = Array.from(
+      e.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]'),
+    );
+    if (tabs.length === 0) return;
+    const idx = tabs.findIndex((t) => t === document.activeElement);
+    let next = idx;
+    if (e.key === 'ArrowLeft') next = idx <= 0 ? tabs.length - 1 : idx - 1;
+    if (e.key === 'ArrowRight') next = idx >= tabs.length - 1 ? 0 : idx + 1;
+    if (e.key === 'Home') next = 0;
+    if (e.key === 'End') next = tabs.length - 1;
+    e.preventDefault();
+    tabs[next]?.focus();
+  };
+
   return (
     <div
       ref={chipScrollerRef}
       role="tablist"
-      aria-label="Record sections"
+      aria-label="Related lists"
+      onKeyDown={handleKeyDown}
       style={style}
       className={cn(
         'relative flex items-center gap-1.5 overflow-x-auto scrollbar-thin px-4 py-2 border-b border-slate-200 dark:border-white/5 bg-white dark:bg-slate-950',
@@ -242,9 +263,10 @@ export const RecordRelatedListChips = memo(function RecordRelatedListChips({
             type="button"
             role="tab"
             aria-selected={isActive}
+            tabIndex={isActive ? 0 : -1}
             onClick={() => onSelect(item.id)}
             className={cn(
-              'inline-flex items-center gap-1.5 shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors border',
+              'inline-flex items-center gap-1.5 shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
               isActive ? accent.active : accent.inactive,
             )}
           >

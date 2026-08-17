@@ -122,13 +122,23 @@ describe('formatCityState', () => {
 });
 
 describe('hrefs', () => {
-  it('encodes the pending contacts filter', () => {
-    const href = pendingContactsHref();
-    expect(href.startsWith('/crm/modules/contacts?filters=')).toBe(true);
-    const json = decodeURIComponent(href.split('filters=')[1]!);
-    expect(JSON.parse(json)).toEqual([
-      { field: 'contact_status', operator: 'equals', value: 'Pending' },
+  it('encodes the pending-lane contacts filter + waiting-longest sort', () => {
+    const href = pendingContactsHref(['Approved Pending', 'Pending', 'Cancellation Pending', 'Active']);
+    expect(href.startsWith('/crm/modules/contacts?')).toBe(true);
+    const params = new URLSearchParams(href.split('?')[1]!);
+    expect(JSON.parse(params.get('filters')!)).toEqual([
+      { field: 'contact_status', operator: 'in', value: ['Approved Pending', 'Pending'] },
     ]);
+    expect(params.get('sortField')).toBe('created_at');
+    expect(params.get('sortDirection')).toBe('asc');
+  });
+  it('falls back to the canonical "Pending" option when no lane values are supplied', () => {
+    for (const href of [pendingContactsHref(), pendingContactsHref([]), pendingContactsHref(null)]) {
+      const params = new URLSearchParams(href.split('?')[1]!);
+      expect(JSON.parse(params.get('filters')!)).toEqual([
+        { field: 'contact_status', operator: 'in', value: ['Pending'] },
+      ]);
+    }
   });
   it('builds record hrefs, with an optional pane deep link', () => {
     expect(recordHref('abc')).toBe('/crm/r/abc');
@@ -147,6 +157,16 @@ describe('statusTone', () => {
     expect(statusTone('Contacted')).toBe('prospect');
     expect(statusTone(null)).toBe('neutral');
     expect(statusTone('Whatever')).toBe('neutral');
+  });
+  it('agrees with the status lanes (chips + desk colour the same)', () => {
+    expect(statusTone('Approved Pending')).toBe('pending');
+    expect(statusTone('In process')).toBe('pending');
+    // Cancel in flight is a cancel, not a pending member.
+    expect(statusTone('Cancellation Pending')).toBe('lost');
+    expect(statusTone('Enrolled - 2024')).toBe('active');
+    expect(statusTone('Agent- SPONSOR- InActive')).toBe('inactive');
+    expect(statusTone('Terminated')).toBe('lost');
+    expect(statusTone('Converted')).toBe('active');
   });
 });
 

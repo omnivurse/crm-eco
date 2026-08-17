@@ -9,9 +9,9 @@
  *
  * Layout:
  *   ┌ Header: breadcrumb + InlineRecordSearch ──────────────────────────┐
- *   │ Avatar · Title + meta · Tags · [Send Email][Convert][Edit][…][⋯] │
- *   │ Stage bar (deals) · Normalization banner                          │
- *   │ Tabs: Overview · Timeline · Data Privacy                          │
+ *   │ Avatar · Title + meta · Tags · [Convert…][Email][Remind][Edit][Add Note ▾][⋯] │
+ *   │ Stage bar (deals) · Normalization banner (admin/manager only)     │
+ *   │ Tabs: Overview · Timeline  (Data Privacy lives under ⋯)           │
  *   ├────────────┬──────────────────────────────┬──────────────────────┤
  *   │ Related    │ Main panel                   │ Insights             │
  *   │ rail       │ (Details / Notes / Emails /  │ · Best time to       │
@@ -36,7 +36,8 @@ import {
   CheckSquare,
   StickyNote,
   Upload,
-  UserCheck,
+  UserPlus,
+  ShieldCheck,
   Loader2,
   Copy,
   Check,
@@ -48,6 +49,10 @@ import {
   Link2,
   ExternalLink,
   Plus,
+  LayoutDashboard,
+  ClipboardList,
+  Users,
+  LifeBuoy,
 } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
@@ -88,11 +93,16 @@ import { StageSelector } from '@/components/crm/blueprints';
 import { ComposerBar } from '@/components/zoho/ComposerBar';
 import { ConvertToContactDialog } from '@/components/crm/records/ConvertToContactDialog';
 import { ConvertLeadButton } from '@/components/crm/records/ConvertLeadButton';
+import { ConvertLeadMenu } from './v2/ConvertLeadMenu';
 import {
   getCoreStatusPickerItems,
+  getEnrollActionLabel,
+  getMemberNoun,
   isActiveCoverageStatus,
   relabelStatusForMarket,
 } from '@/lib/crm/member-terminology';
+import { statusLane } from '@/lib/crm/status-lanes';
+import { stripLegacyAuthorAttribution } from '@/lib/crm/note-sanitize';
 import { MergeRecordDialog } from '@/components/crm/records/MergeRecordDialog';
 import {
   MarketTypeBadge,
@@ -124,6 +134,7 @@ import {
 } from './v2/AiFollowUpEmailButton';
 import { NoteTemplatePicker } from './v2/NoteTemplatePicker';
 import { CustomizeRelatedListsDialog, type CustomizeRelatedListsItem } from './v2/CustomizeRelatedListsDialog';
+import { RecordOverviewSlotsProvider } from './RecordOverviewSlots';
 import { DataPrivacyPanel } from './v2/DataPrivacyPanel';
 import { FilterableTimeline } from './v2/FilterableTimeline';
 import { KeyboardShortcutsDialog } from './v2/KeyboardShortcutsDialog';
@@ -176,6 +187,30 @@ import { setRecordCommandContext } from '@/lib/crm/record-command-context';
 const HEADER_COMPACT_ENTER = 72;
 const HEADER_COMPACT_EXIT = 12;
 
+/**
+ * Related-list chips shown when the user has never customised the strip.
+ * The other panels (Campaigns, Cadences, Products, Visits, Social, Invited
+ * Meetings, Support) stay in the Customize dialog's "Available" column — on
+ * PIFH they are backed by empty tables, so a chip would only ever read "0".
+ */
+const DEFAULT_VISIBLE_RELATED_LIST_IDS = [
+  'details',
+  'notes',
+  'emails',
+  'activities',
+  'attachments',
+  'related',
+] as const;
+
+/** Only `/crm...` paths are honoured as a back target (no open redirects). */
+function sanitizeReturnTo(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  if (!raw.startsWith('/crm')) return null;
+  if (raw.startsWith('//')) return null;
+  if (raw !== '/crm' && !raw.startsWith('/crm/') && !raw.startsWith('/crm?')) return null;
+  return raw;
+}
+
 export interface RecordDetailShellV2Props {
   record: CrmRecord;
   module: CrmModule;
@@ -226,6 +261,10 @@ type OverviewPane =
   | 'surveys'
   | 'desk'
   | 'meetings';
+
+function recordMarketTypeForConvert(record: CrmRecord): string | undefined {
+  return (record as { market_type?: string | null }).market_type ?? undefined;
+}
 
 function HeaderCopyButton({ value }: { value: string }) {
   const [copied, setCopied] = useState(false);
@@ -300,6 +339,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
 
   const [topTab, setTopTab] = useState<TopTab>('overview');
   const [overviewPane, setOverviewPane] = useState<OverviewPane>('details');
+  const [activitiesMode, setActivitiesMode] = useState<'open' | 'closed'>('open');
 
   // Refresh this tab when a sibling tab on the same device drains a
   // mutation tied to this record. Scoped by recordId so unrelated
@@ -592,10 +632,42 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
   })();
   const canConvertToContact = isLeads && !isAlreadyConverted;
   // Enrollment convert is available from Leads and Contacts (not after contact/member link).
+  // A contact whose status is already in the ACTIVE lane ("Active HS Member",
+  // "Enrolled - 2025", …) is already a member — offering "Convert to Member" on
+  // 3,952 of 3,972 active contacts was the single most misleading header action.
+  const statusIsActiveLane =
+    statusLane(displayStatus) === 'active' || isActiveCoverageStatus(displayStatus);
   const canConvertToMember =
-    (isLeads || isContacts) && !isAlreadyConverted && !linkedEnrollmentMemberId;
+    (isLeads || isContacts) &&
+    !isAlreadyConverted &&
+    !linkedEnrollmentMemberId &&
+    !(isContacts && statusIsActiveLane);
+  const [showEnrollDialog, setShowEnrollDialog] = useState(false);
+  const enrollNoun = getMemberNoun(recordMarketTypeForConvert(record));
+  const enrollLabel = getEnrollActionLabel(recordMarketTypeForConvert(record));
 
-  const backUrl = `/crm/modules/${module.key}`;
+  // Back target keeps list state: ?returnTo= (validated) → same-origin module
+  // list referrer → plain module list. `?returnTo=/crm` also adds a Dashboard crumb.
+  const moduleListUrl = `/crm/modules/${module.key}`;
+  const returnTo = sanitizeReturnTo(searchParams?.get('returnTo'));
+  const [referrerBackUrl, setReferrerBackUrl] = useState<string | null>(null);
+  useEffect(() => {
+    if (returnTo) return;
+    try {
+      const ref = document.referrer;
+      if (!ref) return;
+      const url = new URL(ref);
+      if (url.origin !== window.location.origin) return;
+      if (url.pathname === moduleListUrl || url.pathname.startsWith(`${moduleListUrl}/`)) {
+        // Only the list itself (not a sibling record) — carry its filters/page.
+        if (url.pathname === moduleListUrl) setReferrerBackUrl(url.pathname + url.search);
+      }
+    } catch {
+      /* ignore malformed referrer */
+    }
+  }, [returnTo, moduleListUrl]);
+  const backUrl = returnTo ?? referrerBackUrl ?? moduleListUrl;
+  const cameFromDashboard = returnTo === '/crm' || returnTo?.startsWith('/crm?') === true;
 
   const handleNavigateToMatch = useCallback((args: NavigateToMatchArgs) => {
     setTopTab('overview');
@@ -628,6 +700,12 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
       scrollRoot: recordMainScrollRef.current,
       block: 'center',
     });
+  }, [_fields]);
+
+  const fieldLabelMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const f of _fields) map[f.key] = f.label;
+    return map;
   }, [_fields]);
 
   const noteBodiesForSearch = useMemo(
@@ -927,6 +1005,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
       !showCustomizeDialog &&
       !showShortcutsDialog &&
       !showConvertDialog &&
+      !showEnrollDialog &&
       !showNoteModal &&
       !showTaskModal &&
       !showUploadModal &&
@@ -938,6 +1017,8 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
   // task / attachment. Toasts intentionally only fire for events from
   // *other* users, via `useLiveRecord`'s `isSelf` flag.
   const { user: clientUser, profile: clientProfile } = useClientAuth();
+  const viewerCanNormalize =
+    clientProfile?.crm_role === 'crm_admin' || clientProfile?.crm_role === 'crm_manager';
   const {
     participants: presenceParticipants,
     setIntent: setPresenceIntent,
@@ -1039,15 +1120,13 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
         available: !!children.communications,
       },
       {
+        // Open + Closed merged into one chip; the pane has an Open/Closed toggle.
         id: 'activities',
-        label: 'Open Activities',
-        count: counts?.open_activities ?? null,
-        available: true,
-      },
-      {
-        id: 'closed_activities',
-        label: 'Closed Activities',
-        count: counts?.closed_activities ?? null,
+        label: 'Activities',
+        count:
+          counts && (counts.open_activities != null || counts.closed_activities != null)
+            ? (counts.open_activities ?? 0) + (counts.closed_activities ?? 0)
+            : null,
         available: true,
       },
       {
@@ -1109,10 +1188,22 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
    */
   const navItems: RelatedListNavItem[] = useMemo(() => {
     const byId = new Map(defaultNavItems.map((item) => [item.id, item]));
-    if (!customOrder || customOrder.length === 0) return defaultNavItems;
-    // Back-compat: the Details pane id used to be persisted as 'overview'.
-    // Normalize legacy saved orders so the Details pane still resolves.
-    const normalized = customOrder.map((id) => (id === 'overview' ? 'details' : id));
+    // No saved order → the lean default strip (Details · Notes · Emails ·
+    // Activities · Attachments · Connected Records). Everything else stays one
+    // click away in Customize.
+    const source: readonly string[] =
+      !customOrder || customOrder.length === 0
+        ? DEFAULT_VISIBLE_RELATED_LIST_IDS
+        : customOrder;
+    // Back-compat: the Details pane id used to be persisted as 'overview',
+    // and Open/Closed Activities were two chips (now one).
+    const normalized = source.map((id) =>
+      id === 'overview'
+        ? 'details'
+        : id === 'open_activities' || id === 'closed_activities'
+          ? 'activities'
+          : id,
+    );
     const ordered: RelatedListNavItem[] = [];
     const seen = new Set<string>();
     // Details is always pinned to the top regardless of saved order.
@@ -1130,6 +1221,16 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
     }
     return ordered;
   }, [defaultNavItems, customOrder]);
+
+  /**
+   * Open Customize. The dialog seeds its working copy from the SAVED order,
+   * falling back to the same lean default strip the chips render
+   * (`defaultOrder`), so Pinned/Available mirror what the user sees — without
+   * writing anything to ui_preferences until they press "Save layout".
+   */
+  const openCustomizeDialog = useCallback(() => {
+    setShowCustomizeDialog(true);
+  }, []);
 
   // Catalog used by the customize dialog (full superset, even hidden items).
   const customizeCatalog: CustomizeRelatedListsItem[] = useMemo(
@@ -1198,19 +1299,37 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
   const linkedMemberId = (record.data as Record<string, unknown> | null)?.linked_member_id as
     | string
     | undefined;
+  const membershipChangeCount = (() => {
+    const raw = (record.data as Record<string, unknown> | null)?.membership_changes;
+    return Array.isArray(raw) ? raw.length : 0;
+  })();
 
-  const renderOverviewPane = (): React.ReactNode => {
-    switch (overviewPane) {
-      case 'details':
-        return (
-          <>
-            {/* The coverage snapshot + field sections render directly at the top
-                of the pane (no "Lead Information" collapsible wrapper) so the
-                full-width banner leads the record, matching the approved
-                redesign. */}
-            {children.overview}
-
-            {showChangeHistory && (
+  /**
+   * Screen-one context strip: plan/dependent history + the last few notes.
+   * Rendered INSIDE the field stack (DynamicRecordForm `beforeSections`, via
+   * RecordOverviewSlotsProvider) so the details pane reads: section jump bar →
+   * Coverage Snapshot → histories → recent notes → section cards. Each history
+   * block is a native <details> so it is keyboard-toggleable and collapses to a
+   * one-line summary. Memoised so unrelated shell state (scroll compaction,
+   * menus) does not re-render the whole field stack through the slot context.
+   */
+  const hasNotesPane = Boolean(children.notes);
+  const detailsBeforeSections: React.ReactNode = useMemo(
+    () => (
+    <>
+      {(showChangeHistory || linkedMemberId) && (
+        <div className="space-y-2">
+          {showChangeHistory && (
+            <CompactContextBlock
+              icon={ClipboardList}
+              title="Plan changes"
+              summary={
+                membershipChangeCount > 0
+                  ? `${membershipChangeCount} change${membershipChangeCount === 1 ? '' : 's'}`
+                  : 'No plan changes recorded'
+              }
+              defaultOpen={membershipChangeCount > 0}
+            >
               <MembershipChangeHistory
                 data={(record.data ?? null) as Record<string, unknown> | null}
                 recordId={record.id}
@@ -1220,17 +1339,65 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                   (record.system as Record<string, unknown> | null)?.synced === 'true' ||
                   Boolean(linkedMemberId)
                 }
-                className="mt-4"
               />
-            )}
+            </CompactContextBlock>
+          )}
+          {linkedMemberId && (
+            <>
+              <CompactContextBlock
+                icon={Users}
+                title="Dependents"
+                summary="Who is covered, and since when"
+                defaultOpen
+              >
+                <DependentCoverageHistory memberId={linkedMemberId} />
+              </CompactContextBlock>
+              <CompactContextBlock
+                icon={LifeBuoy}
+                title="Support tickets"
+                summary="Member support history"
+                defaultOpen={false}
+              >
+                <MemberSupportTickets memberId={linkedMemberId} />
+              </CompactContextBlock>
+            </>
+          )}
+        </div>
+      )}
 
-            {linkedMemberId && (
-              <>
-                <DependentCoverageHistory memberId={linkedMemberId} className="mt-4" />
-                <MemberSupportTickets memberId={linkedMemberId} className="mt-4" />
-              </>
-            )}
-          </>
+      <RecentNotesStrip
+        notes={sortedNotes}
+        total={noteTotal}
+        onAddNote={handleAddNote}
+        onViewAll={() => {
+          if (hasNotesPane) setOverviewPane('notes');
+          else setShowNotesDrawer(true);
+        }}
+      />
+    </>
+    ),
+    [
+      showChangeHistory,
+      linkedMemberId,
+      membershipChangeCount,
+      record,
+      sortedNotes,
+      noteTotal,
+      handleAddNote,
+      hasNotesPane,
+    ],
+  );
+
+  const renderOverviewPane = (): React.ReactNode => {
+    switch (overviewPane) {
+      case 'details':
+        // Section jump bar + Coverage Snapshot + [beforeSections] + field
+        // sections. The page builds `children.overview` (RecordOverviewPanel),
+        // so the shell-owned blocks reach the form through the slot context.
+        return (
+          <RecordOverviewSlotsProvider beforeSections={detailsBeforeSections}>
+            {children.overview}
+          </RecordOverviewSlotsProvider>
         );
       case 'notes':
         return (
@@ -1241,9 +1408,45 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
       case 'emails':
         return children.communications ?? <ComingSoon label="Emails" hint="Email history is not enabled for this record." />;
       case 'activities':
-        return <RecordTasksPanel recordId={record.id} mode="open" />;
       case 'closed_activities':
-        return <RecordTasksPanel recordId={record.id} mode="closed" />;
+        return (
+          <div>
+            <div
+              role="tablist"
+              aria-label="Activity state"
+              className="mb-3 inline-flex rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-900/60 p-0.5 text-xs font-medium"
+            >
+              {(
+                [
+                  ['open', 'Open', insights?.counts?.open_activities],
+                  ['closed', 'Closed', insights?.counts?.closed_activities],
+                ] as const
+              ).map(([mode, label, count]) => (
+                <button
+                  key={mode}
+                  type="button"
+                  role="tab"
+                  aria-selected={activitiesMode === mode}
+                  onClick={() => setActivitiesMode(mode)}
+                  className={cn(
+                    'inline-flex items-center gap-1 rounded-md px-3 py-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                    activitiesMode === mode
+                      ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white',
+                  )}
+                >
+                  {label}
+                  {typeof count === 'number' && count > 0 && (
+                    <span className="inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-slate-200 dark:bg-slate-700 px-1 text-[10px] font-semibold text-slate-600 dark:text-slate-200">
+                      {count}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+            <RecordTasksPanel recordId={record.id} mode={activitiesMode} />
+          </div>
+        );
       case 'attachments':
         return children.attachments ?? <ComingSoon label="Attachments" hint="No attachments panel is wired for this module." />;
       case 'related':
@@ -1269,6 +1472,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
     <RecordFieldSaveProvider
       recordId={record.id}
       initialUpdatedAt={record.updated_at ?? null}
+      fieldLabels={fieldLabelMap}
       onSaved={() => {
         const el = recordMainScrollRef.current;
         if (el) persistRecordScrollTop(record.id, el.scrollTop);
@@ -1312,22 +1516,44 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
             {/* Breadcrumb + search */}
             {!headerCompact && (
             <div className="flex items-center justify-between gap-4 mb-2">
-              <div className="flex items-center gap-2 min-w-0">
-                <Link
-                  href={backUrl}
-                  className="flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors shrink-0"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  {module.name_plural || module.name}
-                </Link>
-                <span className="text-slate-300 dark:text-slate-600 shrink-0">/</span>
+              <nav aria-label="Breadcrumb" className="flex items-center gap-2 min-w-0">
+                {cameFromDashboard ? (
+                  <>
+                    <Link
+                      href={backUrl}
+                      className="flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors shrink-0"
+                    >
+                      <ArrowLeft className="w-4 h-4" aria-hidden />
+                      <LayoutDashboard className="w-3.5 h-3.5" aria-hidden />
+                      Dashboard
+                    </Link>
+                    <span className="text-slate-300 dark:text-slate-600 shrink-0" aria-hidden>/</span>
+                    <Link
+                      href={moduleListUrl}
+                      className="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors shrink-0"
+                    >
+                      {module.name_plural || module.name}
+                    </Link>
+                  </>
+                ) : (
+                  <Link
+                    href={backUrl}
+                    title={backUrl !== moduleListUrl ? 'Back to your list (filters kept)' : undefined}
+                    className="flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors shrink-0"
+                  >
+                    <ArrowLeft className="w-4 h-4" aria-hidden />
+                    {module.name_plural || module.name}
+                  </Link>
+                )}
+                <span className="text-slate-300 dark:text-slate-600 shrink-0" aria-hidden>/</span>
                 <span
                   className="text-sm text-slate-900 dark:text-white truncate max-w-xs"
                   title={getRecordDisplayName(record)}
+                  aria-current="page"
                 >
                   {getRecordDisplayName(record)}
                 </span>
-              </div>
+              </nav>
               <div className="hidden md:flex items-center gap-3">
                 <RecordToolbarGlobalSearch currentRecordId={record.id} />
                 <InlineRecordSearch
@@ -1536,39 +1762,31 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                   className="mr-1"
                 />
                 )}
-                {!headerCompact && canConvertToContact && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    type="button"
-                    aria-label="Convert lead to contact"
-                    onClick={() => setShowConvertDialog(true)}
-                    className="inline-flex shrink-0 font-medium"
-                  >
-                    <UserCheck className="w-4 h-4 shrink-0 sm:mr-1.5" />
-                    <span className="text-xs sm:text-sm">Convert to Contact</span>
-                  </Button>
-                )}
-                {!headerCompact && canConvertToMember && (
-                  <ConvertLeadButton
-                    recordId={record.id}
-                    recordTitle={getRecordDisplayName(record)}
-                    marketType={recordMarketType}
+                {/* ONE Convert… control for leads (contacts get "Enroll" under ⋯). */}
+                {!headerCompact && isLeads && (canConvertToContact || canConvertToMember) && (
+                  <ConvertLeadMenu
+                    canAddContact={canConvertToContact}
+                    canEnroll={canConvertToMember}
+                    enrollLabel={enrollLabel}
+                    enrollNoun={enrollNoun}
                     effectiveStartDate={recordEffectiveStartDate}
-                    showContactAlternative={isLeads}
+                    onAddContact={() => setShowConvertDialog(true)}
+                    onEnroll={() => setShowEnrollDialog(true)}
                     size="sm"
                   />
                 )}
 
+                {/* Outline so Add Note is the one filled primary in the header. */}
                 <Button
                   type="button"
                   size="sm"
+                  variant="outline"
                   disabled={!record.email}
                   title={
                     record.email ? 'Compose email to this record' : 'Add an email on this record to enable send'
                   }
                   onClick={() => void handleSendEmail()}
-                  className="inline-flex shrink-0 shadow-sm"
+                  className="inline-flex shrink-0 font-medium"
                 >
                   <Mail className="w-4 h-4 shrink-0 sm:mr-1.5" />
                   <span className="text-xs font-medium sm:text-sm">
@@ -1605,29 +1823,31 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                   <span className="hidden min-[380px]:inline">Edit</span>
                 </Button>
 
-                {/* Note Template stays visible even in the compact sticky
-                    header — notes are a per-client, high-frequency action. */}
-                <div className="flex items-stretch shrink-0">
+                {/* Add Note is THE note action (also the `n` hotkey). It stays
+                    visible in the compact sticky header — notes are the
+                    highest-frequency action on a record. The chevron holds the
+                    template picker as a secondary path. */}
+                <div className="flex items-stretch shrink-0" role="group" aria-label="Add note">
                   <Button
-                    variant="outline"
                     size="sm"
                     type="button"
-                    onClick={() => setShowTemplatePicker(true)}
-                    className="rounded-r-none border-r-0 border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300"
+                    onClick={handleAddNote}
+                    title="Add a note (n)"
+                    className="rounded-r-none shadow-sm"
                   >
-                    <StickyNote className="w-4 h-4 sm:mr-1.5" />
-                    <span className="hidden sm:inline">Note Template</span>
-                    <span className="inline sm:hidden text-xs font-medium">Template</span>
+                    <StickyNote className="w-4 h-4 sm:mr-1.5" aria-hidden />
+                    <span className="hidden sm:inline">Add Note</span>
+                    <span className="inline sm:hidden text-xs font-medium">Note</span>
                   </Button>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button
-                        variant="outline"
                         size="sm"
-                        className="rounded-l-none px-1.5 border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300"
-                        aria-label="Choose note template"
+                        className="rounded-l-none border-l border-white/30 px-1.5 shadow-sm"
+                        aria-label="Add note from a template"
+                        title="Note templates"
                       >
-                        <ChevronDown className="w-4 h-4" />
+                        <ChevronDown className="w-4 h-4" aria-hidden />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent
@@ -1635,75 +1855,45 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                       className="bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10 w-56"
                     >
                       <DropdownMenuLabel className="text-xs text-slate-500">
-                        Quick templates
+                        Note templates
                       </DropdownMenuLabel>
                       <DropdownMenuItem onClick={handleAddNote}>
                         Blank note
+                        <kbd className="ml-auto inline-flex h-5 items-center justify-center rounded border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-800 px-1.5 text-[10px] font-medium text-slate-500">
+                          n
+                        </kbd>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator className="bg-slate-200 dark:bg-white/10" />
-                      <DropdownMenuItem
-                        onClick={() => {
-                          import('@/lib/crm/note-templates').then(
-                            ({ DEFAULT_NOTE_TEMPLATES, renderNoteTemplate }) => {
-                              const tmpl = DEFAULT_NOTE_TEMPLATES.find((t) => t.id === 'discovery-call');
-                              if (tmpl) {
-                                handleApplyNoteTemplate(
-                                  renderNoteTemplate(tmpl, {
-                                    name: record.title,
-                                    email: record.email,
-                                    phone: record.phone,
-                                    owner: ownerLabel,
-                                  }),
-                                );
-                              }
-                            },
-                          );
-                        }}
-                      >
-                        Discovery call
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => {
-                          import('@/lib/crm/note-templates').then(
-                            ({ DEFAULT_NOTE_TEMPLATES, renderNoteTemplate }) => {
-                              const tmpl = DEFAULT_NOTE_TEMPLATES.find((t) => t.id === 'voicemail-left');
-                              if (tmpl) {
-                                handleApplyNoteTemplate(
-                                  renderNoteTemplate(tmpl, {
-                                    name: record.title,
-                                    email: record.email,
-                                    phone: record.phone,
-                                    owner: ownerLabel,
-                                  }),
-                                );
-                              }
-                            },
-                          );
-                        }}
-                      >
-                        Voicemail left
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => {
-                          import('@/lib/crm/note-templates').then(
-                            ({ DEFAULT_NOTE_TEMPLATES, renderNoteTemplate }) => {
-                              const tmpl = DEFAULT_NOTE_TEMPLATES.find((t) => t.id === 'follow-up-required');
-                              if (tmpl) {
-                                handleApplyNoteTemplate(
-                                  renderNoteTemplate(tmpl, {
-                                    name: record.title,
-                                    email: record.email,
-                                    phone: record.phone,
-                                    owner: ownerLabel,
-                                  }),
-                                );
-                              }
-                            },
-                          );
-                        }}
-                      >
-                        Follow-up required
-                      </DropdownMenuItem>
+                      {(
+                        [
+                          ['discovery-call', 'Discovery call'],
+                          ['voicemail-left', 'Voicemail left'],
+                          ['follow-up-required', 'Follow-up required'],
+                        ] as const
+                      ).map(([templateId, label]) => (
+                        <DropdownMenuItem
+                          key={templateId}
+                          onClick={() => {
+                            import('@/lib/crm/note-templates').then(
+                              ({ DEFAULT_NOTE_TEMPLATES, renderNoteTemplate }) => {
+                                const tmpl = DEFAULT_NOTE_TEMPLATES.find((t) => t.id === templateId);
+                                if (tmpl) {
+                                  handleApplyNoteTemplate(
+                                    renderNoteTemplate(tmpl, {
+                                      name: record.title,
+                                      email: record.email,
+                                      phone: record.phone,
+                                      owner: ownerLabel,
+                                    }),
+                                  );
+                                }
+                              },
+                            );
+                          }}
+                        >
+                          {label}
+                        </DropdownMenuItem>
+                      ))}
                       <DropdownMenuSeparator className="bg-slate-200 dark:bg-white/10" />
                       <DropdownMenuItem onClick={() => setShowTemplatePicker(true)}>
                         Browse all templates…
@@ -1717,9 +1907,11 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                     <Button
                       variant="ghost"
                       size="icon"
+                      aria-label="More actions"
+                      title="More actions"
                       className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
                     >
-                      <MoreHorizontal className="w-5 h-5" />
+                      <MoreHorizontal className="w-5 h-5" aria-hidden />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent
@@ -1764,32 +1956,40 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                         ?
                       </kbd>
                     </DropdownMenuItem>
-                    {canConvertToContact && (
-                      <>
-                        <DropdownMenuSeparator className="bg-slate-200 dark:bg-white/10" />
-                        <DropdownMenuItem
-                          className="text-emerald-600 dark:text-emerald-400"
-                          onClick={() => setShowConvertDialog(true)}
-                        >
-                          <UserCheck className="w-4 h-4 mr-2" />
-                          Convert to Contact
-                        </DropdownMenuItem>
-                      </>
-                    )}
-                    {canConvertToMember && !canConvertToContact && (
-                      <>
-                        <DropdownMenuSeparator className="bg-slate-200 dark:bg-white/10" />
-                        <DropdownMenuItem className="text-emerald-600 dark:text-emerald-400 p-0">
-                          <ConvertLeadButton
-                            recordId={record.id}
-                            recordTitle={getRecordDisplayName(record)}
-                            marketType={recordMarketType}
-                            effectiveStartDate={recordEffectiveStartDate}
-                            showContactAlternative={isLeads}
-                          />
-                        </DropdownMenuItem>
-                      </>
-                    )}
+                    <DropdownMenuSeparator className="bg-slate-200 dark:bg-white/10" />
+                    <DropdownMenuItem
+                      onClick={() => setTopTab('privacy')}
+                      aria-current={topTab === 'privacy' ? 'page' : undefined}
+                    >
+                      <Shield className="w-4 h-4 mr-2" />
+                      Data Privacy
+                    </DropdownMenuItem>
+                    {/* Convert paths stay reachable when the header is compact
+                        (the Convert… menu hides on scroll) and for contacts. */}
+                    {(canConvertToContact || canConvertToMember) &&
+                      (headerCompact || !isLeads) && (
+                        <>
+                          <DropdownMenuSeparator className="bg-slate-200 dark:bg-white/10" />
+                          {canConvertToContact && (
+                            <DropdownMenuItem
+                              className="text-sky-700 dark:text-sky-400"
+                              onClick={() => setShowConvertDialog(true)}
+                            >
+                              <UserPlus className="w-4 h-4 mr-2" aria-hidden />
+                              Add as Contact
+                            </DropdownMenuItem>
+                          )}
+                          {canConvertToMember && (
+                            <DropdownMenuItem
+                              className="text-emerald-600 dark:text-emerald-400"
+                              onClick={() => setShowEnrollDialog(true)}
+                            >
+                              <ShieldCheck className="w-4 h-4 mr-2" aria-hidden />
+                              {enrollLabel}
+                            </DropdownMenuItem>
+                          )}
+                        </>
+                      )}
                     <DropdownMenuSeparator className="bg-slate-200 dark:bg-white/10" />
                     <DropdownMenuItem
                       className="text-red-600 dark:text-red-400 focus:text-red-700 dark:focus:text-red-300 focus:bg-red-50 dark:focus:bg-red-500/10"
@@ -1841,6 +2041,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                     <ClockIcon className="w-4 h-4 mr-1.5" />
                     Timeline
                   </TabsTrigger>
+                  {topTab === 'privacy' && (
                   <TabsTrigger
                     value="privacy"
                     className={cn(
@@ -1851,6 +2052,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                     <Shield className="w-4 h-4 mr-1.5" />
                     Data Privacy
                   </TabsTrigger>
+                  )}
                 </TabsList>
               </Tabs>
             </div>
@@ -1865,7 +2067,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                 items={navItems}
                 activeId={overviewPane}
                 onSelect={(id) => setOverviewPane(id as OverviewPane)}
-                onMore={() => setShowCustomizeDialog(true)}
+                onMore={openCustomizeDialog}
                 className="flex-1 border-b-0 bg-transparent dark:bg-transparent"
               />
               <div className="flex items-center border-l border-slate-200 dark:border-white/5 px-1">
@@ -1934,7 +2136,9 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
               </div>
             )}
 
-            {!isLeads && (
+            {/* "Needs Review" is an admin/manager action — reps can't act on
+                it, so it only competes with the record for their attention. */}
+            {!isLeads && viewerCanNormalize && (
               <NormalizationBanner
                 status={(record as any).normalization_status}
                 notes={(record as any).normalization_notes}
@@ -2440,6 +2644,21 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
         />
       )}
 
+      {/* Enrollment confirm dialog — opened from the Convert… menu / ⋯ menu.
+          Same component + API path as before; only the trigger moved. */}
+      {canConvertToMember && (
+        <ConvertLeadButton
+          hideTrigger
+          open={showEnrollDialog}
+          onOpenChange={setShowEnrollDialog}
+          recordId={record.id}
+          recordTitle={getRecordDisplayName(record)}
+          marketType={recordMarketType}
+          effectiveStartDate={recordEffectiveStartDate}
+          showContactAlternative={isLeads}
+        />
+      )}
+
       <MergeRecordDialog
         open={showMergeDialog}
         onOpenChange={setShowMergeDialog}
@@ -2493,6 +2712,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
         moduleKey={module.key}
         catalog={customizeCatalog}
         lockedIds={['details']}
+        defaultOrder={DEFAULT_VISIBLE_RELATED_LIST_IDS}
       />
 
       <RecordLinksEditorDialog
@@ -2600,26 +2820,29 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="w-full justify-start text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10"
+                      className="w-full justify-start text-sky-700 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-500/10"
                       onClick={() => {
                         setInsightsSheetOpen(false);
                         setShowConvertDialog(true);
                       }}
                     >
-                      <UserCheck className="w-4 h-4 mr-2" />
-                      Convert to Contact
+                      <UserPlus className="w-4 h-4 mr-2" aria-hidden />
+                      Add as Contact
                     </Button>
                   )}
                   {canConvertToMember && (
-                    <div className="w-full">
-                      <ConvertLeadButton
-                        recordId={record.id}
-                        recordTitle={getRecordDisplayName(record)}
-                        marketType={recordMarketType}
-                        effectiveStartDate={recordEffectiveStartDate}
-                        showContactAlternative={isLeads}
-                      />
-                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full justify-start text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10"
+                      onClick={() => {
+                        setInsightsSheetOpen(false);
+                        setShowEnrollDialog(true);
+                      }}
+                    >
+                      <ShieldCheck className="w-4 h-4 mr-2" aria-hidden />
+                      {enrollLabel}
+                    </Button>
                   )}
                 </div>
               }
@@ -2704,6 +2927,137 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
 // -----------------------------------------------------------------------------
 // Helpers
 // -----------------------------------------------------------------------------
+
+/**
+ * One-line collapsible wrapper for the screen-one context blocks. Native
+ * <details>/<summary> — keyboard-toggleable, no JS state, and it collapses to
+ * a single summary line so empty histories stop pushing fields off the fold.
+ */
+function CompactContextBlock({
+  icon: Icon,
+  title,
+  summary,
+  defaultOpen,
+  children,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  summary: string;
+  defaultOpen: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <details
+      open={defaultOpen}
+      className="group rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/40 open:pb-2"
+    >
+      <summary className="flex cursor-pointer select-none items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-200 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
+        <ChevronDown className="h-3.5 w-3.5 shrink-0 text-slate-400 transition-transform -rotate-90 group-open:rotate-0" aria-hidden />
+        <Icon className="h-4 w-4 shrink-0 text-teal-500" />
+        <span className="font-medium">{title}</span>
+        <span className="truncate text-xs text-slate-500 dark:text-slate-400">· {summary}</span>
+      </summary>
+      <div className="px-2 [&>div]:border-0 [&>div]:shadow-none">{children}</div>
+    </details>
+  );
+}
+
+const RECENT_NOTES_LIMIT = 3;
+
+/**
+ * "Recent notes (3) + Add note" strip for the details pane. Read-only preview
+ * of the newest notes (same aggregated `notes` the Notes pane renders);
+ * editing/searching lives in the Notes pane, one click away.
+ */
+function RecentNotesStrip({
+  notes,
+  total,
+  onAddNote,
+  onViewAll,
+  className,
+}: {
+  notes: CrmNoteWithAuthor[];
+  total: number;
+  onAddNote: () => void;
+  onViewAll: () => void;
+  className?: string;
+}) {
+  const recent = notes.slice(0, RECENT_NOTES_LIMIT);
+  return (
+    <section
+      aria-label="Recent notes"
+      className={cn(
+        'rounded-xl border border-amber-200/70 dark:border-amber-500/20 bg-amber-50/40 dark:bg-amber-500/5',
+        className,
+      )}
+    >
+      <div className="flex items-center gap-2 px-3 py-2">
+        <StickyNote className="h-4 w-4 shrink-0 text-amber-500" aria-hidden />
+        <h3 className="text-sm font-medium text-slate-800 dark:text-slate-100">
+          Recent notes
+          {total > 0 && (
+            <span className="ml-1.5 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-amber-100 dark:bg-amber-500/20 px-1 text-[10px] font-semibold text-amber-700 dark:text-amber-300">
+              {total}
+            </span>
+          )}
+        </h3>
+        <div className="ml-auto flex items-center gap-1">
+          {total > 0 && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={onViewAll}
+              className="h-7 text-xs text-slate-600 dark:text-slate-300"
+            >
+              View all
+            </Button>
+          )}
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={onAddNote}
+            className="h-7 text-xs border-amber-300/70 dark:border-amber-500/30 bg-white dark:bg-slate-900"
+          >
+            <Plus className="mr-1 h-3.5 w-3.5" aria-hidden />
+            Add note
+          </Button>
+        </div>
+      </div>
+      {recent.length > 0 ? (
+        <ul className="divide-y divide-amber-200/50 dark:divide-amber-500/10 border-t border-amber-200/50 dark:border-amber-500/10">
+          {recent.map((note) => {
+            const plain = stripLegacyAuthorAttribution(
+              note.body.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim(),
+            );
+            return (
+              <li key={note.id} className="flex items-baseline gap-2 px-3 py-1.5 text-sm">
+                <span className="shrink-0 text-xs text-slate-500 dark:text-slate-400" suppressHydrationWarning>
+                  {formatNoteRelative(note.created_at)}
+                </span>
+                <span className="shrink-0 truncate max-w-[9rem] text-xs font-medium text-slate-600 dark:text-slate-300">
+                  {getNoteAuthorDisplay(note, { showHistorical: true })}
+                </span>
+                <span className="min-w-0 truncate text-slate-700 dark:text-slate-200" title={plain}>
+                  {plain || '(formatted note)'}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      ) : total > 0 ? (
+        <p className="border-t border-amber-200/50 dark:border-amber-500/10 px-3 py-2 text-xs text-slate-500 dark:text-slate-400">
+          Imported notes history is on the Notes tab.
+        </p>
+      ) : (
+        <p className="border-t border-amber-200/50 dark:border-amber-500/10 px-3 py-2 text-xs text-slate-500 dark:text-slate-400">
+          No notes yet — the last conversation, next step, and anything the member told you go here.
+        </p>
+      )}
+    </section>
+  );
+}
 
 function ComingSoon({
   label,

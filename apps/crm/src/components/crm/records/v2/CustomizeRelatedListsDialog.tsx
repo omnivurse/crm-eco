@@ -9,9 +9,12 @@
  *   - Shows two stacks: "Pinned" (visible in the rail, in order) and
  *     "Available" (hidden). Move arrows reorder within Pinned; Add/Remove
  *     swaps between stacks.
- *   - "Reset to default" clears the override for this module.
+ *   - "Reset to default" restores the module's default order (the caller's
+ *     `defaultOrder`, else every catalog id) in the working copy.
  *   - Persists via `useUiPreferences().patch({ related_list_order })` —
  *     which is already merge-safe on the server (unknown keys preserved).
+ *     Nothing is written until the user presses "Save layout"; opening the
+ *     dialog only reads the saved order (or falls back to `defaultOrder`).
  *   - "Coming soon" items can't be pinned (they're disabled in the
  *     Available column). This keeps Zoho-parity parity honest.
  */
@@ -49,6 +52,13 @@ export interface CustomizeRelatedListsDialogProps {
    * They stay pinned and are not reorderable past the top.
    */
   lockedIds?: string[];
+  /**
+   * The order the host renders when the user has NOT customised this module
+   * (e.g. the lean default chip strip). Seeds the working copy — and "Reset" —
+   * when there is no saved order, so Pinned/Available mirror what the user
+   * actually sees. Defaults to every catalog id.
+   */
+  defaultOrder?: readonly string[];
 }
 
 export function CustomizeRelatedListsDialog({
@@ -57,11 +67,18 @@ export function CustomizeRelatedListsDialog({
   moduleKey,
   catalog,
   lockedIds = [],
+  defaultOrder: defaultOrderProp,
 }: CustomizeRelatedListsDialogProps) {
   const { preferences, patch } = useUiPreferences();
 
-  const defaultOrder = useMemo(() => catalog.map((c) => c.id), [catalog]);
-  const stored = preferences.related_list_order?.[moduleKey];
+  const defaultOrder = useMemo(
+    () => (defaultOrderProp ? [...defaultOrderProp] : catalog.map((c) => c.id)),
+    [defaultOrderProp, catalog],
+  );
+  // An empty saved list is treated as "not customised" (same rule as the
+  // shell's chip strip); "details" is locked so a real save is never empty.
+  const storedRaw = preferences.related_list_order?.[moduleKey];
+  const stored = storedRaw && storedRaw.length > 0 ? storedRaw : undefined;
 
   // Working copy — mutable while the dialog is open so the user can preview
   // changes before committing.

@@ -3,7 +3,7 @@
 import { useState, useCallback, useMemo, useEffect, useRef, memo } from 'react';
 import { queuedSend } from '@/lib/offline/queued-send';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Input, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Combobox } from '@crm-eco/ui';
+import { Input, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Button, Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue, Combobox } from '@crm-eco/ui';
 import type { ComboboxOption } from '@crm-eco/ui';
 import { promptDialog } from '@crm-eco/ui/components/prompt-dialog';
 import { cn } from '@crm-eco/ui/lib/utils';
@@ -21,8 +21,8 @@ import { MassActionsBar } from './MassActionsBar';
 import { ModuleShellProvider } from './ModuleShellContext';
 import { RecentlyViewedRail } from '@/components/crm/records/v2/RecentlyViewedRail';
 import { QuickFilterChips } from '@/components/crm/records/v2/QuickFilterChips';
-import { ViewModeSwitcher } from '@/components/crm/views/ViewModeSwitcher';
 import { SavedViewsBar } from '@/components/crm/views/SavedViewsBar';
+import { ViewModeSwitcher } from '@/components/crm/views/ViewModeSwitcher';
 import { MobileToolbarDrawer } from './MobileToolbarDrawer';
 import { ModuleLiveSearchDropdown, type ModuleLiveSearchResult } from './ModuleLiveSearchDropdown';
 import { nextModuleSpotlightStateAfterSelect } from '@/lib/crm/module-spotlight-select';
@@ -32,8 +32,28 @@ import type { CrmModule, CrmField, CrmView, CrmRecord, CrmTerritory, ViewFilter,
 import { CRM_SPOTLIGHT_SEARCH_LIMIT } from '@/lib/crm/search-limits';
 import { pickDefaultListColumns } from '@/lib/crm/default-list-columns';
 import { toastDeletedWithUndo } from '@/lib/crm/undo-delete';
+import { getFieldOptions } from '@/lib/crm/utils';
+import { STATUS_LANES, statusLane, type StatusLane } from '@/lib/crm/status-lanes';
+import { fetchStatusValues, type StatusValueRow } from '@/lib/crm/status-values-client';
+import {
+  CRM_CLEAR_LIST_STATE_EVENT,
+  clearListStateParams,
+  type ClearListStateDetail,
+} from '@/lib/crm/list-empty-state';
 
 export type RecordScope = 'all' | 'mine' | 'downline';
+
+/** Field keys that carry a record's lifecycle status (people modules). */
+const STATUS_FIELD_KEYS = ['contact_status', 'lead_status', 'status'] as const;
+
+/**
+ * View modes shown as always-visible radios. Kanban/chart/timeline/calendar/
+ * tree are for pipelines and schedules, so on people lists they live behind
+ * ViewModeSwitcher's "More views" menu — unless the current view (URL / saved
+ * view) already uses one, in which case it is promoted so the active state
+ * stays visible.
+ */
+const PRIMARY_VIEW_MODES: ViewMode[] = ['table', 'list', 'split'];
 
 /** Validate parsed filter objects from URL to prevent malformed state */
 function isValidFilter(f: unknown): f is ViewFilter {
@@ -362,6 +382,25 @@ export const ModuleShell = memo(function ModuleShell({
     pushFiltersToUrl([]);
   }, [pushFiltersToUrl]);
 
+  // Empty-state "Clear filters / Clear search / …" buttons live inside
+  // RecordTable/ListView, which don't own list state. They dispatch
+  // `crm:clear-list-state`; we answer here so the URL, chips bar, search box
+  // and scope picker all move together (single write path).
+  useEffect(() => {
+    const onClear = (event: Event) => {
+      const detail = (event as CustomEvent<ClearListStateDetail>).detail;
+      if (!detail || detail.moduleKey !== module.key) return;
+      const { target } = detail;
+      if (target === 'filters' || target === 'all') setFilters([]);
+      if (target === 'search' || target === 'all') setSearchQuery('');
+      if (target === 'scope' || target === 'all') setScope('all');
+      const params = clearListStateParams(searchParamsRef.current, target);
+      router.push(`/crm/modules/${module.key}?${params.toString()}`, { scroll: false });
+    };
+    window.addEventListener(CRM_CLEAR_LIST_STATE_EVENT, onClear);
+    return () => window.removeEventListener(CRM_CLEAR_LIST_STATE_EVENT, onClear);
+  }, [module.key, router]);
+
   const handleSortChange = useCallback((field: string, direction: 'asc' | 'desc') => {
     setSortField(field);
     setSortDirection(direction);
@@ -433,15 +472,56 @@ export const ModuleShell = memo(function ModuleShell({
     setSelectedIds(new Set());
   }, []);
 
-  // Status options based on module
-  const statusOptions = useMemo(() => {
-    if (module.key === 'leads') {
-      return ['new', 'contacted', 'qualified', 'unqualified', 'converted'];
-    } else if (module.key === 'contacts') {
-      return ['active', 'inactive', 'prospect'];
+  // Bulk "Change Status" options: the module's configured status-field
+  // options (crm_fields) merged with the live values actually stored on
+  // records (status-values endpoint), grouped by lane so a non-technical
+  // user sees "Active / Pending / Cancelled…" instead of a raw list.
+  const statusField = useMemo(
+    () => STATUS_FIELD_KEYS.map((k) => fields.find((f) => f.key === k)).find(Boolean),
+    [fields],
+  );
+  // Lazy (first time the dialog opens) via the shared, cached status-values
+  // fetcher — same request QuickFilterChips / the Filters sidebar already made.
+  const [liveStatusValues, setLiveStatusValues] = useState<StatusValueRow[] | null>(null);
+  const [liveStatusLoading, setLiveStatusLoading] = useState(false);
+  const loadLiveStatusValues = useCallback(async () => {
+    if (liveStatusValues !== null || liveStatusLoading) return;
+    setLiveStatusLoading(true);
+    try {
+      setLiveStatusValues(await fetchStatusValues(module.key));
+    } catch {
+      // Fall back to the crm_fields options; the dialog stays usable.
+      setLiveStatusValues([]);
+    } finally {
+      setLiveStatusLoading(false);
     }
-    return ['active', 'inactive', 'pending'];
-  }, [module.key]);
+  }, [liveStatusValues, liveStatusLoading, module.key]);
+
+  const statusOptionGroups = useMemo(() => {
+    const merged = new Map<string, { value: string; count: number }>();
+    for (const opt of statusField ? getFieldOptions(statusField.options, statusField.key) : []) {
+      if (opt) merged.set(opt, { value: opt, count: 0 });
+    }
+    for (const row of liveStatusValues ?? []) {
+      if (!row?.value) continue;
+      const prev = merged.get(row.value);
+      merged.set(row.value, { value: row.value, count: (prev?.count ?? 0) + (row.count ?? 0) });
+    }
+    const byLane = new Map<StatusLane, { value: string; count: number }[]>();
+    for (const entry of merged.values()) {
+      const lane = statusLane(entry.value);
+      const arr = byLane.get(lane) ?? [];
+      arr.push(entry);
+      byLane.set(lane, arr);
+    }
+    return STATUS_LANES
+      .map((lane) => ({
+        lane: lane.id,
+        label: lane.label,
+        options: (byLane.get(lane.id) ?? []).sort((a, b) => b.count - a.count || a.value.localeCompare(b.value)),
+      }))
+      .filter((g) => g.options.length > 0);
+  }, [statusField, liveStatusValues]);
 
   // Stage options for deals
   const stageOptions = ['prospecting', 'qualification', 'proposal', 'negotiation', 'closed_won', 'closed_lost'];
@@ -567,7 +647,8 @@ export const ModuleShell = memo(function ModuleShell({
   const handleChangeStatus = useCallback(() => {
     setSelectedStatus('');
     setShowStatusDialog(true);
-  }, []);
+    void loadLiveStatusValues();
+  }, [loadLiveStatusValues]);
 
   const handleConfirmStatusChange = useCallback(async () => {
     if (!selectedStatus) {
@@ -1151,6 +1232,8 @@ export const ModuleShell = memo(function ModuleShell({
             }}
           />
           <QuickFilterChips
+            moduleKey={module.key}
+            fields={fields}
             currentFilters={filters}
             currentScope={scope}
             onApplyPreset={(preset, active) =>
@@ -1169,6 +1252,7 @@ export const ModuleShell = memo(function ModuleShell({
             <ViewModeSwitcher
               value={viewMode}
               onChange={handleViewModeChange}
+              visibleModes={PRIMARY_VIEW_MODES}
             />
 
             <div className="w-px h-6 bg-slate-200 dark:bg-white/10" />
@@ -1176,6 +1260,8 @@ export const ModuleShell = memo(function ModuleShell({
             <FilterSidebarTrigger
               fields={fields}
               filters={filters}
+              orgId={module.org_id}
+              moduleKey={module.key}
               onFiltersChange={(newFilters) => {
                 setFilters(newFilters);
                 pushFiltersToUrl(newFilters);
@@ -1281,17 +1367,39 @@ export const ModuleShell = memo(function ModuleShell({
           </DialogHeader>
           <div className="py-4">
             <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select new status" />
+              <SelectTrigger aria-label="New status">
+                <SelectValue placeholder={liveStatusLoading ? 'Loading statuses…' : 'Select new status'} />
               </SelectTrigger>
-              <SelectContent>
-                {statusOptions.map((status) => (
-                  <SelectItem key={status} value={status} className="capitalize">
-                    {status.replace('_', ' ')}
-                  </SelectItem>
+              <SelectContent className="max-h-72">
+                {statusOptionGroups.length === 0 && !liveStatusLoading && (
+                  <div className="px-2 py-3 text-xs text-slate-500">
+                    No status options are configured for this module yet.
+                  </div>
+                )}
+                {statusOptionGroups.map((group) => (
+                  <SelectGroup key={group.lane}>
+                    <SelectLabel className="text-[10px] uppercase tracking-wider text-slate-400">
+                      {group.label}
+                    </SelectLabel>
+                    {group.options.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        <span className="flex items-center gap-2">
+                          <span>{opt.value}</span>
+                          {opt.count > 0 && (
+                            <span className="text-[10px] text-slate-400 tabular-nums">
+                              {opt.count.toLocaleString()}
+                            </span>
+                          )}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
                 ))}
               </SelectContent>
             </Select>
+            <p className="mt-2 text-[11px] text-slate-500 dark:text-slate-400">
+              Grouped the way the list filters group them; the exact spelling you pick is what gets saved.
+            </p>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowStatusDialog(false)} disabled={isProcessing}>
@@ -1421,6 +1529,7 @@ export const ModuleShell = memo(function ModuleShell({
                   handleViewModeChange(m);
                   setMobileToolbarOpen(false);
                 }}
+                visibleModes={PRIMARY_VIEW_MODES}
               />
             ),
           },
@@ -1459,6 +1568,8 @@ export const ModuleShell = memo(function ModuleShell({
               <FilterSidebarTrigger
                 fields={fields}
                 filters={filters}
+                orgId={module.org_id}
+                moduleKey={module.key}
                 onFiltersChange={(newFilters) => {
                   setFilters(newFilters);
                   pushFiltersToUrl(newFilters);

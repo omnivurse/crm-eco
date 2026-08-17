@@ -3,7 +3,9 @@ import {
   ACTIVE_INSURANCE_CLIENT_STATUS,
   getConvertActionLabel,
   getCoreStatusPickerItems,
+  getEnrollActionLabel,
   getMemberNoun,
+  getMemberNounTitle,
   isActiveCoverageStatus,
   isInsuranceMarket,
   relabelStatusForMarket,
@@ -33,6 +35,14 @@ describe('member-terminology', () => {
     expect(getConvertActionLabel('traditional_insurance')).toBe('Convert to Insurance Client');
     expect(getConvertActionLabel('healthshare')).toBe('Convert to Member');
     expect(getMemberNoun('traditional_insurance')).toBe('insurance client');
+  });
+
+  it('title-cases the noun for headings and builds the Enroll as… label', () => {
+    expect(getMemberNounTitle('traditional_insurance')).toBe('Insurance Client');
+    expect(getMemberNounTitle('healthshare')).toBe('Member');
+    expect(getMemberNounTitle(null)).toBe('Member');
+    expect(getEnrollActionLabel('traditional_insurance')).toBe('Enroll as Insurance Client');
+    expect(getEnrollActionLabel('healthshare')).toBe('Enroll as Member');
   });
 
   it('exposes Active Insurance Client in the status picker', () => {

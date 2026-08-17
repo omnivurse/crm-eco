@@ -375,7 +375,9 @@ export function reasonFragment(
       return `Starts ${shortDate(ctx.effectiveDate, now)}`;
     }
     case 'pending': {
-      const day = isoDayOf(ctx.updatedAt);
+      // Since CREATED, not updated — editing the record must not reset the
+      // "how long have they been waiting" clock.
+      const day = isoDayOf(ctx.createdAt);
       return day ? `Pending since ${shortDate(day, now)}` : 'Pending activation';
     }
     case 'needs_attention':
@@ -530,7 +532,7 @@ function metaFor(item: PeopleQueueItem): RankMeta {
 /**
  * Comparator implementing the approved order:
  *   overdue_task (oldest due first) > task_today (soonest first)
- *   > starting_soon (soonest first) > pending (oldest updated first)
+ *   > starting_soon (soonest first) > pending (oldest created first)
  *   > needs_attention (score desc) > new (newest first) > recent (latest first)
  * Ties: higher attention score, then most recently updated.
  */
@@ -551,7 +553,7 @@ export function comparePeopleQueueItems(a: PeopleQueueItem, b: PeopleQueueItem):
       c = cmpAsc(ts(a.effectiveDate), ts(b.effectiveDate));
       break;
     case 'pending':
-      c = cmpAsc(ts(a.updatedAt), ts(b.updatedAt));
+      c = cmpAsc(ts(ma.createdAt), ts(mb.createdAt));
       break;
     case 'needs_attention':
       c = b.attentionScore - a.attentionScore;

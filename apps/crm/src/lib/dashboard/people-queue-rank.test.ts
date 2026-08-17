@@ -167,7 +167,11 @@ describe('reasonFragment / buildReasonLabel', () => {
     expect(reasonFragment('starting_soon', { now: NOW, effectiveDate: '2026-09-01' })).toBe('Starts Sep 1');
     expect(reasonFragment('starting_soon', { now: NOW, effectiveDate: '2026-08-17' })).toBe('Starts today');
     expect(reasonFragment('starting_soon', { now: NOW, effectiveDate: '2026-08-18' })).toBe('Starts tomorrow');
-    expect(reasonFragment('pending', { now: NOW, updatedAt: '2026-07-02T10:00:00Z' })).toBe('Pending since Jul 2');
+    // "Pending since" is measured from CREATED — a later edit must not reset it.
+    expect(
+      reasonFragment('pending', { now: NOW, createdAt: '2026-07-02T10:00:00Z', updatedAt: '2026-08-16T10:00:00Z' }),
+    ).toBe('Pending since Jul 2');
+    expect(reasonFragment('pending', { now: NOW, updatedAt: '2026-07-02T10:00:00Z' })).toBe('Pending activation');
     expect(reasonFragment('new', { now: NOW, createdAt: '2026-08-13T10:00:00Z' })).toBe('Added 4d ago');
     expect(reasonFragment('new', { now: NOW, createdAt: '2026-08-17T10:00:00Z' })).toBe('Added today');
     expect(reasonFragment('needs_attention', { now: NOW, attentionLabel: 'No phone on file' })).toBe(
@@ -275,8 +279,9 @@ describe('rankPeopleQueue', () => {
       item({ recordId: 'new-newer', reason: 'new', createdAt: '2026-08-15T00:00:00Z' }),
       item({ recordId: 'attn-lo', reason: 'needs_attention', attentionScore: 40 }),
       item({ recordId: 'attn-hi', reason: 'needs_attention', attentionScore: 90 }),
-      item({ recordId: 'pend-new', reason: 'pending', updatedAt: '2026-08-10T00:00:00Z' }),
-      item({ recordId: 'pend-old', reason: 'pending', updatedAt: '2026-07-01T00:00:00Z' }),
+      // pending: oldest CREATED first (updated_at deliberately inverted to prove it is ignored)
+      item({ recordId: 'pend-new', reason: 'pending', createdAt: '2026-08-10T00:00:00Z', updatedAt: '2026-07-01T00:00:00Z' }),
+      item({ recordId: 'pend-old', reason: 'pending', createdAt: '2026-07-01T00:00:00Z', updatedAt: '2026-08-10T00:00:00Z' }),
       item({ recordId: 'start-later', reason: 'starting_soon', effectiveDate: '2026-09-10' }),
       item({ recordId: 'start-soon', reason: 'starting_soon', effectiveDate: '2026-08-20' }),
       item({ recordId: 'today', reason: 'task_today', task: { id: 't', title: 'x', dueAt: '2026-08-17T16:00:00Z' } }),
@@ -316,7 +321,7 @@ describe('assemblePeopleQueue', () => {
       created_at: '2026-08-13T10:00:00Z',
       data: { sharing_entity: 'Zion Health', product: 'Care+', start_date: '2026-09-01' },
     });
-    const r2 = row({ id: 'r2', updated_at: '2026-07-02T10:00:00Z', status: 'Pending' });
+    const r2 = row({ id: 'r2', created_at: '2026-07-02T10:00:00Z', updated_at: '2026-08-16T10:00:00Z', status: 'Pending' });
     const items = assemblePeopleQueue({
       records: records([{ row: r1 }, { row: r2 }]),
       hits: [
