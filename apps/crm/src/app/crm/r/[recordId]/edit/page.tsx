@@ -15,6 +15,7 @@ import {
   AlertDialogCancel,
 } from '@crm-eco/ui/components/alert-dialog';
 import { toast } from 'sonner';
+import { toastCopy } from '@/lib/crm/toast-copy';
 import { useQueryClient } from '@tanstack/react-query';
 import { useEditRecordData } from '@/hooks/useEditRecordData';
 import { queryKeys } from '@/lib/query-keys';
@@ -439,7 +440,7 @@ export default function EditRecordPage() {
     if (isLoading || resolving) return;
     if (recordRow) return;
     if (!recordQueryError) return;
-    toast.error('Failed to load record');
+    toast.error(toastCopy.failed('load this record', undefined, 'Refresh the page or go back to the list'));
   }, [isLoading, resolving, recordRow, recordQueryError]);
 
   // Autosave plumbing — `scheduleAutosave` and the visibilitychange
@@ -633,10 +634,10 @@ export default function EditRecordPage() {
       const values = formRef.current?.getValues() ?? latestValuesRef.current;
       await persist(values);
       await invalidateCaches();
-      toast.success('Changes saved');
+      toast.success(toastCopy.saved('Changes'));
       proceedToPendingHref();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to save record');
+      toast.error(toastCopy.failed('save your changes', err, 'Try again'));
     } finally {
       setLeaving(false);
     }
@@ -661,12 +662,11 @@ export default function EditRecordPage() {
       await invalidateCaches();
       isDirtyRef.current = false;
       setIsDirty(false);
-      toast.success('Record updated successfully');
+      toast.success(toastCopy.saved('Changes'));
       router.refresh();
       router.push(`/crm/r/${recordId}`);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to save record';
-      toast.error(msg);
+      toast.error(toastCopy.failed('save your changes', err, 'Try again'));
     } finally {
       setSaving(false);
     }
@@ -685,12 +685,11 @@ export default function EditRecordPage() {
         await invalidateCaches();
         isDirtyRef.current = false;
         setIsDirty(false);
-        toast.success('Record updated successfully');
+        toast.success(toastCopy.saved('Changes'));
         router.refresh();
         router.push(`/crm/r/${recordId}`);
       } catch (err) {
-        const msg = err instanceof Error ? err.message : 'Failed to save record';
-        toast.error(msg);
+        toast.error(toastCopy.failed('save your changes', err, 'Try again'));
       } finally {
         setSaving(false);
       }

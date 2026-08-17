@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@crm-eco/ui/components/button';
@@ -93,14 +93,18 @@ export function RecordDrawer() {
   // Use TanStack Query for cached data fetching
   const { data, isLoading } = useRecordDrawerData(isOpen ? recordId : null);
 
-  // Local state for optimistic updates
-  const [localRecordData, setLocalRecordData] = useState<Record<string, unknown> | null>(null);
+  // Local state for optimistic updates. Keyed by the record it belongs to so
+  // it implicitly resets when the drawer switches records (no effect needed).
+  const [localEdit, setLocalEdit] = useState<{
+    recordId: string;
+    data: Record<string, unknown>;
+  } | null>(null);
+  const localRecordData = localEdit && localEdit.recordId === recordId ? localEdit.data : null;
+  const setLocalRecordData = (next: Record<string, unknown> | null) => {
+    setLocalEdit(next && recordId ? { recordId, data: next } : null);
+  };
   // Track which sections are collapsed
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
-
-  useEffect(() => {
-    setLocalRecordData(null);
-  }, [recordId]);
   // Toggle to show all fields including empty sections. Defaults to true so
   // empty sections (e.g. Address) stay visible and editable instead of
   // disappearing — keeping the quick drawer consistent with the always-visible
@@ -113,11 +117,16 @@ export function RecordDrawer() {
     const currentData = localRecordData || data.record.data || {};
     const updatedData = { ...currentData, [fieldKey]: value };
 
-    // Optimistic update
+    // Optimistic update (local display only — the full merged object is
+    // never sent to the server, see below).
     setLocalRecordData(updatedData);
 
     try {
-      await patchCrmRecord(data.record.id, { data: updatedData });
+      // DATA SAFETY: PATCH only the edited key. `record.data` may carry
+      // read-time enrichment (twin overlay / legacy-key projection); spreading
+      // it back would persist projected values as real keys. The server
+      // merges JSONB (record-patch-service.ts).
+      await patchCrmRecord(data.record.id, { data: { [fieldKey]: value } });
 
       // Invalidate caches to refetch fresh data (including module lists)
       queryClient.invalidateQueries({ queryKey: queryKeys.records.detail(data.record.id) });
@@ -133,15 +142,16 @@ export function RecordDrawer() {
   };
 
   // Merge full row + JSONB so lane/carrier fields from crm_records columns display correctly
+  const record = data?.record;
   const effectiveRecordData = useMemo(() => {
-    if (!data?.record) return null;
-    const dataOnly = localRecordData ?? (data.record.data as Record<string, unknown>) ?? {};
-    const recordRow = data.record as CrmRecord & { module?: { key: string } | null };
+    if (!record) return null;
+    const dataOnly = localRecordData ?? (record.data as Record<string, unknown>) ?? {};
+    const recordRow = record as CrmRecord & { module?: { key: string } | null };
     return mergeCrmRecordRowIntoFormDefaults({
       ...(recordRow as unknown as Record<string, unknown>),
       data: dataOnly,
     }, { moduleKey: recordRow.module?.key });
-  }, [data?.record, localRecordData]);
+  }, [record, localRecordData]);
 
   // Build display name — prefer `preferred_name` (nickname) over legal first_name
   // so the drawer header surfaces what the contact actually goes by. Legal

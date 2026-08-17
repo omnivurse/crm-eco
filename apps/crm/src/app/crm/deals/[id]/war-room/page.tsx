@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { toast } from 'sonner';
+import { toastCopy } from '@/lib/crm/toast-copy';
 import { supabase } from '@/lib/supabase-client';
 import { resolveNoteSourceRecordIdsWithClient } from '@/lib/crm/note-aggregate';
 import { getNoteAuthorDisplay } from '@/lib/crm/note-sanitize';
@@ -226,11 +227,11 @@ export default function DealWarRoomPage() {
         const data = await res.json();
         throw new Error(data.error || 'Failed to add note');
       }
-      toast.success('Note added');
+      toast.success(toastCopy.added('Note'));
       setNewNote('');
       fetchData();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to add note');
+      toast.error(toastCopy.failed('add the note', err, 'Try again'));
     } finally {
       setSubmittingNote(false);
     }
@@ -254,7 +255,7 @@ export default function DealWarRoomPage() {
       }
       fetchData();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to create task');
+      toast.error(toastCopy.failed('create the task', err, 'Try again'));
     }
   };
 
@@ -276,7 +277,7 @@ export default function DealWarRoomPage() {
       }
       fetchData();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to update task');
+      toast.error(toastCopy.failed('update the task', err, 'Try again'));
     }
   };
 
@@ -469,7 +470,7 @@ export default function DealWarRoomPage() {
                         handleAddTask(actionTitle.trim(), 'normal');
                         setActionTitle('');
                         setShowAddAction(false);
-                        toast.success('Action added');
+                        toast.success(toastCopy.added('Action item'));
                       }
                       if (e.key === 'Escape') setShowAddAction(false);
                     }}
@@ -536,7 +537,7 @@ export default function DealWarRoomPage() {
                         handleAddTask(blockerTitle.trim(), 'urgent');
                         setBlockerTitle('');
                         setShowAddBlocker(false);
-                        toast.success('Blocker added');
+                        toast.success(toastCopy.added('Blocker'));
                       }
                       if (e.key === 'Escape') setShowAddBlocker(false);
                     }}

@@ -11,9 +11,14 @@
  *   5. Quick Actions (create per-module, import)
  *   6. Terminal command hints (unfiltered state only)
  *
- * Every record result exposes two actions: "Open" and "✨ Draft AI email" (the
- * latter navigates with `?ai=email` which `RecordDetailShellV2` detects and
- * auto-triggers the follow-up draft flow).
+ * Record results are grouped per person (see lib/crm/palette-results.ts): the
+ * same human found as a Contact + Lead + Member renders once, with a chip per
+ * module. "Draft AI email" (navigates with `?ai=email`, which
+ * `RecordDetailShellV2` detects and auto-triggers the draft) is keyboard-only
+ * (⌘/Ctrl+Enter) and offered only when the row has an email AND the viewer is
+ * a CRM admin/manager — there is no client-visible "AI configured" flag, so
+ * this is the narrowest honest gate. Terminal command hints that only make
+ * sense with a deals pipeline are hidden unless the org has `deals` enabled.
  */
 
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
@@ -62,6 +67,15 @@ import {
   shouldClearEphemeralSearchOnOpenChange,
   useEphemeralSearchWhenClosed,
 } from '@/hooks/useEphemeralSearchWhenClosed';
+import { useClientAuth } from '@/hooks/useClientAuth';
+import { SEARCH_PLACEHOLDER, SEARCH_PLACEHOLDER_ON_RECORD } from '@/lib/crm/search-copy';
+import {
+  groupPaletteResults,
+  paletteResultLimit,
+  resultHasEmail,
+  type PaletteResultChip,
+} from '@/lib/crm/palette-results';
+import { canDraftAiEmail as roleCanDraftAiEmail } from '@/lib/crm/ai/email-draft-roles';
 
 interface CommandPaletteProps {
   open: boolean;
@@ -81,12 +95,14 @@ interface CommandItem {
   matches?: RecordSearchMatch[];
   /** Module name shown alongside chips (chips replace the description line). */
   moduleLabel?: string;
-  /** Optional secondary action shown as a small sparkle chip. */
+  /** Optional secondary action — keyboard-only (⌘/Ctrl+Enter), hinted on the selected row. */
   secondary?: {
     label: string;
     action: () => void;
     icon: React.ReactNode;
   };
+  /** Module chips for a grouped person row (Contact / Lead / Member); each navigates. */
+  chips?: PaletteResultChip[];
 }
 
 interface RecordSearchResult {
@@ -120,6 +136,8 @@ interface TerminalCommand {
   pattern: RegExp;
   syntax: string;
   description: string;
+  /** Only meaningful when the org has a deals pipeline module enabled. */
+  requiresDeals?: boolean;
   execute: (match: RegExpMatchArray, navigate: (path: string) => void) => void;
 }
 
@@ -137,6 +155,7 @@ const terminalCommands: TerminalCommand[] = [
     pattern: /^deals?\s+at-?risk$/i,
     syntax: 'deals at-risk',
     description: 'Show at-risk deals',
+    requiresDeals: true,
     execute: (_, navigate) => {
       navigate('/crm/modules/deals?filter=at-risk');
     },
@@ -158,6 +177,7 @@ const terminalCommands: TerminalCommand[] = [
     pattern: /^stage\s+([a-f0-9-]+)\s+(.+)$/i,
     syntax: 'stage <dealId> <stageName>',
     description: 'Change deal stage',
+    requiresDeals: true,
     execute: (match, navigate) => {
       const [, dealId, stageName] = match;
       navigate(`/crm/r/${dealId}?changeStage=${encodeURIComponent(stageName)}`);
@@ -193,9 +213,76 @@ const terminalCommands: TerminalCommand[] = [
   },
 ];
 
+/**
+ * Idle-state "Terminal Commands" hints. Deal-centric ("deals at-risk",
+ * "stage <dealId> …") — rendered only when the org has a deals module.
+ */
+function terminalHintCommands({
+  navigate,
+  setQuery,
+}: {
+  navigate: (path: string) => void;
+  setQuery: (q: string) => void;
+}): CommandItem[] {
+  return [
+    {
+      id: 'terminal-view',
+      label: 'leads view <name>',
+      description: 'Load a specific view for any module',
+      icon: <Terminal className="w-4 h-4" />,
+      action: () => setQuery('leads view '),
+      category: 'Terminal Commands',
+      keywords: ['view', 'filter', 'list'],
+    },
+    {
+      id: 'terminal-atrisk',
+      label: 'deals at-risk',
+      description: 'Show at-risk deals that need attention',
+      icon: <AlertTriangle className="w-4 h-4" />,
+      action: () => {
+        terminalCommands[1].execute(['deals at-risk'] as unknown as RegExpMatchArray, navigate);
+      },
+      category: 'Terminal Commands',
+      keywords: ['risk', 'danger', 'closing'],
+    },
+    {
+      id: 'terminal-open',
+      label: 'open <module> <name/id>',
+      description: 'Open a specific record by name or ID',
+      icon: <Eye className="w-4 h-4" />,
+      action: () => setQuery('open '),
+      category: 'Terminal Commands',
+      keywords: ['open', 'view', 'record'],
+    },
+    {
+      id: 'terminal-stage',
+      label: 'stage <dealId> <stage>',
+      description: 'Change the stage of a deal',
+      icon: <ArrowRightLeft className="w-4 h-4" />,
+      action: () => setQuery('stage '),
+      category: 'Terminal Commands',
+      keywords: ['stage', 'transition', 'move', 'pipeline'],
+    },
+    {
+      id: 'terminal-new',
+      label: 'new <type>',
+      description: 'Create a new record quickly',
+      icon: <Plus className="w-4 h-4" />,
+      action: () => setQuery('new '),
+      category: 'Terminal Commands',
+      keywords: ['create', 'add', 'new'],
+    },
+  ];
+}
+
 export function CommandPalette({ open, onOpenChange, modules }: CommandPaletteProps) {
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
+  // Which module chip is armed on a grouped row (0 = primary). ←/→ move it;
+  // Enter opens it. Stored with the row it belongs to so it implicitly resets
+  // to the primary chip whenever a different row becomes selected.
+  const [armedChip, setArmedChip] = useState<{ row: number; chip: number }>({ row: 0, chip: 0 });
+  const chipIndex = armedChip.row === selectedIndex ? armedChip.chip : 0;
   const [searchResults, setSearchResults] = useState<RecordSearchResult[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [recents, setRecents] = useState<RecordSearchResult[]>([]);
@@ -204,6 +291,16 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
   const router = useRouter();
   const pathname = usePathname();
   const { preferences } = useUiPreferences();
+  const { profile: clientProfile } = useClientAuth();
+  // Same gate as /api/crm/ai/email-draft (shared constant) so the palette
+  // never offers an action the API would 403.
+  const canDraftAiEmail = roleCanDraftAiEmail(clientProfile?.crm_role);
+  // Deal-centric hints/commands only when a deals pipeline exists for this org
+  // (modules passed in are the org's enabled modules).
+  const dealsEnabled = useMemo(
+    () => modules.some((m) => m.key === 'deals' && m.is_enabled !== false),
+    [modules],
+  );
   const habits = parseHabitsProfile(preferences.habits);
   const orderedModules = useMemo(
     () => sortModulesByHabits(modules, habits),
@@ -303,7 +400,7 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
     const handle = window.setTimeout(async () => {
       try {
         const res = await fetch(
-          `/api/crm/search?q=${encodeURIComponent(trimmed)}&limit=8`,
+          `/api/crm/search?q=${encodeURIComponent(trimmed)}&limit=${paletteResultLimit(trimmed)}`,
           { credentials: 'same-origin', signal: ctrl.signal },
         );
         if (!res.ok) {
@@ -339,31 +436,47 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
     const trimmed = query.trim();
     if (!trimmed) return null;
     for (const cmd of terminalCommands) {
+      if (cmd.requiresDeals && !dealsEnabled) continue;
       const match = trimmed.match(cmd.pattern);
       if (match) return { command: cmd, match };
     }
     return null;
-  }, [query]);
+  }, [query, dealsEnabled]);
 
   const recordCommands: CommandItem[] = useMemo(() => {
-    const fromSearch: CommandItem[] = searchResults.map((r) => ({
-      id: `record-${r.id}`,
-      label: r.title,
-      description: r.subtitle ? `${r.module} · ${r.subtitle}` : r.module,
-      icon: <FileText className="w-4 h-4" />,
-      action: () => navigate(r.url),
-      category: 'Records',
-      keywords: [r.title.toLowerCase(), r.module.toLowerCase(), r.moduleKey],
-      matches: r.matches,
-      moduleLabel: r.module,
-      secondary: {
-        label: 'Draft AI email',
-        icon: <Sparkles className="w-3.5 h-3.5" />,
-        action: () => navigate(`${r.url}?ai=email`),
-      },
-    }));
-    return fromSearch;
-  }, [searchResults, navigate]);
+    // One row per person: Contact + Lead + Member twins fold into a single
+    // entry with a chip per module (pure helper, tested).
+    return groupPaletteResults(searchResults).map((group) => {
+      const r = group.primary;
+      const moduleLabel = group.isMerged
+        ? group.chips.map((c) => c.label).join(' · ')
+        : r.module;
+      const offerAi = canDraftAiEmail && group.results.some(resultHasEmail);
+      const aiTarget = group.results.find(resultHasEmail) ?? r;
+      return {
+        id: `record-${r.id}`,
+        label: r.title,
+        description: r.subtitle ? `${moduleLabel} · ${r.subtitle}` : moduleLabel,
+        icon: <FileText className="w-4 h-4" />,
+        action: () => navigate(r.url),
+        category: 'Records',
+        keywords: [
+          r.title.toLowerCase(),
+          ...group.results.flatMap((m) => [m.module.toLowerCase(), m.moduleKey]),
+        ],
+        matches: r.matches,
+        moduleLabel,
+        chips: group.isMerged ? group.chips : undefined,
+        secondary: offerAi
+          ? {
+              label: 'Draft AI email',
+              icon: <Sparkles className="w-3.5 h-3.5" />,
+              action: () => navigate(`${aiTarget.url}?ai=email`),
+            }
+          : undefined,
+      };
+    });
+  }, [searchResults, navigate, canDraftAiEmail]);
 
   const recentCommands: CommandItem[] = useMemo(() => {
     // Hide recents once the user starts typing — searchResults take over.
@@ -376,11 +489,8 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
       action: () => navigate(r.url),
       category: 'Recently viewed',
       keywords: [r.title.toLowerCase(), r.module.toLowerCase()],
-      secondary: {
-        label: 'Draft AI email',
-        icon: <Sparkles className="w-3.5 h-3.5" />,
-        action: () => navigate(`${r.url}?ai=email`),
-      },
+      // No AI action here: the recents API carries no email, so we can't tell
+      // whether a draft is even possible.
     }));
   }, [recents, query, navigate]);
 
@@ -448,56 +558,12 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
         category: 'Quick Actions',
         keywords: ['csv', 'upload', 'bulk'],
       },
-      {
-        id: 'terminal-view',
-        label: 'leads view <name>',
-        description: 'Load a specific view for any module',
-        icon: <Terminal className="w-4 h-4" />,
-        action: () => setQuery('leads view '),
-        category: 'Terminal Commands',
-        keywords: ['view', 'filter', 'list'],
-      },
-      {
-        id: 'terminal-atrisk',
-        label: 'deals at-risk',
-        description: 'Show at-risk deals that need attention',
-        icon: <AlertTriangle className="w-4 h-4" />,
-        action: () => {
-          terminalCommands[1].execute(['deals at-risk'] as unknown as RegExpMatchArray, navigate);
-        },
-        category: 'Terminal Commands',
-        keywords: ['risk', 'danger', 'closing'],
-      },
-      {
-        id: 'terminal-open',
-        label: 'open <module> <name/id>',
-        description: 'Open a specific record by name or ID',
-        icon: <Eye className="w-4 h-4" />,
-        action: () => setQuery('open '),
-        category: 'Terminal Commands',
-        keywords: ['open', 'view', 'record'],
-      },
-      {
-        id: 'terminal-stage',
-        label: 'stage <dealId> <stage>',
-        description: 'Change the stage of a deal',
-        icon: <ArrowRightLeft className="w-4 h-4" />,
-        action: () => setQuery('stage '),
-        category: 'Terminal Commands',
-        keywords: ['stage', 'transition', 'move', 'pipeline'],
-      },
-      {
-        id: 'terminal-new',
-        label: 'new <type>',
-        description: 'Create a new record quickly',
-        icon: <Plus className="w-4 h-4" />,
-        action: () => setQuery('new '),
-        category: 'Terminal Commands',
-        keywords: ['create', 'add', 'new'],
-      },
+      ...(dealsEnabled
+        ? terminalHintCommands({ navigate, setQuery })
+        : []),
     ];
     return commands;
-  }, [orderedModules, navigate]);
+  }, [orderedModules, navigate, dealsEnabled]);
 
   // Filter "base" commands by the free-text query.
   const filteredBase = useMemo(() => {
@@ -555,16 +621,44 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
           e.preventDefault();
           setSelectedIndex((i) => Math.max(i - 1, 0));
           break;
-        case 'Enter':
+        case 'ArrowRight':
+        case 'ArrowLeft': {
+          // On a grouped person row, ←/→ pick which module chip Enter opens.
+          // Rows without chips keep the default (caret movement in the input).
+          const current = flatCommands[selectedIndex];
+          const chipCount = current?.chips?.length ?? 0;
+          if (chipCount < 2) break;
           e.preventDefault();
+          const delta = e.key === 'ArrowRight' ? 1 : -1;
+          setArmedChip({
+            row: selectedIndex,
+            chip: Math.min(Math.max(chipIndex + delta, 0), chipCount - 1),
+          });
+          break;
+        }
+        case 'Enter': {
+          e.preventDefault();
+          const current = flatCommands[selectedIndex];
+          // ⌘/Ctrl+Enter runs the keyboard-only secondary action (AI draft).
+          if ((e.metaKey || e.ctrlKey) && current?.secondary) {
+            current.secondary.action();
+            return;
+          }
           if (terminalMatch) {
             terminalMatch.command.execute(terminalMatch.match, navigate);
             return;
           }
-          if (flatCommands[selectedIndex]) {
-            flatCommands[selectedIndex].action();
+          // Grouped row: open the armed chip (defaults to the primary record).
+          const armedChip = current?.chips?.[chipIndex];
+          if (armedChip && (current?.chips?.length ?? 0) > 1) {
+            navigate(armedChip.url);
+            return;
+          }
+          if (current) {
+            current.action();
           }
           break;
+        }
         case 'Escape':
           e.preventDefault();
           handleOpenChange(false);
@@ -573,11 +667,14 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [open, selectedIndex, flatCommands, handleOpenChange, terminalMatch, navigate]);
+  }, [open, selectedIndex, chipIndex, flatCommands, handleOpenChange, terminalMatch, navigate]);
 
   // Reset selection as the list changes.
   useEffect(() => {
-    queueMicrotask(() => setSelectedIndex(0));
+    queueMicrotask(() => {
+      setSelectedIndex(0);
+      setArmedChip({ row: 0, chip: 0 });
+    });
   }, [query, searchResults.length, recents.length]);
 
   // Global ⌘K / Ctrl+K toggle — sole keyboard owner (TopBar button opens via bus).
@@ -604,8 +701,13 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
           <Input
             placeholder={
               onRecordPage && recordCommandContext
-                ? 'Jump to field, search records, run commands…'
-                : 'Search records, run commands…'
+                ? SEARCH_PLACEHOLDER_ON_RECORD
+                : SEARCH_PLACEHOLDER
+            }
+            aria-label={
+              onRecordPage && recordCommandContext
+                ? SEARCH_PLACEHOLDER_ON_RECORD
+                : SEARCH_PLACEHOLDER
             }
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -659,7 +761,7 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
               <p className="text-sm text-muted-foreground">
                 {query.trim().length >= 2
                   ? 'No matches in this palette. Try a different query or open the full search page.'
-                  : 'Start typing to search records or run a command…'}
+                  : 'Type a name, email, phone or member # — or a command.'}
               </p>
               {query.trim().length >= 2 ? (
                 <button
@@ -706,9 +808,48 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
                             cmd.label
                           )}
                         </p>
+                        {cmd.chips && cmd.chips.length > 1 ? (
+                          // Chips are NOT interactive elements (a <button> may not
+                          // nest one). Keyboard: ←/→ arm a chip on the selected
+                          // row, Enter opens it. Mouse: click a chip directly.
+                          <div
+                            className="mt-1 flex flex-wrap items-center gap-1"
+                            role="group"
+                            aria-label={`${cmd.label} appears in ${cmd.chips.length} modules`}
+                          >
+                            {cmd.chips.map((chip, ci) => {
+                              const isArmed = isSelected && ci === chipIndex;
+                              return (
+                                <span
+                                  key={chip.id}
+                                  aria-current={isArmed ? 'true' : undefined}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigate(chip.url);
+                                  }}
+                                  onMouseDown={(e) => e.preventDefault()}
+                                  title={`Open ${chip.label} record`}
+                                  className={cn(
+                                    'inline-flex items-center rounded-md border px-1.5 py-0.5 text-[11px] font-medium transition-colors',
+                                    isArmed
+                                      ? 'border-primary bg-primary/10 text-foreground ring-1 ring-primary/40'
+                                      : 'border-border bg-background/60 text-muted-foreground hover:text-foreground hover:bg-muted',
+                                  )}
+                                >
+                                  {chip.label}
+                                </span>
+                              );
+                            })}
+                            {isSelected ? (
+                              <span className="sr-only">
+                                Use left and right arrow keys to pick a record type, Enter to open.
+                              </span>
+                            ) : null}
+                          </div>
+                        ) : null}
                         {cmd.matches && cmd.matches.length > 0 ? (
                           <>
-                            {cmd.moduleLabel ? (
+                            {cmd.moduleLabel && !cmd.chips ? (
                               <p className="text-[11px] text-muted-foreground truncate">
                                 {cmd.moduleLabel}
                               </p>
@@ -721,27 +862,25 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
                           </p>
                         ) : null}
                       </div>
-                      {cmd.secondary ? (
-                        <span
-                          role="button"
-                          tabIndex={-1}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            cmd.secondary!.action();
-                          }}
-                          onMouseDown={(e) => e.preventDefault()}
-                          className={cn(
-                            'inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[11px] font-medium',
-                            'border-violet-200 text-violet-700 hover:bg-violet-50',
-                            'dark:border-violet-500/30 dark:text-violet-300 dark:hover:bg-violet-500/10',
-                          )}
-                        >
-                          {cmd.secondary.icon}
-                          {cmd.secondary.label}
-                        </span>
+                      {isSelected && cmd.secondary ? (
+                        <>
+                          {/* Screen readers get the shortcut spelled out; sighted
+                              users get the compact ⌘↵ badge (hidden on mobile). */}
+                          <span className="sr-only">
+                            Press Command or Control plus Enter to {cmd.secondary.label}.
+                          </span>
+                          <span
+                            aria-hidden="true"
+                            className="hidden sm:inline-flex items-center gap-1 text-[11px] text-muted-foreground shrink-0"
+                          >
+                            {cmd.secondary.icon}
+                            <kbd className="px-1 py-0.5 rounded bg-muted font-mono">⌘↵</kbd>
+                            {cmd.secondary.label}
+                          </span>
+                        </>
                       ) : null}
-                      {isSelected && !cmd.secondary && (
-                        <ArrowRight className="w-4 h-4 text-muted-foreground" />
+                      {isSelected && (
+                        <ArrowRight className="w-4 h-4 text-muted-foreground shrink-0" />
                       )}
                     </button>
                   );

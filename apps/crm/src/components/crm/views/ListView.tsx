@@ -45,18 +45,32 @@ import {
 /**
  * Reads the URL-driven list state and decides which empty state applies.
  * Returns `null` while there are rows so callers can early-out.
+ *
+ * `activeViewFilterCount` — how many filters the active saved (crm_view)
+ * view applies. When known, an explicit `?view=` only counts as narrowing
+ * when the view actually filters (an "All Contacts" view is not narrowing);
+ * when unknown (`undefined`) the URL presence of `?view=` decides, as before.
  */
-export function useListEmptyState(recordCount: number, moduleKey: string, totalCount?: number | null): ListEmptyState | null {
+export function useListEmptyState(
+  recordCount: number,
+  moduleKey: string,
+  totalCount?: number | null,
+  activeViewFilterCount?: number | null,
+): ListEmptyState | null {
   const searchParams = useSearchParams();
   return useMemo(() => {
     if (recordCount > 0) return null;
+    const query = readListQueryState(searchParams);
+    if (query.viewId && typeof activeViewFilterCount === 'number' && activeViewFilterCount <= 0) {
+      query.viewId = null;
+    }
     return resolveListEmptyState({
       recordCount,
       totalCount,
-      query: readListQueryState(searchParams),
+      query,
       recordNoun: recordNounFromModuleKey(moduleKey),
     });
-  }, [recordCount, totalCount, searchParams, moduleKey]);
+  }, [recordCount, totalCount, activeViewFilterCount, searchParams, moduleKey]);
 }
 
 /**
@@ -202,6 +216,10 @@ interface ListViewProps {
   onSelectionChange: (ids: Set<string>) => void;
   onRowClick?: (recordId: string) => void;
   onBulkDelete?: (ids: string[]) => void;
+  /** Filtered total from the server — distinguishes "page out of range" from "no match". */
+  totalCount?: number | null;
+  /** Filter count of the active saved view (see `useListEmptyState`). */
+  activeViewFilterCount?: number | null;
 }
 
 const ListRow = memo(function ListRow({
@@ -373,10 +391,12 @@ export const ListView = memo(function ListView({
   onSelectionChange,
   onRowClick,
   onBulkDelete,
+  totalCount,
+  activeViewFilterCount,
 }: ListViewProps) {
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
-  const emptyState = useListEmptyState(records.length, moduleKey);
+  const emptyState = useListEmptyState(records.length, moduleKey, totalCount, activeViewFilterCount);
 
   // eslint-disable-next-line react-hooks/incompatible-library -- @tanstack/react-virtual returns mutable virtualizer by design
   const virtualizer = useVirtualizer({

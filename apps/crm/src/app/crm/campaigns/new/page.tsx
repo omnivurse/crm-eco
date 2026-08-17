@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase-client';
 import { useClientAuth } from '@/hooks/useClientAuth';
@@ -32,6 +32,7 @@ import {
 import { CampaignComposer } from '@/components/campaigns/CampaignComposer';
 import { RecipientSelector } from '@/components/campaigns/RecipientSelector';
 import { toast } from 'sonner';
+import { toastCopy } from '@/lib/crm/toast-copy';
 
 // ============================================================================
 // Types
@@ -122,6 +123,7 @@ function StepIndicator({ currentStep }: { currentStep: number }) {
 
 export default function NewCampaignPage() {
   const router = useRouter();
+  const pathname = usePathname();
   const { user: authUser, profile: authProfile, loading: authLoading } = useClientAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [saving, setSaving] = useState(false);
@@ -193,7 +195,11 @@ export default function NewCampaignPage() {
 
   const handleSave = async (send: boolean = false) => {
     if (!authProfile) {
-      toast.error('Not authenticated');
+      const s = toastCopy.sessionExpired(pathname);
+      toast.error(s.title, {
+        description: s.description,
+        action: { label: s.actionLabel, onClick: () => router.push(s.href) },
+      });
       return;
     }
 
@@ -258,7 +264,7 @@ export default function NewCampaignPage() {
       router.push(`/crm/campaigns/${campaign.id}`);
     } catch (error) {
       console.error('Error saving campaign:', error);
-      toast.error('Failed to save campaign');
+      toast.error(toastCopy.failed('save the campaign', undefined, 'Your draft is still on this page — try again'));
     } finally {
       setSaving(false);
     }

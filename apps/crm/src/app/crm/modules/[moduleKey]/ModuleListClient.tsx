@@ -51,6 +51,7 @@ function ModuleViewContent({
   moduleKey,
   views,
   activeViewId,
+  totalCount,
   advisorTreeData,
   agentTreeData,
   treeGroupBy,
@@ -62,6 +63,7 @@ function ModuleViewContent({
   moduleKey: string;
   views: CrmView[];
   activeViewId?: string;
+  totalCount: number;
   advisorTreeData?: AdvisorTreeData | null;
   agentTreeData?: AgentTreeData | null;
   treeGroupBy?: TreeGroupBy;
@@ -78,7 +80,13 @@ function ModuleViewContent({
   // Use visibleColumns from context if available, otherwise fall back to the
   // active view's columns, then to a small identity-first default (never every
   // field — members has 91 and that produced a ~16k px wide table).
-  const viewColumns = views.find(v => v.id === activeViewId)?.columns;
+  const activeView = views.find(v => v.id === activeViewId);
+  const viewColumns = activeView?.columns;
+  // How many filters the active saved view applies — lets the empty state
+  // say "No contacts match this saved view" (with a Leave-view action) only
+  // when the view actually narrows the list, and use `totalCount` to tell a
+  // page-out-of-range apart from a genuine no-match.
+  const activeViewFilterCount = activeView ? (activeView.filters?.length ?? 0) : undefined;
   const displayColumns = shellContext?.visibleColumns ||
     (viewColumns && viewColumns.length > 0 ? viewColumns : undefined) ||
     pickDefaultListColumns(fields);
@@ -107,6 +115,8 @@ function ModuleViewContent({
           onSelectionChange={setSelectedIds}
           onRowClick={handleRowClick}
           onBulkDelete={shellContext?.requestDelete}
+          totalCount={totalCount}
+          activeViewFilterCount={activeViewFilterCount}
         />
       );
 
@@ -194,6 +204,8 @@ function ModuleViewContent({
           onSort={handleSort}
           currentSort={currentSort}
           onBulkDelete={shellContext?.requestDelete}
+          totalCount={totalCount}
+          activeViewFilterCount={activeViewFilterCount}
         />
       );
   }
@@ -216,6 +228,7 @@ function ModuleListContent({
 }: ModuleListClientProps) {
   return (
     <ModuleShell
+      key={module.key}
       module={module}
       records={records}
       fields={fields}
@@ -231,6 +244,7 @@ function ModuleListContent({
         moduleKey={module.key}
         views={views}
         activeViewId={activeViewId}
+        totalCount={totalCount}
         advisorTreeData={advisorTreeData}
         agentTreeData={agentTreeData}
         treeGroupBy={treeGroupBy}

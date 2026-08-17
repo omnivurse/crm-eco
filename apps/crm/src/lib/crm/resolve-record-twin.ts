@@ -21,6 +21,12 @@ import {
   type MemberCrmLookupInput,
   type MemberCrmRecordCandidate,
 } from './resolve-member-crm-record';
+// No cycle: legacy-key-projection → coverage-snapshot-plan-fields →
+// premium-field-aliases; none of them import this module.
+import {
+  LEGACY_ALIAS_REJECTS_BY_MODULE,
+  MEMBERS_COVERAGE_ALIASES,
+} from './legacy-key-projection';
 
 /** The record being viewed, as stored in `crm_records`. */
 export interface TwinSourceRow {
@@ -172,6 +178,157 @@ export function overlayTwinData(
     if (isBlank(value)) continue;
     if (!isBlank(out[key])) continue;
     out[key] = value;
+  }
+  return out;
+}
+
+// ============================================================================
+// Batch (list-page) twin resolution
+// ============================================================================
+//
+// The Members LIST used to show only the row's own JSONB, so plan / effective
+// date (which live on the Contacts twin for the imported ~1,060 members) were
+// blank until the rep clicked into the record. The helpers below let a list
+// page resolve twins for a whole page of rows with a bounded number of
+// batched lookups and then apply EXACTLY the same blank-fill overlay the
+// detail page uses (`overlayTwinData` via `mergeCrmRecordRowIntoFormDefaults`).
+// Nothing is written back.
+
+/** Deduplicated match keys for one page of rows, in row order. */
+export interface TwinBatchLookupKeys {
+  /** Lower-cased, trimmed primary emails. */
+  emails: string[];
+  /** Trimmed member numbers. */
+  memberNumbers: string[];
+}
+
+/**
+ * Collect the identity keys a page of rows can be matched on. Rows that carry
+ * no strong identifier (see `buildTwinLookup`) contribute nothing, so they can
+ * never pick up a twin by name alone.
+ */
+export function collectTwinLookupKeys(rows: TwinSourceRow[]): TwinBatchLookupKeys {
+  const emails = new Set<string>();
+  const memberNumbers = new Set<string>();
+  for (const row of rows) {
+    const lookup = buildTwinLookup(row);
+    if (!lookup) continue;
+    if (lookup.email) emails.add(lookup.email.toLowerCase());
+    if (lookup.member_number) memberNumbers.add(lookup.member_number);
+  }
+  return { emails: [...emails], memberNumbers: [...memberNumbers] };
+}
+
+function candidateData(candidate: MemberCrmRecordCandidate): Record<string, unknown> {
+  const raw = candidate.data;
+  return raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
+}
+
+function normalizedEmailKeys(candidate: MemberCrmRecordCandidate): string[] {
+  const data = candidateData(candidate);
+  const out = new Set<string>();
+  for (const value of [candidate.email, data.email, data.secondary_email, data.email2]) {
+    const s = str(value);
+    if (s) out.add(s.toLowerCase());
+  }
+  return [...out];
+}
+
+/**
+ * Resolve the richer twin for every row on a page.
+ *
+ * Candidates are indexed by email / member number first so the cost is
+ * O(rows + candidates) rather than rows × candidates; the actual decision for
+ * each row is still `pickRicherTwin` (same-person check via
+ * `memberMatchesCrmRecord`, strictly-richer guard, never itself), so a batch
+ * resolution can never disagree with the single-record detail path.
+ *
+ * Returns rowId → twin JSONB for rows that have a richer twin. Rows without a
+ * twin are simply absent.
+ */
+export function pickRicherTwinsForRows(
+  rows: TwinSourceRow[],
+  candidates: MemberCrmRecordCandidate[],
+): Map<string, Record<string, unknown>> {
+  const byEmail = new Map<string, MemberCrmRecordCandidate[]>();
+  const byMemberNumber = new Map<string, MemberCrmRecordCandidate[]>();
+  for (const candidate of candidates) {
+    if (!candidate?.id) continue;
+    for (const email of normalizedEmailKeys(candidate)) {
+      const bucket = byEmail.get(email);
+      if (bucket) bucket.push(candidate);
+      else byEmail.set(email, [candidate]);
+    }
+    const memberNumber = str(candidateData(candidate).member_number);
+    if (memberNumber) {
+      const bucket = byMemberNumber.get(memberNumber);
+      if (bucket) bucket.push(candidate);
+      else byMemberNumber.set(memberNumber, [candidate]);
+    }
+  }
+
+  const out = new Map<string, Record<string, unknown>>();
+  for (const row of rows) {
+    const lookup = buildTwinLookup(row);
+    if (!lookup) continue;
+    const pool = new Map<string, MemberCrmRecordCandidate>();
+    if (lookup.email) {
+      for (const c of byEmail.get(lookup.email.toLowerCase()) ?? []) pool.set(c.id, c);
+    }
+    if (lookup.member_number) {
+      for (const c of byMemberNumber.get(lookup.member_number) ?? []) pool.set(c.id, c);
+    }
+    if (pool.size === 0) continue;
+    const twin = pickRicherTwin(row, [...pool.values()]);
+    const twinData = twin?.data;
+    if (twinData && typeof twinData === 'object' && !Array.isArray(twinData)) {
+      out.set(row.id, twinData as Record<string, unknown>);
+    }
+  }
+  return out;
+}
+
+/**
+ * Members-module list columns that mean the same thing as a key the twin (or
+ * the row itself) already carries under a legacy / health-share name. Same
+ * table the members DETAIL page projects through (`projectLegacyKeys`) — see
+ * `MEMBERS_COVERAGE_ALIASES` for the field-fill evidence — re-exported here so
+ * list callers keep one import.
+ */
+export const MEMBERS_COVERAGE_LIST_ALIASES: Readonly<Record<string, readonly string[]>> =
+  MEMBERS_COVERAGE_ALIASES;
+
+/**
+ * Per-canonical guard: alias values that must NOT be projected even though
+ * they are non-blank. `product` on legacy contacts often holds a coverage
+ * TYPE ("Health Sharing" / "Health Insurance") rather than a plan name;
+ * surfacing that as the list's Plan column would be wrong. Shared with the
+ * detail page's projection.
+ */
+export const MEMBERS_COVERAGE_ALIAS_REJECTS: Readonly<
+  Record<string, (value: unknown) => boolean>
+> = LEGACY_ALIAS_REJECTS_BY_MODULE.members ?? {};
+
+/**
+ * Fill blank members coverage columns from their same-meaning aliases.
+ * Blank-fill only — a value a rep typed into `plan_name` is never replaced —
+ * and returns a new object. Alias values rejected by
+ * `MEMBERS_COVERAGE_ALIAS_REJECTS` are skipped (the next alias is tried).
+ */
+export function projectMembersCoverageAliases(
+  data: Record<string, unknown>,
+): Record<string, unknown> {
+  const out = { ...data };
+  for (const [canonical, aliases] of Object.entries(MEMBERS_COVERAGE_LIST_ALIASES)) {
+    if (!isBlank(out[canonical])) continue;
+    const reject = MEMBERS_COVERAGE_ALIAS_REJECTS[canonical];
+    for (const alias of aliases) {
+      const value = out[alias];
+      if (isBlank(value)) continue;
+      if (reject?.(value)) continue;
+      out[canonical] = value;
+      break;
+    }
   }
   return out;
 }

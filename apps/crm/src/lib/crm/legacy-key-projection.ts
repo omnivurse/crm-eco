@@ -29,6 +29,9 @@
  * The table below encodes the real prod shape, verified against live crm_fields.
  */
 
+// No cycle: coverage-snapshot-plan-fields → premium-field-aliases only.
+import { isCapacityProductValue } from './coverage-snapshot-plan-fields';
+
 /** canonical key → legacy keys that carry the same meaning, in priority order. */
 export type LegacyAliasTable = Record<string, readonly string[]>;
 
@@ -59,20 +62,55 @@ const LEADS_ALIASES: LegacyAliasTable = {
 };
 
 /**
+ * Members coverage columns that mean the same thing as a key the row (or its
+ * Contacts twin, once overlaid) carries under a legacy / health-share name.
+ * Verified against live PIF-ECO-V2 crm_fields: members define `plan_name`
+ * ("Plan") and `effective_date` ("Effective Date") with a 0/1,060 fill, while
+ * the same person's Contacts twin carries `product` / `plan` and
+ * `sharing_effective_date` / `start_date`.
+ *
+ * Shared by the members DETAIL page (via `projectLegacyKeys`) and the members
+ * LIST (via `projectMembersCoverageAliases` in resolve-record-twin) so the two
+ * surfaces can never disagree on what "Plan" / "Effective Date" show.
+ *
+ * `referral` is deliberately NOT aliased to `referring_member`: on members it
+ * is a Yes/No flag, on contacts `referring_member` is a person's name.
+ */
+export const MEMBERS_COVERAGE_ALIASES: LegacyAliasTable = {
+  plan_name: ['product', 'plan'],
+  effective_date: ['sharing_effective_date', 'start_date'],
+};
+
+/**
  * Members: the address family is already defined with plain names, so only the
- * same-meaning strays need projecting.
+ * same-meaning strays need projecting — plus the coverage columns above.
  */
 const MEMBERS_ALIASES: LegacyAliasTable = {
   gender: ['primary_member_gender'],
   city: ['mailing_city'],
   state: ['mailing_state'],
   zip_code: ['mailing_zip', 'postal_code'],
+  ...MEMBERS_COVERAGE_ALIASES,
 };
 
 export const LEGACY_ALIASES_BY_MODULE: Record<string, LegacyAliasTable> = {
   contacts: CONTACTS_ALIASES,
   leads: LEADS_ALIASES,
   members: MEMBERS_ALIASES,
+};
+
+/**
+ * Per-canonical reject predicates: an alias VALUE that must not be projected
+ * even though it is non-blank (the next alias is tried instead). Legacy
+ * `product` frequently holds a coverage TYPE ("Health Sharing" /
+ * "Health Insurance") rather than a plan name — surfacing that as "Plan" on
+ * the members page would be wrong. Minimal by design: only `plan_name` today.
+ */
+export const LEGACY_ALIAS_REJECTS_BY_MODULE: Record<
+  string,
+  Record<string, (value: unknown) => boolean>
+> = {
+  members: { plan_name: isCapacityProductValue },
 };
 
 /**
@@ -133,14 +171,16 @@ export function projectLegacyKeys(
   const table = LEGACY_ALIASES_BY_MODULE[moduleKey];
   if (!table) return;
 
+  const rejects = LEGACY_ALIAS_REJECTS_BY_MODULE[moduleKey];
   for (const [canonicalKey, legacyKeys] of Object.entries(table)) {
     if (!isBlank(base[canonicalKey])) continue;
+    const reject = rejects?.[canonicalKey];
     for (const legacyKey of legacyKeys) {
       const value = base[legacyKey];
-      if (!isBlank(value)) {
-        base[canonicalKey] = value;
-        break;
-      }
+      if (isBlank(value)) continue;
+      if (reject?.(value)) continue;
+      base[canonicalKey] = value;
+      break;
     }
   }
 }

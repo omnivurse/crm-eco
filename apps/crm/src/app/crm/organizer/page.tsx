@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase-client';
 import { useClientAuth } from '@/hooks/useClientAuth';
 import {
@@ -23,6 +24,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { toast } from 'sonner';
+import { toastCopy } from '@/lib/crm/toast-copy';
 import type { CrmTask, Note as CanonicalNote } from '@crm-eco/lib/types';
 
 interface QuickStat {
@@ -40,6 +42,8 @@ type Note = Pick<CanonicalNote, 'id' | 'title' | 'content' | 'created_at'>;
 
 export default function OrganizerPage() {
     const { user: authUser, profile: authProfile, loading: authLoading } = useClientAuth();
+    const router = useRouter();
+    const pathname = usePathname();
     const [loading, setLoading] = useState(true);
     const [userName, setUserName] = useState('');
     const [stats, setStats] = useState({ tasksDue: 0, overdue: 0, newLeads: 0, dealsAtRisk: 0 });
@@ -144,7 +148,7 @@ export default function OrganizerPage() {
                 if (saved) setScratchpad(saved);
             } catch (error) {
                 console.error('Error loading organizer data:', error);
-                toast.error('Failed to load organizer data');
+                toast.error(toastCopy.failed('load your organizer', undefined, 'Refresh the page'));
             } finally {
                 setLoading(false);
             }
@@ -168,7 +172,11 @@ export default function OrganizerPage() {
     const saveNote = async () => {
         if (!scratchpad.trim()) return;
         if (!authUser) {
-            toast.error('Not authenticated');
+            const s = toastCopy.sessionExpired(pathname);
+            toast.error(s.title, {
+                description: s.description,
+                action: { label: s.actionLabel, onClick: () => router.push(s.href) },
+            });
             return;
         }
 
@@ -189,10 +197,10 @@ export default function OrganizerPage() {
             setNotes(prev => [data, ...prev.slice(0, 4)]);
             setScratchpad('');
             localStorage.removeItem('crm-scratchpad');
-            toast.success('Note saved');
+            toast.success(toastCopy.saved('Note'));
         } catch (error) {
             console.error('Error saving note:', error);
-            toast.error('Failed to save note');
+            toast.error(toastCopy.failed('save the note', error, 'Your text is still in the scratchpad — try again'));
         } finally {
             setSavingNote(false);
         }

@@ -29,6 +29,7 @@ import {
 } from '@/lib/crm/note-filter';
 import { toast } from 'sonner';
 import { toastItemDeletedWithUndo } from '@/lib/crm/undo-delete';
+import { toastCopy } from '@/lib/crm/toast-copy';
 import type { CrmNoteWithAuthor } from '@/lib/crm/types';
 
 interface NotesPanelProps {
@@ -72,7 +73,7 @@ function NoteCard({
       toastItemDeletedWithUndo({ entity: 'note', id: note.id, label: 'Note', onUndo: () => router.refresh() });
     } catch (error) {
       console.error('Failed to delete note:', error);
-      toast.error('Failed to delete note');
+      toast.error(toastCopy.failed('delete the note', undefined, 'Try again'));
     } finally {
       setIsDeleting(false);
     }
@@ -197,14 +198,14 @@ export function NotesPanel({ recordId, notes, orgId, hasLegacyNotes = false }: N
         throw new Error('Failed to update note');
       }
 
-      toast.success('Note updated successfully');
+      toast.success(toastCopy.updated('Note'));
       setEditingNote(null);
       setEditNoteBody('');
       setEditNoteDate('');
       router.refresh();
     } catch (error) {
       console.error('Failed to update note:', error);
-      toast.error('Failed to update note');
+      toast.error(toastCopy.failed('update the note', error, 'Try again'));
     } finally {
       setIsEditSubmitting(false);
     }
@@ -232,13 +233,13 @@ export function NotesPanel({ recordId, notes, orgId, hasLegacyNotes = false }: N
         throw new Error('Failed to create note');
       }
 
-      toast.success('Note added successfully');
+      toast.success(toastCopy.added('Note'));
       setNewNote('');
       setIsAdding(false);
       router.refresh();
     } catch (error) {
       console.error('Failed to create note:', error);
-      toast.error('Failed to add note');
+      toast.error(toastCopy.failed('add the note', error, 'Try again'));
     } finally {
       setIsSubmitting(false);
     }

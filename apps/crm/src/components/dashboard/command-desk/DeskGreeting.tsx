@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { CrmCommandBar } from '@/components/crm/shell/CrmCommandBar';
+import { SEARCH_PLACEHOLDER } from '@/lib/crm/search-copy';
 
 interface DeskGreetingProps {
   fullName: string | null | undefined;
@@ -40,7 +41,7 @@ export function DeskGreeting({ fullName }: DeskGreetingProps) {
       </div>
       <CrmCommandBar
         size="hero"
-        placeholder="Search people, deals, or start a workflow…"
+        placeholder={SEARCH_PLACEHOLDER}
         className="crm-motion-safe md:max-w-xl md:flex-1"
       />
     </div>

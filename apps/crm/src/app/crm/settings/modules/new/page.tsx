@@ -1,13 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Save, Loader2 } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
 import { Textarea } from '@crm-eco/ui/components/textarea';
 import { toast } from 'sonner';
+import { toastCopy } from '@/lib/crm/toast-copy';
 import { supabase } from '@/lib/supabase-client';
 import { useClientAuth } from '@/hooks/useClientAuth';
 
@@ -33,6 +34,7 @@ const iconOptions = [
 export default function NewModulePage() {
   const { profile: authProfile } = useClientAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -79,8 +81,11 @@ export default function NewModulePage() {
     }
 
     if (!authProfile) {
-      toast.error('Not authenticated');
-      router.push('/crm-login');
+      const s = toastCopy.sessionExpired(pathname);
+      toast.error(s.title, {
+        description: s.description,
+        action: { label: s.actionLabel, onClick: () => router.push(s.href) },
+      });
       return;
     }
 
@@ -110,12 +115,12 @@ export default function NewModulePage() {
         throw new Error(error.error || 'Failed to create module');
       }
 
-      toast.success('Module created successfully');
+      toast.success(toastCopy.added('Module'));
       router.push('/crm/settings/modules');
       router.refresh();
     } catch (error) {
       console.error('Error creating module:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to create module');
+      toast.error(toastCopy.failed('create the module', error, 'Try again'));
     } finally {
       setSaving(false);
     }

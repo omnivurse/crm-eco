@@ -21,13 +21,19 @@ import { MassActionsBar } from './MassActionsBar';
 import { ModuleShellProvider } from './ModuleShellContext';
 import { RecentlyViewedRail } from '@/components/crm/records/v2/RecentlyViewedRail';
 import { QuickFilterChips } from '@/components/crm/records/v2/QuickFilterChips';
-import { SavedViewsBar } from '@/components/crm/views/SavedViewsBar';
+import type { SavedViewFilter, SavedViewState } from '@/components/crm/views/SavedViewsBar';
 import { ViewModeSwitcher } from '@/components/crm/views/ViewModeSwitcher';
 import { MobileToolbarDrawer } from './MobileToolbarDrawer';
 import { ModuleLiveSearchDropdown, type ModuleLiveSearchResult } from './ModuleLiveSearchDropdown';
 import { nextModuleSpotlightStateAfterSelect } from '@/lib/crm/module-spotlight-select';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { useCrmDensity } from '@/lib/crm/density';
+import { useListPreferences } from '@/hooks/useListPreferences';
+import {
+  applyListUrlPatch,
+  readListUrlState,
+  resolveInitialListState,
+} from '@/lib/crm/list-preferences';
 import type { CrmModule, CrmField, CrmView, CrmRecord, CrmTerritory, ViewFilter, ViewMode } from '@/lib/crm/types';
 import { CRM_SPOTLIGHT_SEARCH_LIMIT } from '@/lib/crm/search-limits';
 import { pickDefaultListColumns } from '@/lib/crm/default-list-columns';
@@ -131,6 +137,19 @@ export const ModuleShell = memo(function ModuleShell({
     (searchParams.get('sortDirection') as 'asc' | 'desc') || 'asc'
   );
 
+  // Per-module remembered list shape (columns / sort / scope / viewMode) —
+  // `profiles.ui_preferences.list_prefs[module.key]` + localStorage mirror.
+  // Written only from user-action handlers below (never on render, never
+  // while a saved view is being applied); read once per hydration stage.
+  const listPrefs = useListPreferences(module.key);
+  const listPrefsSave = listPrefs.save;
+  // Once the user touches any pref-managed control we stop re-hydrating
+  // (a slower server load must not undo what they just did).
+  const userTouchedPrefsRef = useRef(false);
+  const prefsHydrationStageRef = useRef<'none' | 'local' | 'server'>('none');
+  // Which personal saved view is applied (drives the Views trigger label).
+  const [activeSavedViewId, setActiveSavedViewId] = useState<string | null>(null);
+
   // Dialog states
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showStatusDialog, setShowStatusDialog] = useState(false);
@@ -174,6 +193,25 @@ export const ModuleShell = memo(function ModuleShell({
     const urlViewMode = (searchParams.get('viewMode') as ViewMode) || 'table';
     setViewMode((prev) => (prev === urlViewMode ? prev : urlViewMode));
   }, [searchParams]);
+
+  // Sync sort state from URL when the active crm_view changes. ViewsDropdown
+  // drops `sortField`/`sortDirection` on view change so the view's own sort
+  // applies on the server; mirror that here (URL sort > the view's saved
+  // sort > none) so the header indicator matches what the server sorted by.
+  const urlViewId = searchParams.get('view');
+  const prevUrlViewIdRef = useRef(urlViewId);
+  useEffect(() => {
+    if (prevUrlViewIdRef.current === urlViewId) return;
+    prevUrlViewIdRef.current = urlViewId;
+    const urlSortField = searchParams.get('sortField');
+    const urlSortDirection = searchParams.get('sortDirection') as 'asc' | 'desc' | null;
+    const viewSort = urlViewId ? views.find((v) => v.id === urlViewId)?.sort?.[0] ?? null : null;
+    const nextField = urlSortField ?? viewSort?.field ?? null;
+    const nextDirection: 'asc' | 'desc' =
+      (urlSortField ? urlSortDirection : viewSort?.direction) ?? 'asc';
+    setSortField((prev) => (prev === nextField ? prev : nextField));
+    setSortDirection((prev) => (prev === nextDirection ? prev : nextDirection));
+  }, [urlViewId, searchParams, views]);
 
   // Sync filter state from URL on browser back/forward navigation
   useEffect(() => {
@@ -282,6 +320,8 @@ export const ModuleShell = memo(function ModuleShell({
   // Scope change handler
   const handleScopeChange = useCallback((newScope: RecordScope) => {
     setScope(newScope);
+    userTouchedPrefsRef.current = true;
+    listPrefsSave({ scope: newScope });
     const params = new URLSearchParams(searchParamsRef.current.toString());
     if (newScope === 'all') {
       params.delete('scope');
@@ -290,7 +330,7 @@ export const ModuleShell = memo(function ModuleShell({
     }
     params.delete('page');
     router.push(`/crm/modules/${module.key}?${params.toString()}`, { scroll: false });
-  }, [router, module.key]);
+  }, [router, module.key, listPrefsSave]);
 
   const isAdminOrOwner = userRole === 'owner' || userRole === 'admin' || userRole === 'staff';
 
@@ -379,6 +419,7 @@ export const ModuleShell = memo(function ModuleShell({
 
   const handleClearFilters = useCallback(() => {
     setFilters([]);
+    setActiveSavedViewId(null);
     pushFiltersToUrl([]);
   }, [pushFiltersToUrl]);
 
@@ -393,17 +434,24 @@ export const ModuleShell = memo(function ModuleShell({
       const { target } = detail;
       if (target === 'filters' || target === 'all') setFilters([]);
       if (target === 'search' || target === 'all') setSearchQuery('');
-      if (target === 'scope' || target === 'all') setScope('all');
+      if (target === 'scope' || target === 'all') {
+        setScope('all');
+        userTouchedPrefsRef.current = true;
+        listPrefsSave({ scope: 'all' });
+      }
+      if (target === 'filters' || target === 'view' || target === 'all') setActiveSavedViewId(null);
       const params = clearListStateParams(searchParamsRef.current, target);
       router.push(`/crm/modules/${module.key}?${params.toString()}`, { scroll: false });
     };
     window.addEventListener(CRM_CLEAR_LIST_STATE_EVENT, onClear);
     return () => window.removeEventListener(CRM_CLEAR_LIST_STATE_EVENT, onClear);
-  }, [module.key, router]);
+  }, [module.key, router, listPrefsSave]);
 
   const handleSortChange = useCallback((field: string, direction: 'asc' | 'desc') => {
     setSortField(field);
     setSortDirection(direction);
+    userTouchedPrefsRef.current = true;
+    listPrefsSave({ sort: { field, direction } });
 
     // Apply sort to URL query params (use ref to avoid stale closure)
     const params = new URLSearchParams(searchParamsRef.current.toString());
@@ -411,7 +459,7 @@ export const ModuleShell = memo(function ModuleShell({
     params.set('sortDirection', direction);
     params.delete('page');
     router.push(`/crm/modules/${module.key}?${params.toString()}`);
-  }, [router, module.key]);
+  }, [router, module.key, listPrefsSave]);
 
   /**
    * Select every record matching the current list-page filter state, across
@@ -1022,6 +1070,8 @@ export const ModuleShell = memo(function ModuleShell({
   // View mode change handler - also persists to URL
   const handleViewModeChange = useCallback((mode: ViewMode) => {
     setViewMode(mode);
+    userTouchedPrefsRef.current = true;
+    listPrefsSave({ viewMode: mode });
     const params = new URLSearchParams(searchParamsRef.current.toString());
     if (mode === 'table') {
       params.delete('viewMode');
@@ -1033,7 +1083,99 @@ export const ModuleShell = memo(function ModuleShell({
       params.delete('treeGroupBy');
     }
     router.push(`/crm/modules/${module.key}?${params.toString()}`);
+  }, [router, module.key, listPrefsSave]);
+
+  // Columns change from ColumnsButton (toggle / reorder / reset) — the one
+  // place column prefs are written.
+  const handleColumnsChange = useCallback((columns: string[]) => {
+    setVisibleColumns(columns);
+    userTouchedPrefsRef.current = true;
+    listPrefsSave({ columns });
+  }, [listPrefsSave]);
+
+  // Apply a personal saved view (filters-only or full `view_state_v2`).
+  // Deliberately does NOT write prefs — the view IS the preference here.
+  const applySavedViewFilters = useCallback((newFilters: SavedViewFilter[]) => {
+    // Saved views declare a loose `operator: string`; the module's filters
+    // use the narrower FilterOperator union. Same cast the old bar made.
+    const next = newFilters as ViewFilter[];
+    setFilters(next);
+    pushFiltersToUrl(next);
+  }, [pushFiltersToUrl]);
+
+  const applySavedViewState = useCallback((state: SavedViewState) => {
+    // Rehydrate every piece of list UI from the saved blob. We push one
+    // combined URL update so the history entry reflects the applied view as
+    // a single step. SavedViewsBar declares a loose ViewFilter with
+    // `operator: string`; cast back to the module's narrower type.
+    const next = (state.filters ?? []) as ViewFilter[];
+    userTouchedPrefsRef.current = true;
+    setFilters(next);
+    if (state.columns) setVisibleColumns(state.columns);
+    if (state.sort?.field) {
+      setSortField(state.sort.field);
+      setSortDirection(state.sort.direction ?? 'asc');
+    }
+    if (state.viewMode) setViewMode(state.viewMode as ViewMode);
+    if (state.scope) setScope(state.scope);
+    if (typeof state.search === 'string') setSearchQuery(state.search);
+
+    const params = new URLSearchParams(searchParamsRef.current.toString());
+    if (next.length > 0) params.set('filters', JSON.stringify(next));
+    else params.delete('filters');
+    if (state.sort?.field) {
+      params.set('sortField', state.sort.field);
+      params.set('sortDirection', state.sort.direction ?? 'asc');
+    } else {
+      params.delete('sortField');
+      params.delete('sortDirection');
+    }
+    if (state.scope && state.scope !== 'all') params.set('scope', state.scope);
+    else params.delete('scope');
+    if (state.viewMode && state.viewMode !== 'table') params.set('viewMode', state.viewMode);
+    else params.delete('viewMode');
+    if (state.search) params.set('search', state.search);
+    else params.delete('search');
+    params.delete('page');
+    router.push(`/crm/modules/${module.key}?${params.toString()}`);
   }, [router, module.key]);
+
+  // Hydrate remembered prefs: once from the localStorage mirror (instant),
+  // once more when the server copy lands (may be newer — other device).
+  // Precedence: explicit URL > prefs > active crm_view > module default.
+  // Sort / scope / viewMode live in the URL for the server query, so those
+  // are `router.replace`d in (never overwriting keys already present).
+  useEffect(() => {
+    if (!listPrefs.hydrated) return;
+    const stage: 'local' | 'server' = listPrefs.serverLoaded ? 'server' : 'local';
+    if (prefsHydrationStageRef.current === stage || prefsHydrationStageRef.current === 'server') return;
+    prefsHydrationStageRef.current = stage;
+    if (userTouchedPrefsRef.current || !listPrefs.prefs) return;
+
+    const resolved = resolveInitialListState({
+      url: readListUrlState(searchParamsRef.current),
+      prefs: listPrefs.prefs,
+      activeView: views.find((v) => v.id === activeViewId) ?? null,
+      fields,
+    });
+    // Only override local state where the remembered pref actually won —
+    // URL / view-seeded state is already correct from the initializers.
+    if (resolved.source.columns === 'prefs') {
+      setVisibleColumns((prev) =>
+        prev.length === resolved.columns.length && prev.every((c, i) => c === resolved.columns[i])
+          ? prev
+          : resolved.columns,
+      );
+    }
+    if (resolved.source.sort === 'prefs' && resolved.sort) {
+      setSortField(resolved.sort.field);
+      setSortDirection(resolved.sort.direction);
+    }
+    if (resolved.source.scope === 'prefs') setScope(resolved.scope);
+    if (resolved.source.viewMode === 'prefs') setViewMode(resolved.viewMode);
+    const next = applyListUrlPatch(searchParamsRef.current, resolved.urlPatch);
+    if (next) router.replace(`/crm/modules/${module.key}?${next.toString()}`, { scroll: false });
+  }, [listPrefs.hydrated, listPrefs.serverLoaded, listPrefs.prefs, views, activeViewId, fields, router, module.key]);
 
   // Context for child components — expose the *effective* view mode so
   // children render the list card view on phones even when the user's
@@ -1044,7 +1186,7 @@ export const ModuleShell = memo(function ModuleShell({
     setSelectedIds,
     density,
     visibleColumns,
-    setVisibleColumns,
+    setVisibleColumns: handleColumnsChange,
     sortField,
     sortDirection,
     handleSortChange,
@@ -1052,7 +1194,7 @@ export const ModuleShell = memo(function ModuleShell({
     viewMode: effectiveViewMode,
     setViewMode: handleViewModeChange,
     requestDelete,
-  }), [selectedIds, density, visibleColumns, sortField, sortDirection, handleSortChange, module.key, effectiveViewMode, handleViewModeChange, requestDelete]);
+  }), [selectedIds, density, visibleColumns, handleColumnsChange, sortField, sortDirection, handleSortChange, module.key, effectiveViewMode, handleViewModeChange, requestDelete]);
 
   return (
     <div className={cn('w-full space-y-3', className)}>
@@ -1079,6 +1221,19 @@ export const ModuleShell = memo(function ModuleShell({
               activeViewId={activeViewId}
               moduleKey={module.key}
               onCreateView={handleCreateView}
+              fields={fields}
+              currentFilters={filters}
+              currentViewState={{
+                sort: { field: sortField, direction: sortDirection },
+                columns: visibleColumns,
+                scope,
+                viewMode,
+                search: searchQuery,
+              }}
+              onApplyView={applySavedViewFilters}
+              onApplyViewState={applySavedViewState}
+              activeSavedViewId={activeSavedViewId}
+              onActiveSavedViewChange={setActiveSavedViewId}
             />
 
             <ModuleLiveSearchDropdown
@@ -1171,66 +1326,12 @@ export const ModuleShell = memo(function ModuleShell({
           </Button>
         </div>
 
-        {/* Row 2 — Saved views + quick preset chips (left) · view mode,
-            filters, columns, density (right). Hairline separates it from
-            the find row so the card reads as two ideas, not one soup. */}
+        {/* Row 2 — quick preset chips (left) · view mode, filters, columns,
+            density (right). Saved views live in the row-1 Views control —
+            one "Views" control, one mental model. Hairline separates it
+            from the find row so the card reads as two ideas, not one soup. */}
         <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-slate-200/70 px-1 pt-2 dark:border-white/[0.06]">
           <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <SavedViewsBar
-            pageKey={module.key}
-            currentFilters={filters}
-            currentViewState={{
-              sort: { field: sortField, direction: sortDirection },
-              columns: visibleColumns,
-              scope,
-              viewMode,
-              search: searchQuery,
-            }}
-            onApplyView={(newFilters) => {
-              setFilters(newFilters as ViewFilter[]);
-              pushFiltersToUrl(newFilters as ViewFilter[]);
-            }}
-            onApplyViewState={(state) => {
-              // Rehydrate every piece of list UI from the saved blob. We
-              // push one combined URL update so the history entry reflects
-              // the applied view as a single step. SavedViewsBar declares
-              // a loose ViewFilter with `operator: string`; cast back to
-              // the module's narrower FilterOperator-backed type.
-              const next = (state.filters ?? []) as ViewFilter[];
-              setFilters(next);
-              if (state.columns) setVisibleColumns(state.columns);
-              if (state.sort?.field) {
-                setSortField(state.sort.field);
-                setSortDirection(state.sort.direction ?? 'asc');
-              }
-              if (state.viewMode) {
-                setViewMode(state.viewMode as ViewMode);
-              }
-              if (state.scope) setScope(state.scope);
-              if (typeof state.search === 'string') setSearchQuery(state.search);
-
-              const params = new URLSearchParams(
-                searchParamsRef.current.toString(),
-              );
-              if (next.length > 0) params.set('filters', JSON.stringify(next));
-              else params.delete('filters');
-              if (state.sort?.field) {
-                params.set('sortField', state.sort.field);
-                params.set('sortDirection', state.sort.direction ?? 'asc');
-              } else {
-                params.delete('sortField');
-                params.delete('sortDirection');
-              }
-              if (state.scope && state.scope !== 'all') params.set('scope', state.scope);
-              else params.delete('scope');
-              if (state.viewMode) params.set('viewMode', state.viewMode);
-              else params.delete('viewMode');
-              if (state.search) params.set('search', state.search);
-              else params.delete('search');
-              params.delete('page');
-              router.push(`/crm/modules/${module.key}?${params.toString()}`);
-            }}
-          />
           <QuickFilterChips
             moduleKey={module.key}
             fields={fields}
@@ -1273,7 +1374,7 @@ export const ModuleShell = memo(function ModuleShell({
                 <ColumnsButton
                   fields={fields}
                   visibleColumns={visibleColumns}
-                  onColumnsChange={setVisibleColumns}
+                  onColumnsChange={handleColumnsChange}
                   columnWidthsStorageKey={module.key}
                 />
 
@@ -1586,7 +1687,7 @@ export const ModuleShell = memo(function ModuleShell({
                     <ColumnsButton
                       fields={fields}
                       visibleColumns={visibleColumns}
-                      onColumnsChange={setVisibleColumns}
+                      onColumnsChange={handleColumnsChange}
                     />
                   ),
                 },

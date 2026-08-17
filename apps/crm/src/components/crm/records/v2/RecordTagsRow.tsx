@@ -61,7 +61,10 @@ export function RecordTagsRow({
       const result = await queuedSend({
         method: 'PATCH',
         url: `/api/crm/records/${recordId}`,
-        body: { data: { ...(recordData || {}), tags: next } },
+        // DATA SAFETY: single-key patch — never spread `recordData` back into
+        // the body (it may carry read-time twin/projection enrichment). The
+        // server merges JSONB (record-patch-service.ts).
+        body: { data: { tags: next } },
         queue: {
           label: 'Update tags',
           // Collapse rapid tag toggles into one queued mutation — the
@@ -88,7 +91,7 @@ export function RecordTagsRow({
       setTags(previous);
       toast.error(result.error || 'Failed to save tags');
     },
-    [recordId, recordData, onChange],
+    [recordId, onChange],
   );
 
   const addTag = useCallback(

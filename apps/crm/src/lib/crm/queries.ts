@@ -36,7 +36,14 @@ import type {
   CrmTerritory,
 } from './types';
 import { moduleKeyFromJoinedRelation, resolveNoteSourceRecordIdsWithClient } from './note-aggregate';
-import { buildTwinLookup, pickRicherTwin, type TwinSourceRow } from './resolve-record-twin';
+import {
+  buildTwinLookup,
+  collectTwinLookupKeys,
+  pickRicherTwin,
+  pickRicherTwinsForRows,
+  projectMembersCoverageAliases,
+  type TwinSourceRow,
+} from './resolve-record-twin';
 import type { MemberCrmRecordCandidate } from './resolve-member-crm-record';
 import { applyCrmRecordTextSearch, applyHideConvertedLeadsFilter, isConvertedLeadRow } from './record-search';
 import { alignMisalignedRecordModule } from './align-record-module';
@@ -862,6 +869,24 @@ export async function getRecords(options: RecordQueryOptions): Promise<RecordQue
     return true;
   });
 
+  // Members list twin enrichment: the ~1,060 imported Members rows are strict
+  // subsets of a Contacts row for the same person, and plan / effective date
+  // live only on that twin. The detail page overlays the twin (blank-fill,
+  // read-only — see resolve-record-twin.ts); the list applies the SAME overlay
+  // so a rep sees plan / effective date / city at a glance instead of one
+  // click deeper per member. Bounded to two batched lookups per page (one per
+  // match key, capped at the page size). Never written back. If the lookup
+  // fails the list still renders from the rows' own data.
+  let twinByRowId: Map<string, Record<string, unknown>> | null = null;
+  if (moduleKey === 'members' && records.length > 0) {
+    try {
+      twinByRowId = await getTwinDataForRecordPage(supabase, orgId ?? null, records);
+    } catch (err) {
+      console.error('[CRM] Members list twin enrichment failed (rendering own data):', err);
+      twinByRowId = null;
+    }
+  }
+
   return {
     // Project legacy Zoho keys onto their canonical twins for EVERY consumer of
     // the list query — the 7 view components (list/kanban/chart/timeline/
@@ -871,7 +896,14 @@ export async function getRecords(options: RecordQueryOptions): Promise<RecordQue
     // the record page and the exports showing the same values.
     // Idempotent: the bridges only fill blanks, so components that project
     // again (e.g. RecordTable) are unaffected.
-    records: records.map((r) => withProjectedRecordData(r, moduleKey)),
+    records: records.map((r) => {
+      const projected = withProjectedRecordData(r, moduleKey, twinByRowId?.get(r.id) ?? null);
+      if (moduleKey !== 'members') return projected;
+      // Members list columns `plan_name` / `effective_date` are the same
+      // concept as the twin's `product` / `sharing_effective_date`; fill the
+      // blanks so the view's own column keys carry the value (blank-fill only).
+      return { ...projected, data: projectMembersCoverageAliases(projected.data ?? {}) };
+    }),
     total: includeCount ? count || 0 : 0,
     page,
     pageSize,
@@ -883,6 +915,7 @@ export async function getRecords(options: RecordQueryOptions): Promise<RecordQue
 function withProjectedRecordData<T extends { data?: Record<string, unknown> | null }>(
   record: T,
   moduleKey?: string | null,
+  twinData?: Record<string, unknown> | null,
 ): T {
   return {
     ...record,
@@ -893,9 +926,107 @@ function withProjectedRecordData<T extends { data?: Record<string, unknown> | nu
         phone?: string | null;
         status?: string | null;
       },
-      { moduleKey },
+      { moduleKey, twinData: twinData ?? null },
     ),
   };
+}
+
+/** Largest IN / ILIKE-ANY list sent per twin lookup (UI pages are 25–100 rows). */
+const TWIN_PAGE_LOOKUP_CHUNK = 100;
+/** Max twin candidates fetched per lookup key (see candidateCap below). */
+const TWIN_PAGE_CANDIDATES_PER_KEY = 10;
+
+function chunk<T>(items: T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));
+  return out;
+}
+
+/**
+ * Batched counterpart of `getTwinDataForRecord` for one page of Members rows.
+ *
+ * Same tenant scoping (module `org_id`, falling back to the caller's profile
+ * organization), same RLS-bound client, same candidate columns and the same
+ * `pickRicherTwin` decision per row — just resolved with per-page lookups
+ * (one ILIKE-ANY on `email`, one IN on `data->>member_number`, each chunked at
+ * TWIN_PAGE_LOOKUP_CHUNK keys) instead of two queries per record. Both are
+ * typed filters, not interpolated `.or(...)` strings, so record-supplied
+ * emails / member numbers can't inject filter syntax.
+ *
+ * Returns rowId → twin JSONB. Read-only; nothing is written.
+ */
+async function getTwinDataForRecordPage(
+  supabase: Awaited<ReturnType<typeof createCrmClient>>,
+  orgId: string | null,
+  records: CrmRecord[],
+): Promise<Map<string, Record<string, unknown>>> {
+  const empty = new Map<string, Record<string, unknown>>();
+  let scopedOrgId = orgId;
+  if (!scopedOrgId) {
+    const profile = await getCachedCurrentProfile();
+    scopedOrgId = profile?.organization_id ?? null;
+  }
+  if (!scopedOrgId) return empty;
+
+  const rows = records as unknown as TwinSourceRow[];
+  const { emails, memberNumbers } = collectTwinLookupKeys(rows);
+  if (emails.length === 0 && memberNumbers.length === 0) return empty;
+
+  // Rows on the page are legitimate candidates for each other (pickRicherTwin
+  // only refuses a row as its OWN twin), matching the detail page.
+  const columns = 'id, email, phone, data, market_type, updated_at, source_record_id';
+  const base = () =>
+    supabase
+      .from('crm_records')
+      .select(columns)
+      .eq('org_id', scopedOrgId as string)
+      .is('deleted_at' as never, null);
+
+  const lookups: PromiseLike<{ data: unknown[] | null; error: unknown }>[] = [];
+  // Candidate cap per chunk. Households and re-imports mean one email /
+  // member number can match several crm_records across modules; 10x keys is
+  // generous for real data, but TRUNCATION IS POSSIBLE for a pathological
+  // key (e.g. a shared office email on hundreds of rows) — in that case the
+  // richer twin may simply not be in the candidate set and the row shows its
+  // own data only. This is a read-only fallback, so degrading is safe.
+  const candidateCap = (keyCount: number) => keyCount * TWIN_PAGE_CANDIDATES_PER_KEY;
+  for (const emailChunk of chunk(emails, TWIN_PAGE_LOOKUP_CHUNK)) {
+    lookups.push(
+      base()
+        // Members ↔ Contacts emails differ in case for ~1.7k rows, so match
+        // case-insensitively exactly like the detail page's `.ilike`.
+        .ilikeAnyOf('email', emailChunk)
+        .limit(candidateCap(emailChunk.length)),
+    );
+  }
+  for (const numberChunk of chunk(memberNumbers, TWIN_PAGE_LOOKUP_CHUNK)) {
+    lookups.push(
+      base()
+        .in('data->>member_number' as never, numberChunk)
+        .limit(candidateCap(numberChunk.length)),
+    );
+  }
+
+  const settled = await Promise.allSettled(lookups);
+  const byId = new Map<string, MemberCrmRecordCandidate>();
+  let anyFulfilled = false;
+  for (const result of settled) {
+    if (result.status !== 'fulfilled') {
+      console.error('[CRM] Members list twin lookup rejected:', result.reason);
+      continue;
+    }
+    if (result.value.error) {
+      console.error('[CRM] Members list twin lookup failed:', result.value.error);
+      continue;
+    }
+    anyFulfilled = true;
+    for (const candidate of (result.value.data ?? []) as MemberCrmRecordCandidate[]) {
+      if (candidate?.id) byId.set(candidate.id, candidate);
+    }
+  }
+  if (!anyFulfilled) return empty;
+
+  return pickRicherTwinsForRows(rows, [...byId.values()]);
 }
 
 export async function getRecordById(recordId: string): Promise<CrmRecord | null> {

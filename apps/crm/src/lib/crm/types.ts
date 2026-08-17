@@ -1270,6 +1270,12 @@ export interface CrmUiPreferences {
    * Written by /api/cron/habits-aggregate — never call OpenAI from the client.
    */
   habits?: import('./habits/types').CrmHabitsProfile;
+  /**
+   * Per-module list shape (columns / sort / scope / viewMode) the user last
+   * left each module list in — see `lib/crm/list-preferences.ts`. Additive:
+   * absent module keys mean "use view / module defaults".
+   */
+  list_prefs?: import('./list-preferences').ListPrefsMap;
   [key: string]: unknown;
 }
 

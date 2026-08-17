@@ -67,6 +67,7 @@ import {
   DropdownMenuTrigger,
 } from '@crm-eco/ui/components/dropdown-menu';
 import { toast } from 'sonner';
+import { toastCopy } from '@/lib/crm/toast-copy';
 import type { CrmRecord, CrmField, CrmDealStage } from '@/lib/crm/types';
 import { StageHistoryDrawer } from './StageHistoryDrawer';
 
@@ -729,14 +730,13 @@ export const KanbanView = memo(function KanbanView({
         if (!res.ok) {
           throw new Error(`HTTP ${res.status}`);
         }
-        toast.success('Saved');
+        toast.success(toastCopy.saved('Changes'));
       } catch (err) {
         setRecords((current) =>
           current.map((r) => (r.id === id ? prev : r)),
         );
-        toast.error('Failed to save', {
-          description:
-            err instanceof Error ? err.message : 'Please try again.',
+        toast.error(toastCopy.failed('save your changes', err), {
+          description: 'Your edit was reverted. Try again.',
         });
         throw err;
       }
@@ -889,9 +889,13 @@ export const KanbanView = memo(function KanbanView({
             body: JSON.stringify({ status: newVal }),
           });
         } else {
+          // DATA SAFETY: send ONLY the changed key. `record.data` may carry
+          // read-time enrichment (twin JSONB blank-filled by getRecords) —
+          // spreading it into the PATCH would persist twin data into this
+          // row. The server merges JSONB (record-patch-service.ts).
           const updates: Record<string, unknown> = isSystemField
             ? { [groupByField]: newVal }
-            : { data: { ...record.data, [groupByField]: newVal } };
+            : { data: { [groupByField]: newVal } };
           response = await fetch(`/api/crm/records/${activeId}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
@@ -902,7 +906,7 @@ export const KanbanView = memo(function KanbanView({
         if (!response.ok) throw new Error('Failed to update');
         toast.success(`Moved to "${newVal || 'No Value'}"`);
       } catch {
-        toast.error('Failed to move record');
+        toast.error(toastCopy.failed('move the record', undefined, 'It was put back — try again'));
         setRecords(initialRecords);
       }
     }

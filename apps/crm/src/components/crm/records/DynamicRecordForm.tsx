@@ -51,6 +51,7 @@ import {
 } from '@/lib/crm/carrier-field';
 import {
   coerceCoverageSnapshotFieldValue,
+  coverageSnapshotEnrolledByLabel,
   isCapacityProductValue,
   selectCoverageSnapshotPlanFields,
 } from '@/lib/crm/coverage-snapshot-plan-fields';
@@ -921,9 +922,19 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
          * (in its section card) — never a second time inside the banner.
          */
         readOnlyView?: boolean;
+        /**
+         * Fixed display label for the cell (e.g. the Coverage Snapshot's
+         * "Enrolled by" row, whichever field feeds it). Only the visible
+         * label changes — the field itself, its input and its key are untouched.
+         */
+        label?: string;
+        /** Hover title for the label; defaults to the field's tooltip / label. */
+        labelTitle?: string;
       },
     ) => {
       const cellReadOnly = readOnly || Boolean(opts?.readOnlyView);
+      const cellLabel = opts?.label ?? field.label;
+      const cellLabelTitle = opts?.labelTitle ?? field.tooltip ?? field.label;
       const cellInlineEditable = inlineEditable && !opts?.readOnlyView;
       // Dense side-by-side rows only for static read-only (no click-to-edit).
       // Inline-edit mode must use stacked label→value cells: auto-fit ~220px
@@ -984,13 +995,13 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
             <Label
               // A static snapshot cell must not claim the section input's id.
               htmlFor={opts?.readOnlyView ? undefined : field.key}
-              title={field.tooltip || field.label}
+              title={cellLabelTitle}
               className={cn(
                 'shrink-0 truncate text-muted-foreground text-[11px] font-medium uppercase leading-snug tracking-wide',
                 opts?.tightLabel ? 'w-32' : 'w-40',
               )}
             >
-              {field.label}
+              {cellLabel}
             </Label>
             <div className="min-w-0 flex-1 overflow-hidden">{valueNode}</div>
           </div>
@@ -1011,9 +1022,9 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
           <Label
             htmlFor={field.key}
             className="mb-0.5 block truncate text-muted-foreground text-[11px] font-medium uppercase tracking-wider"
-            title={field.tooltip || field.label}
+            title={cellLabelTitle}
           >
-            {field.label}
+            {cellLabel}
             {!readOnly && field.required && <span className="text-destructive ml-1">*</span>}
           </Label>
           <div className="min-w-0 max-w-full">{valueNode}</div>
@@ -1439,9 +1450,24 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
                     tightLabel: true,
                     readOnlyView: !readOnly,
                   })}
-                {heroReferralSnapshotFields.map((field) =>
-                  renderFieldCell(field, { row: true, tightLabel: true, readOnlyView: !readOnly }),
-                )}
+                {heroReferralSnapshotFields.map((field) => {
+                  // "Who enrolled" wears ONE label everywhere (matches the
+                  // dashboard's "Enrolled by" column) no matter whether
+                  // producer_name / agent / advisor supplied the value; the
+                  // field's own label stays available as the hover title.
+                  const enrolledBy =
+                    heroEnrolledByField && field.key === heroEnrolledByField.key
+                      ? coverageSnapshotEnrolledByLabel(field)
+                      : null;
+                  return renderFieldCell(field, {
+                    row: true,
+                    tightLabel: true,
+                    readOnlyView: !readOnly,
+                    ...(enrolledBy
+                      ? { label: enrolledBy.label, labelTitle: enrolledBy.title }
+                      : {}),
+                  });
+                })}
               </div>
             </>
           )}

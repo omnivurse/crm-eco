@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Button, Input, Label, Textarea } from '@crm-eco/ui';
 import { toast } from 'sonner';
+import { toastCopy } from '@/lib/crm/toast-copy';
 import {
   ChevronLeft,
   Send,
@@ -237,7 +238,7 @@ export default function ConversationDetailPage() {
       }
     } catch (error) {
       console.error('Failed to fetch conversation:', error);
-      toast.error('Failed to load conversation');
+      toast.error(toastCopy.failed('load this conversation', undefined, 'Refresh the page'));
     } finally {
       setLoading(false);
     }
@@ -257,7 +258,7 @@ export default function ConversationDetailPage() {
       setMessagesPage(nextPage);
     } catch (error) {
       console.error('Failed to load more messages:', error);
-      toast.error('Failed to load older messages');
+      toast.error(toastCopy.failed('load older messages', undefined, 'Try again'));
     } finally {
       setLoadingMore(false);
     }
@@ -296,7 +297,7 @@ export default function ConversationDetailPage() {
       fetchConversation();
     } catch (error) {
       console.error('Failed to send reply:', error);
-      toast.error('Failed to send reply');
+      toast.error(toastCopy.failed('send the reply', undefined, 'Your draft is still here — try again'));
     } finally {
       setSending(false);
     }
@@ -313,7 +314,7 @@ export default function ConversationDetailPage() {
       fetchConversation();
     } catch (error) {
       console.error('Failed to assign:', error);
-      toast.error('Failed to assign conversation');
+      toast.error(toastCopy.failed('assign the conversation', undefined, 'Try again'));
     }
   };
 
@@ -327,7 +328,7 @@ export default function ConversationDetailPage() {
       fetchConversation();
     } catch (error) {
       console.error('Failed to change status:', error);
-      toast.error('Failed to update status');
+      toast.error(toastCopy.failed('update the status', undefined, 'Try again'));
     }
   };
 
@@ -397,12 +398,12 @@ export default function ConversationDetailPage() {
         throw new Error('Failed to create task');
       }
 
-      toast.success('Task created successfully');
+      toast.success(toastCopy.added('Task'));
       setShowTaskDialog(false);
       setTaskTitle('');
       setTaskDueDate('');
     } catch (error) {
-      toast.error('Failed to create task');
+      toast.error(toastCopy.failed('create the task', undefined, 'Try again'));
     } finally {
       setIsProcessing(false);
     }
@@ -429,11 +430,11 @@ export default function ConversationDetailPage() {
         throw new Error('Failed to add note');
       }
 
-      toast.success('Note added successfully');
+      toast.success(toastCopy.added('Note'));
       setShowNoteDialog(false);
       setNoteContent('');
     } catch (error) {
-      toast.error('Failed to add note');
+      toast.error(toastCopy.failed('add the note', undefined, 'Try again'));
     } finally {
       setIsProcessing(false);
     }

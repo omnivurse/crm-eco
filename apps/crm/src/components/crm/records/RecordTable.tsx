@@ -104,6 +104,10 @@ interface RecordTableProps {
   onSelectionChange?: (ids: Set<string>) => void;
   enableInlineEdit?: boolean;
   onRecordUpdate?: (recordId: string, updates: Record<string, unknown>) => Promise<void>;
+  /** Filtered total from the server — distinguishes "page out of range" from "no match". */
+  totalCount?: number | null;
+  /** Filter count of the active saved view (see `useListEmptyState` in ListView). */
+  activeViewFilterCount?: number | null;
 }
 
 interface EditingCell {
@@ -549,6 +553,8 @@ export const RecordTable = memo(function RecordTable({
   onSelectionChange,
   enableInlineEdit = false,
   onRecordUpdate,
+  totalCount,
+  activeViewFilterCount,
 }: RecordTableProps) {
   const [internalSelectedIds, setInternalSelectedIds] = useState<Set<string>>(new Set());
   const [isScrolled, setIsScrolled] = useState(false);
@@ -565,7 +571,7 @@ export const RecordTable = memo(function RecordTable({
   const router = useRouter();
   // Filter-aware empty state — reads the URL list state so a search/filter
   // miss never says "create your first record".
-  const emptyState = useListEmptyState(records.length, moduleKey);
+  const emptyState = useListEmptyState(records.length, moduleKey, totalCount, activeViewFilterCount);
 
   // Prefetch record data on row hover for instant drawer opens
   const handleRowMouseEnter = useCallback((recordId: string) => {
@@ -619,9 +625,14 @@ export const RecordTable = memo(function RecordTable({
         await onRecordUpdate(editingCell.recordId, { status: storeValue });
       } else {
         const isSystemField = ['title', 'owner_id'].includes(editingCell.field);
+        // DATA SAFETY: send ONLY the edited key. `record.data` on list rows may
+        // carry read-time enrichment (e.g. the Contacts twin's JSONB blank-filled
+        // into Members rows by getRecords) — spreading it back into the PATCH
+        // would persist twin data into this row. The server merges JSONB
+        // (see record-patch-service.ts), so a single-key patch is sufficient.
         const updates: Record<string, unknown> = isSystemField
           ? { [editingCell.field]: storeValue }
-          : { data: { ...record.data, [editingCell.field]: storeValue } };
+          : { data: { [editingCell.field]: storeValue } };
         await onRecordUpdate(editingCell.recordId, updates);
       }
       toast.success('Updated successfully');

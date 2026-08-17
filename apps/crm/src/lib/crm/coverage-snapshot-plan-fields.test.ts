@@ -5,8 +5,10 @@ import {
   isMonthlyPremiumLabel,
 } from './premium-field-aliases';
 import {
+  ENROLLED_BY_LABEL,
   MEMBERSHIP_LABEL,
   coerceCoverageSnapshotFieldValue,
+  coverageSnapshotEnrolledByLabel,
   coverageSnapshotSkipKeysForPlanType,
   isCapacityProductValue,
   selectCoverageSnapshotPlanFields,
@@ -186,5 +188,31 @@ describe('coverageSnapshotSkipKeysForPlanType', () => {
     expect(skip).not.toContain('monthly_contribution');
     expect(skip).not.toContain('monthly_share');
     expect(skip).toContain('iua_amount');
+  });
+});
+
+describe('coverageSnapshotEnrolledByLabel', () => {
+  it('uses ONE label regardless of which underlying field supplied the value', () => {
+    const producer = coverageSnapshotEnrolledByLabel({ label: 'Producer Name' });
+    const agent = coverageSnapshotEnrolledByLabel({ label: 'Agent' });
+    const advisor = coverageSnapshotEnrolledByLabel({ label: 'Advisor Name' });
+    expect(producer.label).toBe(ENROLLED_BY_LABEL);
+    expect(agent.label).toBe(ENROLLED_BY_LABEL);
+    expect(advisor.label).toBe(ENROLLED_BY_LABEL);
+    expect(ENROLLED_BY_LABEL).toBe('Enrolled by');
+  });
+
+  it("keeps the field's own label visible in the title so the source is not hidden", () => {
+    expect(coverageSnapshotEnrolledByLabel({ label: 'Producer Name' }).title).toBe(
+      'Enrolled by (from Producer Name)',
+    );
+    expect(coverageSnapshotEnrolledByLabel({ label: 'Agent', tooltip: 'Writing agent' }).title).toBe(
+      'Enrolled by (from Agent) — Writing agent',
+    );
+  });
+
+  it('does not repeat itself when the field is already labelled Enrolled by', () => {
+    expect(coverageSnapshotEnrolledByLabel({ label: 'Enrolled by' }).title).toBe('Enrolled by');
+    expect(coverageSnapshotEnrolledByLabel({ label: '  ' }).title).toBe('Enrolled by');
   });
 });

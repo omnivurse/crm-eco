@@ -24,6 +24,35 @@ export interface CoverageSnapshotPlanField {
 export const MEMBERSHIP_LABEL = 'Membership';
 
 /**
+ * ONE label for "who enrolled this member" everywhere. The snapshot's
+ * enrolled-by row can be fed by any of producer_name / producer / advisor_name /
+ * advisor / agent / lead_owner (whichever holds a value on that record), and
+ * each of those has its own crm_fields label ("Producer Name", "Agent", …) —
+ * so the same row used to read differently from one contact to the next while
+ * the dashboard column already said "Enrolled by".
+ */
+export const ENROLLED_BY_LABEL = 'Enrolled by';
+
+/**
+ * Fixed display label + hover title for the snapshot's enrolled-by row.
+ * The label is always `ENROLLED_BY_LABEL`; the field's own label (and tooltip,
+ * when present) survives as the title so nothing about the source is hidden.
+ */
+export function coverageSnapshotEnrolledByLabel(field: {
+  label: string;
+  tooltip?: string | null;
+}): { label: string; title: string } {
+  const own = field.label.trim();
+  const tip = (field.tooltip ?? '').trim();
+  const source = own && own.toLowerCase() !== ENROLLED_BY_LABEL.toLowerCase() ? own : '';
+  const parts = [
+    source ? `${ENROLLED_BY_LABEL} (from ${source})` : ENROLLED_BY_LABEL,
+    tip,
+  ].filter(Boolean);
+  return { label: ENROLLED_BY_LABEL, title: parts.join(' — ') };
+}
+
+/**
  * Coverage-type/capacity labels that get mis-stored in `product` in place of a
  * real membership name (e.g. "Health Insurance" instead of "Premium Care").
  * They are not a membership name, so they should not out-rank a field that

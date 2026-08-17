@@ -20,6 +20,7 @@ import {
   projectLegacyKeys,
   projectedLegacyKeysFor,
   DEFINE_ONLY_LEGACY_KEYS,
+  MEMBERS_COVERAGE_ALIASES,
 } from './legacy-key-projection';
 import {
   SHARING_MEMBER_ID_LEGACY_KEYS,
@@ -137,6 +138,36 @@ describe('projectLegacyKeys', () => {
     projectLegacyKeys(base, 'contacts');
     projectLegacyKeys(base, 'contacts');
     expect(base.mailing_city).toBe('Denver');
+  });
+
+  it('fills members plan_name / effective_date from coverage aliases (detail page agrees with list)', () => {
+    const base: Record<string, unknown> = {
+      product: 'Co-Pay Plan (27199)',
+      sharing_effective_date: '2024-07-01',
+    };
+    projectLegacyKeys(base, 'members');
+    expect(base.plan_name).toBe('Co-Pay Plan (27199)');
+    expect(base.effective_date).toBe('2024-07-01');
+    expect(MEMBERS_COVERAGE_ALIASES.plan_name).toEqual(['product', 'plan']);
+    expect(MEMBERS_COVERAGE_ALIASES.effective_date).toEqual(['sharing_effective_date', 'start_date']);
+    // members-only: contacts do not define plan_name/effective_date this way
+    const contact: Record<string, unknown> = { product: 'Co-Pay Plan (27199)' };
+    projectLegacyKeys(contact, 'contacts');
+    expect(contact.plan_name).toBeUndefined();
+  });
+
+  it('never projects a capacity label ("Health Sharing"/"Health Insurance") into members plan_name', () => {
+    const base: Record<string, unknown> = { product: 'Health Sharing' };
+    projectLegacyKeys(base, 'members');
+    expect(base.plan_name).toBeUndefined();
+
+    const fallthrough: Record<string, unknown> = { product: 'Health Insurance', plan: 'Secure HSA' };
+    projectLegacyKeys(fallthrough, 'members');
+    expect(fallthrough.plan_name).toBe('Secure HSA');
+
+    const typed: Record<string, unknown> = { plan_name: 'Typed by rep', product: 'Health Sharing' };
+    projectLegacyKeys(typed, 'members');
+    expect(typed.plan_name).toBe('Typed by rep');
   });
 
   it('does NOT invent meaning: distinct concepts are never merged', () => {

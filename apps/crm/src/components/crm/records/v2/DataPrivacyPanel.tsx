@@ -134,18 +134,21 @@ export function DataPrivacyPanel({
     async (next: RecordPrivacyData, successMsg: string) => {
       setSaving(true);
       try {
-        const existingData = (record.data ?? {}) as Record<string, unknown>;
         const mergedPrivacy: RecordPrivacyData = {
           ...initial,
           ...next,
           updated_at: new Date().toISOString(),
         };
+        // DATA SAFETY: single-key patch — never spread `record.data` back into
+        // the body (it may carry read-time twin/projection enrichment). The
+        // server merges JSONB (record-patch-service.ts); `privacy` is a whole
+        // sub-object we own, so it is replaced as one key.
         const res = await fetch(`/api/crm/records/${record.id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'same-origin',
           body: JSON.stringify({
-            data: { ...existingData, privacy: mergedPrivacy },
+            data: { privacy: mergedPrivacy },
           }),
         });
         if (!res.ok) {
@@ -162,7 +165,7 @@ export function DataPrivacyPanel({
         setSaving(false);
       }
     },
-    [record.id, record.data, initial, onUpdated],
+    [record.id, initial, onUpdated],
   );
 
   const handleSave = () => persist(draft, 'Privacy settings saved');

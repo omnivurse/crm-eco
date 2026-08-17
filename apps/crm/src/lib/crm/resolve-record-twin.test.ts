@@ -1,9 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import {
   buildTwinLookup,
+  collectTwinLookupKeys,
   countOverlayableKeys,
+  MEMBERS_COVERAGE_LIST_ALIASES,
   overlayTwinData,
   pickRicherTwin,
+  pickRicherTwinsForRows,
+  projectMembersCoverageAliases,
   TWIN_OVERLAY_EXCLUDED_KEYS,
 } from './resolve-record-twin';
 import { mergeCrmRecordRowIntoFormDefaults } from './record-form-defaults';
@@ -177,5 +181,136 @@ describe('mergeCrmRecordRowIntoFormDefaults with a twin', () => {
     });
     expect(withNull).toEqual(without);
     expect(without.carrier).toBeUndefined();
+  });
+});
+
+// ── Batch (list-page) resolution ─────────────────────────────────────────────
+
+const secondMemberRow = {
+  id: 'member-row-2',
+  email: 'Sam.Perez@Example.com',
+  phone: null,
+  data: { first_name: 'Sam', last_name: 'Perez', member_number: 'M-2222', city: 'Austin' },
+};
+
+const secondContactTwin = {
+  id: 'contact-row-2',
+  email: 'sam.perez@example.com',
+  phone: null,
+  data: {
+    first_name: 'Sam',
+    last_name: 'Perez',
+    member_number: 'M-2222',
+    product: 'Co-Pay Plan (27199)',
+    sharing_effective_date: '2024-07-01',
+    referring_member: 'Dan Dubois',
+    a: 1,
+    b: 2,
+  },
+};
+
+const noIdentityRow = { id: 'member-row-3', data: { first_name: 'Only', last_name: 'Name' } };
+
+describe('collectTwinLookupKeys', () => {
+  it('collects deduplicated, lower-cased emails and member numbers', () => {
+    const keys = collectTwinLookupKeys([thinMemberRow, secondMemberRow, secondMemberRow]);
+    expect(keys.emails).toEqual(['davelung@da2ventures.com', 'sam.perez@example.com']);
+    expect(keys.memberNumbers).toEqual(['677910847', 'M-2222']);
+  });
+
+  it('skips rows that have no strong identifier', () => {
+    expect(collectTwinLookupKeys([noIdentityRow])).toEqual({ emails: [], memberNumbers: [] });
+  });
+});
+
+describe('pickRicherTwinsForRows', () => {
+  it('resolves the richer twin for every row on the page', () => {
+    const map = pickRicherTwinsForRows(
+      [thinMemberRow, secondMemberRow, noIdentityRow],
+      [secondContactTwin, richContactTwin],
+    );
+    expect(map.get('member-row-1')).toBe(richContactTwin.data);
+    expect(map.get('member-row-2')).toBe(secondContactTwin.data);
+    expect(map.has('member-row-3')).toBe(false);
+  });
+
+  it('matches email case-insensitively (Members and Contacts emails differ in case)', () => {
+    const map = pickRicherTwinsForRows([secondMemberRow], [
+      { ...secondContactTwin, data: { ...secondContactTwin.data, member_number: null } },
+    ]);
+    expect(map.get('member-row-2')?.product).toBe('Co-Pay Plan (27199)');
+  });
+
+  it('agrees with pickRicherTwin for each row (single vs batch never disagree)', () => {
+    const rows = [thinMemberRow, secondMemberRow];
+    const candidates = [secondContactTwin, richContactTwin, { ...richContactTwin, id: thinMemberRow.id }];
+    const map = pickRicherTwinsForRows(rows, candidates);
+    for (const row of rows) {
+      expect(map.get(row.id) ?? null).toBe(pickRicherTwin(row, candidates)?.data ?? null);
+    }
+  });
+
+  it('never assigns a thinner candidate or a stranger', () => {
+    const stranger = {
+      id: 'stranger',
+      email: 'someone.else@example.com',
+      data: { first_name: 'Jane', last_name: 'Doe', member_number: '000000', a: 1, b: 2, c: 3 },
+    };
+    const thinner = { id: 'thin', email: thinMemberRow.email, data: { first_name: 'David' } };
+    expect(pickRicherTwinsForRows([thinMemberRow], [stranger, thinner]).size).toBe(0);
+  });
+
+  it('never returns a row as its own twin', () => {
+    const self = { ...richContactTwin, id: thinMemberRow.id };
+    expect(pickRicherTwinsForRows([thinMemberRow], [self]).size).toBe(0);
+  });
+});
+
+describe('projectMembersCoverageAliases', () => {
+  it('fills blank plan_name / effective_date from the twin-supplied keys', () => {
+    const merged = mergeCrmRecordRowIntoFormDefaults(secondMemberRow, {
+      moduleKey: 'members',
+      twinData: secondContactTwin.data,
+    });
+    const out = projectMembersCoverageAliases(merged);
+    expect(out.plan_name).toBe('Co-Pay Plan (27199)');
+    expect(out.effective_date).toBe('2024-07-01');
+    // the twin's referring_member is a name, members' referral is a Yes/No flag
+    expect(out.referral).toBeUndefined();
+    expect(MEMBERS_COVERAGE_LIST_ALIASES.referral).toBeUndefined();
+  });
+
+  it('falls back to start_date when sharing_effective_date is blank', () => {
+    expect(projectMembersCoverageAliases({ start_date: '2021-06-01' }).effective_date).toBe(
+      '2021-06-01',
+    );
+  });
+
+  it("never overwrites the row's own values and does not mutate the input", () => {
+    const input = { plan_name: 'Typed by rep', product: 'Secure HSA', effective_date: '2026-07-01', start_date: '2020-01-01' };
+    const out = projectMembersCoverageAliases(input);
+    expect(out).toEqual(input);
+    expect(input.plan_name).toBe('Typed by rep');
+  });
+
+  it('is a no-op when no alias carries a value', () => {
+    expect(projectMembersCoverageAliases({ first_name: 'A' })).toEqual({ first_name: 'A' });
+  });
+
+  it('never projects a capacity label ("Health Sharing" / "Health Insurance") into plan_name', () => {
+    expect(projectMembersCoverageAliases({ product: 'Health Sharing' }).plan_name).toBeUndefined();
+    expect(projectMembersCoverageAliases({ product: 'Health Insurance' }).plan_name).toBeUndefined();
+    // Skips the capacity alias and falls through to the next real plan alias.
+    expect(
+      projectMembersCoverageAliases({ product: 'Health Sharing', plan: 'Secure HSA' }).plan_name,
+    ).toBe('Secure HSA');
+    // A real plan name in `product` still projects.
+    expect(projectMembersCoverageAliases({ product: 'Co-Pay Plan (27199)' }).plan_name).toBe(
+      'Co-Pay Plan (27199)',
+    );
+    // effective_date has no capacity guard.
+    expect(projectMembersCoverageAliases({ start_date: 'Health Sharing' }).effective_date).toBe(
+      'Health Sharing',
+    );
   });
 });

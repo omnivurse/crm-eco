@@ -21,6 +21,7 @@ import {
   CrmAiNotConfiguredError,
   invokeCrmAi,
 } from '@/lib/crm/ai/server';
+import { canDraftAiEmail } from '@/lib/crm/ai/email-draft-roles';
 
 export const dynamic = 'force-dynamic';
 
@@ -49,7 +50,8 @@ export async function POST(request: NextRequest) {
     if (!profile) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    if (!['crm_admin', 'crm_manager', 'crm_agent'].includes(profile.crm_role || '')) {
+    // Shared with the palette's client-side offer — see email-draft-roles.ts.
+    if (!canDraftAiEmail(profile.crm_role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
