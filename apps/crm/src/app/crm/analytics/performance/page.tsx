@@ -36,6 +36,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@crm-eco/ui/components/select';
+import Link from 'next/link';
 import { toast } from 'sonner';
 
 /* ------------------------------------------------------------------ */
@@ -418,7 +419,8 @@ export default function PerformanceAnalyticsPage() {
       {/* Growth Summary */}
       {growth && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Card className="glass-card border-slate-200 dark:border-white/10">
+          <Link href="/crm/commissions" aria-label="Commission Growth" className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500">
+          <Card className="glass-card border-slate-200 dark:border-white/10 hover:border-teal-500/50 transition-all h-full">
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
                 <div className="p-3 rounded-xl bg-teal-500/10">
@@ -441,8 +443,10 @@ export default function PerformanceAnalyticsPage() {
               </div>
             </CardContent>
           </Card>
+          </Link>
 
-          <Card className="glass-card border-slate-200 dark:border-white/10">
+          <Link href="/crm/enrollment" aria-label="Enrollment Growth" className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500">
+          <Card className="glass-card border-slate-200 dark:border-white/10 hover:border-teal-500/50 transition-all h-full">
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
                 <div className="p-3 rounded-xl bg-blue-500/10">
@@ -465,6 +469,7 @@ export default function PerformanceAnalyticsPage() {
               </div>
             </CardContent>
           </Card>
+          </Link>
         </div>
       )}
 
@@ -476,7 +481,8 @@ export default function PerformanceAnalyticsPage() {
               Personal Performance
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Card className="glass-card border-slate-200 dark:border-white/10">
+              <Link href="/crm/commissions" aria-label="Total Commissions" className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500">
+              <Card className="glass-card border-slate-200 dark:border-white/10 hover:border-teal-500/50 transition-all h-full">
                 <CardContent className="pt-5 pb-4">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-lg bg-emerald-500/10">
@@ -493,8 +499,10 @@ export default function PerformanceAnalyticsPage() {
                   </div>
                 </CardContent>
               </Card>
+              </Link>
 
-              <Card className="glass-card border-slate-200 dark:border-white/10">
+              <Link href="/crm/commissions?tab=transactions&status=pending" aria-label="Pending commissions" className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500">
+              <Card className="glass-card border-slate-200 dark:border-white/10 hover:border-teal-500/50 transition-all h-full">
                 <CardContent className="pt-5 pb-4">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-lg bg-amber-500/10">
@@ -509,8 +517,10 @@ export default function PerformanceAnalyticsPage() {
                   </div>
                 </CardContent>
               </Card>
+              </Link>
 
-              <Card className="glass-card border-slate-200 dark:border-white/10">
+              <Link href="/crm/enrollment" aria-label="Enrollments" className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500">
+              <Card className="glass-card border-slate-200 dark:border-white/10 hover:border-teal-500/50 transition-all h-full">
                 <CardContent className="pt-5 pb-4">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-lg bg-blue-500/10">
@@ -525,8 +535,10 @@ export default function PerformanceAnalyticsPage() {
                   </div>
                 </CardContent>
               </Card>
+              </Link>
 
-              <Card className="glass-card border-slate-200 dark:border-white/10">
+              <Link href="/crm/commissions" aria-label="Overrides" className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500">
+              <Card className="glass-card border-slate-200 dark:border-white/10 hover:border-teal-500/50 transition-all h-full">
                 <CardContent className="pt-5 pb-4">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-lg bg-violet-500/10">
@@ -541,6 +553,7 @@ export default function PerformanceAnalyticsPage() {
                   </div>
                 </CardContent>
               </Card>
+              </Link>
             </div>
           </div>
 
@@ -551,7 +564,8 @@ export default function PerformanceAnalyticsPage() {
                 Downline Performance
               </h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <Card className="glass-card border-slate-200 dark:border-white/10">
+                <Link href="/crm/commissions" aria-label="Downline Commissions" className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500">
+                <Card className="glass-card border-slate-200 dark:border-white/10 hover:border-teal-500/50 transition-all h-full">
                   <CardContent className="pt-5 pb-4">
                     <div className="flex items-center gap-3">
                       <div className="p-2 rounded-lg bg-teal-500/10">
@@ -568,8 +582,10 @@ export default function PerformanceAnalyticsPage() {
                     </div>
                   </CardContent>
                 </Card>
+                </Link>
 
-                <Card className="glass-card border-slate-200 dark:border-white/10">
+                <Link href="/crm/settings/team" aria-label="Active Sub-Advisors" className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500">
+                <Card className="glass-card border-slate-200 dark:border-white/10 hover:border-teal-500/50 transition-all h-full">
                   <CardContent className="pt-5 pb-4">
                     <div className="flex items-center gap-3">
                       <div className="p-2 rounded-lg bg-violet-500/10">
@@ -586,8 +602,10 @@ export default function PerformanceAnalyticsPage() {
                     </div>
                   </CardContent>
                 </Card>
+                </Link>
 
-                <Card className="glass-card border-slate-200 dark:border-white/10">
+                <Link href="/crm/enrollment" aria-label="Downline Enrollments" className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500">
+                <Card className="glass-card border-slate-200 dark:border-white/10 hover:border-teal-500/50 transition-all h-full">
                   <CardContent className="pt-5 pb-4">
                     <div className="flex items-center gap-3">
                       <div className="p-2 rounded-lg bg-blue-500/10">
@@ -604,8 +622,10 @@ export default function PerformanceAnalyticsPage() {
                     </div>
                   </CardContent>
                 </Card>
+                </Link>
 
-                <Card className="glass-card border-slate-200 dark:border-white/10">
+                <Link href="/crm/commissions" aria-label="Avg per Advisor" className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500">
+                <Card className="glass-card border-slate-200 dark:border-white/10 hover:border-teal-500/50 transition-all h-full">
                   <CardContent className="pt-5 pb-4">
                     <div className="flex items-center gap-3">
                       <div className="p-2 rounded-lg bg-amber-500/10">
@@ -622,6 +642,7 @@ export default function PerformanceAnalyticsPage() {
                     </div>
                   </CardContent>
                 </Card>
+                </Link>
               </div>
             </div>
           )}
@@ -667,9 +688,11 @@ export default function PerformanceAnalyticsPage() {
                 <div className="space-y-2">
                   {advisor.top_downline.map(
                     (performer: TopDownline, idx: number) => (
-                      <div
+                      <Link
                         key={performer.advisor_id}
-                        className="flex items-center gap-4 p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50"
+                        href="/crm/settings/team"
+                        aria-label={`${performer.first_name} ${performer.last_name}`}
+                        className="flex items-center gap-4 p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800"
                       >
                         <span
                           className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
@@ -702,7 +725,7 @@ export default function PerformanceAnalyticsPage() {
                             {performer.total_enrollments} enrollments
                           </p>
                         </div>
-                      </div>
+                      </Link>
                     ),
                   )}
                 </div>
@@ -720,7 +743,8 @@ export default function PerformanceAnalyticsPage() {
               Organization Overview
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Card className="glass-card border-slate-200 dark:border-white/10">
+              <Link href="/crm/commissions" aria-label="Organization total commissions" className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500">
+              <Card className="glass-card border-slate-200 dark:border-white/10 hover:border-teal-500/50 transition-all h-full">
                 <CardContent className="pt-5 pb-4">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-lg bg-emerald-500/10">
@@ -737,8 +761,10 @@ export default function PerformanceAnalyticsPage() {
                   </div>
                 </CardContent>
               </Card>
+              </Link>
 
-              <Card className="glass-card border-slate-200 dark:border-white/10">
+              <Link href="/crm/commissions?tab=transactions&status=paid" aria-label="Paid Out" className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500">
+              <Card className="glass-card border-slate-200 dark:border-white/10 hover:border-teal-500/50 transition-all h-full">
                 <CardContent className="pt-5 pb-4">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-lg bg-blue-500/10">
@@ -753,8 +779,10 @@ export default function PerformanceAnalyticsPage() {
                   </div>
                 </CardContent>
               </Card>
+              </Link>
 
-              <Card className="glass-card border-slate-200 dark:border-white/10">
+              <Link href="/crm/commissions?tab=transactions&status=pending" aria-label="Pending commissions" className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500">
+              <Card className="glass-card border-slate-200 dark:border-white/10 hover:border-teal-500/50 transition-all h-full">
                 <CardContent className="pt-5 pb-4">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-lg bg-amber-500/10">
@@ -769,8 +797,10 @@ export default function PerformanceAnalyticsPage() {
                   </div>
                 </CardContent>
               </Card>
+              </Link>
 
-              <Card className="glass-card border-slate-200 dark:border-white/10">
+              <Link href="/crm/settings/team" aria-label="Active Advisors" className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500">
+              <Card className="glass-card border-slate-200 dark:border-white/10 hover:border-teal-500/50 transition-all h-full">
                 <CardContent className="pt-5 pb-4">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-lg bg-violet-500/10">
@@ -787,6 +817,7 @@ export default function PerformanceAnalyticsPage() {
                   </div>
                 </CardContent>
               </Card>
+              </Link>
             </div>
           </div>
 

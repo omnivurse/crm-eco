@@ -45,9 +45,9 @@ const CATEGORIES = [
     color: 'blue',
     articles: [
       { title: 'Creating Contacts', href: '/crm/learn/contacts/creating', time: '3 min' },
-      { title: 'Search by Name, Spouse, or Child', href: '/crm/learn/contacts/searching', time: '4 min' },
-      { title: 'Filtering & Saved Views', href: '/crm/learn/contacts/searching', time: '4 min' },
-      { title: 'Bulk Assign Advisor / Agent', href: '/crm/learn/contacts/searching', time: '3 min' },
+      { title: 'Search by Name, Spouse, or Child', href: '/crm/learn/contacts', time: '4 min' },
+      { title: 'Filtering & Saved Views', href: '/crm/learn/contacts', time: '4 min' },
+      { title: 'Bulk Assign Advisor / Agent', href: '/crm/learn/contacts', time: '3 min' },
       { title: 'Importing Contacts', href: '/crm/learn/contacts/importing', time: '4 min' },
       { title: 'Merging Duplicates', href: '/crm/learn/contacts/merging', time: '3 min' },
     ],
@@ -125,7 +125,7 @@ const CATEGORIES = [
     color: 'blue',
     articles: [
       { title: 'Reports Overview', href: '/crm/learn/reports', time: '3 min' },
-      { title: 'Using Report Templates', href: '/crm/learn/reports/templates', time: '5 min' },
+      { title: 'Using Report Templates', href: '/crm/learn/reports/custom', time: '5 min' },
       { title: 'Building Custom Reports', href: '/crm/learn/reports/custom', time: '6 min' },
       { title: 'Exporting Data', href: '/crm/learn/reports/exporting', time: '3 min' },
     ],

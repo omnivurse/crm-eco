@@ -44,8 +44,8 @@ export function DealPipelineFunnel({ moduleStats, reportSummary }: DealPipelineF
       key: 'prospects',
       label: 'Prospects',
       count: prospects?.totalRecords ?? 0,
-      href: '/crm/modules/prospects',
-      color: 'bg-blue-600/80 hover:bg-blue-600 dark:bg-blue-700/80 dark:hover:bg-blue-600',
+      href: '/crm/modules/leads',
+      color: 'bg-primary/80 hover:bg-primary dark:bg-primary/80 dark:hover:bg-primary',
     },
     {
       key: 'contacts',

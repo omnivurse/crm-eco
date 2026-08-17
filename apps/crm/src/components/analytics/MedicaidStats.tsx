@@ -10,6 +10,7 @@ import {
   UserPlus,
   Users,
 } from 'lucide-react';
+import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@crm-eco/ui/components/card';
 import { Button } from '@crm-eco/ui/components/button';
 import { toast } from 'sonner';
@@ -78,11 +79,11 @@ export default function MedicaidStats() {
       {/* KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         {[
-          { label: 'Total Medicaid', value: summary.totalMedicaidMembers, icon: ShieldPlus, color: 'violet' },
-          { label: 'Active Medicaid', value: summary.activeMedicaid, icon: Users, color: 'emerald' },
-          { label: 'Former Medicaid', value: summary.formerMedicaid, icon: Users, color: 'slate' },
-          { label: 'Transitioning', value: summary.transitioningFromMedicaid, icon: ArrowRightLeft, color: 'amber' },
-          { label: 'New This Month', value: summary.newMedicaidThisMonth, icon: UserPlus, color: 'blue' },
+          { label: 'Total Medicaid', value: summary.totalMedicaidMembers, icon: ShieldPlus, color: 'violet', href: '/crm/members' },
+          { label: 'Active Medicaid', value: summary.activeMedicaid, icon: Users, color: 'emerald', href: '/crm/members' },
+          { label: 'Former Medicaid', value: summary.formerMedicaid, icon: Users, color: 'slate', href: '/crm/members' },
+          { label: 'Transitioning', value: summary.transitioningFromMedicaid, icon: ArrowRightLeft, color: 'amber', href: '/crm/members' },
+          { label: 'New This Month', value: summary.newMedicaidThisMonth, icon: UserPlus, color: 'blue', href: '/crm/members' },
         ].map((kpi) => {
           const colorMap: Record<string, { bg: string; text: string }> = {
             violet: { bg: 'bg-violet-500/10', text: 'text-violet-600 dark:text-violet-400' },
@@ -93,15 +94,22 @@ export default function MedicaidStats() {
           };
           const c = colorMap[kpi.color];
           return (
-            <Card key={kpi.label} className="glass-card border-slate-200 dark:border-white/10">
-              <CardContent className="pt-6">
-                <div className={`p-3 rounded-xl ${c.bg} w-fit mb-3`}>
-                  <kpi.icon className={`w-6 h-6 ${c.text}`} />
-                </div>
-                <p className="text-3xl font-bold text-slate-900 dark:text-white">{kpi.value.toLocaleString()}</p>
-                <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{kpi.label}</p>
-              </CardContent>
-            </Card>
+            <Link
+              key={kpi.label}
+              href={kpi.href}
+              aria-label={kpi.label}
+              className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
+            >
+              <Card className="glass-card border-slate-200 dark:border-white/10 hover:border-teal-500/50 transition-all h-full">
+                <CardContent className="pt-6">
+                  <div className={`p-3 rounded-xl ${c.bg} w-fit mb-3`}>
+                    <kpi.icon className={`w-6 h-6 ${c.text}`} />
+                  </div>
+                  <p className="text-3xl font-bold text-slate-900 dark:text-white">{kpi.value.toLocaleString()}</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{kpi.label}</p>
+                </CardContent>
+              </Card>
+            </Link>
           );
         })}
       </div>
@@ -176,7 +184,12 @@ export default function MedicaidStats() {
             ) : (
               <div className="space-y-2 max-h-80 overflow-y-auto">
                 {transitioningMembers.map((m) => (
-                  <div key={m.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800/50">
+                  <Link
+                    key={m.id}
+                    href={`/crm/r/${m.id}`}
+                    aria-label={m.title || m.email || 'Member'}
+                    className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800/50"
+                  >
                     <div>
                       <p className="text-sm text-slate-900 dark:text-white">{m.title || m.email || 'Unknown'}</p>
                       <p className="text-xs text-slate-500">{m.medicaid_state} · Ended {m.medicaid_end_date}</p>
@@ -184,7 +197,7 @@ export default function MedicaidStats() {
                     <span className="text-xs px-2 py-1 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
                       Transitioning
                     </span>
-                  </div>
+                  </Link>
                 ))}
               </div>
             )}
@@ -203,13 +216,18 @@ export default function MedicaidStats() {
             ) : (
               <div className="space-y-3">
                 {topAdvisors.map((a, idx) => (
-                  <div key={a.advisor_id} className="flex items-center gap-3">
+                  <Link
+                    key={a.advisor_id}
+                    href="/crm/settings/team"
+                    aria-label={a.name}
+                    className="flex items-center gap-3 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800/50 px-1 py-0.5"
+                  >
                     <span className="w-6 h-6 rounded-full bg-violet-500/10 text-violet-600 dark:text-violet-400 flex items-center justify-center text-xs font-bold shrink-0">
                       {idx + 1}
                     </span>
                     <span className="flex-1 text-sm text-slate-900 dark:text-white truncate">{a.name}</span>
                     <span className="text-sm font-bold text-slate-900 dark:text-white">{a.count}</span>
-                  </div>
+                  </Link>
                 ))}
               </div>
             )}

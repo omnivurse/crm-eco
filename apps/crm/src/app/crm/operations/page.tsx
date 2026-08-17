@@ -239,37 +239,37 @@ function TaskOverview({ summary }: { summary: TaskSummary }) {
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <div className="p-4 bg-red-50 dark:bg-red-500/10 rounded-lg">
+        <Link href="/crm/tasks" aria-label="Overdue tasks" className="p-4 bg-red-50 dark:bg-red-500/10 rounded-lg hover:ring-2 hover:ring-teal-500/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500">
           <div className="flex items-center gap-2 mb-2">
             <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400" />
             <span className="text-sm font-medium text-red-700 dark:text-red-400">Overdue</span>
           </div>
           <div className="text-2xl font-bold text-red-600 dark:text-red-400">{summary.overdue}</div>
-        </div>
+        </Link>
 
-        <div className="p-4 bg-amber-50 dark:bg-amber-500/10 rounded-lg">
+        <Link href="/crm/tasks" aria-label="Due today tasks" className="p-4 bg-amber-50 dark:bg-amber-500/10 rounded-lg hover:ring-2 hover:ring-teal-500/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500">
           <div className="flex items-center gap-2 mb-2">
             <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400" />
             <span className="text-sm font-medium text-amber-700 dark:text-amber-400">Due Today</span>
           </div>
           <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">{summary.dueToday}</div>
-        </div>
+        </Link>
 
-        <div className="p-4 bg-blue-50 dark:bg-blue-500/10 rounded-lg">
+        <Link href="/crm/tasks" aria-label="Upcoming tasks" className="p-4 bg-blue-50 dark:bg-blue-500/10 rounded-lg hover:ring-2 hover:ring-teal-500/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500">
           <div className="flex items-center gap-2 mb-2">
             <Calendar className="w-4 h-4 text-blue-600 dark:text-blue-400" />
             <span className="text-sm font-medium text-blue-700 dark:text-blue-400">Upcoming</span>
           </div>
           <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{summary.upcoming}</div>
-        </div>
+        </Link>
 
-        <div className="p-4 bg-emerald-50 dark:bg-emerald-500/10 rounded-lg">
+        <Link href="/crm/tasks" aria-label="Completed tasks" className="p-4 bg-emerald-50 dark:bg-emerald-500/10 rounded-lg hover:ring-2 hover:ring-teal-500/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500">
           <div className="flex items-center gap-2 mb-2">
             <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             <span className="text-sm font-medium text-emerald-700 dark:text-emerald-400">Completed</span>
           </div>
           <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{summary.completed}</div>
-        </div>
+        </Link>
       </div>
     </div>
   );
@@ -370,7 +370,7 @@ export default function OperationsPage() {
               Automations
             </Link>
           </Button>
-          <Button className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-400 hover:to-cyan-400" asChild>
+          <Button asChild>
             <Link href="/crm/tasks">
               <ListTodo className="w-4 h-4 mr-2" />
               View Tasks

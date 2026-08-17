@@ -49,7 +49,7 @@ const ARTICLES = [
     title: 'Searching & Filtering',
     description: 'Find contacts by name, spouse, child, Advisor, market type, and more',
     time: '4 min',
-    href: '/crm/learn/contacts/searching',
+    href: '/crm/learn/contacts',
     icon: <Search className="w-5 h-5" />,
     steps: [
       'Search by full name, spouse, or child name',

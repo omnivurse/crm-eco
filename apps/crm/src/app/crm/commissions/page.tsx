@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback, Suspense } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import {
   DollarSign,
   Users,
@@ -556,7 +557,8 @@ function CommissionsPageContent() {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="glass-card border-slate-200 dark:border-white/10">
+        <Link href="/crm/commissions?tab=transactions&status=pending" aria-label="Pending commissions" className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500">
+        <Card className="glass-card border-slate-200 dark:border-white/10 hover:border-teal-500/50 transition-all h-full">
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-xl bg-amber-500/10">
@@ -571,8 +573,10 @@ function CommissionsPageContent() {
             </div>
           </CardContent>
         </Card>
+        </Link>
 
-        <Card className="glass-card border-slate-200 dark:border-white/10">
+        <Link href="/crm/commissions?tab=transactions&status=approved" aria-label="Approved commissions" className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500">
+        <Card className="glass-card border-slate-200 dark:border-white/10 hover:border-teal-500/50 transition-all h-full">
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-xl bg-blue-500/10">
@@ -587,8 +591,10 @@ function CommissionsPageContent() {
             </div>
           </CardContent>
         </Card>
+        </Link>
 
-        <Card className="glass-card border-slate-200 dark:border-white/10">
+        <Link href="/crm/commissions?tab=transactions&status=paid" aria-label="Paid Out commissions" className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500">
+        <Card className="glass-card border-slate-200 dark:border-white/10 hover:border-teal-500/50 transition-all h-full">
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-xl bg-emerald-500/10">
@@ -603,8 +609,10 @@ function CommissionsPageContent() {
             </div>
           </CardContent>
         </Card>
+        </Link>
 
-        <Card className="glass-card border-slate-200 dark:border-white/10">
+        <Link href="/crm/settings/team" aria-label="Active Advisors" className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500">
+        <Card className="glass-card border-slate-200 dark:border-white/10 hover:border-teal-500/50 transition-all h-full">
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-xl bg-violet-500/10">
@@ -617,6 +625,7 @@ function CommissionsPageContent() {
             </div>
           </CardContent>
         </Card>
+        </Link>
       </div>
 
       {/* Product Type Split Tabs */}

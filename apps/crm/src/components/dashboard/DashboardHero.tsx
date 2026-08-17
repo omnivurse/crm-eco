@@ -90,13 +90,15 @@ interface DashboardHeroProps {
 function HeroCard({
   children,
   className = '',
+  href,
 }: {
   children: React.ReactNode;
   className?: string;
   /** Kept for call-site compatibility; entry animation removed. */
   delay?: number;
+  href?: string;
 }) {
-  return (
+  const card = (
     <div
       className={`
         relative overflow-hidden rounded-lg
@@ -106,12 +108,22 @@ function HeroCard({
         hover:shadow-[0_1px_4px_rgba(0,0,0,0.06)]
         transition-shadow duration-200
         group
+        ${href ? 'hover:border-teal-500/50' : ''}
         ${className}
       `}
     >
       <div className="relative z-10 h-full">{children}</div>
     </div>
   );
+
+  if (href) {
+    return (
+      <Link href={href} className="block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500">
+        {card}
+      </Link>
+    );
+  }
+  return card;
 }
 
 /**
@@ -198,7 +210,7 @@ function GoalProgressBar({ goal }: { goal: WeeklyGoalProgress }) {
             absolute inset-y-0 left-0 rounded-full
             ${isComplete
               ? 'bg-gradient-to-r from-amber-500 to-amber-400'
-              : 'bg-gradient-to-r from-blue-500 to-blue-400'
+              : 'bg-gradient-to-r from-primary to-primary/80'
             }
             transition-all duration-1000 ease-out
           `}
@@ -423,16 +435,16 @@ export function DashboardHero({
 
         {/* Zone D: Metrics + context (secondary, below primary workflow) */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
-          <HeroCard delay={150}>
+          <HeroCard delay={150} href="/crm/tasks">
             <StatItem icon={Sun} value={todaysTaskCount} label="Tasks Today" color="amber" />
           </HeroCard>
-          <HeroCard delay={200}>
+          <HeroCard delay={200} href="/crm/workqueue">
             <StatItem icon={AlertTriangle} value={overdueCount} label="Overdue" color="red" />
           </HeroCard>
-          <HeroCard delay={250}>
+          <HeroCard delay={250} href="/crm/modules/leads">
             <StatItem icon={TrendingUp} value={newThisWeek} label="New This Week" color="emerald" />
           </HeroCard>
-          <HeroCard delay={300}>
+          <HeroCard delay={300} href="/crm/needs">
             <StatItem icon={Flame} value={atRiskCount} label="At Risk" color="rose" />
           </HeroCard>
         </div>

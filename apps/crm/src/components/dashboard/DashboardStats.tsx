@@ -92,7 +92,7 @@ const statConfigs: Record<
   },
   advisors: {
     icon: <UserCheck className="w-5 h-5" />,
-    href: '/advisors',
+    href: '/crm/settings/team',
   },
 };
 

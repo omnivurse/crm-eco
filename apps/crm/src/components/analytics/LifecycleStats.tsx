@@ -12,6 +12,7 @@ import {
   ArrowDownRight,
   RefreshCw,
 } from 'lucide-react';
+import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@crm-eco/ui/components/card';
 import { Button } from '@crm-eco/ui/components/button';
 import { toast } from 'sonner';
@@ -126,51 +127,30 @@ export default function LifecycleStats() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-        <Card className="glass-card border-slate-200 dark:border-white/10">
-          <CardContent className="pt-6">
-            <div className="p-3 rounded-xl bg-teal-500/10 w-fit mb-3">
-              <HeartPulse className="w-6 h-6 text-teal-600 dark:text-teal-400" />
-            </div>
-            <p className="text-3xl font-bold text-slate-900 dark:text-white">{summary.totalTrackedMembers.toLocaleString()}</p>
-            <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Tracked Members</p>
-          </CardContent>
-        </Card>
-        <Card className="glass-card border-slate-200 dark:border-white/10">
-          <CardContent className="pt-6">
-            <div className="p-3 rounded-xl bg-emerald-500/10 w-fit mb-3">
-              <UserPlus className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
-            </div>
-            <p className="text-3xl font-bold text-slate-900 dark:text-white">{summary.enrolledThisMonth}</p>
-            <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Enrolled This Month</p>
-          </CardContent>
-        </Card>
-        <Card className="glass-card border-slate-200 dark:border-white/10">
-          <CardContent className="pt-6">
-            <div className="p-3 rounded-xl bg-red-500/10 w-fit mb-3">
-              <UserMinus className="w-6 h-6 text-red-600 dark:text-red-400" />
-            </div>
-            <p className="text-3xl font-bold text-slate-900 dark:text-white">{summary.cancelledThisMonth}</p>
-            <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Cancelled This Month</p>
-          </CardContent>
-        </Card>
-        <Card className="glass-card border-slate-200 dark:border-white/10">
-          <CardContent className="pt-6">
-            <div className="p-3 rounded-xl bg-blue-500/10 w-fit mb-3">
-              <RotateCcw className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-            </div>
-            <p className="text-3xl font-bold text-slate-900 dark:text-white">{summary.totalReturned}</p>
-            <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Total Returned</p>
-          </CardContent>
-        </Card>
-        <Card className="glass-card border-slate-200 dark:border-white/10">
-          <CardContent className="pt-6">
-            <div className="p-3 rounded-xl bg-amber-500/10 w-fit mb-3">
-              <TrendingDown className="w-6 h-6 text-amber-600 dark:text-amber-400" />
-            </div>
-            <p className="text-3xl font-bold text-slate-900 dark:text-white">{summary.churnRate12m}%</p>
-            <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">12-Month Churn Rate</p>
-          </CardContent>
-        </Card>
+        {[
+          { href: '/crm/members', label: 'Tracked Members', value: summary.totalTrackedMembers.toLocaleString(), icon: HeartPulse, bg: 'bg-teal-500/10', text: 'text-teal-600 dark:text-teal-400' },
+          { href: '/crm/enrollment', label: 'Enrolled This Month', value: summary.enrolledThisMonth, icon: UserPlus, bg: 'bg-emerald-500/10', text: 'text-emerald-600 dark:text-emerald-400' },
+          { href: '/crm/members', label: 'Cancelled This Month', value: summary.cancelledThisMonth, icon: UserMinus, bg: 'bg-red-500/10', text: 'text-red-600 dark:text-red-400' },
+          { href: '/crm/members', label: 'Total Returned', value: summary.totalReturned, icon: RotateCcw, bg: 'bg-blue-500/10', text: 'text-blue-600 dark:text-blue-400' },
+          { href: '/crm/analytics?tab=churn', label: '12-Month Churn Rate', value: `${summary.churnRate12m}%`, icon: TrendingDown, bg: 'bg-amber-500/10', text: 'text-amber-600 dark:text-amber-400' },
+        ].map((kpi) => (
+          <Link
+            key={kpi.label}
+            href={kpi.href}
+            aria-label={kpi.label}
+            className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
+          >
+            <Card className="glass-card border-slate-200 dark:border-white/10 hover:border-teal-500/50 transition-all h-full">
+              <CardContent className="pt-6">
+                <div className={`p-3 rounded-xl ${kpi.bg} w-fit mb-3`}>
+                  <kpi.icon className={`w-6 h-6 ${kpi.text}`} />
+                </div>
+                <p className="text-3xl font-bold text-slate-900 dark:text-white">{kpi.value}</p>
+                <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{kpi.label}</p>
+              </CardContent>
+            </Card>
+          </Link>
+        ))}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -284,21 +264,31 @@ export default function LifecycleStats() {
               <p className="text-slate-500 text-center py-8">No events yet</p>
             ) : (
               <div className="space-y-3 max-h-80 overflow-y-auto">
-                {recentEvents.map((e) => (
-                  <div key={e.id} className="flex items-start gap-3 p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800/50">
-                    <div className={`w-2 h-2 rounded-full mt-2 shrink-0 ${EVENT_COLORS[e.event_type] || 'bg-slate-400'}`} />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-slate-900 dark:text-white truncate">
-                        {e.contact?.title || e.contact?.email || 'Unknown'}{' '}
-                        <span className="text-slate-500">— {EVENT_LABELS[e.event_type] || e.event_type}</span>
-                      </p>
-                      <p className="text-xs text-slate-500">
-                        {e.event_date}{e.reason ? ` · ${REASON_LABELS[e.reason] || e.reason}` : ''}
-                        {e.plan_type ? ` · ${e.plan_type}` : ''}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                {recentEvents.map((e) => {
+                  const row = (
+                    <>
+                      <div className={`w-2 h-2 rounded-full mt-2 shrink-0 ${EVENT_COLORS[e.event_type] || 'bg-slate-400'}`} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-slate-900 dark:text-white truncate">
+                          {e.contact?.title || e.contact?.email || 'Unknown'}{' '}
+                          <span className="text-slate-500">— {EVENT_LABELS[e.event_type] || e.event_type}</span>
+                        </p>
+                        <p className="text-xs text-slate-500">
+                          {e.event_date}{e.reason ? ` · ${REASON_LABELS[e.reason] || e.reason}` : ''}
+                          {e.plan_type ? ` · ${e.plan_type}` : ''}
+                        </p>
+                      </div>
+                    </>
+                  );
+                  const className = 'flex items-start gap-3 p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800/50';
+                  return e.contact?.id ? (
+                    <Link key={e.id} href={`/crm/r/${e.contact.id}`} className={className} aria-label={e.contact.title || e.contact.email || 'Record'}>
+                      {row}
+                    </Link>
+                  ) : (
+                    <div key={e.id} className={className}>{row}</div>
+                  );
+                })}
               </div>
             )}
           </CardContent>

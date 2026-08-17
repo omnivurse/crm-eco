@@ -32,6 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@crm-eco/ui/components/select';
+import Link from 'next/link';
 import { toast } from 'sonner';
 
 /* ------------------------------------------------------------------ */
@@ -381,7 +382,8 @@ export default function LeaderboardPage() {
 
       {/* My Ranking Card */}
       {myRanking?.ranked && (
-        <Card className="glass-card border-slate-200 dark:border-white/10 bg-gradient-to-r from-amber-500/5 via-transparent to-violet-500/5 overflow-hidden">
+        <Link href="/crm/commissions" aria-label="Your ranking" className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500">
+        <Card className="glass-card border-slate-200 dark:border-white/10 bg-gradient-to-r from-amber-500/5 via-transparent to-violet-500/5 overflow-hidden hover:border-teal-500/50 transition-all">
           <CardContent className="pt-6 pb-5">
             <div className="flex flex-col md:flex-row md:items-center gap-6">
               {/* Rank position */}
@@ -456,6 +458,7 @@ export default function LeaderboardPage() {
             )}
           </CardContent>
         </Card>
+        </Link>
       )}
 
       {/* Leaderboard Table */}
@@ -493,8 +496,10 @@ export default function LeaderboardPage() {
                   myRanking?.ranked &&
                   myRanking.rank_position === entry.rank_position;
                 return (
-                  <div
+                  <Link
                     key={entry.advisor_id}
+                    href="/crm/settings/team"
+                    aria-label={`${entry.first_name} ${entry.last_name}`}
                     className={`flex items-center md:grid md:grid-cols-[3rem_1fr_6rem_7rem_6rem_5rem] gap-4 px-3 py-3 rounded-lg transition-colors ${
                       isCurrentUser
                         ? 'bg-amber-500/5 border border-amber-500/20'
@@ -590,7 +595,7 @@ export default function LeaderboardPage() {
                         <span className="text-xs text-slate-400">--</span>
                       )}
                     </div>
-                  </div>
+                  </Link>
                 );
               })}
             </div>

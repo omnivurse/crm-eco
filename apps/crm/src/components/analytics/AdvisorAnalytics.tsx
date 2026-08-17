@@ -12,6 +12,7 @@ import {
   ArrowUpRight,
   ArrowDownRight,
 } from 'lucide-react';
+import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@crm-eco/ui/components/card';
 import { Button } from '@crm-eco/ui/components/button';
 import { toast } from 'sonner';
@@ -101,7 +102,8 @@ export default function AdvisorAnalytics() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="glass-card border-slate-200 dark:border-white/10">
+        <Link href="/crm/commissions" aria-label="Total Commissions" className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500">
+        <Card className="glass-card border-slate-200 dark:border-white/10 hover:border-teal-500/50 transition-all h-full">
           <CardContent className="pt-6">
             <div className="flex items-start justify-between">
               <div className="p-3 rounded-xl bg-emerald-500/10"><DollarSign className="w-6 h-6 text-emerald-600 dark:text-emerald-400" /></div>
@@ -116,7 +118,9 @@ export default function AdvisorAnalytics() {
             <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Total Commissions</p>
           </CardContent>
         </Card>
-        <Card className="glass-card border-slate-200 dark:border-white/10">
+        </Link>
+        <Link href="/crm/enrollment" aria-label="Total Enrollments" className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500">
+        <Card className="glass-card border-slate-200 dark:border-white/10 hover:border-teal-500/50 transition-all h-full">
           <CardContent className="pt-6">
             <div className="flex items-start justify-between">
               <div className="p-3 rounded-xl bg-teal-500/10"><TrendingUp className="w-6 h-6 text-teal-600 dark:text-teal-400" /></div>
@@ -131,20 +135,25 @@ export default function AdvisorAnalytics() {
             <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Total Enrollments</p>
           </CardContent>
         </Card>
-        <Card className="glass-card border-slate-200 dark:border-white/10">
+        </Link>
+        <Link href="/crm/settings/team" aria-label="Active Advisors" className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500">
+        <Card className="glass-card border-slate-200 dark:border-white/10 hover:border-teal-500/50 transition-all h-full">
           <CardContent className="pt-6">
             <div className="p-3 rounded-xl bg-blue-500/10"><Users className="w-6 h-6 text-blue-600 dark:text-blue-400" /></div>
             <p className="text-3xl font-bold text-slate-900 dark:text-white mt-4">{summary?.active_advisors || 0}</p>
             <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Active Advisors</p>
           </CardContent>
         </Card>
-        <Card className="glass-card border-slate-200 dark:border-white/10">
+        </Link>
+        <Link href="/crm/commissions?tab=transactions&status=pending" aria-label="Pending Payouts" className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500">
+        <Card className="glass-card border-slate-200 dark:border-white/10 hover:border-teal-500/50 transition-all h-full">
           <CardContent className="pt-6">
             <div className="p-3 rounded-xl bg-amber-500/10"><DollarSign className="w-6 h-6 text-amber-600 dark:text-amber-400" /></div>
             <p className="text-3xl font-bold text-slate-900 dark:text-white mt-4">{formatCurrency(summary?.pending_amount || 0)}</p>
             <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Pending Payouts</p>
           </CardContent>
         </Card>
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -162,14 +171,14 @@ export default function AdvisorAnalytics() {
                 {safeEnrollments.map((a, idx) => {
                   const d = a.row_data || a;
                   return (
-                    <div key={(d as { advisor_id: string }).advisor_id || idx} className="flex items-center gap-3">
+                    <Link key={(d as { advisor_id: string }).advisor_id || idx} href="/crm/settings/team" aria-label={(d as { name: string }).name} className="flex items-center gap-3 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800/50 px-1 py-0.5">
                       <span className="w-6 h-6 rounded-full bg-teal-500/10 text-teal-600 dark:text-teal-400 flex items-center justify-center text-xs font-bold shrink-0">{idx + 1}</span>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm text-slate-900 dark:text-white truncate">{(d as { name: string }).name}</p>
                         {(d as { agency_name?: string }).agency_name && <p className="text-xs text-slate-500 truncate">{(d as { agency_name: string }).agency_name}</p>}
                       </div>
                       <span className="text-sm font-bold text-slate-900 dark:text-white">{(d as { total_enrollments: number }).total_enrollments}</span>
-                    </div>
+                    </Link>
                   );
                 })}
               </div>
@@ -191,13 +200,13 @@ export default function AdvisorAnalytics() {
                 {safeRevenue.map((a, idx) => {
                   const d = a.row_data || a;
                   return (
-                    <div key={(d as { advisor_id: string }).advisor_id || idx} className="flex items-center gap-3">
+                    <Link key={(d as { advisor_id: string }).advisor_id || idx} href="/crm/settings/team" aria-label={(d as { name: string }).name} className="flex items-center gap-3 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800/50 px-1 py-0.5">
                       <span className="w-6 h-6 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xs font-bold shrink-0">{idx + 1}</span>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm text-slate-900 dark:text-white truncate">{(d as { name: string }).name}</p>
                       </div>
                       <span className="text-sm font-bold text-slate-900 dark:text-white">{formatCurrency((d as { total_commissions: number }).total_commissions)}</span>
-                    </div>
+                    </Link>
                   );
                 })}
               </div>

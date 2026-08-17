@@ -10,6 +10,7 @@ import {
   Shield,
   UserX,
 } from 'lucide-react';
+import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@crm-eco/ui/components/card';
 import { Button } from '@crm-eco/ui/components/button';
 import { toast } from 'sonner';
@@ -92,33 +93,35 @@ export default function ChurnAnalysis() {
       {/* KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Overall Churn Rate', value: `${summary.overallChurnRate}%`, icon: TrendingDown, color: 'bg-red-500/10', textColor: 'text-red-600 dark:text-red-400' },
-          { label: '12-Month Churn', value: `${summary.churnRate12m}%`, icon: TrendingDown, color: 'bg-amber-500/10', textColor: 'text-amber-600 dark:text-amber-400' },
-          { label: 'Active Members', value: summary.activeMembers.toLocaleString(), icon: Users, color: 'bg-emerald-500/10', textColor: 'text-emerald-600 dark:text-emerald-400' },
-          { label: 'Cancelled Members', value: summary.cancelledMembers.toLocaleString(), icon: UserX, color: 'bg-slate-500/10', textColor: 'text-slate-600 dark:text-slate-400' },
+          { label: 'Overall Churn Rate', value: `${summary.overallChurnRate}%`, icon: TrendingDown, color: 'bg-red-500/10', textColor: 'text-red-600 dark:text-red-400', href: '/crm/members' },
+          { label: '12-Month Churn', value: `${summary.churnRate12m}%`, icon: TrendingDown, color: 'bg-amber-500/10', textColor: 'text-amber-600 dark:text-amber-400', href: '/crm/members' },
+          { label: 'Active Members', value: summary.activeMembers.toLocaleString(), icon: Users, color: 'bg-emerald-500/10', textColor: 'text-emerald-600 dark:text-emerald-400', href: '/crm/members' },
+          { label: 'Cancelled Members', value: summary.cancelledMembers.toLocaleString(), icon: UserX, color: 'bg-slate-500/10', textColor: 'text-slate-600 dark:text-slate-400', href: '/crm/members' },
         ].map((kpi) => (
-          <Card key={kpi.label} className="glass-card border-slate-200 dark:border-white/10">
-            <CardContent className="pt-6">
-              <div className={`p-3 rounded-xl ${kpi.color} w-fit mb-3`}>
-                <kpi.icon className={`w-6 h-6 ${kpi.textColor}`} />
-              </div>
-              <p className="text-3xl font-bold text-slate-900 dark:text-white">{kpi.value}</p>
-              <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{kpi.label}</p>
-            </CardContent>
-          </Card>
+          <Link key={kpi.label} href={kpi.href} aria-label={kpi.label} className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500">
+            <Card className="glass-card border-slate-200 dark:border-white/10 hover:border-teal-500/50 transition-all h-full">
+              <CardContent className="pt-6">
+                <div className={`p-3 rounded-xl ${kpi.color} w-fit mb-3`}>
+                  <kpi.icon className={`w-6 h-6 ${kpi.textColor}`} />
+                </div>
+                <p className="text-3xl font-bold text-slate-900 dark:text-white">{kpi.value}</p>
+                <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{kpi.label}</p>
+              </CardContent>
+            </Card>
+          </Link>
         ))}
       </div>
 
       {/* This Month + Top Reason */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="p-4 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800">
+        <Link href="/crm/enrollment" aria-label="Enrolled This Month" className="p-4 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 hover:border-emerald-400 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500">
           <p className="text-sm text-emerald-700 dark:text-emerald-300">Enrolled This Month</p>
           <p className="text-2xl font-bold text-emerald-800 dark:text-emerald-200">{summary.enrolledThisMonth}</p>
-        </div>
-        <div className="p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+        </Link>
+        <Link href="/crm/members" aria-label="Cancelled This Month" className="p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 hover:border-red-400 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500">
           <p className="text-sm text-red-700 dark:text-red-300">Cancelled This Month</p>
           <p className="text-2xl font-bold text-red-800 dark:text-red-200">{summary.cancelledThisMonth}</p>
-        </div>
+        </Link>
         <div className="p-4 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
           <p className="text-sm text-amber-700 dark:text-amber-300">Top Cancellation Reason</p>
           <p className="text-2xl font-bold text-amber-800 dark:text-amber-200">{REASON_LABELS[summary.topCancelReason || ''] || summary.topCancelReason || 'N/A'}</p>
@@ -201,14 +204,14 @@ export default function ChurnAnalysis() {
                 {bestRetentionAdvisors.map((a, idx) => {
                   const d = a.row_data || a;
                   return (
-                    <div key={(d as { advisor_id: string }).advisor_id || idx} className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800/50">
+                    <Link key={(d as { advisor_id: string }).advisor_id || idx} href="/crm/settings/team" aria-label={(d as { name: string }).name} className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800/50">
                       <span className="w-6 h-6 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center text-xs font-bold shrink-0">{idx + 1}</span>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm text-slate-900 dark:text-white truncate">{(d as { name: string }).name}</p>
                         <p className="text-xs text-slate-500">{(d as { active_members: number }).active_members} active / {(d as { total_members: number }).total_members} total</p>
                       </div>
                       <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{(d as { churn_rate: number }).churn_rate}%</span>
-                    </div>
+                    </Link>
                   );
                 })}
               </div>
@@ -230,7 +233,7 @@ export default function ChurnAnalysis() {
             ) : (
               <div className="space-y-2 max-h-80 overflow-y-auto">
                 {atRiskMembers.map((m) => (
-                  <div key={m.contact_id} className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800/50">
+                  <Link key={m.contact_id} href={`/crm/r/${m.contact_id}`} aria-label={m.contact_name || m.contact_email || 'Member'} className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800/50">
                     <div>
                       <p className="text-sm text-slate-900 dark:text-white">{m.contact_name || m.contact_email || 'Unknown'}</p>
                       <p className="text-xs text-slate-500">
@@ -242,7 +245,7 @@ export default function ChurnAnalysis() {
                     <span className="text-xs px-2 py-1 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 shrink-0">
                       At Risk
                     </span>
-                  </div>
+                  </Link>
                 ))}
               </div>
             )}

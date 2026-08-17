@@ -30,6 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@crm-eco/ui/components/select';
+import Link from 'next/link';
 import { toast } from 'sonner';
 
 /* ------------------------------------------------------------------ */
@@ -295,7 +296,8 @@ export default function AgencyAnalyticsPage() {
           {/* Summary Cards */}
           {summary && (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Card className="glass-card border-slate-200 dark:border-white/10">
+              <Link href="/crm/commissions" aria-label="Total Production" className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500">
+              <Card className="glass-card border-slate-200 dark:border-white/10 hover:border-teal-500/50 transition-all h-full">
                 <CardContent className="pt-5 pb-4">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-lg bg-emerald-500/10">
@@ -312,8 +314,10 @@ export default function AgencyAnalyticsPage() {
                   </div>
                 </CardContent>
               </Card>
+              </Link>
 
-              <Card className="glass-card border-slate-200 dark:border-white/10">
+              <Link href="/crm/enrollment" aria-label="Enrollments" className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500">
+              <Card className="glass-card border-slate-200 dark:border-white/10 hover:border-teal-500/50 transition-all h-full">
                 <CardContent className="pt-5 pb-4">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-lg bg-blue-500/10">
@@ -328,8 +332,10 @@ export default function AgencyAnalyticsPage() {
                   </div>
                 </CardContent>
               </Card>
+              </Link>
 
-              <Card className="glass-card border-slate-200 dark:border-white/10">
+              <Link href="/crm/settings/team" aria-label="Active Advisors" className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500">
+              <Card className="glass-card border-slate-200 dark:border-white/10 hover:border-teal-500/50 transition-all h-full">
                 <CardContent className="pt-5 pb-4">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-lg bg-violet-500/10">
@@ -344,8 +350,10 @@ export default function AgencyAnalyticsPage() {
                   </div>
                 </CardContent>
               </Card>
+              </Link>
 
-              <Card className="glass-card border-slate-200 dark:border-white/10">
+              <Link href="/crm/commissions?tab=transactions&status=pending" aria-label="Pending commissions" className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500">
+              <Card className="glass-card border-slate-200 dark:border-white/10 hover:border-teal-500/50 transition-all h-full">
                 <CardContent className="pt-5 pb-4">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-lg bg-amber-500/10">
@@ -360,6 +368,7 @@ export default function AgencyAnalyticsPage() {
                   </div>
                 </CardContent>
               </Card>
+              </Link>
             </div>
           )}
 
@@ -461,9 +470,11 @@ export default function AgencyAnalyticsPage() {
                 <CardContent>
                   <div className="space-y-2">
                     {analytics.top_advisors.map((advisor, idx) => (
-                      <div
+                      <Link
                         key={advisor.advisor_id}
-                        className="flex items-center gap-4 p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50"
+                        href="/crm/settings/team"
+                        aria-label={`${advisor.first_name} ${advisor.last_name}`}
+                        className="flex items-center gap-4 p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800"
                       >
                         <span
                           className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
@@ -490,7 +501,7 @@ export default function AgencyAnalyticsPage() {
                         <p className="font-bold text-sm text-slate-900 dark:text-white">
                           {formatCurrency(advisor.total_commissions)}
                         </p>
-                      </div>
+                      </Link>
                     ))}
                   </div>
                 </CardContent>

@@ -375,12 +375,14 @@ export default function ReportsPage() {
           value={stats.reportsThisMonth}
           icon={TrendingUp}
           color="emerald"
+          href="/crm/reports/saved"
         />
         <QuickStatCard
           title="Total Exports"
           value={stats.totalExports}
           icon={Download}
           color="amber"
+          href="/crm/reports/scheduled"
         />
       </div>
 

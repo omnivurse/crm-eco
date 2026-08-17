@@ -80,6 +80,7 @@ function StatCard({
   trendLabel,
   icon: Icon,
   color,
+  href,
 }: {
   label: string;
   value: string;
@@ -87,6 +88,7 @@ function StatCard({
   trendLabel?: string;
   icon: React.ElementType;
   color: string;
+  href?: string;
 }) {
   const colorClasses: Record<string, string> = {
     teal: 'bg-teal-500/10 text-teal-600 dark:text-teal-400',
@@ -95,8 +97,8 @@ function StatCard({
     violet: 'bg-violet-500/10 text-violet-600 dark:text-violet-400',
   };
 
-  return (
-    <div className="glass-card border border-slate-200 dark:border-slate-700 rounded-xl p-5">
+  const content = (
+    <div className={`glass-card border border-slate-200 dark:border-slate-700 rounded-xl p-5 ${href ? 'hover:border-teal-500/50 transition-all' : ''}`}>
       <div className="flex items-start justify-between mb-3">
         <div className={`p-2.5 rounded-lg ${colorClasses[color]}`}>
           <Icon className="w-5 h-5" />
@@ -115,6 +117,15 @@ function StatCard({
       )}
     </div>
   );
+
+  if (href) {
+    return (
+      <Link href={href} aria-label={label} className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500">
+        {content}
+      </Link>
+    );
+  }
+  return content;
 }
 
 function ModuleCard({ module }: { module: RevenueModule }) {
@@ -425,24 +436,28 @@ export default function RevenuePage() {
           value={formatCurrency(stats.pipelineValue)}
           icon={Target}
           color="teal"
+          href="/crm/pipeline"
         />
         <StatCard
           label="Closed Won (MTD)"
           value={formatCurrency(stats.closedWonValue)}
           icon={DollarSign}
           color="emerald"
+          href="/crm/modules/deals"
         />
         <StatCard
           label="Active Deals"
           value={stats.activeDeals.toString()}
           icon={PieChart}
           color="blue"
+          href="/crm/pipeline"
         />
         <StatCard
           label="Win Rate"
           value={`${stats.winRate}%`}
           icon={TrendingUp}
           color="violet"
+          href="/crm/reports"
         />
       </div>
 

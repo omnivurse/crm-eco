@@ -117,8 +117,8 @@ interface FeatureCardProps {
 }
 
 function FeatureCard({ icon, title, description, features, href, isNew, isBeta }: FeatureCardProps) {
-  return (
-    <div className="group relative bg-white dark:bg-slate-900/50 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 hover:border-teal-500/50 hover:shadow-lg transition-all duration-300">
+  const card = (
+    <div className="group relative bg-white dark:bg-slate-900/50 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 hover:border-teal-500/50 hover:shadow-lg transition-all duration-300 h-full">
       <div className="flex items-start justify-between mb-4">
         <div className="p-3 rounded-xl bg-gradient-to-br from-teal-500/10 to-emerald-500/10 text-teal-600 dark:text-teal-400">
           {icon}
@@ -147,14 +147,21 @@ function FeatureCard({ icon, title, description, features, href, isNew, isBeta }
         ))}
       </ul>
       {href && (
-        <Button variant="ghost" size="sm" className="gap-1 text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 p-0" asChild>
-          <Link href={href}>
-            Explore <ChevronRight className="w-4 h-4" />
-          </Link>
-        </Button>
+        <span className="inline-flex items-center gap-1 text-sm font-medium text-teal-600 dark:text-teal-400">
+          Explore <ChevronRight className="w-4 h-4" />
+        </span>
       )}
     </div>
   );
+
+  if (href) {
+    return (
+      <Link href={href} aria-label={title} className="block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 h-full">
+        {card}
+      </Link>
+    );
+  }
+  return card;
 }
 
 interface FeatureSectionProps {
@@ -547,6 +554,7 @@ export default function FeaturesPage() {
             'Format standardization',
             'Matching algorithms',
           ]}
+          href="/crm/vendors"
         />
       </FeatureSection>
 
@@ -626,6 +634,7 @@ export default function FeaturesPage() {
             'Payment history',
             'Billing management',
           ]}
+          href="/crm/commissions?tab=payments"
         />
         <FeatureCard
           icon={<Package className="w-6 h-6" />}
@@ -661,6 +670,7 @@ export default function FeaturesPage() {
             'Audit trail',
             'Secure storage',
           ]}
+          href="/crm/settings/security-control"
         />
       </FeatureSection>
 
@@ -883,6 +893,7 @@ export default function FeaturesPage() {
             'Team leaderboards',
             'Achievement badges',
           ]}
+          href="/crm/analytics?tab=leaderboard"
         />
         <FeatureCard
           icon={<Trophy className="w-6 h-6" />}
@@ -906,6 +917,7 @@ export default function FeaturesPage() {
             'Engagement scores',
             'Performance trends',
           ]}
+          href="/crm/reports/activity"
         />
         <FeatureCard
           icon={<Mail className="w-6 h-6" />}
@@ -917,6 +929,7 @@ export default function FeaturesPage() {
             'Bounce rates',
             'Unsubscribe tracking',
           ]}
+          href="/crm/learn/campaigns/analytics"
         />
         <FeatureCard
           icon={<FileSpreadsheet className="w-6 h-6" />}
@@ -940,6 +953,7 @@ export default function FeaturesPage() {
             'JSON for developers',
             'Bulk data downloads',
           ]}
+          href="/crm/import"
           isNew
         />
         <FeatureCard
@@ -965,6 +979,7 @@ export default function FeaturesPage() {
             'Timestamp logging',
             'Action history',
           ]}
+          href="/crm/settings/audit-logs"
         />
       </FeatureSection>
 
@@ -1008,6 +1023,7 @@ export default function FeaturesPage() {
             'Note history',
             'Record linking',
           ]}
+          href="/crm/modules/contacts"
         />
         <FeatureCard
           icon={<Bell className="w-6 h-6" />}
@@ -1019,6 +1035,7 @@ export default function FeaturesPage() {
             'Custom triggers',
             'Quiet hours',
           ]}
+          href="/crm/settings/experience"
         />
         <FeatureCard
           icon={<Search className="w-6 h-6" />}
@@ -1030,6 +1047,7 @@ export default function FeaturesPage() {
             'Recent searches',
             'Search suggestions',
           ]}
+          href="/crm/search"
         />
         <FeatureCard
           icon={<Command className="w-6 h-6" />}
@@ -1041,6 +1059,7 @@ export default function FeaturesPage() {
             'Search commands',
             'Keyboard shortcuts',
           ]}
+          href="/crm/learn/terminal/commands"
         />
         <FeatureCard
           icon={<Eye className="w-6 h-6" />}
@@ -1052,6 +1071,7 @@ export default function FeaturesPage() {
             'Record type filtering',
             'Time-based sorting',
           ]}
+          href="/crm/modules/contacts"
         />
         <FeatureCard
           icon={<Bookmark className="w-6 h-6" />}
@@ -1063,6 +1083,7 @@ export default function FeaturesPage() {
             'View sharing',
             'Default views',
           ]}
+          href="/crm/modules/contacts"
         />
         <FeatureCard
           icon={<Filter className="w-6 h-6" />}
@@ -1074,6 +1095,7 @@ export default function FeaturesPage() {
             'Date ranges',
             'Custom fields',
           ]}
+          href="/crm/modules/contacts"
         />
       </FeatureSection>
 
@@ -1419,6 +1441,7 @@ export default function FeaturesPage() {
             'System controls',
             'Developer-friendly',
           ]}
+          href="/crm/learn/terminal/commands"
           isNew
         />
         <FeatureCard
@@ -1431,6 +1454,7 @@ export default function FeaturesPage() {
             'Consistent styling',
             'Smooth transitions',
           ]}
+          href="/crm/settings/experience"
         />
         <FeatureCard
           icon={<LayoutGrid className="w-6 h-6" />}
@@ -1442,6 +1466,7 @@ export default function FeaturesPage() {
             'Mobile friendly',
             'Touch gestures',
           ]}
+          href="/crm/settings/experience"
         />
         <FeatureCard
           icon={<Zap className="w-6 h-6" />}
@@ -1453,6 +1478,7 @@ export default function FeaturesPage() {
             'Smart caching',
             'Background sync',
           ]}
+          href="/crm/settings/experience"
         />
         <FeatureCard
           icon={<Lock className="w-6 h-6" />}
@@ -1464,6 +1490,7 @@ export default function FeaturesPage() {
             'Audit logging',
             'Session management',
           ]}
+          href="/crm/settings/security-control"
         />
         <FeatureCard
           icon={<Combine className="w-6 h-6" />}
@@ -1475,6 +1502,7 @@ export default function FeaturesPage() {
             'Role-based access',
             'Secure boundaries',
           ]}
+          href="/crm/settings/security-control"
         />
         <FeatureCard
           icon={<RotateCcw className="w-6 h-6" />}
@@ -1486,6 +1514,7 @@ export default function FeaturesPage() {
             'Version control',
             'Backup support',
           ]}
+          href="/crm/settings/security-control"
         />
       </FeatureSection>
 

@@ -79,6 +79,7 @@ function StatCard({
   trend,
   icon: Icon,
   color,
+  href,
 }: {
   title: string;
   value: string | number;
@@ -86,6 +87,7 @@ function StatCard({
   trend?: 'up' | 'down' | 'neutral';
   icon: React.ElementType;
   color: 'teal' | 'violet' | 'emerald' | 'amber' | 'blue' | 'red';
+  href?: string;
 }) {
   const colorClasses = {
     teal: { bg: 'bg-teal-500/10', text: 'text-teal-600 dark:text-teal-400' },
@@ -97,8 +99,8 @@ function StatCard({
   };
   const colors = colorClasses[color];
 
-  return (
-    <Card className="glass-card border-slate-200 dark:border-white/10 hover:border-teal-500/30 transition-all">
+  const card = (
+    <Card className={`glass-card border-slate-200 dark:border-white/10 transition-all ${href ? 'hover:border-teal-500/50' : ''}`}>
       <CardContent className="pt-6">
         <div className="flex items-start justify-between">
           <div className={`p-3 rounded-xl ${colors.bg}`}>
@@ -120,6 +122,19 @@ function StatCard({
       </CardContent>
     </Card>
   );
+
+  if (href) {
+    return (
+      <Link
+        href={href}
+        aria-label={title}
+        className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
+      >
+        {card}
+      </Link>
+    );
+  }
+  return card;
 }
 
 function MiniChart({ data, height = 60 }: { data: number[]; height?: number }) {
@@ -286,31 +301,40 @@ function AnalyticsDashboard() {
           trend={summary.memberGrowthPct > 0 ? 'up' : summary.memberGrowthPct < 0 ? 'down' : 'neutral'}
           icon={Users}
           color="teal"
+          href="/crm/members"
         />
         <StatCard
           title="Monthly Revenue"
           value={formatCurrency(summary.mrr)}
           icon={DollarSign}
           color="emerald"
+          href="/crm/revenue"
         />
         <StatCard
           title="Lead Conversion"
           value={`${summary.conversionRate}%`}
           icon={Target}
           color="violet"
+          href="/crm/modules/leads"
         />
         <StatCard
           title="Active Advisors"
           value={summary.activeAdvisors}
           icon={Users}
           color="blue"
+          href="/crm/settings/team"
         />
       </div>
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Activity Chart */}
-        <Card className="glass-card border-slate-200 dark:border-white/10 lg:col-span-2">
+        <Link
+          href="/crm/analytics/performance"
+          aria-label="30-Day Activity"
+          className="lg:col-span-2 block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
+        >
+        <Card className="glass-card border-slate-200 dark:border-white/10 hover:border-teal-500/50 transition-all h-full">
           <CardHeader>
             <CardTitle className="text-slate-900 dark:text-white">30-Day Activity</CardTitle>
             <CardDescription>New members, leads, and enrollments</CardDescription>
@@ -341,9 +365,15 @@ function AnalyticsDashboard() {
             </div>
           </CardContent>
         </Card>
+        </Link>
 
         {/* Pipeline Funnel */}
-        <Card className="glass-card border-slate-200 dark:border-white/10">
+        <Link
+          href="/crm/pipeline"
+          aria-label="Sales Pipeline"
+          className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
+        >
+        <Card className="glass-card border-slate-200 dark:border-white/10 hover:border-teal-500/50 transition-all h-full">
           <CardHeader>
             <CardTitle className="text-slate-900 dark:text-white">Sales Pipeline</CardTitle>
             <CardDescription>Lead progression</CardDescription>
@@ -352,12 +382,18 @@ function AnalyticsDashboard() {
             <PipelineFunnel pipeline={pipeline} />
           </CardContent>
         </Card>
+        </Link>
       </div>
 
       {/* Bottom Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Needs Overview */}
-        <Card className="glass-card border-slate-200 dark:border-white/10">
+        {/* Needs Overview — whole card links; tiles share the same destination */}
+        <Link
+          href="/crm/needs"
+          aria-label="Needs Management"
+          className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
+        >
+        <Card className="glass-card border-slate-200 dark:border-white/10 hover:border-teal-500/50 transition-all h-full">
           <CardHeader>
             <CardTitle className="text-slate-900 dark:text-white">Needs Management</CardTitle>
             <CardDescription>Healthcare needs status</CardDescription>
@@ -395,6 +431,7 @@ function AnalyticsDashboard() {
             </div>
           </CardContent>
         </Card>
+        </Link>
 
         {/* Quick Stats */}
         <Card className="glass-card border-slate-200 dark:border-white/10">
@@ -404,22 +441,38 @@ function AnalyticsDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="flex items-center justify-between p-3 rounded-lg bg-slate-100 dark:bg-slate-800/50">
+              <Link
+                href="/crm/members"
+                aria-label="Total Members"
+                className="flex items-center justify-between p-3 rounded-lg bg-slate-100 dark:bg-slate-800/50 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
+              >
                 <span className="text-slate-600 dark:text-slate-400">Total Members</span>
                 <span className="text-slate-900 dark:text-white font-bold">{summary.totalMembers}</span>
-              </div>
-              <div className="flex items-center justify-between p-3 rounded-lg bg-slate-100 dark:bg-slate-800/50">
+              </Link>
+              <Link
+                href="/crm/modules/leads"
+                aria-label="Total Leads"
+                className="flex items-center justify-between p-3 rounded-lg bg-slate-100 dark:bg-slate-800/50 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
+              >
                 <span className="text-slate-600 dark:text-slate-400">Total Leads</span>
                 <span className="text-slate-900 dark:text-white font-bold">{summary.totalLeads}</span>
-              </div>
-              <div className="flex items-center justify-between p-3 rounded-lg bg-slate-100 dark:bg-slate-800/50">
+              </Link>
+              <Link
+                href="/crm/enrollment"
+                aria-label="Completed Enrollments"
+                className="flex items-center justify-between p-3 rounded-lg bg-slate-100 dark:bg-slate-800/50 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
+              >
                 <span className="text-slate-600 dark:text-slate-400">Completed Enrollments</span>
                 <span className="text-slate-900 dark:text-white font-bold">{summary.completedEnrollments}</span>
-              </div>
-              <div className="flex items-center justify-between p-3 rounded-lg bg-slate-100 dark:bg-slate-800/50">
+              </Link>
+              <Link
+                href="/crm/needs"
+                aria-label="Needs Amount Submitted"
+                className="flex items-center justify-between p-3 rounded-lg bg-slate-100 dark:bg-slate-800/50 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
+              >
                 <span className="text-slate-600 dark:text-slate-400">Needs Amount Submitted</span>
                 <span className="text-slate-900 dark:text-white font-bold">{formatCurrency(summary.totalNeedsAmount)}</span>
-              </div>
+              </Link>
             </div>
           </CardContent>
         </Card>

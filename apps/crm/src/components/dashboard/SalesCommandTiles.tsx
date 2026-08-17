@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import {
   Target,
   UserPlus,
@@ -17,13 +18,18 @@ interface TileConfig {
   icon: typeof Target;
   accent: string;
   metrics: MetricRow[];
+  href: string;
 }
 
 function SalesTile({ tile }: { tile: TileConfig }) {
   const Icon = tile.icon;
 
   return (
-    <div className={`relative overflow-hidden rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-700/50 border-l-4 ${tile.accent} p-4 shadow-[0_1px_3px_rgba(0,0,0,0.05),0_20px_25px_-5px_rgba(0,0,0,0.05)]`}>
+    <Link
+      href={tile.href}
+      aria-label={tile.title}
+      className={`relative overflow-hidden rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-700/50 border-l-4 ${tile.accent} p-4 shadow-[0_1px_3px_rgba(0,0,0,0.05),0_20px_25px_-5px_rgba(0,0,0,0.05)] hover:border-teal-500/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 block`}
+    >
       <div className="flex items-center gap-2 mb-4">
         <div className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800">
           <Icon className="w-4 h-4 text-slate-600 dark:text-slate-300" />
@@ -49,7 +55,7 @@ function SalesTile({ tile }: { tile: TileConfig }) {
           </div>
         ))}
       </div>
-    </div>
+    </Link>
   );
 }
 
@@ -82,6 +88,7 @@ export function SalesCommandTiles({ moduleStats, heroStats, reportSummary }: Sal
       title: 'Deals Pipeline',
       icon: Target,
       accent: 'border-l-teal-500',
+      href: '/crm/pipeline',
       metrics: [
         { label: 'Open Deals', value: deals?.totalRecords ?? 0, highlight: true },
         { label: 'Closed This Week', value: reportSummary?.dealsClosedThisWeek ?? 0 },
@@ -92,6 +99,7 @@ export function SalesCommandTiles({ moduleStats, heroStats, reportSummary }: Sal
       title: 'Lead Flow',
       icon: UserPlus,
       accent: 'border-l-blue-500',
+      href: '/crm/modules/leads',
       metrics: [
         { label: 'Active Leads', value: leads?.totalRecords ?? 0, highlight: true },
         { label: 'New This Week', value: leads?.createdThisWeek ?? 0 },
@@ -102,6 +110,7 @@ export function SalesCommandTiles({ moduleStats, heroStats, reportSummary }: Sal
       title: 'My Activity',
       icon: Activity,
       accent: 'border-l-violet-500',
+      href: '/crm/activities',
       metrics: [
         { label: 'Tasks Today', value: heroStats.todaysTaskCount, highlight: heroStats.todaysTaskCount > 0 },
         { label: 'Overdue', value: heroStats.overdueCount, highlight: heroStats.overdueCount > 0 },
@@ -112,6 +121,7 @@ export function SalesCommandTiles({ moduleStats, heroStats, reportSummary }: Sal
       title: 'Relationships',
       icon: Users,
       accent: 'border-l-emerald-500',
+      href: '/crm/modules/contacts',
       metrics: [
         { label: 'Contacts', value: contacts?.totalRecords ?? 0, highlight: true },
         { label: 'Accounts', value: accounts?.totalRecords ?? 0 },
