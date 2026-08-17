@@ -56,7 +56,7 @@ import {
 import { resolveCoverageSnapshotPlanType } from '@/lib/crm/coverage-snapshot-plan-type';
 import { selectHeroSharingField } from '@/lib/crm/coverage-snapshot-identity';
 import {
-  isoDateToMaskedDisplay,
+  dateValueToInputDisplay,
   maskDateTyping,
 } from '@/lib/crm/date-field-bounds';
 import { FieldRenderer } from './FieldRenderer';
@@ -367,12 +367,10 @@ const FormFieldRenderer = memo(function FormFieldRenderer({
       break;
 
     case 'date': {
-      const iso = normalizeDateColumnValue(value);
-      const dateValue = iso
-        ? isoDateToMaskedDisplay(iso)
-        : typeof value === 'string'
-          ? value
-          : '';
+      // Stored ISO → MM/DD/YYYY; a value mid-typing is shown as typed. Never
+      // normalise partial input here — it pivoted "09/01/20" to 2020 before
+      // the user finished typing "2026" (see dateValueToInputDisplay).
+      const dateValue = dateValueToInputDisplay(value);
       // Render fully controlled. Spreading register()'s `ref` lets RHF
       // imperatively write the raw stored value (ISO yyyy-MM-dd) into the DOM on
       // mount, visually overriding our masked `value` until the field is edited —

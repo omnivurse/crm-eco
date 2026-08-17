@@ -76,3 +76,20 @@ export function dateValueToMaskedDraft(value: string | null | undefined): string
   if (iso) return isoDateToMaskedDisplay(iso);
   return maskDateTyping(value);
 }
+
+/**
+ * What a controlled date text input should DISPLAY for the current form value:
+ * a stored ISO date renders as zero-padded MM/DD/YYYY; anything else (a value
+ * mid-typing such as "09/01/20") is shown exactly as typed. Deliberately does
+ * NOT run the storage normaliser: normalizeDateColumnValue treats "09/01/20"
+ * as M/D/YY → 2020-09-01, so re-deriving the display on every keystroke
+ * rewrote the DOM to "09/01/2020" before the user could finish "2026", and
+ * the trailing digits were then truncated on blur → wrong year saved.
+ * Masking to MM/DD/YYYY happens on blur (maskDateTyping); ISO on save.
+ */
+export function dateValueToInputDisplay(value: unknown): string {
+  if (value == null) return '';
+  const str = typeof value === 'string' ? value : String(value);
+  const iso = str.match(/^(\d{4}-\d{2}-\d{2})/)?.[1] ?? null;
+  return iso ? isoDateToMaskedDisplay(iso) : str;
+}
