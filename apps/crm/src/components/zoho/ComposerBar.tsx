@@ -146,7 +146,10 @@ export function ComposerBar({
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder={getPlaceholder()}
-            className="min-h-[60px] bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10 text-sm resize-none"
+            className={cn(
+              'bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10 text-sm',
+              mode === 'note' ? 'min-h-[140px] resize-y' : 'min-h-[60px] resize-none'
+            )}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
                 handleSubmit();

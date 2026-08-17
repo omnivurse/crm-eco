@@ -8,14 +8,35 @@ import {
   PopoverTrigger,
 } from '@crm-eco/ui/components/popover';
 import { cn } from '@crm-eco/ui/lib/utils';
-import { Columns3, Check, GripVertical } from 'lucide-react';
+import { Columns3, Check, GripVertical, MoveHorizontal } from 'lucide-react';
+import { toast } from 'sonner';
 import type { CrmField } from '@/lib/crm/types';
+import { pickDefaultListColumns } from '@/lib/crm/default-list-columns';
+
+/**
+ * Window event broadcast by "Reset column widths". The list table for the
+ * matching `storageKey` (module key — see `useColumnResize`) resets every
+ * column back to its default width. Detail-less / key-less events reset all
+ * mounted tables.
+ */
+export const CRM_COLUMN_WIDTHS_RESET_EVENT = 'crm:reset-column-widths';
+export interface ColumnWidthsResetDetail {
+  storageKey?: string;
+}
 
 interface ColumnsButtonProps {
   fields: CrmField[];
   visibleColumns: string[];
   onColumnsChange: (columns: string[]) => void;
   className?: string;
+  /**
+   * localStorage key suffix the list table persists its widths under
+   * (`useColumnResize({ storageKey })`, i.e. the module key). When provided,
+   * a "Reset column widths" action is shown; omit to hide it.
+   */
+  columnWidthsStorageKey?: string;
+  /** Override for the reset action (defaults to broadcasting the window event). */
+  onResetColumnWidths?: () => void;
 }
 
 export function ColumnsButton({
@@ -23,6 +44,8 @@ export function ColumnsButton({
   visibleColumns,
   onColumnsChange,
   className,
+  columnWidthsStorageKey,
+  onResetColumnWidths,
 }: ColumnsButtonProps) {
   const [open, setOpen] = useState(false);
   const [draggedColumn, setDraggedColumn] = useState<string | null>(null);
@@ -65,12 +88,24 @@ export function ColumnsButton({
   };
 
   const resetColumns = () => {
-    const titleField = fields.find(f => f.is_title_field);
-    const defaultColumns = titleField 
-      ? [titleField.key, 'status', 'email', 'created_at'].filter(c => fields.some(f => f.key === c))
-      : ['title', 'status', 'created_at'];
-    onColumnsChange(defaultColumns);
+    // Same identity-first default the list uses when a module has no view.
+    const defaultColumns = pickDefaultListColumns(fields);
+    onColumnsChange(defaultColumns.length > 0 ? defaultColumns : ['title', 'status', 'created_at']);
   };
+
+  const showResetWidths = Boolean(columnWidthsStorageKey) || Boolean(onResetColumnWidths);
+  const resetColumnWidths = useCallback(() => {
+    if (onResetColumnWidths) {
+      onResetColumnWidths();
+    } else if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent<ColumnWidthsResetDetail>(CRM_COLUMN_WIDTHS_RESET_EVENT, {
+          detail: { storageKey: columnWidthsStorageKey },
+        }),
+      );
+    }
+    toast.success('Column widths reset');
+  }, [onResetColumnWidths, columnWidthsStorageKey]);
 
   // Sort fields to show visible ones first, in their current order
   const sortedFields = [
@@ -167,7 +202,17 @@ export function ColumnsButton({
           })}
         </div>
 
-        <div className="p-2 border-t border-slate-200 dark:border-white/5">
+        <div className="p-2 border-t border-slate-200 dark:border-white/5 space-y-1">
+          {showResetWidths && (
+            <button
+              type="button"
+              onClick={resetColumnWidths}
+              className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-white"
+            >
+              <MoveHorizontal className="h-3.5 w-3.5" aria-hidden />
+              Reset column widths
+            </button>
+          )}
           <p className="text-xs text-slate-500 dark:text-slate-400 text-center">
             Drag to reorder visible columns
           </p>

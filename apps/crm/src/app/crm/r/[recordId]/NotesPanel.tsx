@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { StickyNote, Plus, Pin, Pencil, Trash2, Loader2, User, CalendarDays, ArrowUpDown } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
+import { cn } from '@crm-eco/ui/lib/utils';
 import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import { Dialog, DialogContent, DialogTitle } from '@crm-eco/ui/components/dialog';
 import { sanitizeNoteHtml, getNoteAuthorDisplay } from '@/lib/crm/note-sanitize';
@@ -19,6 +20,13 @@ import {
   backdatedNoteDateOrNull,
 } from '@/lib/crm/note-timestamp';
 import { sortNotesForDisplay } from '@/lib/crm/note-sort';
+import {
+  countNotesByOrigin,
+  defaultNoteOriginFilter,
+  filterNotesByOrigin,
+  noteOriginFilterOptions,
+  type NoteOriginFilter,
+} from '@/lib/crm/note-filter';
 import { toast } from 'sonner';
 import { toastItemDeletedWithUndo } from '@/lib/crm/undo-delete';
 import type { CrmNoteWithAuthor } from '@/lib/crm/types';
@@ -236,7 +244,13 @@ export function NotesPanel({ recordId, notes, orgId, hasLegacyNotes = false }: N
     }
   };
 
-  const sortedNotes = sortNotesForDisplay(notes, sortDir);
+  // Current (written in this CRM) vs Legacy (Zoho-imported, no created_by).
+  const originCounts = useMemo(() => countNotesByOrigin(notes), [notes]);
+  const [originFilter, setOriginFilter] = useState<NoteOriginFilter>(() =>
+    defaultNoteOriginFilter(originCounts),
+  );
+  const filterOptions = noteOriginFilterOptions(originCounts);
+  const sortedNotes = sortNotesForDisplay(filterNotesByOrigin(notes, originFilter), sortDir);
 
   return (
     <div className="space-y-4">
@@ -402,6 +416,45 @@ export function NotesPanel({ recordId, notes, orgId, hasLegacyNotes = false }: N
         </DialogContent>
       </Dialog>
 
+      {/* Origin filter: Current (n) | Legacy (n) | All (n) */}
+      {originCounts.all > 0 && (
+        <div
+          role="group"
+          aria-label="Filter notes by origin"
+          className="inline-flex items-center rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/40 p-0.5"
+        >
+          {filterOptions.map((opt) => {
+            const active = originFilter === opt.id;
+            return (
+              <button
+                key={opt.id}
+                type="button"
+                aria-pressed={active}
+                onClick={() => setOriginFilter(opt.id)}
+                title={
+                  opt.id === 'current'
+                    ? 'Notes written in this CRM'
+                    : opt.id === 'legacy'
+                      ? 'Notes imported from the legacy system'
+                      : 'All notes'
+                }
+                className={cn(
+                  'inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors',
+                  active
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white',
+                )}
+              >
+                {opt.label}
+                <span className={cn('tabular-nums', active ? 'opacity-80' : 'text-slate-400 dark:text-slate-500')}>
+                  ({opt.count})
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {/* Notes List */}
       {sortedNotes.length > 0 ? (
         <div className="space-y-3">
@@ -417,6 +470,30 @@ export function NotesPanel({ recordId, notes, orgId, hasLegacyNotes = false }: N
               }}
             />
           ))}
+        </div>
+      ) : originFilter === 'current' && originCounts.legacy > 0 ? (
+        <div className="text-center py-12">
+          <StickyNote className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-1">No current notes yet</h3>
+          <p className="text-slate-500 dark:text-slate-400">
+            {originCounts.legacy} legacy {originCounts.legacy === 1 ? 'note is' : 'notes are'} under{' '}
+            <button
+              type="button"
+              onClick={() => setOriginFilter('legacy')}
+              className="font-medium text-primary hover:underline"
+            >
+              Legacy
+            </button>
+            .
+          </p>
+        </div>
+      ) : originFilter === 'legacy' && originCounts.all > 0 ? (
+        <div className="text-center py-12">
+          <StickyNote className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-1">No legacy notes</h3>
+          <p className="text-slate-500 dark:text-slate-400">
+            All {originCounts.all} {originCounts.all === 1 ? 'note was' : 'notes were'} written in this CRM.
+          </p>
         </div>
       ) : hasLegacyNotes ? null : (
         <div className="text-center py-12">

@@ -21,6 +21,19 @@ export interface EditRecordData {
   fields: CrmField[];
   /** Same default layout as record detail / `getDefaultLayout` — drives section order & labels */
   layout: CrmLayout | null;
+  /**
+   * Cross-module twin JSONB (members only), resolved server-side by the
+   * bootstrap route with the same helper the detail page uses. Passed to
+   * `mergeCrmRecordRowIntoFormDefaults` so Edit seeds the same blank-fill
+   * overlay the detail view shows. Null when there is no twin.
+   */
+  twinData: Record<string, unknown> | null;
+}
+
+/** Shape returned by `GET /api/crm/records/[id]/bootstrap-edit`. */
+interface BootstrapEditPayload {
+  record: EditRecordRow | null;
+  twinData: Record<string, unknown> | null;
 }
 
 /**
@@ -39,7 +52,8 @@ function moduleDependencyId(row: EditRecordRow | null | undefined): string | nul
  * Load edit row via authenticated API — server heals misaligned `module_id`
  * (RLS hides modules from other orgs) before returning the PostgREST-shaped row.
  */
-async function fetchRecordWithModule(recordId: string): Promise<EditRecordRow | null> {
+async function fetchRecordWithModule(recordId: string): Promise<BootstrapEditPayload> {
+  const empty: BootstrapEditPayload = { record: null, twinData: null };
   const res = await fetch(
     `/api/crm/records/${encodeURIComponent(recordId)}/bootstrap-edit`,
     {
@@ -48,11 +62,20 @@ async function fetchRecordWithModule(recordId: string): Promise<EditRecordRow | 
     }
   );
 
-  if (res.status === 401) return null;
-  if (!res.ok) return null;
+  if (res.status === 401) return empty;
+  if (!res.ok) return empty;
 
-  const body = (await res.json()) as { record?: EditRecordRow | null };
-  return body.record ?? null;
+  const body = (await res.json()) as {
+    record?: EditRecordRow | null;
+    twinData?: Record<string, unknown> | null;
+  };
+  return {
+    record: body.record ?? null,
+    twinData:
+      body.twinData && typeof body.twinData === 'object' && !Array.isArray(body.twinData)
+        ? body.twinData
+        : null,
+  };
 }
 
 async function fetchFieldsForModule(moduleId: string): Promise<CrmField[]> {
@@ -92,8 +115,11 @@ export function useEditRecordData(recordId: string | null) {
     staleTime: 0,
   });
 
+  const recordRow = recordQuery.data?.record ?? null;
+  const twinData = recordQuery.data?.twinData ?? null;
+
   /** Prefer joined module id, else FK — never leave dependents disabled while a row exists. */
-  const moduleId = moduleDependencyId(recordQuery.data ?? undefined);
+  const moduleId = moduleDependencyId(recordRow);
 
   const dependentQueries = useQueries({
     queries: [
@@ -125,15 +151,16 @@ export function useEditRecordData(recordId: string | null) {
     (recordQuery.isSuccess && depsEnabled && !depsComplete);
 
   const data: EditRecordData | null =
-    recordQuery.isSuccess && depsComplete && recordQuery.data
+    recordQuery.isSuccess && depsComplete && recordRow
       ? {
-          record: recordQuery.data,
+          record: recordRow,
           fields:
             depsEnabled && fieldsQuery.isSuccess ? (fieldsQuery.data ?? []) : [],
           layout:
             depsEnabled && layoutQuery.isSuccess
               ? layoutQuery.data ?? null
               : null,
+          twinData,
         }
       : null;
 
@@ -141,8 +168,8 @@ export function useEditRecordData(recordId: string | null) {
   const moduleMetadataMissing =
     recordQuery.isSuccess &&
     depsComplete &&
-    !!recordQuery.data &&
-    !moduleDependencyId(recordQuery.data);
+    !!recordRow &&
+    !moduleDependencyId(recordRow);
 
   const dependentsFailed =
     recordQuery.isSuccess &&
@@ -154,7 +181,7 @@ export function useEditRecordData(recordId: string | null) {
     data,
     isLoading: !!isLoading,
     /** Loaded `crm_records` row — present while fields/layout are still fetching. */
-    recordRow: (recordQuery.data ?? null) as EditRecordRow | null,
+    recordRow,
     /** Only the primary lookup failing (vs layout/metadata errors). */
     recordQueryError: recordQuery.error ?? null,
     error: recordQuery.error || fieldsQuery.error || layoutQuery.error,

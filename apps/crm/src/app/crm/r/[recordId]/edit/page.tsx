@@ -20,6 +20,10 @@ import { useEditRecordData } from '@/hooks/useEditRecordData';
 import { queryKeys } from '@/lib/query-keys';
 import { mergeCrmRecordRowIntoFormDefaults } from '@/lib/crm/record-form-defaults';
 import {
+  buildRecordDataPatch,
+  isEmptyRecordDataPatch,
+} from '@/lib/crm/record-data-patch';
+import {
   DynamicRecordForm,
   type DynamicRecordFormHandle,
 } from '@/components/crm/records/DynamicRecordForm';
@@ -367,6 +371,9 @@ export default function EditRecordPage() {
   const record = data?.record;
   const fields = useMemo(() => data?.fields ?? [], [data?.fields]);
   const layout = data?.layout ?? null;
+  // Cross-module twin (members only) resolved by the bootstrap route — same
+  // helper the detail page uses, so Edit shows the same blank-filled values.
+  const twinData = data?.twinData ?? null;
 
   // Stale-URL recovery: when the fetch finishes with no record, check the
   // server whether this id was merged into another. If so, forward to the
@@ -411,14 +418,19 @@ export default function EditRecordPage() {
 
   const defaultValues = useMemo(() => {
     if (!record) return {} as Record<string, unknown>;
+    // Mirror the detail page exactly ({ moduleKey, twinData }) so a member whose
+    // sharing/coverage keys are filled from the linked Contact does not show
+    // values on the detail page and blanks on Edit. The overlay is blank-fill
+    // only and — because saves send a dirty-key patch diffed against these same
+    // seeded values — untouched overlaid values are never written back.
     const merged = mergeCrmRecordRowIntoFormDefaults(
       record as unknown as Parameters<typeof mergeCrmRecordRowIntoFormDefaults>[0],
-      { moduleKey: record.module?.key ?? null },
+      { moduleKey: record.module?.key ?? null, twinData },
     );
     initialValuesRef.current = merged;
     latestValuesRef.current = merged;
     return merged;
-  }, [record]);
+  }, [record, twinData]);
 
   // Only surface a load error after merge recovery has settled; otherwise a
   // transient fetch issue or a merged stale id can wrongly pair "Failed to
@@ -492,18 +504,35 @@ export default function EditRecordPage() {
   /**
    * Persist via the shared `PATCH /api/crm/records/[id]` so workflows,
    * scoring, normalization, and PHI logging always run.
+   *
+   * Only the keys the rep actually changed (diffed against the values the form
+   * was seeded with — after twin/legacy projection) are sent. The server merges
+   * `{ ...prevData, ...patch }`, so untouched projected/overlaid values and
+   * legacy non-ISO date strings the form displays as blank are left exactly as
+   * stored instead of being rewritten or nulled. Indexed-column mirroring
+   * (market_type, carrier_id, status, ...) still runs server-side over the
+   * merged JSONB, so the row/data split is unchanged.
+   *
+   * Resolves to `null` when nothing changed — callers skip the request and
+   * proceed as if the save succeeded.
    */
   const persist = useCallback(
     async (values: Record<string, unknown>) => {
+      const patch = buildRecordDataPatch(initialValuesRef.current, values);
+      if (isEmptyRecordDataPatch(patch)) return null;
       const response = await fetch(`/api/crm/records/${recordId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data: values }),
+        body: JSON.stringify({ data: patch }),
       });
       const result = await response.json();
       if (!response.ok || !result?.id) {
         throw new Error(result?.error || 'Failed to save record');
       }
+      // Subsequent diffs (autosave → manual save) start from what was just
+      // persisted so the same keys are not re-sent. Merged over the seeded
+      // baseline so keys the form does not render stay in the baseline.
+      initialValuesRef.current = { ...initialValuesRef.current, ...values };
       return result;
     },
     [recordId]
@@ -522,12 +551,12 @@ export default function EditRecordPage() {
       autoSaveTimer.current = null;
       if (!isDirtyRef.current) return;
       try {
-        await persist(latestValuesRef.current);
+        const saved = await persist(latestValuesRef.current);
         initialValuesRef.current = { ...latestValuesRef.current };
         formRef.current?.reset(latestValuesRef.current);
         isDirtyRef.current = false;
         setIsDirty(false);
-        toast.success('Auto-saved', { duration: 2000 });
+        if (saved) toast.success('Auto-saved', { duration: 2000 });
       } catch {
         // silent — user will save manually
       }

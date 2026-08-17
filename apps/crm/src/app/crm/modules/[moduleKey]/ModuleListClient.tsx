@@ -14,6 +14,7 @@ import { TreeView } from '@/components/crm/views/TreeView';
 import { CalendarView } from '@/components/crm/views/CalendarView';
 import type { CrmModule, CrmField, CrmView, CrmRecord, CrmTerritory, TreeGroupBy, CrmDealStage } from '@/lib/crm/types';
 import type { AdvisorTreeData, AgentTreeData } from '@/lib/crm/queries';
+import { pickDefaultListColumns } from '@/lib/crm/default-list-columns';
 
 // Lazy-load ChartView (~150KB recharts) only when user switches to chart mode
 const ChartView = dynamic(
@@ -74,10 +75,13 @@ function ModuleViewContent({
     router.push(`/crm/r/${recordId}`);
   }, [router]);
 
-  // Use visibleColumns from context if available, otherwise fall back to view/all fields
+  // Use visibleColumns from context if available, otherwise fall back to the
+  // active view's columns, then to a small identity-first default (never every
+  // field — members has 91 and that produced a ~16k px wide table).
+  const viewColumns = views.find(v => v.id === activeViewId)?.columns;
   const displayColumns = shellContext?.visibleColumns ||
-    views.find(v => v.id === activeViewId)?.columns ||
-    fields.map(f => f.key);
+    (viewColumns && viewColumns.length > 0 ? viewColumns : undefined) ||
+    pickDefaultListColumns(fields);
 
   // Use selection state from context if available
   const selectedIds = shellContext?.selectedIds || new Set<string>();

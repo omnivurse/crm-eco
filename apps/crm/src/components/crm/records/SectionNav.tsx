@@ -1,6 +1,7 @@
 'use client';
 
-import { Fragment, useCallback } from 'react';
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@crm-eco/ui/lib/utils';
 import type { SectionMeta } from './section-utils';
 import { CRM_SECTION_NAV_EVENT, getSectionNavGroupLabel } from './section-utils';
@@ -28,6 +29,45 @@ export function SectionNav({
   variant = 'pills',
 }: SectionNavProps) {
   const compact = variant === 'compact';
+
+  // The chip strip scrolls horizontally but hides its own scrollbar (with 27
+  // sections it drew a permanent second scrollbar under the record header).
+  // Overflow is measured and surfaced as chevron buttons + edge fades instead.
+  const stripRef = useRef<HTMLDivElement>(null);
+  const [overflow, setOverflow] = useState({ left: false, right: false });
+
+  useEffect(() => {
+    const el = stripRef.current;
+    if (!el) return;
+    const measure = () => {
+      const max = el.scrollWidth - el.clientWidth;
+      const next = {
+        left: el.scrollLeft > 1,
+        right: max > 1 && el.scrollLeft < max - 1,
+      };
+      setOverflow((prev) =>
+        prev.left === next.left && prev.right === next.right ? prev : next,
+      );
+    };
+    measure();
+    el.addEventListener('scroll', measure, { passive: true });
+    window.addEventListener('resize', measure);
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(measure) : null;
+    ro?.observe(el);
+    return () => {
+      el.removeEventListener('scroll', measure);
+      window.removeEventListener('resize', measure);
+      ro?.disconnect();
+    };
+  }, [sections.length]);
+
+  const scrollStrip = useCallback((direction: 'left' | 'right') => {
+    const el = stripRef.current;
+    if (!el) return;
+    const delta = Math.max(200, Math.round(el.clientWidth * 0.6));
+    el.scrollBy({ left: direction === 'left' ? -delta : delta, behavior: 'smooth' });
+  }, []);
+
   const handleClick = useCallback(
     (section: SectionMeta) => {
       // Notes-group pills open the Notes related list (the source of truth for
@@ -66,11 +106,46 @@ export function SectionNav({
       )}
       style={{ top: 'var(--record-sticky-offset, 180px)' }}
     >
+      <div className="relative">
+      {overflow.left && (
+        <>
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-y-0 left-0 z-10 w-10 bg-gradient-to-r from-white to-transparent dark:from-slate-950"
+          />
+          <button
+            type="button"
+            aria-label="Scroll sections left"
+            onClick={() => scrollStrip('left')}
+            className="absolute left-0 top-1/2 z-20 -translate-y-1/2 rounded-full border border-slate-200 bg-white p-0.5 text-slate-500 shadow-sm hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:border-white/10 dark:bg-slate-900 dark:text-slate-400 dark:hover:text-white"
+          >
+            <ChevronLeft className="h-4 w-4" aria-hidden />
+          </button>
+        </>
+      )}
+      {overflow.right && (
+        <>
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-y-0 right-0 z-10 w-10 bg-gradient-to-l from-white to-transparent dark:from-slate-950"
+          />
+          <button
+            type="button"
+            aria-label="Scroll sections right"
+            onClick={() => scrollStrip('right')}
+            className="absolute right-0 top-1/2 z-20 -translate-y-1/2 rounded-full border border-slate-200 bg-white p-0.5 text-slate-500 shadow-sm hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:border-white/10 dark:bg-slate-900 dark:text-slate-400 dark:hover:text-white"
+          >
+            <ChevronRight className="h-4 w-4" aria-hidden />
+          </button>
+        </>
+      )}
       <div
+        ref={stripRef}
         className={cn(
           // Horizontal scroll + snap — never squash section pills into each other.
-          'flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain scrollbar-thin',
-          '[scrollbar-gutter:stable]',
+          // Own scrollbar hidden: overflow is surfaced via the chevrons/fades above.
+          'flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain',
+          '[scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
           compact ? 'items-stretch gap-1 py-1' : 'items-center gap-2 py-2.5',
         )}
         role="tablist"
@@ -138,6 +213,7 @@ export function SectionNav({
             </Fragment>
           );
         })}
+      </div>
       </div>
     </div>
   );

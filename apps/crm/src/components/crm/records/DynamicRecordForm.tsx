@@ -1062,6 +1062,44 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
     return candidates.find((f) => hasValue(f.key)) ?? candidates[0];
   }, [findFieldByKey, matchByKeyPattern, hasValue]);
 
+  // "Enrolled by" — the advisor / agent / producer who enrolled this member.
+  // Client asks that "who enrolled" is visible on the contact at a glance;
+  // native + enrollment-created contacts carry it in `producer` (or the
+  // advisor / agent / lead_owner aliases) rather than the normalized columns.
+  const heroEnrolledByField = useMemo(() => {
+    const isTextish = (f: CrmField) =>
+      f.type === 'text' ||
+      f.type === 'select' ||
+      f.type === 'picklist' ||
+      f.type === 'lookup' ||
+      f.type === 'user';
+    const candidates = [
+      findFieldByKey('producer_name'),
+      findFieldByKey('producer'),
+      findFieldByKey('advisor_name'),
+      findFieldByKey('advisor'),
+      findFieldByKey('agent'),
+      findFieldByKey('lead_owner'),
+      matchByKeyPattern([/^producer/i, /^advisor/i, /^agent$/i, /lead.?owner/i], isTextish),
+    ].filter((f): f is CrmField => Boolean(f));
+    return candidates.find((f) => hasValue(f.key)) ?? candidates[0];
+  }, [findFieldByKey, matchByKeyPattern, hasValue]);
+
+  // Member ID — carrier / sharing / dental member number so reps can quote
+  // it back without opening the coverage section.
+  const heroMemberIdField = useMemo(() => {
+    const isTextish = (f: CrmField) =>
+      f.type === 'text' || f.type === 'number';
+    const candidates = [
+      findFieldByKey('member_number'),
+      findFieldByKey('e123_member_id'),
+      findFieldByKey('sharing_member_id'),
+      findFieldByKey('dental_member_id'),
+      matchByKeyPattern([/member.?(number|id)$/i], isTextish),
+    ].filter((f): f is CrmField => Boolean(f));
+    return candidates.find((f) => hasValue(f.key)) ?? candidates[0];
+  }, [findFieldByKey, matchByKeyPattern, hasValue]);
+
   /** Product / plan / tier lines for the coverage snapshot (never duplicates carrier/date rows). */
   const heroProductPlanFields = useMemo(() => {
     const skipKeys = new Set<string>();
@@ -1095,21 +1133,43 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
     return heroProductPlanFields;
   }, [heroProductPlanFields, defaultValues, inlineEditable, readOnly]);
 
-  /** Referral rows for the snapshot; empty rows dropped in static read-only view. */
+  /**
+   * Context rows for the snapshot (referral source, referring member,
+   * enrolled-by advisor, member ID); empty rows dropped in static read-only
+   * view. Never duplicates a row already shown in the plan / carrier / date
+   * cluster (e.g. `sharing_member_id` for HealthShare plans).
+   */
   const heroReferralSnapshotFields = useMemo(() => {
     const seen = new Set<string>();
-    const fields = [heroReferralSourceField, heroReferringMemberField].filter(
-      (f): f is CrmField => {
-        if (!f || seen.has(f.key)) return false;
-        seen.add(f.key);
-        return true;
-      },
-    );
+    if (heroSharingField) seen.add(heroSharingField.key);
+    if (heroStartDateField) seen.add(heroStartDateField.key);
+    for (const f of heroProductPlanFields) seen.add(f.key);
+    const fields = [
+      heroReferralSourceField,
+      heroReferringMemberField,
+      heroEnrolledByField,
+      heroMemberIdField,
+    ].filter((f): f is CrmField => {
+      if (!f || seen.has(f.key)) return false;
+      seen.add(f.key);
+      return true;
+    });
     if (readOnly && !inlineEditable) {
       return fields.filter((f) => hasValue(f.key));
     }
     return fields;
-  }, [heroReferralSourceField, heroReferringMemberField, hasValue, inlineEditable, readOnly]);
+  }, [
+    heroReferralSourceField,
+    heroReferringMemberField,
+    heroEnrolledByField,
+    heroMemberIdField,
+    heroSharingField,
+    heroStartDateField,
+    heroProductPlanFields,
+    hasValue,
+    inlineEditable,
+    readOnly,
+  ]);
 
   // ── Coverage Snapshot ─────────────────────────────────────────────────
   // Lifted OUT of the Lead Information hero (where it crowded the fields as a

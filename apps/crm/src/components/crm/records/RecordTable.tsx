@@ -8,7 +8,6 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
-  Table,
   TableBody,
   TableCell,
   TableHead,
@@ -48,6 +47,11 @@ import { RecordQueuedBadge } from '@/components/crm/offline/RecordQueuedBadge';
 import { toDatetimeLocalValue } from '@/lib/crm/datetime-local';
 import { ResizeHandle } from './ResizeHandle';
 import { useColumnResize } from '@/hooks/useColumnResize';
+import { pickDefaultListColumns } from '@/lib/crm/default-list-columns';
+import {
+  CRM_COLUMN_WIDTHS_RESET_EVENT,
+  type ColumnWidthsResetDetail,
+} from '@/components/zoho/ColumnsButton';
 import { prefetchRecordForDrawer } from '@/lib/prefetch';
 import type { CrmRecord, CrmField, CrmView } from '@/lib/crm/types';
 import {
@@ -738,40 +742,60 @@ export const RecordTable = memo(function RecordTable({
   // Get visible columns from view or explicit columns
   // Allow any column that exists in the fieldMap (custom fields) or common system fields
   const SYSTEM_COLUMNS = ['title', 'status', 'owner_id', 'created_at', 'updated_at', 'email', 'phone', 'first_name', 'last_name', 'middle_name', 'preferred_name', 'lead_status', 'contact_status', 'salutation', 'contact_name'];
+  // No explicit/view columns → a small identity-first default, never every
+  // field (members has 91 fields → a ~16k px wide table nobody can scroll).
   const visibleColumns = useMemo(() => {
-    const columns = explicitColumns || view?.columns || fields.map(f => f.key);
+    const columns =
+      (explicitColumns && explicitColumns.length > 0 ? explicitColumns : undefined) ||
+      (view?.columns && view.columns.length > 0 ? view.columns : undefined) ||
+      pickDefaultListColumns(fields);
     // Allow columns that exist in fieldMap or are known system columns
     return columns.filter((col) => fieldMap[col] || SYSTEM_COLUMNS.includes(col));
-  }, [explicitColumns, view?.columns, fieldMap]);
+  }, [explicitColumns, view?.columns, fields, fieldMap]);
 
   // Column width mapping for enterprise-grade horizontal table layout
+  // Defaults are tuned so a 6-column view fits a ≤1440px laptop with the
+  // sidebar open (48 checkbox + 6×~150 + 112 actions ≈ 1060px). Users can
+  // still drag-resize; widths persist per module.
   const getColumnWidth = useCallback((col: string): number => {
+    if (col.endsWith('_status')) return 120;
     switch (col) {
-      case 'email': return 240;
-      case 'phone': return 160;
+      case 'email': return 210;
+      case 'phone': return 140;
       case 'first_name':
       case 'last_name':
       case 'contact_name':
-      case 'title': return 180;
+      case 'title': return 150;
       case 'middle_name':
       case 'preferred_name':
       case 'salutation': return 120;
-      case 'status':
-      case 'lead_status':
-      case 'contact_status': return 140;
-      case 'owner_id': return 160;
+      case 'status': return 120;
+      case 'owner_id': return 150;
       case 'created_at':
-      case 'updated_at': return 160;
-      default: return 180;
+      case 'updated_at': return 150;
+      default: return 150;
     }
   }, []);
 
   // Resizable columns -- drag header edges to adjust, double-click to reset
-  const { columnWidths, isResizing, onResizeStart, resetColumnWidth } = useColumnResize({
+  const { columnWidths, isResizing, onResizeStart, resetColumnWidth, resetAllColumnWidths } = useColumnResize({
     columns: visibleColumns,
     getDefaultWidth: getColumnWidth,
     storageKey: moduleKey,
   });
+
+  // "Reset column widths" lives in the toolbar's ColumnsButton (a sibling
+  // rendered by ModuleShell) — it broadcasts a window event scoped by storage
+  // key so this table (and only this module's table) resets its widths.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const onReset = (e: Event) => {
+      const detail = (e as CustomEvent<ColumnWidthsResetDetail>).detail;
+      if (!detail?.storageKey || detail.storageKey === moduleKey) resetAllColumnWidths();
+    };
+    window.addEventListener(CRM_COLUMN_WIDTHS_RESET_EVENT, onReset);
+    return () => window.removeEventListener(CRM_COLUMN_WIDTHS_RESET_EVENT, onReset);
+  }, [moduleKey, resetAllColumnWidths]);
 
   /** Resolved width for a column: user-adjusted or default */
   const getColWidth = useCallback(
@@ -1334,7 +1358,11 @@ export const RecordTable = memo(function RecordTable({
         // (SSR / first-paint) fallback so the table is never briefly unbounded.
         style={measuredMaxH ? { maxHeight: `${measuredMaxH}px` } : undefined}
       >
-      <Table style={{ minWidth: totalMinWidth }}>
+      {/* Plain <table>: the @crm-eco/ui <Table> primitive wraps itself in a
+          second `overflow-auto` div, which put the horizontal scrollbar below
+          the LAST row (off-screen on long lists) and broke the sticky header.
+          The container above is the single scroller for both axes. */}
+      <table className="w-full caption-bottom text-sm" style={{ minWidth: totalMinWidth }}>
         <TableHeader className={cn(
           'sticky top-0 z-10 transition-shadow block',
           isScrolled && 'shadow-md shadow-black/5 dark:shadow-black/20'
@@ -1620,7 +1648,7 @@ export const RecordTable = memo(function RecordTable({
             })
           )}
         </TableBody>
-      </Table>
+      </table>
 
       </div>
 

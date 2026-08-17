@@ -188,7 +188,7 @@ export function NoteRichArea({ value, onChange, placeholder, className }: NoteRi
         onInput={handleInput}
         onPaste={handlePaste}
         className={cn(
-          'min-h-[240px] max-h-[60vh] overflow-y-auto rounded-b-lg rounded-t-none border border-t-0 border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/50 p-4 text-sm text-slate-900 dark:text-white leading-relaxed outline-none ring-1 ring-transparent focus:ring-teal-500/30 dark:focus:ring-teal-500/40',
+          'flex-1 min-h-[280px] max-h-[60vh] overflow-y-auto resize-y whitespace-pre-wrap break-words rounded-b-lg rounded-t-none border border-t-0 border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/50 p-4 text-sm text-slate-900 dark:text-white leading-relaxed outline-none ring-1 ring-transparent focus:ring-teal-500/30 dark:focus:ring-teal-500/40',
           'focus:border-teal-500/50',
           'prose prose-sm max-w-none dark:prose-invert',
           '[&_table]:border-collapse [&_table]:w-full [&_td]:border [&_td]:border-slate-200 dark:[&_td]:border-slate-700 [&_td]:px-2 [&_td]:py-1 [&_td]:text-sm',

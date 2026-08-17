@@ -156,7 +156,9 @@ export const CRM_NAV_ITEMS: NavItem[] = [
     { key: 'leads', label: 'Leads', icon: 'user-plus', href: '/crm/modules/leads' },
     { key: 'contacts', label: 'Contacts', icon: 'users', href: '/crm/modules/contacts' },
     { key: 'accounts', label: 'Accounts', icon: 'building', href: '/crm/modules/accounts' },
-    { key: 'deals', label: 'Deals', icon: 'dollar-sign', href: '/crm/modules/deals' },
+    // Members list (the deals module is disabled; /crm/modules/deals silently
+    // redirected here, so name the destination honestly).
+    { key: 'members', label: 'Members', icon: 'shield-check', href: '/crm/modules/members' },
     { key: 'pipeline', label: 'Pipeline', icon: 'kanban', href: '/crm/pipeline' },
 
     { key: 'sec-people', separator: true, sectionTitle: 'People Management' },

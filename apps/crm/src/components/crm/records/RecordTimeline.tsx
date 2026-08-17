@@ -24,7 +24,7 @@ import {
 import { Button } from '@crm-eco/ui/components/button';
 import { Badge } from '@crm-eco/ui/components/badge';
 import { cn } from '@crm-eco/ui/lib/utils';
-import { formatDistanceToNow, format } from 'date-fns';
+import { format } from 'date-fns';
 import type { 
   TimelineEvent, 
   TimelineEventType,
@@ -35,6 +35,7 @@ import type {
   CrmAuditLogWithActor,
 } from '@/lib/crm/types';
 import { getNoteAuthorDisplay } from '@/lib/crm/note-sanitize';
+import { formatNoteTimestamp, formatNoteRelative } from '@/lib/crm/note-timestamp';
 
 interface RecordTimelineProps {
   events: TimelineEvent[];
@@ -354,9 +355,18 @@ function TimelineItem({ event }: { event: TimelineEvent }) {
             {event.type.replace('_', ' ')}
           </span>
           <span className="text-slate-600">•</span>
-          <span className="text-xs text-slate-500">
-            {formatDistanceToNow(new Date(event.timestamp), { addSuffix: true })}
-          </span>
+          <time
+            dateTime={event.timestamp}
+            title={formatNoteRelative(event.timestamp)}
+            className="text-xs text-slate-500"
+          >
+            {formatNoteTimestamp(event.timestamp) || '—'}
+          </time>
+          {formatNoteRelative(event.timestamp) && (
+            <span className="text-[11px] text-slate-600 hidden sm:inline">
+              ({formatNoteRelative(event.timestamp)})
+            </span>
+          )}
           {userName && (
             <>
               <span className="text-slate-600">•</span>

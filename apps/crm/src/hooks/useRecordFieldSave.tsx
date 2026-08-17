@@ -31,6 +31,10 @@ import {
 import { mutationQueue } from '@/lib/offline/mutation-queue';
 import { makeIdempotencyKey } from '@/lib/offline/queued-send';
 import { resolveFieldSaveTarget } from '@/lib/crm/record-field-registry';
+import {
+  markLocalRecordSaveFinished,
+  markLocalRecordSaveStarted,
+} from '@/lib/crm/local-record-saves';
 
 export type FieldSaveStatus = 'idle' | 'pending' | 'saving' | 'saved' | 'error';
 
@@ -196,6 +200,14 @@ export function RecordFieldSaveProvider({
       // queue a background retry, and let the chain proceed.
       const ATTEMPT_TIMEOUT_MS = 10_000;
 
+      // Register this save with the local-save registry so the record's
+      // Realtime subscription (`useLiveRecord`) can attribute the resulting
+      // `crm_records` UPDATE to us instead of treating it as a teammate
+      // edit (which would trigger a refresh and wipe in-progress edits).
+      // `savedUpdatedAt` is set on success; the `finally` below always
+      // marks the save finished exactly once.
+      let savedUpdatedAt: string | null = null;
+      markLocalRecordSaveStarted(recordId);
       try {
         let attempt = 0;
         let lastMessage = 'Save failed';
@@ -242,7 +254,10 @@ export function RecordFieldSaveProvider({
               const body = (await res.clone().json()) as {
                 updated_at?: string | null;
               };
-              if (body?.updated_at) updatedAtRef.current = body.updated_at;
+              if (body?.updated_at) {
+                updatedAtRef.current = body.updated_at;
+                savedUpdatedAt = body.updated_at;
+              }
             } catch {
               /* response not JSON — ignore */
             }
@@ -341,6 +356,7 @@ export function RecordFieldSaveProvider({
         });
         onSaved?.(field, value);
       } finally {
+        markLocalRecordSaveFinished(recordId, savedUpdatedAt);
         controllersRef.current.delete(field);
       }
     },

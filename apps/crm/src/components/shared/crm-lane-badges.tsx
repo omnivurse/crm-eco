@@ -3,6 +3,7 @@
 import { Badge } from '@crm-eco/ui/components/badge';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { Heart, Shield, HelpCircle, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
+import { resolveOwnershipName } from '@/lib/crm/ownership-name';
 
 /* ------------------------------------------------------------------ */
 /*  Market Type (Business Lane)                                        */
@@ -129,7 +130,7 @@ interface OwnershipDisplayProps {
     market_type?: string | null;
     normalized_advisor_name?: string | null;
     normalized_agent_name?: string | null;
-    data?: Record<string, unknown>;
+    data?: Record<string, unknown> | null;
   };
   size?: 'sm' | 'md';
   showLabel?: boolean;
@@ -140,16 +141,10 @@ export function OwnershipDisplay({ record, size = 'sm', showLabel = true, classN
   const market = record.market_type || 'unknown';
   const config = MARKET_TYPE_CONFIG[market] || MARKET_TYPE_CONFIG.unknown;
 
-  let ownerName: string | null = null;
-
-  if (market === 'healthshare') {
-    ownerName = record.normalized_advisor_name || null;
-  } else if (market === 'traditional_insurance') {
-    ownerName = record.normalized_agent_name || null;
-  } else {
-    // Unknown: show best available
-    ownerName = record.normalized_advisor_name || record.normalized_agent_name || null;
-  }
+  // Lane-aware normalized name first, then `data.producer` / advisor /
+  // agent / lead_owner fallbacks so "who enrolled" shows for native and
+  // enrollment-created contacts that never went through normalization.
+  const { name: ownerName } = resolveOwnershipName(record);
 
   if (!ownerName) return <span className="text-slate-400 dark:text-slate-600 text-sm">Unassigned</span>;
 

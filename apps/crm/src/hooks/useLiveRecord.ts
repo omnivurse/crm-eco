@@ -16,6 +16,17 @@
  *       - refresh insights / timeline (for dependent table inserts).
  *   - Accepts `currentUserId` so the hook can short-circuit self-originated
  *     events and avoid spurious "someone else updated this" toasts.
+ *   - `crm_records` has NO `updated_by`/actor column, and `created_by` /
+ *     `owner_id` hold `profiles.id` (not the auth uid the shell passes),
+ *     so row inspection alone can never attribute an UPDATE to the
+ *     current user. For `crm_records` UPDATEs the hook therefore also
+ *     consults the local-save registry (`lib/crm/local-record-saves`):
+ *     the event is `isSelf` when its `updated_at` matches one returned
+ *     by a save made from this tab, or when a local save is in flight /
+ *     finished within the last ~8s. Trade-off: a genuine teammate edit
+ *     landing inside that window right after our own save is treated as
+ *     self (no toast/refresh) — accepted, since the alternative was
+ *     wiping the user's edits on every save.
  */
 
 import { useEffect, useRef } from 'react';
@@ -24,6 +35,10 @@ import type {
   RealtimePostgresChangesPayload,
 } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase-client';
+import {
+  matchesLocalUpdatedAt,
+  wasRecordSavedLocallyRecently,
+} from '@/lib/crm/local-record-saves';
 
 export type LiveRecordEventType = 'INSERT' | 'UPDATE' | 'DELETE';
 export type LiveRecordTable =
@@ -82,6 +97,24 @@ function didSelfOriginate(
   return candidates.some((v) => typeof v === 'string' && v === currentUserId);
 }
 
+/**
+ * Self-attribution for the main `crm_records` row. Row-based matching is
+ * kept as a harmless extra OR; the reliable signal is the local-save
+ * registry (see module doc).
+ */
+function didSelfOriginateRecordRow(
+  recordId: string,
+  payload: RealtimePostgresChangesPayload<Record<string, unknown>>,
+  currentUserId?: string | null,
+): boolean {
+  if (payload.eventType === 'UPDATE') {
+    const updatedAt = (payload.new as Record<string, unknown> | undefined)?.updated_at;
+    if (matchesLocalUpdatedAt(recordId, updatedAt)) return true;
+    if (wasRecordSavedLocallyRecently(recordId)) return true;
+  }
+  return didSelfOriginate(payload, currentUserId);
+}
+
 export function useLiveRecord({
   recordId,
   enabled = true,
@@ -117,7 +150,7 @@ export function useLiveRecord({
           type: payload.eventType as LiveRecordEventType,
           new: (payload.new as Record<string, unknown>) ?? null,
           old: (payload.old as Record<string, unknown>) ?? null,
-          isSelf: didSelfOriginate(payload, currentUserId),
+          isSelf: didSelfOriginateRecordRow(recordId, payload, currentUserId),
         });
       },
     );

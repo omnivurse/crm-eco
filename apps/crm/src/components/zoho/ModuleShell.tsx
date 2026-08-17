@@ -30,6 +30,7 @@ import { useIsMobile } from '@/hooks/useIsMobile';
 import { useCrmDensity } from '@/lib/crm/density';
 import type { CrmModule, CrmField, CrmView, CrmRecord, CrmTerritory, ViewFilter, ViewMode } from '@/lib/crm/types';
 import { CRM_SPOTLIGHT_SEARCH_LIMIT } from '@/lib/crm/search-limits';
+import { pickDefaultListColumns } from '@/lib/crm/default-list-columns';
 import { toastDeletedWithUndo } from '@/lib/crm/undo-delete';
 
 export type RecordScope = 'all' | 'mine' | 'downline';
@@ -99,9 +100,12 @@ export const ModuleShell = memo(function ModuleShell({
   // Global, persisted display density — drives html[data-density] (chrome
   // tokens) and the table padding variants below. Was ephemeral local state.
   const { density, setDensity } = useCrmDensity();
-  const [visibleColumns, setVisibleColumns] = useState<string[]>(
-    views.find(v => v.id === activeViewId)?.columns || fields.map(f => f.key)
-  );
+  // No active view (or a view without columns) → identity-first default
+  // subset, never every field (members: 91 fields → unusable horizontal scroll).
+  const [visibleColumns, setVisibleColumns] = useState<string[]>(() => {
+    const viewColumns = views.find(v => v.id === activeViewId)?.columns;
+    return viewColumns && viewColumns.length > 0 ? viewColumns : pickDefaultListColumns(fields);
+  });
   const [sortField, setSortField] = useState<string | null>(searchParams.get('sortField'));
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>(
     (searchParams.get('sortDirection') as 'asc' | 'desc') || 'asc'
@@ -1089,6 +1093,7 @@ export const ModuleShell = memo(function ModuleShell({
                   fields={fields}
                   visibleColumns={visibleColumns}
                   onColumnsChange={setVisibleColumns}
+                  columnWidthsStorageKey={module.key}
                 />
 
                 <DensityToggle
