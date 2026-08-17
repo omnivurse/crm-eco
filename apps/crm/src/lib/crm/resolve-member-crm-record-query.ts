@@ -8,6 +8,9 @@ import {
 const CANDIDATE_SELECT =
   'id, email, phone, source_record_id, market_type, updated_at, data, crm_modules!inner(key)';
 
+/** Keep PostgREST filter URLs well under gateway limits. */
+const LOOKUP_CHUNK_SIZE = 80;
+
 type RecordRow = {
   id: string;
   email: string | null;
@@ -49,6 +52,15 @@ function dedupeCandidates(rows: RecordRow[]): MemberCrmRecordCandidate[] {
   return Array.from(byId.values());
 }
 
+function chunkValues<T>(values: T[], size = LOOKUP_CHUNK_SIZE): T[][] {
+  if (values.length === 0) return [];
+  const chunks: T[][] = [];
+  for (let i = 0; i < values.length; i += size) {
+    chunks.push(values.slice(i, i + size));
+  }
+  return chunks;
+}
+
 async function fetchContactModuleCandidates(
   supabase: SupabaseClient,
   orgId: string,
@@ -67,6 +79,37 @@ async function fetchContactModuleCandidates(
     return [];
   }
   return (data ?? []) as RecordRow[];
+}
+
+async function fetchCandidatesByColumnIn(
+  supabase: SupabaseClient,
+  orgId: string,
+  column: string,
+  values: string[],
+): Promise<RecordRow[]> {
+  if (values.length === 0) return [];
+  const batches = await Promise.all(
+    chunkValues(values).map((group) =>
+      fetchContactModuleCandidates(supabase, orgId, (query) => query.in(column, group)),
+    ),
+  );
+  return batches.flat();
+}
+
+async function fetchCandidatesByEmailIlike(
+  supabase: SupabaseClient,
+  orgId: string,
+  emails: string[],
+): Promise<RecordRow[]> {
+  if (emails.length === 0) return [];
+  const batches = await Promise.all(
+    chunkValues(emails).map((group) =>
+      fetchContactModuleCandidates(supabase, orgId, (query) =>
+        query.or(group.map((email) => `email.ilike.${escapeIlikeExact(email)}`).join(',')),
+      ),
+    ),
+  );
+  return batches.flat();
 }
 
 /** Collect alternate emails stored on already-fetched twins (email2 / secondary). */
@@ -106,20 +149,12 @@ async function expandCandidatesViaAlternateEmails(
   const alternates = alternateEmailsFromRows(seedRows, knownEmails);
   if (alternates.length === 0) return [];
 
-  const expanded: RecordRow[] = [];
-  for (const email of alternates) {
-    expanded.push(
-      ...(await fetchContactModuleCandidates(supabase, orgId, (query) =>
-        query.ilike('email', email),
-      )),
-    );
-    expanded.push(
-      ...(await fetchContactModuleCandidates(supabase, orgId, (query) =>
-        query.eq('data->>secondary_email', email),
-      )),
-    );
-  }
-  return expanded;
+  const [byEmail, bySecondary, byEmail2] = await Promise.all([
+    fetchCandidatesByEmailIlike(supabase, orgId, alternates),
+    fetchCandidatesByColumnIn(supabase, orgId, 'data->>secondary_email', alternates),
+    fetchCandidatesByColumnIn(supabase, orgId, 'data->>email2', alternates),
+  ]);
+  return [...byEmail, ...bySecondary, ...byEmail2];
 }
 
 /** Resolve the best CRM record for one enrollment member using targeted lookups. */
@@ -128,52 +163,8 @@ export async function resolveMemberCrmRecordId(
   orgId: string,
   member: MemberCrmLookupInput,
 ): Promise<string | null> {
-  const rows: RecordRow[] = [];
-
-  rows.push(
-    ...(await fetchContactModuleCandidates(supabase, orgId, (query) =>
-      query.contains('data', { linked_member_id: member.id }),
-    )),
-  );
-
-  const memberNumber = member.member_number?.trim();
-  if (memberNumber) {
-    rows.push(
-      ...(await fetchContactModuleCandidates(supabase, orgId, (query) =>
-        query.eq('data->>member_number', memberNumber),
-      )),
-    );
-  }
-
-  const email = member.email?.trim();
-  const knownEmails = new Set<string>();
-  if (email) {
-    knownEmails.add(email.toLowerCase());
-    rows.push(
-      ...(await fetchContactModuleCandidates(supabase, orgId, (query) =>
-        query.ilike('email', email),
-      )),
-    );
-    rows.push(
-      ...(await fetchContactModuleCandidates(supabase, orgId, (query) =>
-        query.eq('data->>secondary_email', email),
-      )),
-    );
-    // Portal/hushmail primary on billing can match Zoho contact via email2 on
-    // the members-module twin, or secondary_email on the Zoho contact after link.
-    rows.push(
-      ...(await fetchContactModuleCandidates(supabase, orgId, (query) =>
-        query.eq('data->>email2', email),
-      )),
-    );
-  }
-
-  rows.push(
-    ...(await expandCandidatesViaAlternateEmails(supabase, orgId, rows, knownEmails)),
-  );
-
-  const best = pickBestMemberCrmRecord(member, dedupeCandidates(rows));
-  return best?.id ?? null;
+  const resolved = await resolveMemberCrmRecordIds(supabase, orgId, [member]);
+  return resolved.get(member.id) ?? null;
 }
 
 /** Batch-resolve CRM record ids for many members (members list API). */
@@ -185,7 +176,6 @@ export async function resolveMemberCrmRecordIds(
   const out = new Map<string, string>();
   if (members.length === 0) return out;
 
-  const rows: RecordRow[] = [];
   const memberIds = members.map((m) => m.id);
   const memberNumbers = Array.from(
     new Set(members.map((m) => m.member_number?.trim()).filter((v): v is string => !!v)),
@@ -194,41 +184,21 @@ export async function resolveMemberCrmRecordIds(
     new Set(members.map((m) => m.email?.trim().toLowerCase()).filter((v): v is string => !!v)),
   );
 
-  if (memberIds.length > 0) {
-    const linkedOr = memberIds
-      .map((memberId) => `data.cs.${JSON.stringify({ linked_member_id: memberId })}`)
-      .join(',');
-    rows.push(
-      ...(await fetchContactModuleCandidates(supabase, orgId, (query) => query.or(linkedOr))),
-    );
-  }
+  const [linkedRows, numberRows, emailRows, secondaryRows, email2Rows] = await Promise.all([
+    fetchCandidatesByColumnIn(supabase, orgId, 'data->>linked_member_id', memberIds),
+    fetchCandidatesByColumnIn(supabase, orgId, 'data->>member_number', memberNumbers),
+    fetchCandidatesByEmailIlike(supabase, orgId, emails),
+    fetchCandidatesByColumnIn(supabase, orgId, 'data->>secondary_email', emails),
+    fetchCandidatesByColumnIn(supabase, orgId, 'data->>email2', emails),
+  ]);
 
-  for (const memberNumber of memberNumbers) {
-    rows.push(
-      ...(await fetchContactModuleCandidates(supabase, orgId, (query) =>
-        query.eq('data->>member_number', memberNumber),
-      )),
-    );
-  }
-
-  if (emails.length > 0) {
-    const orClause = emails.map((e) => `email.ilike.${escapeIlikeExact(e)}`).join(',');
-    rows.push(
-      ...(await fetchContactModuleCandidates(supabase, orgId, (query) => query.or(orClause))),
-    );
-    for (const email of emails) {
-      rows.push(
-        ...(await fetchContactModuleCandidates(supabase, orgId, (query) =>
-          query.eq('data->>secondary_email', email),
-        )),
-      );
-      rows.push(
-        ...(await fetchContactModuleCandidates(supabase, orgId, (query) =>
-          query.eq('data->>email2', email),
-        )),
-      );
-    }
-  }
+  const rows: RecordRow[] = [
+    ...linkedRows,
+    ...numberRows,
+    ...emailRows,
+    ...secondaryRows,
+    ...email2Rows,
+  ];
 
   rows.push(
     ...(await expandCandidatesViaAlternateEmails(
