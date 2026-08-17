@@ -9,12 +9,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@crm-eco/ui/components/dropdown-menu';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@crm-eco/ui/components/tooltip';
 import type { ViewFilter, CrmField } from '@/lib/crm/types';
 import { collapseStatusInFilter, type StatusValueCount } from '@/lib/crm/status-lanes';
 import { useStatusValues } from '@/lib/crm/status-values-client';
@@ -271,35 +265,28 @@ export function FilterChipsBar({
         if (collapsed) {
           const rawList = collapsed.values.join(', ');
           return (
-            <TooltipProvider key={index} delayDuration={200}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div
-                    className="inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-1 rounded-full text-xs
-                      bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300
-                      border border-slate-200 dark:border-white/10"
-                    tabIndex={0}
-                    aria-label={`Status: ${collapsed.label} (${collapsed.values.length} spellings: ${rawList})`}
-                  >
-                    <span className="font-medium">{getFieldLabel(filter.field)}:</span>
-                    <span className="font-medium text-teal-600 dark:text-teal-400">
-                      {collapsed.label} ({collapsed.values.length})
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => onRemoveFilter(index)}
-                      aria-label={`Remove ${collapsed.label} status filter`}
-                      className="ml-0.5 p-0.5 rounded-full hover:bg-slate-200 dark:hover:bg-white/10 transition-colors"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="max-w-sm break-words text-xs">
-                  {rawList}
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <div
+              key={index}
+              className="inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-1 rounded-full text-xs
+                bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300
+                border border-slate-200 dark:border-white/10"
+              tabIndex={0}
+              title={rawList}
+              aria-label={`Status: ${collapsed.label} (${collapsed.values.length} spellings: ${rawList})`}
+            >
+              <span className="font-medium">{getFieldLabel(filter.field)}:</span>
+              <span className="font-medium text-teal-600 dark:text-teal-400">
+                {collapsed.label} ({collapsed.values.length})
+              </span>
+              <button
+                type="button"
+                onClick={() => onRemoveFilter(index)}
+                aria-label={`Remove ${collapsed.label} status filter`}
+                className="ml-0.5 p-0.5 rounded-full hover:bg-slate-200 dark:hover:bg-white/10 transition-colors"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
           );
         }
 
