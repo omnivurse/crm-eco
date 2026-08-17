@@ -65,6 +65,16 @@
   --input: 214 32% 91%;
   --ring: 187 81% 29%;                /* Spruce-teal focus ring (matches --primary) */
 
+  /* Sidebar (shadcn primitive — export-only; not wired as CRM/Admin nav) */
+  --sidebar-background: 0 0% 98%;
+  --sidebar-foreground: 240 5.3% 26.1%;
+  --sidebar-primary: 187 81% 29%;
+  --sidebar-primary-foreground: 0 0% 98%;
+  --sidebar-accent: 240 4.8% 95.9%;
+  --sidebar-accent-foreground: 240 5.9% 10%;
+  --sidebar-border: 220 13% 91%;
+  --sidebar-ring: 187 81% 29%;
+
   /* Brand tokens (HEX via HSL reference) */
   --brand-navy-500: 222 47% 11%;      /* #0f172a */
   --brand-teal-500: 187 94% 43%;      /* #06b6d4 - now cyan */
@@ -211,6 +221,16 @@
   --tone-success-fg:#34d399;   --tone-success-bg:#34d3991f;   --tone-success-border:#34d39940;
   --tone-danger-fg:#f87171;    --tone-danger-bg:#f871711f;    --tone-danger-border:#f8717140;
   --tone-special-fg:#f472b6;   --tone-special-bg:#f472b61f;   --tone-special-border:#f472b640;
+
+  /* Sidebar — dark */
+  --sidebar-background: 240 5.9% 10%;
+  --sidebar-foreground: 240 4.8% 95.9%;
+  --sidebar-primary: 187 72% 46%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 240 3.7% 15.9%;
+  --sidebar-accent-foreground: 240 4.8% 95.9%;
+  --sidebar-border: 240 3.7% 15.9%;
+  --sidebar-ring: 187 72% 46%;
 }
 
 /* ============================================================
@@ -634,7 +654,7 @@ button:focus-visible {
 :root {
   --ui-row-h: 40px;
   --ui-toolbar-h: 48px;
-  --ui-topbar-h: 44px;
+  --ui-topbar-h: 52px;
   --ui-navbar-h: 38px;
   --ui-chrome-h: calc(var(--ui-topbar-h) + var(--ui-navbar-h) + 1px);
   --ui-gutter: 20px;
@@ -650,7 +670,7 @@ button:focus-visible {
 :root[data-density='compact'] {
   --ui-row-h: 34px;
   --ui-toolbar-h: 42px;
-  --ui-topbar-h: 38px;
+  --ui-topbar-h: 44px;
   --ui-navbar-h: 32px;
   --ui-gutter: 14px;
   --ui-section-gap: 16px;
@@ -661,7 +681,7 @@ button:focus-visible {
 :root[data-density='comfortable'] {
   --ui-row-h: 52px;
   --ui-toolbar-h: 56px;
-  --ui-topbar-h: 52px;
+  --ui-topbar-h: 56px;
   --ui-navbar-h: 44px;
   --ui-gutter: 28px;
   --ui-section-gap: 32px;

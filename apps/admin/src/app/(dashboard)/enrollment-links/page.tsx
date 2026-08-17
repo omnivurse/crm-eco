@@ -7,6 +7,7 @@ import { createClient } from '@crm-eco/lib/supabase/client';
 import { Button } from '@crm-eco/ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@crm-eco/ui/components/card';
 import { Badge } from '@crm-eco/ui/components/badge';
+import { Skeleton } from '@crm-eco/ui/components/skeleton';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -121,11 +122,11 @@ export default function EnrollmentLinksPage() {
   if (loading) {
     return (
       <div className="p-8">
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-slate-200 rounded w-1/3"></div>
+        <div className="space-y-4">
+          <Skeleton className="h-8 w-1/3" />
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-24 bg-slate-200 rounded"></div>
+              <Skeleton key={i} className="h-24 w-full rounded-lg" />
             ))}
           </div>
         </div>

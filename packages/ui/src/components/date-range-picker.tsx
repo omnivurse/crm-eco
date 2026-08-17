@@ -1,10 +1,12 @@
 'use client';
 
 import * as React from 'react';
-import { Calendar, ChevronDown } from 'lucide-react';
+import { Calendar as CalendarIcon, ChevronDown } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { Button } from './button';
+import { Calendar } from './calendar';
 import { Popover, PopoverContent, PopoverTrigger } from './popover';
+import type { DateRange as DayPickerDateRange } from 'react-day-picker';
 
 export interface DateRange {
   from: Date | undefined;
@@ -108,20 +110,6 @@ function formatDate(date: Date | undefined): string {
   });
 }
 
-function formatDateForInput(date: Date | undefined): string {
-  if (!date) return '';
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-function parseInputDate(value: string): Date | undefined {
-  if (!value) return undefined;
-  const date = new Date(value + 'T00:00:00');
-  return isNaN(date.getTime()) ? undefined : date;
-}
-
 export interface DateRangePickerProps {
   value?: DateRange;
   onChange?: (range: DateRange) => void;
@@ -156,17 +144,22 @@ export function DateRangePicker({
     setOpen(false);
   };
 
-  const handleFromChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const date = parseInputDate(e.target.value);
-    setTempRange((prev) => ({ ...prev, from: date }));
-  };
-
-  const handleToChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const date = parseInputDate(e.target.value);
-    if (date) {
-      date.setHours(23, 59, 59, 999);
+  const handleSelect = (range: DayPickerDateRange | undefined) => {
+    if (!range) {
+      setTempRange({ from: undefined, to: undefined });
+      return;
     }
-    setTempRange((prev) => ({ ...prev, to: date }));
+    const next: DateRange = {
+      from: range.from,
+      to: range.to
+        ? (() => {
+            const end = new Date(range.to);
+            end.setHours(23, 59, 59, 999);
+            return end;
+          })()
+        : undefined,
+    };
+    setTempRange(next);
   };
 
   const handleApply = () => {
@@ -192,24 +185,24 @@ export function DateRangePicker({
           className={cn(
             'justify-start text-left font-normal',
             !value?.from && !value?.to && 'text-muted-foreground',
-            className
+            className,
           )}
         >
-          <Calendar className="mr-2 h-4 w-4" />
+          <CalendarIcon className="mr-2 h-4 w-4" />
           <span className="flex-1 truncate">{displayValue}</span>
           <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align={align}>
-        <div className="flex">
-          {/* Presets */}
-          <div className="border-r border-border p-3 space-y-1">
+        <div className="flex flex-col sm:flex-row">
+          <div className="border-b sm:border-b-0 sm:border-r border-border p-3 space-y-1">
             <p className="text-xs font-medium text-muted-foreground mb-2 px-2">
               Quick Select
             </p>
             {presets.map((preset) => (
               <button
                 key={preset.label}
+                type="button"
                 onClick={() => handlePresetClick(preset)}
                 className="w-full text-left px-3 py-1.5 text-sm rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"
               >
@@ -218,33 +211,21 @@ export function DateRangePicker({
             ))}
           </div>
 
-          {/* Custom Range */}
-          <div className="p-4 space-y-4">
-            <p className="text-xs font-medium text-muted-foreground">
+          <div className="p-3 space-y-3">
+            <p className="text-xs font-medium text-muted-foreground px-1">
               Custom Range
             </p>
-            <div className="space-y-3">
-              <div className="space-y-1.5">
-                <label className="text-xs text-muted-foreground">From</label>
-                <input
-                  type="date"
-                  value={formatDateForInput(tempRange.from)}
-                  onChange={handleFromChange}
-                  className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-xs text-muted-foreground">To</label>
-                <input
-                  type="date"
-                  value={formatDateForInput(tempRange.to)}
-                  onChange={handleToChange}
-                  min={formatDateForInput(tempRange.from)}
-                  className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                />
-              </div>
-            </div>
-            <div className="flex gap-2 pt-2">
+            <Calendar
+              mode="range"
+              selected={{
+                from: tempRange.from,
+                to: tempRange.to,
+              }}
+              onSelect={handleSelect}
+              numberOfMonths={1}
+              defaultMonth={tempRange.from ?? value?.from}
+            />
+            <div className="flex gap-2 pt-1 px-1">
               <Button
                 variant="outline"
                 size="sm"

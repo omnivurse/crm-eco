@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import Link from 'next/link';
 import { HeartPulse } from 'lucide-react';
+import { Skeleton } from '@crm-eco/ui/components/skeleton';
 import { MembersListClient } from '@/components/members/MembersListClient';
 
 export const dynamic = 'force-dynamic';
@@ -13,32 +14,29 @@ function MembersPageSkeleton() {
         {[...Array(4)].map((_, i) => (
           <div
             key={i}
-            className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-700/50 p-6"
+            className="relative overflow-hidden rounded-2xl bg-card border border-border p-6"
           >
-            <div className="absolute top-0 left-0 right-0 h-1 bg-slate-200 dark:bg-slate-700" />
+            <div className="absolute top-0 left-0 right-0 h-1 bg-muted" />
             <div className="flex items-start justify-between mb-4">
               <div className="space-y-2">
-                <div className="h-4 w-24 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
-                <div className="h-8 w-16 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-8 w-16" />
               </div>
-              <div className="h-11 w-11 bg-slate-200 dark:bg-slate-700 rounded-xl animate-pulse" />
+              <Skeleton className="h-11 w-11 rounded-xl" />
             </div>
-            <div className="h-3 w-32 bg-slate-100 dark:bg-slate-800 rounded animate-pulse" />
+            <Skeleton className="h-3 w-32" />
           </div>
         ))}
       </div>
 
       {/* Table skeleton */}
-      <div className="bg-white dark:bg-slate-900/60 rounded-2xl border border-slate-200/60 dark:border-slate-700/50 p-6">
+      <div className="bg-card rounded-2xl border border-border p-6">
         <div className="space-y-4">
-          <div className="h-5 w-40 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
-          <div className="h-3 w-24 bg-slate-100 dark:bg-slate-800 rounded animate-pulse" />
+          <Skeleton className="h-5 w-40" />
+          <Skeleton className="h-3 w-24" />
           <div className="space-y-3 mt-6">
             {[...Array(5)].map((_, i) => (
-              <div
-                key={i}
-                className="h-12 bg-slate-100 dark:bg-slate-800 rounded animate-pulse"
-              />
+              <Skeleton key={i} className="h-12 w-full" />
             ))}
           </div>
         </div>

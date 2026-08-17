@@ -313,11 +313,15 @@ export default function RevenuePage() {
         winRate: winRate,
       });
 
-      // Fetch products count
-      const { count: productsCount } = await supabase
+      // Products count is best-effort. A failed HEAD (abort, RLS, network)
+      // must not break the rest of the revenue desk.
+      const { count: productsCount, error: productsCountError } = await supabase
         .from('products')
         .select('id', { count: 'exact', head: true })
         .eq('organization_id', authProfile.organization_id);
+      if (productsCountError && process.env.NODE_ENV !== 'production') {
+        console.warn('[revenue] products count failed:', productsCountError.message);
+      }
 
         // Create revenue modules
       const revenueModules: RevenueModule[] = [

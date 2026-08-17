@@ -1,10 +1,20 @@
 'use client';
 
 import { ReactNode } from 'react';
-import { CaretLeft } from '@phosphor-icons/react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { IdentityActionsHeader } from '@crm-eco/ui/components/identity-actions-header';
+import { Button } from '@crm-eco/ui/components/button';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@crm-eco/ui/components/breadcrumb';
 import { cn } from '@crm-eco/ui';
+import { ChevronLeft } from 'lucide-react';
 
 interface PageHeaderProps {
   title: string;
@@ -42,13 +52,31 @@ export function PageHeader({
   return (
     <div className={cn('mb-6', className)}>
       {backHref !== undefined && (
-        <button
-          onClick={handleBack}
-          className="group mb-4 flex items-center gap-1.5 text-sm text-[var(--adm-muted)] transition-colors hover:text-[var(--adm-ink)]"
-        >
-          <CaretLeft weight="light" className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
-          {backLabel}
-        </button>
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={handleBack}
+            className="h-8 gap-1.5 px-2 text-muted-foreground hover:text-foreground"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            {backLabel}
+          </Button>
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink asChild>
+                  <Link href={backHref || '/'}>{backLabel}</Link>
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage>{title}</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+        </div>
       )}
 
       <IdentityActionsHeader

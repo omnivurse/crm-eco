@@ -47,18 +47,18 @@ export function EmptyState({
     return (
         <div className={cn(
             'flex flex-col items-center justify-center py-16 px-4 text-center',
-            'bg-white dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700',
+            'bg-card rounded-2xl border border-border',
             className
         )}>
-            <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center mb-6">
-                <Icon className="w-8 h-8 text-slate-400 dark:text-slate-500" />
+            <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mb-6">
+                <Icon className="w-8 h-8 text-muted-foreground" />
             </div>
 
-            <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">
+            <h3 className="text-xl font-semibold text-foreground mb-2">
                 {title}
             </h3>
 
-            <p className="text-slate-500 dark:text-slate-400 max-w-md mb-6">
+            <p className="text-muted-foreground max-w-md mb-6">
                 {description}
             </p>
 

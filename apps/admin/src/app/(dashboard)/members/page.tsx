@@ -1,5 +1,17 @@
-import { CaretLeft, CaretRight, Plus, UploadSimple, Users } from '@phosphor-icons/react/dist/ssr';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button } from '@crm-eco/ui';
+import { Plus, UploadSimple, Users } from '@phosphor-icons/react/dist/ssr';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Button,
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationPrevious,
+  PaginationNext,
+} from '@crm-eco/ui';
 import Link from 'next/link';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { getActiveTenant } from '@/lib/tenant';
@@ -135,33 +147,41 @@ export default async function MembersPage({ searchParams }: PageProps) {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
           <p className="text-sm text-muted-foreground">
             Showing {((page - 1) * PAGE_SIZE) + 1} to {Math.min(page * PAGE_SIZE, total)} of {total.toLocaleString()}
           </p>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" disabled={page <= 1} asChild={page > 1}>
-              {page > 1 ? (
-                <Link href={buildPageUrl(page - 1)}>
-                  <CaretLeft weight="light" className="w-4 h-4 mr-1" /> Previous
-                </Link>
-              ) : (
-                <span><CaretLeft weight="light" className="w-4 h-4 mr-1" /> Previous</span>
-              )}
-            </Button>
-            <span className="text-sm text-muted-foreground px-2">
-              Page {page} of {totalPages}
-            </span>
-            <Button variant="outline" size="sm" disabled={page >= totalPages} asChild={page < totalPages}>
-              {page < totalPages ? (
-                <Link href={buildPageUrl(page + 1)}>
-                  Next <CaretRight weight="light" className="w-4 h-4 ml-1" />
-                </Link>
-              ) : (
-                <span>Next <CaretRight weight="light" className="w-4 h-4 ml-1" /></span>
-              )}
-            </Button>
-          </div>
+          <Pagination className="mx-0 w-auto justify-end">
+            <PaginationContent>
+              <PaginationItem>
+                {page > 1 ? (
+                  <PaginationPrevious href={buildPageUrl(page - 1)} />
+                ) : (
+                  <PaginationPrevious
+                    href="#"
+                    aria-disabled
+                    className="pointer-events-none opacity-50"
+                  />
+                )}
+              </PaginationItem>
+              <PaginationItem>
+                <span className="px-2 text-sm text-muted-foreground tabular-nums">
+                  Page {page} of {totalPages}
+                </span>
+              </PaginationItem>
+              <PaginationItem>
+                {page < totalPages ? (
+                  <PaginationNext href={buildPageUrl(page + 1)} />
+                ) : (
+                  <PaginationNext
+                    href="#"
+                    aria-disabled
+                    className="pointer-events-none opacity-50"
+                  />
+                )}
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
         </div>
       )}
     </div>

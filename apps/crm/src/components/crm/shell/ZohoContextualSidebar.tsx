@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase-client';
@@ -321,11 +321,23 @@ export function ZohoContextualSidebar({
         ? (activeTopModule === 'settings' ? 'Settings menu' : 'Menu')
         : `${TOP_MODULE_TITLES[activeTopModule]} menu`;
 
-    // Handle link click on mobile
-    const handleLinkClick = () => {
-        if (onMobileClose) {
-            onMobileClose();
+    const mobileDrawerRef = useRef<HTMLElement>(null);
+
+    // Closing the drawer sets aria-hidden/inert. If a link inside still has
+    // focus, Chrome blocks aria-hidden and AT users get a hidden focused node.
+    useEffect(() => {
+        if (mobileMenuOpen) return;
+        const root = mobileDrawerRef.current;
+        const active = document.activeElement;
+        if (root && active instanceof HTMLElement && root.contains(active)) {
+            active.blur();
         }
+    }, [mobileMenuOpen]);
+
+    const handleLinkClick = () => {
+        const active = document.activeElement;
+        if (active instanceof HTMLElement) active.blur();
+        onMobileClose?.();
     };
 
     return (
@@ -473,15 +485,17 @@ export function ZohoContextualSidebar({
 
             {/* Mobile Sidebar - Slide-in Drawer */}
             <aside
+                ref={mobileDrawerRef}
                 data-crm-module={activeTopModule}
                 aria-hidden={!mobileMenuOpen}
+                inert={!mobileMenuOpen}
                 className={cn(
                     'fixed left-0 bottom-0 w-72 z-40 lg:hidden',
                     // No module tab bar under the simple profile → drawer starts right under the top bar.
                     isSimple ? 'top-[var(--crm-topbar-h)]' : 'top-[var(--crm-chrome-h)]',
                     'flex flex-col bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-white/10',
                     'transform transition-transform duration-300 ease-in-out',
-                    mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+                    mobileMenuOpen ? 'translate-x-0' : '-translate-x-full pointer-events-none',
                 )}
             >
                 {/* Mobile Module switcher (full profile only) */}

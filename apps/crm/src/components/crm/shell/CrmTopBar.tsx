@@ -17,6 +17,12 @@ import {
   DropdownMenuTrigger,
 } from '@crm-eco/ui/components/dropdown-menu';
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@crm-eco/ui/components/tooltip';
+import {
   Search,
   LogOut,
   User,
@@ -137,17 +143,25 @@ export const CrmTopBar = memo(function CrmTopBar({
   };
 
   return (
-    <header className="relative z-40 h-[var(--crm-topbar-h)] flex items-center px-3 sm:px-4 lg:px-5 xl:px-6 glass border-b border-slate-200/80 dark:border-white/5 shrink-0">
+    <TooltipProvider delayDuration={300}>
+    <header className="relative z-40 h-[var(--crm-topbar-h)] flex items-center px-3 sm:px-4 lg:px-5 xl:px-6 glass border-b border-border shrink-0">
       {/* Mobile Menu Toggle */}
-      <Button
-        variant="ghost"
-        size="icon"
-        className="lg:hidden h-8 w-8 mr-2 rounded-md text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
-        onClick={onMobileMenuToggle}
-        aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
-      >
-        {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-      </Button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="lg:hidden h-8 w-8 mr-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
+            onClick={onMobileMenuToggle}
+            aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+          >
+            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">
+          {mobileMenuOpen ? 'Close menu' : 'Open menu'}
+        </TooltipContent>
+      </Tooltip>
 
       {/* Left Section: Logo */}
       <Link prefetch={false} href="/crm" className="flex items-center gap-2 group flex-shrink-0">
@@ -162,23 +176,28 @@ export const CrmTopBar = memo(function CrmTopBar({
         {/* Search Button — opens global search overlay */}
         <button
           onClick={() => openCommandPalette(onOpenCommandPalette)}
-          className="hidden sm:flex items-center gap-2 h-8 px-2.5 rounded-md border border-slate-200 dark:border-white/10 bg-slate-50/80 dark:bg-white/5 text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-white/10 hover:border-slate-300 dark:hover:border-white/20 hover:text-slate-600 dark:hover:text-slate-300 transition-colors text-[13px] min-w-[160px] lg:min-w-[220px]"
+          className="hidden sm:flex items-center gap-2 h-8 px-2.5 rounded-md border border-border bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors text-[13px] min-w-[160px] lg:min-w-[220px]"
         >
           <Search className="w-4 h-4 flex-shrink-0" />
-          <span className="truncate">Search people, deals, or start a workflow…</span>
+          <span className="truncate">Search people or work…</span>
           <kbd className="ml-auto hidden lg:inline-flex items-center gap-0.5 text-[10px] font-medium text-slate-400 dark:text-slate-500 bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded px-1.5 py-0.5">
             ⌘K
           </kbd>
         </button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="sm:hidden h-8 w-8 rounded-md text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10"
-          onClick={() => openCommandPalette(onOpenCommandPalette)}
-          title="Search (⌘K)"
-        >
-          <Search className="w-4 h-4" />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="sm:hidden h-8 w-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
+              onClick={() => openCommandPalette(onOpenCommandPalette)}
+              aria-label="Search (⌘K)"
+            >
+              <Search className="w-4 h-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">Search (⌘K)</TooltipContent>
+        </Tooltip>
 
         {/* Split Create Button - hidden on mobile */}
         <div className="hidden sm:block">
@@ -188,9 +207,14 @@ export const CrmTopBar = memo(function CrmTopBar({
         {/* Theme Toggle - hidden on the narrowest mobile widths.
             (`xs` is not a defined breakpoint, so the old `xs:block` never
             applied and the toggle was hidden at every width.) */}
-        <div className="hidden sm:block">
-          <ThemeToggle variant="icon" />
-        </div>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="hidden sm:block">
+              <ThemeToggle variant="icon" />
+            </div>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">Toggle theme</TooltipContent>
+        </Tooltip>
 
         {/* The connectivity/offline simulator is a dev-only testing aid —
             don't ship it in production builds. */}
@@ -207,21 +231,27 @@ export const CrmTopBar = memo(function CrmTopBar({
         <NotificationsPanel />
 
         {/* Settings Gear - hidden on mobile */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="hidden sm:flex h-8 w-8 rounded-md text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10"
-          onClick={() => router.push('/crm/settings')}
-        >
-          <Settings className="w-4 h-4" />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="hidden sm:flex h-8 w-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
+              onClick={() => router.push('/crm/settings')}
+              aria-label="Settings"
+            >
+              <Settings className="w-4 h-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">Settings</TooltipContent>
+        </Tooltip>
 
         {/* User Menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
-              className="flex items-center gap-1.5 h-8 px-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-white/10"
+              className="flex items-center gap-1.5 h-8 px-1.5 rounded-md hover:bg-muted"
             >
               <Avatar className="w-7 h-7 border border-teal-500/50">
                 <AvatarImage src={profile.avatar_url || undefined} alt={profile.full_name} />
@@ -316,5 +346,6 @@ export const CrmTopBar = memo(function CrmTopBar({
         modules={modules}
       />
     </header>
+    </TooltipProvider>
   );
 });

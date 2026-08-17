@@ -35,6 +35,16 @@ function getIcon(iconName: string): LucideIcon {
   return iconMap[iconName] || Users;
 }
 
+const MODULE_TABS: Array<{
+  key: TopModule;
+  label: string;
+  icon: string;
+  href: string;
+}> = [
+  ...TOP_MODULES,
+  { key: 'settings', label: 'Settings', icon: 'settings', href: '/crm/settings' },
+];
+
 interface CrmModuleTabBarProps {
   /**
    * `'simple'` (tenant flag `crm.nav.simple`) renders no tab strip at all —
@@ -44,25 +54,23 @@ interface CrmModuleTabBarProps {
 }
 
 /**
- * Sticky Zoho-style module tab strip — visible below the top bar under the
- * `full` nav profile so reps can switch CRM / Communications / Revenue
- * without hunting in menus.
+ * Sticky module tab strip under the top bar. Full profile only: reps switch
+ * CRM / Communications / Revenue without hunting in menus.
  */
 export function CrmModuleTabBar({ navProfile = 'full' }: CrmModuleTabBarProps) {
   const pathname = usePathname();
   const { setActiveModule } = useModule();
   const activeModule = resolveTopModuleFromPathname(pathname);
 
-  const handleClick = (key: TopModule) => {
-    setActiveModule(key);
-  };
-
   if (navProfile === 'simple') return null;
 
   return (
-    <div className="sticky top-[var(--crm-topbar-h)] z-[35] isolate shrink-0 border-b border-slate-200/80 bg-white dark:border-white/5 dark:bg-slate-950">
-      <div className="flex items-center gap-0 overflow-x-auto scrollbar-thin px-2 sm:px-4 lg:px-5">
-        {TOP_MODULES.map((module) => {
+    <nav
+      aria-label="Modules"
+      className="sticky top-[var(--crm-topbar-h)] z-[35] isolate shrink-0 border-b border-border bg-background"
+    >
+      <div className="flex items-center gap-0.5 overflow-x-auto scrollbar-thin px-1.5 sm:px-3 lg:px-4">
+        {MODULE_TABS.map((module) => {
           const Icon = getIcon(module.icon);
           const isActive = activeModule === module.key;
 
@@ -72,60 +80,43 @@ export function CrmModuleTabBar({ navProfile = 'full' }: CrmModuleTabBarProps) {
               key={module.key}
               href={module.href}
               data-crm-module={module.key}
-              onClick={() => handleClick(module.key)}
-              style={isActive ? { color: 'var(--mod-fg)' } : undefined}
-              className={cn(
-                'relative flex shrink-0 snap-start items-center gap-1.5 h-[var(--crm-modulebar-h)] px-3 text-xs font-medium transition-colors sm:text-[13px]',
+              onClick={() => setActiveModule(module.key)}
+              style={
                 isActive
-                  ? ''
-                  : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white',
+                  ? { color: 'var(--mod-fg)' }
+                  : undefined
+              }
+              className={cn(
+                'relative flex shrink-0 snap-start items-center gap-1.5 h-[var(--crm-modulebar-h)] px-2.5 sm:px-3',
+                'text-[13px] tracking-[-0.01em] rounded-md',
+                'transition-colors duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+                isActive
+                  ? 'font-semibold'
+                  : 'font-medium text-muted-foreground hover:bg-muted/70 hover:text-foreground',
               )}
               aria-current={isActive ? 'page' : undefined}
             >
               <Icon
                 style={isActive ? { color: 'var(--mod-fg)' } : undefined}
-                className={cn('h-3.5 w-3.5', !isActive && 'text-slate-400')}
+                className={cn(
+                  'hidden h-3.5 w-3.5 sm:block',
+                  !isActive && 'text-muted-foreground/70',
+                )}
+                aria-hidden
               />
               <span>{module.label}</span>
               {isActive && (
                 <span
                   className="absolute inset-x-2 bottom-0 h-0.5 rounded-full"
                   style={{ backgroundColor: 'var(--mod-border)' }}
+                  aria-hidden
                 />
               )}
             </Link>
           );
         })}
-
-        <span className="mx-1 h-4 w-px shrink-0 bg-slate-200 dark:bg-white/10" aria-hidden />
-
-        <Link
-          prefetch={false}
-          href="/crm/settings"
-          data-crm-module="settings"
-          onClick={() => handleClick('settings')}
-          style={activeModule === 'settings' ? { color: 'var(--mod-fg)' } : undefined}
-          className={cn(
-            'relative flex shrink-0 snap-start items-center gap-1.5 h-[var(--crm-modulebar-h)] px-3 text-xs font-medium transition-colors sm:text-[13px]',
-            activeModule === 'settings'
-              ? ''
-              : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white',
-          )}
-          aria-current={activeModule === 'settings' ? 'page' : undefined}
-        >
-          <Settings
-            className="h-3.5 w-3.5"
-            style={activeModule === 'settings' ? { color: 'var(--mod-fg)' } : undefined}
-          />
-          <span>Settings</span>
-          {activeModule === 'settings' && (
-            <span
-              className="absolute inset-x-2 bottom-0 h-0.5 rounded-full"
-              style={{ backgroundColor: 'var(--mod-border)' }}
-            />
-          )}
-        </Link>
       </div>
-    </div>
+    </nav>
   );
 }
