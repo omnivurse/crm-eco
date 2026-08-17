@@ -10,43 +10,40 @@ import {
 } from 'lucide-react';
 import { cn } from '@crm-eco/ui/lib/utils';
 import type { PeopleQueueAction, PeopleQueueItem } from '@/lib/dashboard/people-queue-types';
-import {
-  initialsFor,
-  mailtoHref,
-  recordHref,
-  statusTone,
-  telHref,
-  type StatusTone,
-} from './command-desk-format';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { statusToneForValue, withReturnTo } from '@/lib/crm/status-lanes';
+import { initialsFor, mailtoHref, recordHref, telHref } from './command-desk-format';
 
 /* ------------------------------------------------------------------ */
-/*  Status pill (same tone families as RecordTable STATUS_STYLES)      */
+/*  Back-to-dashboard: every desk → record link carries ?returnTo=/crm  */
 /* ------------------------------------------------------------------ */
 
-const TONE_CLASSES: Record<StatusTone, string> = {
-  active: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30',
-  pending: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30',
-  prospect: 'bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/30',
-  inactive: 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/30',
-  lost: 'bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/30',
-  neutral: 'bg-muted text-muted-foreground border-border',
-};
+/** Dashboard record links return to `/crm` (RecordDetailShellV2 adds the Dashboard crumb). */
+export const DESK_RETURN_TO = '/crm';
+
+/** `/crm/r/<id>[?pane=…]` → same href with `returnTo=/crm` appended. */
+export function deskHref(href: string): string {
+  return withReturnTo(href, DESK_RETURN_TO);
+}
+
+/* ------------------------------------------------------------------ */
+/*  Status pill — lane tone (lib/crm/status-lanes), the SAME colour     */
+/*  RecordTable / ListView / the record header paint for a status.      */
+/* ------------------------------------------------------------------ */
 
 export function StatusPill({ status, className }: { status: string | null; className?: string }) {
   if (!status) {
     return <span className={cn('text-xs italic text-muted-foreground', className)}>No status</span>;
   }
   return (
-    <span
+    <StatusBadge
+      status={status}
+      tone={statusToneForValue(status)}
+      size="sm"
       title={status}
-      className={cn(
-        'inline-flex max-w-full items-center truncate rounded-full border px-2 py-px text-[11px] font-medium leading-4',
-        TONE_CLASSES[statusTone(status)],
-        className,
-      )}
-    >
-      <span className="truncate">{status}</span>
-    </span>
+      className={cn('max-w-full leading-4', className)}
+      label={<span className="min-w-0 truncate">{status}</span>}
+    />
   );
 }
 
@@ -109,7 +106,7 @@ export function NextActionLink({
   const Icon = ACTION_ICONS[action.kind] ?? ArrowUpRight;
   return (
     <Link
-      href={action.href}
+      href={deskHref(action.href)}
       title={action.label}
       className={cn(
         'inline-flex max-w-full items-center gap-1.5 rounded-md text-xs font-medium text-primary hover:underline',
@@ -151,7 +148,7 @@ export function QuickActions({
 }) {
   const tel = telHref(item.phone);
   const mailto = mailtoHref(item.email);
-  const open = item.href || recordHref(item.recordId);
+  const open = deskHref(item.href || recordHref(item.recordId));
   return (
     <span className={cn('inline-flex items-center gap-0.5', className)}>
       {showOpen ? (
@@ -178,7 +175,7 @@ export function QuickActions({
         </span>
       )}
       <Link
-        href={recordHref(item.recordId, { pane: 'notes' })}
+        href={deskHref(recordHref(item.recordId, { pane: 'notes' }))}
         className={ICON_BTN}
         aria-label={`Add a note for ${item.name}`}
         title="Add note"

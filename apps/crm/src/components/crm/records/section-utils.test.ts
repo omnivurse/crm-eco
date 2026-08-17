@@ -218,8 +218,26 @@ describe('section-utils person coverage visibility', () => {
   it('nav groups coverage separately from identity', () => {
     expect(getSectionNavGroup('core')).toBe('identity');
     expect(getSectionNavGroup('health_sharing')).toBe('coverage');
-    expect(getSectionNavGroup('address')).toBe('location');
+    expect(getSectionNavGroup('address')).toBe('address');
     expect(getSectionNavGroup('payment')).toBe('admin');
+  });
+
+  it('splits Family from Address and Ownership from Admin', () => {
+    expect(getSectionNavGroup('family')).toBe('family');
+    expect(getSectionNavGroup('family_spouse')).toBe('family');
+    expect(getSectionNavGroup('family_children')).toBe('family');
+    expect(getSectionNavGroup('relationships')).toBe('family');
+    expect(getSectionNavGroup('address')).toBe('address');
+    expect(getSectionNavGroup('mailing_address')).toBe('address');
+    expect(getSectionNavGroup('advisor')).toBe('ownership');
+    expect(getSectionNavGroup('management')).toBe('ownership');
+    expect(getSectionNavGroup('agent')).toBe('ownership');
+    expect(getSectionNavGroup('system')).toBe('admin');
+    expect(getSectionNavGroup('identifiers')).toBe('admin');
+    expect(getSectionNavGroup('zoho_system')).toBe('admin');
+    // Account related-list sections are neither family nor address.
+    expect(getSectionNavGroup('contacts')).toBe('other');
+    expect(getSectionNavGroup('deals')).toBe('other');
   });
 
   it('hides empty read-only sections from nav but keeps inline-editable ones', () => {
@@ -407,15 +425,41 @@ describe('groupSectionsForNav', () => {
     expect(bands.map((b) => b.group)).toEqual([
       'identity',
       'coverage',
-      'location',
-      'admin',
+      'address',
+      'family',
+      'ownership',
       'other',
     ]);
     expect(bands[0]).toMatchObject({ label: 'Profile', filledCount: 4, fieldCount: 6 });
     expect(bands[0].sections.map((s) => s.key)).toEqual(['core', 'contact']);
-    expect(bands[2].sections.map((s) => s.key)).toEqual(['address', 'family']);
-    expect(bands[2]).toMatchObject({ filledCount: 2, fieldCount: 10 });
-    expect(bands[4].label).toBe('More');
+    expect(bands[2]).toMatchObject({ label: 'Address', filledCount: 2, fieldCount: 6 });
+    expect(bands[3]).toMatchObject({ label: 'Family', filledCount: 0, fieldCount: 4 });
+    expect(bands[4]).toMatchObject({ label: 'Ownership', filledCount: 1, fieldCount: 1 });
+    expect(bands[5].label).toBe('More');
+  });
+
+  it('orders people-module bands Profile · Coverage · Family · Address · Ownership · Admin', () => {
+    const bands = groupSectionsForNav([
+      meta('core', 1, 1),
+      meta('health_sharing', 1, 1),
+      meta('family_spouse', 1, 1),
+      meta('family_children', 0, 1),
+      meta('address', 1, 1),
+      meta('advisor', 1, 1),
+      meta('management', 1, 1),
+      meta('payment', 1, 1),
+      meta('system', 1, 1),
+    ]);
+    expect(bands.map((b) => b.label)).toEqual([
+      'Profile',
+      'Coverage',
+      'Family',
+      'Address',
+      'Ownership',
+      'Admin',
+    ]);
+    expect(bands[2].sections.map((s) => s.key)).toEqual(['family_spouse', 'family_children']);
+    expect(bands[4].sections.map((s) => s.key)).toEqual(['advisor', 'management']);
   });
 
   it('carries the note badge onto the notes band', () => {
@@ -436,7 +480,7 @@ describe('groupSectionsForNav', () => {
 
   it('resolves the owning group for a section key', () => {
     const bands = groupSectionsForNav([meta('core', 1, 1), meta('address', 1, 1)]);
-    expect(findSectionNavGroupForKey(bands, 'address')).toBe('location');
+    expect(findSectionNavGroupForKey(bands, 'address')).toBe('address');
     expect(findSectionNavGroupForKey(bands, 'nope')).toBeNull();
   });
 });

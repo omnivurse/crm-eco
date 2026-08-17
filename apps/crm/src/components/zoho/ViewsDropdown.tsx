@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@crm-eco/ui/components/button';
 import {
@@ -73,6 +73,33 @@ interface ViewsDropdownProps {
    */
   activeSavedViewId?: string | null;
   onActiveSavedViewChange?: (id: string | null) => void;
+  /**
+   * Keys of the org's other enabled modules — gates the member quick views
+   * (they only belong on `members`, or anywhere when the org has no
+   * `members` module). When omitted they are fetched once from
+   * GET /api/crm/modules and cached for the session.
+   */
+  siblingModuleKeys?: ReadonlyArray<string> | null;
+}
+
+/** Session cache of enabled module keys (one request per page load). */
+let moduleKeysPromise: Promise<string[]> | null = null;
+function fetchEnabledModuleKeys(): Promise<string[]> {
+  if (!moduleKeysPromise) {
+    moduleKeysPromise = fetch('/api/crm/modules', { credentials: 'same-origin' })
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`modules ${res.status}`);
+        const json = (await res.json()) as Array<{ key?: unknown }> | { error?: string };
+        return Array.isArray(json)
+          ? json.map((m) => (typeof m?.key === 'string' ? m.key : '')).filter(Boolean)
+          : [];
+      })
+      .catch((err) => {
+        moduleKeysPromise = null;
+        throw err;
+      });
+  }
+  return moduleKeysPromise;
 }
 
 const itemClass = (active: boolean) =>
@@ -96,6 +123,7 @@ export function ViewsDropdown({
   onApplyViewState,
   activeSavedViewId: activeSavedViewIdProp,
   onActiveSavedViewChange,
+  siblingModuleKeys: siblingModuleKeysProp,
 }: ViewsDropdownProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -111,7 +139,32 @@ export function ViewsDropdown({
   const personalEnabled = Boolean(onApplyView);
   const saved = useSavedViews(moduleKey, { enabled: personalEnabled });
   const savedViews = personalEnabled ? saved.views : [];
-  const builtInViews = useMemo(() => (personalEnabled ? getBuiltInSavedViews(fields) : []), [fields, personalEnabled]);
+  // Sibling module keys gate the member quick views (see getBuiltInSavedViews).
+  // `members` itself never needs the lookup; other modules fetch once
+  // (cached) unless the caller passed the keys. Fetch failure → keep hidden
+  // (fail closed: better no quick views than misleading ones).
+  const [fetchedSiblingKeys, setFetchedSiblingKeys] = useState<string[] | null | undefined>(undefined);
+  const needsSiblingLookup =
+    personalEnabled && moduleKey !== 'members' && siblingModuleKeysProp === undefined;
+  useEffect(() => {
+    if (!needsSiblingLookup) return;
+    let cancelled = false;
+    fetchEnabledModuleKeys()
+      .then((keys) => {
+        if (!cancelled) setFetchedSiblingKeys(keys.filter((k) => k !== moduleKey));
+      })
+      .catch(() => {
+        if (!cancelled) setFetchedSiblingKeys(undefined);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [needsSiblingLookup, moduleKey]);
+  const siblingModuleKeys = siblingModuleKeysProp !== undefined ? siblingModuleKeysProp : fetchedSiblingKeys;
+  const builtInViews = useMemo(
+    () => (personalEnabled ? getBuiltInSavedViews(fields, { moduleKey, siblingModuleKeys }) : []),
+    [fields, personalEnabled, moduleKey, siblingModuleKeys],
+  );
 
   const activeView = views.find((v) => v.id === activeViewId) || views.find((v) => v.is_default);
   const activeSaved = activeSavedViewId ? savedViews.find((v) => v.id === activeSavedViewId) ?? null : null;

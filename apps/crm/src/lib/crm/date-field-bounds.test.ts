@@ -3,6 +3,7 @@ import {
   dateValueToInputDisplay,
   dateValueToTypedEntryDraft,
   isoDateToTypedEntryDisplay,
+  maskDateTyping,
 } from './date-field-bounds';
 
 describe('date-field-bounds helpers', () => {
@@ -34,5 +35,26 @@ describe('dateValueToInputDisplay (controlled date input)', () => {
   it('is empty for null/undefined', () => {
     expect(dateValueToInputDisplay(null)).toBe('');
     expect(dateValueToInputDisplay(undefined)).toBe('');
+  });
+});
+
+describe('maskDateTyping (blur mask)', () => {
+  it('zero-pads unpadded pasted dates instead of scrambling them', () => {
+    expect(maskDateTyping('9/1/2026')).toBe('09/01/2026');
+    expect(maskDateTyping('12/1/2026')).toBe('12/01/2026');
+    expect(maskDateTyping('1/15/1980')).toBe('01/15/1980');
+    expect(maskDateTyping('9/1/26')).toBe('09/01/2026');
+    expect(maskDateTyping('9-1-2026')).toBe('09/01/2026');
+  });
+
+  it('keeps already-masked and ISO values stable', () => {
+    expect(maskDateTyping('09/01/2026')).toBe('09/01/2026');
+    expect(maskDateTyping('2026-09-01')).toBe('09/01/2026');
+  });
+
+  it('still masks digit-by-digit typing', () => {
+    expect(maskDateTyping('0901')).toBe('09/01');
+    expect(maskDateTyping('09012026')).toBe('09/01/2026');
+    expect(maskDateTyping('')).toBe('');
   });
 });

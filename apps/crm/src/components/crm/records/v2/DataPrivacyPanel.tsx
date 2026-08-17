@@ -34,6 +34,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { toastCopy } from '@/lib/crm/toast-copy';
 import { Button } from '@crm-eco/ui/components/button';
 import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import { Textarea } from '@crm-eco/ui/components/textarea';
@@ -131,7 +132,7 @@ export function DataPrivacyPanel({
   }, [draft, initial]);
 
   const persist = useCallback(
-    async (next: RecordPrivacyData, successMsg: string) => {
+    async (next: RecordPrivacyData, successMsg: string, description?: string) => {
       setSaving(true);
       try {
         const mergedPrivacy: RecordPrivacyData = {
@@ -155,12 +156,10 @@ export function DataPrivacyPanel({
           const body = (await res.json().catch(() => ({}))) as { error?: string };
           throw new Error(body.error || `HTTP ${res.status}`);
         }
-        toast.success(successMsg);
+        toast.success(successMsg, description ? { description } : undefined);
         onUpdated?.();
       } catch (err) {
-        toast.error(
-          err instanceof Error ? err.message : 'Failed to update privacy settings',
-        );
+        toast.error(toastCopy.failed('save the privacy settings', err, 'Try again'));
       } finally {
         setSaving(false);
       }
@@ -168,7 +167,7 @@ export function DataPrivacyPanel({
     [record.id, initial, onUpdated],
   );
 
-  const handleSave = () => persist(draft, 'Privacy settings saved');
+  const handleSave = () => persist(draft, toastCopy.saved('Privacy settings'));
 
   const handleExport = useCallback(() => {
     try {
@@ -196,7 +195,7 @@ export function DataPrivacyPanel({
       URL.revokeObjectURL(url);
       toast.success('Record exported');
     } catch (err) {
-      toast.error('Failed to export record');
+      toast.error(toastCopy.failed('export the record', err, 'Try again'));
       console.error(err);
     }
   }, [record]);
@@ -221,7 +220,8 @@ export function DataPrivacyPanel({
           ...draft,
           erasure_requested_at: new Date().toISOString(),
         },
-        'Erasure request submitted for admin review',
+        toastCopy.added('Erasure request'),
+        'Submitted for admin review',
       );
     } finally {
       setErasureLoading(false);
@@ -231,7 +231,8 @@ export function DataPrivacyPanel({
   const handleCancelErasure = useCallback(async () => {
     await persist(
       { ...draft, erasure_requested_at: null },
-      'Erasure request cancelled',
+      toastCopy.updated('Erasure request'),
+      'Cancelled',
     );
   }, [draft, persist]);
 

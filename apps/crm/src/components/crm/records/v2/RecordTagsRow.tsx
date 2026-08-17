@@ -5,6 +5,7 @@ import { X, Plus, Tag, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { queuedSend } from '@/lib/offline/queued-send';
+import { toastCopy } from '@/lib/crm/toast-copy';
 
 export interface RecordTagsRowProps {
   recordId: string;
@@ -89,7 +90,7 @@ export function RecordTagsRow({
       }
       // Terminal server error — rollback.
       setTags(previous);
-      toast.error(result.error || 'Failed to save tags');
+      toast.error(toastCopy.failed('save the tags', result.error, 'Try again'));
     },
     [recordId, onChange],
   );

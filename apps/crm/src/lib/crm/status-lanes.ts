@@ -58,6 +58,7 @@
  * Client-safe: no server imports.
  */
 
+import { statusToTone, type Tone } from '@crm-eco/ui/components/status-badge';
 import { PENDING_CONTACT_STATUSES } from './resolve-effective-start-date';
 import {
   ACTIVE_CONTACT_STATUSES,
@@ -281,4 +282,150 @@ export function parseStatusValuesRpcResult(payload: unknown): StatusValueCount[]
     out.push({ value: status, count: Number.isFinite(count) ? count : 0 });
   }
   return out;
+}
+
+// ---------------------------------------------------------------------------
+// Lane → colour tone (ONE status colour on record header, list rows, desk)
+// ---------------------------------------------------------------------------
+
+/**
+ * Semantic tone names — a strict subset of `@crm-eco/ui` StatusBadge `Tone`
+ * so callers can pass the result straight to `<StatusBadge tone={…}>`.
+ * Kept as string literals here (no ui import) so this module stays
+ * server/test safe.
+ */
+export type LaneTone = 'success' | 'attention' | 'progress' | 'info' | 'neutral' | 'danger';
+
+const LANE_TONE: Record<StatusLane, LaneTone> = {
+  active: 'success',
+  pending: 'attention',
+  in_process: 'progress',
+  new: 'info',
+  inactive: 'neutral',
+  cancelled: 'danger',
+  other: 'neutral',
+};
+
+/** Colour tone for a lane: active→success, pending→attention, in_process→progress, new→info, inactive→neutral, cancelled→danger, other→neutral. */
+export function laneTone(lane: StatusLane): LaneTone {
+  return LANE_TONE[lane] ?? 'neutral';
+}
+
+/**
+ * Tone for a raw status spelling — `laneTone(statusLane(raw))`. Use this
+ * everywhere a status pill is painted so "Active HS Member" and "Cancelled"
+ * render one colour on the record header, the list rows and the dashboard.
+ */
+export function statusToneForValue(raw: string | null | undefined): Tone {
+  const lane = statusLane(raw);
+  // Lanes cover the health-share vocabulary; anything else (Contacted,
+  // Qualified, Lost, Closed Won…) keeps the shared canonical StatusBadge
+  // colours instead of collapsing to neutral grey.
+  return lane === 'other' ? statusToTone(raw) : laneTone(lane);
+}
+
+// ---------------------------------------------------------------------------
+// Filter chip collapse: `status in (…)` that IS a lane → one "Status: Active (n)" pill
+// ---------------------------------------------------------------------------
+
+export interface CollapsedLaneFilter {
+  lane: StatusLane;
+  label: string;
+  /** Raw values in the filter (for the tooltip). */
+  values: string[];
+}
+
+/**
+ * Decide whether an `in` filter's value set reads as ONE lane.
+ *
+ * Rules (both required):
+ *   1. every value buckets into the same lane (never `other`); and
+ *   2. coverage — when the module's live status values are known
+ *      (`moduleValues`, with or without counts), the filter must cover ≥ 90 %
+ *      of that lane (by record count when counts are present, else by distinct
+ *      value); without live values, the set must hold at least two spellings
+ *      (a single raw value stays a plain "Status is Active" chip).
+ *
+ * Returns null when the set should render as the raw list.
+ */
+export function collapseStatusInFilter(
+  values: unknown,
+  moduleValues?: ReadonlyArray<string | StatusValueCount> | null,
+): CollapsedLaneFilter | null {
+  if (!Array.isArray(values)) return null;
+  const raw = values.filter((v): v is string => typeof v === 'string' && v.trim().length > 0);
+  if (raw.length === 0) return null;
+  const lane = statusLane(raw[0]);
+  if (lane === 'other') return null;
+  for (const v of raw) if (statusLane(v) !== lane) return null;
+
+  if (moduleValues && moduleValues.length > 0) {
+    const inFilter = new Set(raw);
+    const weighted = moduleValues.some((mv) => typeof mv !== 'string');
+    let laneTotal = 0;
+    let covered = 0;
+    for (const mv of moduleValues) {
+      const value = typeof mv === 'string' ? mv : mv.value;
+      if (typeof value !== 'string' || !value.trim()) continue;
+      if (statusLane(value) !== lane) continue;
+      const w = weighted && typeof mv !== 'string' ? Math.max(0, Number(mv.count) || 0) : 1;
+      laneTotal += w;
+      if (inFilter.has(value)) covered += w;
+    }
+    if (laneTotal === 0) return null;
+    if (covered / laneTotal < 0.9) return null;
+  } else {
+    // Without the module's live values we cannot prove lane coverage, so a
+    // hand-picked subset (e.g. 2 of ~20 active spellings) stays as raw chips
+    // rather than masquerading as the whole lane.
+    return null;
+  }
+
+  return { lane, label: statusLaneLabel(lane), values: raw };
+}
+
+// ---------------------------------------------------------------------------
+// Back-to-list: `?returnTo=` plumbing shared by list rows and the dashboard
+// ---------------------------------------------------------------------------
+
+/**
+ * Only same-app `/crm…` paths are honoured as a back target (no open
+ * redirects, no protocol-relative `//host`). Mirrors the reader in
+ * RecordDetailShellV2 so writers and the reader agree.
+ */
+export function sanitizeReturnTo(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  if (!raw.startsWith('/crm')) return null;
+  if (raw.startsWith('//')) return null;
+  if (raw !== '/crm' && !raw.startsWith('/crm/') && !raw.startsWith('/crm?')) return null;
+  return raw;
+}
+
+/**
+ * Append `returnTo=<encoded>` to a record href, keeping any query it already
+ * carries (`/crm/r/<id>?pane=notes` → `…?pane=notes&returnTo=%2Fcrm`). Invalid
+ * or empty targets leave the href untouched; an existing `returnTo` is kept.
+ */
+export function withReturnTo(href: string, returnTo: string | null | undefined): string {
+  const safe = sanitizeReturnTo(returnTo);
+  // Only same-app paths get a returnTo. `tel:`/`mailto:`/`#`/absolute URLs
+  // must pass through untouched — a dialer receiving "tel:555?returnTo=…"
+  // is exactly the kind of regression this guard prevents.
+  if (!safe || !href || !href.startsWith('/') || href.startsWith('//')) return href;
+  const hashIdx = href.indexOf('#');
+  const hash = hashIdx >= 0 ? href.slice(hashIdx) : '';
+  const base = hashIdx >= 0 ? href.slice(0, hashIdx) : href;
+  if (/[?&]returnTo=/.test(base)) return href;
+  const sep = base.includes('?') ? '&' : '?';
+  return `${base}${sep}returnTo=${encodeURIComponent(safe)}${hash}`;
+}
+
+/** Current list location (`pathname + search`) as a returnTo target. */
+export function currentListReturnTo(
+  pathname: string | null | undefined,
+  search: string | null | undefined,
+): string | null {
+  if (!pathname) return null;
+  const qs = search ? (search.startsWith('?') ? search : `?${search}`) : '';
+  return sanitizeReturnTo(`${pathname}${qs === '?' ? '' : qs}`);
 }

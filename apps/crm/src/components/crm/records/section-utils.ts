@@ -169,14 +169,29 @@ const MODULE_SECTION_ORDERS: Record<string, readonly string[]> = {
   accounts: ACCOUNT_SECTION_DISPLAY_ORDER,
 };
 
-/** Visual grouping for section nav — mirrors Zoho's logical field bands. */
-export type SectionNavGroup = 'identity' | 'notes' | 'coverage' | 'location' | 'admin' | 'other';
+/**
+ * Visual grouping for section nav — mirrors Zoho's logical field bands.
+ * Pill order follows the module's section display order, which for people
+ * modules reads: Profile · Notes · Coverage · Family · Address · Ownership ·
+ * Admin · More.
+ */
+export type SectionNavGroup =
+  | 'identity'
+  | 'notes'
+  | 'coverage'
+  | 'family'
+  | 'address'
+  | 'ownership'
+  | 'admin'
+  | 'other';
 
 const SECTION_NAV_GROUP_LABELS: Record<SectionNavGroup, string> = {
   identity: 'Profile',
   notes: 'Notes',
   coverage: 'Coverage',
-  location: 'Location',
+  family: 'Family',
+  address: 'Address',
+  ownership: 'Ownership',
   admin: 'Admin',
   other: 'More',
 };
@@ -208,17 +223,27 @@ export function getSectionNavGroup(sectionKey: string): SectionNavGroup {
   ) {
     return 'coverage';
   }
+  // Family / household — spouse, children, relationships (NOT the address).
   if (
-    ['address', 'family', 'family_spouse', 'family_children', 'relationships', 'contacts', 'deals'].includes(
-      sectionKey,
-    )
+    sectionKey === 'family' ||
+    sectionKey.startsWith('family_') ||
+    sectionKey === 'relationships' ||
+    sectionKey === 'household' ||
+    sectionKey === 'dependents'
   ) {
-    return 'location';
+    return 'family';
+  }
+  if (sectionKey === 'address' || sectionKey.endsWith('_address') || sectionKey === 'location') {
+    return 'address';
+  }
+  // Ownership — who owns / manages / sold the record (advisor, agent, owner).
+  if (
+    ['advisor', 'management', 'agent', 'owner', 'ownership', 'referral', 'referrals', 'sponsor'].includes(sectionKey)
+  ) {
+    return 'ownership';
   }
   if (
     [
-      'advisor',
-      'management',
       'payment',
       'identifiers',
       'portal',
@@ -231,6 +256,8 @@ export function getSectionNavGroup(sectionKey: string): SectionNavGroup {
       'commissions',
       'zoho_system',
       'system',
+      'normalization',
+      'audit',
     ].includes(sectionKey)
   ) {
     return 'admin';

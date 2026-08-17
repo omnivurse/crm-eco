@@ -1,7 +1,9 @@
 'use client';
 
+import { sanitizeReturnTo, withReturnTo } from '@/lib/crm/status-lanes';
+
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Save, Loader2, X } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
@@ -354,6 +356,11 @@ const AUTOSAVE_DELAY_MS = 8_000;
 export default function EditRecordPage() {
   const { recordId } = useParams<{ recordId: string }>();
   const router = useRouter();
+  // Carry the list's returnTo through Edit → Save/Cancel → record page so
+  // Back on the record still returns to the same filtered list.
+  const editSearchParams = useSearchParams();
+  const editReturnTo = sanitizeReturnTo(editSearchParams?.get('returnTo'));
+  const recordHref = withReturnTo(`/crm/r/${recordId}`, editReturnTo);
   const queryClient = useQueryClient();
 
   const [saving, setSaving] = useState(false);
@@ -664,7 +671,7 @@ export default function EditRecordPage() {
       setIsDirty(false);
       toast.success(toastCopy.saved('Changes'));
       router.refresh();
-      router.push(`/crm/r/${recordId}`);
+      router.push(recordHref);
     } catch (err) {
       toast.error(toastCopy.failed('save your changes', err, 'Try again'));
     } finally {
@@ -687,7 +694,7 @@ export default function EditRecordPage() {
         setIsDirty(false);
         toast.success(toastCopy.saved('Changes'));
         router.refresh();
-        router.push(`/crm/r/${recordId}`);
+        router.push(recordHref);
       } catch (err) {
         toast.error(toastCopy.failed('save your changes', err, 'Try again'));
       } finally {
@@ -748,7 +755,7 @@ export default function EditRecordPage() {
       {/* Header */}
       <div className="mb-6">
         <Link
-          href={`/crm/r/${recordId}`}
+          href={recordHref}
           className="inline-flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white mb-4"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -766,7 +773,7 @@ export default function EditRecordPage() {
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
-              onClick={() => router.push(`/crm/r/${recordId}`)}
+              onClick={() => router.push(recordHref)}
               className="border-slate-200 dark:border-white/10"
             >
               <X className="w-4 h-4 mr-2" />
@@ -807,7 +814,7 @@ export default function EditRecordPage() {
         mode="edit"
         isLoading={saving}
         onSubmit={handleSubmitFromForm}
-        onCancel={() => router.push(`/crm/r/${recordId}`)}
+        onCancel={() => router.push(recordHref)}
         onDirtyChange={handleDirtyChange}
         onValuesChange={handleValuesChange}
       />
@@ -822,7 +829,7 @@ export default function EditRecordPage() {
         )}
         <Button
           variant="outline"
-          onClick={() => router.push(`/crm/r/${recordId}`)}
+          onClick={() => router.push(recordHref)}
           className="border-slate-200 dark:border-white/10"
         >
           Cancel

@@ -2,7 +2,8 @@
 
 import { useCallback } from 'react';
 import dynamic from 'next/dynamic';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { currentListReturnTo, withReturnTo } from '@/lib/crm/status-lanes';
 import { ModuleShell } from '@/components/zoho/ModuleShell';
 import { useModuleShellOptional } from '@/components/zoho/ModuleShellContext';
 import { RecordTable } from '@/components/crm/records/RecordTable';
@@ -73,9 +74,14 @@ function ModuleViewContent({
   const router = useRouter();
   const shellContext = useModuleShellOptional();
 
+  // Row click carries the current list URL so the record page's Back returns
+  // to the same filters/page (same as the title link).
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const listReturnTo = currentListReturnTo(pathname, searchParams?.toString());
   const handleRowClick = useCallback((recordId: string) => {
-    router.push(`/crm/r/${recordId}`);
-  }, [router]);
+    router.push(withReturnTo(`/crm/r/${recordId}`, listReturnTo));
+  }, [router, listReturnTo]);
 
   // Use visibleColumns from context if available, otherwise fall back to the
   // active view's columns, then to a small identity-first default (never every

@@ -24,7 +24,14 @@ export const QUICK_CREATE_MODULE_KEYS: readonly QuickCreateModuleKey[] = [
   'accounts',
 ] as const;
 
-export type QuickCreateFieldType = 'text' | 'email' | 'tel' | 'date' | 'select';
+/**
+ * - `state`   → native <select> of US states + DC (lib/crm/us-states); an
+ *               existing value that is not a known code stays selectable.
+ * - `suggest` → text input with a <datalist> of suggestions (crm_fields
+ *               options for the key + values used earlier this session).
+ *               Free text is always allowed; the list only speeds typing.
+ */
+export type QuickCreateFieldType = 'text' | 'email' | 'tel' | 'date' | 'select' | 'state' | 'suggest';
 
 export interface QuickCreateField {
   /** `crm_fields.key` — the JSONB key written on the record. */
@@ -63,6 +70,12 @@ export interface QuickCreateModuleConfig {
   statusKey?: string;
   /** Which JSONB key is the coverage effective/start date. */
   effectiveDateKey?: string;
+  /**
+   * Keys that stay filled after "Save & add another" — the batch-entry
+   * fields that repeat across a stack of enrollments from the same producer /
+   * sharing entity / state. Everything else resets to `initialQuickCreateValues`.
+   */
+  batchStickyKeys?: string[];
   fields: QuickCreateField[];
 }
 
@@ -78,17 +91,18 @@ export const QUICK_CREATE_FIELDS: Record<QuickCreateModuleKey, QuickCreateModule
     description: 'The essentials from the enrollment. Everything else can be added later.',
     statusKey: 'contact_status',
     effectiveDateKey: 'sharing_effective_date',
+    batchStickyKeys: ['producer_name', 'sharing_entity', 'contact_status', 'mailing_state'],
     fields: [
       { key: 'first_name', label: 'First name', type: 'text', required: true },
       { key: 'last_name', label: 'Last name', type: 'text', required: true },
-      { key: 'phone', label: 'Phone', type: 'tel', placeholder: '(555) 555-5555' },
+      { key: 'phone', label: 'Phone', type: 'tel', placeholder: '555-555-5555' },
       { key: 'email', label: 'Email', type: 'email', placeholder: 'Optional' },
       { key: 'date_of_birth', label: 'Date of birth', type: 'date', placeholder: 'MM/DD/YYYY' },
       { key: 'mailing_city', label: 'City', type: 'text' },
-      { key: 'mailing_state', label: 'State', type: 'text', placeholder: 'e.g. TX' },
-      { key: 'product', label: 'Plan', type: 'text' },
+      { key: 'mailing_state', label: 'State', type: 'state', placeholder: 'e.g. TX' },
+      { key: 'product', label: 'Plan', type: 'suggest' },
       { key: 'sharing_effective_date', label: 'Effective date', type: 'date', placeholder: 'MM/DD/YYYY' },
-      { key: 'producer_name', label: 'Producer Name', hint: 'Who enrolled', type: 'text' },
+      { key: 'producer_name', label: 'Producer Name', hint: 'Who enrolled', type: 'suggest' },
       { key: 'referring_member', label: 'Referring member', type: 'text' },
       { key: 'member_number', label: 'Member #', type: 'text' },
       {
@@ -113,17 +127,18 @@ export const QUICK_CREATE_FIELDS: Record<QuickCreateModuleKey, QuickCreateModule
     description: 'Capture the lead now; the full form is one click away.',
     statusKey: 'lead_status',
     effectiveDateKey: 'sharing_effective_date',
+    batchStickyKeys: ['producer', 'sharing_entity', 'lead_status', 'state'],
     fields: [
       { key: 'first_name', label: 'First name', type: 'text', required: true },
       { key: 'last_name', label: 'Last name', type: 'text', required: true },
-      { key: 'phone', label: 'Phone', type: 'tel', placeholder: '(555) 555-5555' },
+      { key: 'phone', label: 'Phone', type: 'tel', placeholder: '555-555-5555' },
       { key: 'email', label: 'Email', type: 'email', placeholder: 'Optional' },
       { key: 'date_of_birth', label: 'Date of birth', type: 'date', placeholder: 'MM/DD/YYYY' },
       { key: 'city', label: 'City', type: 'text' },
-      { key: 'state', label: 'State', type: 'text', placeholder: 'e.g. TX' },
-      { key: 'product_type', label: 'Plan', type: 'text' },
+      { key: 'state', label: 'State', type: 'state', placeholder: 'e.g. TX' },
+      { key: 'product_type', label: 'Plan', type: 'suggest' },
       { key: 'sharing_effective_date', label: 'Effective date', type: 'date', placeholder: 'MM/DD/YYYY' },
-      { key: 'producer', label: 'Producer', hint: 'Who enrolled', type: 'text' },
+      { key: 'producer', label: 'Producer', hint: 'Who enrolled', type: 'suggest' },
       { key: 'referring_member', label: 'Referring member', type: 'text' },
       {
         key: 'lead_status',
@@ -166,13 +181,89 @@ export function initialQuickCreateValues(moduleKey: QuickCreateModuleKey): Recor
   return out;
 }
 
-/** True when the user has typed anything beyond the select defaults. */
+/**
+ * True when the user has typed anything beyond the baseline (select defaults,
+ * or — after "Save & add another" — defaults + the sticky batch fields, so a
+ * carried-over producer does not by itself trigger the discard prompt).
+ */
 export function isQuickCreateDirty(
   moduleKey: QuickCreateModuleKey,
   values: Record<string, string>,
+  baseline: Record<string, string> = initialQuickCreateValues(moduleKey),
 ): boolean {
-  const initial = initialQuickCreateValues(moduleKey);
-  return Object.entries(values).some(([k, v]) => (v ?? '').trim() !== '' && (initial[k] ?? '') !== v);
+  return Object.entries(values).some(([k, v]) => (v ?? '').trim() !== '' && (baseline[k] ?? '') !== v);
+}
+
+/**
+ * Values to start the NEXT record from after "Save & add another": select
+ * defaults, with the module's `batchStickyKeys` carried over from the record
+ * just saved (only when they were actually filled).
+ */
+export function nextQuickCreateBatchValues(
+  moduleKey: QuickCreateModuleKey,
+  previous: Record<string, string>,
+): Record<string, string> {
+  const out = initialQuickCreateValues(moduleKey);
+  for (const key of QUICK_CREATE_FIELDS[moduleKey].batchStickyKeys ?? []) {
+    const v = (previous[key] ?? '').trim();
+    if (v) out[key] = previous[key];
+  }
+  return out;
+}
+
+/** Keys whose values are worth remembering as datalist suggestions this session. */
+export function quickCreateSuggestKeys(moduleKey: QuickCreateModuleKey): string[] {
+  return QUICK_CREATE_FIELDS[moduleKey].fields.filter((f) => f.type === 'suggest').map((f) => f.key);
+}
+
+// ---------------------------------------------------------------------------
+// Duplicate pre-check parity with the server (record-create-service.ts)
+// ---------------------------------------------------------------------------
+
+export interface QuickCreateDuplicateCandidate {
+  id: string;
+  title: string | null;
+  email?: string | null;
+  phone?: string | null;
+}
+
+/** Same normalisation as `normalizeName` in record-create-service: lower, collapse ws, trim. */
+export function normalizeDuplicateName(name: string | null | undefined): string {
+  return (name ?? '').toLowerCase().replace(/\s+/g, ' ').trim();
+}
+
+/** Comparable "first last" (or title/name fallback) for what the user typed. */
+export function quickCreateTypedName(values: Record<string, string>): string {
+  const combined = `${values.first_name ?? ''} ${values.last_name ?? ''}`.trim();
+  const fallback = values.title || values.name || '';
+  return normalizeDuplicateName(combined || fallback);
+}
+
+export interface QuickCreateDuplicateSplit<C extends QuickCreateDuplicateCandidate> {
+  /** Same contact info AND the same name → the server would 409 → amber card + "Create anyway". */
+  blocking: C[];
+  /** Same phone/email, DIFFERENT name (family member) → grey hint; create proceeds without force. */
+  soft: C[];
+}
+
+/**
+ * Mirror of the server rule (record-create-service.ts): a check_crm_duplicate
+ * candidate only blocks the create when its normalised name equals the typed
+ * first+last. When no name is typed yet every candidate is treated as
+ * blocking, exactly like the server (`!newName ||` …).
+ */
+export function splitQuickCreateDuplicates<C extends QuickCreateDuplicateCandidate>(
+  values: Record<string, string>,
+  candidates: readonly C[],
+): QuickCreateDuplicateSplit<C> {
+  const typed = quickCreateTypedName(values);
+  const blocking: C[] = [];
+  const soft: C[] = [];
+  for (const c of candidates) {
+    if (!typed || normalizeDuplicateName(c.title) === typed) blocking.push(c);
+    else soft.push(c);
+  }
+  return { blocking, soft };
 }
 
 /** Labels of required fields that are still blank. */

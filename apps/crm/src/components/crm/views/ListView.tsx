@@ -3,7 +3,9 @@
 import { memo, useCallback, useMemo, useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { currentListReturnTo, statusToneForValue, withReturnTo } from '@/lib/crm/status-lanes';
 import { Checkbox } from '@crm-eco/ui/components/checkbox';
 import { Button } from '@crm-eco/ui/components/button';
 import {
@@ -149,21 +151,6 @@ export function ListEmptyStatePanel({
   );
 }
 
-const STATUS_STYLES: Record<string, { bg: string; text: string; border: string }> = {
-  'Active': { bg: 'bg-emerald-500/10', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-emerald-500/30' },
-  'In-Active': { bg: 'bg-slate-500/10', text: 'text-slate-600 dark:text-slate-400', border: 'border-slate-500/30' },
-  'Inactive': { bg: 'bg-slate-500/10', text: 'text-slate-600 dark:text-slate-400', border: 'border-slate-500/30' },
-  'Prospect': { bg: 'bg-blue-500/10', text: 'text-blue-600 dark:text-blue-400', border: 'border-blue-500/30' },
-  'New': { bg: 'bg-blue-500/10', text: 'text-blue-600 dark:text-blue-400', border: 'border-blue-500/30' },
-  'Contacted': { bg: 'bg-cyan-500/10', text: 'text-cyan-600 dark:text-cyan-400', border: 'border-cyan-500/30' },
-  'Hot Prospect - ready to move': { bg: 'bg-orange-500/10', text: 'text-orange-600 dark:text-orange-400', border: 'border-orange-500/30' },
-  'Qualified': { bg: 'bg-violet-500/10', text: 'text-violet-600 dark:text-violet-400', border: 'border-violet-500/30' },
-  'Working': { bg: 'bg-amber-500/10', text: 'text-amber-600 dark:text-amber-400', border: 'border-amber-500/30' },
-  'Converted': { bg: 'bg-emerald-500/10', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-emerald-500/30' },
-  'Lost': { bg: 'bg-red-500/10', text: 'text-red-600 dark:text-red-400', border: 'border-red-500/30' },
-  'Closed Won': { bg: 'bg-emerald-500/10', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-emerald-500/30' },
-  'Closed Lost': { bg: 'bg-red-500/10', text: 'text-red-600 dark:text-red-400', border: 'border-red-500/30' },
-};
 
 function getInitials(record: CrmRecord): string {
   const firstName = String(record.data?.first_name || '');
@@ -187,11 +174,9 @@ function getDisplayName(record: CrmRecord): string {
   return fullName || record.data?.account_name as string || record.data?.name as string || record.title || 'Untitled';
 }
 
-function getStatusInfo(record: CrmRecord) {
+function getStatusValue(record: CrmRecord): string {
   const rawStatus = record.status ?? record.data?.status ?? record.data?.lead_status ?? record.data?.contact_status;
-  const status = rawStatus ? String(rawStatus) : '';
-  const style = STATUS_STYLES[status] || { bg: 'bg-slate-500/10', text: 'text-slate-600 dark:text-slate-400', border: 'border-slate-500/30' };
-  return { status, style };
+  return rawStatus ? String(rawStatus) : '';
 }
 
 const AVATAR_COLORS = [
@@ -228,6 +213,7 @@ const ListRow = memo(function ListRow({
   onSelect,
   onClick,
   moduleKey,
+  recordHref,
   onDelete,
 }: {
   record: CrmRecord;
@@ -235,11 +221,13 @@ const ListRow = memo(function ListRow({
   onSelect: () => void;
   onClick: () => void;
   moduleKey: string;
+  /** Record page URL carrying `?returnTo=<this list>` so Back keeps list state. */
+  recordHref: string;
   onDelete?: () => void;
 }) {
   const displayName = getDisplayName(record);
   const initials = getInitials(record);
-  const { status, style: statusStyle } = getStatusInfo(record);
+  const status = getStatusValue(record);
   const email = (record.email || record.data?.email) as string | undefined;
   const phone = (record.phone || record.data?.phone) as string | undefined;
   const avatarColor = getAvatarColor(record.id);
@@ -274,19 +262,15 @@ const ListRow = memo(function ListRow({
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-0.5">
           <Link
-            href={`/crm/r/${record.id}`}
+            href={recordHref}
             className="font-semibold text-sm text-slate-900 dark:text-white hover:text-teal-600 dark:hover:text-teal-400 transition-colors truncate"
             onClick={(e) => e.stopPropagation()}
           >
             {displayName}
           </Link>
           {status && (
-            <span className={cn(
-              'inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium border flex-shrink-0',
-              statusStyle.bg, statusStyle.text, statusStyle.border
-            )}>
-              {status}
-            </span>
+            // Lane tone (lib/crm/status-lanes) — same colour as RecordTable, the record header and the desk.
+            <StatusBadge status={status} tone={statusToneForValue(status)} size="sm" className="flex-shrink-0" />
           )}
         </div>
         <div className="flex items-center gap-4 text-xs text-slate-500 dark:text-slate-400">
@@ -395,8 +379,20 @@ export const ListView = memo(function ListView({
   activeViewFilterCount,
 }: ListViewProps) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const containerRef = useRef<HTMLDivElement>(null);
   const emptyState = useListEmptyState(records.length, moduleKey, totalCount, activeViewFilterCount);
+  // Back keeps list state: row links carry `?returnTo=<this list URL>` (validated
+  // by RecordDetailShellV2's sanitizeReturnTo).
+  const listReturnTo = useMemo(
+    () => currentListReturnTo(pathname, searchParams?.toString()),
+    [pathname, searchParams],
+  );
+  const recordHref = useCallback(
+    (recordId: string) => withReturnTo(`/crm/r/${recordId}`, listReturnTo),
+    [listReturnTo],
+  );
 
   // eslint-disable-next-line react-hooks/incompatible-library -- @tanstack/react-virtual returns mutable virtualizer by design
   const virtualizer = useVirtualizer({
@@ -410,9 +406,9 @@ export const ListView = memo(function ListView({
     if (onRowClick) {
       onRowClick(recordId);
     } else {
-      router.push(`/crm/r/${recordId}`);
+      router.push(recordHref(recordId));
     }
-  }, [onRowClick, router]);
+  }, [onRowClick, router, recordHref]);
 
   const handleSelectRow = useCallback((id: string) => {
     const next = new Set(selectedIds);
@@ -488,6 +484,7 @@ export const ListView = memo(function ListView({
                   onSelect={() => handleSelectRow(record.id)}
                   onClick={() => handleRowClick(record.id)}
                   moduleKey={moduleKey}
+                  recordHref={recordHref(record.id)}
                   onDelete={() => onBulkDelete?.([record.id])}
                 />
               </div>

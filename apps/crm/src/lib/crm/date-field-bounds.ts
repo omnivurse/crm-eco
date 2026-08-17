@@ -39,7 +39,22 @@ export function isoDateToMaskedDisplay(iso: string): string {
  * normalizeDateColumnValue (e.g. "02/05/1982" -> 1982-02-05 on save).
  */
 export function maskDateTyping(input: string | null | undefined): string {
-  const digits = String(input ?? '').replace(/\D/g, '').slice(0, 8);
+  const raw = String(input ?? '').trim();
+  if (!raw) return '';
+  // A complete but UNPADDED slash/dash/dot date ("9/1/2026", "1/15/1980",
+  // "9/1/26") must be zero-padded BEFORE digit-chunking — otherwise the digits
+  // "912026" re-chunk to "91/20/26" and the value is silently corrupted on blur.
+  // Enrollment exports commonly use M/D/YYYY, so this is the client's paste path.
+  const slashDate = raw.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2}|\d{4})$/);
+  if (slashDate) {
+    const [, m, d, y] = slashDate;
+    const year = y.length === 2 ? (Number(y) <= 29 ? `20${y}` : `19${y}`) : y;
+    return `${m.padStart(2, '0')}/${d.padStart(2, '0')}/${year}`;
+  }
+  // Stored ISO ("2026-09-01") → display mask, never digit-chunked.
+  const iso = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) return `${iso[2]}/${iso[3]}/${iso[1]}`;
+  const digits = raw.replace(/\D/g, '').slice(0, 8);
   if (!digits) return '';
   const parts = [digits.slice(0, 2)];
   if (digits.length > 2) parts.push(digits.slice(2, 4));

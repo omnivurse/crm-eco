@@ -3,7 +3,7 @@ import { Clock, ArrowUpRight, Sparkles } from 'lucide-react';
 import { cn } from '@crm-eco/ui/lib/utils';
 import type { PeopleQueue, PeopleQueueItem } from '@/lib/dashboard/people-queue-types';
 import { MarketTypeBadge } from '@/components/shared/crm-lane-badges';
-import { StatusPill, AvatarTile, ACTION_ICONS, QuickActions } from './desk-primitives';
+import { StatusPill, AvatarTile, ACTION_ICONS, QuickActions, deskHref } from './desk-primitives';
 import {
   NOT_ON_FILE,
   formatCityState,
@@ -48,7 +48,7 @@ function NextUpCard({ item }: { item: PeopleQueueItem }) {
         <AvatarTile name={item.name} initials={item.initials} marketType={item.marketType} size="md" />
         <div className="min-w-0 flex-1">
           <Link
-            href={item.href}
+            href={deskHref(item.href)}
             title={item.name}
             className="block truncate text-sm font-semibold text-foreground hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
           >
@@ -76,7 +76,7 @@ function NextUpCard({ item }: { item: PeopleQueueItem }) {
 
       <div className="mt-3 flex items-center gap-2">
         <Link
-          href={item.nextAction.href}
+          href={deskHref(item.nextAction.href)}
           className={cn(
             'inline-flex h-8 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground',
             'hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
@@ -111,7 +111,7 @@ export function NextUpRail({ item, recentlyViewed, className }: NextUpRailProps)
           <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Next up</h2>
           {item ? (
             <Link
-              href={item.href}
+              href={deskHref(item.href)}
               className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
             >
               Open
@@ -136,7 +136,7 @@ export function NextUpRail({ item, recentlyViewed, className }: NextUpRailProps)
             {recent.map((r) => (
               <li key={r.recordId}>
                 <Link
-                  href={r.href}
+                  href={deskHref(r.href)}
                   className="flex items-center gap-2 px-3 py-1.5 hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
                 >
                   <AvatarTile name={r.name} initials={r.initials} marketType={null} />

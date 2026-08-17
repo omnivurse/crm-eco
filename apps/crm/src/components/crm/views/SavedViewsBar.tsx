@@ -106,11 +106,43 @@ export const BUILT_IN_SAVED_VIEWS: readonly BuiltInSavedView[] = [
   { name: 'Group Records', filters: makeFilters({ record_type: 'group' }) },
 ];
 
+export interface BuiltInSavedViewsScope {
+  /** Key of the module the list is showing. */
+  moduleKey?: string | null;
+  /**
+   * Keys of the org's other (enabled) modules. When the org has a `members`
+   * module, the member quick views only belong there — on PIFH Contacts they
+   * matched 46 / 41 of 14,073 rows next to a 1,060-record Members module,
+   * which is misleading. `undefined` = unknown (still loading) → hide the
+   * built-ins on non-members modules until known; `null` = known-empty.
+   */
+  siblingModuleKeys?: ReadonlyArray<string> | null;
+}
+
 /**
- * Built-ins whose filter fields all exist on the module. Pass `undefined`
- * fields to get the legacy "always show" behaviour.
+ * Should the member quick views be offered on this module at all?
+ *   - `members` itself → yes
+ *   - any other module → only when the org has NO `members` sibling
+ *   - no scope given (legacy callers) → yes (fields gate alone)
  */
-export function getBuiltInSavedViews(fields?: ReadonlyArray<{ key: string }>): BuiltInSavedView[] {
+export function builtInSavedViewsAllowed(scope?: BuiltInSavedViewsScope): boolean {
+  if (!scope || scope.moduleKey == null) return true;
+  if (scope.moduleKey === 'members') return true;
+  if (scope.siblingModuleKeys === undefined) return false;
+  const siblings = scope.siblingModuleKeys ?? [];
+  return !siblings.includes('members');
+}
+
+/**
+ * Built-ins whose filter fields all exist on the module AND that belong on
+ * this module (see `builtInSavedViewsAllowed`). Pass `undefined` fields to
+ * get the legacy "always show" behaviour.
+ */
+export function getBuiltInSavedViews(
+  fields?: ReadonlyArray<{ key: string }>,
+  scope?: BuiltInSavedViewsScope,
+): BuiltInSavedView[] {
+  if (!builtInSavedViewsAllowed(scope)) return [];
   if (!fields) return [...BUILT_IN_SAVED_VIEWS];
   const known = new Set(fields.map((f) => f.key));
   return BUILT_IN_SAVED_VIEWS.filter((v) => v.filters.every((f) => known.has(f.field)));

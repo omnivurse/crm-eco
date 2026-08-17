@@ -6,7 +6,8 @@ import { useCrmDensity } from '@/lib/crm/density';
 import { CRM_STATUS_PICKER_CORE } from '@/lib/crm/status-allowlist';
 import { StatusBadge } from '@/components/ui/status-badge';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { currentListReturnTo, statusToneForValue, withReturnTo } from '@/lib/crm/status-lanes';
 import {
   TableBody,
   TableCell,
@@ -311,21 +312,6 @@ function InlineEditor({
   );
 }
 
-const STATUS_STYLES: Record<string, { bg: string; text: string; border: string }> = {
-  'Active': { bg: 'bg-emerald-500/10', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-emerald-500/30' },
-  'In-Active': { bg: 'bg-slate-500/10', text: 'text-slate-600 dark:text-slate-400', border: 'border-slate-500/30' },
-  'Inactive': { bg: 'bg-slate-500/10', text: 'text-slate-600 dark:text-slate-400', border: 'border-slate-500/30' },
-  'Prospect': { bg: 'bg-blue-500/10', text: 'text-blue-600 dark:text-blue-400', border: 'border-blue-500/30' },
-  'New': { bg: 'bg-blue-500/10', text: 'text-blue-600 dark:text-blue-400', border: 'border-blue-500/30' },
-  'Contacted': { bg: 'bg-cyan-500/10', text: 'text-cyan-600 dark:text-cyan-400', border: 'border-cyan-500/30' },
-  'Hot Prospect - ready to move': { bg: 'bg-orange-500/10', text: 'text-orange-600 dark:text-orange-400', border: 'border-orange-500/30' },
-  'Qualified': { bg: 'bg-violet-500/10', text: 'text-violet-600 dark:text-violet-400', border: 'border-violet-500/30' },
-  'Working': { bg: 'bg-amber-500/10', text: 'text-amber-600 dark:text-amber-400', border: 'border-amber-500/30' },
-  'Converted': { bg: 'bg-emerald-500/10', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-emerald-500/30' },
-  'Lost': { bg: 'bg-red-500/10', text: 'text-red-600 dark:text-red-400', border: 'border-red-500/30' },
-  'Closed Won': { bg: 'bg-emerald-500/10', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-emerald-500/30' },
-  'Closed Lost': { bg: 'bg-red-500/10', text: 'text-red-600 dark:text-red-400', border: 'border-red-500/30' },
-};
 
 /**
  * Mobile-friendly card component for displaying records on small screens.
@@ -337,6 +323,8 @@ interface RecordCardProps {
   onSelect: () => void;
   onClick: () => void;
   moduleKey: string;
+  /** Record page URL carrying `?returnTo=<this list>` so Back keeps list state. */
+  recordHref: string;
   onCall?: () => void;
   onEmail?: () => void;
   onAddTask?: () => void;
@@ -349,6 +337,7 @@ const RecordCard = memo(function RecordCard({
   onSelect,
   onClick,
   moduleKey,
+  recordHref,
   onCall,
   onEmail,
   onAddTask,
@@ -363,7 +352,6 @@ const RecordCard = memo(function RecordCard({
   // Get status
   const rawStatus = record.status ?? record.data?.status ?? record.data?.lead_status ?? record.data?.contact_status;
   const status = rawStatus ? String(rawStatus) : '';
-  const statusStyle = STATUS_STYLES[status] || { bg: 'bg-slate-500/10', text: 'text-slate-600 dark:text-slate-400', border: 'border-slate-500/30' };
 
   // Get email and phone (check system columns first, then data JSONB)
   const email = (record.email || record.data?.email) as string | undefined;
@@ -388,7 +376,7 @@ const RecordCard = memo(function RecordCard({
         />
         <div className="flex-1 min-w-0">
           <Link
-            href={`/crm/r/${record.id}`}
+            href={recordHref}
             className="font-semibold text-slate-900 dark:text-white hover:text-teal-600 dark:hover:text-teal-400 transition-colors block truncate"
             title={displayName}
             onClick={(e) => e.stopPropagation()}
@@ -397,12 +385,8 @@ const RecordCard = memo(function RecordCard({
           </Link>
           <div className="flex items-center gap-1.5 mt-1 flex-wrap">
             {status && (
-              <span className={cn(
-                'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border',
-                statusStyle.bg, statusStyle.text, statusStyle.border
-              )}>
-                {status}
-              </span>
+              // Lane tone — same colour as the record header and the dashboard.
+              <StatusBadge status={status} tone={statusToneForValue(status)} size="sm" />
             )}
             <MarketTypeBadge marketType={(record as any).market_type} size="sm" />
             <NormalizationBadge status={(record as any).normalization_status} size="sm" />
@@ -569,6 +553,18 @@ export const RecordTable = memo(function RecordTable({
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const prefetchTimerRef = useRef<NodeJS.Timeout | null>(null);
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  // Back keeps list state: every row link carries `?returnTo=<this list URL
+  // incl. filters/page/sort>`; RecordDetailShellV2 validates it (sanitizeReturnTo).
+  const listReturnTo = useMemo(
+    () => currentListReturnTo(pathname, searchParams?.toString()),
+    [pathname, searchParams],
+  );
+  const recordHref = useCallback(
+    (recordId: string, extra?: string) => withReturnTo(`/crm/r/${recordId}${extra ?? ''}`, listReturnTo),
+    [listReturnTo],
+  );
   // Filter-aware empty state — reads the URL list state so a search/filter
   // miss never says "create your first record".
   const emptyState = useListEmptyState(records.length, moduleKey, totalCount, activeViewFilterCount);
@@ -1002,7 +998,7 @@ export const RecordTable = memo(function RecordTable({
 
       return (
         <Link
-          href={`/crm/r/${record.id}`}
+          href={recordHref(record.id)}
           className="font-medium text-slate-900 dark:text-white hover:text-teal-600 dark:hover:text-teal-400 transition-colors truncate block"
           title={displayName}
           onClick={(e) => e.stopPropagation()}
@@ -1062,7 +1058,8 @@ export const RecordTable = memo(function RecordTable({
         : String(rawStatus);
       if (!status) return <span className="text-slate-400 dark:text-slate-600">—</span>;
 
-      const content = <StatusBadge status={status} />;
+      // Lane tone (lib/crm/status-lanes) — one colour per lane on list, record and desk.
+      const content = <StatusBadge status={status} tone={statusToneForValue(status)} />;
 
       if (enableInlineEdit && onRecordUpdate) {
         return (
@@ -1202,7 +1199,7 @@ export const RecordTable = memo(function RecordTable({
     if (onRowClick) {
       onRowClick(record.id);
     } else {
-      router.push(`/crm/r/${record.id}`);
+      router.push(recordHref(record.id));
     }
   };
 
@@ -1319,6 +1316,7 @@ export const RecordTable = memo(function RecordTable({
                 onSelect={() => handleSelectRow(record.id)}
                 onClick={() => handleRowClick(record)}
                 moduleKey={moduleKey}
+                recordHref={recordHref(record.id)}
                 onAddTask={() => openTaskDialog(record.id)}
                 onDelete={() => onBulkDelete?.([record.id])}
               />
@@ -1596,14 +1594,14 @@ export const RecordTable = memo(function RecordTable({
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-40 bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10">
                           <DropdownMenuItem
-                            onClick={() => router.push(`/crm/r/${record.id}`)}
+                            onClick={() => router.push(recordHref(record.id))}
                             className="text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 cursor-pointer"
                           >
                             <Eye className="w-4 h-4 mr-2" />
                             View Details
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => router.push(`/crm/r/${record.id}?edit=true`)}
+                            onClick={() => router.push(recordHref(record.id, '?edit=true'))}
                             className="text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 cursor-pointer"
                           >
                             <Pencil className="w-4 h-4 mr-2" />

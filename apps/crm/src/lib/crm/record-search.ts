@@ -149,6 +149,76 @@ export const CORE_GLOBAL_SEARCH_JSON_KEYS = [
 ];
 
 /**
+ * JSONB keys that hold a member's identifiers. PIFH member numbers are
+ * all-digit (7–9 chars, 2,037 rows on 2026-08-17), so a numeric query looks
+ * exactly like a phone fragment — the phone RPC never scans these keys, and
+ * before this pass a real member number returned zero results.
+ */
+export const IDENTIFIER_SEARCH_JSON_KEYS = [
+  'member_number',
+  'sharing_member_id',
+  'e123_member_id',
+] as const;
+
+/**
+ * True when the query is a bare run of digits (≥ 4) — i.e. it might be a
+ * phone fragment OR a member number, so global search must run BOTH the
+ * phone lookup and the identifier ilike pass. Formatted phones
+ * ("(303) 555-1212", "303-555…") stay phone-only.
+ */
+export function isNumericIdentifierQuery(rawQuery: string): boolean {
+  const q = rawQuery.trim();
+  return /^\d{4,20}$/.test(q);
+}
+
+/**
+ * Single PostgREST `.or(...)` filter for the identifier pass:
+ * `data->>member_number.ilike.%q%,data->>sharing_member_id.ilike.%q%,…`.
+ * Empty string when the query is not usable (caller skips the pass).
+ */
+export function buildIdentifierSearchOrFilter(
+  rawQuery: string,
+  keys: readonly string[] = IDENTIFIER_SEARCH_JSON_KEYS,
+): string {
+  const q = rawQuery.trim();
+  if (!q) return '';
+  const pattern = `%${escapeIlikePattern(q)}%`;
+  const parts: string[] = [];
+  for (const key of keys) {
+    if (!SAFE_DATA_JSON_KEY.test(key)) continue;
+    parts.push(`data->>${key}.ilike.${pattern}`);
+  }
+  return parts.join(',');
+}
+
+/**
+ * Merge two result lists by `id`, primary order first, then secondary rows not
+ * already present, capped at `limit`. Used by /api/crm/search to put phone
+ * hits ahead of identifier hits (and RPC hits ahead of ilike supplements).
+ */
+export function mergeUniqueByIdPreserveOrder<T extends { id: string }>(
+  primary: readonly T[],
+  secondary: readonly T[],
+  limit: number,
+): T[] {
+  const seen = new Set<string>();
+  const out: T[] = [];
+  for (const row of primary) {
+    if (seen.has(row.id)) continue;
+    seen.add(row.id);
+    out.push(row);
+    if (out.length >= limit) return out;
+  }
+  for (const row of secondary) {
+    if (seen.has(row.id)) continue;
+    seen.add(row.id);
+    out.push(row);
+    if (out.length >= limit) break;
+  }
+  return out;
+}
+
+/**
  * Module-scoped search loads crm_fields keys; global spotlight uses a fixed core set.
  */
 export async function resolveSearchDataJsonKeys(

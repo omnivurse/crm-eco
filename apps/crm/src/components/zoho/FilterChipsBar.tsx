@@ -9,7 +9,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@crm-eco/ui/components/dropdown-menu';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@crm-eco/ui/components/tooltip';
 import type { ViewFilter, CrmField } from '@/lib/crm/types';
+import { collapseStatusInFilter, type StatusValueCount } from '@/lib/crm/status-lanes';
+import { useStatusValues } from '@/lib/crm/status-values-client';
 
 interface FilterChipsBarProps {
   filters: ViewFilter[];
@@ -21,7 +29,19 @@ interface FilterChipsBarProps {
   onClearAll: () => void;
   onSortChange?: (field: string, direction: 'asc' | 'desc') => void;
   className?: string;
+  /**
+   * Module key — lets a `status in (…)` chip whose values ARE a lane collapse
+   * to one "Status: Active (n)" pill. The module's live status values come
+   * from the shared, cached status-values fetcher (one request per list page).
+   * Without it the chip still collapses when every value maps to one lane.
+   */
+  moduleKey?: string;
+  /** Live status values, if the caller already has them (skips the fetch). */
+  statusValues?: ReadonlyArray<string | StatusValueCount> | null;
 }
+
+/** Fields whose `in` filters are status lanes (contact_status aliases status). */
+const STATUS_FILTER_FIELDS = new Set(['status', 'contact_status', 'lead_status']);
 
 const OPERATOR_LABELS: Record<string, string> = {
   equals: 'is',
@@ -144,8 +164,20 @@ export function FilterChipsBar({
   onClearAll,
   onSortChange,
   className,
+  moduleKey,
+  statusValues,
 }: FilterChipsBarProps) {
   const fieldMap = new Map(fields.map(f => [f.key, f]));
+  // Only fetch when a status `in` chip is on screen (and no values were passed).
+  const hasStatusInChip = filters.some(
+    (f) => (f.category ?? 'field') === 'field' && f.operator === 'in' && STATUS_FILTER_FIELDS.has(f.field),
+  );
+  const liveStatus = useStatusValues(
+    moduleKey,
+    Boolean(moduleKey) && hasStatusInChip && statusValues == null,
+  );
+  const laneCoverageValues: ReadonlyArray<string | StatusValueCount> | null =
+    statusValues ?? (liveStatus.status === 'ready' ? liveStatus.values : null);
 
   const getFieldLabel = (key: string): string => {
     return fieldMap.get(key)?.label || key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
@@ -226,6 +258,48 @@ export function FilterChipsBar({
                 <X className="w-3 h-3" />
               </button>
             </div>
+          );
+        }
+
+        // Status lane chip: `status in (Active HS Member, active, Active, …)`
+        // that IS a lane renders as ONE pill — "Status: Active (4)" — with the
+        // raw spellings in a tooltip, instead of a 20-value comma wall.
+        const collapsed =
+          filter.operator === 'in' && STATUS_FILTER_FIELDS.has(filter.field)
+            ? collapseStatusInFilter(filter.value, laneCoverageValues)
+            : null;
+        if (collapsed) {
+          const rawList = collapsed.values.join(', ');
+          return (
+            <TooltipProvider key={index} delayDuration={200}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div
+                    className="inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-1 rounded-full text-xs
+                      bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300
+                      border border-slate-200 dark:border-white/10"
+                    tabIndex={0}
+                    aria-label={`Status: ${collapsed.label} (${collapsed.values.length} spellings: ${rawList})`}
+                  >
+                    <span className="font-medium">{getFieldLabel(filter.field)}:</span>
+                    <span className="font-medium text-teal-600 dark:text-teal-400">
+                      {collapsed.label} ({collapsed.values.length})
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => onRemoveFilter(index)}
+                      aria-label={`Remove ${collapsed.label} status filter`}
+                      className="ml-0.5 p-0.5 rounded-full hover:bg-slate-200 dark:hover:bg-white/10 transition-colors"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-sm break-words text-xs">
+                  {rawList}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
 

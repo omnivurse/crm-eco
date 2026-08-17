@@ -8,10 +8,15 @@ import {
   isQuickCreateDirty,
   isQuickCreateModuleKey,
   missingRequiredQuickCreateFields,
+  nextQuickCreateBatchValues,
+  normalizeDuplicateName,
   normalizePhoneDigits,
   phoneLookupVariants,
   quickCreateDraftStorageKey,
   quickCreatePendingNeedsEffectiveDate,
+  quickCreateSuggestKeys,
+  quickCreateTypedName,
+  splitQuickCreateDuplicates,
 } from './quick-create-config';
 
 describe('QUICK_CREATE_FIELDS', () => {
@@ -44,6 +49,12 @@ describe('QUICK_CREATE_FIELDS', () => {
     expect(producer?.hint).toBe('Who enrolled');
     expect(cfg.fields.find((f) => f.key === 'contact_status')?.defaultValue).toBe('Pending');
     expect(cfg.fields.find((f) => f.key === 'sharing_entity')?.optionalIfNoOptions).toBe(true);
+    // Taxonomy inputs: State is a US-state select, Plan/Producer get datalists.
+    expect(cfg.fields.find((f) => f.key === 'mailing_state')?.type).toBe('state');
+    expect(cfg.fields.find((f) => f.key === 'product')?.type).toBe('suggest');
+    expect(cfg.fields.find((f) => f.key === 'producer_name')?.type).toBe('suggest');
+    expect(cfg.batchStickyKeys).toEqual(['producer_name', 'sharing_entity', 'contact_status', 'mailing_state']);
+    expect(quickCreateSuggestKeys('contacts')).toEqual(['product', 'producer_name']);
   });
 
   it('leads use the lead-equivalent keys', () => {
@@ -76,6 +87,90 @@ describe('initial values / dirty tracking', () => {
     expect(isQuickCreateDirty('contacts', { contact_status: 'Pending', first_name: ' ' })).toBe(false);
     expect(isQuickCreateDirty('contacts', { contact_status: 'Pending', first_name: 'A' })).toBe(true);
     expect(isQuickCreateDirty('contacts', { contact_status: 'Active' })).toBe(true);
+  });
+
+  it('accepts a baseline so sticky batch fields do not count as dirty', () => {
+    const baseline = { contact_status: 'Active', producer_name: 'Jo Rep' };
+    expect(isQuickCreateDirty('contacts', { ...baseline }, baseline)).toBe(false);
+    expect(isQuickCreateDirty('contacts', { ...baseline, first_name: 'A' }, baseline)).toBe(true);
+    expect(isQuickCreateDirty('contacts', { ...baseline, producer_name: 'Other' }, baseline)).toBe(true);
+  });
+});
+
+describe('nextQuickCreateBatchValues (Save & add another)', () => {
+  it('keeps producer / sharing entity / status / state and clears the rest', () => {
+    const next = nextQuickCreateBatchValues('contacts', {
+      first_name: 'Jane',
+      last_name: 'Doe',
+      phone: '555-123-4567',
+      email: 'jane@example.com',
+      mailing_city: 'Denver',
+      mailing_state: 'CO',
+      product: 'Sedera Select',
+      producer_name: 'Jo Rep',
+      sharing_entity: 'Sedera',
+      contact_status: 'Active',
+      member_number: '1234567',
+    });
+    expect(next).toEqual({
+      producer_name: 'Jo Rep',
+      sharing_entity: 'Sedera',
+      contact_status: 'Active',
+      mailing_state: 'CO',
+    });
+  });
+
+  it('falls back to the select default when a sticky field was blank', () => {
+    expect(nextQuickCreateBatchValues('contacts', { first_name: 'A', producer_name: '  ' })).toEqual({
+      contact_status: 'Pending',
+    });
+    expect(nextQuickCreateBatchValues('leads', { producer: 'P', state: 'TX', lead_status: 'New' })).toEqual({
+      producer: 'P',
+      state: 'TX',
+      lead_status: 'New',
+    });
+    expect(nextQuickCreateBatchValues('accounts', { name: 'Acme' })).toEqual({});
+  });
+});
+
+describe('duplicate pre-check parity (record-create-service rule)', () => {
+  const cands = [
+    { id: 'a', title: 'Jane Doe', email: 'j@x.com', phone: null },
+    { id: 'b', title: 'Timmy  Doe', email: 'j@x.com', phone: null },
+    { id: 'c', title: null, email: null, phone: '5551234567' },
+  ];
+
+  it('normalises names the same way as the server', () => {
+    expect(normalizeDuplicateName('  Jane   DOE ')).toBe('jane doe');
+    expect(normalizeDuplicateName(null)).toBe('');
+    expect(quickCreateTypedName({ first_name: ' Jane', last_name: 'Doe ' })).toBe('jane doe');
+    expect(quickCreateTypedName({ name: 'Acme Co' })).toBe('acme co');
+    expect(quickCreateTypedName({})).toBe('');
+  });
+
+  it('blocks only when the candidate name equals the typed first+last', () => {
+    const split = splitQuickCreateDuplicates({ first_name: 'jane', last_name: 'doe' }, cands);
+    expect(split.blocking.map((c) => c.id)).toEqual(['a']);
+    expect(split.soft.map((c) => c.id)).toEqual(['b', 'c']);
+  });
+
+  it('treats a family member sharing the email as a soft hint', () => {
+    const split = splitQuickCreateDuplicates({ first_name: 'Timmy', last_name: 'Doe' }, cands);
+    expect(split.blocking.map((c) => c.id)).toEqual(['b']);
+    expect(split.soft.map((c) => c.id)).toEqual(['a', 'c']);
+  });
+
+  it('with no name typed yet every candidate blocks (matches `!newName ||`)', () => {
+    const split = splitQuickCreateDuplicates({}, cands);
+    expect(split.blocking).toHaveLength(3);
+    expect(split.soft).toEqual([]);
+  });
+
+  it('handles an empty candidate list', () => {
+    expect(splitQuickCreateDuplicates({ first_name: 'A', last_name: 'B' }, [])).toEqual({
+      blocking: [],
+      soft: [],
+    });
   });
 });
 

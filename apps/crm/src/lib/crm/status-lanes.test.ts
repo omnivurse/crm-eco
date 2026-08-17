@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
   STATUS_LANES,
+  collapseStatusInFilter,
+  currentListReturnTo,
   groupStatusValuesByLane,
+  laneTone,
+  sanitizeReturnTo,
+  statusToneForValue,
+  withReturnTo,
   laneCount,
   laneFilter,
   laneFilterFieldForModule,
@@ -261,5 +267,131 @@ describe('status-values RPC helpers', () => {
     ]);
     expect(parseStatusValuesRpcResult(null)).toEqual([]);
     expect(parseStatusValuesRpcResult({})).toEqual([]);
+  });
+});
+
+describe('laneTone / statusToneForValue', () => {
+  it('maps every lane to its one tone', () => {
+    expect(laneTone('active')).toBe('success');
+    expect(laneTone('pending')).toBe('attention');
+    expect(laneTone('in_process')).toBe('progress');
+    expect(laneTone('new')).toBe('info');
+    expect(laneTone('inactive')).toBe('neutral');
+    expect(laneTone('cancelled')).toBe('danger');
+    expect(laneTone('other')).toBe('neutral');
+  });
+
+  it('paints prod spellings by lane, so record / list / desk agree', () => {
+    expect(statusToneForValue('Active HS Member')).toBe('success');
+    expect(statusToneForValue('Enrolled - 2024')).toBe('success');
+    expect(statusToneForValue('Cancelled')).toBe('danger');
+    expect(statusToneForValue('Cancellation Pending')).toBe('danger');
+    expect(statusToneForValue('Approved Pending')).toBe('attention');
+    expect(statusToneForValue('In-Active')).toBe('neutral');
+    expect(statusToneForValue('Application in Process')).toBe('progress');
+    expect(statusToneForValue('Hot Prospect - ready to move')).toBe('info');
+    // 'other' lane keeps the shared canonical StatusBadge colours (Contacted → progress)
+    expect(statusToneForValue('Contacted')).toBe('progress');
+    expect(statusToneForValue('Lost')).toBe('danger');
+    expect(statusToneForValue('Qualified')).toBe('success');
+    expect(statusToneForValue(null)).toBe('neutral');
+    expect(statusToneForValue('')).toBe('neutral');
+  });
+});
+
+describe('collapseStatusInFilter', () => {
+  const activeValues = ['Active HS Member', 'active', 'Active', 'Enrolled-2016'];
+
+  it('never collapses without live values (coverage cannot be proven)', () => {
+    expect(collapseStatusInFilter(activeValues)).toBeNull();
+  });
+
+  it('collapses when the in-set covers ≥90% of the lane by live count', () => {
+    const live = activeValues.map((value) => ({ value, count: 10 }));
+    expect(collapseStatusInFilter(activeValues, live)).toEqual({
+      lane: 'active',
+      label: 'Active',
+      values: activeValues,
+    });
+    // a small subset of a big lane stays raw (2 spellings = 20 of 5,030 rows)
+    expect(
+      collapseStatusInFilter(['active', 'Enrolled-2016'], [
+        ...live,
+        { value: 'Active Member', count: 5000 },
+      ]),
+    ).toBeNull();
+  });
+
+  it('keeps a single raw value or a mixed-lane set as a raw chip', () => {
+    expect(collapseStatusInFilter(['Active'])).toBeNull();
+    expect(collapseStatusInFilter(['Active', 'Cancelled'])).toBeNull();
+    expect(collapseStatusInFilter(['Contacted', 'Released'])).toBeNull();
+    expect(collapseStatusInFilter('Active')).toBeNull();
+    expect(collapseStatusInFilter([])).toBeNull();
+  });
+
+  it('requires ≥ 90 % coverage of the lane by record count when live values are known', () => {
+    const live = [
+      { value: 'Active HS Member', count: 3972 },
+      { value: 'active', count: 462 },
+      { value: 'Active', count: 300 },
+      { value: 'Cancelled', count: 6415 },
+    ];
+    // 3972 + 462 = 4434 / 4734 = 93.7 % → collapses even without "Active".
+    expect(collapseStatusInFilter(['Active HS Member', 'active'], live)?.lane).toBe('active');
+    // 462 + 300 = 762 / 4734 → raw list.
+    expect(collapseStatusInFilter(['active', 'Active'], live)).toBeNull();
+    // Single spelling that IS ≥ 90 % of the lane collapses too.
+    expect(collapseStatusInFilter(['Cancelled'], live)?.label).toBe('Cancelled');
+  });
+
+  it('counts distinct values when live values carry no counts', () => {
+    const live = ['Active HS Member', 'active', 'Active', 'Cancelled'];
+    expect(collapseStatusInFilter(['Active HS Member', 'active', 'Active'], live)?.lane).toBe('active');
+    expect(collapseStatusInFilter(['Active HS Member', 'active'], live)).toBeNull();
+  });
+});
+
+describe('returnTo helpers', () => {
+  it('honours only same-app /crm paths', () => {
+    expect(sanitizeReturnTo('/crm')).toBe('/crm');
+    expect(sanitizeReturnTo('/crm/modules/contacts?page=2')).toBe('/crm/modules/contacts?page=2');
+    expect(sanitizeReturnTo('/crm?x=1')).toBe('/crm?x=1');
+    expect(sanitizeReturnTo('//evil.com/crm')).toBeNull();
+    expect(sanitizeReturnTo('https://evil.com/crm')).toBeNull();
+    expect(sanitizeReturnTo('/crmx')).toBeNull();
+    expect(sanitizeReturnTo('/portal')).toBeNull();
+    expect(sanitizeReturnTo(null)).toBeNull();
+  });
+
+  it('appends returnTo to a record href, keeping existing query + hash', () => {
+    expect(withReturnTo('/crm/r/abc', '/crm')).toBe('/crm/r/abc?returnTo=%2Fcrm');
+    expect(withReturnTo('/crm/r/abc?pane=notes', '/crm/modules/contacts?page=2&filters=%5B%5D')).toBe(
+      '/crm/r/abc?pane=notes&returnTo=%2Fcrm%2Fmodules%2Fcontacts%3Fpage%3D2%26filters%3D%255B%255D',
+    );
+    expect(withReturnTo('/crm/r/abc#top', '/crm')).toBe('/crm/r/abc?returnTo=%2Fcrm#top');
+    expect(withReturnTo('/crm/r/abc?returnTo=%2Fcrm', '/crm/modules/x')).toBe('/crm/r/abc?returnTo=%2Fcrm');
+    expect(withReturnTo('/crm/r/abc', 'https://evil.com')).toBe('/crm/r/abc');
+    expect(withReturnTo('/crm/r/abc', null)).toBe('/crm/r/abc');
+  });
+
+  it('builds the current list location as a returnTo', () => {
+    expect(currentListReturnTo('/crm/modules/contacts', 'page=2')).toBe('/crm/modules/contacts?page=2');
+    expect(currentListReturnTo('/crm/modules/contacts', '?page=2')).toBe('/crm/modules/contacts?page=2');
+    expect(currentListReturnTo('/crm/modules/contacts', '')).toBe('/crm/modules/contacts');
+    expect(currentListReturnTo(null, 'page=2')).toBeNull();
+    expect(currentListReturnTo('/portal/x', '')).toBeNull();
+  });
+});
+
+describe('withReturnTo guards non-app hrefs', () => {
+  it('leaves tel:/mailto:/#/absolute untouched and decorates app paths', () => {
+    expect(withReturnTo('tel:5551234567', '/crm')).toBe('tel:5551234567');
+    expect(withReturnTo('mailto:a@b.co', '/crm')).toBe('mailto:a@b.co');
+    expect(withReturnTo('#', '/crm')).toBe('#');
+    expect(withReturnTo('https://x.y/z', '/crm')).toBe('https://x.y/z');
+    expect(withReturnTo('/crm/r/abc', '/crm/modules/contacts?page=2')).toBe(
+      '/crm/r/abc?returnTo=%2Fcrm%2Fmodules%2Fcontacts%3Fpage%3D2',
+    );
   });
 });

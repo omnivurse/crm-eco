@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient, getAuthProfile } from '@/lib/supabase-server';
 import {
   applyCrmRecordTextSearch,
+  buildIdentifierSearchOrFilter,
   buildPhoneSearchOrFilter,
+  isNumericIdentifierQuery,
+  mergeUniqueByIdPreserveOrder,
   resolveSearchDataJsonKeys,
   isConvertedLeadRow,
 } from '@/lib/crm/record-search';
@@ -68,7 +71,9 @@ interface SmartSearchRow {
  *   - threshold: trigram similarity threshold 0..1 (default 0.2; lower = more hits)
  *
  * Phone-heavy queries use digit-normalized matching; mixed queries (e.g. name + number)
- * merge text RPC results with phone hits.
+ * merge text RPC results with phone hits. A bare digit run (member number OR
+ * phone fragment) also runs the identifier ilike pass (member_number /
+ * sharing_member_id / e123_member_id) and merges it behind the phone hits.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -117,12 +122,28 @@ export async function GET(request: NextRequest) {
     let rows: SmartSearchRow[] = [];
 
     if (isPhoneOnlyQuery) {
-      rows = await phoneSearch(supabase, profile.organization_id, {
-        rawQuery: searchQuery,
-        digits: phoneDigits,
-        moduleFilter,
-        limit,
-      });
+      // PIFH member numbers are all-digit, so "1234567" is a phone fragment
+      // AND a possible member number. Run both; phone hits stay first.
+      const identifierPass = isNumericIdentifierQuery(searchQuery)
+        ? identifierSearch(supabase, profile.organization_id, {
+            query: searchQuery,
+            moduleFilter,
+            limit,
+          }).catch((e) => {
+            console.warn('[search] identifier pass failed:', e);
+            return [] as SmartSearchRow[];
+          })
+        : Promise.resolve([] as SmartSearchRow[]);
+      const [phoneRows, identifierRows] = await Promise.all([
+        phoneSearch(supabase, profile.organization_id, {
+          rawQuery: searchQuery,
+          digits: phoneDigits,
+          moduleFilter,
+          limit,
+        }),
+        identifierPass,
+      ]);
+      rows = mergeUniqueByIdPreserveOrder(phoneRows, identifierRows, limit);
     } else {
       rows = await smartSearch(supabase, profile.organization_id, {
         query: searchQuery,
@@ -396,6 +417,61 @@ async function phoneIlikeFallback(
 }
 
 /**
+ * Identifier pass for numeric queries: substring ilike on the member-id JSONB
+ * keys (`IDENTIFIER_SEARCH_JSON_KEYS`). Org-scoped, trashed rows excluded,
+ * same row shape as the other paths so results merge cleanly.
+ */
+async function identifierSearch(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  orgId: string,
+  opts: { query: string; moduleFilter: string | null; limit: number },
+): Promise<SmartSearchRow[]> {
+  const filter = buildIdentifierSearchOrFilter(opts.query);
+  if (!filter) return [];
+
+  let qb = supabase
+    .from('crm_records')
+    .select(
+      `
+      id, title, email, phone, status, module_id, data,
+      crm_modules!inner ( id, key, name, name_plural )
+    `,
+    )
+    .eq('org_id', orgId)
+    .is('deleted_at' as never, null)
+    .or(filter)
+    // Stable order so an over-limit identifier match returns the same rows
+    // on every call (most recently touched first).
+    .order('updated_at', { ascending: false })
+    .limit(opts.limit);
+
+  if (opts.moduleFilter) {
+    qb = qb.eq('crm_modules.key', opts.moduleFilter);
+  }
+
+  const { data, error } = await qb;
+  if (error) {
+    console.error('[search] identifier pass failed:', error);
+    return [];
+  }
+
+  return (data || []).map((row: any): SmartSearchRow => ({
+    id: row.id,
+    title: row.title,
+    email: row.email,
+    phone: row.phone,
+    status: row.status,
+    module_id: row.module_id,
+    data: row.data,
+    module_key: row.crm_modules.key,
+    module_name: row.crm_modules.name,
+    module_name_plural: row.crm_modules.name_plural,
+    match_type: 'exact',
+    rank: 0.75,
+  }));
+}
+
+/**
  * Last-resort fallback used when the RPC errors out. Pure ilike — no
  * fuzzy tolerance, but it still tries multiple phone formats so a
  * `(800) 555-8888` query finds an `8005558888` row (and vice-versa) even
@@ -452,28 +528,6 @@ async function ilikeFallback(
     match_type: 'exact',
     rank: 0.5,
   }));
-}
-
-function mergeUniqueByIdPreserveOrder(
-  primary: SmartSearchRow[],
-  secondary: SmartSearchRow[],
-  limit: number,
-): SmartSearchRow[] {
-  const seen = new Set<string>();
-  const out: SmartSearchRow[] = [];
-  for (const row of primary) {
-    if (seen.has(row.id)) continue;
-    seen.add(row.id);
-    out.push(row);
-    if (out.length >= limit) return out;
-  }
-  for (const row of secondary) {
-    if (seen.has(row.id)) continue;
-    seen.add(row.id);
-    out.push(row);
-    if (out.length >= limit) break;
-  }
-  return out;
 }
 
 function clamp01(value: number, fallback: number): number {

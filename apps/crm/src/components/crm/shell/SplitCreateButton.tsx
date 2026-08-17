@@ -138,6 +138,11 @@ interface SplitCreateButtonProps {
     className?: string;
     /** Fallback for the primary click when `onQuickCreate` is not provided. */
     defaultHref?: string;
+    /**
+     * Primary button label. Defaults to "Add Member" when the quick path is
+     * wired (`onQuickCreate` — the click opens the Add Member drawer, so the
+     * label says what it does) and to "Create" for the plain-link fallback.
+     */
     defaultLabel?: string;
     size?: 'sm' | 'default' | 'lg';
     /**
@@ -152,12 +157,13 @@ interface SplitCreateButtonProps {
 export function SplitCreateButton({
     className,
     defaultHref = '/crm/modules/contacts/new',
-    defaultLabel = 'Create',
+    defaultLabel,
     size = 'sm',
     onQuickCreate,
     modules,
 }: SplitCreateButtonProps) {
     const [isOpen, setIsOpen] = useState(false);
+    const primaryLabel = defaultLabel ?? (onQuickCreate ? 'Add Member' : 'Create');
 
     const isModuleEnabled = (key: string) =>
         !modules || modules.some((m) => m.key === key && m.is_enabled !== false);
@@ -175,10 +181,10 @@ export function SplitCreateButton({
                     )}
                     onClick={() => onQuickCreate('contacts')}
                     aria-label="Add Member (quick create)"
-                    title="Add Member — quick create"
+                    title="Add Member — quick create (more options in the menu)"
                 >
                     <Plus className="w-4 h-4 mr-1.5" />
-                    {defaultLabel}
+                    {primaryLabel}
                 </Button>
             ) : (
                 <Button
@@ -191,7 +197,7 @@ export function SplitCreateButton({
                 >
                     <Link prefetch={false} href={defaultHref}>
                         <Plus className="w-4 h-4 mr-1.5" />
-                        {defaultLabel}
+                        {primaryLabel}
                     </Link>
                 </Button>
             )}

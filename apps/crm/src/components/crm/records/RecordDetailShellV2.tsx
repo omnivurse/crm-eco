@@ -58,7 +58,6 @@ import { Button } from '@crm-eco/ui/components/button';
 import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import { IdentityActionsHeader } from '@crm-eco/ui/components/identity-actions-header';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@crm-eco/ui/components/tabs';
-import { Badge } from '@crm-eco/ui/components/badge';
 import { Input } from '@crm-eco/ui/components/input';
 import { Textarea } from '@crm-eco/ui/components/textarea';
 import {
@@ -101,7 +100,9 @@ import {
   isActiveCoverageStatus,
   relabelStatusForMarket,
 } from '@/lib/crm/member-terminology';
-import { statusLane } from '@/lib/crm/status-lanes';
+import { statusLane, statusToneForValue, sanitizeReturnTo, withReturnTo } from '@/lib/crm/status-lanes';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { toastCopy } from '@/lib/crm/toast-copy';
 import { stripLegacyAuthorAttribution } from '@/lib/crm/note-sanitize';
 import { MergeRecordDialog } from '@/components/crm/records/MergeRecordDialog';
 import {
@@ -202,14 +203,9 @@ const DEFAULT_VISIBLE_RELATED_LIST_IDS = [
   'related',
 ] as const;
 
-/** Only `/crm...` paths are honoured as a back target (no open redirects). */
-function sanitizeReturnTo(raw: string | null | undefined): string | null {
-  if (!raw) return null;
-  if (!raw.startsWith('/crm')) return null;
-  if (raw.startsWith('//')) return null;
-  if (raw !== '/crm' && !raw.startsWith('/crm/') && !raw.startsWith('/crm?')) return null;
-  return raw;
-}
+// `sanitizeReturnTo` (only `/crm...` paths are honoured as a back target — no
+// open redirects) now lives in lib/crm/status-lanes next to `withReturnTo`,
+// so the list rows / dashboard that WRITE `?returnTo=` and this reader agree.
 
 export interface RecordDetailShellV2Props {
   record: CrmRecord;
@@ -393,7 +389,6 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
       setTopTab('overview');
       setOverviewPane(paneParam);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Modal state (identical to V1 so existing flows keep working)
@@ -440,12 +435,19 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
     if (aiEmailAutoTriggeredRef.current) return;
     if (searchParams?.get('ai') !== 'email') return;
     aiEmailAutoTriggeredRef.current = true;
+    // Scrub only `ai` — `returnTo` / `pane` must survive so Back still works.
+    const stripAiParam = () => {
+      const params = new URLSearchParams(searchParams?.toString() ?? '');
+      params.delete('ai');
+      const qs = params.toString();
+      return `${pathname ?? `/crm/r/${record.id}`}${qs ? `?${qs}` : ''}`;
+    };
 
     if (!record.email) {
       toast.warning('No email on file', {
         description: 'Add an email address before drafting a follow-up.',
       });
-      router.replace(pathname ?? `/crm/r/${record.id}`);
+      router.replace(stripAiParam());
       return;
     }
 
@@ -488,7 +490,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
         toast.error('AI request failed', { description: message });
       } finally {
         setAiEmailLoading(false);
-        router.replace(pathname ?? `/crm/r/${record.id}`);
+        router.replace(stripAiParam());
       }
     })();
   }, [searchParams, record.id, record.email, router, pathname]);
@@ -646,28 +648,17 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
   const enrollNoun = getMemberNoun(recordMarketTypeForConvert(record));
   const enrollLabel = getEnrollActionLabel(recordMarketTypeForConvert(record));
 
-  // Back target keeps list state: ?returnTo= (validated) → same-origin module
-  // list referrer → plain module list. `?returnTo=/crm` also adds a Dashboard crumb.
+  // Back target keeps list state: validated `?returnTo=` (written by the list
+  // rows / dashboard links, see withReturnTo) → plain module list. No
+  // document.referrer heuristic — it never updates on client-side navigation,
+  // so it pointed at the wrong list after the first record.
+  // `?returnTo=/crm` also adds a Dashboard crumb.
   const moduleListUrl = `/crm/modules/${module.key}`;
   const returnTo = sanitizeReturnTo(searchParams?.get('returnTo'));
-  const [referrerBackUrl, setReferrerBackUrl] = useState<string | null>(null);
-  useEffect(() => {
-    if (returnTo) return;
-    try {
-      const ref = document.referrer;
-      if (!ref) return;
-      const url = new URL(ref);
-      if (url.origin !== window.location.origin) return;
-      if (url.pathname === moduleListUrl || url.pathname.startsWith(`${moduleListUrl}/`)) {
-        // Only the list itself (not a sibling record) — carry its filters/page.
-        if (url.pathname === moduleListUrl) setReferrerBackUrl(url.pathname + url.search);
-      }
-    } catch {
-      /* ignore malformed referrer */
-    }
-  }, [returnTo, moduleListUrl]);
-  const backUrl = returnTo ?? referrerBackUrl ?? moduleListUrl;
+  const backUrl = returnTo ?? moduleListUrl;
   const cameFromDashboard = returnTo === '/crm' || returnTo?.startsWith('/crm?') === true;
+  /** Record-page URL (`/crm/r/<id>` or `/edit`) with the back target carried along. */
+  const keepReturnTo = useCallback((href: string) => withReturnTo(href, returnTo), [returnTo]);
 
   const handleNavigateToMatch = useCallback((args: NavigateToMatchArgs) => {
     setTopTab('overview');
@@ -816,8 +807,8 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
   // -------------------------------------------------------------------------
   const handleEditRecord = useCallback(() => {
     if (onEdit) onEdit();
-    else router.push(`/crm/r/${record.id}/edit`);
-  }, [onEdit, router, record.id]);
+    else router.push(keepReturnTo(`/crm/r/${record.id}/edit`));
+  }, [onEdit, router, record.id, keepReturnTo]);
 
   const handleAddTask = useCallback(() => {
     if (onAddTask) onAddTask();
@@ -859,11 +850,11 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
     setIsSubmitting(false);
 
     if (result.ok) {
-      toast.success('Task created successfully');
+      toast.success(toastCopy.added('Task'));
     } else if (result.queued) {
       toast.info('Task saved offline — will sync when reconnected');
     } else {
-      toast.error(result.error || 'Failed to create task');
+      toast.error(toastCopy.failed('create the task', result.error, 'Try again'));
       return;
     }
     setShowTaskModal(false);
@@ -896,11 +887,11 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
     setIsSubmitting(false);
 
     if (result.ok) {
-      toast.success('Note added successfully');
+      toast.success(toastCopy.added('Note'));
     } else if (result.queued) {
       toast.info('Note saved offline — will sync when reconnected');
     } else {
-      toast.error(result.error || 'Failed to add note');
+      toast.error(toastCopy.failed('add the note', result.error, 'Try again'));
       return;
     }
     setShowNoteModal(false);
@@ -924,7 +915,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
       formData.append('recordId', record.id);
       const response = await fetch('/api/crm/attachments', { method: 'POST', body: formData });
       if (!response.ok) throw new Error('Failed to upload file');
-      toast.success('File uploaded successfully');
+      toast.success(toastCopy.added('File'));
       setShowUploadModal(false);
       setSelectedFile(null);
       if (children.attachments) setOverviewPane('attachments');
@@ -932,7 +923,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
       void refreshInsights();
     } catch (err) {
       console.error(err);
-      toast.error('Failed to upload file');
+      toast.error(toastCopy.failed('upload the file', err, 'Try again'));
     } finally {
       setIsSubmitting(false);
     }
@@ -1083,7 +1074,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
           const err = await res.json();
           throw new Error(err.error || 'Failed');
         }
-        toast.success(`Status changed to ${newStatus}`);
+        toast.success(toastCopy.updated('Status'), { description: `Now ${newStatus}` });
         // Mark the commit timestamp so the optimistic-clear effect
         // ignores stale server props that arrive before the RSC cache
         // has propagated the revalidation.
@@ -1094,7 +1085,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
         router.refresh();
       } catch (err) {
         setOptimisticStatus(null);
-        toast.error(err instanceof Error ? err.message : 'Failed to update status');
+        toast.error(toastCopy.failed('update the status', err, 'Try again'));
       }
     },
     [record.id, router],
@@ -1681,21 +1672,14 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <button className="inline-flex items-center gap-1 cursor-pointer hover:ring-2 hover:ring-teal-500/30 rounded-full transition-all">
-                            <Badge
-                              variant="outline"
-                              className={cn(
-                                'border text-xs font-medium transition-colors',
-                                isActiveCoverageStatus(displayStatus)
-                                  ? 'bg-emerald-100 dark:bg-emerald-500/20 border-emerald-300 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-400'
-                                  : displayStatus === 'Inactive' ||
-                                    displayStatus === 'Terminated' ||
-                                    displayStatus === 'Cancelled'
-                                    ? 'bg-red-100 dark:bg-red-500/20 border-red-300 dark:border-red-500/30 text-red-700 dark:text-red-400'
-                                    : 'bg-slate-100 dark:bg-slate-800/50 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300',
-                              )}
-                            >
-                              {relabelStatusForMarket(displayStatus, recordMarketType)}
-                            </Badge>
+                            {/* ONE status colour system: lane tone (lib/crm/status-lanes)
+                                — the same tone RecordTable / ListView / the dashboard use. */}
+                            <StatusBadge
+                              status={displayStatus}
+                              tone={statusToneForValue(displayStatus)}
+                              label={relabelStatusForMarket(displayStatus, recordMarketType)}
+                              className="transition-colors"
+                            />
                           </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent
@@ -1743,7 +1727,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                     })()}
                     {isLeads && isAlreadyConverted && getConvertedContactId(record.data as Record<string, unknown>) && (
                       <Link
-                        href={`/crm/r/${String(getConvertedContactId(record.data as Record<string, unknown>))}`}
+                        href={keepReturnTo(`/crm/r/${String(getConvertedContactId(record.data as Record<string, unknown>))}`)}
                         className="flex items-center gap-1 text-sm text-emerald-600 dark:text-emerald-400 hover:underline"
                       >
                         <CheckCircle className="w-3.5 h-3.5" />
@@ -1794,23 +1778,6 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                     <span className="hidden sm:inline">Send Email</span>
                   </span>
                 </Button>
-
-                {!headerCompact && (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  title="Set a follow-up reminder for this record"
-                  onClick={() => setShowFollowUpDialog(true)}
-                  className="inline-flex shrink-0 font-medium"
-                >
-                  <Bell className="w-4 h-4 shrink-0 sm:mr-1.5" />
-                  <span className="text-xs font-medium sm:text-sm">
-                    <span className="sm:hidden">Remind</span>
-                    <span className="hidden sm:inline">Set Reminder</span>
-                  </span>
-                </Button>
-                )}
 
                 <Button
                   variant="outline"
@@ -1930,6 +1897,15 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                       <StickyNote className="w-4 h-4 mr-2" />
                       Note templates…
                     </DropdownMenuItem>
+                    {/* Set Reminder lives here (not in the header row) so the
+                        header reads Email · Edit · Add Note · ⋯ */}
+                    <DropdownMenuItem
+                      onClick={() => setShowFollowUpDialog(true)}
+                      title="Set a follow-up reminder for this record"
+                    >
+                      <Bell className="w-4 h-4 mr-2" aria-hidden />
+                      Set reminder
+                    </DropdownMenuItem>
                     <DropdownMenuSeparator className="bg-slate-200 dark:bg-white/10" />
                     <DropdownMenuItem
                       onClick={async () => {
@@ -1937,10 +1913,10 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                           const res = await fetch(`/api/crm/records/${record.id}/clone`, { method: 'POST' });
                           const data = await res.json();
                           if (!res.ok) throw new Error(data.error || 'Clone failed');
-                          toast.success('Record cloned successfully');
-                          router.push(`/crm/modules/${module.key}/${data.id}`);
+                          toast.success(toastCopy.added(`Copy of this ${module.name.toLowerCase()}`));
+                          router.push(keepReturnTo(`/crm/r/${data.id}`));
                         } catch (err) {
-                          toast.error(err instanceof Error ? err.message : 'Failed to clone record');
+                          toast.error(toastCopy.failed('clone the record', err, 'Try again'));
                         }
                       }}
                     >
@@ -2002,10 +1978,10 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                             const data = await res.json();
                             throw new Error(data.error || 'Delete failed');
                           }
-                          toast.success(`${module.name} deleted`);
+                          toast.success(toastCopy.deleted(module.name));
                           router.push(backUrl);
                         } catch (err) {
-                          toast.error(err instanceof Error ? err.message : 'Failed to delete record');
+                          toast.error(toastCopy.failed('delete the record', err, 'Try again'));
                         }
                       }}
                     >

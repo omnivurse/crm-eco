@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { ChevronRight, Inbox } from 'lucide-react';
 import { cn } from '@crm-eco/ui/lib/utils';
 import type { PeopleQueueItem, PeopleQueueCounts } from '@/lib/dashboard/people-queue-types';
-import { StatusPill, AvatarTile, NextActionLink, QuickActions } from './desk-primitives';
+import { StatusPill, AvatarTile, NextActionLink, QuickActions, deskHref } from './desk-primitives';
 import { countLabel, formatCityState, pendingContactsHref } from './command-desk-format';
 
 interface PeopleQueueTableProps {
@@ -139,7 +139,7 @@ export function PeopleQueueTable({ items, counts, degraded = false, className }:
                         <AvatarTile name={item.name} initials={item.initials} marketType={item.marketType} />
                         <div className="min-w-0">
                           <Link
-                            href={item.href}
+                            href={deskHref(item.href)}
                             title={item.name}
                             className="block truncate font-medium text-foreground hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
                           >
@@ -186,7 +186,7 @@ export function PeopleQueueTable({ items, counts, degraded = false, className }:
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-2">
                         <Link
-                          href={item.href}
+                          href={deskHref(item.href)}
                           className="truncate text-sm font-medium text-foreground hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
                         >
                           {item.name}

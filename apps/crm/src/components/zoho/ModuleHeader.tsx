@@ -76,8 +76,17 @@ export function ModuleHeader({
   const [quickCreateOpen, setQuickCreateOpen] = useState(false);
   const usesQuickCreate =
     QUICK_CREATE_HEADER_MODULES.has(module.key) && isQuickCreateModuleKey(module.key);
+  // Members-module records (PIFH `members`, 91 fields) are created by the
+  // enrollment / lead-conversion sync (`linked_member_id`), not by hand — the
+  // quick "Add Member" drawer creates a *Contact*, so it is deliberately NOT
+  // wired here. The full form stays, labelled so it is not mistaken for the
+  // quick path.
   const newLabel =
-    module.key === 'contacts' ? 'Add Member' : `New ${module.name}`;
+    module.key === 'contacts'
+      ? 'Add Member'
+      : module.key === 'members'
+        ? 'New Member record'
+        : `New ${module.name}`;
   const colors = resolveModulePalette(module.key);
 
   // Check if tree view is currently active
@@ -206,9 +215,16 @@ export function ModuleHeader({
               </Button>
             ) : (
               <Button size="sm" className="h-9 shadow-sm" asChild>
-                <Link href={`/crm/modules/${module.key}/new`}>
+                <Link
+                  href={`/crm/modules/${module.key}/new`}
+                  title={
+                    module.key === 'members'
+                      ? 'Opens the full Member record form (members are normally created by enrollment)'
+                      : `${newLabel} — full form`
+                  }
+                >
                   <Plus className="w-4 h-4 mr-1.5" />
-                  New {module.name}
+                  {newLabel}
                 </Link>
               </Button>
             )}

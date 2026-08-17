@@ -12,6 +12,14 @@
  *   the same sessionStorage draft `RecordDraftAutosave` restores.
  * - Success → toast + navigate to the record; the drawer keeps its state until
  *   the pathname confirms we landed on the new record.
+ * - "Save & add another" (button or Shift+Enter) saves through the SAME path,
+ *   toasts, resets the form but keeps the batch-sticky fields (producer /
+ *   sharing entity / status / state — `batchStickyKeys` in the config), keeps
+ *   the drawer open and counts "N added this session".
+ * - Duplicate parity with the server (record-create-service): a phone/email
+ *   hit only BLOCKS (amber card + "Create anyway") when the candidate's name
+ *   equals the typed first+last; otherwise it is a soft grey "shares a
+ *   phone/email with …" hint and Create proceeds without force.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -45,10 +53,15 @@ import {
   RefreshCw,
   CheckCircle2,
   FileText,
+  Info,
+  ListPlus,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { CrmRecordCreateError, postCrmRecord } from '@/lib/crm/create-record-client';
 import { dateValueToInputDisplay, maskDateTyping } from '@/lib/crm/date-field-bounds';
+import { formatPhoneDisplay } from '@/lib/crm/phone-normalize';
+import { toastCopy } from '@/lib/crm/toast-copy';
+import { usStateOptionsWith } from '@/lib/crm/us-states';
 import {
   QUICK_CREATE_FIELDS,
   QUICK_CREATE_MODULE_KEYS,
@@ -58,8 +71,11 @@ import {
   isQuickCreateDirty,
   isQuickCreateModuleKey,
   missingRequiredQuickCreateFields,
+  nextQuickCreateBatchValues,
   normalizePhoneDigits,
   quickCreatePendingNeedsEffectiveDate,
+  quickCreateSuggestKeys,
+  splitQuickCreateDuplicates,
   writeQuickCreateDraft,
   type QuickCreateField,
   type QuickCreateModuleKey,
@@ -93,6 +109,15 @@ interface DuplicateState {
   matchedOn: 'email' | 'phone' | 'server';
   candidates: DuplicateCandidate[];
 }
+
+/** Family-member style overlap: same phone/email, different name. Never blocks. */
+interface SoftDuplicateState {
+  matchedOn: 'email' | 'phone';
+  candidates: DuplicateCandidate[];
+}
+
+/** What happens after a successful save. */
+type SubmitMode = 'open' | 'another';
 
 const MODULE_ICONS: Record<QuickCreateModuleKey, React.ReactNode> = {
   contacts: <Users className="w-4 h-4" />,
@@ -141,6 +166,17 @@ export function QuickCreateDrawer({
   const [values, setValues] = useState<Record<string, string>>(() =>
     initialQuickCreateValues(defaultModule),
   );
+  /**
+   * Values the current form started from — select defaults, or after "Save &
+   * add another" defaults + the sticky batch fields. Dirty = differs from this.
+   */
+  const [baseline, setBaseline] = useState<Record<string, string>>(() =>
+    initialQuickCreateValues(defaultModule),
+  );
+  /** Records saved via "Save & add another" while this drawer has been open. */
+  const [sessionAdded, setSessionAdded] = useState(0);
+  /** Plan / Producer values typed earlier this session → datalist suggestions. */
+  const [sessionSuggestions, setSessionSuggestions] = useState<Record<string, string[]>>({});
 
   // --- org modules (for module_id/org_id + hiding disabled tabs) -----------
   const [fetchedModules, setFetchedModules] = useState<ModuleLite[] | null>(null);
@@ -156,31 +192,66 @@ export function QuickCreateDrawer({
   const [submitting, setSubmitting] = useState(false);
   const [checkingDuplicates, setCheckingDuplicates] = useState(false);
   const [duplicate, setDuplicate] = useState<DuplicateState | null>(null);
+  const [softDuplicate, setSoftDuplicate] = useState<SoftDuplicateState | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
   const [created, setCreated] = useState<{ id: string; noun: string } | null>(null);
-  /** "email|phoneDigits" that was last confirmed duplicate-free. */
+  /**
+   * "name|email|phoneDigits" that was last confirmed free of BLOCKING
+   * duplicates. The name is part of the signature because the blocking rule
+   * depends on it (same phone + different name is allowed).
+   */
   const cleanSignatureRef = useRef<string | null>(null);
   const firstInputRef = useRef<HTMLInputElement | null>(null);
   /** Latest values, so late-resolving blur checks can ignore stale results. */
   const valuesRef = useRef(values);
   valuesRef.current = values;
+  /** Which outcome the in-flight submit was started for (so "Create anyway"/Retry repeat it). */
+  const submitModeRef = useRef<SubmitMode>('open');
 
   const config = QUICK_CREATE_FIELDS[selectedModule];
-  const dirty = isQuickCreateDirty(selectedModule, values);
+  const dirty = isQuickCreateDirty(selectedModule, values, baseline);
   const currentModuleRow = modules?.find((m) => m.key === selectedModule) ?? null;
   const orgId = currentModuleRow?.org_id ?? modules?.[0]?.org_id ?? null;
 
-  const resetForm = useCallback((moduleKey: QuickCreateModuleKey) => {
-    setValues(initialQuickCreateValues(moduleKey));
+  const clearFeedback = useCallback(() => {
     setDuplicate(null);
+    setSoftDuplicate(null);
     setSubmitError(null);
     setValidationError(null);
     setConfirmDiscard(false);
     setCreated(null);
     cleanSignatureRef.current = null;
   }, []);
+
+  /** Full reset (close / module switch): defaults only, session counter cleared. */
+  const resetForm = useCallback(
+    (moduleKey: QuickCreateModuleKey) => {
+      const initial = initialQuickCreateValues(moduleKey);
+      setValues(initial);
+      setBaseline(initial);
+      setSessionAdded(0);
+      clearFeedback();
+    },
+    [clearFeedback],
+  );
+
+  /** After "Save & add another": keep the sticky batch fields, clear the rest. */
+  const resetForNext = useCallback(
+    (moduleKey: QuickCreateModuleKey, previous: Record<string, string>) => {
+      const next = nextQuickCreateBatchValues(moduleKey, previous);
+      setValues(next);
+      setBaseline(next);
+      clearFeedback();
+    },
+    [clearFeedback],
+  );
+
+  const duplicateSignature = (v: Record<string, string>) =>
+    `${(v.first_name ?? '').trim().toLowerCase()} ${(v.last_name ?? '').trim().toLowerCase()}|${(v.email ?? '')
+      .trim()
+      .toLowerCase()}|${normalizePhoneDigits(v.phone ?? '')}`;
 
   // Re-seed the default module each time the drawer opens (the top bar and a
   // module header may pass different defaults into the same mounted instance).
@@ -217,7 +288,11 @@ export function QuickCreateDrawer({
   // Load crm_fields options for the selected module's select fields (once).
   useEffect(() => {
     if (!open || !currentModuleRow || fieldOptionsLoaded[selectedModule]) return;
-    const wanted = config.fields.filter((f) => f.type === 'select').map((f) => f.key);
+    // Selects need their options; Plan/Producer (`suggest`) get a datalist
+    // from the same crm_fields.options payload — one request per open.
+    const wanted = config.fields
+      .filter((f) => f.type === 'select' || f.type === 'suggest')
+      .map((f) => f.key);
     if (wanted.length === 0) {
       setFieldOptionsLoaded((p) => ({ ...p, [selectedModule]: true }));
       return;
@@ -268,6 +343,24 @@ export function QuickCreateDrawer({
     return field.fallbackOptions ?? [];
   };
 
+  /**
+   * Datalist suggestions for a `suggest` field: crm_fields.options for the
+   * key (when the org defined any) + distinct values used earlier in this
+   * drawer session. There is no distinct-values endpoint for arbitrary JSONB
+   * keys, so this stays cheap and never restricts free text.
+   */
+  const suggestionsFor = (field: QuickCreateField): string[] => {
+    const out: string[] = [];
+    const seen = new Set<string>();
+    for (const v of [...(sessionSuggestions[field.key] ?? []), ...optionsFor(field)]) {
+      const key = v.trim().toLowerCase();
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      out.push(v);
+    }
+    return out;
+  };
+
   const visibleFields = config.fields.filter((f) => {
     if (f.type !== 'select' || !f.optionalIfNoOptions) return true;
     return optionsFor(f).length > 0;
@@ -281,10 +374,29 @@ export function QuickCreateDrawer({
     setValues((prev) => ({ ...prev, [key]: value }));
     setValidationError(null);
     setSubmitError(null);
-    if (key === 'email' || key === 'phone') {
+    if (key === 'email' || key === 'phone' || key === 'first_name' || key === 'last_name') {
+      // Blocking-vs-soft depends on name + contact info, so any of them
+      // changing invalidates the last check.
       setDuplicate(null);
+      setSoftDuplicate(null);
       cleanSignatureRef.current = null;
     }
+  };
+
+  /**
+   * Phone: normalise to NNN-NNN-NNNN on blur, only when the formatted value
+   * differs (same contract as the full form's FormFieldRenderer). Then run the
+   * duplicate pre-check with the value as it will be saved.
+   */
+  const handlePhoneBlur = (raw: string) => {
+    const formatted = formatPhoneDisplay(raw);
+    let next = raw;
+    if (formatted !== raw) {
+      next = formatted;
+      // Reformatting does not change the digits, so keep any duplicate result.
+      setValues((prev) => ({ ...prev, phone: formatted }));
+    }
+    void handleContactBlur({ phone: next });
   };
 
   const [pendingModuleSwitch, setPendingModuleSwitch] = useState<QuickCreateModuleKey | null>(null);
@@ -366,26 +478,45 @@ export function QuickCreateDrawer({
     [selectedModule],
   );
 
+  /**
+   * Split raw candidates by the server's blocking rule. Blocking → amber card
+   * (matchedOn kept); soft → grey hint. Either side may be empty.
+   */
+  const classify = (
+    found: DuplicateState | null,
+    v: Record<string, string>,
+  ): { blocking: DuplicateState | null; soft: SoftDuplicateState | null } => {
+    if (!found) return { blocking: null, soft: null };
+    const { blocking, soft } = splitQuickCreateDuplicates(v, found.candidates);
+    const softOn: 'email' | 'phone' = found.matchedOn === 'server' ? 'email' : found.matchedOn;
+    return {
+      blocking: blocking.length > 0 ? { matchedOn: found.matchedOn, candidates: blocking } : null,
+      soft: soft.length > 0 ? { matchedOn: softOn, candidates: soft } : null,
+    };
+  };
+
   /** Non-blocking early warning on blur; failures are silent (submit re-checks). */
-  const handleContactBlur = async () => {
-    const email = values.email ?? '';
-    const phone = values.phone ?? '';
+  const handleContactBlur = async (override?: { phone?: string; email?: string }) => {
+    const snapshot = { ...valuesRef.current, ...override };
+    const email = snapshot.email ?? '';
+    const phone = snapshot.phone ?? '';
     if (!email.trim() && !phone.trim()) return;
-    const sig = `${email.trim().toLowerCase()}|${normalizePhoneDigits(phone)}`;
+    const sig = duplicateSignature(snapshot);
     try {
       const found = await lookupDuplicates(email, phone);
-      const cur = valuesRef.current;
-      const curSig = `${(cur.email ?? '').trim().toLowerCase()}|${normalizePhoneDigits(cur.phone ?? '')}`;
-      if (curSig !== sig) return; // user kept typing — result is stale
-      if (found) setDuplicate(found);
-      else cleanSignatureRef.current = sig;
+      if (duplicateSignature(valuesRef.current) !== sig) return; // user kept typing — stale
+      const { blocking, soft } = classify(found, snapshot);
+      setDuplicate(blocking);
+      setSoftDuplicate(soft);
+      if (!blocking) cleanSignatureRef.current = sig;
     } catch {
       /* submit will re-check and surface errors */
     }
   };
 
-  const submit = async (force: boolean) => {
+  const submit = async (force: boolean, mode: SubmitMode = submitModeRef.current) => {
     if (submitting) return;
+    submitModeRef.current = mode;
     setSubmitError(null);
     setValidationError(null);
 
@@ -415,15 +546,21 @@ export function QuickCreateDrawer({
 
       const email = values.email ?? '';
       const phone = values.phone ?? '';
-      const sig = `${email.trim().toLowerCase()}|${normalizePhoneDigits(phone)}`;
+      const sig = duplicateSignature(values);
       if (!force && cleanSignatureRef.current !== sig) {
         setCheckingDuplicates(true);
         try {
           const found = await lookupDuplicates(email, phone);
-          if (found) {
-            setDuplicate(found);
+          const { blocking, soft } = classify(found, values);
+          setSoftDuplicate(soft);
+          if (blocking) {
+            // Same name + same contact info → the server would 409 anyway.
+            setDuplicate(blocking);
             return;
           }
+          // Soft overlap (family member) is allowed — proceed WITHOUT force so
+          // the server still applies its own rule.
+          setDuplicate(null);
           cleanSignatureRef.current = sig;
         } finally {
           setCheckingDuplicates(false);
@@ -437,8 +574,33 @@ export function QuickCreateDrawer({
         force,
       });
 
-      toast.success(`${config.noun} created`);
+      toast.success(toastCopy.added(config.noun));
       setDuplicate(null);
+      setSoftDuplicate(null);
+
+      // Remember Plan / Producer for this session's datalists.
+      const suggestKeys = quickCreateSuggestKeys(selectedModule);
+      if (suggestKeys.length > 0) {
+        setSessionSuggestions((prev) => {
+          const next = { ...prev };
+          for (const k of suggestKeys) {
+            const v = (values[k] ?? '').trim();
+            if (!v) continue;
+            const list = next[k] ?? [];
+            if (!list.some((x) => x.toLowerCase() === v.toLowerCase())) next[k] = [v, ...list].slice(0, 25);
+          }
+          return next;
+        });
+      }
+
+      if (mode === 'another') {
+        setSessionAdded((n) => n + 1);
+        resetForNext(selectedModule, values);
+        // Back to the top of the paste order for the next one.
+        window.requestAnimationFrame(() => firstInputRef.current?.focus());
+        return;
+      }
+
       setCreated({ id: record.id, noun: config.noun });
       router.push(`/crm/r/${record.id}`);
     } catch (err) {
@@ -527,7 +689,56 @@ export function QuickCreateDrawer({
     );
 
     let control: React.ReactNode;
-    if (field.type === 'select') {
+    if (field.type === 'state') {
+      // Native select: type-ahead ("c","o" → CO) suits the paste workflow and
+      // keyboard users; an unknown stored value is kept as its own option.
+      const opts = usStateOptionsWith(value);
+      control = (
+        <select
+          id={id}
+          value={value}
+          onChange={(e) => setField(field.key, e.target.value)}
+          aria-label={field.label}
+          className={cn(
+            inputClass,
+            'flex w-full rounded-md border px-3 py-1 shadow-sm focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50',
+            value ? 'text-slate-900 dark:text-white' : 'text-slate-400 dark:text-slate-500',
+          )}
+        >
+          <option value="">{field.placeholder ? `Select… (${field.placeholder})` : 'Select…'}</option>
+          {opts.map((o) => (
+            <option key={o.value} value={o.value} className="text-slate-900 dark:text-white">
+              {o.label}
+            </option>
+          ))}
+        </select>
+      );
+    } else if (field.type === 'suggest') {
+      const listId = `${id}-suggestions`;
+      const suggestions = suggestionsFor(field);
+      control = (
+        <>
+          <Input
+            id={id}
+            ref={isFirst ? firstInputRef : undefined}
+            type="text"
+            autoComplete="off"
+            list={suggestions.length > 0 ? listId : undefined}
+            value={value}
+            onChange={(e) => setField(field.key, e.target.value)}
+            placeholder={field.placeholder}
+            className={inputClass}
+          />
+          {suggestions.length > 0 && (
+            <datalist id={listId}>
+              {suggestions.map((o) => (
+                <option key={o} value={o} />
+              ))}
+            </datalist>
+          )}
+        </>
+      );
+    } else if (field.type === 'select') {
       const opts = optionsFor(field);
       if (opts.length === 0) {
         control = (
@@ -572,17 +783,24 @@ export function QuickCreateDrawer({
         />
       );
     } else {
-      const isContactKey = field.key === 'email' || field.key === 'phone';
+      const isPhone = field.type === 'tel';
+      const isContactKey = field.key === 'email' || isPhone;
       control = (
         <Input
           id={id}
           ref={isFirst ? firstInputRef : undefined}
           type={field.type}
-          inputMode={field.type === 'tel' ? 'tel' : undefined}
+          inputMode={isPhone ? 'tel' : undefined}
           autoComplete="off"
           value={value}
           onChange={(e) => setField(field.key, e.target.value)}
-          onBlur={isContactKey ? () => void handleContactBlur() : undefined}
+          onBlur={
+            isPhone
+              ? (e) => handlePhoneBlur(e.target.value)
+              : isContactKey
+                ? () => void handleContactBlur()
+                : undefined
+          }
           placeholder={field.placeholder}
           required={field.required}
           aria-required={field.required || undefined}
@@ -665,7 +883,16 @@ export function QuickCreateDrawer({
           noValidate
           onSubmit={(e) => {
             e.preventDefault();
-            void submit(false);
+            void submit(false, 'open');
+          }}
+          onKeyDown={(e) => {
+            // Shift+Enter anywhere in the form = Save & add another
+            // (plain Enter keeps the native submit = save & open record).
+            if (e.key !== 'Enter' || !e.shiftKey || busy || created) return;
+            const target = e.target as HTMLElement | null;
+            if (target && target.tagName === 'BUTTON') return;
+            e.preventDefault();
+            void submit(false, 'another');
           }}
         >
           <div className="flex-1 min-h-0 overflow-y-auto px-5 py-4 space-y-4">
@@ -758,6 +985,35 @@ export function QuickCreateDrawer({
               </div>
             )}
 
+            {softDuplicate && !duplicate && !created && (
+              <div
+                role="status"
+                className="rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 px-3 py-2 flex items-start gap-2"
+              >
+                <Info className="w-4 h-4 text-slate-400 dark:text-slate-500 mt-0.5 shrink-0" />
+                <div className="flex-1 min-w-0 text-xs text-slate-600 dark:text-slate-300">
+                  <p>
+                    Shares {softDuplicate.matchedOn === 'phone' ? 'a phone' : 'an email'} with{' '}
+                    {softDuplicate.candidates.slice(0, 3).map((c, i) => (
+                      <span key={c.id}>
+                        {i > 0 ? ', ' : ''}
+                        <button
+                          type="button"
+                          onClick={() => openExisting(c.id)}
+                          className="font-medium text-slate-800 dark:text-white underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/60 rounded"
+                        >
+                          {c.title || 'an untitled record'}
+                        </button>
+                      </span>
+                    ))}
+                    {softDuplicate.candidates.length > 3 ? ` and ${softDuplicate.candidates.length - 3} more` : ''}
+                    {' — '}
+                    different name, so this is usually a family member. You can still create.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {submitError && (
               <div
                 role="alert"
@@ -842,7 +1098,7 @@ export function QuickCreateDrawer({
               </div>
             ) : (
               <>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <Button
                     type="button"
                     variant="outline"
@@ -850,15 +1106,32 @@ export function QuickCreateDrawer({
                     disabled={submitting}
                     className="h-9 border-slate-200 dark:border-white/10"
                   >
-                    {created ? 'Close' : 'Cancel'}
+                    {created ? 'Close' : sessionAdded > 0 ? 'Done' : 'Cancel'}
                   </Button>
-                  <Button type="submit" disabled={busy || !!created} className="h-9 flex-1">
+                  {!created && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={busy}
+                      onClick={() => void submit(false, 'another')}
+                      className="h-9 border-slate-200 dark:border-white/10"
+                      title="Save this one and start the next (Shift+Enter)"
+                    >
+                      {busy && submitModeRef.current === 'another' ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <ListPlus className="w-4 h-4 mr-2" />
+                      )}
+                      Save &amp; add another
+                    </Button>
+                  )}
+                  <Button type="submit" disabled={busy || !!created} className="h-9 flex-1 min-w-[10rem]">
                     {checkingDuplicates ? (
                       <>
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                         Checking for duplicates…
                       </>
-                    ) : submitting ? (
+                    ) : submitting && submitModeRef.current === 'open' ? (
                       <>
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                         Creating…
@@ -872,9 +1145,22 @@ export function QuickCreateDrawer({
                   </Button>
                 </div>
                 {!created && (
-                  <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
-                    <span className="hidden sm:inline">
-                      <kbd className="px-1 py-0.5 rounded border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-800 text-[10px]">Enter</kbd> saves
+                  <div className="flex items-center justify-between gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+                    <span className="flex items-center gap-2 min-w-0">
+                      <span className="hidden sm:inline whitespace-nowrap">
+                        <kbd className="px-1 py-0.5 rounded border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-800 text-[10px]">Enter</kbd> saves &amp; opens ·{' '}
+                        <kbd className="px-1 py-0.5 rounded border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-800 text-[10px]">Shift+Enter</kbd> saves &amp; adds another
+                      </span>
+                      {sessionAdded > 0 && (
+                        <span
+                          role="status"
+                          aria-live="polite"
+                          className="inline-flex items-center gap-1 rounded-full border border-emerald-200 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-300 whitespace-nowrap"
+                        >
+                          <CheckCircle2 className="w-3 h-3" />
+                          {sessionAdded} added this session
+                        </span>
+                      )}
                     </span>
                     <button
                       type="button"

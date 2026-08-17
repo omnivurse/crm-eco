@@ -30,7 +30,8 @@ interface SectionNavProps {
 /**
  * Section jump bar.
  *
- * Top row = one pill per nav GROUP (Profile · Coverage · Location · Admin …)
+ * Top row = one pill per nav GROUP (Profile · Coverage · Family · Address ·
+ * Ownership · Admin …)
  * instead of one per section — a PIFH contact has 27 sections, which drew a
  * second scrollbar under the record header and buried the useful bands.
  * Clicking a group jumps to its first section. The per-section pills for the

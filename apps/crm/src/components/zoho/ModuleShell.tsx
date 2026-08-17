@@ -1392,6 +1392,8 @@ export const ModuleShell = memo(function ModuleShell({
         <FilterChipsBar
           filters={filters}
           fields={fields}
+          moduleKey={module.key}
+          statusValues={liveStatusValues}
           sortField={sortField}
           sortDirection={sortDirection}
           totalCount={totalCount}
