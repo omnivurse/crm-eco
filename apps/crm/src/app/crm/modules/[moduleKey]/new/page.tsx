@@ -8,9 +8,15 @@ import {
   getFieldsForModule,
   getDefaultLayout,
 } from '@/lib/crm/queries';
-import { createRecord, type CreateRecordInput } from '@/lib/crm/mutations';
+import { createRecordResult, type CreateRecordInput } from '@/lib/crm/mutations';
+import { disabledModuleRedirect } from '@/lib/crm/nav-profile';
 import { RecordDraftAutosave } from '@/components/crm/records/RecordDraftAutosave';
-import { UnsavedFormGuard } from '@/components/crm/records/UnsavedFormGuard';
+import {
+  UnsavedFormGuard,
+  CREATE_FORM_FORCE_FIELD,
+  type CreateFormActionState,
+  type CreateFormDuplicate,
+} from '@/components/crm/records/UnsavedFormGuard';
 
 interface PageProps {
   params: Promise<{ moduleKey: string }>;
@@ -22,33 +28,64 @@ async function NewRecordContent({ params }: PageProps) {
   const profile = await getCurrentProfile();
   if (!profile) return notFound();
 
-  // Check permission
-  if (!profile.crm_role || profile.crm_role === 'crm_viewer') {
+  // Only viewers are turned away here; users admitted via tenant membership
+  // (crm_role null) are decided by the service/RLS, whose errors render inline.
+  if (profile.crm_role === 'crm_viewer') {
     redirect(`/crm/modules/${moduleKey}?error=no_create_permission`);
   }
 
   const crmModule = await getModuleByKey(profile.organization_id, moduleKey);
   if (!crmModule) return notFound();
+  // Disabled module (e.g. legacy 'deals'): send to the enabled sibling's list
+  // instead of offering a create form for a module nobody can see.
+  const disabledTarget = disabledModuleRedirect(crmModule);
+  if (disabledTarget) redirect(disabledTarget);
 
   const [fields, layout] = await Promise.all([
     getFieldsForModule(crmModule.id),
     getDefaultLayout(crmModule.id),
   ]);
 
-  async function handleSubmit(formData: FormData) {
+  /**
+   * Server action wired through `useActionState` (see UnsavedFormGuard).
+   * NEVER throws for expected outcomes: duplicates / validation / permission
+   * problems are RETURNED so the client renders them inline and keeps every
+   * typed value + the sessionStorage draft. Success redirects to the record.
+   */
+  async function handleSubmit(
+    _prev: CreateFormActionState,
+    formData: FormData,
+  ): Promise<CreateFormActionState> {
     'use server';
 
     const profile = await getCurrentProfile();
     if (!profile) redirect(`/crm-login?error=session_expired&return=/crm/modules/${moduleKey}/new`);
+    if (!profile.crm_role || profile.crm_role === 'crm_viewer') {
+      return {
+        ok: false,
+        code: 'FORBIDDEN',
+        message: 'Your role cannot create records. Ask an admin for access.',
+      };
+    }
 
     const crmMod = await getModuleByKey(profile.organization_id, moduleKey);
-    if (!crmMod) throw new Error('Module not found');
+    if (!crmMod) {
+      return { ok: false, code: 'MODULE_NOT_FOUND', message: 'This module no longer exists.' };
+    }
 
+    // Whole-form payload is fine for CREATE; blank strings are dropped here
+    // (and again defensively in record-create-service) so a new record never
+    // carries hundreds of empty keys.
     const data: Record<string, unknown> = {};
+    let force = false;
     formData.forEach((value, key) => {
-      if (key !== '_action' && value !== '') {
-        data[key] = value;
+      if (key === CREATE_FORM_FORCE_FIELD) {
+        force = value === '1';
+        return;
       }
+      if (key.startsWith('$ACTION') || key === '_action') return;
+      if (typeof value === 'string' && value.trim() === '') return;
+      data[key] = value;
     });
 
     const input: CreateRecordInput = {
@@ -56,10 +93,40 @@ async function NewRecordContent({ params }: PageProps) {
       module_id: crmMod.id,
       owner_id: profile.id,
       data,
+      force,
     };
 
-    const record = await createRecord(input);
-    redirect(`/crm/r/${record.id}`);
+    const result = await createRecordResult(input);
+    if (!result.ok) {
+      const body = result.body;
+      const code = typeof body.code === 'string' ? body.code : undefined;
+      const rawDuplicates = Array.isArray(body.duplicates)
+        ? (body.duplicates as Array<Record<string, unknown>>)
+        : [];
+      const duplicates: CreateFormDuplicate[] = rawDuplicates
+        .filter((d) => typeof d?.id === 'string')
+        .map((d) => ({
+          id: d.id as string,
+          title: typeof d.title === 'string' ? d.title : null,
+          email: typeof d.email === 'string' ? d.email : null,
+          phone: typeof d.phone === 'string' ? d.phone : null,
+        }));
+      const message =
+        code === 'DUPLICATE_RECORD'
+          ? duplicates.length > 0
+            ? 'A record with the same name and email or phone already exists in this module.'
+            : 'The database rejected this record as a duplicate (same name + email).'
+          : typeof body.error === 'string'
+            ? body.error
+            : 'Something went wrong while saving. Your entries are preserved — please try again.';
+      return {
+        ok: false,
+        code,
+        message,
+        duplicates: duplicates.length > 0 ? duplicates : undefined,
+      };
+    }
+    redirect(`/crm/r/${result.record.id}`);
   }
 
   return (
@@ -68,9 +135,10 @@ async function NewRecordContent({ params }: PageProps) {
       <div className="flex items-center gap-4">
         <Link
           href={`/crm/modules/${moduleKey}`}
-          className="p-2 text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+          aria-label={`Back to ${crmModule.name}`}
+          className="p-2 text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
         >
-          <ArrowLeft className="w-5 h-5" />
+          <ArrowLeft className="w-5 h-5" aria-hidden />
         </Link>
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">New {crmModule.name}</h1>
@@ -80,34 +148,21 @@ async function NewRecordContent({ params }: PageProps) {
         </div>
       </div>
 
-      {/* Form */}
-      <UnsavedFormGuard>
-        <form action={handleSubmit} className="space-y-6">
-          <div className="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-6 shadow-sm">
-            <RecordDraftAutosave
-              moduleKey={moduleKey}
-              fields={fields}
-              layout={layout}
-              storageScope={profile.organization_id}
-            />
-          </div>
-
-          {/* Actions */}
-          <div className="sticky bottom-0 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-white/10 z-10 py-4 flex items-center justify-end gap-3 -mx-6 px-6">
-            <Link
-              href={`/crm/modules/${moduleKey}`}
-              className="px-4 py-2 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-600 rounded-lg transition-colors"
-            >
-              Cancel
-            </Link>
-            <button
-              type="submit"
-              className="px-6 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded-lg transition-colors shadow-sm"
-            >
-              Create Record
-            </button>
-          </div>
-        </form>
+      {/* Form — UnsavedFormGuard owns the <form>, inline result banner and the
+          sticky Create bar (unsaved pill lives inside the bar, no overlap). */}
+      <UnsavedFormGuard
+        action={handleSubmit}
+        cancelHref={`/crm/modules/${moduleKey}`}
+        submitLabel={`Create ${crmModule.name}`}
+      >
+        <div className="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-6 shadow-sm">
+          <RecordDraftAutosave
+            moduleKey={crmModule.key}
+            fields={fields}
+            layout={layout}
+            storageScope={profile.organization_id}
+          />
+        </div>
       </UnsavedFormGuard>
     </div>
   );

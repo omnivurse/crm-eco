@@ -54,8 +54,32 @@ function recordDisplayName(data: Record<string, unknown>): string {
 }
 
 /**
+ * Drop blank values before a CREATE so a fresh record does not get hundreds of
+ * `""` / `null` keys for fields the user never touched. On CREATE an absent key
+ * and a blank key are semantically identical (nothing on file yet), so this
+ * never loses information — unlike PATCH, where a blank is an intentional
+ * clear and MUST be preserved (see record-patch-service). Arrays/objects pass
+ * through untouched.
+ */
+export function stripBlankCreateValues(
+  data: Record<string, unknown>,
+): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(data ?? {})) {
+    if (value === undefined || value === null) continue;
+    if (typeof value === 'string' && value.trim() === '') continue;
+    out[key] = value;
+  }
+  return out;
+}
+
+/**
  * Single implementation of CRM record create (duplicate check, indexed columns from JSONB, workflows, scoring).
  * Used by `POST /api/crm/records` and server-side `createRecord()`.
+ *
+ * Duplicate handling: returns `{ ok:false, status:409, body:{ code:'DUPLICATE_RECORD', duplicates } }`
+ * unless `input.force` is true, in which case the RPC pre-check is skipped and
+ * only the DB unique index can still reject (also surfaced as DUPLICATE_RECORD).
  */
 export async function executeCrmRecordCreate(params: {
   supabase: SupabaseClient;
@@ -79,8 +103,17 @@ export async function executeCrmRecordCreate(params: {
     return { ok: false, status: 404, body: { error: 'Module not found' } };
   }
 
-  const emailToCheck = (input.data?.email as string) || null;
-  const phoneToCheck = (input.data?.phone as string) || null;
+  // Blank keys are dropped up-front (see stripBlankCreateValues) so the
+  // duplicate check, the pending-start-date invariant and the insert all see
+  // the same, minimal payload.
+  const createData = stripBlankCreateValues(
+    (input.data ?? {}) as Record<string, unknown>,
+  );
+
+  const emailToCheck = typeof createData.email === 'string' ? createData.email : null;
+  // Raw phone is passed through — `check_crm_duplicate` compares digits server-side
+  // (migration 20260817180000), so "(303) 555-1212" and "3035551212" both match.
+  const phoneToCheck = typeof createData.phone === 'string' ? createData.phone : null;
 
   if (!input.force && (emailToCheck || phoneToCheck)) {
     const { data: duplicates } = await (supabase as any).rpc('check_crm_duplicate', {
@@ -95,7 +128,7 @@ export async function executeCrmRecordCreate(params: {
     // candidate as a blocking duplicate only when the NAME also matches; the same
     // email with a DIFFERENT name is allowed, consistent with the (email + name)
     // idx_crm_records_unique_email index and the members table's shared-email rule.
-    const newName = recordDisplayName(input.data);
+    const newName = recordDisplayName(createData);
     const realDuplicates = ((duplicates as DuplicateCandidate[] | null) ?? []).filter(
       (d) => !newName || normalizeName(d.title) === newName,
     );
@@ -113,7 +146,7 @@ export async function executeCrmRecordCreate(params: {
     }
   }
 
-  const d = sanitizeCrmDataJsonPatch(input.data as Record<string, unknown>);
+  const d = sanitizeCrmDataJsonPatch(createData);
   const rowFromData = mergeCrmDataJsonIntoRowColumns(d, { moduleKey: moduleRow.key });
 
   const insertRow: Record<string, unknown> = {

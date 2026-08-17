@@ -17,6 +17,7 @@ import {
   type Control,
   type UseFormRegister,
 } from 'react-hook-form';
+import { flushSync } from 'react-dom';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@crm-eco/ui/components/button';
@@ -73,9 +74,11 @@ import {
   buildEffectiveSections,
   getSectionNavGroup,
   isPersonCoverageSectionKey,
+  isPersonModuleKey,
   isRecordFormExcludedField,
   shouldAlwaysShowEmptySection,
 } from './section-utils';
+import { formatPhoneDisplay } from '@/lib/crm/phone-normalize';
 import {
   INLINE_EDIT_GRID_CLASS,
   FULL_ROW_SPAN_CLASS,
@@ -95,6 +98,26 @@ import { CalendarClock, ChevronDown, ChevronRight, Loader2, ShieldCheck, Heart, 
 // Section accent palette — see section-accent-tokens.ts (shared with SectionNav).
 
 const getAccent = (accent?: LayoutSectionAccent) => getSectionCardAccent(accent);
+
+/**
+ * CREATE-form defaults for person modules (contacts / leads / members): only the
+ * sections a rep needs to enter a new member stay open — Name (core/main),
+ * Health Share, Membership & Product (insurance), Address, Ownership &
+ * Management (producer / referring), Identifiers. Every other section starts
+ * collapsed so the form is not a 40-card wall. This is a UI-only override for
+ * mode="create"; it never touches crm_layouts and never applies to edit /
+ * detail views. Sections containing a REQUIRED field are always kept open so
+ * native validation can focus them.
+ */
+export const CREATE_FORM_EXPANDED_SECTION_KEYS: readonly string[] = [
+  'core',
+  'main',
+  'health_sharing',
+  'insurance',
+  'address',
+  'management',
+  'identifiers',
+];
 
 /**
  * Label for the Membership Snapshot's carrier/entity row. The snapshot resolves
@@ -230,12 +253,15 @@ const FormFieldRenderer = memo(function FormFieldRenderer({
   register,
   setValue,
   error,
+  initialValue,
 }: {
   field: CrmField;
   control: Control<Record<string, unknown>>;
   register: UseFormRegister<Record<string, unknown>>;
   setValue: (name: string, value: unknown) => void;
   error?: string;
+  /** Value the form was opened with (stored truth) — used to avoid rewriting untouched phones. */
+  initialValue?: unknown;
 }) {
   const value = useWatch({ name: field.key, control });
   const marketType = useWatch({ name: 'market_type', control });
@@ -287,9 +313,34 @@ const FormFieldRenderer = memo(function FormFieldRenderer({
 
   switch (field.type) {
     case 'text':
-    case 'phone':
       input = <Input {...commonProps} type="text" />;
       break;
+
+    case 'phone': {
+      // Normalise to the canonical display format (NNN-NNN-NNNN, the dominant
+      // formatted style in prod — see phone-normalize.ts) on blur, but ONLY
+      // when the user actually changed the value: an untouched stored phone
+      // must round-trip byte-for-byte (never rewrite saved data on read).
+      const { onBlur: rhfBlur, ...phoneReg } = commonProps;
+      input = (
+        <Input
+          {...phoneReg}
+          type="tel"
+          inputMode="tel"
+          autoComplete="tel"
+          onBlur={(e) => {
+            const raw = e.target.value;
+            const formatted = formatPhoneDisplay(raw);
+            const stored = initialValue === null || initialValue === undefined ? '' : String(initialValue);
+            if (formatted !== raw && raw.trim() !== '' && raw !== stored) {
+              setValue(field.key, formatted);
+            }
+            void rhfBlur(e);
+          }}
+        />
+      );
+      break;
+    }
 
     case 'email':
       input = <Input {...commonProps} type="email" />;
@@ -563,12 +614,36 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
   );
 
   const layoutConfig = layout?.config || { sections: [{ key: 'main', label: 'Information', columns: 2 }] };
+  const isCreateForm = !readOnly && mode === 'create' && !record;
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(() => {
     const collapsed = new Set(
       (layoutConfig.sections || [])
         .filter((s: LayoutSection) => s.collapsed)
         .map((s: LayoutSection) => s.key),
     );
+    if (isCreateForm) {
+      const allSectionKeys = new Set<string>(
+        (layoutConfig.sections || []).map((s: LayoutSection) => s.key),
+      );
+      const requiredSections = new Set<string>();
+      for (const f of visibleFields) {
+        allSectionKeys.add(f.section || 'main');
+        if (f.required) requiredSections.add(f.section || 'main');
+      }
+      if (isPersonModuleKey(moduleKey)) {
+        // Create-mode override (see CREATE_FORM_EXPANDED_SECTION_KEYS): collapse
+        // every section except the entry-critical ones. Field/section keys, not
+        // layout order, decide — so it works even when crm_layouts has no row.
+        for (const key of allSectionKeys) {
+          if (CREATE_FORM_EXPANDED_SECTION_KEYS.includes(key)) collapsed.delete(key);
+          else collapsed.add(key);
+        }
+      }
+      // A section holding a required field is never collapsed on create: the
+      // embedded form keeps collapsed inputs mounted-but-hidden, and a hidden
+      // required input would block native submit with no visible message.
+      for (const key of requiredSections) collapsed.delete(key);
+    }
     if (record?.id && typeof window !== 'undefined') {
       for (const key of getPersistedExpandedSections(record.id)) {
         collapsed.delete(key);
@@ -829,30 +904,42 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
   const renderFieldCell = useCallback(
     (
       field: CrmField,
-      opts?: { row?: boolean; tightLabel?: boolean; displayValue?: unknown },
+      opts?: {
+        row?: boolean;
+        tightLabel?: boolean;
+        displayValue?: unknown;
+        /**
+         * Force the static (FieldRenderer) view even on an edit form. Used by
+         * the Coverage Snapshot so a key is registered as an input exactly ONCE
+         * (in its section card) — never a second time inside the banner.
+         */
+        readOnlyView?: boolean;
+      },
     ) => {
+      const cellReadOnly = readOnly || Boolean(opts?.readOnlyView);
+      const cellInlineEditable = inlineEditable && !opts?.readOnlyView;
       // Dense side-by-side rows only for static read-only (no click-to-edit).
       // Inline-edit mode must use stacked label→value cells: auto-fit ~220px
       // columns left ~60px for the value after a w-40 label, so "Add …" inputs
       // and native <select> overlays spilled into the next column.
       const denseRow = shouldUseDenseFieldRow({
         row: opts?.row,
-        readOnly,
-        inlineEditable,
+        readOnly: cellReadOnly,
+        inlineEditable: cellInlineEditable,
       });
       const cellValue =
         opts && 'displayValue' in opts
           ? opts.displayValue
           : defaultValues[field.key];
 
-      const valueNode = readOnly ? (
+      const valueNode = cellReadOnly ? (
         <div
           className={cn(
             'text-sm min-w-0 max-w-full',
             denseRow ? 'min-h-[20px]' : 'py-0.5 min-h-[28px]',
           )}
         >
-          {inlineEditable ? (
+          {cellInlineEditable ? (
             <InlineFieldCell
               field={field}
               value={cellValue}
@@ -873,6 +960,7 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
           register={register}
           setValue={setValue}
           error={errors[field.key]?.message as string | undefined}
+          initialValue={defaultValues[field.key]}
         />
       );
 
@@ -887,7 +975,8 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
             )}
           >
             <Label
-              htmlFor={field.key}
+              // A static snapshot cell must not claim the section input's id.
+              htmlFor={opts?.readOnlyView ? undefined : field.key}
               title={field.tooltip || field.label}
               className={cn(
                 'shrink-0 truncate text-muted-foreground text-[11px] font-medium uppercase leading-snug tracking-wide',
@@ -1141,6 +1230,15 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
     });
   }, [visibleFields, heroSharingField, heroStartDateField, recordPlanType, defaultValues]);
 
+  /**
+   * The Coverage Snapshot is a READ summary. On the detail page it is static
+   * (or click-to-edit in inline mode). On create/edit FORMS it is always static:
+   * rendering editable inputs there registered the same key twice (banner +
+   * section card) so FormData carried duplicate entries. Each key now has
+   * exactly one input — in its section — and the banner shows what is on file.
+   */
+  const snapshotStatic = readOnly ? !inlineEditable : true;
+
   /** Omit empty rows in static read-only snapshot; keep placeholders in edit / inline-edit. */
   const heroProductPlanSnapshotFields = useMemo(() => {
     const hasSnapshotValue = (key: string) => {
@@ -1150,11 +1248,11 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
       if (key === 'product' && isCapacityProductValue(defaultValues[key])) return false;
       return true;
     };
-    if (readOnly && !inlineEditable) {
+    if (snapshotStatic) {
       return heroProductPlanFields.filter((f) => hasSnapshotValue(f.key));
     }
     return heroProductPlanFields;
-  }, [heroProductPlanFields, defaultValues, inlineEditable, readOnly]);
+  }, [heroProductPlanFields, defaultValues, snapshotStatic]);
 
   /**
    * Context rows for the snapshot (referral source, referring member,
@@ -1177,7 +1275,7 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
       seen.add(f.key);
       return true;
     });
-    if (readOnly && !inlineEditable) {
+    if (snapshotStatic) {
       return fields.filter((f) => hasValue(f.key));
     }
     return fields;
@@ -1190,8 +1288,7 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
     heroStartDateField,
     heroProductPlanFields,
     hasValue,
-    inlineEditable,
-    readOnly,
+    snapshotStatic,
   ]);
 
   // ── Coverage Snapshot ─────────────────────────────────────────────────
@@ -1205,6 +1302,9 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
   // inline editing is unchanged.
   const renderCoverageSnapshot = () => {
     if (!sections.some((s) => s.variant === 'hero')) return null;
+    // A brand-new record has nothing on file yet — the summary banner would
+    // only say "Not set" above the very fields being filled in. Skip it.
+    if (isCreateForm) return null;
 
     const accent =
       recordPlanType === 'insurance'
@@ -1235,7 +1335,7 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
             };
     const AccentIcon = accent.Icon;
 
-    const staticView = readOnly && !inlineEditable;
+    const staticView = snapshotStatic;
     const carrierHasValue = heroSharingField ? hasValue(heroSharingField.key) : false;
     const showDate =
       Boolean(heroStartDateField) &&
@@ -1267,7 +1367,7 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
               </div>
               <div className="mt-1.5">
                 {heroSharingFieldForDisplay && (carrierHasValue || !staticView) ? (
-                  renderFieldCell(heroSharingFieldForDisplay)
+                  renderFieldCell(heroSharingFieldForDisplay, { readOnlyView: !readOnly })
                 ) : (
                   <p className="text-sm text-muted-foreground">Not set</p>
                 )}
@@ -1316,6 +1416,7 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
                   renderFieldCell(field, {
                     row: true,
                     tightLabel: true,
+                    readOnlyView: !readOnly,
                     // Capacity aliases ("Health Insurance") must not read as a
                     // Membership / plan name — show the empty placeholder instead.
                     displayValue: coerceCoverageSnapshotFieldValue(
@@ -1326,9 +1427,13 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
                 )}
                 {showDate &&
                   heroStartDateField &&
-                  renderFieldCell(heroStartDateField, { row: true, tightLabel: true })}
+                  renderFieldCell(heroStartDateField, {
+                    row: true,
+                    tightLabel: true,
+                    readOnlyView: !readOnly,
+                  })}
                 {heroReferralSnapshotFields.map((field) =>
-                  renderFieldCell(field, { row: true, tightLabel: true }),
+                  renderFieldCell(field, { row: true, tightLabel: true, readOnlyView: !readOnly }),
                 )}
               </div>
             </>
@@ -1406,12 +1511,22 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
             className={cn('break-inside-avoid border', accent.border, overviewScrollAid)}
           >
             <CardHeader
+              role="button"
+              tabIndex={0}
+              aria-expanded={!isCollapsed}
+              aria-controls={`section-${section.key}-content`}
               className={cn(
-                'cursor-pointer hover:bg-muted/50 transition-colors',
+                'cursor-pointer hover:bg-muted/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                 accent.header,
                 readOnly ? 'py-2 px-4' : 'py-3',
               )}
               onClick={() => toggleSection(section.key)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  toggleSection(section.key);
+                }
+              }}
             >
               <CardTitle
                 className={cn(
@@ -1433,8 +1548,17 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
                 )}
               </CardTitle>
             </CardHeader>
-            {!isCollapsed && (
-              <CardContent className={readOnly ? 'pt-3 pb-3 px-4' : undefined}>
+            {/* The embedded (server-action) form keeps collapsed content MOUNTED
+                but hidden so the inputs stay in the DOM: the create page builds
+                FormData from the DOM, so an unmounted section would silently drop
+                what the user typed there (or a restored draft value). Read-only
+                and RHF-submitted forms unmount as before. */}
+            {(!isCollapsed || (embedded && !readOnly)) && (
+              <CardContent
+                id={`section-${section.key}-content`}
+                hidden={isCollapsed}
+                className={cn(readOnly ? 'pt-3 pb-3 px-4' : undefined, isCollapsed && 'hidden')}
+              >
                 {isHero ? (
                   // ──────────────────────────────────────────────────────────
                   // HERO LAYOUT — Name/core fields. Inline-edit uses a capped
@@ -1517,7 +1641,26 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
   // When embedded in a server action form, just render the fields without form wrapper
   if (embedded) {
     return (
-      <div className="space-y-6">
+      <div
+        className="space-y-6"
+        // Native validation on the host <form>: if the offending input sits in
+        // a collapsed (hidden) section, expand it synchronously so the browser
+        // can focus it and show its message instead of failing silently.
+        onInvalidCapture={(e) => {
+          const sectionKey = (e.target as HTMLElement | null)
+            ?.closest?.('[data-section]')
+            ?.getAttribute('data-section');
+          if (!sectionKey || !collapsedSections.has(sectionKey)) return;
+          flushSync(() => {
+            setCollapsedSections((prev) => {
+              if (!prev.has(sectionKey)) return prev;
+              const next = new Set(prev);
+              next.delete(sectionKey);
+              return next;
+            });
+          });
+        }}
+      >
         {renderSections()}
       </div>
     );

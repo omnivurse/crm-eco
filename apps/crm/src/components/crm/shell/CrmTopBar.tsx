@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, memo } from 'react';
+import { useState, memo, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase-client';
@@ -37,6 +37,7 @@ import { PendingChangesPill } from '@/components/crm/offline/PendingChangesPill'
 import { clearOfflineState } from '@/lib/offline/reset';
 import { openCrmCommandPalette } from '@/lib/crm/command-palette-bus';
 import type { CrmModule, CrmProfile } from '@/lib/crm/types';
+import type { QuickCreateModuleKey } from '@/lib/crm/quick-create-config';
 
 function openCommandPalette(onOpenCommandPalette?: () => void) {
   if (onOpenCommandPalette) onOpenCommandPalette();
@@ -69,7 +70,15 @@ export const CrmTopBar = memo(function CrmTopBar({
   onMobileMenuToggle,
 }: CrmTopBarProps) {
   const [quickCreateOpen, setQuickCreateOpen] = useState(false);
+  const [quickCreateModule, setQuickCreateModule] = useState<QuickCreateModuleKey>('contacts');
   const router = useRouter();
+
+  // "+ Create" (and the quick menu entries) open the QuickCreateDrawer —
+  // Add Member by default — instead of routing to the 250-field full form.
+  const openQuickCreate = useCallback((moduleKey: QuickCreateModuleKey) => {
+    setQuickCreateModule(moduleKey);
+    setQuickCreateOpen(true);
+  }, []);
 
   // ⌘K / Ctrl+K is owned solely by CommandPalette (toggle + clear-on-close).
   // TopBar search button / event bus only *open* the palette — never register
@@ -173,7 +182,7 @@ export const CrmTopBar = memo(function CrmTopBar({
 
         {/* Split Create Button - hidden on mobile */}
         <div className="hidden sm:block">
-          <SplitCreateButton />
+          <SplitCreateButton onQuickCreate={openQuickCreate} modules={modules} />
         </div>
 
         {/* Theme Toggle - hidden on the narrowest mobile widths.
@@ -299,8 +308,13 @@ export const CrmTopBar = memo(function CrmTopBar({
         </DropdownMenu>
       </div>
 
-      {/* Quick Create Drawer */}
-      <QuickCreateDrawer open={quickCreateOpen} onOpenChange={setQuickCreateOpen} />
+      {/* Quick Create Drawer — mounted once here; opened via + Create / menu */}
+      <QuickCreateDrawer
+        open={quickCreateOpen}
+        onOpenChange={setQuickCreateOpen}
+        defaultModule={quickCreateModule}
+        modules={modules}
+      />
     </header>
   );
 });

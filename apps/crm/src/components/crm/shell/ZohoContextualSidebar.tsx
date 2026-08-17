@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase-client';
 import { clearOfflineState } from '@/lib/offline/reset';
 import { cn } from '@crm-eco/ui/lib/utils';
@@ -88,16 +88,25 @@ import {
     Code,
     SlidersHorizontal,
     Trash2,
+    User,
+    Briefcase,
     type LucideIcon,
 } from 'lucide-react';
 import { Lightbulb, Search, LogOut } from 'lucide-react';
 import {
-  useModule,
+  CRM_NAV_ITEMS,
   getNavItemsForModule,
   resolveTopModuleFromPathname,
   TOP_MODULE_TITLES,
   type NavItem,
 } from '@/contexts/ModuleContext';
+import {
+  buildFullCrmNav,
+  buildSimpleNav,
+  resolveActiveNavKey,
+  type NavModule,
+  type NavProfile,
+} from '@/lib/crm/nav-profile';
 import { ModuleSwitcherRail } from './ModuleSwitcherRail';
 import { openCrmCommandPalette } from '@/lib/crm/command-palette-bus';
 import { useGizmoSafe } from '@/components/crm/gizmo';
@@ -111,9 +120,11 @@ function SidebarSearchTrigger({ collapsed }: { collapsed?: boolean }) {
     if (collapsed) {
         return (
             <button
+                type="button"
                 onClick={handleClick}
-                className="flex items-center justify-center w-full h-8 rounded-md text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
-                title="Search Contacts (⌘K)"
+                aria-label="Search (⌘K)"
+                className="flex items-center justify-center w-full h-8 rounded-md text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-slate-100 dark:hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/60 transition-colors"
+                title="Search (⌘K)"
             >
                 <Search className="w-4 h-4" />
             </button>
@@ -212,6 +223,10 @@ const iconMap: Record<string, LucideIcon> = {
     'code': Code,
     'sliders': SlidersHorizontal,
     'trash-2': Trash2,
+    // crm_modules.icon values seen in prod (module-driven links)
+    'user': User,
+    'briefcase': Briefcase,
+    'file': FileText,
 };
 
 function getIcon(iconName: string): LucideIcon {
@@ -223,16 +238,29 @@ interface ZohoContextualSidebarProps {
     onToggle: () => void;
     mobileMenuOpen?: boolean;
     onMobileClose?: () => void;
+    /** Tenant nav profile (`crm.nav.simple`); defaults to the full Zoho layout. */
+    navProfile?: NavProfile;
+    /** The org's ENABLED crm_modules (+ field counts) that drive module links. */
+    navModules?: readonly NavModule[];
 }
+
+const EMPTY_MODULES: readonly NavModule[] = [];
+
+/** Under the simple profile, Settings pages get a way back to the flat menu. */
+const BACK_TO_CRM_ITEM: NavItem = { key: 'back-to-crm', label: 'Back to CRM', icon: 'layout-dashboard', href: '/crm' };
 
 export function ZohoContextualSidebar({ 
     isOpen, 
     onToggle,
     mobileMenuOpen = false,
     onMobileClose,
+    navProfile = 'full',
+    navModules = EMPTY_MODULES,
 }: ZohoContextualSidebarProps) {
     const pathname = usePathname();
+    const searchParams = useSearchParams();
     const router = useRouter();
+    const isSimple = navProfile === 'simple';
 
     // Live unread mail, so the count is visible from anywhere in the CRM rather
     // than only once you are already on the inbox page.
@@ -263,16 +291,35 @@ export function ZohoContextualSidebar({
     };
 
     const activeTopModule = resolveTopModuleFromPathname(pathname);
-    const navItems = getNavItemsForModule(activeTopModule);
 
-    const isActive = (href: string) => {
-        if (href === '/crm') {
-            return pathname === '/crm';
+    // simple → one flat menu everywhere (Settings keeps its own sub-menu, with a
+    // way back). full → the classic per-tab menus, with the CRM tab's module
+    // links rebuilt from the org's enabled crm_modules.
+    const navItems = useMemo<NavItem[]>(() => {
+        if (isSimple) {
+            if (activeTopModule === 'settings') {
+                return [BACK_TO_CRM_ITEM, ...getNavItemsForModule('settings')];
+            }
+            return buildSimpleNav(navModules);
         }
-        return pathname.startsWith(href);
-    };
+        if (activeTopModule === 'crm') {
+            return buildFullCrmNav(CRM_NAV_ITEMS, navModules);
+        }
+        return getNavItemsForModule(activeTopModule);
+    }, [isSimple, activeTopModule, navModules]);
 
-    const moduleTitle = TOP_MODULE_TITLES;
+    // Exactly one highlighted item: matched on pathname AND query, so
+    // `?tab=` entries light up (and their parent does not).
+    const searchString = searchParams?.toString() ?? '';
+    const activeKey = useMemo(
+        () => resolveActiveNavKey(navItems, pathname, searchString),
+        [navItems, pathname, searchString],
+    );
+    const isActive = (item: NavItem) => item.key === activeKey;
+
+    const menuTitle = isSimple
+        ? (activeTopModule === 'settings' ? 'Settings menu' : 'Menu')
+        : `${TOP_MODULE_TITLES[activeTopModule]} menu`;
 
     // Handle link click on mobile
     const handleLinkClick = () => {
@@ -291,14 +338,15 @@ export function ZohoContextualSidebar({
                     isOpen ? 'w-52' : 'w-14'
                 )}
             >
-                {/* Module switcher — icon rail when collapsed; top tab bar handles expanded desktop */}
-                {!isOpen && <ModuleSwitcherRail expanded={false} />}
+                {/* Module switcher — icon rail when collapsed; top tab bar handles expanded desktop.
+                    Hidden entirely under the simple profile (no top-level modules to switch). */}
+                {!isOpen && !isSimple && <ModuleSwitcherRail expanded={false} />}
 
                 {isOpen && (
                     <div className="px-3 py-1.5 border-b border-slate-200/80 dark:border-white/5">
                         <h2 className="flex items-center gap-1.5 text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-[0.14em]">
                             <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: 'var(--mod-fg)' }} aria-hidden />
-                            {moduleTitle[activeTopModule]} menu
+                            {menuTitle}
                         </h2>
                     </div>
                 )}
@@ -309,7 +357,7 @@ export function ZohoContextualSidebar({
                 </div>
 
                 {/* Navigation Items */}
-                <nav className="flex-1 px-2 py-2 space-y-px overflow-y-auto scrollbar-thin">
+                <nav aria-label="Primary" className="flex-1 px-2 py-2 space-y-px overflow-y-auto scrollbar-thin">
                     {navItems.map((item) => {
                         if (item.separator) {
                             return (
@@ -326,7 +374,7 @@ export function ZohoContextualSidebar({
                         }
 
                         const Icon = getIcon(item.icon);
-                        const active = isActive(item.href);
+                        const active = isActive(item);
                         const unreadBadge = item.key === 'inbox' ? formatUnreadBadge(inboxUnread) : null;
 
                         return (
@@ -335,9 +383,11 @@ export function ZohoContextualSidebar({
                                 key={item.key}
                                 href={item.href}
                                 style={active ? { backgroundColor: 'var(--mod-bg)', color: 'var(--mod-fg)', borderColor: 'var(--mod-border)' } : undefined}
+                                aria-current={active ? 'page' : undefined}
                                 className={cn(
                                     'relative flex items-center gap-2.5 px-2.5 py-[5px] rounded-md text-[13px] font-medium transition-colors',
                                     'hover:bg-slate-100 dark:hover:bg-white/5',
+                                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/60',
                                     active
                                         ? 'border-l-[3px] pl-[7px]'
                                         : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white',
@@ -407,8 +457,11 @@ export function ZohoContextualSidebar({
 
                 {/* Toggle Button */}
                 <button
+                    type="button"
                     onClick={onToggle}
-                    className="absolute -right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-white shadow-sm z-10 opacity-0 hover:opacity-100 group-hover/sidebar:opacity-100 transition-opacity"
+                    aria-label={isOpen ? 'Collapse sidebar' : 'Expand sidebar'}
+                    aria-expanded={isOpen}
+                    className="absolute -right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-white shadow-sm z-10 opacity-0 hover:opacity-100 group-hover/sidebar:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/60 transition-opacity"
                 >
                     {isOpen ? (
                         <ChevronLeft className="w-3 h-3" />
@@ -421,20 +474,23 @@ export function ZohoContextualSidebar({
             {/* Mobile Sidebar - Slide-in Drawer */}
             <aside
                 data-crm-module={activeTopModule}
+                aria-hidden={!mobileMenuOpen}
                 className={cn(
-                    'fixed top-[var(--crm-chrome-h)] left-0 bottom-0 w-72 z-40 lg:hidden',
+                    'fixed left-0 bottom-0 w-72 z-40 lg:hidden',
+                    // No module tab bar under the simple profile → drawer starts right under the top bar.
+                    isSimple ? 'top-[var(--crm-topbar-h)]' : 'top-[var(--crm-chrome-h)]',
                     'flex flex-col bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-white/10',
                     'transform transition-transform duration-300 ease-in-out',
                     mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
                 )}
             >
-                {/* Mobile Module switcher */}
-                <ModuleSwitcherRail expanded />
+                {/* Mobile Module switcher (full profile only) */}
+                {!isSimple && <ModuleSwitcherRail expanded />}
 
                 <div className="px-4 py-2 border-b border-slate-200 dark:border-white/5">
                     <h2 className="flex items-center gap-1.5 text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-[0.14em]">
                         <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: 'var(--mod-fg)' }} aria-hidden />
-                        {moduleTitle[activeTopModule]} menu
+                        {menuTitle}
                     </h2>
                 </div>
 
@@ -444,7 +500,7 @@ export function ZohoContextualSidebar({
                 </div>
 
                 {/* Mobile Navigation Items */}
-                <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto scrollbar-thin">
+                <nav aria-label="Primary" className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto scrollbar-thin">
                     {navItems.map((item) => {
                         if (item.separator) {
                             return (
@@ -461,7 +517,7 @@ export function ZohoContextualSidebar({
                         }
 
                         const Icon = getIcon(item.icon);
-                        const active = isActive(item.href);
+                        const active = isActive(item);
                         const unreadBadge = item.key === 'inbox' ? formatUnreadBadge(inboxUnread) : null;
 
                         return (
@@ -470,10 +526,12 @@ export function ZohoContextualSidebar({
                                 key={item.key}
                                 href={item.href}
                                 onClick={handleLinkClick}
+                                aria-current={active ? 'page' : undefined}
                                 style={active ? { backgroundColor: 'var(--mod-bg)', color: 'var(--mod-fg)', borderColor: 'var(--mod-border)' } : undefined}
                                 className={cn(
                                     'flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all',
                                     'hover:bg-slate-100 dark:hover:bg-white/5',
+                                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/60',
                                     'active:scale-[0.98]',
                                     active
                                         ? 'border-l-[3px]'

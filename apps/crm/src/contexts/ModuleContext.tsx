@@ -152,6 +152,9 @@ export const CRM_NAV_ITEMS: NavItem[] = [
     { key: 'dashboard', label: 'Dashboard', icon: 'layout-dashboard', href: '/crm' },
     { key: 'workqueue', label: 'Workqueue', icon: 'inbox', href: '/crm/workqueue' },
 
+    // NOTE: the module links in this section are the static baseline used by
+    // the reachability test; the rendered sidebar rebuilds them from the org's
+    // enabled crm_modules via buildFullCrmNav() (lib/crm/nav-profile.ts).
     { key: 'sec-pipeline', separator: true, sectionTitle: 'Sales Pipeline' },
     { key: 'leads', label: 'Leads', icon: 'user-plus', href: '/crm/modules/leads' },
     { key: 'contacts', label: 'Contacts', icon: 'users', href: '/crm/modules/contacts' },
@@ -162,7 +165,12 @@ export const CRM_NAV_ITEMS: NavItem[] = [
     { key: 'pipeline', label: 'Pipeline', icon: 'kanban', href: '/crm/pipeline' },
 
     { key: 'sec-people', separator: true, sectionTitle: 'People Management' },
-    { key: 'advisors', label: 'Advisors & Agents', icon: 'user-cog', href: '/crm/members' },
+    // The `advisors` CRM module (crm_modules.key = 'advisors'); the sidebar
+    // hides this when the org has that module disabled (see nav-profile.ts).
+    { key: 'advisors', label: 'Advisors', icon: 'user-cog', href: '/crm/modules/advisors' },
+    // Admin-Portal member roster (health-share `members` table), distinct from
+    // the CRM `members` module list above — label it for what it opens.
+    { key: 'member-roster', label: 'Member Roster', icon: 'heart-pulse', href: '/crm/members' },
     { key: 'contact-groups', label: 'Contact Groups', icon: 'folder-users', href: '/crm/modules/contacts?tab=groups' },
     { key: 'segmentation', label: 'Segmentation', icon: 'target', href: '/crm/modules/contacts?tab=segments' },
 

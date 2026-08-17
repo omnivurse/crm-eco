@@ -104,7 +104,11 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
   // If the module is disabled (e.g. PIFH's vestigial `deals` and `prospects`
   // duplicates), redirect to a sibling enabled module with the same display
   // name so old bookmarks and stale links don't dead-end on a 0-record page.
+  //
+  // NOTE: `redirect()` throws NEXT_REDIRECT, so it must be called OUTSIDE the
+  // try/catch — otherwise the catch swallows it and the disabled module renders.
   if (crmModule && crmModule.is_enabled === false) {
+    let siblingKey: string | null = null;
     try {
       const supabase = await createCrmClient();
       const { data: sibling } = await supabase
@@ -117,11 +121,12 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
         .order('display_order', { ascending: true })
         .limit(1)
         .maybeSingle();
-      if (sibling?.key) {
-        redirect(`/crm/modules/${sibling.key}`);
-      }
+      siblingKey = sibling?.key ?? null;
     } catch (err) {
       console.error('[ModulePage] Failed to resolve disabled module sibling:', err);
+    }
+    if (siblingKey) {
+      redirect(`/crm/modules/${siblingKey}`);
     }
   }
 

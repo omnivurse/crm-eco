@@ -16,6 +16,7 @@ import type { CrmProfile, CrmUiPreferences } from './types';
 
 export type CrmFeatureFlagKey =
   | 'crm.layout.v2'
+  | 'crm.nav.simple'
   | (string & { readonly __brand?: never });
 
 interface ResolvedFlag {
@@ -91,4 +92,17 @@ export async function isLayoutV2Enabled(
 ): Promise<boolean> {
   const flag = await resolveCrmFeatureFlag('crm.layout.v2', profile, false);
   return flag.enabled;
+}
+
+/**
+ * Tenant navigation profile (`crm.nav.simple`). Org/global rows only — there
+ * is deliberately no per-user override: the whole org sees the same menu.
+ * Resolves `'simple'` when the flag is enabled, `'full'` otherwise (and on
+ * any DB failure, so a broken flags table can never hide navigation).
+ */
+export async function resolveCrmNavProfile(
+  profile: Pick<CrmProfile, 'organization_id' | 'ui_preferences'> | null | undefined,
+): Promise<'simple' | 'full'> {
+  const flag = await resolveCrmFeatureFlag('crm.nav.simple', profile, false);
+  return flag.enabled ? 'simple' : 'full';
 }

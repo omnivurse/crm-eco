@@ -19,6 +19,7 @@ import {
   useModule,
   type TopModule,
 } from '@/contexts/ModuleContext';
+import type { NavProfile } from '@/lib/crm/nav-profile';
 
 const iconMap: Record<string, LucideIcon> = {
   users: Users,
@@ -34,11 +35,20 @@ function getIcon(iconName: string): LucideIcon {
   return iconMap[iconName] || Users;
 }
 
+interface CrmModuleTabBarProps {
+  /**
+   * `'simple'` (tenant flag `crm.nav.simple`) renders no tab strip at all —
+   * small orgs get one flat sidebar menu instead of 7 top-level tabs.
+   */
+  navProfile?: NavProfile;
+}
+
 /**
- * Sticky Zoho-style module tab strip — always visible below the top bar so
- * reps can switch CRM / Communications / Revenue without hunting in menus.
+ * Sticky Zoho-style module tab strip — visible below the top bar under the
+ * `full` nav profile so reps can switch CRM / Communications / Revenue
+ * without hunting in menus.
  */
-export function CrmModuleTabBar() {
+export function CrmModuleTabBar({ navProfile = 'full' }: CrmModuleTabBarProps) {
   const pathname = usePathname();
   const { setActiveModule } = useModule();
   const activeModule = resolveTopModuleFromPathname(pathname);
@@ -46,6 +56,8 @@ export function CrmModuleTabBar() {
   const handleClick = (key: TopModule) => {
     setActiveModule(key);
   };
+
+  if (navProfile === 'simple') return null;
 
   return (
     <div className="sticky top-[var(--crm-topbar-h)] z-[35] isolate shrink-0 border-b border-slate-200/80 bg-white dark:border-white/5 dark:bg-slate-950">

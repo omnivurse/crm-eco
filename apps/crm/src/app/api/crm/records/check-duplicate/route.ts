@@ -6,6 +6,12 @@ import { createClient, getAuthProfile } from '@/lib/supabase-server';
  *
  * Check for existing records that match the given email or phone.
  * Returns matching duplicates so the UI can warn before creating.
+ *
+ * Both `email` and `phone` are accepted. Phone is passed RAW — the
+ * `check_crm_duplicate` RPC compares digits (migration 20260817180000), so any
+ * of the stored formats ("3035551212", "303-555-1212", "(303) 555-1212") match.
+ * Email is matched case-insensitively by the RPC; phone is a fallback when no
+ * email is supplied (unchanged RPC semantics).
  */
 export async function GET(request: NextRequest) {
   try {
@@ -31,11 +37,15 @@ export async function GET(request: NextRequest) {
     }
 
     // Look up module
+    // Scope the lookup to the caller's org — module keys repeat across tenants
+    // and an unscoped `.single()` would error (or leak) once a second org has
+    // the same key.
     const { data: mod, error: moduleError } = await supabase
       .from('crm_modules')
       .select('id, org_id')
       .eq('key', moduleKey)
-      .single();
+      .eq('org_id', profile.organization_id)
+      .maybeSingle();
 
     if (moduleError || !mod || mod.org_id !== profile.organization_id) {
       return NextResponse.json({ error: 'Module not found' }, { status: 404 });

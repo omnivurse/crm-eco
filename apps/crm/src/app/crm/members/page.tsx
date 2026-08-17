@@ -1,4 +1,5 @@
 import { Suspense } from 'react';
+import Link from 'next/link';
 import { HeartPulse } from 'lucide-react';
 import { MembersListClient } from '@/components/members/MembersListClient';
 
@@ -56,11 +57,15 @@ export default function CrmMembersPage() {
             <HeartPulse className="w-5 h-5 text-white" />
           </div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
-            Members
+            Member Roster (Admin Portal)
           </h1>
         </div>
         <p className="text-sm text-slate-500 dark:text-slate-400 ml-12">
-          View and manage health share members synced from the Admin Portal
+          Health share members synced from the Admin Portal. For CRM member records, use{' '}
+          <Link href="/crm/modules/members" className="underline underline-offset-2 hover:text-slate-900 dark:hover:text-white">
+            Members
+          </Link>{' '}
+          in the sidebar.
         </p>
       </div>
 

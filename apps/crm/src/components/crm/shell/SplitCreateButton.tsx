@@ -18,7 +18,7 @@ import {
     UserPlus,
     Users,
     Building,
-    DollarSign,
+    Zap,
     CheckSquare,
     Calendar,
     FileCheck,
@@ -28,6 +28,9 @@ import {
     type LucideIcon,
 } from 'lucide-react';
 
+import type { CrmModule } from '@/lib/crm/types';
+import type { QuickCreateModuleKey } from '@/lib/crm/quick-create-config';
+
 interface CreateOption {
     label: string;
     description?: string;
@@ -36,34 +39,57 @@ interface CreateOption {
     color: string;
 }
 
-const RECORD_OPTIONS: CreateOption[] = [
+/**
+ * Record entries. `quick` opens the QuickCreateDrawer for that module (the
+ * ~12-field one-screen path); `href` entries go to the full form. `moduleKey`
+ * gates the entry on the org having that module enabled.
+ */
+interface RecordOption extends Omit<CreateOption, 'href'> {
+    href?: string;
+    quick?: QuickCreateModuleKey;
+    moduleKey: string;
+}
+
+const RECORD_OPTIONS: RecordOption[] = [
+    {
+        label: 'Member',
+        description: 'Quick add — the essentials from an enrollment',
+        quick: 'contacts',
+        moduleKey: 'contacts',
+        icon: Zap,
+        color: 'text-teal-600 dark:text-teal-400',
+    },
     {
         label: 'Lead',
-        description: 'Add a potential customer',
-        href: '/crm/modules/leads/new',
+        description: 'Quick add a potential member',
+        quick: 'leads',
+        moduleKey: 'leads',
         icon: UserPlus,
         color: 'text-blue-600 dark:text-blue-400',
     },
     {
-        label: 'Contact',
-        description: 'Add a contact record',
+        label: 'Contact — full form',
+        description: 'Every field, sectioned',
         href: '/crm/modules/contacts/new',
+        moduleKey: 'contacts',
         icon: Users,
         color: 'text-indigo-600 dark:text-indigo-400',
     },
     {
-        label: 'Account',
-        description: 'Add a company',
-        href: '/crm/modules/accounts/new',
-        icon: Building,
-        color: 'text-purple-600 dark:text-purple-400',
+        label: 'Lead — full form',
+        description: 'Every field, sectioned',
+        href: '/crm/modules/leads/new',
+        moduleKey: 'leads',
+        icon: UserPlus,
+        color: 'text-slate-600 dark:text-slate-400',
     },
     {
-        label: 'Deal',
-        description: 'Create a sales opportunity',
-        href: '/crm/modules/deals/new',
-        icon: DollarSign,
-        color: 'text-emerald-600 dark:text-emerald-400',
+        label: 'Account',
+        description: 'Add a company or group',
+        href: '/crm/modules/accounts/new',
+        moduleKey: 'accounts',
+        icon: Building,
+        color: 'text-purple-600 dark:text-purple-400',
     },
 ];
 
@@ -110,35 +136,65 @@ const FINANCIAL_OPTIONS: CreateOption[] = [
 
 interface SplitCreateButtonProps {
     className?: string;
+    /** Fallback for the primary click when `onQuickCreate` is not provided. */
     defaultHref?: string;
     defaultLabel?: string;
     size?: 'sm' | 'default' | 'lg';
+    /**
+     * Opens the QuickCreateDrawer. When provided, the primary click opens
+     * Add Member (contacts) and the quick menu entries call this too.
+     */
+    onQuickCreate?: (module: QuickCreateModuleKey) => void;
+    /** Enabled org modules — record entries for disabled modules are hidden. */
+    modules?: Pick<CrmModule, 'key' | 'is_enabled'>[];
 }
 
 export function SplitCreateButton({
     className,
-    defaultHref = '/crm/modules/leads/new',
+    defaultHref = '/crm/modules/contacts/new',
     defaultLabel = 'Create',
     size = 'sm',
+    onQuickCreate,
+    modules,
 }: SplitCreateButtonProps) {
     const [isOpen, setIsOpen] = useState(false);
 
+    const isModuleEnabled = (key: string) =>
+        !modules || modules.some((m) => m.key === key && m.is_enabled !== false);
+    const recordOptions = RECORD_OPTIONS.filter((o) => isModuleEnabled(o.moduleKey));
+
     return (
         <div className={cn('flex items-center', className)}>
-            {/* Primary Create Button */}
-            <Button
-                size={size}
-                className={cn(
-                    'rounded-r-none font-medium shadow-sm',
-                    size === 'sm' && 'h-8 px-3'
-                )}
-                asChild
-            >
-                <Link prefetch={false} href={defaultHref}>
+            {/* Primary Create Button — one click to Add Member */}
+            {onQuickCreate ? (
+                <Button
+                    size={size}
+                    className={cn(
+                        'rounded-r-none font-medium shadow-sm',
+                        size === 'sm' && 'h-8 px-3'
+                    )}
+                    onClick={() => onQuickCreate('contacts')}
+                    aria-label="Add Member (quick create)"
+                    title="Add Member — quick create"
+                >
                     <Plus className="w-4 h-4 mr-1.5" />
                     {defaultLabel}
-                </Link>
-            </Button>
+                </Button>
+            ) : (
+                <Button
+                    size={size}
+                    className={cn(
+                        'rounded-r-none font-medium shadow-sm',
+                        size === 'sm' && 'h-8 px-3'
+                    )}
+                    asChild
+                >
+                    <Link prefetch={false} href={defaultHref}>
+                        <Plus className="w-4 h-4 mr-1.5" />
+                        {defaultLabel}
+                    </Link>
+                </Button>
+            )}
 
             {/* Dropdown Trigger */}
             <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
@@ -151,6 +207,7 @@ export function SplitCreateButton({
                         )}
                     >
                         <ChevronDown className={cn('w-4 h-4 transition-transform', isOpen && 'rotate-180')} />
+                        <span className="sr-only">More create options</span>
                     </Button>
                 </DropdownMenuTrigger>
 
@@ -163,9 +220,9 @@ export function SplitCreateButton({
                     <DropdownMenuLabel className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                         Records
                     </DropdownMenuLabel>
-                    {RECORD_OPTIONS.map((option) => (
-                        <DropdownMenuItem key={option.label} asChild className="cursor-pointer">
-                            <Link prefetch={false} href={option.href} className="flex items-center gap-3 py-2">
+                    {recordOptions.map((option) => {
+                        const body = (
+                            <>
                                 <div className={cn('p-1.5 rounded-md bg-slate-100 dark:bg-slate-800', option.color)}>
                                     <option.icon className="w-4 h-4" />
                                 </div>
@@ -179,9 +236,31 @@ export function SplitCreateButton({
                                         </div>
                                     )}
                                 </div>
-                            </Link>
-                        </DropdownMenuItem>
-                    ))}
+                            </>
+                        );
+                        // Quick entries open the drawer when the host wires it;
+                        // otherwise they degrade to the full form for that module.
+                        if (option.quick && onQuickCreate) {
+                            const quick = option.quick;
+                            return (
+                                <DropdownMenuItem
+                                    key={option.label}
+                                    className="cursor-pointer flex items-center gap-3 py-2"
+                                    onSelect={() => onQuickCreate(quick)}
+                                >
+                                    {body}
+                                </DropdownMenuItem>
+                            );
+                        }
+                        const href = option.href ?? `/crm/modules/${option.moduleKey}/new`;
+                        return (
+                            <DropdownMenuItem key={option.label} asChild className="cursor-pointer">
+                                <Link prefetch={false} href={href} className="flex items-center gap-3 py-2">
+                                    {body}
+                                </Link>
+                            </DropdownMenuItem>
+                        );
+                    })}
 
                     <DropdownMenuSeparator />
 

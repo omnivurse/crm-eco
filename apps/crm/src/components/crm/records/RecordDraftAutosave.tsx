@@ -248,6 +248,12 @@ export function RecordDraftAutosave({
         key={formKey}
         fields={fields}
         layout={layout || undefined}
+        // moduleKey drives per-module section ordering (PERSON_SECTION_DISPLAY_ORDER
+        // etc.) and the create-mode collapse defaults — without it the form fell
+        // back to DEFAULT_SECTION_DISPLAY_ORDER and Health Share / Membership &
+        // Product / Identifiers landed after Children and Commissions.
+        moduleKey={moduleKey}
+        mode="create"
         readOnly={false}
         embedded
         defaultValues={resolvedDefaults}

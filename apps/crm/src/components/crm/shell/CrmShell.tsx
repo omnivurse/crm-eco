@@ -21,18 +21,25 @@ const GizmoWidget = dynamic(
   { ssr: false }
 );
 import type { CrmModule, CrmProfile } from '@/lib/crm/types';
+import type { NavModule, NavProfile } from '@/lib/crm/nav-profile';
 import { CRM_OPEN_COMMAND_PALETTE_EVENT } from '@/lib/crm/command-palette-bus';
 
 interface CrmShellProps {
   children: React.ReactNode;
   modules: CrmModule[];
   profile: CrmProfile;
+  /** Tenant nav profile resolved server-side from `crm.nav.simple`. */
+  navProfile?: NavProfile;
+  /** Enabled org modules (+ field counts) that drive module-based nav links. */
+  navModules?: NavModule[];
 }
 
 export function CrmShell({
   children,
   modules,
   profile,
+  navProfile = 'full',
+  navModules,
 }: CrmShellProps) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -112,7 +119,7 @@ export function CrmShell({
               onMobileMenuToggle={handleMobileMenuToggle}
             />
 
-            <CrmModuleTabBar />
+            <CrmModuleTabBar navProfile={navProfile} />
 
             {/* Mobile Menu Overlay */}
             {mobileMenuOpen && (
@@ -130,6 +137,8 @@ export function CrmShell({
                 onToggle={handleSidebarToggle}
                 mobileMenuOpen={mobileMenuOpen}
                 onMobileClose={handleMobileClose}
+                navProfile={navProfile}
+                navModules={navModules ?? modules}
               />
 
               <main className="flex-1 min-w-0 min-h-0 overflow-auto [scrollbar-gutter:stable] px-2 py-1.5 sm:px-3 sm:py-1.5 lg:px-4 lg:py-2 scrollbar-thin">

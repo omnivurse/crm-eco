@@ -24,7 +24,7 @@ import type {
 import { createCrmClient } from './queries';
 import { cache } from 'react';
 import { getAuthUser, getAuthProfile } from '@/lib/supabase-server';
-import { executeCrmRecordCreate } from './record-create-service';
+import { executeCrmRecordCreate, type CrmRecordCreateResult } from './record-create-service';
 import { executeCrmRecordPatch } from './record-patch-service';
 
 // ============================================================================
@@ -89,15 +89,23 @@ export interface CreateRecordInput {
   force?: boolean;
 }
 
-export async function createRecord(input: CreateRecordInput): Promise<CrmRecord> {
+/**
+ * Non-throwing record create. Returns the service's structured result so a
+ * server action / form can render duplicates + validation errors INLINE and
+ * keep the user's typed values instead of crashing to the error boundary.
+ * Auth failures are folded into the same shape (status 401).
+ */
+export async function createRecordResult(
+  input: CreateRecordInput,
+): Promise<CrmRecordCreateResult> {
   const supabase = await createCrmClient();
   const { user } = await getAuthUser();
   const profile = await getAuthProfile();
   if (!user || !profile) {
-    throw new Error('Not authenticated');
+    return { ok: false, status: 401, body: { error: 'Not authenticated', code: 'UNAUTHENTICATED' } };
   }
 
-  const result = await executeCrmRecordCreate({
+  return executeCrmRecordCreate({
     supabase,
     profile,
     user,
@@ -111,7 +119,15 @@ export async function createRecord(input: CreateRecordInput): Promise<CrmRecord>
       force: input.force,
     },
   });
+}
 
+/**
+ * Throwing wrapper kept for callers that treat any failure as exceptional
+ * (e.g. scripts). Interactive forms should use `createRecordResult` so a
+ * duplicate never becomes an unhandled error.
+ */
+export async function createRecord(input: CreateRecordInput): Promise<CrmRecord> {
+  const result = await createRecordResult(input);
   if (!result.ok) {
     const errMsg =
       typeof result.body.error === 'string' ? result.body.error : JSON.stringify(result.body);

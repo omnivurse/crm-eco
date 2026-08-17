@@ -1,6 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@crm-eco/ui/components/button';
 import { IdentityActionsHeader } from '@crm-eco/ui/components/identity-actions-header';
@@ -31,6 +33,15 @@ import {
   DropdownMenuTrigger,
 } from '@crm-eco/ui/components/dropdown-menu';
 import type { CrmModule } from '@/lib/crm/types';
+import { isQuickCreateModuleKey } from '@/lib/crm/quick-create-config';
+
+// Contacts/Leads "New …" opens the one-screen quick drawer (with an
+// "Open full form" handoff inside) instead of the 250-field full form.
+const QuickCreateDrawer = dynamic(
+  () => import('@/components/zoho/QuickCreateDrawer').then((mod) => mod.QuickCreateDrawer),
+  { ssr: false },
+);
+const QUICK_CREATE_HEADER_MODULES = new Set(['contacts', 'leads']);
 
 interface ModuleHeaderProps {
   module: CrmModule;
@@ -62,6 +73,11 @@ export function ModuleHeader({
   const router = useRouter();
   const searchParams = useSearchParams();
   const icon = MODULE_ICONS[module.key] || <Users className="w-5 h-5" />;
+  const [quickCreateOpen, setQuickCreateOpen] = useState(false);
+  const usesQuickCreate =
+    QUICK_CREATE_HEADER_MODULES.has(module.key) && isQuickCreateModuleKey(module.key);
+  const newLabel =
+    module.key === 'contacts' ? 'Add Member' : `New ${module.name}`;
   const colors = resolveModulePalette(module.key);
 
   // Check if tree view is currently active
@@ -178,12 +194,24 @@ export function ModuleHeader({
               Export
             </Button>
 
-            <Button size="sm" className="h-9 shadow-sm" asChild>
-              <Link href={`/crm/modules/${module.key}/new`}>
+            {usesQuickCreate ? (
+              <Button
+                size="sm"
+                className="h-9 shadow-sm"
+                onClick={() => setQuickCreateOpen(true)}
+                title={`${newLabel} — quick create (full form available inside)`}
+              >
                 <Plus className="w-4 h-4 mr-1.5" />
-                New {module.name}
-              </Link>
-            </Button>
+                {newLabel}
+              </Button>
+            ) : (
+              <Button size="sm" className="h-9 shadow-sm" asChild>
+                <Link href={`/crm/modules/${module.key}/new`}>
+                  <Plus className="w-4 h-4 mr-1.5" />
+                  New {module.name}
+                </Link>
+              </Button>
+            )}
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -191,6 +219,7 @@ export function ModuleHeader({
                   variant="ghost"
                   size="icon"
                   className="h-9 w-9 text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                  aria-label="More actions"
                 >
                   <MoreHorizontal className="w-4 h-4" />
                 </Button>
@@ -253,6 +282,13 @@ export function ModuleHeader({
           </>
         }
       />
+      {usesQuickCreate && isQuickCreateModuleKey(module.key) && (
+        <QuickCreateDrawer
+          open={quickCreateOpen}
+          onOpenChange={setQuickCreateOpen}
+          defaultModule={module.key}
+        />
+      )}
     </div>
   );
 }
