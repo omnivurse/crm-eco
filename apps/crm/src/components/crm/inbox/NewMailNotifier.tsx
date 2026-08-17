@@ -147,25 +147,39 @@ export function NewMailNotifier({ organizationId }: NewMailNotifierProps) {
   useEffect(() => {
     if (!organizationId) return;
 
-    // Org scoping is the one server-side filter postgres_changes allows, so it
-    // is spent here; direction and dedupe are decided in decideNotify. RLS on
-    // inbox_messages is the real boundary — this filter is an optimisation.
-    const channel = supabase
-      .channel(`crm-new-mail-${organizationId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'inbox_messages',
-          filter: `org_id=eq.${organizationId}`,
-        },
-        (payload: { new: IncomingMessage }) => announce(payload.new),
-      )
-      .subscribe();
+    let cancelled = false;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+
+    const start = () => {
+      if (cancelled) return;
+      // Org scoping is the one server-side filter postgres_changes allows, so it
+      // is spent here; direction and dedupe are decided in decideNotify. RLS on
+      // inbox_messages is the real boundary — this filter is an optimisation.
+      channel = supabase
+        .channel(`crm-new-mail-${organizationId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'inbox_messages',
+            filter: `org_id=eq.${organizationId}`,
+          },
+          (payload: { new: IncomingMessage }) => announce(payload.new),
+        )
+        .subscribe();
+    };
+
+    const useIdle = typeof window !== 'undefined' && 'requestIdleCallback' in window;
+    const idle = useIdle
+      ? window.requestIdleCallback(start, { timeout: 1500 })
+      : window.setTimeout(start, 800);
 
     return () => {
-      void supabase.removeChannel(channel);
+      cancelled = true;
+      if (useIdle) window.cancelIdleCallback(idle);
+      else window.clearTimeout(idle);
+      if (channel) void supabase.removeChannel(channel);
     };
   }, [organizationId, announce]);
 

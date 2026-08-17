@@ -6,7 +6,6 @@ import { CrmTopBar } from './CrmTopBar';
 import { CrmModuleTabBar } from './CrmModuleTabBar';
 import { ZohoContextualSidebar } from './ZohoContextualSidebar';
 import { BottomBar } from './bottom-bar';
-import { CommandPalette } from './CommandPalette';
 import { OfflineBanner } from '@/components/crm/offline/OfflineBanner';
 import { SyncToastNotifier } from '@/components/crm/offline/SyncToastNotifier';
 import { OfflineAnalyticsBoot } from '@/components/crm/offline/OfflineAnalyticsBoot';
@@ -19,6 +18,10 @@ import dynamic from 'next/dynamic';
 const GizmoWidget = dynamic(
   () => import('@/components/crm/gizmo/GizmoWidget').then((m) => m.GizmoWidget),
   { ssr: false }
+);
+const CommandPalette = dynamic(
+  () => import('./CommandPalette').then((m) => m.CommandPalette),
+  { ssr: false },
 );
 import type { CrmModule, CrmProfile } from '@/lib/crm/types';
 import type { NavModule, NavProfile } from '@/lib/crm/nav-profile';
@@ -45,6 +48,7 @@ export function CrmShell({
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const [commandPaletteMounted, setCommandPaletteMounted] = useState(false);
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -53,10 +57,33 @@ export function CrmShell({
 
   // Dashboard hero / top bar can open the command palette via event bus.
   useEffect(() => {
-    const openPalette = () => setCommandPaletteOpen(true);
+    const openPalette = () => {
+      setCommandPaletteMounted(true);
+      setCommandPaletteOpen(true);
+    };
     window.addEventListener(CRM_OPEN_COMMAND_PALETTE_EVENT, openPalette);
     return () => window.removeEventListener(CRM_OPEN_COMMAND_PALETTE_EVENT, openPalette);
   }, []);
+
+  // Own ⌘K until the palette chunk is mounted — CommandPalette is the
+  // keyboard owner after that, so this listener unregisters to avoid a
+  // double-toggle.
+  useEffect(() => {
+    if (commandPaletteMounted) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        setCommandPaletteMounted(true);
+        setCommandPaletteOpen(true);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [commandPaletteMounted]);
+
+  useEffect(() => {
+    if (commandPaletteOpen) setCommandPaletteMounted(true);
+  }, [commandPaletteOpen]);
 
   // Prevent body scroll when mobile menu is open
   useEffect(() => {
@@ -71,6 +98,7 @@ export function CrmShell({
   }, [mobileMenuOpen]);
 
   const handleOpenCommandPalette = useCallback(() => {
+    setCommandPaletteMounted(true);
     setCommandPaletteOpen(true);
   }, []);
   const handleMobileMenuToggle = useCallback(() => {
@@ -157,12 +185,13 @@ export function CrmShell({
             <BottomBar modules={modules} profile={profile} />
           </div>
 
-          {/* Global Command Palette (⌘K / Ctrl+K) */}
-          <CommandPalette
-            open={commandPaletteOpen}
-            onOpenChange={setCommandPaletteOpen}
-            modules={modules}
-          />
+          {commandPaletteMounted && (
+            <CommandPalette
+              open={commandPaletteOpen}
+              onOpenChange={setCommandPaletteOpen}
+              modules={modules}
+            />
+          )}
         </div>
       </GizmoProvider>
     </ModuleProvider>

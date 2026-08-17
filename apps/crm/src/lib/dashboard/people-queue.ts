@@ -116,7 +116,48 @@ function addDays(d: Date, days: number): Date {
   return new Date(d.getTime() + days * 86_400_000);
 }
 
+export const PEOPLE_QUEUE_TTL_MS = 20_000;
+
+type PeopleQueueCacheEntry = { value: PeopleQueueResult; exp: number };
+
+function peopleQueueStore(): Map<string, PeopleQueueCacheEntry> {
+  const g = globalThis as typeof globalThis & {
+    __crmPeopleQueue?: Map<string, PeopleQueueCacheEntry>;
+  };
+  if (!g.__crmPeopleQueue) g.__crmPeopleQueue = new Map();
+  return g.__crmPeopleQueue;
+}
+
+/**
+ * Org+user keyed. Recently viewed is per-user, so the key must include
+ * profile.id. Tests that inject `now` bypass the cache.
+ */
 export async function buildPeopleQueue(
+  profile: PeopleQueueProfile,
+  opts: BuildPeopleQueueOptions = {},
+): Promise<PeopleQueueResult> {
+  const limit = opts.limit ?? 12;
+  const recentLimit = opts.recentLimit ?? 6;
+  const cacheKey =
+    !opts.now && profile.id && profile.organization_id
+      ? `${profile.organization_id}:${profile.id}:${limit}:${recentLimit}`
+      : null;
+  if (cacheKey) {
+    const hit = peopleQueueStore().get(cacheKey);
+    if (hit && hit.exp > Date.now()) return hit.value;
+  }
+
+  const value = await buildPeopleQueueFresh(profile, { ...opts, limit, recentLimit });
+  if (cacheKey) {
+    peopleQueueStore().set(cacheKey, {
+      value,
+      exp: Date.now() + PEOPLE_QUEUE_TTL_MS,
+    });
+  }
+  return value;
+}
+
+async function buildPeopleQueueFresh(
   profile: PeopleQueueProfile,
   opts: BuildPeopleQueueOptions = {},
 ): Promise<PeopleQueueResult> {

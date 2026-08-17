@@ -2,10 +2,8 @@
  * CRM Supabase Query Functions
  */
 
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
 import { cache } from 'react';
-import { getAuthUser as getCachedAuthUser } from '../supabase-server';
+import { createClient, getAuthUser as getCachedAuthUser } from '../supabase-server';
 import { mergeCrmRecordRowIntoFormDefaults } from '@/lib/crm/record-form-defaults';
 import type {
   CrmModule,
@@ -165,42 +163,8 @@ function getDateRangeForPreset(preset: FilterOperator, nValue?: number): DateRan
 // Supabase Client Helper
 // ============================================================================
 
-export async function createCrmClient() {
-  // Validate environment variables early
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  
-  if (!supabaseUrl || !supabaseKey) {
-    console.error('[CRM] Missing Supabase environment variables:', {
-      hasUrl: !!supabaseUrl,
-      hasKey: !!supabaseKey,
-    });
-    throw new Error('Missing Supabase configuration. Check NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.');
-  }
-  
-  const cookieStore = await cookies();
-  
-  return createServerClient(
-    supabaseUrl,
-    supabaseKey,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            );
-          } catch {
-            // Server Component context - cookies are read-only
-          }
-        },
-      },
-    }
-  );
-}
+/** One cookie-backed SSR client per request — do not construct a new client per query. */
+export const createCrmClient = createClient;
 
 // ============================================================================
 // User & Profile Queries
@@ -208,7 +172,7 @@ export async function createCrmClient() {
 // Tenant: `profiles.organization_id` is the same UUID as `crm_*`.`org_id` for that tenant
 // (conventions: `lib/crm/org-scope.ts`).
 
-export async function getCurrentProfile(): Promise<CrmProfile | null> {
+export const getCurrentProfile = cache(async function getCurrentProfile(): Promise<CrmProfile | null> {
   try {
     // Use cached auth to prevent concurrent token refresh conflicts (409 errors)
     const { user, error: authError } = await getCachedAuthUser();
@@ -249,13 +213,13 @@ export async function getCurrentProfile(): Promise<CrmProfile | null> {
     console.error('[CRM] getCurrentProfile failed:', error);
     return null; // Return null instead of throwing — callers check for null
   }
-}
+});
 
 /**
- * Cached version of getCurrentProfile - deduplicates within a single request
- * Use this in layouts to avoid re-fetching on every navigation
+ * Alias — getCurrentProfile is already request-cached. Kept so existing
+ * imports keep working.
  */
-export const getCachedCurrentProfile = cache(getCurrentProfile);
+export const getCachedCurrentProfile = getCurrentProfile;
 
 export async function getOrganizationProfiles(orgId: string): Promise<CrmProfile[]> {
   const supabase = await createCrmClient();
@@ -1685,7 +1649,7 @@ export interface ReportSummary {
 }
 
 export async function getReportSummary(orgId: string): Promise<ReportSummary> {
-  const stats = await getModuleStats(orgId);
+  const stats = await getCachedModuleStats(orgId);
   
   const totalContacts = stats.find(s => s.moduleKey === 'contacts')?.totalRecords || 0;
   const totalLeads = stats.find(s => s.moduleKey === 'leads')?.totalRecords || 0;

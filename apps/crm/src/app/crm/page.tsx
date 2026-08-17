@@ -1,6 +1,6 @@
 import { Suspense } from 'react';
 import {
-  getCurrentProfile,
+  getCachedCurrentProfile,
   getCachedDashboardHeroStats,
   getCachedAtRiskDeals,
   getCachedModuleStats,
@@ -100,34 +100,83 @@ async function fetchWidgetData(
   return results;
 }
 
-async function DashboardContent() {
-  let profile;
-  try {
-    profile = await getCurrentProfile();
-  } catch (err) {
-    console.error('[Dashboard] Failed to get profile:', err);
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <p className="text-lg font-semibold text-slate-700 dark:text-slate-200">Unable to load dashboard</p>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Please sign in to access the CRM.</p>
-        </div>
+function DashboardUnavailable({ title, detail }: { title: string; detail: string }) {
+  return (
+    <div className="flex items-center justify-center min-h-[400px]">
+      <div className="text-center">
+        <p className="text-lg font-semibold text-slate-700 dark:text-slate-200">{title}</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{detail}</p>
       </div>
-    );
-  }
-  if (!profile) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <p className="text-lg font-semibold text-slate-700 dark:text-slate-200">Profile not found</p>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Please complete your profile setup.</p>
-        </div>
+    </div>
+  );
+}
+
+function DeskSkeleton() {
+  return (
+    <div className="space-y-3">
+      <div className="h-28 animate-pulse rounded-lg border border-border bg-muted" />
+      <div className="h-64 animate-pulse rounded-lg border border-border bg-muted" />
+    </div>
+  );
+}
+
+function WidgetsSkeleton() {
+  return (
+    <div className="space-y-3 pt-1">
+      <div className="h-4 w-32 animate-pulse rounded bg-muted" />
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="h-40 animate-pulse rounded-lg bg-muted" />
+        <div className="h-40 animate-pulse rounded-lg bg-muted" />
       </div>
-    );
+    </div>
+  );
+}
+
+async function CommandDeskBlock({
+  profile,
+}: {
+  profile: NonNullable<Awaited<ReturnType<typeof getCachedCurrentProfile>>>;
+}) {
+  const [heroStatsResult, peopleQueueResult] = await Promise.allSettled([
+    getCachedDashboardHeroStats(profile.organization_id, profile.id),
+    buildPeopleQueue(profile, { limit: 12, recentLimit: 6 }),
+  ]);
+
+  const heroStats = heroStatsResult.status === 'fulfilled'
+    ? heroStatsResult.value
+    : { todaysTaskCount: 0, overdueCount: 0, atRiskCount: 0, newThisWeek: 0 };
+
+  let peopleQueue: PeopleQueue;
+  if (peopleQueueResult.status === 'fulfilled') {
+    peopleQueue = peopleQueueResult.value;
+  } else {
+    console.error('[Dashboard] buildPeopleQueue failed:', peopleQueueResult.reason);
+    peopleQueue = {
+      items: [],
+      counts: {
+        tasksToday: heroStats.todaysTaskCount,
+        overdue: heroStats.overdueCount,
+        pending: 0,
+        startingSoon: 0,
+      },
+      recentlyViewed: [],
+      degraded: true,
+    };
   }
 
-  // Load user's saved layout, or role-aware defaults for first-time visitors.
-  // Habit bias only applies when there is no custom saved layout.
+  return (
+    <>
+      <CommandDesk profile={profile} queue={peopleQueue} />
+      <CrmAlerts heroStats={heroStats} />
+    </>
+  );
+}
+
+async function WidgetsBlock({
+  profile,
+}: {
+  profile: NonNullable<Awaited<ReturnType<typeof getCachedCurrentProfile>>>;
+}) {
   let layout = resolveDefaultDashboardLayout(profile.crm_role);
   let usedSavedLayout = false;
   try {
@@ -149,59 +198,28 @@ async function DashboardContent() {
     }
   }
 
-  // Strip comingSoon widgets from the rendered layout (catalog already hides them)
   const activeWidgets = layout.widgets.filter(
     (w) => !WIDGET_REGISTRY[w.type]?.comingSoon,
   );
   const layoutForRender = { ...layout, widgets: activeWidgets };
   const widgetTypes = activeWidgets.map((w) => w.type);
 
-  // Fetch hero/shared data in parallel first
-  const [
-    heroStatsResult,
-    moduleStatsResult,
-    reportSummaryResult,
-    peopleQueueResult,
-  ] = await Promise.allSettled([
+  const [heroStatsResult, moduleStatsResult, reportSummaryResult] = await Promise.allSettled([
     getCachedDashboardHeroStats(profile.organization_id, profile.id),
     getCachedModuleStats(profile.organization_id),
     getReportSummary(profile.organization_id),
-    buildPeopleQueue(profile, { limit: 12, recentLimit: 6 }),
   ]);
 
   const heroStats = heroStatsResult.status === 'fulfilled'
     ? heroStatsResult.value
     : { todaysTaskCount: 0, overdueCount: 0, atRiskCount: 0, newThisWeek: 0 };
-
   const moduleStats = moduleStatsResult.status === 'fulfilled'
     ? moduleStatsResult.value
     : [];
-
   const reportSummary = reportSummaryResult.status === 'fulfilled'
     ? reportSummaryResult.value
     : null;
 
-  // Today queue of people (command desk). A rejected build degrades to an
-  // empty-but-honest desk rather than failing the whole page.
-  let peopleQueue: PeopleQueue;
-  if (peopleQueueResult.status === 'fulfilled') {
-    peopleQueue = peopleQueueResult.value;
-  } else {
-    console.error('[Dashboard] buildPeopleQueue failed:', peopleQueueResult.reason);
-    peopleQueue = {
-      items: [],
-      counts: {
-        tasksToday: heroStats.todaysTaskCount,
-        overdue: heroStats.overdueCount,
-        pending: 0,
-        startingSoon: 0,
-      },
-      recentlyViewed: [],
-      degraded: true,
-    };
-  }
-
-  // Fetch widget-specific data (passes shared data to avoid duplicate DB calls)
   let widgetData: Record<string, unknown> = {};
   try {
     widgetData = await fetchWidgetData(profile, widgetTypes, {
@@ -215,28 +233,51 @@ async function DashboardContent() {
 
   return (
     <DashboardLayoutProvider initialLayout={layoutForRender}>
-      <div className="space-y-4 pb-6">
-        {/* Command desk: greeting + search → count chips → today queue of people + next-up rail */}
-        <CommandDesk profile={profile} queue={peopleQueue} />
-
-        {/* CRM Alerts — only renders when there are actionable items */}
-        <CrmAlerts heroStats={heroStats} />
-
-        {/* Habit coach tips (cached from nightly AI batch — 0 tokens on load) */}
-        <HabitForYouCard />
-
-        {/* Below-fold customizable widgets */}
-        <section aria-label="Dashboard widgets" className="space-y-3 pt-1">
-          <div className="flex items-center justify-between gap-2 px-0.5">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              Your dashboard
-            </h2>
-          </div>
-          <DashboardToolbar />
-          <DashboardGrid renderedWidgets={preRenderWidgets(activeWidgets, widgetData)} />
-        </section>
-      </div>
+      <HabitForYouCard />
+      <section aria-label="Dashboard widgets" className="space-y-3 pt-1">
+        <div className="flex items-center justify-between gap-2 px-0.5">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            Your dashboard
+          </h2>
+        </div>
+        <DashboardToolbar />
+        <DashboardGrid renderedWidgets={preRenderWidgets(activeWidgets, widgetData)} />
+      </section>
     </DashboardLayoutProvider>
+  );
+}
+
+async function DashboardContent() {
+  let profile;
+  try {
+    profile = await getCachedCurrentProfile();
+  } catch (err) {
+    console.error('[Dashboard] Failed to get profile:', err);
+    return (
+      <DashboardUnavailable
+        title="Unable to load dashboard"
+        detail="Please sign in to access the CRM."
+      />
+    );
+  }
+  if (!profile) {
+    return (
+      <DashboardUnavailable
+        title="Profile not found"
+        detail="Please complete your profile setup."
+      />
+    );
+  }
+
+  return (
+    <div className="space-y-4 pb-6">
+      <Suspense fallback={<DeskSkeleton />}>
+        <CommandDeskBlock profile={profile} />
+      </Suspense>
+      <Suspense fallback={<WidgetsSkeleton />}>
+        <WidgetsBlock profile={profile} />
+      </Suspense>
+    </div>
   );
 }
 

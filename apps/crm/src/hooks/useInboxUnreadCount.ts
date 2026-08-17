@@ -44,7 +44,8 @@ export function useInboxUnreadCount(organizationId: string | null): number | nul
   useEffect(() => {
     if (!organizationId) return;
 
-    void refresh();
+    let cancelled = false;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
 
     // Mail arriving and threads being read both fire here. Coalesced because a
     // single inbound email triggers several row events (conversation upsert
@@ -54,23 +55,36 @@ export function useInboxUnreadCount(organizationId: string | null): number | nul
       timerRef.current = setTimeout(() => void refresh(), 400);
     };
 
-    const channel = supabase
-      .channel(`crm-inbox-unread-${organizationId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'inbox_conversations',
-          filter: `org_id=eq.${organizationId}`,
-        },
-        scheduleRefresh,
-      )
-      .subscribe();
+    const start = () => {
+      if (cancelled) return;
+      void refresh();
+      channel = supabase
+        .channel(`crm-inbox-unread-${organizationId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'inbox_conversations',
+            filter: `org_id=eq.${organizationId}`,
+          },
+          scheduleRefresh,
+        )
+        .subscribe();
+    };
+
+    // Stay off the first-paint network — badge can appear a beat later.
+    const useIdle = typeof window !== 'undefined' && 'requestIdleCallback' in window;
+    const idle = useIdle
+      ? window.requestIdleCallback(start, { timeout: 1500 })
+      : window.setTimeout(start, 800);
 
     return () => {
+      cancelled = true;
+      if (useIdle) window.cancelIdleCallback(idle);
+      else window.clearTimeout(idle);
       if (timerRef.current) clearTimeout(timerRef.current);
-      void supabase.removeChannel(channel);
+      if (channel) void supabase.removeChannel(channel);
     };
   }, [organizationId, refresh]);
 
