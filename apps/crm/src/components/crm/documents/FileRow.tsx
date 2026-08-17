@@ -59,7 +59,7 @@ export function FileRow({
       <TableCell>
         <button
           onClick={() => onOpen(item.id)}
-          className="flex items-center gap-2 text-sm hover:text-blue-600 transition-colors"
+          className="flex items-center gap-2 text-sm hover:text-primary transition-colors"
         >
           <Icon className={`w-4 h-4 shrink-0 ${isDoc ? 'text-gray-400' : 'text-blue-400'}`} />
           <span className="truncate">{item.name}</span>

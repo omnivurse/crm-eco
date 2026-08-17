@@ -26,7 +26,7 @@ export function FolderTree({ folders, currentFolderId, onSelectFolder, onNewFold
         <button
           onClick={() => onSelectFolder(null)}
           className={`w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-md hover:bg-gray-100 transition-colors mb-1 ${
-            currentFolderId === null ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'
+            currentFolderId === null ? 'bg-primary/10 text-primary font-medium' : 'text-gray-700'
           }`}
         >
           <FolderRoot className="w-4 h-4 shrink-0" />

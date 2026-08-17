@@ -1097,7 +1097,7 @@ export const RecordDetailShell = memo(function RecordDetailShell({
               <Button
                 onClick={submitTask}
                 disabled={isSubmitting}
-                className="bg-teal-500 hover:bg-teal-600 text-white"
+               
               >
                 {isSubmitting ? (
                   <>
@@ -1143,7 +1143,7 @@ export const RecordDetailShell = memo(function RecordDetailShell({
               <Button
                 onClick={submitNote}
                 disabled={isSubmitting}
-                className="bg-teal-500 hover:bg-teal-600 text-white"
+               
               >
                 {isSubmitting ? (
                   <>
@@ -1207,7 +1207,7 @@ export const RecordDetailShell = memo(function RecordDetailShell({
               <Button
                 onClick={submitFile}
                 disabled={isSubmitting || !selectedFile}
-                className="bg-teal-500 hover:bg-teal-600 text-white"
+               
               >
                 {isSubmitting ? (
                   <>

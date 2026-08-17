@@ -708,7 +708,7 @@ export function FilterSidebar({ fields, filters, onFiltersChange, orgId }: Filte
                         className={cn(
                           'flex items-center gap-2 w-full px-3 py-2 rounded-lg text-xs transition-colors text-left',
                           isActive
-                            ? 'bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 font-medium'
+                            ? 'bg-primary/10 text-primary font-medium'
                             : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800',
                           !enabled && 'opacity-40 cursor-not-allowed',
                         )}
@@ -762,7 +762,7 @@ export function FilterSidebar({ fields, filters, onFiltersChange, orgId }: Filte
             <AccordionTrigger className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 hover:no-underline">
               Filter by Owner
               {activeOwnerFilter && (
-                <span className="ml-2 px-1.5 py-0.5 text-[10px] bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full font-bold">1</span>
+                <span className="ml-2 px-1.5 py-0.5 text-[10px] bg-primary/15 text-primary rounded-full font-bold">1</span>
               )}
             </AccordionTrigger>
             <AccordionContent className="px-3 pb-3">
@@ -787,7 +787,7 @@ export function FilterSidebar({ fields, filters, onFiltersChange, orgId }: Filte
             <AccordionTrigger className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 hover:no-underline">
               Filter By Fields
               {fieldFilters.length > 0 && (
-                <span className="ml-2 px-1.5 py-0.5 text-[10px] bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full font-bold">
+                <span className="ml-2 px-1.5 py-0.5 text-[10px] bg-primary/15 text-primary rounded-full font-bold">
                   {fieldFilters.length}
                 </span>
               )}
@@ -823,7 +823,7 @@ export function FilterSidebar({ fields, filters, onFiltersChange, orgId }: Filte
                         className={cn(
                           'flex items-center gap-2 w-full px-3 py-2 rounded-lg text-xs transition-colors text-left',
                           hasFilter
-                            ? 'bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 font-medium'
+                            ? 'bg-primary/10 text-primary font-medium'
                             : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800',
                         )}
                       >
@@ -856,7 +856,7 @@ export function FilterSidebar({ fields, filters, onFiltersChange, orgId }: Filte
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-6 text-[10px] text-blue-600 hover:text-blue-700 pl-2"
+                            className="h-6 text-[10px] text-primary hover:text-primary/80 pl-2"
                             onClick={() => addFieldFilter(field.key)}
                           >
                             <Plus className="w-3 h-3 mr-1" />
@@ -882,7 +882,7 @@ export function FilterSidebar({ fields, filters, onFiltersChange, orgId }: Filte
             <AccordionTrigger className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 hover:no-underline">
               Filter By Related Modules
               {activeRelatedModules.size > 0 && (
-                <span className="ml-2 px-1.5 py-0.5 text-[10px] bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full font-bold">
+                <span className="ml-2 px-1.5 py-0.5 text-[10px] bg-primary/15 text-primary rounded-full font-bold">
                   {activeRelatedModules.size}
                 </span>
               )}
@@ -898,7 +898,7 @@ export function FilterSidebar({ fields, filters, onFiltersChange, orgId }: Filte
                       <div className={cn(
                         'flex items-center gap-2 flex-1 min-w-0 px-2 py-2 rounded-lg text-xs',
                         isActive
-                          ? 'bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 font-medium'
+                          ? 'bg-primary/10 text-primary font-medium'
                           : 'text-slate-700 dark:text-slate-300',
                       )}>
                         <Icon className="w-3.5 h-3.5 shrink-0" />
@@ -911,7 +911,7 @@ export function FilterSidebar({ fields, filters, onFiltersChange, orgId }: Filte
                           className={cn(
                             'px-2 py-1 rounded text-[10px] font-medium transition-colors',
                             currentCondition === 'has_any'
-                              ? 'bg-blue-600 text-white'
+                              ? 'bg-primary text-primary-foreground'
                               : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700',
                             !enabled && 'opacity-40 cursor-not-allowed',
                           )}

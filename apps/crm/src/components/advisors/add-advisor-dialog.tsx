@@ -356,7 +356,7 @@ export function AddAdvisorDialog() {
                         onClick={() => toggleState(state)}
                         className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
                           formData.licenseStates.includes(state)
-                            ? 'bg-blue-600 text-white'
+                            ? 'bg-primary text-primary-foreground'
                             : 'bg-white text-slate-600 hover:bg-slate-100 border'
                         }`}
                       >

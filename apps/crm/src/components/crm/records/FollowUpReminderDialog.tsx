@@ -159,8 +159,8 @@ export function FollowUpReminderDialog({
                   className={cn(
                     'rounded-full transition-all',
                     activePreset === idx
-                      ? 'bg-teal-500 hover:bg-teal-400 text-white border-teal-500'
-                      : 'border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:border-teal-400 dark:hover:border-teal-500/60',
+                      ? 'bg-primary hover:bg-primary/90 text-primary-foreground border-primary'
+                      : 'border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:border-primary/60',
                   )}
                 >
                   {preset.label}
@@ -254,7 +254,7 @@ export function FollowUpReminderDialog({
           <Button
             onClick={handleSave}
             disabled={saving || !dueDate}
-            className="bg-teal-500 hover:bg-teal-400 text-white"
+           
           >
             {saving ? (
               <>

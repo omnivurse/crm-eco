@@ -259,7 +259,7 @@ export function DocumentsPage() {
                   {i > 0 && <ChevronRight className="w-3 h-3" />}
                   <button
                     onClick={() => setCurrentFolderId(crumb.id)}
-                    className={`hover:text-blue-600 ${i === breadcrumbs.length - 1 ? 'text-gray-900 font-medium' : ''}`}
+                    className={`hover:text-primary ${i === breadcrumbs.length - 1 ? 'text-gray-900 font-medium' : ''}`}
                   >
                     {crumb.name}
                   </button>

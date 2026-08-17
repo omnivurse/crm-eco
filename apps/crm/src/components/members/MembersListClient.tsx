@@ -116,7 +116,7 @@ function MemberTableRow({ member }: { member: Member }) {
       <td className="py-3 pr-4">
         <Link
           href={memberHref(member)}
-          className="text-sm font-medium text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400"
+          className="text-sm font-medium text-slate-900 dark:text-white hover:text-primary dark:hover:text-primary"
         >
           {member.first_name} {member.last_name}
         </Link>

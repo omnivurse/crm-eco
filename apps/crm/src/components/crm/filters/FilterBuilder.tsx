@@ -348,7 +348,6 @@ export function FilterBuilder({
               <Button
                 size="sm"
                 onClick={() => setIsOpen(false)}
-                className="bg-teal-500 hover:bg-teal-400 text-white"
               >
                 Apply Filters
               </Button>

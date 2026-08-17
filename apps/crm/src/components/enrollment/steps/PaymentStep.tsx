@@ -210,7 +210,7 @@ export function PaymentStep({ plans }: PaymentStepProps) {
                   }}
                   className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all ${
                     isSelected
-                      ? 'border-blue-500 bg-blue-50'
+                      ? 'border-primary bg-primary/10'
                       : 'border-slate-200 hover:border-slate-300'
                   }`}
                 >

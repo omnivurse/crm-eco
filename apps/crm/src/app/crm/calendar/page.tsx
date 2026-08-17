@@ -1010,7 +1010,7 @@ export default function CalendarPage() {
                         {/* Google Calendar */}
                         <button
                             onClick={() => connectCalendar('google')}
-                            className="w-full flex items-center gap-4 p-4 border border-slate-200 dark:border-slate-700 rounded-xl hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all"
+                            className="w-full flex items-center gap-4 p-4 border border-slate-200 dark:border-slate-700 rounded-xl hover:border-primary hover:bg-primary/10 dark:hover:bg-primary/10 transition-all"
                         >
                             <div className="w-10 h-10 rounded-lg bg-white shadow flex items-center justify-center">
                                 <svg viewBox="0 0 24 24" className="w-6 h-6">
@@ -1030,7 +1030,7 @@ export default function CalendarPage() {
                         {/* Outlook Calendar */}
                         <button
                             onClick={() => connectCalendar('outlook')}
-                            className="w-full flex items-center gap-4 p-4 border border-slate-200 dark:border-slate-700 rounded-xl hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all"
+                            className="w-full flex items-center gap-4 p-4 border border-slate-200 dark:border-slate-700 rounded-xl hover:border-primary hover:bg-primary/10 dark:hover:bg-primary/10 transition-all"
                         >
                             <div className="w-10 h-10 rounded-lg bg-[#0078D4] flex items-center justify-center">
                                 <svg viewBox="0 0 24 24" className="w-6 h-6 fill-white">
@@ -1089,7 +1089,7 @@ export default function CalendarPage() {
                                 {[
                                     { type: 'meeting' as const, label: 'Meeting', icon: Users, activeBorder: 'border-teal-500', activeBg: 'bg-teal-50 dark:bg-teal-900/20', activeIcon: 'text-teal-600', activeText: 'text-teal-700 dark:text-teal-400' },
                                     { type: 'call' as const, label: 'Call', icon: Video, activeBorder: 'border-purple-500', activeBg: 'bg-purple-50 dark:bg-purple-900/20', activeIcon: 'text-purple-600', activeText: 'text-purple-700 dark:text-purple-400' },
-                                    { type: 'task' as const, label: 'Task', icon: CheckCircle2, activeBorder: 'border-blue-500', activeBg: 'bg-blue-50 dark:bg-blue-900/20', activeIcon: 'text-blue-600', activeText: 'text-blue-700 dark:text-blue-400' },
+                                    { type: 'task' as const, label: 'Task', icon: CheckCircle2, activeBorder: 'border-primary', activeBg: 'bg-primary/10', activeIcon: 'text-primary', activeText: 'text-primary' },
                                     { type: 'email' as const, label: 'Email', icon: AlertCircle, activeBorder: 'border-amber-500', activeBg: 'bg-amber-50 dark:bg-amber-900/20', activeIcon: 'text-amber-600', activeText: 'text-amber-700 dark:text-amber-400' },
                                 ].map(({ type, label, icon: Icon, activeBorder, activeBg, activeIcon, activeText }) => (
                                     <button

@@ -41,7 +41,7 @@ export function EnrollmentFunnel({ stats }: EnrollmentFunnelProps) {
       label: 'In Progress',
       count: pipelineCounts.inProgress,
       href: '/crm/modules/contacts',
-      color: 'bg-blue-600/80 hover:bg-blue-600',
+      color: 'bg-primary/80 hover:bg-primary',
     },
     {
       key: 'submitted',

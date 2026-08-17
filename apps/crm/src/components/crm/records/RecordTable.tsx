@@ -508,7 +508,7 @@ const RecordCard = memo(function RecordCard({
               e.stopPropagation();
               window.location.href = `mailto:${email}`;
             }}
-            className="flex-1 h-9 text-blue-600 border-blue-200 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-500/30 dark:hover:bg-blue-500/10"
+            className="flex-1 h-9 text-primary border-primary/30 hover:bg-primary/10"
           >
             <Mail className="w-4 h-4 mr-1" />
             Email
@@ -1584,7 +1584,7 @@ export const RecordTable = memo(function RecordTable({
                             e.stopPropagation();
                             window.location.href = `mailto:${record.email}`;
                           }}
-                          className="h-7 w-7 text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:text-blue-400 dark:hover:bg-blue-500/10"
+                          className="h-7 w-7 text-slate-500 hover:text-primary hover:bg-primary/10 dark:hover:text-primary dark:hover:bg-primary/10"
                           title="Send Email"
                         >
                           <Mail className="w-3.5 h-3.5" />

@@ -321,13 +321,13 @@ export function IntakeStep({ members, leads, advisors, currentAdvisorId, isAdvis
                   className={cn(
                     'relative flex flex-col items-center gap-2 p-4 border-2 rounded-lg cursor-pointer transition-all text-left',
                     isSelected
-                      ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200'
+                      ? 'border-primary bg-primary/10 ring-2 ring-primary/30'
                       : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
                   )}
                 >
                   {isSelected && (
                     <div className="absolute top-2 right-2">
-                      <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center">
+                      <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
                         <Check className="w-3 h-3 text-white" />
                       </div>
                     </div>

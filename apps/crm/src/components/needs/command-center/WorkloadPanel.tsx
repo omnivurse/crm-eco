@@ -88,7 +88,7 @@ export function WorkloadPanel({
                   className={`
                     cursor-pointer transition-colors
                     ${isSelected 
-                      ? 'bg-blue-50 hover:bg-blue-100' 
+                      ? 'bg-primary/10 hover:bg-primary/15' 
                       : 'hover:bg-slate-50'
                     }
                   `}

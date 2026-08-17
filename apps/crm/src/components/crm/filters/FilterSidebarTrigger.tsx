@@ -41,14 +41,14 @@ export function FilterSidebarTrigger({
           size="sm"
           className={cn(
             'h-8 text-xs gap-1.5',
-            activeCount > 0 && 'border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-700 dark:bg-blue-950/50 dark:text-blue-300',
+            activeCount > 0 && 'border-primary/40 bg-primary/10 text-primary',
             className,
           )}
         >
           <Filter className="w-3.5 h-3.5" />
           Filters
           {activeCount > 0 && (
-            <span className="flex items-center justify-center w-4.5 h-4.5 rounded-full bg-blue-600 text-white text-[10px] font-bold leading-none ml-0.5">
+            <span className="flex items-center justify-center w-4.5 h-4.5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold leading-none ml-0.5">
               {activeCount}
             </span>
           )}

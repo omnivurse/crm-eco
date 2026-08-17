@@ -44,7 +44,7 @@ export function FavoritesView({ favDocs, favFolders, loading, onOpenFolder, onDo
           {favFolders.map(folder => (
             <TableRow key={folder.id} className="cursor-pointer hover:bg-gray-50">
               <TableCell>
-                <button onClick={() => onOpenFolder(folder.id)} className="flex items-center gap-2 text-sm hover:text-blue-600">
+                <button onClick={() => onOpenFolder(folder.id)} className="flex items-center gap-2 text-sm hover:text-primary">
                   <Folder className="w-4 h-4 text-blue-400" />
                   {folder.name}
                 </button>
@@ -67,7 +67,7 @@ export function FavoritesView({ favDocs, favFolders, loading, onOpenFolder, onDo
             return (
               <TableRow key={doc.id} className="cursor-pointer hover:bg-gray-50">
                 <TableCell>
-                  <button onClick={() => onDownload(doc.id)} className="flex items-center gap-2 text-sm hover:text-blue-600">
+                  <button onClick={() => onDownload(doc.id)} className="flex items-center gap-2 text-sm hover:text-primary">
                     <Icon className="w-4 h-4 text-gray-400" />
                     {doc.name}
                   </button>

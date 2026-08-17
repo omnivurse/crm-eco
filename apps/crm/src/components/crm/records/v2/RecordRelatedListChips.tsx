@@ -91,11 +91,11 @@ const CHIP_ACCENTS: Record<string, ChipAccent> = {
     badge: 'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300',
   },
   emails: {
-    active: 'bg-blue-500 text-white border-blue-500 shadow-sm',
+    active: 'bg-primary text-primary-foreground border-primary shadow-sm',
     inactive:
-      'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300 border-transparent hover:bg-blue-100 dark:hover:bg-blue-500/20',
-    icon: 'text-blue-500 dark:text-blue-400',
-    badge: 'bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300',
+      'bg-primary/10 text-primary border-transparent hover:bg-primary/15',
+    icon: 'text-primary',
+    badge: 'bg-primary/15 text-primary',
   },
   open_activities: {
     active: 'bg-cyan-500 text-white border-cyan-500 shadow-sm',

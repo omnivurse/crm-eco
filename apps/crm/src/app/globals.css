@@ -275,9 +275,12 @@
   --primary: 189 55% 26%;
   --ring: 189 55% 26%;
 
-  /* Supporting accents, desaturated to sit calmly beside the spruce primary:
-     slate-blue instead of electric #3b82f6, dusty violet instead of #7c3aed. */
-  --secondary: 215 48% 42%;
+  /* Secondary is a quiet MUTED surface — not a second brand hue. Solid blue
+     secondary buttons/badges fought spruce primary and made the chrome look
+     unorganized. Foreground must be ink (shared theme still has white fg for
+     the old solid-blue secondary). */
+  --secondary: 214 30% 92%;
+  --secondary-foreground: 222 47% 11%;
   --brand-purple: 258 35% 48%;
 
   /* Status semantics, pulled down from the neon originals but kept AA. */
@@ -353,7 +356,9 @@
   --primary: 188 45% 45%;
   --ring: 188 45% 45%;
 
-  --secondary: 215 50% 46%;
+  /* Quiet muted surface (matches --muted); ink flipped for dark grounds. */
+  --secondary: 220 28% 15%;
+  --secondary-foreground: 210 40% 98%;
   --brand-purple: 258 40% 66%;
   --success: 160 48% 44%;
   --warning: 38 78% 52%;

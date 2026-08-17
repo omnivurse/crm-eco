@@ -396,7 +396,7 @@ export default function ApprovalDetailPage() {
                         isComplete || (isPassed && index <= approval.current_step)
                           ? 'bg-green-500 text-white'
                           : isCurrent
-                          ? 'bg-blue-500 text-white'
+                          ? 'bg-primary text-primary-foreground'
                           : 'bg-gray-200 text-gray-500'
                       }`}>
                         {isComplete || (isPassed && index <= approval.current_step) ? (

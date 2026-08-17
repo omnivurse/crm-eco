@@ -127,7 +127,7 @@ export function ActivityForm({
             onClick={() => updateField('activity_type', type.value)}
             className={cn(
               formData.activity_type === type.value
-                ? 'bg-teal-500 hover:bg-teal-400 text-white'
+                ? undefined
                 : 'glass border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:border-white/20'
             )}
           >
@@ -327,7 +327,7 @@ export function ActivityForm({
         <Button
           type="submit"
           disabled={isLoading || !formData.title.trim()}
-          className="bg-teal-500 hover:bg-teal-400 text-white"
+         
         >
           {isLoading ? (
             <>

@@ -426,7 +426,7 @@ export function RecordTimeline({ events, isLoading, className }: RecordTimelineP
           className={cn(
             'rounded-full',
             filter === 'all' 
-              ? 'bg-teal-500 hover:bg-teal-400 text-white' 
+              ? 'bg-primary hover:bg-primary/90 text-primary-foreground' 
               : 'glass border-white/10 text-slate-300 hover:text-white'
           )}
         >
@@ -445,7 +445,7 @@ export function RecordTimeline({ events, isLoading, className }: RecordTimelineP
               className={cn(
                 'rounded-full',
                 filter === type 
-                  ? 'bg-teal-500 hover:bg-teal-400 text-white' 
+                  ? 'bg-primary hover:bg-primary/90 text-primary-foreground' 
                   : 'glass border-white/10 text-slate-300 hover:text-white'
               )}
             >

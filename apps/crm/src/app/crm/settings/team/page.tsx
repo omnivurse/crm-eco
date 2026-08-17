@@ -645,13 +645,13 @@ export default function TeamManagementPage() {
                   onClick={() => toggleCapacity('health_insurance')}
                   className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
                     editCapacities.includes('health_insurance')
-                      ? 'bg-blue-50 dark:bg-blue-500/10 border-blue-300 dark:border-blue-500/30'
+                      ? 'bg-primary/10 border-primary/40'
                       : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-slate-300'
                   }`}
                 >
                   <div className={`w-5 h-5 rounded flex items-center justify-center border ${
                     editCapacities.includes('health_insurance')
-                      ? 'bg-blue-500 border-blue-500 text-white'
+                      ? 'bg-primary border-primary text-primary-foreground'
                       : 'border-slate-300 dark:border-slate-600'
                   }`}>
                     {editCapacities.includes('health_insurance') && <Check className="w-3 h-3" />}

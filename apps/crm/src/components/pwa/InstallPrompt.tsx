@@ -60,7 +60,7 @@ export function InstallPrompt() {
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-slate-100 dark:border-slate-700">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
               <Smartphone className="w-5 h-5 text-white" />
             </div>
             <div>
@@ -103,7 +103,7 @@ export function InstallPrompt() {
             // Native install button
             <button
               onClick={handleInstall}
-              className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-4 rounded-lg transition-colors"
+              className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium py-2.5 px-4 rounded-lg transition-colors"
             >
               <Download className="w-4 h-4" />
               Install Now

@@ -646,7 +646,7 @@ function ChangeFormDialog({
           <Button
             onClick={() => void handleSave()}
             disabled={!form.date || saving}
-            className="bg-teal-500 hover:bg-teal-400 text-white"
+           
           >
             {saving ? (
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />

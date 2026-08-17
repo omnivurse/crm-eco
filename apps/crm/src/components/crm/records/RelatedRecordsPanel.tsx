@@ -541,7 +541,7 @@ function LinkRecordDialog({
             <Button
               onClick={handleLink}
               disabled={selectedRecords.length === 0 || isLinking}
-              className="bg-teal-500 hover:bg-teal-400 text-white"
+             
             >
               {isLinking ? (
                 <>

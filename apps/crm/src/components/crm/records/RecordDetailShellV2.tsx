@@ -1521,7 +1521,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                     type="button"
                     aria-label="Convert lead to contact"
                     onClick={() => setShowConvertDialog(true)}
-                    className="inline-flex shrink-0 border-teal-300 dark:border-teal-500/40 text-teal-800 dark:text-teal-200 hover:bg-teal-50 dark:hover:bg-teal-500/10 font-medium"
+                    className="inline-flex shrink-0 font-medium"
                   >
                     <UserCheck className="w-4 h-4 shrink-0 sm:mr-1.5" />
                     <span className="text-xs sm:text-sm">Convert to Contact</span>
@@ -1546,7 +1546,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                     record.email ? 'Compose email to this record' : 'Add an email on this record to enable send'
                   }
                   onClick={() => void handleSendEmail()}
-                  className="inline-flex shrink-0 bg-rose-600 hover:bg-rose-700 text-white shadow-sm disabled:opacity-40"
+                  className="inline-flex shrink-0 shadow-sm"
                 >
                   <Mail className="w-4 h-4 shrink-0 sm:mr-1.5" />
                   <span className="text-xs font-medium sm:text-sm">
@@ -1562,7 +1562,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                   variant="outline"
                   title="Set a follow-up reminder for this record"
                   onClick={() => setShowFollowUpDialog(true)}
-                  className="inline-flex shrink-0 border-amber-300 dark:border-amber-500/30 text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-500/10 font-medium"
+                  className="inline-flex shrink-0 font-medium"
                 >
                   <Bell className="w-4 h-4 shrink-0 sm:mr-1.5" />
                   <span className="text-xs font-medium sm:text-sm">
@@ -2024,7 +2024,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="w-full justify-start text-teal-600 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-500/10"
+                        className="w-full justify-start text-primary hover:bg-primary/10"
                         onClick={() => {
                           if (notesProp.length > 0) {
                             setShowNotesDrawer(true);
@@ -2299,7 +2299,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
               >
                 Cancel
               </Button>
-              <Button onClick={submitTask} disabled={isSubmitting} className="bg-teal-500 hover:bg-teal-600 text-white">
+              <Button onClick={submitTask} disabled={isSubmitting}>
                 {isSubmitting ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -2338,7 +2338,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
               >
                 Cancel
               </Button>
-              <Button onClick={submitNote} disabled={isSubmitting} className="bg-teal-500 hover:bg-teal-600 text-white">
+              <Button onClick={submitNote} disabled={isSubmitting}>
                 {isSubmitting ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -2392,7 +2392,6 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
               <Button
                 onClick={submitFile}
                 disabled={isSubmitting || !selectedFile}
-                className="bg-teal-500 hover:bg-teal-600 text-white"
               >
                 {isSubmitting ? (
                   <>

@@ -297,13 +297,13 @@ export function PlanSelectionStep({ plans }: PlanSelectionStepProps) {
                   className={cn(
                     'relative p-4 rounded-lg border-2 text-left transition-all',
                     selectedPlan === plan.id
-                      ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200'
+                      ? 'border-primary bg-primary/10 ring-2 ring-primary/30'
                       : 'border-slate-200 hover:border-slate-300 bg-white'
                   )}
                 >
                   {selectedPlan === plan.id && (
                     <div className="absolute top-3 right-3">
-                      <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center">
+                      <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
                         <Check className="w-4 h-4 text-white" />
                       </div>
                     </div>

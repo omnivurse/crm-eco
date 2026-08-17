@@ -278,7 +278,7 @@ function UploadZone({
           <Button
             onClick={handleUpload}
             disabled={isUploading}
-            className="bg-teal-500 hover:bg-teal-400 text-white"
+           
           >
             {isUploading ? (
               <>

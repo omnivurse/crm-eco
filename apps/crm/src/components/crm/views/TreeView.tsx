@@ -410,7 +410,7 @@ function AgentHierarchyNode({
         ) : (
           <ChevronRight className="w-4 h-4 text-slate-500 flex-shrink-0" />
         )}
-        <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
+        <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-semibold flex-shrink-0">
           {initials}
         </div>
         <div className="flex-1 min-w-0">
@@ -424,7 +424,7 @@ function AgentHierarchyNode({
             </span>
           )}
         </div>
-        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-500/30 flex-shrink-0">
+        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/30 flex-shrink-0">
           {item.totalCount.toLocaleString()} contact{item.totalCount !== 1 ? 's' : ''}
         </span>
       </button>

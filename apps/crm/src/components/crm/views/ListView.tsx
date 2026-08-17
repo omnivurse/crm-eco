@@ -227,7 +227,7 @@ const ListRow = memo(function ListRow({
             variant="ghost"
             size="icon"
             onClick={() => { window.location.href = `mailto:${email}`; }}
-            className="h-7 w-7 text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:text-blue-400 dark:hover:bg-blue-500/10"
+            className="h-7 w-7 text-slate-500 hover:text-primary hover:bg-primary/10 dark:hover:text-primary dark:hover:bg-primary/10"
             title="Email"
           >
             <Mail className="w-3.5 h-3.5" />

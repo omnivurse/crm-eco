@@ -18,7 +18,7 @@ interface NeedsFiltersBarProps {
 const ALL_STATUSES: NeedStatus[] = [...OPEN_NEED_STATUSES, ...TERMINAL_NEED_STATUSES];
 
 const SLA_TABS: { value: SlaFilter; label: string; icon: React.ElementType; colorClass: string }[] = [
-  { value: 'all', label: 'All', icon: HeartPulse, colorClass: 'bg-blue-600 text-white' },
+  { value: 'all', label: 'All', icon: HeartPulse, colorClass: 'bg-primary text-primary-foreground' },
   { value: 'green', label: 'On Track', icon: CheckCircle, colorClass: 'bg-emerald-600 text-white' },
   { value: 'orange', label: 'At-Risk', icon: Clock, colorClass: 'bg-amber-500 text-white' },
   { value: 'red', label: 'Overdue', icon: AlertTriangle, colorClass: 'bg-red-600 text-white' },

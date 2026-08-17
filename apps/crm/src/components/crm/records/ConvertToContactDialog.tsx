@@ -342,7 +342,6 @@ export function ConvertToContactDialog({
                   <Button
                     onClick={() => handleConvert(result.existingContactId)}
                     disabled={isMerging}
-                    className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-400 hover:to-indigo-400 text-white"
                   >
                     {isMerging ? (
                       <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Merging...</>

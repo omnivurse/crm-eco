@@ -25,7 +25,7 @@ export function WizardStepper() {
                       className={cn(
                         'flex-1 h-0.5 transition-colors',
                         stepStatuses[WIZARD_STEPS[index - 1].key]?.isCompleted
-                          ? 'bg-blue-600'
+                          ? 'bg-primary'
                           : 'bg-slate-200'
                       )}
                     />
@@ -38,10 +38,10 @@ export function WizardStepper() {
                     disabled={!isAccessible}
                     className={cn(
                       'relative flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all',
-                      isActive && !isCompleted && 'border-blue-600 bg-blue-50',
-                      isCompleted && 'border-blue-600 bg-blue-600',
+                      isActive && !isCompleted && 'border-primary bg-primary/10',
+                      isCompleted && 'border-primary bg-primary',
                       !isActive && !isCompleted && 'border-slate-300 bg-white',
-                      isAccessible && !isActive && 'cursor-pointer hover:border-blue-400',
+                      isAccessible && !isActive && 'cursor-pointer hover:border-primary/60',
                       !isAccessible && 'cursor-not-allowed opacity-60'
                     )}
                   >
@@ -51,7 +51,7 @@ export function WizardStepper() {
                       <span
                         className={cn(
                           'text-sm font-semibold',
-                          isActive ? 'text-blue-600' : 'text-slate-400'
+                          isActive ? 'text-primary' : 'text-slate-400'
                         )}
                       >
                         {index + 1}
@@ -64,7 +64,7 @@ export function WizardStepper() {
                     <div
                       className={cn(
                         'flex-1 h-0.5 transition-colors',
-                        isCompleted ? 'bg-blue-600' : 'bg-slate-200'
+                        isCompleted ? 'bg-primary' : 'bg-slate-200'
                       )}
                     />
                   )}
@@ -75,7 +75,7 @@ export function WizardStepper() {
                   <p
                     className={cn(
                       'text-sm font-medium',
-                      isActive ? 'text-blue-600' : isCompleted ? 'text-slate-700' : 'text-slate-400'
+                      isActive ? 'text-primary' : isCompleted ? 'text-slate-700' : 'text-slate-400'
                     )}
                   >
                     {step.label}
