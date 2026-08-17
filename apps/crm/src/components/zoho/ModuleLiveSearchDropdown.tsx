@@ -58,7 +58,7 @@ export function ModuleLiveSearchDropdown({
     <Popover open={showPanel} onOpenChange={onOpenChange}>
       <form
         onSubmit={onSubmit}
-        className="relative flex-1 min-w-[12rem] max-w-md group"
+        className="relative flex-1 min-w-[12rem] max-w-2xl group"
       >
         <PopoverTrigger asChild>
           <div className="relative w-full">
