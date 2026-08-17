@@ -74,6 +74,8 @@ import {
 } from './section-utils';
 import {
   INLINE_EDIT_GRID_CLASS,
+  FULL_ROW_SPAN_CLASS,
+  fieldSpansFullRow,
   shouldUseDenseFieldRow,
 } from './field-layout';
 import { getSectionCardAccent } from './section-accent-tokens';
@@ -860,7 +862,7 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
             key={field.key}
             className={cn(
               'flex min-w-0 items-baseline gap-3 border-b border-border/40 py-1.5 overflow-hidden',
-              field.width === 'full' && 'md:col-span-2',
+              fieldSpansFullRow(field) && FULL_ROW_SPAN_CLASS,
             )}
           >
             <Label
@@ -886,12 +888,12 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
           className={cn(
             'relative min-w-0 max-w-full rounded-md',
             inlineEditable && 'focus-within:z-20',
-            field.width === 'full' && 'md:col-span-2',
+            fieldSpansFullRow(field) && FULL_ROW_SPAN_CLASS,
           )}
         >
           <Label
             htmlFor={field.key}
-            className="mb-1.5 block truncate text-muted-foreground text-[11px] font-medium uppercase tracking-wider"
+            className="mb-0.5 block truncate text-muted-foreground text-[11px] font-medium uppercase tracking-wider"
             title={field.tooltip || field.label}
           >
             {field.label}
@@ -1277,47 +1279,37 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
             </div>
           ) : (
             <>
-              {hasDetail && (
-                <>
-                  {divider}
-                  <div
-                    className="grid flex-1 gap-x-8 gap-y-2 border-t border-dashed pt-3 lg:border-0 lg:pt-0"
-                    style={{
-                      gridTemplateColumns:
-                        'repeat(auto-fill, minmax(min(100%, 16rem), 1fr))',
-                    }}
-                  >
-                    {heroProductPlanSnapshotFields.map((field) =>
-                      renderFieldCell(field, {
-                        row: true,
-                        tightLabel: true,
-                        // Capacity aliases ("Health Insurance") must not read as a
-                        // Membership / plan name — show the empty placeholder instead.
-                        displayValue: coerceCoverageSnapshotFieldValue(
-                          field.key,
-                          defaultValues[field.key],
-                        ),
-                      }),
-                    )}
-                    {showDate &&
-                      heroStartDateField &&
-                      renderFieldCell(heroStartDateField, { row: true, tightLabel: true })}
-                  </div>
-                </>
-              )}
-              {hasReferral && (
-                <>
-                  {/* No divider before the referral cluster: with lg:flex-wrap it
-                      may wrap to its own row when the column is narrow (e.g. the
-                      insights rail is open), and a stray vertical rule would hang
-                      off the end of the previous row. */}
-                  <div className="grid grid-cols-2 gap-x-6 gap-y-0 border-t border-dashed pt-3 sm:grid-cols-2 lg:w-56 lg:shrink-0 lg:grid-cols-1 lg:border-0 lg:pt-0">
-                    {heroReferralSnapshotFields.map((field) =>
-                      renderFieldCell(field, { row: true, tightLabel: true }),
-                    )}
-                  </div>
-                </>
-              )}
+              {divider}
+              {/* One dense auto-fill grid for plan / product / effective date
+                  AND the referral + enrolled-by + member-ID context. Reps
+                  want everything at a glance; the earlier three-rail layout
+                  stacked one field per row and left two rails mostly empty. */}
+              <div
+                className="grid flex-1 gap-x-6 gap-y-2 border-t border-dashed pt-3 lg:border-0 lg:pt-0"
+                style={{
+                  gridTemplateColumns:
+                    'repeat(auto-fill, minmax(min(100%, 13rem), 1fr))',
+                }}
+              >
+                {heroProductPlanSnapshotFields.map((field) =>
+                  renderFieldCell(field, {
+                    row: true,
+                    tightLabel: true,
+                    // Capacity aliases ("Health Insurance") must not read as a
+                    // Membership / plan name — show the empty placeholder instead.
+                    displayValue: coerceCoverageSnapshotFieldValue(
+                      field.key,
+                      defaultValues[field.key],
+                    ),
+                  }),
+                )}
+                {showDate &&
+                  heroStartDateField &&
+                  renderFieldCell(heroStartDateField, { row: true, tightLabel: true })}
+                {heroReferralSnapshotFields.map((field) =>
+                  renderFieldCell(field, { row: true, tightLabel: true }),
+                )}
+              </div>
             </>
           )}
         </div>
