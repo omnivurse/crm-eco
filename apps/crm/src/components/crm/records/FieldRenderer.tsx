@@ -6,6 +6,10 @@ import { Badge } from '@crm-eco/ui/components/badge';
 import { cn } from '@crm-eco/ui/lib/utils';
 import type { CrmField } from '@/lib/crm/types';
 import { formatPhoneOwnerLabel } from '@/lib/crm/phone-owner';
+import {
+  isCarrierIdentityField,
+  resolveInlineCarrierType,
+} from '@/lib/crm/carrier-field';
 import { Mail, Phone, ExternalLink, Check, X, Copy } from 'lucide-react';
 import DOMPurify from 'dompurify';
 
@@ -180,12 +184,16 @@ export const FieldRenderer = memo(function FieldRenderer({
     return <span className={cn('text-muted-foreground', className)}>—</span>;
   }
 
-  // Carrier-typed fields resolve their UUID value to the carrier_name from the
-  // advisor's personal list. Free-text legacy values are shown verbatim.
-  if (field.metadata?.carrier_type) {
+  // Carrier identity (metadata.carrier_type OR indexed `carrier_id`).
+  // Live crm_fields still types `carrier_id` as lookup; the UUID is an
+  // insurance_carriers.id, not a crm_records.id.
+  if (isCarrierIdentityField(field)) {
     return (
       <span className={className}>
-        <CarrierName carrierType={field.metadata.carrier_type} value={String(value)} />
+        <CarrierName
+          carrierType={resolveInlineCarrierType(field, relatedValues)}
+          value={String(value)}
+        />
       </span>
     );
   }
@@ -349,13 +357,13 @@ export function getDisplayValue(field: CrmField, value: unknown): string {
     return '';
   }
 
-  // Carrier-typed fields: try the in-memory cache (populated when a record
+  // Carrier identity: try the in-memory cache (populated when a record
   // with the same carrier_type was viewed earlier in the session).
-  if (field.metadata?.carrier_type) {
-    const map = carrierCache.get(field.metadata.carrier_type);
+  if (isCarrierIdentityField(field)) {
+    const carrierType = resolveInlineCarrierType(field);
+    const map = carrierCache.get(carrierType);
     const resolved = map?.get(String(value));
     if (resolved) return resolved;
-    // Fall back to raw value (UUID or legacy text) when cache miss.
     return String(value);
   }
 

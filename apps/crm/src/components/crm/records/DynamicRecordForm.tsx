@@ -45,6 +45,10 @@ import { toDatetimeLocalValue } from '@/lib/crm/datetime-local';
 import { normalizeDateColumnValue } from '@/lib/crm/merge-crm-data-json-to-row';
 import { classifyCarrierValue } from '@/lib/crm/coverage-carriers';
 import {
+  isCarrierIdentityField,
+  resolveInlineCarrierType,
+} from '@/lib/crm/carrier-field';
+import {
   coerceCoverageSnapshotFieldValue,
   isCapacityProductValue,
   selectCoverageSnapshotPlanFields,
@@ -234,6 +238,12 @@ const FormFieldRenderer = memo(function FormFieldRenderer({
   error?: string;
 }) {
   const value = useWatch({ name: field.key, control });
+  const marketType = useWatch({ name: 'market_type', control });
+  const sharingEntity = useWatch({ name: 'sharing_entity', control });
+  const healthInsuranceCarrier = useWatch({
+    name: 'health_insurance_carrier',
+    control,
+  });
 
   const commonProps = {
     id: field.key,
@@ -245,14 +255,27 @@ const FormFieldRenderer = memo(function FormFieldRenderer({
 
   let input: React.ReactNode;
 
-  // Carrier-typed fields take precedence regardless of the underlying field
-  // type (`select`, `lookup`, etc.) — the advisor's personal carrier list is
-  // always the source of truth.
-  if (field.metadata?.carrier_type) {
+  // Carrier identity (metadata.carrier_type OR indexed `carrier_id`).
+  // Live crm_fields still types `carrier_id` as lookup; that UUID is an
+  // insurance_carriers.id, not a crm_records.id.
+  if (isCarrierIdentityField(field)) {
+    const carrierField = field.metadata?.carrier_type
+      ? field
+      : {
+          ...field,
+          metadata: {
+            ...field.metadata,
+            carrier_type: resolveInlineCarrierType(field, {
+              market_type: marketType,
+              sharing_entity: sharingEntity,
+              health_insurance_carrier: healthInsuranceCarrier,
+            }),
+          },
+        };
     return (
       <>
         <AdvisorCarrierField
-          field={field}
+          field={carrierField}
           value={value as string | undefined}
           onChange={(val) => setValue(field.key, val)}
           error={!!error}
@@ -563,11 +586,11 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
     for (const field of visibleFields) {
       let fieldSchema: z.ZodType;
 
-      // Carrier-typed fields render AdvisorCarrierField which accepts
+      // Carrier identity fields render AdvisorCarrierField which accepts
       // both UUIDs (carrier picked from list) and free-text (typed
       // manually via the "Use X as text" fallback). The value must
       // validate as any string, not just UUID.
-      if (field.metadata?.carrier_type) {
+      if (isCarrierIdentityField(field)) {
         schemaShape[field.key] = field.required
           ? z.string().min(1, `${field.label} is required`)
           : z.preprocess(

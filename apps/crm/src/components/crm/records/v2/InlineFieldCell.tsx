@@ -31,6 +31,10 @@ import {
   isValidCurrencyTyping,
   parseCurrencyInput,
 } from '@/lib/crm/currency-input';
+import {
+  isCarrierIdentityField,
+  resolveInlineCarrierType,
+} from '@/lib/crm/carrier-field';
 
 /**
  * Render a money value for a click-to-edit cell.
@@ -97,15 +101,15 @@ export const InlineFieldCell = memo(function InlineFieldCell({
     className,
   };
 
-  // Carrier-typed fields (metadata.carrier_type) override their base
-  // type and render as an advisor-carrier picker regardless of whether
-  // the base type is 'text' or 'select'.
-  if (field.metadata?.carrier_type) {
+  // Carrier identity (metadata.carrier_type OR indexed `carrier_id`).
+  // Live crm_fields still types `carrier_id` as lookup; that UUID is an
+  // insurance_carriers.id (e.g. Sedera HealthShare), not a crm_records.id.
+  if (isCarrierIdentityField(field)) {
     return (
       <InlineCarrierField
         {...common}
         value={value == null ? null : String(value)}
-        carrierType={field.metadata.carrier_type}
+        carrierType={resolveInlineCarrierType(field, relatedValues)}
         placeholder={`Select ${field.label.toLowerCase()}`}
       />
     );
