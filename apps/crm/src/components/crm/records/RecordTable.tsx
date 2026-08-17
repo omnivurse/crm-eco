@@ -1405,6 +1405,10 @@ export const RecordTable = memo(function RecordTable({
                   colIndex === 0 && 'sticky z-20 after:absolute after:right-0 after:top-0 after:bottom-0 after:w-[3px] after:bg-gradient-to-r after:from-black/[0.06] after:to-transparent dark:after:from-white/[0.08]'
                 )}
                 style={{
+                  // Basis = the (default or dragged) width; grow in proportion
+                  // so a wide viewport fills the row instead of leaving dead
+                  // space right of the last column. Header + body share this.
+                  flex: `${getColWidth(col)} 0 ${getColWidth(col)}px`,
                   width: getColWidth(col),
                   minWidth: 80,
                   ...(colIndex === 0 ? { left: stickyFirstColLeft } : {}),
@@ -1481,6 +1485,9 @@ export const RecordTable = memo(function RecordTable({
                     position: 'absolute',
                     top: 0,
                     left: 0,
+                    // Full width so the flex cells can grow exactly like the
+                    // header's — an absolute row otherwise shrink-wraps.
+                    width: '100%',
                     minWidth: totalMinWidth,
                     height: `${virtualRow.size}px`,
                     transform: `translateY(${virtualRow.start}px)`,
@@ -1530,6 +1537,7 @@ export const RecordTable = memo(function RecordTable({
                         )
                       )}
                       style={{
+                        flex: `${getColWidth(col)} 0 ${getColWidth(col)}px`,
                         width: getColWidth(col),
                         minWidth: 80,
                         ...(colIndex === 0 ? { left: stickyFirstColLeft } : {}),

@@ -986,10 +986,13 @@ export const ModuleShell = memo(function ModuleShell({
       <RecentlyViewedRail moduleKey={module.key} />
 
       {/* Toolbar */}
-      <div className="glass-card rounded-xl border border-slate-200 dark:border-white/10 p-2.5">
-        <div className="flex flex-col lg:flex-row gap-3">
+      <div className="glass-card rounded-xl border border-slate-200 dark:border-white/10 p-2.5 overflow-hidden">
+        {/* Wraps instead of bleeding: on a laptop with the sidebar open the
+            scope/territory + view/filter/column controls drop to a second
+            row, right-aligned, rather than pushing "Compact" off the card. */}
+        <div className="flex flex-col lg:flex-row lg:flex-wrap lg:items-center gap-x-3 gap-y-2">
           {/* Left: Views + Search */}
-          <div className="flex items-center gap-2 flex-1">
+          <div className="flex min-w-0 items-center gap-2 flex-1 basis-[22rem]">
             <ViewsDropdown
               views={views}
               activeViewId={activeViewId}
@@ -1070,7 +1073,7 @@ export const ModuleShell = memo(function ModuleShell({
           {/* Right: View Mode + Filters + Columns + Density — collapsed
               behind a single "Filters & View" button on mobile, which
               opens MobileToolbarDrawer. */}
-          <div className="hidden md:flex items-center gap-2">
+          <div className="hidden md:flex items-center gap-2 lg:ml-auto">
             <ViewModeSwitcher
               value={viewMode}
               onChange={handleViewModeChange}
