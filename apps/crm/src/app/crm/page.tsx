@@ -10,8 +10,6 @@ import {
   getTodaysTasks,
   getCalendarEvents,
   getAdvisorContactSummary,
-  createCrmClient,
-  getMyTasks,
 } from '@/lib/crm/queries';
 import { loadDashboardLayout } from './dashboard-actions';
 import { WIDGET_REGISTRY } from '@/lib/dashboard';
@@ -20,9 +18,9 @@ import { biasLayoutWidgetOrder } from '@/lib/crm/habits/score';
 import { parseHabitsProfile } from '@/lib/crm/habits/types';
 import { HabitForYouCard } from '@/components/crm/habits/HabitForYouCard';
 import { DashboardLayoutProvider } from '@/contexts/DashboardLayoutContext';
-import { DashboardHero } from '@/components/dashboard/DashboardHero';
-import type { HeroCalendarEvent } from '@/components/dashboard/DashboardHero';
-import type { TodayQueueItem } from '@/components/dashboard/TodayQueuePreview';
+import { CommandDesk } from '@/components/dashboard/command-desk/CommandDesk';
+import { buildPeopleQueue } from '@/lib/dashboard/people-queue';
+import type { PeopleQueue } from '@/lib/dashboard/people-queue-types';
 import {
   CrmAlerts,
   DashboardToolbar,
@@ -30,80 +28,6 @@ import {
 } from '@/components/dashboard';
 import { preRenderWidgets } from '@/components/dashboard/ServerWidgetRenderer';
 import { DashboardGrid } from '@/components/dashboard/DashboardGrid';
-
-/** Active enrollment count for the journey strip (draft + in_progress + submitted). */
-async function getOpenEnrollmentCount(orgId: string): Promise<number> {
-  try {
-    const supabase = await createCrmClient();
-    const { count, error } = await supabase
-      .from('enrollments')
-      .select('*', { count: 'exact', head: true })
-      .eq('organization_id', orgId)
-      .in('status', ['draft', 'in_progress', 'submitted']);
-    if (error) {
-      console.error('[Dashboard] enrollment count failed:', error);
-      return 0;
-    }
-    return count ?? 0;
-  } catch (err) {
-    console.error('[Dashboard] enrollment count error:', err);
-    return 0;
-  }
-}
-
-/** Build a compact today-queue preview from tasks + at-risk deals. */
-async function buildTodayQueueItems(
-  profileId: string,
-  orgId: string,
-): Promise<TodayQueueItem[]> {
-  const items: TodayQueueItem[] = [];
-  try {
-    const [todaysTasks, myTasks, atRisk] = await Promise.all([
-      getTodaysTasks(profileId, 5),
-      getMyTasks(profileId, false, 20),
-      getCachedAtRiskDeals(orgId, 3),
-    ]);
-
-    const now = new Date();
-    const overdue = myTasks.filter(
-      (t) => t.due_at && new Date(t.due_at) < now && t.status !== 'completed',
-    );
-
-    for (const t of overdue.slice(0, 2)) {
-      items.push({
-        id: `overdue-${t.id}`,
-        title: t.title || 'Untitled task',
-        subtitle: t.due_at ? `Due ${new Date(t.due_at).toLocaleDateString()}` : null,
-        href: '/crm/workqueue',
-        kind: 'overdue',
-      });
-    }
-
-    for (const t of todaysTasks.slice(0, 3)) {
-      if (items.some((i) => i.id === `overdue-${t.id}`)) continue;
-      items.push({
-        id: `task-${t.id}`,
-        title: t.title || 'Untitled task',
-        subtitle: 'Due today',
-        href: '/crm/workqueue',
-        kind: 'task',
-      });
-    }
-
-    for (const d of atRisk.slice(0, 2)) {
-      items.push({
-        id: `risk-${d.id}`,
-        title: d.name || 'At-risk deal',
-        subtitle: `${d.daysInStage}d in stage · ${d.stage}`,
-        href: `/crm/r/${d.id}`,
-        kind: 'at_risk',
-      });
-    }
-  } catch (err) {
-    console.error('[Dashboard] today queue build failed:', err);
-  }
-  return items.slice(0, 5);
-}
 
 // Server-side data fetching based on widget types
 async function fetchWidgetData(
@@ -237,16 +161,12 @@ async function DashboardContent() {
     heroStatsResult,
     moduleStatsResult,
     reportSummaryResult,
-    calendarEventsResult,
-    enrollmentCountResult,
-    todayQueueResult,
+    peopleQueueResult,
   ] = await Promise.allSettled([
     getCachedDashboardHeroStats(profile.organization_id, profile.id),
     getCachedModuleStats(profile.organization_id),
     getReportSummary(profile.organization_id),
-    getCalendarEvents(profile.organization_id),
-    getOpenEnrollmentCount(profile.organization_id),
-    buildTodayQueueItems(profile.id, profile.organization_id),
+    buildPeopleQueue(profile, { limit: 12, recentLimit: 6 }),
   ]);
 
   const heroStats = heroStatsResult.status === 'fulfilled'
@@ -261,23 +181,25 @@ async function DashboardContent() {
     ? reportSummaryResult.value
     : null;
 
-  const calendarEvents = calendarEventsResult.status === 'fulfilled'
-    ? calendarEventsResult.value || []
-    : [];
-
-  const enrollmentCount =
-    enrollmentCountResult.status === 'fulfilled' ? enrollmentCountResult.value : 0;
-
-  const todayQueueItems =
-    todayQueueResult.status === 'fulfilled' ? todayQueueResult.value : [];
-
-  // Map calendar events to hero format
-  const upcomingMeetings: HeroCalendarEvent[] = calendarEvents.slice(0, 3).map((event: { id: string; title: string; start_time: string; type?: string }) => ({
-    id: event.id,
-    title: event.title,
-    start_time: event.start_time,
-    type: (event.type === 'call' ? 'call' : event.type === 'meeting' ? 'meeting' : 'task') as HeroCalendarEvent['type'],
-  }));
+  // Today queue of people (command desk). A rejected build degrades to an
+  // empty-but-honest desk rather than failing the whole page.
+  let peopleQueue: PeopleQueue;
+  if (peopleQueueResult.status === 'fulfilled') {
+    peopleQueue = peopleQueueResult.value;
+  } else {
+    console.error('[Dashboard] buildPeopleQueue failed:', peopleQueueResult.reason);
+    peopleQueue = {
+      items: [],
+      counts: {
+        tasksToday: heroStats.todaysTaskCount,
+        overdue: heroStats.overdueCount,
+        pending: 0,
+        startingSoon: 0,
+      },
+      recentlyViewed: [],
+      degraded: true,
+    };
+  }
 
   // Fetch widget-specific data (passes shared data to avoid duplicate DB calls)
   let widgetData: Record<string, unknown> = {};
@@ -294,18 +216,8 @@ async function DashboardContent() {
   return (
     <DashboardLayoutProvider initialLayout={layoutForRender}>
       <div className="space-y-4 pb-6">
-        {/* Day-in-the-life home: search → journey → queue → pick-up → metrics */}
-        <DashboardHero
-          profile={profile}
-          todaysTaskCount={heroStats.todaysTaskCount}
-          overdueCount={heroStats.overdueCount}
-          newThisWeek={heroStats.newThisWeek}
-          atRiskCount={heroStats.atRiskCount}
-          upcomingMeetings={upcomingMeetings}
-          moduleStats={moduleStats}
-          enrollmentCount={enrollmentCount}
-          todayQueueItems={todayQueueItems}
-        />
+        {/* Command desk: greeting + search → count chips → today queue of people + next-up rail */}
+        <CommandDesk profile={profile} queue={peopleQueue} />
 
         {/* CRM Alerts — only renders when there are actionable items */}
         <CrmAlerts heroStats={heroStats} />

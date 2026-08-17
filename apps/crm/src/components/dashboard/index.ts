@@ -1,12 +1,7 @@
 export { DashboardGrid } from './DashboardGrid';
 export { DashboardToolbar } from './DashboardToolbar';
-export { DashboardHero } from './DashboardHero';
+export { CommandDesk } from './command-desk/CommandDesk';
 export { DashboardWorkflowChips } from './DashboardWorkflowChips';
-export { DashboardPickUpSection } from './DashboardPickUpSection';
-export { SalesJourneyStrip } from './SalesJourneyStrip';
-export type { JourneyStageCounts } from './SalesJourneyStrip';
-export { TodayQueuePreview } from './TodayQueuePreview';
-export type { TodayQueueItem } from './TodayQueuePreview';
 export { DashboardStats } from './DashboardStats';
 export { DashboardSkeleton } from './DashboardSkeleton';
 export { WidgetCard } from './WidgetCard';

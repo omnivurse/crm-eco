@@ -334,6 +334,28 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
     return () => window.removeEventListener('crm:switch-tab', handler);
   }, []);
 
+  // Deep link: `?pane=notes|emails|attachments|related|timeline` (dashboard
+  // command desk quick actions, notifications). Applied once on mount so a
+  // later in-page pane switch is never overridden by the stale URL.
+  const paneParam = searchParams?.get('pane') ?? null;
+  useEffect(() => {
+    if (!paneParam) return;
+    if (paneParam === 'timeline') {
+      setTopTab('timeline');
+      return;
+    }
+    if (
+      paneParam === 'notes' ||
+      paneParam === 'emails' ||
+      paneParam === 'attachments' ||
+      paneParam === 'related'
+    ) {
+      setTopTab('overview');
+      setOverviewPane(paneParam);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Modal state (identical to V1 so existing flows keep working)
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [showNoteModal, setShowNoteModal] = useState(false);
