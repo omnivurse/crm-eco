@@ -72,6 +72,54 @@ export function hexToHslTriple(hex: string): string {
   return `${hue} ${sat}% ${lum}%`;
 }
 
+/** sRGB channel → linear-light, per WCAG 2.x relative luminance. */
+function srgbToLinear(channel: number): number {
+  return channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+}
+
+/**
+ * WCAG relative luminance (0 = black, 1 = white) of a hex color, or null when
+ * the hex is not parseable.
+ */
+export function hexRelativeLuminance(hex: string): number | null {
+  if (typeof hex !== 'string') return null;
+  let value = hex.trim().replace(/^#/, '');
+  if (/^[0-9a-fA-F]{3}$/.test(value)) {
+    value = value
+      .split('')
+      .map((c) => c + c)
+      .join('');
+  }
+  if (!/^[0-9a-fA-F]{6}$/.test(value)) return null;
+  const r = srgbToLinear(parseInt(value.slice(0, 2), 16) / 255);
+  const g = srgbToLinear(parseInt(value.slice(2, 4), 16) / 255);
+  const b = srgbToLinear(parseInt(value.slice(4, 6), 16) / 255);
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+/** Foreground triples: near-white paper and near-black ink (theme.css scale). */
+const FOREGROUND_LIGHT = '210 40% 98%';
+const FOREGROUND_DARK = '222 47% 11%';
+const LUM_LIGHT = 0.9498; // relative luminance of hsl(210 40% 98%)
+const LUM_DARK = 0.0113; // relative luminance of hsl(222 47% 11%)
+
+/**
+ * Pick the foreground (paper or ink) with the higher WCAG contrast against a
+ * tenant color, so text on `bg-<token>` stays readable whatever the tenant
+ * chose. Returns '' for unparseable hex.
+ *
+ * Why this exists: a tenant that overrides `--secondary` to a saturated blue
+ * (PIFH: #1d4ed8) inherited the CRM's ink `--secondary-foreground` (meant for
+ * its muted-gray secondary) → blue pills with black text.
+ */
+export function hexToContrastForegroundTriple(hex: string): string {
+  const lum = hexRelativeLuminance(hex);
+  if (lum === null) return '';
+  const contrastWithLight = (LUM_LIGHT + 0.05) / (lum + 0.05);
+  const contrastWithDark = (lum + 0.05) / (LUM_DARK + 0.05);
+  return contrastWithLight >= contrastWithDark ? FOREGROUND_LIGHT : FOREGROUND_DARK;
+}
+
 /** Narrow an unknown value to a plain object (jsonb columns can be anything). */
 function asRecord(value: unknown): Record<string, unknown> | null {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
@@ -102,9 +150,10 @@ function readColor(
 }
 
 /**
- * Build the override declarations (one per resolvable token) as a string like
- * "--primary: 187 94% 43%;--secondary: 217 91% 60%;". Returns '' when nothing
- * resolves to a valid hex.
+ * Build the override declarations (color + contrast foreground per resolvable
+ * token) as a string like
+ * "--primary: 187 94% 43%;--primary-foreground: 210 40% 98%;--secondary: …".
+ * Returns '' when nothing resolves to a valid hex.
  */
 function brandingToDeclarations(branding?: Record<string, unknown> | null): string {
   const record = asRecord(branding);
@@ -119,6 +168,11 @@ function brandingToDeclarations(branding?: Record<string, unknown> | null): stri
     const triple = hexToHslTriple(raw);
     if (!triple) continue;
     decls.push(`--${token}: ${triple};`);
+    // Every overridden surface token gets a matching readable foreground;
+    // otherwise the app's own `--<token>-foreground` (tuned for ITS default
+    // color) is applied on top of the tenant color.
+    const foreground = hexToContrastForegroundTriple(raw);
+    if (foreground) decls.push(`--${token}-foreground: ${foreground};`);
   }
 
   return decls.join('');
