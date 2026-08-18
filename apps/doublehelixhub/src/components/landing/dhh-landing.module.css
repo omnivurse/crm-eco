@@ -1,0 +1,60 @@
+/**
+ * doublehelixhub landing — page-scoped composition only.
+ *
+ * This is NOT a second design system. Everything reusable lives in
+ * packages/ui/src/styles/landing.css (the `--lp-*` system shared with the CRM
+ * and MMS landings); that file is consumed by two shipped, in-production
+ * pages and must not be edited. Anything here either references an `--lp-*`
+ * token or solves a problem the shared stylesheet cannot know about — which
+ * of the two theme stills is painted, how this app's chrome and the landing
+ * root meet.
+ *
+ * Class names are doubled (`.x.x`) where they must out-specify a shared
+ * `.lp-*` rule. Note the ordering difference from apps/crm and apps/admin:
+ * there, `landing.css` is imported from the page component, so it loads AFTER
+ * the CSS module and wins ties on source order. Here it is imported from
+ * `app/globals.css`, so it loads BEFORE the modules and a module rule wins
+ * ties. Keep doubling class names anyway — it makes the intent explicit and
+ * it is the only thing that reliably beats the shared attribute-selector
+ * rules (`.lp-bento > .lp-tile[data-span]`, `.lp-spine[data-orientation]`).
+ */
+
+/* --- landing type ------------------------------------------------------
+ * `--lp-font-display` is declared on :root in ethereal.css, and a custom
+ * property substitutes the `var()`s inside it where it is DECLARED, not where
+ * it is used. `app/layout.tsx` puts `landingFontVars` on <html>, so :root can
+ * see `--font-display` / `--font-mono` and the tokens already resolve — but
+ * re-declaring them here, on the element that carries the font classes, means
+ * a landing root is correct on its own even if the root layout ever stops
+ * carrying them. This is the same gotcha crm-landing.module.css documents.
+ * The fallback chain is unchanged: if a face cannot be fetched at build time
+ * the page drops to `--font-heading` (Plus Jakarta Sans).                  */
+
+.root.root {
+  --lp-font-display: var(--font-display, var(--font-heading, 'Plus Jakarta Sans')),
+    'Bricolage Grotesque', system-ui, sans-serif;
+  --lp-font-mono: var(--font-mono, 'IBM Plex Mono'), ui-monospace, 'SFMono-Regular',
+    Menlo, monospace;
+}
+
+/* --- theme-paired product stills ---------------------------------------
+ * The theme is a class on <html> (see components/theme-provider.tsx), not an
+ * OS preference, so <picture> + prefers-color-scheme cannot follow the nav
+ * toggle. Both stills ship and exactly one is painted; the unpainted one is
+ * `display: none`, so assistive tech only ever announces a single image.   */
+
+.lightShot.lightShot {
+  display: block;
+}
+
+.darkShot.darkShot {
+  display: none;
+}
+
+:global(html.dark) .lightShot.lightShot {
+  display: none;
+}
+
+:global(html.dark) .darkShot.darkShot {
+  display: block;
+}

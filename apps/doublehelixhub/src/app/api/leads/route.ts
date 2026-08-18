@@ -63,7 +63,24 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: result.error }, { status: 400 });
   }
 
-  const supabase = getServiceClient();
+  /* `getServiceClient()` THROWS when NEXT_PUBLIC_SUPABASE_URL or
+     SUPABASE_SERVICE_ROLE_KEY is missing. Uncaught, that escaped the handler
+     as a bare 500 with an EMPTY body, and <LeadForm> — which reads
+     `body.error` — could only show "Request failed (500)". Same status, but
+     now the message says the endpoint is misconfigured, and the server log
+     names the missing variable. The env var names, the client and the write
+     below are unchanged. */
+  let supabase;
+  try {
+    supabase = getServiceClient();
+  } catch (err) {
+    console.error('[doublehelixhub:lead] supabase client unavailable', err);
+    return NextResponse.json(
+      { error: 'Lead capture is temporarily unavailable. Please email us instead.' },
+      { status: 500 },
+    );
+  }
+
   const ip = request.headers.get('x-forwarded-for') ?? null;
   const userAgent = request.headers.get('user-agent') ?? null;
 

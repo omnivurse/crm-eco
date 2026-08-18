@@ -1,4 +1,10 @@
 @import '@crm-eco/ui/styles/theme.css';
+/* The shared marketing design system (--lp-* tokens + .lp-* components),
+   the same file apps/crm and apps/admin ship. It pulls in ethereal.css, so
+   the --lp-* tokens resolve site-wide. Every selector inside it is .lp-*
+   scoped, so importing it here changes nothing on the dh-* pages.
+   DO NOT EDIT packages/ui/src/styles/landing.css or ethereal.css. */
+@import '@crm-eco/ui/styles/landing.css';
 
 @tailwind base;
 @tailwind components;
@@ -339,4 +345,100 @@
 }
 @media (max-width: 768px) {
   .dh-bezel:hover { transform: none; }
+}
+
+/* ======================================================================
+ * LANDING BRIDGE — where the shared .lp-* system meets this app's chrome
+ * ======================================================================
+ *
+ * Everything below is ADDITIVE. No dh-* rule above is modified or removed,
+ * so every page still on the dh-* chrome renders exactly as it did.
+ *
+ * The shared landing system assumes `.lp-root` IS the page: it paints the
+ * ambient mesh and the grain from `.lp-root::before` / `::after`, two FIXED,
+ * full-viewport layers, and it claims `min-height: 100dvh` and an opaque
+ * `--lp-void` background. That is true on apps/crm and apps/admin, where the
+ * landing root wraps the nav, the main and the footer.
+ *
+ * Here it is not: `app/layout.tsx` owns the header, the footer and a single
+ * site-wide atmosphere (`.dh-mesh` at z-0, `.dh-grain` at z-50), and a page's
+ * landing root is only the middle of that sandwich. Left alone we would get
+ * two stacked meshes, doubled grain, an opaque panel hiding the site mesh,
+ * and every page a viewport taller than its content.
+ *
+ * So the landing root's own atmosphere is switched off and the app's existing
+ * layer is repainted in the --lp-* palette whenever a landing root is on the
+ * page. Same look as the product landings, correct stacking against the
+ * shared chrome, and nothing in packages/ui is touched.
+ *
+ * `.lp-root::before/::after` are `content: none` rather than `display: none`
+ * so nothing else about them has to be reasoned about; the layers simply are
+ * not generated.
+ */
+
+.lp-root::before,
+.lp-root::after {
+  content: none;
+}
+
+.lp-root {
+  /* The site mesh below has to show through, and the flex column in
+     app/layout.tsx already fills the viewport. */
+  background: transparent;
+  min-height: 0;
+}
+
+/* Landing pages sit on --lp-void, the ground the --lp-* contrast ratios in
+   ethereal.css were measured against. Only visible on overscroll, but it
+   keeps the rubber-band edge from flashing the dh-* ground. */
+:root:has(.lp-root) body {
+  background: var(--lp-void);
+}
+
+:root:has(.lp-root) .dh-grain {
+  opacity: var(--lp-grain-opacity);
+}
+
+/* The corporate mesh: two lobes of equal weight entering from the top — cyan
+   (CRM Core) and emerald (Admin Enrollment) — meeting over one ground, with
+   the amber signal low and centred. Deliberately NOT the cyan-led CRM mesh or
+   the emerald-led MMS mesh: on doublehelixhub neither product leads. */
+:root:has(.lp-root) .dh-mesh {
+  background:
+    radial-gradient(ellipse 46% 38% at 14% 4%, var(--lp-mesh-1), transparent 62%),
+    radial-gradient(ellipse 46% 38% at 86% 4%, var(--lp-mesh-2), transparent 62%),
+    radial-gradient(ellipse 34% 26% at 50% 96%, var(--lp-mesh-3), transparent 60%),
+    var(--lp-void);
+}
+
+/* A page that is ABOUT one product can lead with that product's tone by
+   setting `data-strand` on its landing root — the same attribute landing.css
+   already reads for the headline gradient, inline links, signal ticks and
+   focus ring. These two mirror `.lp-root::before` / `.lp-root[data-strand='mms']::before`
+   in landing.css so a DHH product page matches its product landing. */
+:root:has(.lp-root[data-strand='crm']) .dh-mesh {
+  background:
+    radial-gradient(ellipse 52% 40% at 82% 6%, var(--lp-mesh-1), transparent 64%),
+    radial-gradient(ellipse 40% 34% at 4% 62%, var(--lp-mesh-2), transparent 60%),
+    radial-gradient(ellipse 30% 24% at 68% 92%, var(--lp-mesh-3), transparent 62%),
+    var(--lp-void);
+}
+
+:root:has(.lp-root[data-strand='mms']) .dh-mesh {
+  background:
+    radial-gradient(ellipse 52% 40% at 18% 6%, var(--lp-mesh-2), transparent 64%),
+    radial-gradient(ellipse 40% 34% at 96% 58%, var(--lp-mesh-1), transparent 60%),
+    radial-gradient(ellipse 30% 24% at 30% 92%, var(--lp-mesh-3), transparent 62%),
+    var(--lp-void);
+}
+
+/* The app shell sets `h1..h6 { font-family: var(--font-heading) }` for the
+   dh-* pages. Inside a landing root the display face should win, but only for
+   headings that have not already been given an lp-* class — the `:not()`
+   makes it impossible for this rule to touch `.lp-display`, `.lp-tile-title`
+   or any other typed heading, whatever the source order. Use the lp-* classes
+   anyway; this is a floor, not a substitute. */
+.lp-root :where(h1, h2, h3, h4, h5, h6):not([class*='lp-']) {
+  font-family: var(--lp-font-display);
+  letter-spacing: -0.03em;
 }

@@ -1,0 +1,560 @@
+/**
+ * doublehelixhub — DOCUMENT pages.
+ *
+ * Scope: the pages that are not marketing pages — the three legal documents
+ * (/legal/privacy, /legal/sms-privacy, /legal/terms) and the PIFH MSA rate
+ * matrix (/products/pricing). They are read, not skimmed, so they get long-
+ * form measure and table craft rather than hero composition.
+ *
+ * This is NOT a second design system. Every value below either references an
+ * `--lp-*` token from packages/ui/src/styles/ethereal.css or solves a problem
+ * the shared stylesheet cannot know about: how a 65-75ch reading measure sits
+ * inside `.lp-section`, how the shared SmsPrivacyPolicy component's Tailwind
+ * utilities are neutralised so its opacity stacking cannot fall under AA, and
+ * how a wide rate matrix scrolls inside its own box instead of the page body.
+ * packages/ui/src/styles/{landing,ethereal}.css are untouched — they are
+ * consumed by two shipped, in-production landings.
+ *
+ * `landing.css` is imported from app/globals.css, so it loads BEFORE every CSS
+ * module and a module rule already wins ties. Class names are doubled (`.x.x`)
+ * anyway: it is the only thing that reliably out-specifies the shared
+ * attribute-selector rules, and it documents the intent.
+ *
+ * `.root` (the --lp-font-* re-declaration) lives in dhh-landing.module.css and
+ * is imported alongside this file — there is exactly one copy of it.
+ */
+
+/* =====================================================================
+ * 1. PAGE SHELL
+ * ===================================================================== */
+
+/* `.lp-section` carries no top padding — on the product landings the hero
+   supplies it. A document page opens directly under the sticky site header,
+   so it has to supply its own. */
+.page.page {
+  padding-top: clamp(2.75rem, 6vw, 4.5rem);
+}
+
+/* A document title is not a hero headline. `h1.lp-display` is
+   clamp(2.6rem, 5.6vw, 4.5rem) — right for a landing, shouting on a privacy
+   policy. Same face, same tracking, two steps quieter. */
+.head.head h1 {
+  font-size: clamp(1.95rem, 4.2vw, 2.85rem);
+  line-height: 1.07;
+  letter-spacing: -0.032em;
+  max-width: 20ch;
+}
+
+.head.head :global(.lp-lede) {
+  max-width: 60ch;
+}
+
+/* Standalone navigation link (the section head aside). Inline text links are
+   exempt from the 44px touch target; this one is not inline, so it is sized.
+   `.lp-inline-link`'s border-bottom would float away from the text inside a
+   44px box, so the underline is a text decoration and follows the baseline. */
+.backLink.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  padding-block: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--lp-cyan);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+  text-decoration-color: color-mix(in srgb, var(--lp-cyan) 45%, transparent);
+  transition: text-decoration-color var(--lp-dur) var(--lp-ease);
+}
+
+.backLink.backLink:hover {
+  text-decoration-color: currentColor;
+}
+
+.backLink.backLink:focus-visible {
+  outline: 2px solid var(--lp-cyan);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* =====================================================================
+ * 2. THE PAPER — bezel + inner sheet
+ * ===================================================================== */
+
+/* Sized to the reading measure, not to the section: 68ch of body copy plus
+   the sheet's own padding. At 58rem the sheet ran ~130px wider than the text
+   it holds and read as a half-empty panel. */
+.paper.paper {
+  min-width: 0;
+  max-width: 51rem;
+  padding: 0.5rem;
+  border-radius: var(--lp-r-xl);
+  background: var(--lp-bezel-bg);
+  border: 1px solid var(--lp-hairline);
+}
+
+.paperInner.paperInner {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(1.5rem, 4vw, 3rem);
+  border-radius: calc(var(--lp-r-xl) - 0.5rem);
+  background: var(--lp-bezel-inner);
+  box-shadow: inset 0 1px 0 var(--lp-inset-hilite);
+}
+
+/* The strand signs the document the same way `.lp-close-core::before` signs
+   the close on both product landings — one shared mark, not a new one. */
+.paperInner.paperInner::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 9rem;
+  height: 2px;
+  background: var(--lp-gradient);
+  opacity: 0.85;
+}
+
+/* =====================================================================
+ * 3. LONG-FORM PROSE
+ *
+ * Measure is the whole point: 68ch lands inside the 65-75ch band at every
+ * step of the font-size clamp. Text sits on --lp-bezel-inner (#ffffff light /
+ * #0a1416 dark) at --lp-fg, so it is the highest-contrast pairing the token
+ * set has in both themes.
+ * ===================================================================== */
+
+.prose.prose {
+  max-width: 68ch;
+  color: var(--lp-fg);
+  font-size: 1rem;
+  line-height: 1.72;
+  text-wrap: pretty;
+}
+
+.prose.prose p {
+  margin: 0;
+}
+
+.prose.prose p + p {
+  margin-top: 1.15rem;
+}
+
+/* `max-width` / `text-wrap` are here to unset the LEGACY `.lp-section h2`
+   rule in landing.css (its `max-width: 20ch; text-wrap: balance` is meant for
+   a v1 section headline and was breaking every numbered policy heading onto
+   two lines). That file is shipped and must not be edited, so it is overridden
+   from here. */
+.prose.prose h2 {
+  font-family: var(--lp-font-display);
+  font-size: clamp(1.12rem, 2vw, 1.32rem);
+  font-weight: 700;
+  line-height: 1.28;
+  letter-spacing: -0.022em;
+  color: var(--lp-fg-strong);
+  max-width: none;
+  text-wrap: pretty;
+  margin: 0;
+}
+
+.prose.prose h3 {
+  font-family: var(--lp-font-display);
+  font-size: 1.02rem;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: -0.018em;
+  color: var(--lp-fg-strong);
+  margin: 0;
+}
+
+.prose.prose h2 + p,
+.prose.prose h3 + p {
+  margin-top: 0.7rem;
+}
+
+/* The shared SmsPrivacyPolicy component's `afterBullets` paragraphs follow a
+   <ul>, so `p + p` never reaches them and they sat on the last bullet. */
+.prose.prose ul + p,
+.prose.prose ol + p {
+  margin-top: 1.15rem;
+}
+
+.prose.prose ul,
+.prose.prose ol {
+  margin-top: 0.85rem;
+  padding-left: 1.35rem;
+}
+
+.prose.prose li {
+  padding-left: 0.15rem;
+}
+
+/* The bullet is the smallest place the strand can show up. */
+.prose.prose li::marker {
+  color: var(--lp-cyan);
+}
+
+.prose.prose a {
+  color: var(--lp-cyan);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  text-decoration-color: color-mix(in srgb, var(--lp-cyan) 45%, transparent);
+  transition: text-decoration-color var(--lp-dur) var(--lp-ease);
+}
+
+.prose.prose a:hover {
+  text-decoration-color: currentColor;
+}
+
+.prose.prose a:focus-visible {
+  outline: 2px solid var(--lp-cyan);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* --- neutralising the shared SmsPrivacyPolicy component's utilities -------
+ * `packages/ui/src/components/sms-privacy-policy.tsx` is shared with other
+ * apps and is not ours to edit. It paints its body copy with `opacity-90` and
+ * its "Last updated" line with `opacity-70`. Element opacity MULTIPLIES with
+ * the alpha already in the --lp-* colour, so `opacity-70` over a muted token
+ * lands around 3:1 and fails AA. Opacity is reset to 1 here and the colour is
+ * carried by an AA-measured token instead. */
+.prose.prose :global(.opacity-90) {
+  opacity: 1;
+  color: var(--lp-fg);
+}
+
+/* The "Last updated: …" line, restyled as the ledger micro-label the rest of
+   the family uses. --lp-muted-soft is the AA floor in both themes. */
+.prose.prose :global(.opacity-70) {
+  opacity: 1;
+  color: var(--lp-muted-soft);
+  font-family: var(--lp-font-mono);
+  font-size: 0.72rem;
+  line-height: 1.5;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* =====================================================================
+ * 4. RELATED DOCUMENTS
+ * ===================================================================== */
+
+/* Capped to the reading measure by default, so on a legal page it lines up
+   with the sheet above it. `.wide` lifts the cap where the content it follows
+   is wider — the rate matrix, whose tables want the room. */
+.related.related {
+  max-width: 58rem;
+  margin-top: clamp(2rem, 5vw, 3rem);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+/* One vertical rhythm for the stacked blocks on the rate-matrix page, so the
+   disclaimer, the plan cards and the related links all breathe the same.
+   `min-width: 0` all the way down the grid chain: a grid item's automatic
+   minimum size is its MIN-CONTENT size, so without it the 34rem rate table
+   would push the page body wider than a 390px phone instead of panning
+   inside its own scroller. */
+.stack.stack {
+  display: grid;
+  gap: clamp(1.75rem, 4vw, 2.75rem);
+  min-width: 0;
+}
+
+.wide.wide.wide {
+  max-width: none;
+}
+
+/* =====================================================================
+ * 5. RATE MATRIX  (/products/pricing)
+ * ===================================================================== */
+
+/* Rates ARE the money moment on this page, so the semantic amber is the right
+   accent for the provisional disclaimer — and it is the only place it is used.
+   The disclaimer TEXT is --lp-fg, not amber: amber-on-amber-wash is what made
+   the old `text-amber-100 on bg-amber-500/10` near-illegible in light mode. */
+.notice.notice {
+  min-width: 0;
+  max-width: 58rem;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 0.8rem;
+  padding: 1rem 1.15rem;
+  border-radius: var(--lp-r-md);
+  border: 1px solid var(--lp-signal-line);
+  background: var(--lp-signal-wash);
+  color: var(--lp-fg);
+  font-size: 0.94rem;
+  line-height: 1.6;
+}
+
+.noticeTick.noticeTick {
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-top: 0.5rem;
+  border-radius: var(--lp-r-pill);
+  background: var(--lp-signal);
+  flex: none;
+}
+
+.notice.notice p {
+  margin: 0;
+  max-width: 66ch;
+}
+
+.plans.plans {
+  display: grid;
+  gap: clamp(1.1rem, 2.6vw, 1.75rem);
+  min-width: 0;
+}
+
+.plan.plan {
+  min-width: 0;
+  padding: clamp(1.1rem, 2.4vw, 1.6rem);
+  border-radius: var(--lp-r-lg);
+  border: 1px solid var(--lp-hairline);
+  background: var(--lp-surface-strong);
+  box-shadow: var(--lp-shadow-1);
+}
+
+.planHead.planHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  margin-bottom: 1rem;
+}
+
+/* Same legacy `.lp-section h2` override as `.prose h2` above. */
+.planTitle.planTitle {
+  max-width: none;
+  text-wrap: pretty;
+  margin: 0;
+  font-family: var(--lp-font-display);
+  font-size: clamp(1.08rem, 2vw, 1.28rem);
+  font-weight: 700;
+  letter-spacing: -0.022em;
+  line-height: 1.2;
+  color: var(--lp-fg);
+}
+
+.planMeta.planMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.chip.chip {
+  font-family: var(--lp-font-mono);
+  font-size: 10px;
+  line-height: 1;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--lp-chip-fg);
+  background: var(--lp-chip-bg);
+  border: 1px solid var(--lp-chip-border);
+  padding: 0.38rem 0.6rem;
+  border-radius: var(--lp-r-pill);
+}
+
+/* "Provisional" restates the page-level disclaimer at the point of use. */
+.chipSignal.chipSignal {
+  color: var(--lp-signal);
+  background: var(--lp-signal-wash);
+  border-color: var(--lp-signal-line);
+}
+
+.planId.planId {
+  font-family: var(--lp-font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  color: var(--lp-muted-soft);
+}
+
+/* --- the scroller ---------------------------------------------------------
+ * The table scrolls inside this box; the page body never does. It is a
+ * labelled region with tabindex=0 so a keyboard user can reach and pan it —
+ * a scroll container that is not focusable is a keyboard trap for its own
+ * content. */
+.tableWrap.tableWrap {
+  min-width: 0;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--lp-hairline);
+  border-radius: var(--lp-r-sm);
+  background: var(--lp-bezel-inner);
+}
+
+.tableWrap.tableWrap:focus-visible {
+  outline: 2px solid var(--lp-cyan);
+  outline-offset: 2px;
+}
+
+/* A table that pans has to LOOK like it pans. macOS overlay scrollbars are
+   invisible at rest, so the bar is styled explicitly — that forces a
+   persistent one and is the only wordless affordance available here: a
+   right-edge fade would veil the last column's digits, and a rate card whose
+   numbers are half-hidden is worse than one that shows its scrollbar. */
+.tableWrap.tableWrap {
+  scrollbar-width: thin;
+  scrollbar-color: var(--lp-hairline-strong) transparent;
+}
+
+.tableWrap.tableWrap::-webkit-scrollbar {
+  height: 9px;
+}
+
+.tableWrap.tableWrap::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.tableWrap.tableWrap::-webkit-scrollbar-thumb {
+  background: var(--lp-hairline-strong);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  border-radius: var(--lp-r-pill);
+}
+
+.tableWrap.tableWrap::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--lp-fg) 42%, transparent);
+  background-clip: padding-box;
+}
+
+.matrix.matrix {
+  /* Opaque, because the first column is sticky and has to hide the cells
+     sliding under it. color-mix over an opaque base stays opaque. */
+  --doc-head-bg: color-mix(in srgb, var(--lp-fg) 4%, var(--lp-bezel-inner));
+  --doc-zebra-bg: color-mix(in srgb, var(--lp-fg) 2.5%, var(--lp-bezel-inner));
+
+  width: 100%;
+  /* Four age bands plus the coverage column: below this the numbers wrap and
+     a rate card that cannot be read row-by-row is worse than one that pans. */
+  min-width: 34rem;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--lp-fg);
+}
+
+.matrix.matrix th,
+.matrix.matrix td {
+  padding: 0.7rem 0.9rem;
+  text-align: right;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--lp-hairline);
+}
+
+.matrix.matrix thead th {
+  font-family: var(--lp-font-mono);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--lp-muted-soft);
+  background: var(--doc-head-bg);
+  border-bottom: 1px solid var(--lp-hairline-strong);
+}
+
+/* The coverage-tier column stays put while the age bands pan under it. */
+.matrix.matrix thead th:first-child,
+.matrix.matrix tbody th {
+  position: sticky;
+  left: 0;
+  text-align: left;
+  border-right: 1px solid var(--lp-hairline);
+}
+
+.matrix.matrix thead th:first-child {
+  z-index: 2;
+}
+
+.matrix.matrix tbody th {
+  z-index: 1;
+  font-weight: 600;
+  color: var(--lp-fg);
+  background: var(--lp-bezel-inner);
+}
+
+.matrix.matrix tbody tr:nth-child(even) td {
+  background: var(--doc-zebra-bg);
+}
+
+.matrix.matrix tbody tr:nth-child(even) th {
+  background: var(--doc-zebra-bg);
+}
+
+.matrix.matrix tbody tr:last-child th,
+.matrix.matrix tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.footnotes.footnotes {
+  margin: 0.9rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.4rem;
+  max-width: 62ch;
+  font-size: 0.8rem;
+  line-height: 1.55;
+  color: var(--lp-muted);
+}
+
+/* Mono chip for a package name inside running copy. */
+.code.code {
+  font-family: var(--lp-font-mono);
+  font-size: 0.85em;
+  letter-spacing: 0.01em;
+  color: var(--lp-fg);
+  background: var(--lp-chip-bg);
+  border: 1px solid var(--lp-chip-border);
+  border-radius: var(--lp-r-xs);
+  padding: 0.1em 0.4em;
+  white-space: nowrap;
+}
+
+/* =====================================================================
+ * 6. RESPONSIVE + REDUCED MOTION
+ * ===================================================================== */
+
+@media (max-width: 640px) {
+  .related.related {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .planHead.planHead {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.55rem;
+  }
+
+  .matrix.matrix {
+    min-width: 30rem;
+    font-size: 0.85rem;
+  }
+
+  .matrix.matrix th,
+  .matrix.matrix td {
+    padding: 0.6rem 0.7rem;
+  }
+
+  .prose.prose {
+    font-size: 0.97rem;
+    line-height: 1.68;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .backLink.backLink,
+  .prose.prose a {
+    transition: none;
+  }
+}

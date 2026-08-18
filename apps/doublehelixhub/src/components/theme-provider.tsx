@@ -4,8 +4,8 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
-  useState,
+  useMemo,
+  useSyncExternalStore,
   type ReactNode,
 } from 'react';
 
@@ -20,6 +20,46 @@ type ThemeContextValue = {
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 const STORAGE_KEY = 'dh-theme';
 
+/**
+ * The theme is an EXTERNAL store, not React state: the source of truth is the
+ * `dark` class on <html>, which `themeInitScript` below stamps on before React
+ * ever runs so the page never flashes the wrong ground.
+ *
+ * It is read with `useSyncExternalStore` rather than mirrored into `useState`
+ * inside a mount effect. The effect version tripped `react-hooks/
+ * set-state-in-effect` (setState synchronously in an effect body causes a
+ * cascading render), and it also rendered one frame of `light` before
+ * correcting itself, which flipped the theme toggle's icon on every load for
+ * dark-mode users. `getServerSnapshot` returns the light default, so the
+ * server HTML and the hydration render agree; React then reconciles against
+ * `getSnapshot` (the real DOM class) immediately after hydrating.
+ *
+ * Light is still the default: absent a stored preference the init script
+ * removes `.dark`, and `getSnapshot` reports `light`. OS `prefers-color-scheme`
+ * is deliberately NOT consulted — this site opts into light and lets the
+ * header toggle move it, which is the behaviour that shipped.
+ */
+const listeners = new Set<() => void>();
+
+function subscribe(onStoreChange: () => void) {
+  listeners.add(onStoreChange);
+  return () => {
+    listeners.delete(onStoreChange);
+  };
+}
+
+function emit() {
+  for (const listener of listeners) listener();
+}
+
+function getSnapshot(): Theme {
+  return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+}
+
+function getServerSnapshot(): Theme {
+  return 'light';
+}
+
 function applyTheme(theme: Theme) {
   const root = document.documentElement;
   root.classList.toggle('dark', theme === 'dark');
@@ -27,38 +67,28 @@ function applyTheme(theme: Theme) {
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>('light');
-
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      const next: Theme = stored === 'dark' ? 'dark' : 'light';
-      setThemeState(next);
-      applyTheme(next);
-    } catch {
-      applyTheme('light');
-    }
-  }, []);
+  const theme = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
   const setTheme = useCallback((next: Theme) => {
-    setThemeState(next);
     applyTheme(next);
     try {
       localStorage.setItem(STORAGE_KEY, next);
     } catch {
-      /* ignore */
+      /* Safari private mode / storage disabled — the class still applied. */
     }
+    emit();
   }, []);
 
   const toggleTheme = useCallback(() => {
-    setTheme(theme === 'dark' ? 'light' : 'dark');
-  }, [setTheme, theme]);
+    setTheme(getSnapshot() === 'dark' ? 'light' : 'dark');
+  }, [setTheme]);
 
-  return (
-    <ThemeContext.Provider value={{ theme, setTheme, toggleTheme }}>
-      {children}
-    </ThemeContext.Provider>
+  const value = useMemo(
+    () => ({ theme, setTheme, toggleTheme }),
+    [theme, setTheme, toggleTheme],
   );
+
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
 
 export function useTheme() {

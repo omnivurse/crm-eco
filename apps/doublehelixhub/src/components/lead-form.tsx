@@ -14,7 +14,15 @@ export function LeadForm() {
     setStatus('submitting');
     setErrorMessage(null);
 
-    const formData = new FormData(event.currentTarget);
+    /* Capture the form element BEFORE the first await. React nulls
+       `event.currentTarget` once the handler yields, so reading it after the
+       fetch threw `Cannot read properties of null (reading 'reset')` — inside
+       the try, after `setStatus('success')` — and the catch then flipped a
+       succeeded submission to the error state. The lead was written to
+       Supabase; the person was told it had failed and submitted again. Wiring
+       (endpoint, payload, field names, honeypot) is unchanged. */
+    const form = event.currentTarget;
+    const formData = new FormData(form);
     const payload = {
       firstName: String(formData.get('firstName') ?? ''),
       lastName: String(formData.get('lastName') ?? ''),
@@ -38,8 +46,8 @@ export function LeadForm() {
         throw new Error(body.error ?? `Request failed (${res.status})`);
       }
 
+      form.reset();
       setStatus('success');
-      event.currentTarget.reset();
     } catch (err) {
       setStatus('error');
       setErrorMessage(err instanceof Error ? err.message : 'Something went wrong.');
@@ -120,7 +128,7 @@ function Field({
     <div>
       <label htmlFor={name} className="mb-1.5 block text-sm font-medium text-foreground/70">
         {label}
-        {required && <span className="text-cyan-600 dark:text-cyan-400"> *</span>}
+        {required && <span className="text-cyan-800 dark:text-cyan-400"> *</span>}
       </label>
       <input id={name} name={name} type={type} required={required} className="dh-input" />
     </div>

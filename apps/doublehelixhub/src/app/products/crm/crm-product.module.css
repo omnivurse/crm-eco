@@ -1,0 +1,490 @@
+/**
+ * CRM Core product page (doublehelixhub.com) — page-scoped composition only.
+ *
+ * This is NOT a second design system. Every value below either references an
+ * `--lp-*` token from packages/ui/src/styles/ethereal.css or solves a problem
+ * the shared stylesheet cannot know about: how the strand threads THIS hero,
+ * how a 1.9:1 / 5.5:1 screenshot stays readable on a phone, how the ledger
+ * spec-list in the "why" band is laid out. Nothing in packages/ui is touched —
+ * two production landings consume it.
+ *
+ * Ordering note (differs from apps/crm and apps/admin): here `landing.css` is
+ * imported from `app/globals.css`, so it loads BEFORE the CSS modules and a
+ * module rule wins ties. Class names are still doubled (`.x.x`) because that
+ * is the only thing that reliably beats the shared attribute-selector rules
+ * (`.lp-bento > .lp-tile[data-span]`, `.lp-spine[data-orientation='vertical']`)
+ * and because it documents which shared rule is being out-specified.
+ *
+ * Family resemblance vs. the shipped CRM landing: same system, mirrored hero
+ * (the strand runs down the RIGHT of the still here), and a section set that
+ * belongs to a vendor's product page rather than an app's front door.
+ */
+
+/* --- anchors under the site's sticky header -----------------------------
+ * `app/layout.tsx` renders SiteHeader as a sticky island. Section ids are
+ * linked to from the page and from elsewhere on the site, so every anchor
+ * target has to clear it or the heading lands under the island.           */
+
+.anchor {
+  scroll-margin-top: 6rem;
+}
+
+/* --- hero ---------------------------------------------------------------
+ * The shared `.lp-hero` already sets the two-column grid and the rhythm; the
+ * page decides the column balance and buys enough headroom to clear the
+ * sticky header, which the shared padding (which assumes `.lp-root` owns the
+ * nav) does not account for.                                               */
+
+.hero.hero {
+  grid-template-columns: minmax(0, 1.04fr) minmax(0, 0.96fr);
+  padding-top: clamp(4.5rem, 8vw, 7rem);
+}
+
+.heroStage.heroStage {
+  position: relative;
+  display: block;
+}
+
+/* The strand runs BEHIND the screen rather than beside it: the record rail is
+   the page's spine and the product sits on it. Mirrored from the shipped CRM
+   landing (rail left / device pushed right) so the two pages read as a pair
+   rather than as the same page twice.
+
+   Tripled + attribute: the rail declares `--lp-spine-w` on itself through
+   `.lp-spine[data-orientation='vertical']`, so this selector has to out-weigh
+   that or the spine silently renders at the shared 6.5rem — narrow enough
+   that it stops overlapping the device and reads as an ornament parked in the
+   gutter. The viewBox locks the strand's height to its width, so the width is
+   also what keeps the spine roughly as tall as the device it runs behind; it
+   is tracked to the viewport so it does not overshoot on a small laptop. */
+.heroSpine.heroSpine.heroSpine[data-orientation='vertical'] {
+  --lp-spine-w: clamp(6.5rem, 9.5vw, 8.5rem);
+  position: absolute;
+  right: -1.25rem;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.9;
+}
+
+/* `showStations={false}` still leaves the canvas as a two-column grid with a
+   gap, which would offset the strand inside its own box. */
+.heroSpine.heroSpine :global(.lp-spine-canvas) {
+  grid-template-columns: var(--lp-spine-w);
+  gap: 0;
+}
+
+.heroDevice.heroDevice {
+  position: relative;
+  z-index: 1;
+  margin-right: 4.5rem;
+}
+
+/* Stacked hero: the strand steps back into the flow beside the screen, and
+   the still is capped near its natural size so it stays crisp. */
+@media (max-width: 900px) {
+  .hero.hero {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .heroStage.heroStage {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Same specificity as the desktop rule above, which it has to unset. */
+  .heroSpine.heroSpine.heroSpine[data-orientation='vertical'] {
+    position: relative;
+    top: auto;
+    right: auto;
+    transform: none;
+    flex: 0 0 auto;
+    order: 2;
+  }
+
+  .heroDevice.heroDevice {
+    order: 1;
+    flex: 0 1 auto;
+    width: min(100%, 23rem);
+    margin-right: -2.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .heroSpine.heroSpine {
+    display: none;
+  }
+
+  .heroDevice.heroDevice {
+    margin-right: 0;
+  }
+}
+
+/* --- journey (capture -> qualify -> close) -------------------------------
+ * Three stations, not five. The horizontal viewBox is `count * 132` wide and
+ * a fixed 118 tall, so at three stations a full-measure rail is scaled ~2.9x
+ * and the strand renders as a fat rope. Capping the rail's width (canvas AND
+ * station list together, so the dots stay welded to their stems) brings the
+ * scale back to roughly what the five-station landings render at.          */
+
+.journey.journey :global(.lp-journey-h) {
+  max-width: min(100%, 52rem);
+  margin-inline: auto;
+}
+
+/* Three stations means three wide columns, so the captions can run longer
+   than the shared 26ch before they look like a poem. */
+.journey.journey
+  :global(.lp-spine[data-orientation='horizontal'] .lp-spine-station-caption) {
+  max-width: 32ch;
+}
+
+.journey.journey :global(.lp-journey-note) {
+  margin-inline: auto;
+  text-align: center;
+}
+
+/* Below md the journey swaps its horizontal rail for the vertical spine, and
+   the spine width is the ONLY lever on its height: the viewBox is
+   `132 x (stations * 132)`, so total height = stations * --lp-spine-w and each
+   station gets a slot exactly one --lp-spine-w tall. The shared 4.25rem
+   default gives 68px slots, far too short for a captioned station.
+   The shipped landings use 7.5rem for five stations, but their captions are
+   about half as long as these three; measured at 390px, 7.5rem left only ~5px
+   between the end of station 01's caption and station 02's index. 9rem opens
+   that to ~30px. Below 400px the text column is narrow enough that the
+   caption needs more lines than the slot allows, so it steps down a size
+   rather than the spine stepping down (a narrower spine shortens the strand
+   faster than it widens the text — it makes the collision worse, not better). */
+@media (max-width: 768px) {
+  .journey.journey :global(.lp-journey-v) {
+    --lp-spine-w: 9rem;
+  }
+
+  .journey.journey :global(.lp-journey-v .lp-spine-station-caption) {
+    font-size: 0.82rem;
+    line-height: 1.45;
+    max-width: none;
+  }
+
+  .journey.journey :global(.lp-journey-note) {
+    text-align: left;
+  }
+}
+
+/* Phone-width stations.
+ *
+ * The vertical rail lays each station out ABSOLUTELY at a fixed fraction of a
+ * height the SVG dictates, so a station taller than its slot does not push the
+ * next one down — it runs into it. Below ~430px the text column beside the
+ * strand is narrow enough that these three captions (about twice the length of
+ * the ones on the shipped landings) wrap past their slot.
+ *
+ * Widening the spine does not fix it: the spine is also the column that steals
+ * the width, so past ~9rem each extra rem of height costs more lines than it
+ * buys. What fixes it is reclaiming horizontal space (the canvas gap, the
+ * station's own gap) and tightening the caption. Measured station-to-station
+ * gaps with this block, at --lp-spine-w: 9rem:
+ *   430px +37/+37 · 390px +29/+37 · 375px +29/+29 · 360px +21/+21 · 344px -4/+13
+ * versus -16/-7 at 360px and -34/-16 at 344px without it. Clear at every phone
+ * width in current use; 320px still crowds, which no combination of spine
+ * width and caption size fixes while the text sits beside the strand. */
+@media (max-width: 430px) {
+  .journey.journey :global(.lp-journey-v .lp-spine-canvas) {
+    gap: 0.6rem;
+  }
+
+  .journey.journey :global(.lp-journey-v .lp-spine-station) {
+    gap: 0.55rem;
+  }
+
+  .journey.journey :global(.lp-journey-v .lp-spine-station-caption) {
+    font-size: 0.74rem;
+    line-height: 1.4;
+  }
+}
+
+/* --- capabilities bento -------------------------------------------------
+ * Row 1-2: the desk still leads at `span 4` with two units stacked beside it.
+ * Row 3: the three remaining capability tiles at `span 2` each.
+ * At <= 1080px the shared rules drop every unit to `span 3` (two per row),
+ * which leaves the last of five units orphaned at half width — so it takes
+ * the full row instead.                                                     */
+
+/* The lower bound is load-bearing, not tidiness. Below 768px the shared sheet
+   collapses the bento to `grid-template-columns: minmax(0, 1fr)`; a leftover
+   `grid-column: span 6` there does not mean "full width", it CREATES five
+   implicit columns and drags every other tile into a 6-column layout of
+   ~40px slivers. Verified at 390px. */
+@media (min-width: 769px) and (max-width: 1080px) {
+  :global(.lp-bento) > :global(.lp-tile).fullOnTablet.fullOnTablet {
+    grid-column: span 6;
+  }
+}
+
+.deskTile.deskTile :global(.lp-tile-media) {
+  margin-bottom: 0.35rem;
+}
+
+/* --- controls tile ------------------------------------------------------
+ * No honest still exists for row-level security, audit logs or PHI
+ * guardrails, so the tile is typographic and the strand ornament (SVG,
+ * aria-hidden, no station text) fills the space a screenshot would have
+ * taken. It is never a faked UI.                                           */
+
+.controlsTile.controlsTile :global(.lp-tile-inner) {
+  overflow: hidden;
+}
+
+/* The ornament is a child of the tile body, so the body drops out of the
+   positioning chain and the copy is lifted above it instead. */
+.controlsTile.controlsTile :global(.lp-tile-body) {
+  position: static;
+}
+
+/* The copy is lifted above the ornament AND reserves the column the ornament
+   runs in. That second half is an accessibility requirement, not taste: a
+   ~4px strand stroke sitting directly behind `--lp-muted` body text drops the
+   measured contrast to roughly 3.6:1 in the dark theme (light text over the
+   locally-brightened cyan), under the 4.5:1 floor — and no z-index fixes that,
+   because the strand is still the text's background. Reserving 4.75rem keeps
+   the strand at the tile's right edge with the copy clear of it, so every
+   pairing on this page is measured against a flat tile surface. */
+.controlsTile.controlsTile :global(.lp-tile-label),
+.controlsTile.controlsTile :global(.lp-tile-title),
+.controlsTile.controlsTile :global(.lp-tile-text) {
+  position: relative;
+  z-index: 1;
+  padding-right: 4.75rem;
+}
+
+.controlsStrand.controlsStrand.controlsStrand[data-orientation='vertical'] {
+  --lp-spine-w: 6rem;
+  position: absolute;
+  top: -1rem;
+  right: -1.75rem;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.55;
+}
+
+.controlsStrand.controlsStrand :global(.lp-spine-canvas) {
+  grid-template-columns: var(--lp-spine-w);
+  gap: 0;
+}
+
+/* --- ledger chips --------------------------------------------------------
+ * The mono "record" texture, used where a tile's truth is a set of named
+ * things rather than a screenshot. Every chip is a word the page already
+ * uses — no chip introduces a capability the copy does not claim.          */
+
+.chips {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 1.15rem 0 0;
+  padding: 0;
+}
+
+.chips > * {
+  font-family: var(--lp-font-mono);
+  font-size: 10px;
+  line-height: 1;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--lp-chip-fg);
+  background: var(--lp-chip-bg);
+  border: 1px solid var(--lp-chip-border);
+  border-radius: var(--lp-r-xs);
+  padding: 0.45rem 0.55rem;
+}
+
+/* --- why band: the spec list + the exhibit ------------------------------
+ * An evaluator's section, so it is built like a spec sheet: numbered rows on
+ * hairlines, then one real screenshot as the exhibit under it. The exhibit is
+ * the coverage strip because that is where the product's benefits vocabulary
+ * is literally visible on a record.                                         */
+
+.spec {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: clamp(1.5rem, 4vw, 3.5rem);
+}
+
+.specItem {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 0.85rem;
+  padding: 1.05rem 0;
+  border-top: 1px solid var(--lp-hairline);
+}
+
+.specIndex {
+  font-family: var(--lp-font-mono);
+  font-size: 10px;
+  line-height: 1;
+  letter-spacing: 0.14em;
+  color: var(--lp-muted-soft);
+  padding-top: 0.35rem;
+}
+
+.specText {
+  font-size: 0.98rem;
+  line-height: 1.55;
+  color: var(--lp-muted);
+}
+
+@media (max-width: 720px) {
+  .spec {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Doubled: `.lp-device { margin: 0 }` would otherwise flatten the top margin
+   (the band's own `> *` rule only sets `margin-inline`). */
+.exhibit.exhibit {
+  margin-top: clamp(2.25rem, 4vw, 3.25rem);
+}
+
+/* The coverage still is a 5.49:1 band, so the frame reserves exactly its
+   aspect and `object-fit: cover` has nothing to crop. */
+.exhibitDevice.exhibitDevice :global(.lp-device-screen) {
+  aspect-ratio: 2096 / 382;
+}
+
+.crop {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* NB: no `display` here. This class sits on the same <img> as `.lightShot` /
+   `.darkShot` in dhh-landing.module.css, which are what hide the still for
+   the theme that is not painted — a `display` declaration at equal
+   specificity would win on source order and show BOTH stills. */
+.coverageShot.coverageShot {
+  width: 100%;
+  height: auto;
+  object-fit: fill;
+}
+
+/* --- wide stills on a phone ---------------------------------------------
+ * A 1.9:1 dashboard or a 5.5:1 coverage band scaled into a ~330px column is a
+ * smudge: the field names stop being readable, which makes an honest still
+ * dishonest about what it shows. Below md each still is pinned near its
+ * natural width, the frame crops to the leading columns, and a right-edge
+ * fade says the screen continues. Nothing is redrawn — same PNG, cropped.
+ *
+ * Where the coverage window LANDS is a content decision, not a cosmetic one.
+ * Left-aligned, a ~334px window on a 390px phone shows only the entity panel
+ * ("Healthshare coverage / Sharing entity / Meridian Share Alliance") — one
+ * field, under a caption that promises benefits vocabulary. Shifted to the
+ * field grid it shows Membership, IUA and Effective date as labelled pairs,
+ * which is what the claim it sits under actually says. Same crop offset the
+ * shipped CRM landing tuned for this still.                                 */
+
+@media (max-width: 768px) {
+  .deskTile.deskTile :global(.lp-tile-media) {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .deskTile.deskTile :global(.lp-tile-media)::after {
+    content: '';
+    position: absolute;
+    inset: 0 0 0 auto;
+    width: 3.5rem;
+    background: linear-gradient(to right, transparent, var(--lp-bezel-inner));
+    pointer-events: none;
+  }
+
+  .deskShot.deskShot {
+    width: 1100px;
+    max-width: none;
+    height: auto;
+  }
+
+  /* A fixed height rather than an aspect-ratio: the image below is pinned to
+     1180px wide, so its rendered height is a constant 215px (1180 * 382/2096)
+     and the frame has to match it exactly or the crop cuts the field row. */
+  .exhibitDevice.exhibitDevice :global(.lp-device-screen) {
+    aspect-ratio: auto;
+    height: 215px;
+  }
+
+  .exhibitDevice.exhibitDevice :global(.lp-device-screen)::after {
+    content: '';
+    position: absolute;
+    inset: 0 0 0 auto;
+    width: 3.5rem;
+    background: linear-gradient(to right, transparent, var(--lp-panel-sunk));
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .coverageShot.coverageShot {
+    width: 1180px;
+    max-width: none;
+    height: auto;
+    object-fit: fill;
+    margin-left: -366px;
+  }
+
+  /* The strand ornament crosses the copy once the controls tile collapses to
+     a single column, so it steps out below md. The base rule carries three
+     classes + an attribute selector, so this has to match that specificity or
+     it silently loses and the ornament reappears at ~700px. */
+  .controlsStrand.controlsStrand.controlsStrand[data-orientation='vertical'],
+  .controlsStrand.controlsStrand {
+    display: none;
+  }
+
+  /* No ornament left to clear, so the copy takes the full column back. */
+  .controlsTile.controlsTile :global(.lp-tile-label),
+  .controlsTile.controlsTile :global(.lp-tile-title),
+  .controlsTile.controlsTile :global(.lp-tile-text) {
+    padding-right: 0;
+  }
+}
+
+/* --- close --------------------------------------------------------------- */
+
+.closeCore.closeCore {
+  align-items: stretch;
+}
+
+.closeCore.closeCore > div:first-child {
+  align-self: center;
+}
+
+.crosslink.crosslink {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.crosslinkArrow {
+  display: inline-block;
+  vertical-align: -1px;
+  margin-left: 0.3rem;
+  transition: transform var(--lp-dur) var(--lp-ease);
+}
+
+.crosslink:hover .crosslinkArrow {
+  transform: translateX(3px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crosslinkArrow,
+  .crosslink:hover .crosslinkArrow {
+    transition: none;
+    transform: none;
+  }
+}

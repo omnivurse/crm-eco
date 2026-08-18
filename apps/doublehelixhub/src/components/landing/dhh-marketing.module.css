@@ -1,0 +1,592 @@
+/**
+ * doublehelixhub — the three SECONDARY MARKETING pages.
+ *
+ * Scope: /pricing, /about (through `components/page-section.tsx`) and
+ * /contact. The home page and the two product pages compose their own thing;
+ * the legal + rate-matrix documents use `dhh-doc.module.css`. This file is the
+ * connective tissue for the pages in between — the ones that are marketing,
+ * but are not a product surface.
+ *
+ * This is NOT a second design system. Every value below either references an
+ * `--lp-*` token from packages/ui/src/styles/ethereal.css or solves a problem
+ * the shared stylesheet cannot know about: how a masthead with a strand
+ * ornament (and no product still) sits in `.lp-hero`, how a three-tier price
+ * card is built out of `.lp-tile`, and how the existing `<LeadForm>` — whose
+ * markup is not ours to touch, because its POST -> /api/leads -> Supabase
+ * wiring must not move — is re-dressed in the --lp-* palette from the outside.
+ * packages/ui/src/styles/{landing,ethereal}.css are untouched: two shipped,
+ * in-production landings consume them.
+ *
+ * `landing.css` is imported from `app/globals.css`, so it loads BEFORE every
+ * CSS module and a module rule already wins ties. Class names are doubled
+ * (`.x.x`) anyway: it is the only thing that reliably out-specifies the shared
+ * attribute-selector rules (`.lp-spine[data-orientation='vertical']`), and it
+ * documents the intent.
+ *
+ * `.root` (the `--lp-font-*` re-declaration) lives in `dhh-landing.module.css`
+ * and is imported alongside this file — there is exactly one copy of it.
+ *
+ * ORDERING TRAP, read before adding a breakpoint: `landing.css` collapses
+ * `.lp-hero` to one column at `max-width: 900px` with a (0,1,0) selector. Any
+ * doubled `.x.x` grid rule here is (0,2,0) and beats it EVEN INSIDE that media
+ * query, because media queries add no specificity. Every masthead rule below
+ * therefore restates its own collapse. Do not delete those.
+ */
+
+/* =====================================================================
+ * 1. MASTHEAD — copy + strand ornament
+ *
+ * The corporate secondary pages have no product surface of their own, and
+ * there is no honest still of "pricing" or of "who we serve". Rather than
+ * dressing the pages with a screenshot that does not evidence what is next
+ * to it, the visual is the signature itself: the record rail, stations
+ * hidden, faded at both ends so it threads the page. Same fallback the CRM
+ * landing's controls tile uses. Nothing is drawn to look like a UI.
+ * ===================================================================== */
+
+/* The shared hero splits ~50/50 because a product still fills the second
+   column. A strand is a few rem wide, so an even split would pool ~400px of
+   dead space between the copy (capped at 36rem by `.lp-hero-copy`) and the
+   ornament. The narrower second column, with the strand CENTRED in it, turns
+   that into symmetric air either side of a spine — margin, not a gap. */
+/* 0.62fr gave the ornament a column far wider than itself, and .lp-hero-copy
+   caps the copy at 36rem, so at 1440 the strand floated with ~340px of dead
+   space to its left and ~165px to its right — the one place on the site where
+   the rail really was parked in a gutter rather than threading anything.
+   Narrowing the column and pulling the strand to its leading edge turns it
+   into a rule between the copy and the page edge. */
+.masthead.masthead {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.34fr);
+  align-items: center;
+}
+
+.mastheadStage.mastheadStage {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-width: 0;
+}
+
+/* Tripled + attribute so it beats `.lp-spine[data-orientation='vertical']`,
+   which declares `--lp-spine-w` on this same element. The viewBox locks the
+   strand's height to its width (1:1 per station), so the width is the only
+   lever on how tall the ornament is: at three stations, 6.75rem reads as a
+   masthead-height spine rather than a full-page one. */
+.mastheadSpine.mastheadSpine.mastheadSpine[data-orientation='vertical'] {
+  --lp-spine-w: clamp(6rem, 10vw, 9rem);
+  /* Light tokens are much softer than dark, so the same opacity that reads as
+     a spine on the dark ground measured as a watermark on the light one. */
+  opacity: 1;
+  pointer-events: none;
+}
+
+:global(html.dark) .mastheadSpine.mastheadSpine.mastheadSpine[data-orientation='vertical'] {
+  opacity: 0.9;
+}
+
+/* With `showStations={false}` the canvas still reserves its second column
+   (the station list), so the ornament would sit against an empty gutter. */
+.mastheadSpine.mastheadSpine :global(.lp-spine-canvas) {
+  grid-template-columns: var(--lp-spine-w);
+  gap: 0;
+}
+
+/* Below the shared hero collapse the ornament would land under the copy as a
+   ~20rem tall object between the headline and the first real content. It is
+   decoration; it steps out rather than pushing the page down. */
+@media (max-width: 900px) {
+  .masthead.masthead {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .mastheadStage.mastheadStage {
+    display: none;
+  }
+}
+
+/* =====================================================================
+ * 2. TILE STRAND ORNAMENT
+ *
+ * A tile whose claim has no still (about -> "How we ship": *one shared
+ * backbone*). The strand is an aria-hidden SVG with its station text off, so
+ * it carries no words and asserts nothing; the tile's own copy is the claim.
+ * Recipe lifted from apps/crm's controls tile so both sites do it once.
+ * ===================================================================== */
+
+.strandTile.strandTile :global(.lp-tile-inner) {
+  overflow: hidden;
+}
+
+/* The ornament is a child of the tile BODY, so the body has to drop out of
+   the positioning chain for `position: absolute` to resolve against the
+   inner panel; the copy is lifted above the strand instead. */
+.strandTile.strandTile :global(.lp-tile-body) {
+  position: static;
+}
+
+.strandTile.strandTile :global(.lp-tile-label),
+.strandTile.strandTile :global(.lp-tile-title),
+.strandTile.strandTile :global(.lp-tile-text) {
+  position: relative;
+  z-index: 1;
+  /* The real separation. The strand's leftmost ink lands ~38px inside the
+     tile's right edge while the copy column ended only ~24px inside, so the
+     ornament intruded ~14px into the text column at EVERY width — whether a
+     given line actually touched it was down to where that width happened to
+     wrap. Tuning the ornament's `right` just re-rolled that dice (clear at
+     1440, colliding by up to 9px at 820 and 1024). Reserving the strand's
+     column here means no wrap can reach it at any width. */
+  padding-right: 3.25rem;
+}
+
+/* Centring this over the card ran the strand straight through the heading and
+   all five lines of body copy, and clipped it at the card lip. The reference
+   (apps/crm .controlsStrand) only survives centring because that tile's copy is
+   bottom-anchored and the strand fills an empty top half; here the copy is
+   top-anchored and fills the card. So the ornament moves out of the text column
+   and bleeds against the card's right radius instead, and drops in weight. */
+.tileStrand.tileStrand.tileStrand[data-orientation='vertical'] {
+  --lp-spine-w: 6rem;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: auto;
+  /* Separation is owned by the copy's padding-right above, not by this
+     offset, so this only decides how much of the strand the card lip crops. */
+  right: -2.25rem;
+  transform: none;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.28;
+}
+
+.tileStrand.tileStrand :global(.lp-spine-canvas) {
+  grid-template-columns: var(--lp-spine-w);
+  gap: 0;
+}
+
+/* Single-column tiles are wide and short, so the strand crosses the copy.
+   The base rule carries three classes + an attribute selector; this has to
+   match that weight or the ornament silently reappears. */
+@media (max-width: 768px) {
+  .tileStrand.tileStrand.tileStrand[data-orientation='vertical'],
+  .tileStrand.tileStrand {
+    display: none;
+  }
+
+  /* The strand is gone below this width, so the copy must stop reserving a
+     column for it — left in, it cost 52px (21% of the measure at 390px), made
+     the card visibly lopsided and forced an extra line plus a hyphen break. */
+  .strandTile.strandTile :global(.lp-tile-label),
+  .strandTile.strandTile :global(.lp-tile-title),
+  .strandTile.strandTile :global(.lp-tile-text) {
+    padding-right: 0;
+  }
+}
+
+/* =====================================================================
+ * 3. PRICING TIERS
+ *
+ * Three cards built on the shared `.lp-tile` / `.lp-tile-inner` chrome, so
+ * they are the same object as a bento tile — same bezel, same inner panel,
+ * same hover hairline — with a price ledger inside instead of a screenshot.
+ *
+ * The colour IS the thesis: CRM Core takes the cyan strand, Admin Enrollment
+ * the emerald one, and the Suite card's rule runs cyan -> emerald because it
+ * is literally both. No card invents a number; all three prices are "Custom".
+ * ===================================================================== */
+
+.tierGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.tier.tier {
+  /* Set per variant below; read by the top rule, the badge and the ticks. */
+  --tier-accent: var(--lp-cyan);
+  --tier-rule: linear-gradient(90deg, var(--lp-cyan), transparent);
+}
+
+.tierCrm.tierCrm {
+  --tier-accent: var(--lp-cyan);
+  --tier-rule: linear-gradient(90deg, var(--lp-cyan), transparent);
+}
+
+.tierAdmin.tierAdmin {
+  --tier-accent: var(--lp-emerald);
+  --tier-rule: linear-gradient(90deg, var(--lp-emerald), transparent);
+}
+
+/* Both strands, in the order the platform reads them. */
+.tierSuite.tierSuite {
+  --tier-accent: var(--lp-cyan);
+  --tier-rule: linear-gradient(90deg, var(--lp-cyan), var(--lp-emerald));
+}
+
+/* `.lp-tile-inner` gaps every child by 1rem, which is right for a tile of
+   three blocks and wrong for a ledger of six. Spacing is explicit below. */
+.tierInner.tierInner {
+  gap: 0;
+  padding: 1.75rem 1.5rem;
+}
+
+/* The strand mark that signs `.lp-close-core` on both product landings and
+   the paper on the document pages. One mark, three places. */
+.tierInner.tierInner::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 8rem;
+  height: 2px;
+  background: var(--tier-rule);
+  opacity: 0.9;
+}
+
+.tierBadge {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 0.9rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: var(--lp-r-pill);
+  font-family: var(--lp-font-mono);
+  font-size: 10px;
+  line-height: 1;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--tier-accent);
+  background: color-mix(in srgb, var(--tier-accent) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--tier-accent) 30%, transparent);
+}
+
+/* Doubled: `globals.css` gives display type to any heading inside a landing
+   root that has no `lp-*` class, and that floor rule is (0,2,0) — it would
+   otherwise win the tracking on this h2. */
+.tierName.tierName {
+  margin: 0;
+  font-family: var(--lp-font-display);
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+  color: var(--lp-fg);
+}
+
+.tierDesc {
+  margin: 0.45rem 0 0;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: var(--lp-muted);
+}
+
+.tierPrice {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.6rem;
+  margin-top: 1.4rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--lp-hairline);
+}
+
+.tierAmount {
+  font-family: var(--lp-font-display);
+  font-size: clamp(2rem, 3vw, 2.4rem);
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1;
+  color: var(--lp-fg);
+}
+
+.tierPeriod {
+  font-family: var(--lp-font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--lp-muted-soft);
+}
+
+.tierFeatures {
+  flex: 1;
+  list-style: none;
+  display: grid;
+  align-content: start;
+  gap: 0.8rem;
+  margin: 1.4rem 0 0;
+  padding: 0;
+}
+
+.tierFeature {
+  display: flex;
+  gap: 0.6rem;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: var(--lp-muted);
+}
+
+/* Sized here rather than through the icon's `size` prop so the tick tracks
+   the type, and coloured by the tier so the two products stay legible as
+   two products all the way down the card. */
+.tierCheck.tierCheck {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+  margin-top: 0.17rem;
+  color: var(--tier-accent);
+}
+
+/* `.lp-btn-*` is inline-flex; this makes the action the full width of the
+   card it closes. Both shared buttons are already min-height 48px. */
+.tierCta.tierCta {
+  width: 100%;
+  margin-top: 1.6rem;
+}
+
+/* The lift the previous design gave the highlighted tier, kept. It is a
+   static transform, not a transition, so reduced motion has nothing to
+   suppress; `align-items: stretch` keeps all three cards the same height. */
+@media (min-width: 901px) {
+  .tierPopular.tierPopular {
+    transform: translateY(-0.75rem);
+  }
+}
+
+/* Three cards in a ~850px container are 280px wide — under that the ledger
+   stops being readable, so they stack. Capped and centred, because a single
+   740px-wide card holding a five-item list is a worse read than a 34rem one. */
+@media (max-width: 900px) {
+  .tierGrid {
+    grid-template-columns: minmax(0, 1fr);
+    max-width: 34rem;
+    margin-inline: auto;
+  }
+}
+
+/* `landing.css` tightens `.lp-tile-inner` to 1.35rem/1.25rem below md, but at
+   (0,1,0) it loses to `.tierInner.tierInner`. Restated so a price card is not
+   the one tile on the site still carrying desktop padding at 390px. */
+@media (max-width: 768px) {
+  .tierInner.tierInner {
+    padding: 1.5rem 1.25rem;
+  }
+}
+
+.footnote {
+  max-width: 46ch;
+  margin: 3rem auto 0;
+  text-align: center;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: var(--lp-muted-soft);
+}
+
+/* =====================================================================
+ * 4. CONTACT — the strand runs behind the form
+ *
+ * Same composition as the CRM landing's hero: the rail is taller than the
+ * panel and masked at both ends, so it reads as a spine the form is sitting
+ * on rather than an ornament parked in the gutter.
+ * ===================================================================== */
+
+.contactHero.contactHero {
+  /* The form needs the wider half; the copy is three short blocks. */
+  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+  align-items: center;
+}
+
+.contactStage.contactStage {
+  position: relative;
+  display: block;
+}
+
+.contactSpine.contactSpine.contactSpine[data-orientation='vertical'] {
+  --lp-spine-w: clamp(5.5rem, 8.5vw, 7.5rem);
+  position: absolute;
+  left: -1.25rem;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 0;
+  /* The panel below it is a form: the strand must never eat a click. */
+  pointer-events: none;
+  opacity: 0.85;
+}
+
+.contactSpine.contactSpine :global(.lp-spine-canvas) {
+  grid-template-columns: var(--lp-spine-w);
+  gap: 0;
+}
+
+@media (max-width: 900px) {
+  .contactHero.contactHero {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .contactSpine.contactSpine.contactSpine[data-orientation='vertical'],
+  .contactSpine.contactSpine {
+    display: none;
+  }
+}
+/* The panel's own `margin-left` reset lives at the END of section 5, after
+   the rule it has to beat. Same specificity, so source order decides and a
+   media query adds none — putting it here would have silently lost. */
+
+/* =====================================================================
+ * 5. THE FORM PANEL
+ *
+ * `components/lead-form.tsx` is NOT edited — its field names, its POST to
+ * /api/leads and its Supabase write are load-bearing, and its markup carries
+ * the app's older `dh-*` control classes. So the panel re-dresses it from the
+ * outside: every rule below is a descendant of `.formCore`, which makes it
+ * (0,2,0) against the `dh-*` originals' (0,1,0) and leaves the form's own
+ * styling intact everywhere else it is rendered (the home page).
+ * ===================================================================== */
+
+.formPanel.formPanel {
+  position: relative;
+  z-index: 1;
+  margin-left: 4rem;
+  padding: 0.5rem;
+  border-radius: var(--lp-r-xl);
+  background: var(--lp-bezel-bg);
+  border: 1px solid var(--lp-hairline);
+}
+
+.formCore.formCore {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(1.5rem, 3.5vw, 2.25rem);
+  border-radius: calc(var(--lp-r-xl) - 0.5rem);
+  background: var(--lp-bezel-inner);
+  box-shadow: inset 0 1px 0 var(--lp-inset-hilite);
+}
+
+.formCore.formCore::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 9rem;
+  height: 2px;
+  background: var(--lp-gradient);
+  opacity: 0.85;
+}
+
+/* Field labels become the ledger micro-label the rest of the family uses.
+   Held at --lp-muted rather than the quieter --lp-muted-soft the decorative
+   eyebrows use: these are functional text a person reads while typing, and
+   --lp-muted is the higher-contrast of the two AA-measured tokens in BOTH
+   themes (see the comments in ethereal.css). Do not quiet either one. */
+.formCore.formCore label {
+  font-family: var(--lp-font-mono);
+  font-size: 0.72rem;
+  line-height: 1.3;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 400;
+  color: var(--lp-muted);
+}
+
+.formCore.formCore :global(.dh-input),
+.formCore.formCore :global(.dh-select),
+.formCore.formCore :global(.dh-textarea) {
+  background: var(--lp-surface);
+  border-color: var(--lp-hairline-strong);
+  color: var(--lp-fg);
+  border-radius: var(--lp-r-sm);
+  font-family: var(--lp-font-body);
+}
+
+/* The originals set `outline: none` on :focus and lean on a box-shadow. That
+   is a visible ring for a mouse and a weak one for a keyboard, so the
+   focus-visible ring the rest of the landing system draws is restored here. */
+.formCore.formCore :global(.dh-input):focus,
+.formCore.formCore :global(.dh-select):focus,
+.formCore.formCore :global(.dh-textarea):focus {
+  border-color: color-mix(in srgb, var(--lp-cyan) 55%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--lp-cyan) 14%, transparent);
+}
+
+.formCore.formCore :global(.dh-input):focus-visible,
+.formCore.formCore :global(.dh-select):focus-visible,
+.formCore.formCore :global(.dh-textarea):focus-visible {
+  outline: 2px solid var(--lp-cyan);
+  outline-offset: 2px;
+}
+
+/* The submit button becomes `.lp-btn-primary` in everything but class name:
+   same ink/paper inversion, same pill, same shadow, same 48px floor. */
+.formCore.formCore :global(.dh-btn-island) {
+  min-height: 48px;
+  border-radius: var(--lp-r-pill);
+  background: var(--lp-btn-primary-bg);
+  color: var(--lp-btn-primary-fg);
+  box-shadow: var(--lp-shadow-2);
+  font-family: var(--lp-font-body);
+  font-size: 0.95rem;
+}
+
+.formCore.formCore :global(.dh-btn-island .dh-btn-ico) {
+  background: var(--lp-btn-primary-ico);
+}
+
+.formCore.formCore :global(.dh-btn-island):focus-visible {
+  outline: 2px solid var(--lp-cyan);
+  outline-offset: 3px;
+}
+
+/* The success panel the form swaps itself for. Emerald is correct here — it
+   is the confirmation, not a brand accent — but it arrives as Tailwind
+   `emerald-500` utilities, which are not theme-aware against --lp-*. */
+.formCore.formCore > div:first-child:not(form) {
+  border-radius: var(--lp-r-lg);
+  border-color: color-mix(in srgb, var(--lp-emerald) 30%, transparent);
+  background: color-mix(in srgb, var(--lp-emerald) 8%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .formCore.formCore :global(.dh-input),
+  .formCore.formCore :global(.dh-select),
+  .formCore.formCore :global(.dh-textarea),
+  .formCore.formCore :global(.dh-btn-island) {
+    transition: none;
+  }
+}
+
+/* The stacked-hero reset for the panel. It MUST sit after `.formPanel`'s base
+   rule above: both are (0,2,0) and a media query contributes no specificity,
+   so this is decided purely on source order. */
+@media (max-width: 900px) {
+  .formPanel.formPanel {
+    margin-left: 0;
+  }
+}
+
+/* =====================================================================
+ * 6. INFO CARDS (contact)
+ *
+ * The two audience cards stay in the COPY column, above the form on a phone,
+ * exactly where the page that shipped had them. A member who lands here has
+ * to read "reach out to your agency directly" before they meet a form that is
+ * not for them; leading with the form would look better and work worse.
+ *
+ * They are `.lp-tile`s — same bezel, same inner panel, same hover hairline as
+ * a bento tile — stacked rather than gridded, because they live inside the
+ * 36rem hero copy column where two 17rem columns would shred the paragraphs.
+ * ===================================================================== */
+
+.infoCards {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 2.25rem;
+}
+
+/* `.lp-tile-inner` is a flex column whose `.lp-tile-body` carries
+   `margin-top: auto`, which bottom-aligns copy so equal-height bento tiles
+   line up. These two are content-height and stacked, so there is no row to
+   align to and the padding is tightened for the shorter card. */
+.infoCard.infoCard {
+  padding: 1.35rem 1.4rem;
+}

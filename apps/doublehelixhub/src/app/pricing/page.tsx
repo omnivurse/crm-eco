@@ -1,12 +1,38 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Check, ArrowUpRight } from '@phosphor-icons/react/dist/ssr';
+import { Check } from '@phosphor-icons/react/dist/ssr';
+import { LandingSection } from '@crm-eco/ui/components/landing-section';
+import { LandingRail } from '@crm-eco/ui/components/landing-rail';
+import type { LandingRailStation } from '@crm-eco/ui/components/landing-rail';
+import { landingFontVars } from '@/components/landing/fonts';
+import landing from '@/components/landing/dhh-landing.module.css';
+import styles from '@/components/landing/dhh-marketing.module.css';
 
 export const metadata: Metadata = {
   title: 'Pricing | Double Helix Software',
   description: 'Simple per-tenant pricing for CRM Core and Admin Enrollment. Subscribe to one or both.',
 };
 
+/**
+ * Ornament geometry for the masthead strand. `showStations={false}`, so the
+ * labels are never rendered and never announced; the count sets the strand's
+ * height. Named for the three tiers below, which is what this page is.
+ */
+const TIER_ORNAMENT: LandingRailStation[] = [
+  { id: 'crm-core', label: 'CRM Core' },
+  { id: 'admin-enrollment', label: 'Admin Enrollment' },
+  { id: 'suite', label: 'Suite' },
+];
+
+/**
+ * The tiers, byte-for-byte as they shipped: same names, same descriptions,
+ * same "Custom" price, same "per tenant org", same feature bullets in the same
+ * order, same CTA labels, same highlighted tier. Nothing here is a number we
+ * invented — all three prices are deliberately Custom, and this file must
+ * never be the place that changes.
+ *
+ * `accent` is presentation only: which of the two strands the card carries.
+ */
 const tiers = [
   {
     name: 'CRM Core',
@@ -14,6 +40,7 @@ const tiers = [
     price: 'Custom',
     period: 'per tenant org',
     cta: 'Request a quote',
+    accent: 'crm' as const,
     features: [
       'Unlimited records & modules',
       'Email & SMS sync',
@@ -28,6 +55,7 @@ const tiers = [
     price: 'Custom',
     period: 'per tenant org',
     cta: 'Request a quote',
+    accent: 'admin' as const,
     features: [
       'Plan & rate engines',
       'Member management + portal',
@@ -43,6 +71,7 @@ const tiers = [
     price: 'Custom',
     period: 'per tenant org',
     cta: 'Talk to sales',
+    accent: 'suite' as const,
     features: [
       'Everything in both products',
       'Unified identity & RLS',
@@ -53,68 +82,106 @@ const tiers = [
   },
 ];
 
+const TIER_ACCENT: Record<(typeof tiers)[number]['accent'], string> = {
+  crm: styles.tierCrm,
+  admin: styles.tierAdmin,
+  suite: styles.tierSuite,
+};
+
+/**
+ * /pricing — restyled into the landing family. This is a re-dress and a
+ * recomposition, not a rewrite: the headline, the lede, all three tiers and
+ * the closing line are the copy that was already here.
+ *
+ * The composition change worth naming: colour now carries the thesis. CRM Core
+ * takes the cyan strand, Admin Enrollment the emerald one, and the Suite card's
+ * rule runs cyan -> emerald because the Suite is literally both. That is the
+ * company's own claim ("subscribe to either product — or both") said in the
+ * one language a price table can say it in.
+ *
+ * There is no product screenshot on this page. The stills that exist show the
+ * CRM desk and the MMS console; none of them evidences a price, and the honest
+ * fallback for a surface with no still is typographic + strand.
+ */
 export default function PricingPage() {
   return (
-    <main className="container-page py-20 md:py-28">
-      <div className="max-w-2xl">
-        <span className="dh-eyebrow">Pricing</span>
-        <h1 className="mt-5 font-heading text-[clamp(2.25rem,5vw,3.5rem)] font-bold tracking-[-0.04em] text-foreground">
-          Pricing scales with your tenancy.
-        </h1>
-        <p className="mt-5 text-lg leading-relaxed text-muted-foreground">
-          We&rsquo;re onboarding manually during phase 1 — every customer gets a hands-on
-          implementation. Final pricing is custom while we calibrate seats, volume tiers, and
-          gateway-specific fees.
-        </p>
-      </div>
+    <div className={`lp-root ${landing.root} ${landingFontVars}`} data-strand="dhh">
+      <main>
+        <section className={`lp-hero ${styles.masthead}`} aria-label="Double Helix pricing">
+          <div className="lp-hero-copy">
+            <p className="lp-eyebrow">Pricing</p>
+            <h1 className="lp-display">
+              Pricing scales with <span className="lp-gradient">your tenancy.</span>
+            </h1>
+            <p className="lp-lede">
+              We&rsquo;re onboarding manually during phase 1 — every customer gets a hands-on
+              implementation. Final pricing is custom while we calibrate seats, volume tiers, and
+              gateway-specific fees.
+            </p>
+          </div>
 
-      <div className="mt-14 grid gap-4 lg:grid-cols-3">
-        {tiers.map((tier) => (
-          <article
-            key={tier.name}
-            className={`dh-bezel h-full ${tier.highlighted ? 'dh-bezel-suite lg:-translate-y-2' : ''}`}
-          >
-            <div className="dh-bezel-inner flex h-full flex-col p-7 sm:p-8">
-              {tier.highlighted && (
-                <span className="mb-3 inline-flex w-fit rounded-full bg-cyan-500/15 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-cyan-700 ring-1 ring-cyan-500/25 dark:text-cyan-300 dark:ring-cyan-400/25">
-                  Most popular
-                </span>
-              )}
-              <h2 className="font-heading text-2xl font-bold tracking-[-0.03em] text-foreground">{tier.name}</h2>
-              <p className="mt-1 text-sm text-muted-foreground">{tier.description}</p>
-              <div className="mt-6 flex items-baseline gap-2">
-                <span className="font-heading text-4xl font-bold tracking-[-0.03em] text-foreground">
-                  {tier.price}
-                </span>
-                <span className="text-sm text-muted-foreground/80">{tier.period}</span>
-              </div>
-              <ul className="mt-6 flex-1 space-y-3 text-sm">
-                {tier.features.map((f) => (
-                  <li key={f} className="flex gap-2 text-muted-foreground">
-                    <Check weight="light" className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
-                    <span>{f}</span>
-                  </li>
-                ))}
-              </ul>
-              <Link
-                href="/#request-access"
-                className={`group mt-8 inline-flex h-11 w-full items-center justify-center gap-2 rounded-full px-4 text-sm font-semibold transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.98] ${
-                  tier.highlighted
-                    ? 'dh-btn-primary bg-[var(--dh-btn-primary-bg)] text-[var(--dh-btn-primary-fg)]'
-                    : 'border border-border text-foreground hover:bg-foreground/5'
-                }`}
+          <div className={`lp-hero-stage ${styles.mastheadStage}`} aria-hidden="true">
+            <LandingRail
+              className={styles.mastheadSpine}
+              tone="cyan"
+              stations={TIER_ORNAMENT}
+              orientation="vertical"
+              showStations={false}
+              fade="ends"
+            />
+          </div>
+        </section>
+
+        <LandingSection aria-label="Plans">
+          <div className={styles.tierGrid}>
+            {tiers.map((tier) => (
+              <article
+                key={tier.name}
+                className={[
+                  'lp-tile',
+                  styles.tier,
+                  TIER_ACCENT[tier.accent],
+                  tier.highlighted ? styles.tierPopular : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
               >
-                {tier.cta}
-                <ArrowUpRight weight="light" className="h-4 w-4 transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-x-0.5 group-hover:-translate-y-px" />
-              </Link>
-            </div>
-          </article>
-        ))}
-      </div>
+                <div className={`lp-tile-inner ${styles.tierInner}`}>
+                  {tier.highlighted && <span className={styles.tierBadge}>Most popular</span>}
 
-      <p className="mt-12 text-center text-sm text-muted-foreground/80">
-        Volume, multi-tenant, and partner agreements available — talk to us.
-      </p>
-    </main>
+                  <h2 className={styles.tierName}>{tier.name}</h2>
+                  <p className={styles.tierDesc}>{tier.description}</p>
+
+                  <p className={styles.tierPrice}>
+                    <span className={styles.tierAmount}>{tier.price}</span>
+                    <span className={styles.tierPeriod}>{tier.period}</span>
+                  </p>
+
+                  <ul className={styles.tierFeatures}>
+                    {tier.features.map((feature) => (
+                      <li key={feature} className={styles.tierFeature}>
+                        <Check weight="light" className={styles.tierCheck} aria-hidden="true" />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <Link
+                    href="/#request-access"
+                    className={`${tier.highlighted ? 'lp-btn-primary' : 'lp-btn-secondary'} ${styles.tierCta}`}
+                  >
+                    {tier.cta}
+                  </Link>
+                </div>
+              </article>
+            ))}
+          </div>
+
+          <p className={styles.footnote}>
+            Volume, multi-tenant, and partner agreements available — talk to us.
+          </p>
+        </LandingSection>
+      </main>
+    </div>
   );
 }

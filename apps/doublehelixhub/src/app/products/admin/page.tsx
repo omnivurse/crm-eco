@@ -1,19 +1,41 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import {
-  ArrowUpRight,
-  Check,
-  Buildings,
-  CreditCard,
-  Users,
-  IdentificationCard,
-  ChartBar,
-  Receipt,
-  GlobeHemisphereWest,
-  PaintBrush,
-  ShieldCheck,
-  CurrencyCircleDollar,
-} from '@phosphor-icons/react/dist/ssr';
+import { ArrowUpRight } from 'lucide-react';
+import { LandingSection, LandingSectionHead } from '@crm-eco/ui/components/landing-section';
+import { LandingSignalStrip } from '@crm-eco/ui/components/landing-signal-strip';
+import { LandingDevice } from '@crm-eco/ui/components/landing-device';
+import { LandingBento, LandingBentoTile } from '@crm-eco/ui/components/landing-bento';
+import { LandingJourney } from '@crm-eco/ui/components/landing-journey';
+import { LandingRail } from '@crm-eco/ui/components/landing-rail';
+import type { LandingRailStation } from '@crm-eco/ui/components/landing-rail';
+import type { LandingSignalItem } from '@crm-eco/ui/components/landing-signal-strip';
+import { ProductStill, PRODUCT_STILLS } from '@/components/landing/ProductStill';
+import { landingFontVars } from '@/components/landing/fonts';
+import root from '@/components/landing/dhh-landing.module.css';
+import styles from './admin-product.module.css';
+
+/**
+ * Admin Enrollment — the vendor's product page for the agencies and TPAs
+ * evaluating the software.
+ *
+ * Built on the shared landing system (`lp-*` classes + `--lp-*` tokens from
+ * packages/ui, imported globally by app/globals.css), emerald-led via
+ * `data-strand="mms"` so it reads as a sibling of the shipped MMS landing
+ * without being a copy of it. Page-scoped composition lives in
+ * ./admin-product.module.css; nothing in packages/ui was edited.
+ *
+ * HONESTY: every claim below is carried forward from the page this replaces.
+ * No metric, logo, customer, testimonial or certification has been added, and
+ * no capability claim has been amplified. The three stills are the real MMS
+ * screenshots that ship on the MMS landing, with their vetted alt text — each
+ * one ends with an explicit statement that the data is invented. Where a
+ * capability has no honest still (plans and rate engines), the tile is
+ * typographic with a strand ornament rather than a UI faked out of divs.
+ *
+ * AMBER is semantic, exactly as on the MMS landing: money moments only —
+ * billing, commissions, payouts. The legend under the console says so in
+ * words, so the colour is a key rather than decoration.
+ */
 
 export const metadata: Metadata = {
   title: 'Admin Enrollment | Double Helix Software',
@@ -21,268 +43,395 @@ export const metadata: Metadata = {
     'Run plans, members, billing, commissions, payouts, and ops from a single multi-tenant admin platform.',
 };
 
-const capabilities = [
+const CRM_HREF = '/products/crm';
+const ACCESS_HREF = '/#request-access';
+
+/**
+ * The hero's "Built for" panel — the three pillars the previous page listed,
+ * verbatim. "Billing + commissions" carries the money signal; nothing else
+ * on this page borrows amber that is not about money.
+ */
+const BUILT_FOR: LandingSignalItem[] = [
+  { id: 'tenancy', label: 'Tenancy', value: 'Multi-tenant RLS.' },
+  { id: 'money', label: 'Money', value: 'Billing + commissions.', signal: true },
+  { id: 'ops', label: 'Visibility', value: 'Ops dashboards.' },
+];
+
+/**
+ * The strand ornament inside the "Built for" panel. Never rendered as text —
+ * the panel's own copy carries the claim; these only give the SVG a length.
+ */
+const PANEL_ORNAMENT: LandingRailStation[] = [
+  { id: 'org', label: 'Org' },
+  { id: 'plan', label: 'Plan' },
+  { id: 'member', label: 'Member' },
+];
+
+/** The same, for the plans tile in the bento. */
+const PLANS_ORNAMENT: LandingRailStation[] = [
+  { id: 'plan', label: 'Plan' },
+  { id: 'tier', label: 'Tier' },
+  { id: 'rate', label: 'Rate card' },
+  { id: 'effective', label: 'Effective date' },
+];
+
+/**
+ * How it runs — the three stages the previous page shipped, with their bodies
+ * intact as station captions. "Operate" carries the money signal because it
+ * is where premiums, commissions and vendor payments happen.
+ */
+const STATIONS: LandingRailStation[] = [
   {
-    icon: IdentificationCard,
-    title: 'Plans & rate engines',
-    body: 'Define plans, tiers, and rate cards per carrier. Versioning + effective dating built in.',
+    id: 'configure',
+    label: 'Configure',
+    caption:
+      'Stand up plans, rates, and branding for each tenant org — isolation is the default, not an afterthought.',
   },
   {
-    icon: Users,
-    title: 'Member management',
-    body: 'Enroll, change, terminate. Family units, dependents, and lifecycle events handled cleanly.',
+    id: 'enroll',
+    label: 'Enroll',
+    caption:
+      'Move members through enrollment, changes, and terminations with dependents and effective dates intact.',
   },
   {
-    icon: GlobeHemisphereWest,
-    title: 'Member portal',
-    body: 'Self-service for enrolled members — view plan, ID cards, billing, and submit changes.',
-  },
-  {
-    icon: CreditCard,
-    title: 'Billing engine',
-    body: 'Multi-gateway support for member premiums, recurring billing, refunds, and reconciliation.',
-  },
-  {
-    icon: CurrencyCircleDollar,
-    title: 'Commissions & payouts',
-    body: 'Automate advisor and agent comp from books to payable runs. ACH and check supported.',
-  },
-  {
-    icon: Receipt,
-    title: 'Vendor payables',
-    body: 'Track vendor invoices, approvals, and payouts in the same financial backbone.',
-  },
-  {
-    icon: Buildings,
-    title: 'Tenant landing pages',
-    body: 'Each tenant org gets a built-in landing-page builder, populated from their product catalog.',
-  },
-  {
-    icon: PaintBrush,
-    title: 'Branding per tenant',
-    body: 'White-labeled domains, logos, and email templates so members see your brand, not ours.',
+    id: 'operate',
+    label: 'Operate',
+    caption:
+      'Bill premiums, run commissions, pay vendors, and keep the member portal in sync — one spine.',
+    signal: true,
   },
 ];
 
-const workflow = [
-  {
-    step: '01',
-    title: 'Configure',
-    body: 'Stand up plans, rates, and branding for each tenant org — isolation is the default, not an afterthought.',
-  },
-  {
-    step: '02',
-    title: 'Enroll',
-    body: 'Move members through enrollment, changes, and terminations with dependents and effective dates intact.',
-  },
-  {
-    step: '03',
-    title: 'Operate',
-    body: 'Bill premiums, run commissions, pay vendors, and keep the member portal in sync — one spine.',
-  },
+/** The four isolation guarantees, verbatim. */
+const ISOLATION = [
+  'Row-level security on every member and financial table',
+  'White-labeled portals and email per tenant',
+  'Gateway credentials scoped to the org that owns them',
+  'Commission books that never leak across agencies',
 ];
 
-const pillars = [
-  { icon: ShieldCheck, label: 'Multi-tenant RLS' },
-  { icon: CreditCard, label: 'Billing + commissions' },
-  { icon: ChartBar, label: 'Ops dashboards' },
-];
+/* ---------------------------------------------------------------------------
+ * Alt text, copied verbatim from apps/admin/src/components/landing/
+ * AdminLandingPage.tsx — the same PNGs, and these strings were written and
+ * vetted for honesty. Every one names what is on screen and says the data is
+ * invented. Do not shorten one without keeping that clause.
+ * ------------------------------------------------------------------------ */
+
+const CONSOLE_ALT =
+  'The MMS operations console: alert chips for failed payments, a failed job, enrollments ' +
+  'pending review and commissions pending, above membership, revenue, commission and system ' +
+  'tiles and a member lifecycle bar running Leads, Draft, In progress, Submitted, Active. ' +
+  'Invented demo data.';
+
+const QUEUE_ALT =
+  'The MMS action items queue: a returned ACH payment, an application awaiting review, ' +
+  'a payout batch ready for fourteen agents, a NACHA export that did not complete, an ' +
+  'outstanding signature and a coverage start to confirm. Every name, amount and date ' +
+  'shown is invented demo data.';
+
+const REGISTRY_ALT =
+  'The MMS member registry: a table of members with email, phone, state, plan, market, ' +
+  'tobacco, advisor, status and created date, headed "All Members". Invented demo data.';
 
 export default function AdminProductPage() {
   return (
-    <main>
-      {/* Hero */}
-      <section className="relative overflow-hidden">
-        <div className="container-page">
-          <div className="grid items-end gap-12 py-16 sm:py-20 lg:grid-cols-[1.15fr_0.85fr] lg:gap-16 lg:py-24">
-            <div>
-              <span className="dh-eyebrow mb-7">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_0_3px_rgba(5,150,105,0.25)]" />
-                Product 02 · Admin Enrollment
-              </span>
-              <h1 className="mt-7 max-w-[15ch] font-heading text-[clamp(2.6rem,5.5vw,4.25rem)] font-bold leading-[0.98] tracking-[-0.04em] text-foreground">
-                Enrollment ops on one{' '}
-                <span className="gradient-text-helix">tenancy spine</span>
-              </h1>
-              <p className="mt-6 max-w-lg text-[1.05rem] leading-relaxed text-muted-foreground">
-                Plans, members, billing, commissions, payouts, and portals — multi-tenant isolation
-                for every agency and TPA. The operational half of Double Helix.
-              </p>
-              <div className="mt-9 flex flex-wrap gap-3">
-                <Link href="/#request-access" className="group dh-btn-island dh-btn-primary">
-                  Request access
-                  <span className="dh-btn-ico">
-                    <ArrowUpRight weight="light" className="h-3.5 w-3.5" />
-                  </span>
-                </Link>
-                <Link href="/products/crm" className="dh-btn-ghost">
-                  See CRM Core
-                </Link>
-              </div>
-            </div>
-
-            <div className="dh-bezel dh-bezel-suite">
-              <div className="dh-bezel-inner p-7 sm:p-8">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-600 dark:text-emerald-400/90">
-                  Built for
-                </p>
-                <ul className="mt-5 space-y-4">
-                  {pillars.map(({ icon: Icon, label }) => (
-                    <li key={label} className="flex items-center gap-3 text-sm font-medium text-foreground/80">
-                      <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-emerald-400/10 text-emerald-600 dark:text-emerald-400 ring-1 ring-emerald-400/20">
-                        <Icon weight="light" className="h-5 w-5" />
-                      </span>
-                      {label}
-                    </li>
-                  ))}
-                </ul>
-                <div className="mt-7 border-t border-border pt-5">
-                  <p className="text-sm leading-relaxed text-muted-foreground">
-                    Every agency and TPA runs in its own isolated partition — shared platform, private data.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Workflow */}
-      <section className="py-20 md:py-28">
-        <div className="container-page">
-          <div className="max-w-2xl">
-            <span className="dh-eyebrow">How it runs</span>
-            <h2 className="mt-5 font-heading text-[clamp(1.75rem,3.5vw,2.5rem)] font-bold tracking-[-0.03em] text-foreground">
-              Configure → enroll → operate
-            </h2>
-            <p className="mt-4 text-muted-foreground">
-              From rate cards to ACH payouts — the full member lifecycle lives on one backbone.
+    <div className={`lp-root ${root.root} ${landingFontVars}`} data-strand="mms">
+      <main>
+        {/* -------------------------------- hero ----------------------------- */}
+        <section className={`lp-hero ${styles.hero}`} aria-label="Admin Enrollment">
+          <div className="lp-hero-copy">
+            <p className="lp-eyebrow">Product 02 · Admin Enrollment</p>
+            <h1 className="lp-display">
+              Enrollment ops on one <span className="lp-gradient">tenancy spine</span>
+            </h1>
+            <p className="lp-lede">
+              Plans, members, billing, commissions, payouts, and portals — multi-tenant
+              isolation for every agency and TPA. The operational half of Double Helix.
             </p>
-          </div>
-          <div className="mt-12 grid gap-4 md:grid-cols-3">
-            {workflow.map((item) => (
-              <div key={item.step} className="dh-bezel h-full">
-                <div className="dh-bezel-inner flex h-full flex-col p-7">
-                  <span className="font-heading text-3xl font-bold tracking-[-0.04em] text-emerald-600 dark:text-emerald-400/80">
-                    {item.step}
-                  </span>
-                  <h3 className="mt-4 font-heading text-xl font-semibold tracking-[-0.02em] text-foreground">
-                    {item.title}
-                  </h3>
-                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{item.body}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Capabilities */}
-      <section className="pb-20 md:pb-28">
-        <div className="container-page">
-          <div className="max-w-2xl">
-            <span className="dh-eyebrow">Capabilities</span>
-            <h2 className="mt-5 font-heading text-[clamp(1.75rem,3.5vw,2.5rem)] font-bold tracking-[-0.03em] text-foreground">
-              The ops platform behind your agency
-            </h2>
-          </div>
-          <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {capabilities.map(({ icon: Icon, title, body }) => (
-              <div key={title} className="dh-bezel h-full">
-                <div className="dh-bezel-inner flex h-full flex-col p-6">
-                  <div className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-400/10 text-emerald-600 dark:text-emerald-400 ring-1 ring-emerald-400/20">
-                    <Icon weight="light" className="h-5 w-5" />
-                  </div>
-                  <h3 className="mt-4 font-heading text-base font-semibold tracking-[-0.02em] text-foreground">
-                    {title}
-                  </h3>
-                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{body}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Isolation callout */}
-      <section className="pb-20 md:pb-28">
-        <div className="container-page">
-          <div className="dh-bezel">
-            <div className="dh-bezel-inner grid gap-10 p-8 sm:p-10 lg:grid-cols-2 lg:gap-16 lg:p-14">
-              <div>
-                <span className="dh-eyebrow">Multi-tenant by design</span>
-                <h2 className="mt-5 font-heading text-[clamp(1.75rem,3vw,2.25rem)] font-bold tracking-[-0.03em] text-foreground">
-                  Isolation is the product
-                </h2>
-                <p className="mt-4 text-muted-foreground">
-                  Agencies and TPAs share infrastructure — never data. RLS, branding, domains, and
-                  billing all resolve at the org boundary.
-                </p>
-              </div>
-              <ul className="space-y-4">
-                {[
-                  'Row-level security on every member and financial table',
-                  'White-labeled portals and email per tenant',
-                  'Gateway credentials scoped to the org that owns them',
-                  'Commission books that never leak across agencies',
-                ].map((item) => (
-                  <li key={item} className="flex gap-3 text-sm text-muted-foreground">
-                    <Check weight="light" className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Cross-sell + CTA */}
-      <section className="pb-24 md:pb-32">
-        <div className="container-page grid gap-4 lg:grid-cols-2">
-          <div className="dh-bezel h-full">
-            <div className="dh-bezel-inner flex h-full flex-col p-8 sm:p-10">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-600 dark:text-emerald-400/90">
-                Pair with
-              </p>
-              <h3 className="mt-3 font-heading text-2xl font-bold tracking-[-0.03em] text-foreground">
-                CRM Core
-              </h3>
-              <p className="mt-3 flex-1 text-sm leading-relaxed text-muted-foreground">
-                Advisors close in CRM; ops enrolls in Admin. Same identity, same tenancy — no
-                reconciliation tax between sales and membership.
-              </p>
-              <Link
-                href="/products/crm"
-                className="group mt-8 inline-flex items-center gap-2 text-sm font-semibold text-foreground transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:gap-3"
-              >
-                Explore CRM Core
-                <ArrowUpRight weight="light" className="h-4 w-4" />
+            <div className="lp-hero-actions">
+              <Link href={ACCESS_HREF} className="lp-btn-primary">
+                Request access
+              </Link>
+              <Link href={CRM_HREF} className="lp-btn-secondary">
+                See CRM Core
               </Link>
             </div>
           </div>
-          <div className="dh-bezel dh-bezel-suite h-full">
-            <div className="dh-bezel-inner flex h-full flex-col p-8 sm:p-10">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-600 dark:text-emerald-400/90">
-                Early access
+
+          <div className={styles.builtFor}>
+            <div className={styles.builtForInner}>
+              <p className="lp-eyebrow">Built for</p>
+              <LandingSignalStrip
+                className={styles.builtForStrip}
+                items={BUILT_FOR}
+                label="Built for"
+              />
+              <p className={styles.panelNote}>
+                Every agency and TPA runs in its own isolated partition — shared platform,
+                private data.
               </p>
-              <h3 className="mt-3 font-heading text-2xl font-bold tracking-[-0.03em] text-foreground">
-                Ready to run enrollment here?
-              </h3>
-              <p className="mt-3 flex-1 text-sm leading-relaxed text-muted-foreground">
-                We&rsquo;re onboarding agencies and TPAs in waves. Tell us your stack — we&rsquo;ll
-                respond within a business day.
+              {/* Ornament, not evidence: the record rail turning through the
+                  panel. SVG is aria-hidden inside the component. */}
+              <LandingRail
+                className={styles.panelStrand}
+                tone="emerald"
+                stations={PANEL_ORNAMENT}
+                orientation="vertical"
+                showStations={false}
+                fade="ends"
+              />
+            </div>
+          </div>
+
+          <div className={`lp-hero-stage ${styles.heroStage}`}>
+            <LandingDevice
+              className={styles.consoleDevice}
+              chrome="window"
+              chromeLabel="Admin / Operations"
+              glow="emerald"
+            >
+              <div className={styles.crop}>
+                <ProductStill
+                  {...PRODUCT_STILLS['mms-console']}
+                  alt={CONSOLE_ALT}
+                  sizes="(max-width: 768px) 200vw, (max-width: 1080px) 94vw, 1120px"
+                  imgClassName={styles.consoleShot}
+                  priority
+                />
+              </div>
+            </LandingDevice>
+            <div className={styles.consoleMeta}>
+              <p className={styles.consoleCaption}>
+                Operations console — demo data, invented names and amounts
               </p>
-              <Link href="/#request-access" className="group mt-8 inline-flex dh-btn-island dh-btn-primary w-fit">
-                Request access
-                <span className="dh-btn-ico">
-                  <ArrowUpRight weight="light" className="h-3.5 w-3.5" />
+              <p className={styles.consoleLegend}>Amber marks money moments</p>
+            </div>
+          </div>
+        </section>
+
+        {/* ------------------------------ how it runs ------------------------ */}
+        <LandingSection
+          id="how-it-runs"
+          band
+          rhythm="loose"
+          aria-label="How Admin Enrollment runs"
+        >
+          <LandingJourney
+            className={styles.journey}
+            tone="emerald"
+            stations={STATIONS}
+            label="Configure, enroll, operate"
+            header={
+              <LandingSectionHead
+                eyebrow="How it runs"
+                heading="Configure → enroll → operate"
+                align="center"
+                lede="From rate cards to ACH payouts — the full member lifecycle lives on one backbone."
+              />
+            }
+            footnote={
+              <>
+                The sales side of the same platform is{' '}
+                <Link href={CRM_HREF} className="lp-inline-link">
+                  CRM Core
+                </Link>{' '}
+                — advisors close there, ops enrolls here.
+              </>
+            }
+          />
+        </LandingSection>
+
+        {/* ----------------------------- capabilities ------------------------ */}
+        <LandingSection id="capabilities" aria-label="Capabilities">
+          <LandingSectionHead
+            eyebrow="Capabilities"
+            heading="The ops platform behind your agency"
+            lede="Run plans, members, billing, commissions, payouts, and ops from a single multi-tenant admin platform. The screens below are the real product with invented people in it."
+          />
+
+          <LandingBento>
+            <LandingBentoTile
+              span="lead"
+              label="Members"
+              title="Member management"
+              body="Enroll, change, terminate. Family units, dependents, and lifecycle events handled cleanly."
+              media={
+                <div className={`${styles.crop} ${styles.cropRegistry}`}>
+                  <ProductStill
+                    {...PRODUCT_STILLS['mms-registry']}
+                    alt={REGISTRY_ALT}
+                    sizes="(max-width: 768px) 450vw, (max-width: 1080px) 92vw, 730px"
+                    imgClassName={styles.registryShot}
+                  />
+                </div>
+              }
+              mediaFit="panel"
+              mediaCaption="Member registry — demo data, invented names"
+            />
+
+            {/* No honest still exists for a rate card, so this tile takes the
+                typographic + strand fallback rather than a faked screenshot. */}
+            <LandingBentoTile
+              span="tall"
+              className={styles.plansTile}
+              label="Plans"
+              title="Plans & rate engines"
+              body="Define plans, tiers, and rate cards per carrier. Versioning + effective dating built in."
+            >
+              <ul className={styles.chips}>
+                <li>Plans</li>
+                <li>Tiers</li>
+                <li>Rate cards</li>
+                <li>Versioning</li>
+                <li>Effective dating</li>
+              </ul>
+              <LandingRail
+                className={styles.plansStrand}
+                tone="emerald"
+                stations={PLANS_ORNAMENT}
+                orientation="vertical"
+                showStations={false}
+                fade="ends"
+              />
+            </LandingBentoTile>
+
+            <LandingBentoTile
+              span="wide"
+              tone="signal"
+              label="Payouts"
+              title="Commissions & payouts"
+              body="Automate advisor and agent comp from books to payable runs. ACH and check supported."
+              media={
+                <div className={`${styles.crop} ${styles.cropQueue}`}>
+                  <ProductStill
+                    {...PRODUCT_STILLS['mms-queue']}
+                    alt={QUEUE_ALT}
+                    sizes="(max-width: 768px) 260vw, (max-width: 1080px) 62vw, 730px"
+                    imgClassName={styles.queueShot}
+                  />
+                </div>
+              }
+              mediaFit="panel"
+              mediaCaption="Action items — demo data, invented names and amounts"
+            />
+
+            <LandingBentoTile
+              span="unit"
+              tone="signal"
+              label="Billing"
+              title="Billing engine"
+              body="Multi-gateway support for member premiums, recurring billing, refunds, and reconciliation."
+            >
+              <ul className={`${styles.chips} ${styles.chipsSignal}`}>
+                <li>Premiums</li>
+                <li>Recurring</li>
+                <li>Refunds</li>
+                <li>Reconciliation</li>
+              </ul>
+            </LandingBentoTile>
+
+            <LandingBentoTile
+              span="half"
+              tone="b"
+              label="Portal"
+              title="Member portal"
+              body="Self-service for enrolled members — view plan, ID cards, billing, and submit changes."
+            >
+              <ul className={styles.chips}>
+                <li>Plan</li>
+                <li>ID cards</li>
+                <li>Billing</li>
+                <li>Changes</li>
+              </ul>
+            </LandingBentoTile>
+
+            {/* Vendor payables is money too, but the amber stays on the two
+                tiles the legend points at — one accent, held semantic, does not
+                become an ambient wash across half the grid. */}
+            <LandingBentoTile
+              span="half"
+              label="Payables"
+              title="Vendor payables"
+              body="Track vendor invoices, approvals, and payouts in the same financial backbone."
+            />
+
+            <LandingBentoTile
+              span="half"
+              label="Landing pages"
+              title="Tenant landing pages"
+              body="Each tenant org gets a built-in landing-page builder, populated from their product catalog."
+            />
+
+            <LandingBentoTile
+              span="half"
+              tone="b"
+              className={styles.fullOnTablet}
+              label="Branding"
+              title="Branding per tenant"
+              body="White-labeled domains, logos, and email templates so members see your brand, not ours."
+            />
+          </LandingBento>
+        </LandingSection>
+
+        {/* ------------------------------ isolation -------------------------- */}
+        <LandingSection id="isolation" band aria-label="Multi-tenant by design">
+          <LandingSectionHead
+            eyebrow="Multi-tenant by design"
+            heading="Isolation is the product"
+            lede="Agencies and TPAs share infrastructure — never data. RLS, branding, domains, and billing all resolve at the org boundary."
+          />
+          <ul className={styles.isolation}>
+            {ISOLATION.map((item, i) => (
+              <li key={item} className={styles.isolationItem}>
+                <span className={styles.isolationIndex} aria-hidden="true">
+                  {String(i + 1).padStart(2, '0')}
+                </span>
+                <p className={styles.isolationText}>{item}</p>
+              </li>
+            ))}
+          </ul>
+        </LandingSection>
+
+        {/* -------------------------------- close ---------------------------- */}
+        <section className="lp-close" aria-label="Request access">
+          <div className="lp-close-inner">
+            <div className={`lp-close-core ${styles.closeCore}`} data-layout="split">
+              <div>
+                <p className={`lp-eyebrow ${styles.closeEyebrow}`}>Early access</p>
+                <h2 className="lp-display">Ready to run enrollment here?</h2>
+                <p>
+                  We’re onboarding agencies and TPAs in waves. Tell us your stack —
+                  we’ll respond within a business day.
+                </p>
+                <div className="lp-close-actions">
+                  <Link href={ACCESS_HREF} className="lp-btn-primary">
+                    Request access
+                  </Link>
+                  <Link href="/contact" className="lp-btn-secondary">
+                    Contact us
+                  </Link>
+                </div>
+              </div>
+
+              <Link href={CRM_HREF} className={`lp-crosslink ${styles.crosslink}`}>
+                <span className="lp-crosslink-label">Pair with</span>
+                <span className="lp-crosslink-title">
+                  CRM Core
+                  <ArrowUpRight
+                    size={16}
+                    className={styles.crosslinkArrow}
+                    aria-hidden="true"
+                  />
+                </span>
+                <span className="lp-crosslink-body">
+                  Advisors close in CRM; ops enrolls in Admin. Same identity, same tenancy
+                  — no reconciliation tax between sales and membership.
                 </span>
               </Link>
             </div>
           </div>
-        </div>
-      </section>
-    </main>
+        </section>
+      </main>
+    </div>
   );
 }

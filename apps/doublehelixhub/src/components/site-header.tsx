@@ -1,158 +1,280 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { ArrowUpRight, CaretDown } from '@phosphor-icons/react';
-import { ThemeToggle } from '@/components/theme-toggle';
+/**
+ * doublehelixhub site header.
+ *
+ * Same island the CRM and MMS landings ship — `.lp-nav-wrap` / `.lp-nav` /
+ * `.lp-nav-links` / `.lp-nav-cta` / `.lp-theme-btn` out of the shared landing
+ * stylesheet, which `app/globals.css` imports site-wide. It is NOT
+ * `packages/ui`'s `<LandingNav>` — that hard-codes its own link set and CTA —
+ * but it renders the same `<BrandLogo>` lockup, off the same `/logo.png`,
+ * `/logo-white.png` and `/logo-icon.png` the two product apps ship (copied
+ * into this app's public/). Everything else — the classes, the breakpoint, the
+ * focus rings — is the shared vocabulary, so the corporate nav and the two
+ * product navs are the same object.
+ *
+ * Two deliberate departures, both documented in chrome.module.css:
+ *   - the brand is `<BrandLogo>`, the same lockup apps/crm and apps/admin
+ *     render, rather than the old `/logo.svg` <img>. That SVG bakes its
+ *     wordmark in as dark `<text>`, so dark mode needed a brightness/invert
+ *     hack that flattened the helix gradient to white. The PNG set ships a
+ *     real white variant, so both themes get the true mark.
+ *   - the mobile menu stays a full-screen sheet (this site's existing
+ *     interaction, with its body scroll lock) rather than the shared
+ *     `.lp-nav-panel` dropdown
+ *
+ * Every link that was here before is still here, on the same href. "Sign in"
+ * and "Access" were desktop-only; they are still hidden from the island below
+ * 768px (there is no room at 390px) but they now also appear in the sheet, so
+ * a phone can reach both.
+ */
 
-const NAV = [
-  { name: 'CRM Core', href: '/products/crm' },
-  { name: 'Admin', href: '/products/admin' },
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { ArrowUpRight, CaretRight } from '@phosphor-icons/react';
+import { ThemeToggle } from '@/components/theme-toggle';
+import { BrandLogo } from '@crm-eco/ui/components/brand-logo';
+import styles from '@/components/chrome.module.css';
+
+const SIGN_IN_HREF = 'https://crm.doublehelixhub.com';
+const ACCESS_HREF = '/#request-access';
+const SHEET_ID = 'dh-mobile-menu';
+
+type NavItem = {
+  name: string;
+  href: string;
+  /** The two products carry their strand tone as wayfinding. */
+  tone?: 'cyan' | 'emerald';
+};
+
+const NAV: readonly NavItem[] = [
+  { name: 'CRM Core', href: '/products/crm', tone: 'cyan' },
+  { name: 'Admin', href: '/products/admin', tone: 'emerald' },
   { name: 'Pricing', href: '/pricing' },
   { name: 'About', href: '/about' },
   { name: 'Contact', href: '/contact' },
-] as const;
+];
+
+/**
+ * The breakpoint at which the sheet stops existing, read as an EXTERNAL store.
+ *
+ * This used to be an effect that called `window.matchMedia(...)` and then
+ * `setMobileOpen(false)` — setState synchronously inside an effect body, which
+ * is the cascading-render pattern `react-hooks/set-state-in-effect` rejects.
+ * `useSyncExternalStore` is the sanctioned way to read a browser store: it
+ * subscribes to the `change` event and re-renders from the media query itself,
+ * with no React state to keep in sync.
+ *
+ * It matters for more than lint. Rotating a phone to landscape with the sheet
+ * open takes the sheet away at >=769px, but the body scroll lock below is
+ * keyed on the sheet being open — so without this the page stayed frozen.
+ * `getServerSnapshot` returns false (mobile-first) so the server HTML and the
+ * hydration render agree.
+ */
+const DESKTOP_QUERY = '(min-width: 769px)';
+
+function subscribeDesktop(onStoreChange: () => void) {
+  const mq = window.matchMedia(DESKTOP_QUERY);
+  mq.addEventListener('change', onStoreChange);
+  return () => mq.removeEventListener('change', onStoreChange);
+}
+
+function getDesktopSnapshot() {
+  return window.matchMedia(DESKTOP_QUERY).matches;
+}
+
+function getDesktopServerSnapshot() {
+  return false;
+}
+
+function isCurrent(pathname: string | null, href: string) {
+  if (!pathname) return false;
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+function ToneDot({ tone }: { tone: 'cyan' | 'emerald' }) {
+  return (
+    <span
+      aria-hidden
+      className={`${styles.dot} ${tone === 'cyan' ? styles.dotCyan : styles.dotEmerald}`}
+    />
+  );
+}
 
 export function SiteHeader() {
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
+  const pathname = usePathname();
+  const menuBtnRef = useRef<HTMLButtonElement>(null);
 
+  /* The sheet's open state is stored as THE PATH IT WAS OPENED ON, not a
+     boolean, so "close on navigate" is derived during render instead of being
+     an effect that calls setState (which `react-hooks/set-state-in-effect`
+     rejects, and which rendered one frame of the sheet over the new page).
+     Navigate with the sheet open — back button, in-page anchor, a link inside
+     the sheet — and `openPath` no longer equals `pathname`, so the sheet is
+     closed on the very first render of the new route. */
+  const [openPath, setOpenPath] = useState<string | null>(null);
+  const isDesktop = useSyncExternalStore(
+    subscribeDesktop,
+    getDesktopSnapshot,
+    getDesktopServerSnapshot,
+  );
+  const mobileOpen = openPath !== null && openPath === pathname && !isDesktop;
+
+  const close = useCallback(() => setOpenPath(null), []);
+  const toggle = useCallback(
+    () => setOpenPath((current) => (current === pathname ? null : pathname)),
+    [pathname],
+  );
+
+  /* Crossing UP to the desktop breakpoint also DISCARDS the stored path, so
+     rotating a phone landscape and back does not resurrect a sheet the user
+     never re-opened. `isDesktop` above already forces `mobileOpen` false the
+     moment the query matches — this only clears the residue. setState here is
+     inside the subscription CALLBACK, which is the pattern the
+     set-state-in-effect rule explicitly endorses; the version that tripped it
+     called setState in the effect BODY. */
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 16);
-    onScroll();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
+    const mq = window.matchMedia(DESKTOP_QUERY);
+    const onChange = (event: MediaQueryListEvent) => {
+      if (event.matches) setOpenPath(null);
+    };
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
   }, []);
 
+  /* Body scroll lock — the sheet covers the viewport, so the page behind it
+     must not scroll. Unchanged from the previous header. */
   useEffect(() => {
-    document.body.style.overflow = mobileOpen ? 'hidden' : '';
+    if (!mobileOpen) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
     return () => {
-      document.body.style.overflow = '';
+      document.body.style.overflow = previous;
     };
   }, [mobileOpen]);
 
+  /* Escape closes and hands focus back to the button that opened it. The
+     sheet does not trap focus; Tab leaves it the way it leaves any dialog-less
+     overlay, and the closed sheet is `visibility: hidden` + `inert`, so it is
+     out of the tab order entirely. */
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      close();
+      menuBtnRef.current?.focus();
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [close, mobileOpen]);
+
   return (
     <>
-      <header className="pointer-events-none sticky top-0 z-40 w-full pt-4 sm:pt-5">
-        <div className="mx-auto flex w-full max-w-6xl justify-center px-4">
-          <div
-            className={`pointer-events-auto dh-island flex w-full max-w-4xl items-center gap-2 rounded-full px-3 py-2 transition-shadow duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] sm:px-4 ${
-              scrolled ? 'shadow-[0_16px_48px_rgba(15,23,42,0.12)] dark:shadow-[0_16px_48px_rgba(0,0,0,0.5)]' : ''
-            }`}
+      <header className={`lp-nav-wrap ${styles.navWrap}`}>
+        <nav className={`lp-nav ${styles.nav}`} aria-label="Primary">
+          <Link
+            href="/"
+            className={`lp-nav-brand ${styles.brand}`}
+            aria-label="Double Helix Hub — home"
           >
-            <Link href="/" className="flex flex-shrink-0 items-center pl-1" aria-label="Double Helix home">
-              <img
-                src="/logo.svg"
-                alt="Double Helix"
-                width={120}
-                height={28}
-                className="dh-logo"
-              />
-            </Link>
+            <BrandLogo variant="full" size="sm" tone="auto" priority alt="Double Helix Hub" />
+          </Link>
 
-            <nav className="ml-1 hidden flex-1 items-center justify-center gap-0.5 md:flex" aria-label="Main">
-              {NAV.map((item) => (
+          <div className="lp-nav-links">
+            {NAV.map((item) => {
+              const current = isCurrent(pathname, item.href);
+              return (
                 <Link
-                  key={item.name}
+                  key={item.href}
                   href={item.href}
-                  className="rounded-full px-3 py-2 text-[0.78rem] font-medium text-foreground/55 transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-foreground/[0.06] hover:text-foreground"
+                  className={styles.navLink}
+                  aria-current={current ? 'page' : undefined}
                 >
                   {item.name}
                 </Link>
-              ))}
-            </nav>
-
-            <div className="ml-auto hidden items-center gap-1.5 md:flex">
-              <ThemeToggle />
-              <Link
-                href="https://crm.doublehelixhub.com"
-                className="rounded-full px-3 py-2 text-[0.78rem] font-medium text-foreground/45 transition-colors duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:text-foreground"
-              >
-                Sign in
-              </Link>
-              <Link href="/#request-access" className="group dh-btn-island dh-btn-primary text-[0.78rem] !py-1.5 !pl-3.5 !pr-1.5">
-                Access
-                <span className="dh-btn-ico !h-7 !w-7">
-                  <ArrowUpRight weight="light" className="h-3.5 w-3.5" />
-                </span>
-              </Link>
-            </div>
-
-            <div className="ml-auto flex items-center gap-1 md:hidden">
-              <ThemeToggle />
-              <button
-                type="button"
-                className="relative flex h-10 w-10 items-center justify-center rounded-full text-foreground transition-colors duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-foreground/[0.06]"
-                onClick={() => setMobileOpen((o) => !o)}
-                aria-expanded={mobileOpen}
-                aria-controls="dh-mobile-menu"
-                aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
-              >
-                <span className="relative block h-3.5 w-5">
-                  <span
-                    className={`absolute left-0 top-0 block h-[1.5px] w-full origin-center rounded-full bg-current transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${
-                      mobileOpen ? 'translate-y-[6px] rotate-45' : ''
-                    }`}
-                  />
-                  <span
-                    className={`absolute left-0 top-[6px] block h-[1.5px] w-full rounded-full bg-current transition-opacity duration-300 ${
-                      mobileOpen ? 'opacity-0' : 'opacity-100'
-                    }`}
-                  />
-                  <span
-                    className={`absolute left-0 top-[12px] block h-[1.5px] w-full origin-center rounded-full bg-current transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${
-                      mobileOpen ? '-translate-y-[6px] -rotate-45' : ''
-                    }`}
-                  />
-                </span>
-              </button>
-            </div>
+              );
+            })}
           </div>
-        </div>
+
+          <div className="lp-nav-actions">
+            <ThemeToggle className={`lp-theme-btn !h-11 !w-11 ${styles.themeBtn}`} />
+            <Link href={SIGN_IN_HREF} className={styles.signIn}>
+              Sign in
+            </Link>
+            <Link href={ACCESS_HREF} className={`lp-nav-cta ${styles.navCta}`}>
+              Access
+            </Link>
+            <button
+              ref={menuBtnRef}
+              type="button"
+              className="lp-nav-menu-btn"
+              onClick={toggle}
+              aria-expanded={mobileOpen}
+              aria-controls={SHEET_ID}
+              aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
+            >
+              <span
+                aria-hidden
+                className={`${styles.burger} ${mobileOpen ? styles.burgerOpen : ''}`}
+              >
+                <span className={styles.burgerBar} />
+                <span className={styles.burgerBar} />
+                <span className={styles.burgerBar} />
+              </span>
+            </button>
+          </div>
+        </nav>
       </header>
 
+      {/* Sibling of the island, at a lower z-index, so the island — and the
+          close button inside it — stays above the scrim and clickable. */}
       <div
-        id="dh-mobile-menu"
-        className={`fixed inset-0 z-[45] md:hidden ${mobileOpen ? 'pointer-events-auto' : 'pointer-events-none'}`}
-        aria-hidden={!mobileOpen}
+        id={SHEET_ID}
+        className={`${styles.sheet} ${mobileOpen ? styles.sheetOpen : ''}`}
+        inert={!mobileOpen}
       >
-        <div
-          className={`absolute inset-0 bg-background/90 backdrop-blur-3xl transition-opacity duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] dark:bg-black/80 ${
-            mobileOpen ? 'opacity-100' : 'opacity-0'
-          }`}
-          onClick={() => setMobileOpen(false)}
-        />
-        <div
-          className={`relative flex h-full flex-col px-6 pb-10 pt-24 transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] ${
-            mobileOpen ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'
-          }`}
-        >
-          <nav className="flex-1 space-y-1" aria-label="Mobile">
-            {NAV.map((item, i) => (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={`flex items-center justify-between border-b border-border py-4 font-heading text-2xl font-semibold text-foreground transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] ${
-                  mobileOpen ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'
-                }`}
-                style={{ transitionDelay: mobileOpen ? `${100 + i * 50}ms` : '0ms' }}
-                onClick={() => setMobileOpen(false)}
-              >
-                {item.name}
-                <CaretDown weight="light" className="h-5 w-5 -rotate-90 text-foreground/40" />
-              </Link>
-            ))}
+        <div className={styles.sheetScrim} aria-hidden onClick={close} />
+        <div className={styles.sheetPanel}>
+          <p className={styles.sheetLabel}>Menu</p>
+          <nav className={styles.sheetNav} aria-label="Mobile">
+            {NAV.map((item) => {
+              const current = isCurrent(pathname, item.href);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={styles.sheetLink}
+                  aria-current={current ? 'page' : undefined}
+                  onClick={close}
+                >
+                  {item.tone ? <ToneDot tone={item.tone} /> : null}
+                  {item.name}
+                  <CaretRight
+                    weight="light"
+                    className={`h-5 w-5 ${styles.sheetChevron}`}
+                    aria-hidden
+                  />
+                </Link>
+              );
+            })}
           </nav>
-          <Link
-            href="/#request-access"
-            onClick={() => setMobileOpen(false)}
-            className="group mt-6 flex w-full items-center justify-between rounded-full bg-foreground px-6 py-3.5 font-semibold text-background"
-          >
-            Request access
-            <span className="grid h-8 w-8 place-items-center rounded-full bg-background/10 transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-x-0.5 group-hover:-translate-y-px">
-              <ArrowUpRight weight="light" className="h-4 w-4" />
-            </span>
-          </Link>
+
+          <div className={styles.sheetActions}>
+            <Link href={ACCESS_HREF} className="lp-btn-primary" onClick={close}>
+              Request access
+              <ArrowUpRight weight="light" className="h-4 w-4" aria-hidden />
+            </Link>
+            <Link href={SIGN_IN_HREF} className="lp-btn-secondary" onClick={close}>
+              Sign in
+            </Link>
+          </div>
         </div>
       </div>
     </>

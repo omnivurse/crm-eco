@@ -4,6 +4,7 @@ import { LeadGenQuotePinGate } from '@crm-eco/ui/components/pin-lock-overlay';
 import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
 import { ThemeProvider, themeInitScript } from '@/components/theme-provider';
+import { landingFontVars } from '@/components/landing/fonts';
 import './globals.css';
 
 const plusJakarta = Plus_Jakarta_Sans({
@@ -59,9 +60,21 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
+/**
+ * `landingFontVars` adds --font-display (Bricolage Grotesque) and --font-mono
+ * (IBM Plex Mono), the two faces the CRM and MMS landings use. They are
+ * declared on <html> so the `:root` declarations in ethereal.css can see them
+ * and `--lp-font-display` / `--lp-font-mono` resolve site-wide. The dh-* pages
+ * read --font-body / --font-heading and are unaffected — these two variables
+ * are only ever consumed through the --lp-* tokens.
+ */
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${plusJakarta.variable} ${plusJakartaHeading.variable}`} suppressHydrationWarning>
+    <html
+      lang="en"
+      className={`${plusJakarta.variable} ${plusJakartaHeading.variable} ${landingFontVars}`}
+      suppressHydrationWarning
+    >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>

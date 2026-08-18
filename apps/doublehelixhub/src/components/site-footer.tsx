@@ -1,64 +1,112 @@
+/**
+ * doublehelixhub site footer.
+ *
+ * Built from the shared landing footer vocabulary — `.lp-footer`,
+ * `.lp-footer-grid`, `.lp-footer-brand`, `.lp-footer-desc`, `.lp-footer-col`,
+ * `.lp-footer-bottom` — so it is the same object as the footers on the CRM and
+ * MMS landings, including their <=768px two-column collapse, their <=420px
+ * single column and their 44px mobile link rows.
+ *
+ * It is composed here rather than through `packages/ui`'s `<LandingFooter>`
+ * because that component takes `brand` as a plain string, has no slot for the
+ * "Request access" action, and hard-codes the copyright year. This site needs
+ * the brand mark, the CTA and a live year. Same classes, same look, no second
+ * system — and `layout.tsx` renders exactly one footer, so nothing is doubled.
+ *
+ * Server component: no `'use client'`, phosphor icons from `/dist/ssr`.
+ *
+ * Copy is carried forward verbatim. Every link is the href it was.
+ */
+
 import Link from 'next/link';
 import { ArrowUpRight } from '@phosphor-icons/react/dist/ssr';
+import { BrandLogo } from '@crm-eco/ui/components/brand-logo';
+import styles from '@/components/chrome.module.css';
+
+type FooterLink = {
+  href: string;
+  label: string;
+  /** The two products carry their strand tone, same as the mobile menu. */
+  tone?: 'cyan' | 'emerald';
+};
+
+const COLUMNS: readonly { heading: string; links: readonly FooterLink[] }[] = [
+  {
+    heading: 'Products',
+    links: [
+      { href: '/products/crm', label: 'CRM Core', tone: 'cyan' },
+      { href: '/products/admin', label: 'Admin Enrollment', tone: 'emerald' },
+      { href: '/pricing', label: 'Pricing' },
+    ],
+  },
+  {
+    heading: 'Company',
+    links: [
+      { href: '/about', label: 'About' },
+      { href: '/contact', label: 'Contact' },
+    ],
+  },
+  {
+    heading: 'Legal',
+    links: [
+      { href: '/legal/privacy', label: 'Privacy' },
+      { href: '/legal/sms-privacy', label: 'SMS Privacy' },
+      { href: '/legal/terms', label: 'Terms' },
+    ],
+  },
+];
 
 export function SiteFooter() {
   return (
-    <footer className="relative z-[1] px-4 pb-6 sm:px-6 md:px-8">
-      <div className="dh-bezel mx-auto max-w-6xl">
-        <div className="dh-bezel-inner">
-          <div className="flex flex-col gap-10 px-6 py-12 sm:px-10 md:flex-row md:items-start md:justify-between md:px-12">
-            <div className="max-w-sm">
-              <img
-                src="/logo.svg"
-                alt="Double Helix"
-                width={140}
-                height={32}
-                className="dh-logo !h-8"
-              />
-              <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-                The operating system for health benefits. Licensed SaaS for advisors, agencies, and TPAs.
-              </p>
-              <Link
-                href="/#request-access"
-                className="group mt-6 inline-flex items-center gap-2 text-sm font-semibold text-foreground transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:gap-3"
-              >
-                Request access
-                <ArrowUpRight weight="light" className="h-4 w-4" />
-              </Link>
-            </div>
-            <div className="grid grid-cols-2 gap-8 sm:grid-cols-3">
-              <div>
-                <h4 className="mb-4 text-[10px] font-semibold uppercase tracking-[0.18em] text-foreground/80">Products</h4>
-                <ul className="space-y-3 text-sm text-muted-foreground">
-                  <li><Link href="/products/crm" className="transition-colors hover:text-foreground">CRM Core</Link></li>
-                  <li><Link href="/products/admin" className="transition-colors hover:text-foreground">Admin Enrollment</Link></li>
-                  <li><Link href="/pricing" className="transition-colors hover:text-foreground">Pricing</Link></li>
-                </ul>
-              </div>
-              <div>
-                <h4 className="mb-4 text-[10px] font-semibold uppercase tracking-[0.18em] text-foreground/80">Company</h4>
-                <ul className="space-y-3 text-sm text-muted-foreground">
-                  <li><Link href="/about" className="transition-colors hover:text-foreground">About</Link></li>
-                  <li><Link href="/contact" className="transition-colors hover:text-foreground">Contact</Link></li>
-                </ul>
-              </div>
-              <div>
-                <h4 className="mb-4 text-[10px] font-semibold uppercase tracking-[0.18em] text-foreground/80">Legal</h4>
-                <ul className="space-y-3 text-sm text-muted-foreground">
-                  <li><Link href="/legal/privacy" className="transition-colors hover:text-foreground">Privacy</Link></li>
-                  <li><Link href="/legal/sms-privacy" className="transition-colors hover:text-foreground">SMS Privacy</Link></li>
-                  <li><Link href="/legal/terms" className="transition-colors hover:text-foreground">Terms</Link></li>
-                </ul>
-              </div>
-            </div>
+    <footer className={`lp-footer ${styles.footer}`}>
+      <div className="lp-footer-grid">
+        <div>
+          <div className={`lp-footer-brand ${styles.footerBrand}`}>
+            <BrandLogo variant="full" size="sm" tone="auto" alt="Double Helix Hub" />
           </div>
-          <div className="border-t border-border px-6 py-4 sm:px-10 md:px-12">
-            <div className="flex flex-col items-center justify-between gap-2 text-xs text-muted-foreground/80 sm:flex-row">
-              <span>© {new Date().getFullYear()} Double Helix Software. All rights reserved.</span>
-              <span>doublehelixhub.com</span>
-            </div>
-          </div>
+          <p className="lp-footer-desc">
+            The operating system for health benefits. Licensed SaaS for advisors,
+            agencies, and TPAs.
+          </p>
+          <Link href="/#request-access" className={styles.footerCta}>
+            Request access
+            <ArrowUpRight
+              weight="light"
+              className={`h-4 w-4 ${styles.footerCtaIcon}`}
+              aria-hidden
+            />
+          </Link>
         </div>
+
+        {COLUMNS.map((column) => (
+          <div key={column.heading} className="lp-footer-col">
+            <h2 className={styles.colHeading}>{column.heading}</h2>
+            {column.links.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={link.tone ? styles.colLink : undefined}
+              >
+                {link.tone ? (
+                  <span
+                    aria-hidden
+                    className={`${styles.dot} ${
+                      link.tone === 'cyan' ? styles.dotCyan : styles.dotEmerald
+                    }`}
+                  />
+                ) : null}
+                {link.label}
+              </Link>
+            ))}
+          </div>
+        ))}
+      </div>
+
+      <div className="lp-footer-bottom">
+        <span>
+          © {new Date().getFullYear()} Double Helix Software. All rights reserved.
+        </span>
+        <span>doublehelixhub.com</span>
       </div>
     </footer>
   );

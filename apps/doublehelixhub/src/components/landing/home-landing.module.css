@@ -1,0 +1,733 @@
+/**
+ * doublehelixhub HOME — page-scoped composition only.
+ *
+ * This is NOT a second design system. Everything reusable lives in
+ * packages/ui/src/styles/landing.css (the `--lp-*` system the CRM and MMS
+ * landings ship); that file is consumed by two in-production pages and is not
+ * edited here. Every value below either references an `--lp-*` token or solves
+ * a problem the shared stylesheet cannot know about: where the two product
+ * strands are tagged against the hero rail, how a 2.4:1 screenshot stays
+ * readable on a phone, how the "why" ledger is composed.
+ *
+ * Class names are doubled (`.x.x`) where they must out-specify a shared
+ * `.lp-*` rule. NB the ordering difference from apps/crm and apps/admin:
+ * there `landing.css` is imported by the page component and so loads AFTER the
+ * module; here it is imported from `app/globals.css` and loads BEFORE it, so a
+ * module rule wins ties. The doubling is kept anyway — it is the only thing
+ * that reliably beats the shared attribute-selector rules
+ * (`.lp-bento > .lp-tile[data-span]`, `.lp-spine[data-orientation]`) and it
+ * documents the intent.
+ *
+ * The theme-still switch (`.lightShot` / `.darkShot`) and the landing type
+ * tokens live in dhh-landing.module.css and are imported alongside this file.
+ */
+
+/* ==========================================================================
+ * HERO — the signature
+ *
+ * The rail is not an ornament here: on doublehelixhub the TWO STRANDS ARE THE
+ * TWO PRODUCTS. The strand runs down the middle of the stage and each product
+ * is tagged against the point where ITS strand reaches maximum separation, so
+ * the composition says "CRM Core and Admin Enrollment are the two strands of
+ * one backbone" structurally rather than in a caption.
+ *
+ * Geometry (see packages/ui/src/components/landing-rail.tsx): with N stations
+ * the viewBox is 132 x (N * 132), so the SVG's height is exactly N x its
+ * width — which is why the stage's min-height is `5 * --dhh-spine-w` and the
+ * percentages below land on the strand rather than near it. Strands reach
+ * maximum separation at (i + 0.5) / N of the height: 10%, 30%, 50%, 70%, 90%.
+ * At 30% strand A (cyan, --lp-strand-a) is on the LEFT and strand B (emerald)
+ * on the right; at 70% they have swapped back. Hence CRM at 30% on the left
+ * and Admin Enrollment at 70% on the right: each tag points at the widest
+ * point of its own strand. Change the station count and these two numbers
+ * have to be re-derived.
+ * ====================================================================== */
+
+.hero.hero {
+  grid-template-columns: minmax(0, 1.02fr) minmax(0, 0.98fr);
+  row-gap: clamp(2rem, 4vw, 3rem);
+}
+
+.heroCopy.heroCopy {
+  position: relative;
+  z-index: 1;
+  max-width: 34rem;
+}
+
+.heroStrip {
+  grid-column: 1 / -1;
+}
+
+.heroStage.heroStage {
+  --dhh-spine-w: clamp(5.5rem, 7.5vw, 7rem);
+  position: relative;
+  display: block;
+  min-height: calc(5 * var(--dhh-spine-w));
+}
+
+/* Tripled + attribute: the rail declares `--lp-spine-w` on itself through
+   `.lp-spine[data-orientation='vertical']`, so this has to win on specificity
+   rather than on source order. */
+.heroSpine.heroSpine.heroSpine[data-orientation='vertical'] {
+  --lp-spine-w: var(--dhh-spine-w);
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* With `showStations={false}` the canvas' second column is empty, so the
+   strand would sit off-centre by half the gap without this. */
+.heroSpine.heroSpine :global(.lp-spine-canvas) {
+  grid-template-columns: var(--lp-spine-w);
+  gap: 0;
+}
+
+/* `display: contents` so the three tags stay absolutely positioned against
+   the stage at >= md, and become a plain column below it. */
+.strandTags {
+  display: contents;
+}
+
+.strandTag {
+  position: absolute;
+  z-index: 1;
+  margin: 0;
+  max-width: 11rem;
+}
+
+.strandTag::after {
+  content: '';
+  position: absolute;
+  top: 0.35rem;
+  /* Reach the strand, not the gutter. The tag's edge sits
+     (spine-w / 2 + 0.9rem) out from centre and the strand sits 0.19 * spine-w
+     in from the SVG's edge, so the leader has to span 0.19 * spine-w + 0.9rem.
+     At 0.7rem it stopped ~24px short and read as a floating stub. */
+  width: calc(var(--dhh-spine-w) * 0.19 + 0.9rem);
+  height: 1px;
+  background: var(--lp-hairline-strong);
+}
+
+.strandTagA {
+  top: calc(30% - 0.5rem);
+  right: 50%;
+  margin-right: calc(var(--dhh-spine-w) / 2 + 0.9rem);
+  text-align: right;
+}
+
+.strandTagA::after {
+  left: 100%;
+  background: linear-gradient(to right, var(--lp-hairline-strong), var(--lp-cyan));
+}
+
+.strandTagB {
+  top: calc(70% - 0.5rem);
+  left: 50%;
+  margin-left: calc(var(--dhh-spine-w) / 2 + 0.9rem);
+  text-align: left;
+}
+
+.strandTagB::after {
+  right: 100%;
+  background: linear-gradient(to left, var(--lp-hairline-strong), var(--lp-emerald));
+}
+
+.strandKind {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.45rem;
+  font-family: var(--lp-font-mono);
+  font-size: 10px;
+  line-height: 1;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--lp-muted-soft);
+}
+
+.strandTagA .strandKind {
+  justify-content: flex-end;
+}
+
+.strandDot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+
+.strandTagA .strandDot {
+  background: var(--lp-cyan);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--lp-cyan) 14%, transparent);
+}
+
+.strandTagB .strandDot {
+  background: var(--lp-emerald);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--lp-emerald) 14%, transparent);
+}
+
+.strandName {
+  display: block;
+  font-family: var(--lp-font-display);
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--lp-fg);
+}
+
+.strandRole {
+  display: block;
+  margin-top: 0.3rem;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: var(--lp-muted);
+}
+
+/* The convergence, said once, at the foot of the strand. */
+.backboneNote {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin: 0;
+  text-align: center;
+  font-family: var(--lp-font-mono);
+  font-size: 10px;
+  line-height: 1.5;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--lp-muted-soft);
+}
+
+/* The shared stylesheet flips `.lp-hero` to one column at 900, but `.hero.hero`
+   out-specifies it, so the collapse has to be restated here or the hero stays
+   two columns all the way down to 390 and both halves are crushed. */
+
+@media (max-width: 900px) {
+  .hero.hero {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .heroCopy.heroCopy {
+    max-width: 40rem;
+  }
+}
+
+/* Stacked hero, phone. The stage keeps the strand — it is the page's
+   signature — but the tags step out of the absolute layout and stack beside
+   it, which is the only thing that fits a 390px viewport without either
+   clipping the tags or opening a horizontal scroll. */
+@media (max-width: 768px) {
+  .heroStage.heroStage {
+    --dhh-spine-w: 4.5rem;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    gap: 1.1rem;
+  }
+
+  /* Same specificity as the desktop rule it has to unset. */
+  .heroSpine.heroSpine.heroSpine[data-orientation='vertical'] {
+    position: relative;
+    top: auto;
+    left: auto;
+    transform: none;
+    flex: none;
+  }
+
+  .strandTags {
+    display: flex;
+    flex-direction: column;
+    gap: 1.4rem;
+    min-width: 0;
+  }
+
+  .strandTag,
+  .strandTagA,
+  .strandTagB {
+    position: relative;
+    top: auto;
+    right: auto;
+    left: auto;
+    margin: 0;
+    max-width: none;
+    text-align: left;
+  }
+
+  .strandTagA .strandKind {
+    justify-content: flex-start;
+  }
+
+  .strandTag::after {
+    display: none;
+  }
+
+  .backboneNote {
+    position: relative;
+    bottom: auto;
+    text-align: left;
+  }
+}
+
+/* ==========================================================================
+ * PRODUCTS — the bento
+ *
+ * Row 1 is CRM Core: the desk still leads, the record panel sits beside it.
+ * Row 2 is the backbone tile + Admin Enrollment's console — the small tile
+ * moves to the left so the two rows interlock rather than repeat.
+ * Row 3 is the member registry, which is a 2.4:1 table and only stays legible
+ * across the full grid.
+ * ====================================================================== */
+
+.products.products {
+  scroll-margin-top: 7rem;
+}
+
+/* Triple-class to out-specify `.lp-bento > .lp-tile[data-span='wide']`. */
+:global(.lp-bento) > :global(.lp-tile).registryTile.registryTile {
+  grid-column: span 6;
+}
+
+/* The mobile crop fade has to dissolve into the tile it is cut out of, and
+   this one carries the emerald wash (`tone="b"`), so it names its own end
+   colour rather than the untinted `--lp-bezel-inner` the other two use. */
+.registryTile.registryTile {
+  --dhh-fade: color-mix(in srgb, var(--lp-emerald) 7%, var(--lp-bezel-inner));
+}
+
+.deskTile.deskTile :global(.lp-tile-media),
+.consoleTile.consoleTile :global(.lp-tile-media) {
+  margin-bottom: 0.35rem;
+}
+
+/* --- the backbone tile ---------------------------------------------------
+ * No honest still exists for "one identity layer, one data backbone" — it is
+ * an architecture claim, not a screen — so the tile takes the spec's
+ * typographic + strand fallback rather than a UI faked out of divs. The
+ * ornament keeps BOTH tones (it is the one tile about both products at once),
+ * carries no station text, and is aria-hidden inside the rail component.   */
+
+.suiteTile.suiteTile :global(.lp-tile-inner) {
+  justify-content: flex-start;
+  overflow: hidden;
+}
+
+/* The ornament is placed against the tile, so the body has to drop out of the
+   positioning chain and the copy is lifted above it instead. */
+.suiteTile.suiteTile :global(.lp-tile-body) {
+  margin-top: 0;
+  position: static;
+}
+
+.suiteTile.suiteTile :global(.lp-tile-label),
+.suiteTile.suiteTile :global(.lp-tile-title),
+.suiteTile.suiteTile :global(.lp-tile-text),
+.suiteTile.suiteTile .chips,
+.suiteTile.suiteTile .tileLink {
+  position: relative;
+  z-index: 1;
+}
+
+.suiteStrand.suiteStrand.suiteStrand[data-orientation='vertical'] {
+  --lp-spine-w: 5.75rem;
+  position: absolute;
+  bottom: -1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.suiteStrand.suiteStrand.suiteStrand :global(.lp-spine-canvas) {
+  grid-template-columns: var(--lp-spine-w);
+  gap: 0;
+}
+
+/* Below lg the ornament steps out: the shared grid halves every span, so the
+   tile sits beside the tall record still and the strand would either be cut
+   in half or push the copy off the panel. Matches the base rule's
+   specificity. The copy then centres in the row height its neighbour sets,
+   so the tile reads as composed rather than unfinished — the same fix
+   mms-landing.module.css makes for its billing tile. */
+@media (max-width: 1080px) {
+  .suiteStrand.suiteStrand.suiteStrand[data-orientation='vertical'],
+  .suiteStrand.suiteStrand {
+    display: none;
+  }
+
+  .suiteTile.suiteTile :global(.lp-tile-inner) {
+    justify-content: center;
+  }
+}
+
+/* --- in-tile links ------------------------------------------------------
+ * A text link, but a 44px target: these are the only route links in the
+ * section and they are the whole point of it. Focus rings come from the
+ * shared `.lp-tile a:focus-visible` rule.                                  */
+
+.tileLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  margin-top: 0.9rem;
+  font-size: 0.92rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--lp-fg);
+  text-decoration: none;
+}
+
+.tileArrow {
+  transition: transform var(--lp-dur) var(--lp-ease);
+}
+
+.tileLink:hover .tileArrow {
+  transform: translate(2px, -2px);
+}
+
+/* --- ledger chips --------------------------------------------------------
+ * The mono "record" texture, used where a tile's truth is a set of fields or
+ * modules rather than a screenshot. Every chip names something this site
+ * already claims.                                                          */
+
+.chips {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 1.15rem 0 0;
+  padding: 0;
+}
+
+.chips > * {
+  font-family: var(--lp-font-mono);
+  font-size: 10px;
+  line-height: 1;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--lp-chip-fg);
+  background: var(--lp-chip-bg);
+  border: 1px solid var(--lp-chip-border);
+  border-radius: var(--lp-r-xs);
+  padding: 0.45rem 0.55rem;
+}
+
+/* ==========================================================================
+ * WHY DOUBLE HELIX — the ledger
+ *
+ * Six claims, composed as a register rather than a 3x2 grid of icon cards:
+ * a mono index, a tone tick that says WHICH strand the claim belongs to
+ * (cyan = CRM Core, emerald = Admin Enrollment, gradient = the shared core,
+ * amber = the money one), and a hairline between entries. Amber is used once
+ * on this page and it is the billing entry — the semantic, never decoration.
+ * ====================================================================== */
+
+.why.why {
+  display: grid;
+  grid-template-columns: minmax(0, 0.76fr) minmax(0, 1.24fr);
+  gap: clamp(2rem, 5vw, 4.5rem);
+  align-items: start;
+}
+
+.whyHead {
+  align-self: stretch;
+}
+
+/* Sticky needs travel, which it only has because the cell above is stretched
+   to the ledger's height while this box stays its own height. */
+.whyHeadInner {
+  position: sticky;
+  top: 6.75rem;
+}
+
+.whyHead :global(.lp-head) {
+  margin-bottom: 0;
+}
+
+.ledger {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ledgerItem {
+  display: grid;
+  grid-template-columns: 2.25rem minmax(0, 1fr);
+  gap: 0 1rem;
+  padding: 1.4rem 0;
+  border-top: 1px solid var(--lp-hairline);
+}
+
+.ledgerItem:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.ledgerItem:last-child {
+  padding-bottom: 0;
+}
+
+.ledgerMark {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding-top: 0.15rem;
+}
+
+.ledgerIndex {
+  font-family: var(--lp-font-mono);
+  font-size: 10px;
+  line-height: 1;
+  letter-spacing: 0.14em;
+  color: var(--lp-muted-soft);
+}
+
+.ledgerTick {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--lp-strand-dim);
+}
+
+.ledgerItem[data-tone='a'] .ledgerTick {
+  background: var(--lp-cyan);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--lp-cyan) 14%, transparent);
+}
+
+.ledgerItem[data-tone='b'] .ledgerTick {
+  background: var(--lp-emerald);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--lp-emerald) 14%, transparent);
+}
+
+.ledgerItem[data-tone='core'] .ledgerTick {
+  background: var(--lp-gradient);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--lp-cyan) 10%, transparent);
+}
+
+.ledgerItem[data-tone='signal'] .ledgerTick {
+  background: var(--lp-signal);
+  box-shadow: 0 0 0 3px var(--lp-signal-wash);
+}
+
+.ledgerItem[data-tone='signal'] .ledgerIndex {
+  color: var(--lp-signal);
+}
+
+.ledgerTitle {
+  margin: 0;
+  font-family: var(--lp-font-display);
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: var(--lp-fg);
+}
+
+.ledgerBody {
+  margin: 0.4rem 0 0;
+  font-size: 0.93rem;
+  line-height: 1.6;
+  color: var(--lp-muted);
+  max-width: 56ch;
+}
+
+@media (max-width: 1080px) {
+  .why.why {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2.25rem;
+  }
+
+  .whyHeadInner {
+    position: static;
+  }
+}
+
+/* ==========================================================================
+ * REQUEST ACCESS — the close
+ *
+ * The form's markup, field names and POST /api/leads wiring are untouched;
+ * this only gives the panel it sits in the landing system's surfaces.
+ * The `#request-access` id is deep-linked from the header, the footer and
+ * every other page, so the scroll offset clears the sticky header.
+ * ====================================================================== */
+
+.close.close {
+  scroll-margin-top: 7rem;
+}
+
+.closeCore.closeCore {
+  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+  align-items: start;
+}
+
+.closeCore.closeCore :global(.lp-display) {
+  max-width: 18ch;
+}
+
+.checks {
+  list-style: none;
+  margin: 1.75rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.7rem;
+}
+
+.checkItem {
+  display: flex;
+  gap: 0.6rem;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: var(--lp-muted);
+}
+
+.checkTick {
+  flex: none;
+  margin-top: 0.2rem;
+  color: var(--lp-emerald);
+}
+
+/* The homepage close panel is the site's primary conversion surface, and it
+   was rendering the same <LeadForm /> that /contact renders — but still in the
+   old dh-* chrome, because the landing treatment lived only in the marketing
+   module. Two costs: the two forms read as two different products, and the
+   dh-* controls have no usable focus indicator (the <select> has none at all,
+   WCAG 2.4.7 Level A; the inputs' ring composites to 1.15:1 against white,
+   WCAG 2.4.11 wants 3:1).
+   `composes` pulls in the treatment already proven on /contact rather than
+   copying it, so the two panels cannot drift apart. .formCore owns the panel
+   surface (padding, radius, background, accent rule) at (0,2,0), so only the
+   positioning context stays here. */
+.formCard {
+  composes: formCore from './dhh-marketing.module.css';
+  position: relative;
+}
+
+@media (max-width: 900px) {
+  .closeCore.closeCore {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ==========================================================================
+ * WIDE STILLS ON A PHONE
+ *
+ * The desk (1.9:1), the console (2.6:1) and the registry (2.4:1) become a
+ * grey smudge in a 300px column, which would make an honest screenshot
+ * dishonest about what it shows. Below md each one is pinned near its natural
+ * width, the frame crops to the leading columns, and a right-edge fade says
+ * the screen continues. Nothing is redrawn — the same PNG, cropped. This is
+ * the recipe crm-landing.module.css uses.
+ *
+ * NB: no `display` in the *Shot classes. They sit on the same <img> as
+ * `.lightShot` / `.darkShot` in dhh-landing.module.css, and a `display`
+ * declaration here would show BOTH theme stills at once.
+ * ====================================================================== */
+
+@media (max-width: 768px) {
+  :global(.lp-bento) > :global(.lp-tile).registryTile.registryTile {
+    grid-column: span 1;
+  }
+
+  .deskTile.deskTile :global(.lp-tile-media),
+  .consoleTile.consoleTile :global(.lp-tile-media),
+  .registryTile.registryTile :global(.lp-tile-media) {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .deskTile.deskTile :global(.lp-tile-media)::after,
+  .consoleTile.consoleTile :global(.lp-tile-media)::after,
+  .registryTile.registryTile :global(.lp-tile-media)::after {
+    content: '';
+    position: absolute;
+    inset: 0 0 0 auto;
+    /* Widened from 3.5rem so the ramp covers a whole UI chip rather than
+       ending mid-glyph. */
+    width: 5rem;
+    background: linear-gradient(to right, transparent, var(--dhh-fade, var(--lp-bezel-inner)));
+    pointer-events: none;
+  }
+
+  .deskShot.deskShot {
+    width: 1100px;
+    max-width: none;
+    height: auto;
+  }
+
+  .consoleShot.consoleShot {
+    width: 1120px;
+    max-width: none;
+    height: auto;
+  }
+
+  .registryShot.registryShot {
+    width: 1220px;
+    max-width: none;
+    height: auto;
+  }
+}
+
+/* ======================= reduced motion ================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .tileArrow,
+  .tileLink:hover .tileArrow {
+    transition: none;
+    transform: none;
+  }
+}
+
+/* The light stills are rendered on rgb(254,254,254); the fade above ramps to
+   --dhh-fade, which defaulted to --lp-bezel-inner (#ffffff). Those two are
+   close enough that the gradient did nothing and the crop read as a hard cut
+   through the UI. Ramping to the screenshot's own ground is what makes the
+   edge dissolve. Dark measured a correct ramp already, so it keeps the bezel. */
+@media (max-width: 768px) {
+  .deskTile.deskTile :global(.lp-tile-media),
+  .consoleTile.consoleTile :global(.lp-tile-media),
+  .registryTile.registryTile :global(.lp-tile-media) {
+    --dhh-fade: #fefefe;
+  }
+
+  :global(html.dark) .deskTile.deskTile :global(.lp-tile-media),
+  :global(html.dark) .consoleTile.consoleTile :global(.lp-tile-media),
+  :global(html.dark) .registryTile.registryTile :global(.lp-tile-media) {
+    --dhh-fade: var(--lp-bezel-inner);
+  }
+}
+
+/* ── hero strand identity ────────────────────────────────────────────────
+ * The hero's claim is that the two strands ARE the two products: cyan is CRM
+ * Core, emerald is Admin Enrollment, and the legend dots beside it say so.
+ * The shared rail paints strand A on an --lp-strand-a -> --lp-strand-b
+ * gradient and strand B on the reverse, so both strands cross-fade through
+ * each other's hue and neither owns one. Measured at 1440, the strand next to
+ * the cyan-dotted tag rendered green and the strand next to the emerald-dotted
+ * tag rendered cyan — the page contradicted its own legend.
+ *
+ * Each strand is selected by its gradient's stable id prefix rather than by
+ * child order, because LandingRail emits all of strand A's segments and then
+ * all of strand B's, so an odd/even split would cut the wrong way. A CSS
+ * `stroke` always beats the SVG presentation attribute, so no !important.
+ * landing.css is untouched: everywhere else the cross-fade is intended.
+ * ─────────────────────────────────────────────────────────────────────── */
+
+.heroSpine.heroSpine :global(.lp-spine-strand[stroke^='url(#lpRailGrad']:not([stroke^='url(#lpRailGradB'])) {
+  stroke: var(--lp-cyan);
+}
+
+.heroSpine.heroSpine :global(.lp-spine-strand[stroke^='url(#lpRailGradB']) {
+  stroke: var(--lp-emerald);
+}
+
+/* With one tone each, the shared 0.32 back-strand opacity made the pair read as
+   one strand plus a ghost. They are peers here — two products, not depth. */
+.heroSpine.heroSpine :global(.lp-spine-back .lp-spine-strand) {
+  opacity: 0.62;
+}
