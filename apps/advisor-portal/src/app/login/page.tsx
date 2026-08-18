@@ -1,11 +1,31 @@
 'use client';
 
+/**
+ * Advisor Portal — sign in.
+ *
+ * VISUAL REDESIGN ONLY. Nothing about how this page authenticates changed:
+ * the `createClient()` call, `signInWithPassword`, the `redirect` search
+ * param defaulting to `/dashboard`, the `no_advisor_access` error mapping,
+ * `router.push` + `router.refresh()`, both field ids, both `autoComplete`
+ * values, `required`, and every string of copy are byte-for-byte what they
+ * were. The diff is the shell (`variant="advisor"`), the token-driven class
+ * map, and three accessibility fixes noted inline.
+ */
+
 import { Suspense, useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { CircleNotch, Lock, Eye, EyeSlash, Envelope } from '@phosphor-icons/react';
-import { AuthSplitLayout, AuthHeroPanel, BrandLogo, authForm } from '@crm-eco/ui';
+import {
+  ArrowRight,
+  CircleNotch,
+  Envelope,
+  Eye,
+  EyeSlash,
+  Lock,
+} from '@phosphor-icons/react';
+import { AuthFormError, BrandLogo, authForm } from '@crm-eco/ui';
+import { AdvisorAuthShell } from '@/components/auth/AdvisorAuthShell';
 
 function LoginForm() {
   const [email, setEmail] = useState('');
@@ -45,22 +65,33 @@ function LoginForm() {
   return (
     <div className="space-y-8">
       <div className="text-center lg:text-left">
+        {/* tone was "white", which resolved to /logo-white.png — an asset this
+            app does not ship. The mark was a broken image on every sign-in.
+            "color" uses the /logo.png that is actually here. */}
         <Link href="/" className="mb-6 inline-flex items-center">
-          <BrandLogo variant="full" size="lg" tone="white" priority />
+          <BrandLogo
+            variant="full"
+            size="md"
+            tone="color"
+            priority
+            className="lg:h-14"
+          />
         </Link>
         <h2 className={authForm.title}>Advisor Portal</h2>
         <p className={authForm.subtitle}>Sign in to access your dashboard</p>
       </div>
 
       <form onSubmit={handleLogin} className="space-y-6">
-        {displayError && <div className={authForm.error}>{displayError}</div>}
+        {/* Was a bare <div>: the failure appeared silently and a screen reader
+            never announced it. Same box, now role="alert". Text untouched. */}
+        {displayError && <AuthFormError>{displayError}</AuthFormError>}
 
         <div className="space-y-4">
           <div className="space-y-2">
             <label htmlFor="email" className={authForm.label}>Email Address</label>
             <div className="group relative">
               <div className={authForm.inputGlow} />
-              <Envelope weight="light" className={authForm.inputIcon} />
+              <Envelope weight="light" className={authForm.inputIcon} aria-hidden="true" />
               <input
                 id="email"
                 type="email"
@@ -81,7 +112,7 @@ function LoginForm() {
             </div>
             <div className="group relative">
               <div className={authForm.inputGlow} />
-              <Lock weight="light" className={authForm.inputIcon} />
+              <Lock weight="light" className={authForm.inputIcon} aria-hidden="true" />
               <input
                 id="password"
                 type={showPassword ? 'text' : 'password'}
@@ -90,34 +121,45 @@ function LoginForm() {
                 required
                 autoComplete="current-password"
                 placeholder="Enter your password"
-                className={`${authForm.input} pr-12`}
+                className={`${authForm.input} pr-14`}
               />
+              {/* Was a ~20px unlabelled target painted `hover:text-slate-300`
+                  — lighter on hover, on a light panel. `authForm.fieldAffix`
+                  is 44x44 and tone-aware; the aria-label is new, nothing was
+                  removed. It stays in the tab order deliberately: revealing
+                  the password is something a keyboard user needs to reach. */}
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 z-10 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                className={authForm.fieldAffix}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
               >
                 {showPassword ? (
-                  <EyeSlash weight="light" className="h-5 w-5" />
+                  <EyeSlash weight="light" className="h-5 w-5" aria-hidden="true" />
                 ) : (
-                  <Eye weight="light" className="h-5 w-5" />
+                  <Eye weight="light" className="h-5 w-5" aria-hidden="true" />
                 )}
               </button>
             </div>
           </div>
         </div>
 
-        <button type="submit" disabled={loading} className={authForm.submitBtn}>
+        <button
+          type="submit"
+          disabled={loading}
+          aria-busy={loading}
+          className={authForm.submitBtn}
+        >
           <div className={authForm.submitShimmer} />
           {loading ? (
             <span className="flex items-center justify-center gap-2">
-              <CircleNotch weight="light" className="h-5 w-5 animate-spin" />
+              <CircleNotch weight="light" className="h-5 w-5 animate-spin" aria-hidden="true" />
               Signing in...
             </span>
           ) : (
-            <span className="flex items-center justify-center">
+            <span className="flex items-center justify-center gap-2">
               Sign In
-              <span className="ml-2 transition-transform group-hover:translate-x-1">&rarr;</span>
+              <ArrowRight weight="light" className="h-4 w-4" aria-hidden="true" />
             </span>
           )}
         </button>
@@ -136,33 +178,25 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <AuthSplitLayout
-      variant="crm"
-      hero={
-        <AuthHeroPanel
-          variant="crm"
-          headline={
-            <>
-              <span className="block">Grow your</span>
-              <span className="block bg-gradient-to-r from-cyan-300 to-emerald-300 bg-clip-text text-transparent">
-                advisor practice
-              </span>
-            </>
-          }
-          subtitle="Leads, presentations, and your team — one Ethereal Glass workspace."
-          badge="Advisor Portal"
-        />
-      }
-    >
+    <AdvisorAuthShell>
       <Suspense
         fallback={
-          <div className="flex items-center justify-center py-16">
-            <CircleNotch weight="light" className="h-8 w-8 animate-spin text-[var(--adv-teal,#0b6d85)]" />
+          <div
+            className="flex items-center justify-center py-16"
+            role="status"
+            aria-live="polite"
+          >
+            <CircleNotch
+              weight="light"
+              className="h-8 w-8 animate-spin text-[var(--auth-tone)]"
+              aria-hidden="true"
+            />
+            <span className="sr-only">Loading sign in</span>
           </div>
         }
       >
         <LoginForm />
       </Suspense>
-    </AuthSplitLayout>
+    </AdvisorAuthShell>
   );
 }

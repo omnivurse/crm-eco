@@ -1,5 +1,11 @@
-import { AuthSplitLayout, AuthHeroPanel } from '@crm-eco/ui';
+import { AuthSplitLayout, AuthHeroPanel, authForm } from '@crm-eco/ui';
+import { ThemeToggle } from '@/components/crm/shell/ThemeToggle';
 
+/**
+ * Shell for /update-password. VISUAL ONLY — the page inside it owns the
+ * PASSWORD_RECOVERY session handshake and the `updateUser` call, and the
+ * password-rule copy lives in the shared form. Neither is touched here.
+ */
 export default function CrmUpdatePasswordLayout({
   children,
 }: {
@@ -8,6 +14,8 @@ export default function CrmUpdatePasswordLayout({
   return (
     <AuthSplitLayout
       variant="crm"
+      brandLabel="CRM Core"
+      toolbar={<ThemeToggle variant="icon" className="auth-theme-btn !h-9 !w-9" />}
       hero={
         <AuthHeroPanel
           variant="crm"
@@ -16,9 +24,9 @@ export default function CrmUpdatePasswordLayout({
           headline={
             <>
               <span className="block">Choose a</span>
-              <span className="block bg-gradient-to-r from-cyan-300 to-emerald-300 bg-clip-text text-transparent">
-                new password
-              </span>
+              {/* Same defect as /reset-password: a 300-weight gradient with no
+                  light-theme counterpart, on a white panel. */}
+              <span className={`block ${authForm.titleAccent}`}>new password</span>
             </>
           }
           subtitle="Set a strong password to protect your CRM workspace."

@@ -1,28 +1,19 @@
-import { AuthSplitLayout, AuthHeroPanel } from '@crm-eco/ui';
+import { AdvisorAuthShell } from '@/components/auth/AdvisorAuthShell';
 
+/**
+ * VISUAL ONLY. This layout runs no auth logic — it wraps
+ * update-password/page.tsx, which still owns the PASSWORD_RECOVERY listener,
+ * the `getSession()` race against it, and `updateUser({ password })`,
+ * untouched. The 8-character rule, both validation strings and the field ids
+ * live in the shared `AuthUpdatePasswordForm` and were not edited here.
+ *
+ * Same change as the reset-password layout: the hero moved to
+ * `AdvisorAuthShell`, and the hard-coded hex gradient is gone.
+ */
 export default function AdvisorUpdatePasswordLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <AuthSplitLayout
-      hero={
-        <AuthHeroPanel
-          headline={
-            <>
-              <span className="block">Grow your practice with</span>
-              <span className="block bg-gradient-to-r from-[#5eead4] via-[#67e8f9] to-[#a7f3d0] bg-clip-text text-transparent">
-                Double Helix Hub
-              </span>
-            </>
-          }
-          subtitle="Enroll members, track commissions, and manage your book of business from one advisor portal."
-          badge="Advisor Portal"
-        />
-      }
-    >
-      {children}
-    </AuthSplitLayout>
-  );
+  return <AdvisorAuthShell>{children}</AdvisorAuthShell>;
 }

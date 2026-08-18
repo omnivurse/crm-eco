@@ -1,0 +1,200 @@
+/**
+ * CRM auth surface — the call-site pieces the shared @crm-eco/ui auth layer
+ * cannot own, because they live in these pages rather than in a component.
+ *
+ * Every value here resolves through the `--auth-*` tokens (which derive from
+ * `--lp-*`), never through a Tailwind colour utility. That is not a style
+ * preference: the CRM console remaps Tailwind's `cyan` and `teal` scales onto
+ * Muted Spruce (`consoleColors` in packages/ui/tailwind.preset.ts), so
+ * `text-cyan-700` on a sign-in page painted #204e57 instead of the brand cyan.
+ * It is the reason the old auth chrome could never match the landings.
+ *
+ * NOTHING in this file is load-bearing for authentication. It is layout,
+ * colour and hit-area only.
+ */
+
+/* ----------------------------------------------------------------------
+   1. TENANT BRANDING SCOPE  (/crm-login)
+   /crm-login wraps the shell in a div that carries the tenant's
+   brandingToCssVariables() output as inline custom properties. Its only job
+   is to be the element those properties inherit from — so it takes no box at
+   all and cannot re-introduce the `min-h-screen` (100vh) bug the shell just
+   fixed. Custom-property inheritance is unaffected by `display: contents`.
+   The min-height stays declared first as the fallback for any engine that
+   does not support `display: contents`.
+   ---------------------------------------------------------------------- */
+
+.brandScope {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: contents;
+}
+
+/* ----------------------------------------------------------------------
+   2. SUSPENSE FALLBACK  (/crm-login)
+   Was `bg-slate-950 text-slate-400`: a hard-coded dark card that flashed
+   black on the light theme before the real page resolved.
+   ---------------------------------------------------------------------- */
+
+.fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 2rem;
+  background: var(--auth-bg);
+  color: var(--auth-muted);
+  font-family: var(--auth-font-body);
+  font-size: 0.9rem;
+}
+
+/* ----------------------------------------------------------------------
+   3. REMEMBER-ME HIT AREA
+   The visual box stays 20px — the classes stay on the <button> itself so
+   `.auth-checkbox-on/off:focus-visible` still lands on the focused element —
+   while `::before` extends the pointer target to 44x44. The slop reaches
+   exactly to the 0.75rem gap, so it meets the label without covering it.
+   ---------------------------------------------------------------------- */
+
+.checkboxHit {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-width: 2px;
+  border-style: solid;
+  border-radius: var(--auth-r-xs);
+  cursor: pointer;
+  transition:
+    background-color var(--auth-dur-fast) var(--auth-ease),
+    border-color var(--auth-dur-fast) var(--auth-ease);
+}
+
+.checkboxHit::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 44px;
+  height: 44px;
+  transform: translate(-50%, -50%);
+}
+
+.checkboxMark {
+  width: 0.6rem;
+  height: 0.6rem;
+}
+
+.checkboxRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* ----------------------------------------------------------------------
+   4. ASSURANCE CHIPS
+   Two pigments only — cyan leads because this is CRM Core, emerald answers.
+   The chip text sits on an 8% wash of its own colour and measures
+   4.80:1 (cyan) / 4.90:1 (emerald) light and 9.02:1 / 8.52:1 dark against
+   --auth-panel, so it clears AA at this size in both themes.
+   Copy is untouched; `text-transform` changes rendering, not the DOM text a
+   screen reader announces.
+   ---------------------------------------------------------------------- */
+
+.trustRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.trustChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.32rem 0.7rem;
+  border-radius: var(--auth-r-pill);
+  font-family: var(--auth-font-mono);
+  font-size: 10px;
+  line-height: 1.5;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--auth-tone);
+  background: color-mix(in srgb, var(--auth-tone) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--auth-tone) 34%, transparent);
+}
+
+/* The second strand. Must stay after .trustChip: same specificity, so source
+   order is what decides it when both classes are applied. */
+.trustChipCounter {
+  color: var(--auth-counter);
+  background: color-mix(in srgb, var(--auth-counter) 8%, transparent);
+  border-color: color-mix(in srgb, var(--auth-counter) 34%, transparent);
+}
+
+.trustChipIcon {
+  flex: none;
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+/* ----------------------------------------------------------------------
+   5. ASSURANCE LINE
+   The quieter row under the chips. --auth-muted-soft measures 5.10:1 light /
+   5.11:1 dark on --auth-panel; the icons carry the tone so the line still
+   reads as the product's, not as grey chrome.
+   ---------------------------------------------------------------------- */
+
+.assuranceRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem 0.7rem;
+  margin: 0;
+  font-family: var(--auth-font-mono);
+  font-size: 10px;
+  line-height: 1.6;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--auth-muted-soft);
+}
+
+.assuranceItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.assuranceIcon {
+  flex: none;
+  width: 0.8rem;
+  height: 0.8rem;
+  color: var(--auth-tone);
+}
+
+.assuranceSep {
+  flex: none;
+  width: 3px;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--auth-hairline-strong);
+}
+
+/* ----------------------------------------------------------------------
+   6. MOTION
+   Auth is the front door at 7am. The only transition this file introduces is
+   the checkbox tint, and it goes away when the OS asks it to.
+   ---------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .checkboxHit {
+    transition: none;
+  }
+}

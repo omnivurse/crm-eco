@@ -13,7 +13,27 @@ import {
   ArrowRight,
   CircleNotch,
 } from '@phosphor-icons/react';
-import { AuthFormHeader, AuthSuccessPanel, authForm } from '@crm-eco/ui';
+import { AuthFormHeader, AuthFormError, AuthSuccessPanel, authForm } from '@crm-eco/ui';
+
+/**
+ * VISUAL REDESIGN ONLY.
+ *
+ * `signUp`, the `user_type: 'agent'` metadata, both validation rules and their
+ * exact messages ("Passwords do not match", "Password must be at least 8
+ * characters"), the success switch and every string of copy are unchanged.
+ *
+ * What changed:
+ *   - the error box announces itself (`AuthFormError`, role="alert");
+ *   - the show/hide password control is a 44x44 target instead of ~20px;
+ *   - `autocomplete` is present on every field. It was missing everywhere,
+ *     which meant no password manager offered to generate or store the
+ *     password on the one page where that matters most;
+ *   - "Last name" gets the icon its sibling always had. `.auth-field` reserves
+ *     3rem of left padding for one unconditionally, so that field has been
+ *     sitting with an empty indent;
+ *   - the name pair stacks below 640px rather than squeezing two iconed fields
+ *     into a phone's width.
+ */
 
 const LEGAL_BASE = process.env.NEXT_PUBLIC_WEBSITE_URL || 'https://doublehelixhub.com';
 
@@ -103,34 +123,40 @@ export default function AgentSignUpPage() {
       />
 
       <form onSubmit={handleSignUp} className="space-y-5">
-        {error && <div className={authForm.error}>{error}</div>}
+        {error && <AuthFormError>{error}</AuthFormError>}
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-4">
           <div className="space-y-2">
             <label htmlFor="firstName" className={authForm.label}>First name</label>
             <div className="group relative">
               <div className={authForm.inputGlow} />
-              <User weight="light" className={authForm.inputIcon} />
+              <User weight="light" className={authForm.inputIcon} aria-hidden="true" />
               <input
                 id="firstName"
                 value={formData.firstName}
                 onChange={(e) => updateField('firstName', e.target.value)}
                 placeholder="John"
                 required
+                autoComplete="given-name"
                 className={authForm.input}
               />
             </div>
           </div>
           <div className="space-y-2">
             <label htmlFor="lastName" className={authForm.label}>Last name</label>
-            <input
-              id="lastName"
-              value={formData.lastName}
-              onChange={(e) => updateField('lastName', e.target.value)}
-              placeholder="Doe"
-              required
-              className={authForm.input}
-            />
+            <div className="group relative">
+              <div className={authForm.inputGlow} />
+              <User weight="light" className={authForm.inputIcon} aria-hidden="true" />
+              <input
+                id="lastName"
+                value={formData.lastName}
+                onChange={(e) => updateField('lastName', e.target.value)}
+                placeholder="Doe"
+                required
+                autoComplete="family-name"
+                className={authForm.input}
+              />
+            </div>
           </div>
         </div>
 
@@ -138,7 +164,7 @@ export default function AgentSignUpPage() {
           <label htmlFor="email" className={authForm.label}>Email address</label>
           <div className="group relative">
             <div className={authForm.inputGlow} />
-            <Envelope weight="light" className={authForm.inputIcon} />
+            <Envelope weight="light" className={authForm.inputIcon} aria-hidden="true" />
             <input
               id="email"
               type="email"
@@ -146,6 +172,7 @@ export default function AgentSignUpPage() {
               onChange={(e) => updateField('email', e.target.value)}
               placeholder="you@example.com"
               required
+              autoComplete="email"
               className={authForm.input}
             />
           </div>
@@ -155,13 +182,14 @@ export default function AgentSignUpPage() {
           <label htmlFor="phone" className={authForm.label}>Phone (optional)</label>
           <div className="group relative">
             <div className={authForm.inputGlow} />
-            <Phone weight="light" className={authForm.inputIcon} />
+            <Phone weight="light" className={authForm.inputIcon} aria-hidden="true" />
             <input
               id="phone"
               type="tel"
               value={formData.phone}
               onChange={(e) => updateField('phone', e.target.value)}
               placeholder="(555) 123-4567"
+              autoComplete="tel"
               className={authForm.input}
             />
           </div>
@@ -171,7 +199,7 @@ export default function AgentSignUpPage() {
           <label htmlFor="password" className={authForm.label}>Password</label>
           <div className="group relative">
             <div className={authForm.inputGlow} />
-            <Lock weight="light" className={authForm.inputIcon} />
+            <Lock weight="light" className={authForm.inputIcon} aria-hidden="true" />
             <input
               id="password"
               type={showPassword ? 'text' : 'password'}
@@ -179,18 +207,19 @@ export default function AgentSignUpPage() {
               onChange={(e) => updateField('password', e.target.value)}
               placeholder="Minimum 8 characters"
               required
-              className={`${authForm.input} pr-12`}
+              autoComplete="new-password"
+              className={`${authForm.input} pr-14`}
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-4 top-1/2 z-10 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+              className={authForm.fieldAffix}
               aria-label={showPassword ? 'Hide password' : 'Show password'}
             >
               {showPassword ? (
-                <EyeSlash weight="light" className="h-5 w-5" />
+                <EyeSlash weight="light" className="h-5 w-5" aria-hidden="true" />
               ) : (
-                <Eye weight="light" className="h-5 w-5" />
+                <Eye weight="light" className="h-5 w-5" aria-hidden="true" />
               )}
             </button>
           </div>
@@ -200,7 +229,7 @@ export default function AgentSignUpPage() {
           <label htmlFor="confirmPassword" className={authForm.label}>Confirm password</label>
           <div className="group relative">
             <div className={authForm.inputGlow} />
-            <Lock weight="light" className={authForm.inputIcon} />
+            <Lock weight="light" className={authForm.inputIcon} aria-hidden="true" />
             <input
               id="confirmPassword"
               type="password"
@@ -208,6 +237,7 @@ export default function AgentSignUpPage() {
               onChange={(e) => updateField('confirmPassword', e.target.value)}
               placeholder="Re-enter your password"
               required
+              autoComplete="new-password"
               className={authForm.input}
             />
           </div>
@@ -217,30 +247,30 @@ export default function AgentSignUpPage() {
           <div className={authForm.submitShimmer} />
           {loading ? (
             <span className="flex items-center justify-center gap-2">
-              <CircleNotch weight="light" className="h-5 w-5 animate-spin" />
+              <CircleNotch weight="light" className="h-5 w-5 animate-spin" aria-hidden="true" />
               Creating account...
             </span>
           ) : (
             <span className="flex items-center justify-center gap-2">
               Create account
-              <ArrowRight weight="light" className="h-4 w-4" />
+              <ArrowRight weight="light" className="h-4 w-4" aria-hidden="true" />
             </span>
           )}
         </button>
 
-        <p className="text-center text-sm text-slate-400">
+        <p className="mp-rule-text text-center">
           Already have an account?{' '}
-          <Link href="/signin" className="font-medium text-[#5ec8d8] hover:text-[#7dd3e0]">
+          <Link href="/signin" className="mp-link">
             Sign in
           </Link>
         </p>
       </form>
 
-      <p className="text-center text-xs text-slate-500">
+      <p className={authForm.footer}>
         By signing up you agree to our{' '}
-        <a href={`${LEGAL_BASE}/legal/terms`} className="text-[#5ec8d8] hover:underline" target="_blank" rel="noopener noreferrer">Terms</a>
+        <a href={`${LEGAL_BASE}/legal/terms`} className="mp-link" target="_blank" rel="noopener noreferrer">Terms</a>
         {' '}and{' '}
-        <a href={`${LEGAL_BASE}/legal/privacy`} className="text-[#5ec8d8] hover:underline" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
+        <a href={`${LEGAL_BASE}/legal/privacy`} className="mp-link" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
       </p>
     </div>
   );

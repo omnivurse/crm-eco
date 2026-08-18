@@ -375,35 +375,11 @@
   }
 }
 
-/* Soft Structuralism auth — teal instead of cyan/blue/purple */
-.mp-auth {
-  --auth-accent: #0b6d85;
-  --auth-accent-highlight: #5ec8d8;
-  --auth-gradient: linear-gradient(135deg, #0b6d85 0%, #0e8c9a 55%, #12a065 100%);
-}
-.mp-auth h2.bg-gradient-to-r,
-.mp-auth h2[class*='from-cyan'] {
-  background-image: linear-gradient(90deg, #7dd3e0, #5ec8d8, #3db89a) !important;
-}
-.mp-auth a.text-cyan-400,
-.mp-auth .text-cyan-400 {
-  color: #5ec8d8 !important;
-}
-.mp-auth a.hover\:text-cyan-300:hover,
-.mp-auth .hover\:text-cyan-300:hover {
-  color: #7dd3e0 !important;
-}
-.mp-auth button[type='submit'] {
-  background-image: linear-gradient(90deg, #0b6d85, #0e8c9a) !important;
-  box-shadow: 0 4px 20px rgba(11, 109, 133, 0.28) !important;
-}
-.mp-auth button[type='submit']:hover {
-  background-image: linear-gradient(90deg, #0e8c9a, #12a065) !important;
-}
-.mp-auth .group-focus-within\:text-cyan-400:is(:focus-within *) {
-  color: #5ec8d8 !important;
-}
-.mp-auth input:focus {
-  border-color: #0e8c9a !important;
-  --tw-ring-color: rgba(11, 109, 133, 0.25) !important;
-}
+/* The `.mp-auth` override block that used to live here is retired.
+   It existed to repaint the shared auth surface teal — `!important` rules on
+   `button[type='submit']`, `.text-cyan-400`, `input:focus` and an h2 gradient
+   — back when auth was written in Tailwind colour literals. The member
+   sign-in is now `variant="member"` on `AuthSplitLayout`, so the emerald lead
+   and cyan counter-strand come from the `--auth-*` tokens themselves, and
+   these rules would only have painted over `.auth-btn-primary` and the tone
+   links. Member-only sizing lives in src/app/(auth)/member-auth.css. */

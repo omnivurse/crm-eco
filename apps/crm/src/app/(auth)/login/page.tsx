@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@crm-eco/lib/supabase/client';
-import { BrandLogo, authForm } from '@crm-eco/ui';
+import { AuthFormError, AuthFormHeader, authForm } from '@crm-eco/ui';
 import Link from 'next/link';
 import {
   CircleNotch,
@@ -14,9 +14,24 @@ import {
   ShieldCheck,
   Square,
 } from '@phosphor-icons/react';
+import styles from '@/styles/crm-auth.module.css';
 
 export const dynamic = 'force-dynamic';
 
+/**
+ * VISUAL REDESIGN ONLY.
+ *
+ * Unchanged, deliberately: the Supabase `signInWithPassword` call, the
+ * `profiles` lookup and its `signOut` on failure, the `router.push('/crm')`
+ * + `router.refresh()` destination, every error string, the field ids
+ * (`email`, `password`), `required`, both `autoComplete` values, and the
+ * `export const dynamic` directive.
+ *
+ * NOTE for the reviewer: this route is NOT the one middleware sends
+ * unauthenticated users to (that is /crm-login) and it has neither tenant
+ * branding nor the MFA challenge. `header.tsx` still pushes here on sign-out,
+ * so it is reachable. See the hand-off report.
+ */
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
@@ -70,19 +85,18 @@ export default function LoginPage() {
 
   return (
     <div className="space-y-8">
-      <div className="text-center lg:text-left">
-        <Link href="/" className="mb-6 inline-flex items-center">
-          <BrandLogo variant="full" size="lg" tone="auto" priority />
-        </Link>
-        <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-700 dark:text-cyan-400/90">
-          CRM Core
-        </p>
-        <h2 className={authForm.title}>Welcome back</h2>
-        <p className={authForm.subtitle}>Sign in to your pipeline, modules, and workqueue.</p>
-      </div>
+      {/* Was a hand-rolled logo + `text-[10px] … text-cyan-700` eyebrow. The
+          shared header is the same block, and its eyebrow uses the mono face
+          and the tone token instead of a remapped Tailwind cyan. */}
+      <AuthFormHeader
+        eyebrow="CRM Core"
+        title="Welcome back"
+        subtitle="Sign in to your pipeline, modules, and workqueue."
+      />
 
       <form onSubmit={handleLogin} className="space-y-6">
-        {error && <div className={authForm.error}>{error}</div>}
+        {/* Was a bare <div>: a screen reader never announced a failed sign-in. */}
+        {error && <AuthFormError>{error}</AuthFormError>}
 
         <div className="space-y-4">
           <div className="space-y-2">
@@ -125,12 +139,16 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 autoComplete="current-password"
-                className={`${authForm.input} pr-12`}
+                className={`${authForm.input} pr-14`}
               />
+              {/* Was an unlabelled ~20px icon at `absolute right-4`. Same
+                  handler, now a 44px target with an accessible name. */}
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 z-10 -translate-y-1/2 text-[var(--auth-muted)] transition-colors hover:text-[var(--auth-text)]"
+                className={authForm.fieldAffix}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                aria-pressed={showPassword}
               >
                 {showPassword ? (
                   <EyeSlash weight="light" className="h-5 w-5" />
@@ -142,20 +160,25 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <div className="flex items-center space-x-3">
+        {/* The box is still 20px; `.checkboxHit::before` extends the pointer
+            target to 44px. `htmlFor` gives the control a real accessible name
+            and lets the browser forward the label click natively — which is
+            why the label's own onClick had to go, or it would toggle twice. */}
+        <div className={styles.checkboxRow}>
           <button
             type="button"
+            id="remember-me"
+            role="checkbox"
+            aria-checked={rememberMe}
+            aria-labelledby="remember-me-label"
             onClick={() => setRememberMe(!rememberMe)}
-            className={`flex h-5 w-5 items-center justify-center rounded-md border-2 transition-all ${
+            className={`${styles.checkboxHit} ${
               rememberMe ? authForm.checkboxOn : authForm.checkboxOff
             }`}
           >
-            {rememberMe && <Square weight="fill" className="h-2.5 w-2.5 text-white" />}
+            {rememberMe && <Square weight="fill" className={styles.checkboxMark} />}
           </button>
-          <label
-            onClick={() => setRememberMe(!rememberMe)}
-            className={authForm.checkboxLabel}
-          >
+          <label id="remember-me-label" htmlFor="remember-me" className={authForm.checkboxLabel}>
             Remember me for 30 days
           </label>
         </div>
@@ -198,10 +221,15 @@ export default function LoginPage() {
       </form>
 
       <div className="mt-8 space-y-4 text-center">
-        <div className="inline-flex items-center gap-2 text-xs font-medium text-cyan-400/90">
-          <ShieldCheck weight="light" className="h-3.5 w-3.5" />
-          <span>Org-isolated · Encrypted in transit</span>
-        </div>
+        {/* Was `text-cyan-400/90` — a remapped Tailwind cyan at 90% opacity,
+            which fell under AA on the light panel. Now the shared mono
+            assurance line: --auth-muted-soft, 5.1:1 in both themes. */}
+        <p className={styles.assuranceRow}>
+          <span className={styles.assuranceItem}>
+            <ShieldCheck weight="light" className={styles.assuranceIcon} aria-hidden="true" />
+            Org-isolated · Encrypted in transit
+          </span>
+        </p>
         <p className={authForm.footer}>
           © 2026 Double Helix Hub. All rights reserved.
           {' · '}

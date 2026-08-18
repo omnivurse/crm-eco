@@ -1,0 +1,338 @@
+/**
+ * MEMBER PORTAL — auth skin
+ *
+ * This file adds NOTHING new to the design system. It is a scale-and-tone
+ * layer on top of `@crm-eco/ui/styles/auth.css`, scoped to `.mp-auth-member`
+ * (the class the (auth) layout puts on `AuthSplitLayout`), because the member
+ * sign-in has an audience the other three consoles do not:
+ *
+ *   The CRM, Admin and Advisor sign-ins are read by professionals at a desk.
+ *   This one is read by a health-share MEMBER — often older, usually on a
+ *   phone, sometimes while worrying about a medical bill. So the same family,
+ *   one notch larger and one notch calmer: 16px fields (which is also what
+ *   stops iOS auto-zooming the page on focus), 3.5rem controls, plainer
+ *   hierarchy, and no motion beyond what auth.css already ships.
+ *
+ * Every value here resolves through the --auth-* tokens, which derive from
+ * --lp-*. There is not one raw colour literal in this file, so both themes and
+ * the member variant's emerald lead stay correct by construction.
+ *
+ * Scoped with a single extra class, so it out-specifies the single-class
+ * `.auth-*` rules without `!important` and cannot leak onto any other surface.
+ */
+
+/* ======================================================================
+   1. SCALE — the member notch
+   ====================================================================== */
+
+/* A little more room: the type below is larger, so the same line count needs
+   a slightly wider measure. */
+.mp-auth-member .auth-form-slot {
+  max-width: 28rem;
+}
+
+.mp-auth-member .auth-title {
+  font-size: clamp(1.8rem, 1.3rem + 1.6vw, 2.15rem);
+}
+
+.mp-auth-member .auth-subtitle {
+  font-size: 1.0125rem;
+  line-height: 1.62;
+}
+
+.mp-auth-member .auth-label {
+  font-size: 0.9375rem;
+}
+
+/* 16px is deliberate and load-bearing: below it, iOS Safari zooms the page in
+   on focus and the member loses the rest of the form. 3.5rem gives the field
+   a 56px hit area. */
+.mp-auth-member .auth-field {
+  height: 3.5rem;
+  font-size: 1rem;
+}
+
+.mp-auth-member .auth-field-icon {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
+.mp-auth-member .auth-btn-primary,
+.mp-auth-member .auth-btn-secondary {
+  min-height: 3.5rem;
+  font-size: 1rem;
+}
+
+.mp-auth-member .auth-link {
+  font-size: 0.9375rem;
+}
+
+.mp-auth-member .auth-alert {
+  font-size: 0.9375rem;
+}
+
+/* Legal small print. 12px is the family default; a member reading a consent
+   line on a phone gets 13px. --auth-muted-soft holds AA at this size. */
+.mp-auth-member .auth-footer {
+  font-size: 0.8125rem;
+}
+
+/* The compact masthead's wordline, one step up from the 10px the consoles use. */
+.mp-auth-member .auth-brandbar-label {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+}
+
+/* ======================================================================
+   2. HERO — the reassurance list (lg and up)
+   The four points are the ones this page has always carried; only their
+   dressing changed. They sit in the hero's `children` slot.
+   ====================================================================== */
+
+.mp-trust {
+  display: grid;
+  gap: 1.15rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 1280px) {
+  .mp-trust {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.25rem 2rem;
+  }
+}
+
+.mp-trust-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  min-width: 0;
+}
+
+.mp-trust-icon {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: var(--auth-r-sm);
+  color: var(--auth-tone);
+  background: color-mix(in srgb, var(--auth-tone) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--auth-tone) 22%, transparent);
+}
+
+.mp-trust-title {
+  display: block;
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--auth-text-strong);
+}
+
+.mp-trust-copy {
+  display: block;
+  margin: 0.2rem 0 0;
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: var(--auth-muted);
+  max-width: 34ch;
+}
+
+/* Short laptops and landscape tablets. `.auth-brand-side` is `overflow:
+   hidden`, so anything that does not fit is simply cut off — measured at
+   1024x640 the four captions overran the panel by a couple of pixels, which
+   reads as a broken page. The captions are the supporting half of a
+   supporting element, so they are what gives way; the four claims stay. */
+@media (min-width: 1024px) and (max-height: 780px) {
+  .mp-auth-member .auth-hero-slot {
+    margin-top: 1.25rem;
+  }
+  .mp-trust {
+    gap: 0.85rem;
+  }
+  .mp-trust-icon {
+    width: 2.1rem;
+    height: 2.1rem;
+  }
+  .mp-trust-copy {
+    display: none;
+  }
+}
+
+/* ======================================================================
+   3. FORM FURNITURE — member-only pieces
+   ====================================================================== */
+
+/* Inline link inside a sentence. `.auth-link` is a 44px block control, which
+   is right for "Forgot password?" on its own line and wrong in the middle of
+   a paragraph. Inline links in a body of text are exempt from WCAG 2.5.8, so
+   this is a text link and reads like one. */
+.mp-link {
+  color: var(--auth-tone);
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  border-radius: var(--auth-r-xs);
+  transition: color var(--auth-dur-fast) var(--auth-ease);
+}
+
+.mp-link:hover {
+  color: var(--auth-text-strong);
+}
+
+.mp-link:focus-visible {
+  outline: 2px solid var(--auth-focus);
+  outline-offset: 2px;
+}
+
+/* Temporary lockout notice.
+   Deliberately NOT amber: in this family amber is semantic and means money.
+   It is also deliberately not red — the red alert above it has already said
+   what went wrong, and a second alarm box in front of someone who is already
+   locked out is just noise. This is a quiet, factual panel. */
+.mp-lock {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.9rem 1rem;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--auth-text);
+  background: var(--auth-panel-sunk);
+  border: 1px solid var(--auth-hairline-strong);
+  border-radius: var(--auth-r-md);
+}
+
+.mp-lock-icon {
+  flex: none;
+  width: 1.15rem;
+  height: 1.15rem;
+  color: var(--auth-muted);
+}
+
+.mp-lock-count {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--auth-text-strong);
+}
+
+/* Section rule above the "are you an agent?" line. */
+.mp-rule {
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--auth-hairline);
+  text-align: center;
+}
+
+.mp-rule-text {
+  margin: 0;
+  font-size: 0.9375rem;
+  color: var(--auth-muted);
+}
+
+/* The security assurance strip. Same three claims, same words, legible size. */
+.mp-assure {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem 0.85rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.8125rem;
+  color: var(--auth-muted);
+}
+
+.mp-assure-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.mp-assure-icon {
+  width: 1rem;
+  height: 1rem;
+  color: var(--auth-tone);
+}
+
+.mp-assure-sep {
+  width: 3px;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--auth-hairline-strong);
+}
+
+@media (max-width: 359px) {
+  .mp-assure-sep {
+    display: none;
+  }
+}
+
+/* ======================================================================
+   4. LOADING SKELETON
+   The old fallback painted a whole second split screen (min-h-screen, its own
+   hero column) INSIDE the form panel, in slate/cyan literals. This is the
+   shape of the form it is standing in for, in tokens.
+   ====================================================================== */
+
+.mp-skeleton {
+  display: grid;
+  gap: 1.15rem;
+}
+
+.mp-skeleton > * {
+  border-radius: var(--auth-r-md);
+  background: var(--auth-panel-sunk);
+  animation: mp-skeleton-breathe 1.8s var(--auth-ease) infinite;
+}
+
+.mp-skeleton-logo {
+  width: 11rem;
+  height: 2.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.mp-skeleton-title {
+  width: 62%;
+  height: 2.15rem;
+}
+
+.mp-skeleton-line {
+  width: 85%;
+  height: 1.15rem;
+  margin-bottom: 0.75rem;
+}
+
+.mp-skeleton-field {
+  height: 3.5rem;
+}
+
+.mp-skeleton-btn {
+  height: 3.5rem;
+  border-radius: var(--auth-r-pill);
+  margin-top: 0.5rem;
+}
+
+@keyframes mp-skeleton-breathe {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+/* ======================================================================
+   5. REDUCED MOTION
+   auth.css already stills its own transitions; this covers what is added here.
+   ====================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .mp-skeleton > * {
+    animation: none;
+  }
+  .mp-link {
+    transition: none;
+  }
+}

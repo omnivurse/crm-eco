@@ -9,23 +9,30 @@ export default function SignInPage() {
   );
 }
 
+/**
+ * The Suspense fallback, corrected.
+ *
+ * The previous one rendered a whole second split screen — `min-h-screen`, its
+ * own 55%/45% columns, `bg-dhh-ink`, `bg-cyan-500/20` — INSIDE the (auth)
+ * layout's form slot, so for the first paint the member saw a dark panel
+ * nested in the real one. This is simply the shape of the form it stands in
+ * for, drawn from the auth tokens (see member-auth.css), so the swap to the
+ * real form is unnoticeable.
+ */
 function SignInLoading() {
   return (
-    <div className="min-h-screen flex flex-row bg-dhh-ink">
-      <div className="hidden lg:flex lg:w-[55%] xl:w-[58%] bg-dhh-ink animate-pulse" />
-      <div className="w-full lg:w-[45%] xl:w-[42%] flex items-center justify-center bg-dhh-panel p-8">
-        <div className="w-full max-w-md space-y-8">
-          <div className="space-y-3">
-            <div className="h-8 w-48 bg-slate-700/50 rounded-lg animate-pulse" />
-            <div className="h-4 w-64 bg-slate-700/30 rounded animate-pulse" />
-          </div>
-          <div className="space-y-5">
-            <div className="h-14 bg-slate-800/50 rounded-xl animate-pulse" />
-            <div className="h-14 bg-slate-800/50 rounded-xl animate-pulse" />
-            <div className="h-14 bg-cyan-500/20 rounded-xl animate-pulse" />
-          </div>
-        </div>
+    <>
+      <p className="sr-only" role="status">
+        Loading the sign-in form.
+      </p>
+      <div className="mp-skeleton" aria-hidden="true">
+        <div className="mp-skeleton-logo" />
+        <div className="mp-skeleton-title" />
+        <div className="mp-skeleton-line" />
+        <div className="mp-skeleton-field" />
+        <div className="mp-skeleton-field" />
+        <div className="mp-skeleton-btn" />
       </div>
-    </div>
+    </>
   );
 }

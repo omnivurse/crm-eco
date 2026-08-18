@@ -1,40 +1,70 @@
-import type { AuthVariant } from './auth-gradient-mesh';
+import { AuthBrandBar } from './auth-brand-bar';
+import type { AuthVariant } from './auth-variant';
 
-interface AuthSplitLayoutProps {
+export interface AuthSplitLayoutProps {
+  /** The brand side. Shown at lg and up. */
   hero: React.ReactNode;
   children: React.ReactNode;
   variant?: AuthVariant;
-  /** Optional top-right toolbar on the form panel (e.g. theme toggle). */
+  /** Optional top-right toolbar (e.g. theme toggle). */
   toolbar?: React.ReactNode;
+  /**
+   * NEW. The below-lg identity. Defaults to `<AuthBrandBar />` for the
+   * variant, which is why no app has to change to get a mobile brand
+   * treatment. Pass `null` to suppress it, or your own node to replace it.
+   */
+  compact?: React.ReactNode;
+  /** NEW. Product wordline for the default compact bar (e.g. a tenant name). */
+  brandLabel?: string;
+  /** NEW. Extra classes on the shell root. */
+  className?: string;
 }
 
-/** Split auth layout — Ethereal Glass hero left, bezel form panel right */
+/**
+ * Split auth layout — brand side left, form panel right.
+ *
+ * Two defects fixed here:
+ *  - `min-h-screen` became `100dvh` (with a 100vh fallback). On mobile
+ *    browsers with a collapsing toolbar, 100vh is the LARGE viewport, which
+ *    pushed the submit button under the chrome.
+ *  - the brand side no longer vanishes below lg; `compact` takes over.
+ *
+ * The form stays the priority on small screens: the compact bar is a fixed
+ * ~5.25rem masthead, not a hero, and the form panel takes the rest.
+ *
+ * `data-auth-variant` on the root is what switches the tone tokens in
+ * packages/ui/src/styles/auth.css — every descendant inherits it, so a hero,
+ * a rail and a focus ring cannot disagree about which product this is.
+ */
 export function AuthSplitLayout({
   hero,
   children,
   variant = 'default',
   toolbar,
+  compact,
+  brandLabel,
+  className,
 }: AuthSplitLayoutProps) {
-  const panelAccent =
-    variant === 'admin'
-      ? 'before:from-emerald-500/15 dark:before:from-emerald-400/20'
-      : variant === 'crm'
-        ? 'before:from-cyan-500/15 dark:before:from-cyan-400/20'
-        : 'before:from-cyan-500/10 dark:before:from-cyan-400/15';
+  const compactNode =
+    compact === undefined ? (
+      <AuthBrandBar variant={variant} label={brandLabel} />
+    ) : (
+      compact
+    );
 
   return (
-    <div className="flex min-h-screen flex-row bg-[var(--auth-bg)]">
-      <div className="relative hidden bg-[var(--auth-bg)] lg:flex lg:w-[55%] xl:w-[58%]">
-        {hero}
-      </div>
+    <div
+      className={['auth-shell', className].filter(Boolean).join(' ')}
+      data-auth-variant={variant}
+    >
+      {toolbar ? <div className="auth-toolbar">{toolbar}</div> : null}
 
-      <div
-        className={`relative w-full lg:w-[45%] xl:w-[42%] flex items-center justify-center px-6 py-10 sm:p-10 bg-[var(--auth-panel)] pt-[max(2.5rem,env(safe-area-inset-top))] pb-[max(2.5rem,env(safe-area-inset-bottom))] border-l border-[var(--auth-hairline)] before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-32 before:bg-gradient-to-b ${panelAccent} before:to-transparent`}
-      >
-        {toolbar ? (
-          <div className="absolute right-4 top-4 z-20 sm:right-6 sm:top-6">{toolbar}</div>
-        ) : null}
-        <div className="relative z-10 w-full max-w-md">{children}</div>
+      {compactNode ? <div className="auth-compact">{compactNode}</div> : null}
+
+      <div className="auth-brand-side">{hero}</div>
+
+      <div className="auth-form-side">
+        <div className="auth-form-slot">{children}</div>
       </div>
     </div>
   );

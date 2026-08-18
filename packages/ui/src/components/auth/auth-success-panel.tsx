@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Check, ArrowLeft, ArrowRight } from 'lucide-react';
 import { authForm } from './auth-form-styles';
 
-interface AuthSuccessPanelProps {
+export interface AuthSuccessPanelProps {
   title: string;
   description: React.ReactNode;
   primaryHref: string;
@@ -10,7 +10,16 @@ interface AuthSuccessPanelProps {
   showPrimaryArrow?: boolean;
 }
 
-/** Dark-themed success state for auth flows (reset email sent, password updated, etc.) */
+/**
+ * Success state for auth flows (reset email sent, password updated).
+ *
+ * v1 hard-coded `border-slate-600 text-slate-200 hover:bg-slate-800/50`, which
+ * was designed for an always-dark panel and read as grey-on-white in the light
+ * theme. Everything is token-driven now; the emerald mark comes from
+ * `--auth-ok`, which derives from `--lp-emerald`.
+ *
+ * Copy is passed in by the caller and is untouched.
+ */
 export function AuthSuccessPanel({
   title,
   description,
@@ -19,28 +28,25 @@ export function AuthSuccessPanel({
   showPrimaryArrow = false,
 }: AuthSuccessPanelProps) {
   return (
-    <div className="space-y-8 text-center lg:text-left">
-      <div className="w-16 h-16 rounded-full bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center mx-auto lg:mx-0">
-        <Check className="w-8 h-8 text-emerald-400" />
+    <div className="space-y-7 text-center lg:text-left">
+      <div className="auth-success-mark mx-auto lg:mx-0">
+        <Check className="h-7 w-7" aria-hidden="true" />
       </div>
       <div>
         <h2 className={authForm.title}>{title}</h2>
-        <p className={`${authForm.subtitle} mt-3`}>{description}</p>
+        <p className={authForm.subtitle}>{description}</p>
       </div>
-      <Link
-        href={primaryHref}
-        className="inline-flex items-center justify-center gap-2 w-full h-12 rounded-xl border border-slate-600 text-slate-200 hover:bg-slate-800/50 transition-colors font-medium"
-      >
+      <Link href={primaryHref} className={authForm.secondaryBtn}>
         {showPrimaryArrow ? (
-          <>
+          <span className="flex items-center justify-center gap-2">
             {primaryLabel}
-            <ArrowRight className="h-4 w-4" />
-          </>
+            <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          </span>
         ) : (
-          <>
-            <ArrowLeft className="h-4 w-4" />
+          <span className="flex items-center justify-center gap-2">
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
             {primaryLabel}
-          </>
+          </span>
         )}
       </Link>
     </div>

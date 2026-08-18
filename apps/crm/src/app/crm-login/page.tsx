@@ -4,6 +4,7 @@ import { getLoginBrandingContext } from '@/lib/login-tenant';
 import { safeCrmRedirect } from '@/lib/login-branding-types';
 import { isMfaEnforcementEnabled } from '@/lib/security/mfa';
 import { CrmLoginClient } from './CrmLoginClient';
+import styles from '@/styles/crm-auth.module.css';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,8 +31,18 @@ async function CrmLoginContent({ searchParams }: CrmLoginPageProps) {
   const cssVars = brandingToCssVariables(brandingContext?.branding);
 
   return (
+    // The tenant's brand tokens (--primary / --secondary / --accent and the
+    // contrast-safe --*-foreground each of them gets from
+    // hexToContrastForegroundTriple) are still injected here, unchanged, and
+    // still inherit to everything below — including the MFA challenge's
+    // <Button>, which is the one control on this flow that paints with them.
+    //
+    // `.brandScope` is `display: contents`: the div is now purely the element
+    // those custom properties inherit from and contributes no box, so it can
+    // no longer re-impose the `min-h-screen` (100vh) the shell just replaced
+    // with 100dvh. Inheritance is unaffected by `display: contents`.
     <div
-      className="min-h-screen"
+      className={styles.brandScope}
       style={Object.keys(cssVars).length > 0 ? (cssVars as React.CSSProperties) : undefined}
     >
       <CrmLoginClient
@@ -47,11 +58,9 @@ async function CrmLoginContent({ searchParams }: CrmLoginPageProps) {
 }
 
 function CrmLoginFallback() {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-400 text-sm">
-      Loading sign-in…
-    </div>
-  );
+  // Was `bg-slate-950 text-slate-400`: a hard-coded dark card that flashed
+  // black over the light theme before the real page resolved.
+  return <div className={styles.fallback}>Loading sign-in…</div>;
 }
 
 export default function CrmLoginPage(props: CrmLoginPageProps) {

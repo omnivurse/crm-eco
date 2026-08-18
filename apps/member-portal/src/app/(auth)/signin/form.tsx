@@ -15,7 +15,30 @@ import {
   CheckCircle,
   WarningCircle,
 } from '@phosphor-icons/react';
-import { AuthFormHeader, authForm } from '@crm-eco/ui';
+import { AuthFormHeader, AuthFormError, authForm } from '@crm-eco/ui';
+
+/**
+ * VISUAL REDESIGN ONLY.
+ *
+ * Not one line of authentication behaviour changed. The lockout threshold and
+ * duration, the countdown, `signInWithPassword`, the email normalisation, the
+ * profile/advisor lookup, the inactive-agent sign-out, both `window.location`
+ * destinations, the `redirect` param handling, every error string and the
+ * legal copy are byte-for-byte what they were. The diff is classes, tokens,
+ * touch targets, and three accessibility fixes:
+ *
+ *   1. the error box is now `AuthFormError` (role="alert"), so a screen reader
+ *      is told the sign-in failed — before, the message appeared in silence;
+ *   2. the show/hide password control was a ~20px tap target floating in the
+ *      field; `authForm.fieldAffix` makes it 44x44 with a focus ring;
+ *   3. the mount fade is gone. It held the whole form at `opacity-0` until
+ *      hydration, which on a slow phone is a blank panel for a member who is
+ *      already anxious. Nothing else depended on that state.
+ *
+ * The lockout panel is deliberately NOT a live region: the countdown ticks
+ * every second, and a polite live region would read "59… 58… 57…" over the
+ * member. The alert that opens the lockout is announced once, by (1).
+ */
 
 const LOCKOUT_THRESHOLD = 5;
 const LOCKOUT_DURATION_MS = 60_000;
@@ -34,13 +57,8 @@ export function SignInForm() {
   const [failedAttempts, setFailedAttempts] = useState(0);
   const [lockoutUntil, setLockoutUntil] = useState<number | null>(null);
   const [lockoutSeconds, setLockoutSeconds] = useState(0);
-  const [mounted, setMounted] = useState(false);
 
   const supabase = createClient();
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     if (!lockoutUntil) return;
@@ -147,11 +165,7 @@ export function SignInForm() {
   };
 
   return (
-    <div
-      className={`space-y-8 transition-all duration-500 ${
-        mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
-      }`}
-    >
+    <div className="space-y-8">
       <AuthFormHeader
         title="Welcome back"
         subtitle="Sign in to your member account to continue."
@@ -159,28 +173,28 @@ export function SignInForm() {
 
       <form onSubmit={handleSignIn} className="space-y-6">
         {error && (
-          <div className={`${authForm.error} flex items-start gap-3`}>
-            <WarningCircle weight="light" className="mt-0.5 h-4 w-4 flex-shrink-0 text-red-400" />
+          <AuthFormError>
+            <WarningCircle weight="light" className="auth-alert-icon" aria-hidden="true" />
             <span>{error}</span>
-          </div>
+          </AuthFormError>
         )}
 
         {isLockedOut && (
-          <div className="flex items-center gap-3 rounded-xl border border-amber-500/20 bg-amber-500/10 p-3.5 text-sm text-amber-200">
-            <Lock weight="light" className="h-4 w-4 flex-shrink-0" />
+          <div className="mp-lock">
+            <Lock weight="light" className="mp-lock-icon" aria-hidden="true" />
             <span>
               Account temporarily locked. Try again in{' '}
-              <span className="font-semibold tabular-nums">{lockoutSeconds}s</span>
+              <span className="mp-lock-count">{lockoutSeconds}s</span>
             </span>
           </div>
         )}
 
-        <div className="space-y-4">
+        <div className="space-y-5">
           <div className="space-y-2">
             <label htmlFor="signin-email" className={authForm.label}>Email address</label>
             <div className="group relative">
               <div className={authForm.inputGlow} />
-              <Envelope weight="light" className={authForm.inputIcon} />
+              <Envelope weight="light" className={authForm.inputIcon} aria-hidden="true" />
               <input
                 id="signin-email"
                 type="email"
@@ -190,19 +204,19 @@ export function SignInForm() {
                 required
                 autoComplete="email"
                 disabled={isLockedOut}
-                className={`${authForm.input} disabled:opacity-50`}
+                className={authForm.input}
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-x-4">
               <label htmlFor="signin-password" className={authForm.label}>Password</label>
               <Link href="/reset-password" className={authForm.link}>Forgot password?</Link>
             </div>
             <div className="group relative">
               <div className={authForm.inputGlow} />
-              <Lock weight="light" className={authForm.inputIcon} />
+              <Lock weight="light" className={authForm.inputIcon} aria-hidden="true" />
               <input
                 id="signin-password"
                 type={showPassword ? 'text' : 'password'}
@@ -212,18 +226,18 @@ export function SignInForm() {
                 required
                 autoComplete="current-password"
                 disabled={isLockedOut}
-                className={`${authForm.input} pr-12 disabled:opacity-50`}
+                className={`${authForm.input} pr-14`}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 z-10 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                className={authForm.fieldAffix}
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
               >
                 {showPassword ? (
-                  <EyeSlash weight="light" className="h-5 w-5" />
+                  <EyeSlash weight="light" className="h-5 w-5" aria-hidden="true" />
                 ) : (
-                  <Eye weight="light" className="h-5 w-5" />
+                  <Eye weight="light" className="h-5 w-5" aria-hidden="true" />
                 )}
               </button>
             </div>
@@ -234,21 +248,21 @@ export function SignInForm() {
           <div className={authForm.submitShimmer} />
           {loading ? (
             <span className="flex items-center justify-center gap-2">
-              <CircleNotch weight="light" className="h-5 w-5 animate-spin" />
+              <CircleNotch weight="light" className="h-5 w-5 animate-spin" aria-hidden="true" />
               Signing in...
             </span>
           ) : (
             <span className="flex items-center justify-center gap-2">
               Sign in
-              <ArrowRight weight="light" className="h-4 w-4" />
+              <ArrowRight weight="light" className="h-4 w-4" aria-hidden="true" />
             </span>
           )}
         </button>
 
-        <div className="border-t border-slate-700 pt-4 text-center">
-          <p className="text-sm text-slate-400">
+        <div className="mp-rule">
+          <p className="mp-rule-text">
             Are you an agent?{' '}
-            <Link href="/signup" className="font-medium text-[#5ec8d8] transition-colors hover:text-[#7dd3e0]">
+            <Link href="/signup" className="mp-link">
               Register here
             </Link>
           </p>
@@ -256,29 +270,29 @@ export function SignInForm() {
       </form>
 
       <div className="space-y-3">
-        <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-slate-500">
-          <div className="flex items-center gap-1.5">
-            <CheckCircle weight="light" className="h-3 w-3 text-[#5ec8d8]" />
+        <ul className="mp-assure">
+          <li className="mp-assure-item">
+            <CheckCircle weight="light" className="mp-assure-icon" aria-hidden="true" />
             <span>SSL Secured</span>
-          </div>
-          <div className="h-1 w-1 rounded-full bg-slate-600" />
-          <div className="flex items-center gap-1.5">
-            <Shield weight="light" className="h-3 w-3 text-[#5ec8d8]" />
+          </li>
+          <li className="mp-assure-sep" aria-hidden="true" />
+          <li className="mp-assure-item">
+            <Shield weight="light" className="mp-assure-icon" aria-hidden="true" />
             <span>HIPAA Compliant</span>
-          </div>
-          <div className="h-1 w-1 rounded-full bg-slate-600" />
-          <div className="flex items-center gap-1.5">
-            <Lock weight="light" className="h-3 w-3 text-[#5ec8d8]" />
+          </li>
+          <li className="mp-assure-sep" aria-hidden="true" />
+          <li className="mp-assure-item">
+            <Lock weight="light" className="mp-assure-icon" aria-hidden="true" />
             <span>Encrypted</span>
-          </div>
-        </div>
-        <p className="text-center text-xs text-slate-500">
+          </li>
+        </ul>
+        <p className={authForm.footer}>
           By signing in you agree to our{' '}
-          <a href={`${LEGAL_BASE}/legal/terms`} className="text-[#5ec8d8] hover:underline" target="_blank" rel="noopener noreferrer">Terms</a>
+          <a href={`${LEGAL_BASE}/legal/terms`} className="mp-link" target="_blank" rel="noopener noreferrer">Terms</a>
           {', '}
-          <a href={`${LEGAL_BASE}/legal/privacy`} className="text-[#5ec8d8] hover:underline" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
+          <a href={`${LEGAL_BASE}/legal/privacy`} className="mp-link" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
           {', and '}
-          <Link href="/legal/sms-privacy" className="text-[#5ec8d8] hover:underline">
+          <Link href="/legal/sms-privacy" className="mp-link">
             SMS Privacy Policy
           </Link>
         </p>

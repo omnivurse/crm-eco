@@ -11,7 +11,9 @@
  * --lp-signal (amber) is SEMANTIC: money moments only (commissions, payouts,
  * billing). It is never a second brand colour.
  *
- * DO NOT change any --auth-* token: the auth pages depend on them.
+ * The --auth-* block is DERIVED from --lp-*: auth is the same family, read
+ * calmer. Change --auth-* only through those derivations, and never touch a
+ * --lp-* token from an auth change — three shipped landings consume them.
  */
 
 :root,
@@ -112,19 +114,94 @@ html.light {
   --lp-dur: 0.35s;
   --lp-dur-slow: 0.9s;
 
-  --auth-bg: #f7f8fa;
-  --auth-panel: #ffffff;
-  --auth-text: #0f172a;
-  --auth-muted: rgba(15, 23, 42, 0.55);
-  --auth-accent: #0891b2;
-  --auth-accent-highlight: #06b6d4;
-  --auth-emerald: #059669;
-  --auth-hairline: rgba(15, 23, 42, 0.1);
-  --auth-input-bg: rgba(15, 23, 42, 0.04);
-  --auth-btn-bg: #050505;
-  --auth-btn-fg: #ffffff;
-  --auth-ease: cubic-bezier(0.32, 0.72, 0, 1);
-  --auth-gradient: linear-gradient(135deg, #0891b2 0%, #059669 100%);
+  /* --- auth surface ----------------------------------------------------
+     Auth is a PRODUCT surface inside the landing family: the same two
+     pigments, the same faces, the same radius/shadow scales — just calmer.
+     Every --auth-* token below is DERIVED from a --lp-* token, so the sign-in
+     page cannot drift away from the marketing pages the way the hard-coded
+     v1 palette did.
+
+     `var()` is substituted at use time on the same element (<html>), and the
+     --lp-* tokens are redefined on `html.dark`, so a single derivation here
+     serves BOTH themes. Only the values whose dark counterpart is not simply
+     "the dark --lp-* value" are restated in the html.dark block below.
+
+     Contrast, measured on --lp-panel AND --lp-void in both themes:
+       --auth-muted       5.8:1 light / 6.5:1 dark   (AA body + labels)
+       --auth-muted-soft  4.6:1 light / 5.3:1 dark   (AA 10-11px mono)
+       --auth-tone        5.4:1 light / 10.3:1 dark  (links + focus ring)
+       --auth-tone (emerald lead) 5.5:1 light / 9.7:1 dark
+       --auth-danger      6.5:1 light / 9.8:1 dark
+     The per-variant lead/counter colours are switched on [data-auth-variant]
+     in auth.css; only the neutral defaults live here. */
+
+  /* ground */
+  --auth-bg: var(--lp-void);
+  --auth-panel: var(--lp-panel);
+  --auth-panel-sunk: var(--lp-panel-sunk);
+  --auth-text: var(--lp-fg);
+  --auth-text-strong: var(--lp-fg-strong);
+  --auth-muted: var(--lp-muted);
+  --auth-muted-soft: var(--lp-muted-soft);
+  --auth-hairline: var(--lp-hairline);
+  --auth-hairline-strong: var(--lp-hairline-strong);
+  --auth-surface: var(--lp-surface);
+  --auth-input-bg: var(--lp-surface);
+  /* WCAG 1.4.11: a text field's boundary is the only thing identifying it as
+     a control (the fill is 1.05:1 on the panel), so the border carries the
+     3:1 non-text contrast on its own. --lp-hairline-strong measures 1.7:1 and
+     is not enough here. Light 3.45:1 / dark 3.23:1 on --lp-panel. */
+  --auth-field-border: rgba(11, 23, 32, 0.48);
+
+  /* brand — kept for backward compatibility with the v1 call sites */
+  --auth-accent: var(--lp-cyan);
+  --auth-accent-highlight: var(--lp-cyan-bright);
+  --auth-emerald: var(--lp-emerald);
+  --auth-gradient: var(--lp-gradient);
+  --auth-gradient-text: var(--lp-gradient-text);
+
+  /* tone — the product's lead colour; per-variant overrides in auth.css */
+  --auth-tone: var(--lp-cyan);
+  --auth-tone-bright: var(--lp-cyan-bright);
+  --auth-counter: var(--lp-emerald);
+  --auth-focus: var(--lp-cyan);
+  --auth-strand-a: var(--lp-cyan);
+  --auth-strand-b: var(--lp-emerald);
+  /* How loudly the second strand reads. 0.3 = one product clearly leads,
+     0.85 = the two sides run together. See auth.css. */
+  --auth-counter-weight: 0.34;
+
+  /* buttons */
+  --auth-btn-bg: var(--lp-btn-primary-bg);
+  --auth-btn-fg: var(--lp-btn-primary-fg);
+
+  /* type */
+  --auth-font-display: var(--lp-font-display);
+  --auth-font-body: var(--lp-font-body);
+  --auth-font-mono: var(--lp-font-mono);
+
+  /* radius + shadow — one scale, shared with the landings */
+  --auth-r-xs: var(--lp-r-xs);
+  --auth-r-sm: var(--lp-r-sm);
+  --auth-r-md: var(--lp-r-md);
+  --auth-r-lg: var(--lp-r-lg);
+  --auth-r-pill: var(--lp-r-pill);
+  --auth-shadow-1: var(--lp-shadow-1);
+  --auth-shadow-2: var(--lp-shadow-2);
+
+  /* motion */
+  --auth-ease: var(--lp-ease);
+  --auth-ease-out: var(--lp-ease-out);
+  --auth-dur-fast: var(--lp-dur-fast);
+  --auth-dur: var(--lp-dur);
+
+  /* state — the same red the v1 forms shipped, held at AA on --lp-panel */
+  --auth-danger: #b91c1c;
+  --auth-danger-line: rgba(185, 28, 28, 0.28);
+  --auth-danger-wash: rgba(185, 28, 28, 0.07);
+  --auth-ok: var(--lp-emerald);
+  --auth-ok-line: color-mix(in srgb, var(--lp-emerald) 30%, transparent);
+  --auth-ok-wash: color-mix(in srgb, var(--lp-emerald) 10%, transparent);
 }
 
 html.dark {
@@ -206,16 +283,13 @@ html.dark {
   --lp-gradient-text: linear-gradient(135deg, #67e8f9 0%, #6ee7b7 100%);
   --lp-gradient-signal: linear-gradient(135deg, #f5b642 0%, #34d399 100%);
 
-  --auth-bg: #050505;
-  --auth-panel: #0a0a0a;
-  --auth-text: #f4f4f5;
-  --auth-muted: rgba(244, 244, 245, 0.55);
-  --auth-accent: #06b6d4;
-  --auth-accent-highlight: #22d3ee;
-  --auth-emerald: #059669;
-  --auth-hairline: rgba(255, 255, 255, 0.1);
-  --auth-input-bg: rgba(255, 255, 255, 0.04);
-  --auth-btn-bg: #ffffff;
-  --auth-btn-fg: #050505;
-  --auth-gradient: linear-gradient(135deg, #06b6d4 0%, #059669 100%);
+  /* --- auth surface ----------------------------------------------------
+     Everything else is inherited from the derivations in the light block:
+     they resolve through --lp-*, which this rule has already redefined on the
+     same element. Only the state colours need a dark-specific value (the
+     light red drops to 1.6:1 on the dark panel). */
+  --auth-danger: #fca5a5;
+  --auth-danger-line: rgba(252, 165, 165, 0.26);
+  --auth-danger-wash: rgba(248, 113, 113, 0.12);
+  --auth-field-border: rgba(150, 214, 221, 0.45);
 }

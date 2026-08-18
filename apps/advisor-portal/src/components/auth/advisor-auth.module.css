@@ -1,0 +1,60 @@
+/**
+ * Advisor auth shell — type re-binding only. No colour, no geometry: those
+ * belong to packages/ui/src/styles/auth.css and must stay there.
+ *
+ * WHY THIS FILE HAS TO EXIST
+ *   A custom property that references other custom properties is substituted
+ *   at computed-value time ON THE ELEMENT WHERE IT IS DECLARED, and
+ *   descendants inherit the already-substituted result. `ethereal.css`
+ *   declares `--lp-font-*` (and the `--auth-font-*` that derive from them) on
+ *   `:root`, i.e. on <html> — but this app, like crm, admin and member-portal,
+ *   puts its next/font variables on <body>. So at :root `--font-body`,
+ *   `--font-display` and `--font-mono` are all undefined, and every
+ *   `--auth-font-*` token resolves to its literal fallback: the auth shell
+ *   would render in system-ui while the rest of the portal renders in Plus
+ *   Jakarta Sans.
+ *
+ *   Re-declaring the six tokens on the auth shell re-runs the substitution
+ *   against the values that ARE in scope there: `--font-body` inherited from
+ *   <body>, and `--font-display` / `--font-mono` supplied by
+ *   `advisorAuthFontVars` on this same element.
+ *
+ *   The declarations below are copied verbatim from the `:root` block in
+ *   packages/ui/src/styles/ethereal.css — including the fallback chains — so
+ *   this file cannot drift into being a second source of truth for type.
+ *
+ *   `.root.root` doubles the specificity for the same reason
+ *   apps/crm/src/components/landing/crm-landing.module.css does: `:root` and
+ *   a single class tie at (0,1,0), and stylesheet order across a global
+ *   import and a CSS module is not something to bet the front door on.
+ */
+
+.root.root {
+  --lp-font-display: var(--font-display, var(--font-heading, 'Plus Jakarta Sans')),
+    'Bricolage Grotesque', system-ui, sans-serif;
+  --lp-font-body: var(--font-body, var(--font-sans, 'Inter')), system-ui, sans-serif;
+  --lp-font-mono: var(--font-mono, 'IBM Plex Mono'), ui-monospace, 'SFMono-Regular',
+    Menlo, monospace;
+
+  --auth-font-display: var(--lp-font-display);
+  --auth-font-body: var(--lp-font-body);
+  --auth-font-mono: var(--lp-font-mono);
+}
+
+/**
+ * The one moving thing left on this surface is the submit/Suspense spinner
+ * (Tailwind's `animate-spin`). auth.css neutralises its own transitions under
+ * `prefers-reduced-motion: reduce` but cannot reach a utility class, and the
+ * spinner is a status indicator — stopping it dead would remove the only
+ * signal that sign-in is in flight. It is slowed instead, which is the
+ * vestibular-safe reading of SC 2.3.3.
+ *
+ * Everything else here is already still by design: quotes are off, the
+ * gradient mesh is two fixed washes, and the record rail is finished rather
+ * than scroll-charged.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .root :global(.animate-spin) {
+    animation-duration: 1.8s;
+  }
+}

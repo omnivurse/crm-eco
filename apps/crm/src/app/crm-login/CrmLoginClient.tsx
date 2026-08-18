@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase-client';
 import {
   AuthSplitLayout,
   AuthHeroPanel,
+  AuthFormError,
   TenantBrandLogo,
   authForm,
 } from '@crm-eco/ui';
@@ -25,6 +26,7 @@ import { ACTIVE_ORG_COOKIE } from '@/lib/login-branding-types';
 import { resolveBrandDisplay } from '@crm-eco/ui/lib/branding';
 import { MFAChallenge } from '@/components/auth';
 import { ThemeToggle } from '@/components/crm/shell/ThemeToggle';
+import styles from '@/styles/crm-auth.module.css';
 
 export interface CrmLoginClientProps {
   brandingContext: LoginBrandingContext | null;
@@ -43,6 +45,23 @@ function persistActiveOrgCookie(organizationId: string) {
   document.cookie = `${ACTIVE_ORG_COOKIE}=${encodeURIComponent(organizationId)}; path=/; max-age=${maxAge}; samesite=lax`;
 }
 
+/**
+ * VISUAL REDESIGN ONLY.
+ *
+ * Unchanged, deliberately and in full: `signInWithPassword`, the `profiles`
+ * select with its `.not('crm_role','is',null)` filter, the `signOut` on a
+ * missing profile, `persistActiveOrgCookie`, `logAuthEvent` and every action
+ * name it posts, the AAL1/AAL2 assurance check behind `enforceMfa`, the
+ * `MFAChallenge` hand-off and its cancel-then-signOut, the
+ * `window.location.href = redirectTo` navigation, every error string, the
+ * field ids, `required`, both `autoComplete` values, and all trust/assurance
+ * copy (it is a compliance claim, not decoration).
+ *
+ * The diff is: tokens instead of Tailwind colour literals, `AuthFormError`
+ * so a failed sign-in is announced, 44px hit areas on the two controls that
+ * were ~20px, and a mobile identity (the shell's AuthBrandBar, fed the
+ * tenant name) where the brand side used to simply vanish below 1024px.
+ */
 export function CrmLoginClient({
   brandingContext,
   redirectTo,
@@ -180,6 +199,10 @@ export function CrmLoginClient({
   return (
     <AuthSplitLayout
       variant="crm"
+      // Below lg the shell now renders AuthBrandBar instead of nothing. The
+      // masthead carries the org when we know it and the platform otherwise;
+      // the product wordline is the form's own eyebrow, just beneath it.
+      brandLabel={tenantLabel ?? 'Double Helix'}
       toolbar={<ThemeToggle variant="icon" className="auth-theme-btn !h-9 !w-9" />}
       hero={
         <AuthHeroPanel
@@ -187,9 +210,11 @@ export function CrmLoginClient({
           headline={
             <>
               <span className="block">Your book,</span>
-              <span className="block bg-gradient-to-r from-cyan-600 to-emerald-600 dark:from-cyan-300 dark:to-emerald-300 bg-clip-text text-transparent">
-                one workspace
-              </span>
+              {/* `.auth-title-accent` instead of `from-cyan-600 to-emerald-600
+                  dark:from-cyan-300 …`: the console remaps Tailwind's cyan
+                  scale onto Muted Spruce, so those literals could never paint
+                  the brand cyan the landings use. */}
+              <span className={`block ${authForm.titleAccent}`}>one workspace</span>
             </>
           }
           subtitle={heroSubtitle}
@@ -209,12 +234,15 @@ export function CrmLoginClient({
               orgName={brandingContext?.orgName}
             />
           </Link>
+          <p className={authForm.eyebrow}>CRM Core</p>
           <h2 className={authForm.title}>Welcome back</h2>
           <p className={authForm.subtitle}>{formSubtitle}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {error && <div className={authForm.error}>{error}</div>}
+          {/* Was a bare <div>: a screen reader never announced a failed
+              sign-in, including the server-rendered `initialError`. */}
+          {error && <AuthFormError>{error}</AuthFormError>}
 
           <div className="space-y-4">
             <div className="space-y-2">
@@ -257,12 +285,15 @@ export function CrmLoginClient({
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   autoComplete="current-password"
-                  className={`${authForm.input} pr-12`}
+                  className={`${authForm.input} pr-14`}
                 />
+                {/* Same handler; it was an unlabelled ~20px icon target. */}
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--auth-muted)] hover:text-[var(--auth-text)] z-10"
+                  className={authForm.fieldAffix}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  aria-pressed={showPassword}
                 >
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
@@ -270,17 +301,25 @@ export function CrmLoginClient({
             </div>
           </div>
 
-          <div className="flex items-center space-x-3">
+          {/* The 20px box keeps its size; `.checkboxHit::before` extends the
+              pointer target to 44px. `htmlFor` names the control and lets the
+              browser forward the label click, which is why the label's own
+              onClick had to go — with both, it toggled twice. */}
+          <div className={styles.checkboxRow}>
             <button
               type="button"
+              id="remember-me"
+              role="checkbox"
+              aria-checked={rememberMe}
+              aria-labelledby="remember-me-label"
               onClick={() => setRememberMe(!rememberMe)}
-              className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
+              className={`${styles.checkboxHit} ${
                 rememberMe ? authForm.checkboxOn : authForm.checkboxOff
               }`}
             >
-              {rememberMe && <Square className="w-2.5 h-2.5 text-white fill-current" />}
+              {rememberMe && <Square className={`${styles.checkboxMark} fill-current`} />}
             </button>
-            <label onClick={() => setRememberMe(!rememberMe)} className={authForm.checkboxLabel}>
+            <label id="remember-me-label" htmlFor="remember-me" className={authForm.checkboxLabel}>
               Remember me for 30 days
             </label>
           </div>
@@ -320,34 +359,39 @@ export function CrmLoginClient({
           </button>
         </form>
 
+        {/* Compliance copy is untouched. What changed is the paint: these were
+            `bg-emerald-500/10 … text-cyan-700 dark:text-cyan-300` literals, all
+            of which resolve through the console's remapped scales. They now
+            carry the two strand pigments from the tokens — cyan leads because
+            this is CRM Core, emerald answers. */}
         <div className="mt-8 space-y-4">
-          <div className="flex items-center justify-center gap-4 flex-wrap">
-            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
-              <Shield className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-              <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-300">HIPAA Compliant</span>
-            </div>
-            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-cyan-500/10 border border-cyan-500/20 rounded-full">
-              <Lock className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
-              <span className="text-xs font-semibold text-cyan-700 dark:text-cyan-300">256-bit Encryption</span>
-            </div>
+          <div className={styles.trustRow}>
+            <span className={`${styles.trustChip} ${styles.trustChipCounter}`}>
+              <Shield className={styles.trustChipIcon} aria-hidden="true" />
+              HIPAA Compliant
+            </span>
+            <span className={styles.trustChip}>
+              <Lock className={styles.trustChipIcon} aria-hidden="true" />
+              256-bit Encryption
+            </span>
           </div>
 
-          <div className="flex items-center justify-center gap-3 text-xs text-[var(--auth-muted)] flex-wrap">
-            <span className="flex items-center gap-1">
-              <Activity className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+          <p className={styles.assuranceRow}>
+            <span className={styles.assuranceItem}>
+              <Activity className={styles.assuranceIcon} aria-hidden="true" />
               MFA Protected
             </span>
-            <span className="w-1 h-1 rounded-full bg-[var(--auth-hairline)]" />
-            <span className="flex items-center gap-1">
-              <Stethoscope className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+            <span className={styles.assuranceSep} aria-hidden="true" />
+            <span className={styles.assuranceItem}>
+              <Stethoscope className={styles.assuranceIcon} aria-hidden="true" />
               PHI Secure
             </span>
-            <span className="w-1 h-1 rounded-full bg-[var(--auth-hairline)]" />
-            <span className="flex items-center gap-1">
-              <Shield className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+            <span className={styles.assuranceSep} aria-hidden="true" />
+            <span className={styles.assuranceItem}>
+              <Shield className={styles.assuranceIcon} aria-hidden="true" />
               Audit Logging
             </span>
-          </div>
+          </p>
 
           <p className={authForm.footer}>
             © 2026 {tenantLabel ?? 'Double Helix Hub'}. All rights reserved.

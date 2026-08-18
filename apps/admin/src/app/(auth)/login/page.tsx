@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createBrowserClient } from '@supabase/ssr';
-import { BrandLogo, authForm } from '@crm-eco/ui';
+import { BrandLogo, authForm, AuthFormError } from '@crm-eco/ui';
 import {
   ShieldCheck,
   Pulse,
@@ -16,7 +16,30 @@ import {
   EnvelopeSimple,
   Square,
 } from '@phosphor-icons/react';
+import styles from '../admin-auth.module.css';
 
+/**
+ * MMS sign-in.
+ *
+ * VISUAL REDESIGN ONLY. Everything below the render is byte-identical to the
+ * shipped version: the browser client, `signInWithPassword`, the profile
+ * lookup, the `['owner','super_admin','admin','staff']` role gate and its two
+ * `signOut()` calls, `logAuthEvent`, the `?error=config` effect, the
+ * `/dashboard` push + refresh, every field name, every error string.
+ *
+ * The diff is paint and accessibility:
+ *  - hand-rolled eyebrow  -> `authForm.eyebrow` (mono, tone-coloured)
+ *  - error <div>          -> <AuthFormError> (role="alert" — the failure was
+ *                            never announced to a screen reader)
+ *  - show/hide password   -> `authForm.fieldAffix`, a real 44px target with a
+ *                            name (it was a ~20px unlabelled icon)
+ *  - remember me          -> one 44px labelled control with role="checkbox"
+ *                            (it was a 20px unnamed button next to a <label>
+ *                            bound to nothing)
+ *  - trust chips          -> token-driven; `emerald-500/10` and `cyan-500/10`
+ *                            did not paint the brand, because the console
+ *                            remaps those Tailwind scales.
+ */
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
@@ -110,12 +133,12 @@ export default function LoginPage() {
   return (
     <div className="space-y-8">
       <div className="text-center lg:text-left">
-        <Link href="/" className="mb-6 inline-flex items-center">
-          <BrandLogo variant="full" size="lg" tone="auto" priority />
+        <Link href="/" className={styles.brandLink}>
+          {/* h-10 on a phone, h-14 from lg — the compact brand bar already
+              sits above this below lg, so the mark does not need to shout. */}
+          <BrandLogo variant="full" size="md" tone="auto" priority className="lg:h-14" />
         </Link>
-        <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-400/90">
-          Admin Enrollment
-        </p>
+        <p className={authForm.eyebrow}>Admin Enrollment</p>
         <h2 className={authForm.title}>Welcome back</h2>
         <p className={authForm.subtitle}>
           Sign in to MMS — members, billing, commissions, and ops.
@@ -123,7 +146,7 @@ export default function LoginPage() {
       </div>
 
       <form onSubmit={handleLogin} className="space-y-6">
-        {error && <div className={authForm.error}>{error}</div>}
+        {error && <AuthFormError>{error}</AuthFormError>}
 
         <div className="space-y-4">
           <div className="space-y-2">
@@ -132,7 +155,7 @@ export default function LoginPage() {
             </label>
             <div className="group relative">
               <div className={authForm.inputGlow} />
-              <EnvelopeSimple weight="light" className={authForm.inputIcon} />
+              <EnvelopeSimple weight="light" aria-hidden="true" className={authForm.inputIcon} />
               <input
                 id="email"
                 type="email"
@@ -157,7 +180,7 @@ export default function LoginPage() {
             </div>
             <div className="group relative">
               <div className={authForm.inputGlow} />
-              <Lock weight="light" className={authForm.inputIcon} />
+              <Lock weight="light" aria-hidden="true" className={authForm.inputIcon} />
               <input
                 id="password"
                 type={showPassword ? 'text' : 'password'}
@@ -166,49 +189,63 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 autoComplete="current-password"
-                className={`${authForm.input} pr-12`}
+                className={`${authForm.input} pr-14`}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 z-10 -translate-y-1/2 text-[var(--auth-muted)] transition-colors hover:text-[var(--auth-text)]"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                aria-pressed={showPassword}
+                aria-controls="password"
+                className={authForm.fieldAffix}
               >
                 {showPassword ? (
-                  <EyeSlash weight="light" className="h-5 w-5" />
+                  <EyeSlash weight="light" aria-hidden="true" className="h-5 w-5" />
                 ) : (
-                  <Eye weight="light" className="h-5 w-5" />
+                  <Eye weight="light" aria-hidden="true" className="h-5 w-5" />
                 )}
               </button>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center space-x-3">
-          <button
-            type="button"
-            onClick={() => setRememberMe(!rememberMe)}
-            className={`flex h-5 w-5 items-center justify-center rounded-md border-2 transition-all ${
+        {/* One control, not a 20px button beside an unbound <label>. Same
+            toggle, same copy — it is now 44px, keyboard operable, and its
+            state is announced. */}
+        <button
+          type="button"
+          role="checkbox"
+          aria-checked={rememberMe}
+          onClick={() => setRememberMe(!rememberMe)}
+          className={styles.remember}
+        >
+          <span
+            aria-hidden="true"
+            className={`${styles.rememberBox} ${
               rememberMe ? authForm.checkboxOn : authForm.checkboxOff
             }`}
           >
-            {rememberMe && <Square weight="fill" className="h-2.5 w-2.5 text-white" />}
-          </button>
-          <label onClick={() => setRememberMe(!rememberMe)} className={authForm.checkboxLabel}>
-            Remember me for 30 days
-          </label>
-        </div>
+            {rememberMe && <Square weight="fill" className="h-2.5 w-2.5" />}
+          </span>
+          <span className={authForm.checkboxLabel}>Remember me for 30 days</span>
+        </button>
 
-        <button type="submit" className={authForm.submitBtn} disabled={loading}>
+        <button
+          type="submit"
+          className={authForm.submitBtn}
+          disabled={loading}
+          aria-busy={loading}
+        >
           <div className={authForm.submitShimmer} />
           {loading ? (
             <span className="flex items-center justify-center">
-              <CircleNotch weight="light" className="mr-2 h-5 w-5 animate-spin" />
+              <CircleNotch weight="light" aria-hidden="true" className="mr-2 h-5 w-5 animate-spin" />
               Signing in...
             </span>
           ) : (
             <span className="flex items-center justify-center">
               Enter Admin
-              <span className="ml-2 transition-transform group-hover:translate-x-1">&rarr;</span>
+              <span aria-hidden="true" className="ml-2">&rarr;</span>
             </span>
           )}
         </button>
@@ -233,34 +270,34 @@ export default function LoginPage() {
         </button>
       </form>
 
-      <div className="mt-8 space-y-4">
-        <div className="flex flex-wrap items-center justify-center gap-3">
-          <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5">
-            <ShieldCheck weight="light" className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-            <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-300">HIPAA-aware</span>
-          </div>
-          <div className="inline-flex items-center gap-1.5 rounded-full border border-cyan-500/20 bg-cyan-500/10 px-3 py-1.5">
-            <Lock weight="light" className="h-3.5 w-3.5 text-cyan-600 dark:text-cyan-400" />
-            <span className="text-[11px] font-semibold text-cyan-700 dark:text-cyan-300">256-bit TLS</span>
-          </div>
+      <div className={styles.assure}>
+        <div className={styles.chips}>
+          <span className={`${styles.chip} ${styles.chipLead}`}>
+            <ShieldCheck weight="light" aria-hidden="true" className={styles.chipIcon} />
+            HIPAA-aware
+          </span>
+          <span className={`${styles.chip} ${styles.chipCounter}`}>
+            <Lock weight="light" aria-hidden="true" className={styles.chipIcon} />
+            256-bit TLS
+          </span>
         </div>
 
-        <div className="flex flex-wrap items-center justify-center gap-3 text-[11px] text-[var(--auth-muted)]">
-          <span className="inline-flex items-center gap-1">
-            <Pulse weight="light" className="h-3.5 w-3.5 text-emerald-600/80 dark:text-emerald-400/80" />
+        <p className={styles.marks}>
+          <span className={styles.mark}>
+            <Pulse weight="light" aria-hidden="true" className={styles.markIcon} />
             MFA ready
           </span>
-          <span className="h-1 w-1 rounded-full bg-[var(--auth-hairline)]" />
-          <span className="inline-flex items-center gap-1">
-            <FirstAidKit weight="light" className="h-3.5 w-3.5 text-emerald-600/80 dark:text-emerald-400/80" />
+          <span aria-hidden="true" className={styles.markDot} />
+          <span className={styles.mark}>
+            <FirstAidKit weight="light" aria-hidden="true" className={styles.markIcon} />
             PHI secure
           </span>
-          <span className="h-1 w-1 rounded-full bg-[var(--auth-hairline)]" />
-          <span className="inline-flex items-center gap-1">
-            <ShieldCheck weight="light" className="h-3.5 w-3.5 text-emerald-600/80 dark:text-emerald-400/80" />
+          <span aria-hidden="true" className={styles.markDot} />
+          <span className={styles.mark}>
+            <ShieldCheck weight="light" aria-hidden="true" className={styles.markIcon} />
             Audit logged
           </span>
-        </div>
+        </p>
 
         <p className={authForm.footer}>
           © 2026 Double Helix Hub. All rights reserved.

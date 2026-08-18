@@ -1,11 +1,1128 @@
 /**
- * Double Helix — Ethereal Glass auth surfaces
- * Light default / dark artifact look via ethereal --auth-* tokens + html.dark.
+ * Double Helix — AUTH SURFACES
+ *
+ * Auth belongs to the landing family (packages/ui/src/styles/landing.css) but
+ * it is a PRODUCT surface, not a brochure: same pigments, same faces, same
+ * radius/shadow scales — less variance, far less motion, higher trust.
+ *
+ * WHY THIS FILE DOES NOT `@import './landing.css'`
+ *   auth.css is pulled into every app's globals.css (crm, admin,
+ *   member-portal, advisor-portal). Importing landing.css here would hoist
+ *   ~2,000 lines of `.lp-*` into four global bundles AND — because css-loader
+ *   dedupes a repeated `@import` to its FIRST position — it would move
+ *   landing.css ahead of the landing CSS modules in apps/crm and apps/admin,
+ *   which document their reliance on loading after it. So the auth rail ships
+ *   its own `.auth-rail-*` vocabulary here. It is the same geometry and the
+ *   same tokens, scoped so it can never reach a shipped landing page.
+ *
+ * Light is the default; `html.dark` (each app's ThemeProvider) flips the
+ * --lp-* tokens that every --auth-* token derives from, so both themes are
+ * designed, not inverted.
  */
 
 @import './ethereal.css';
 
-/* Animated mesh blobs */
+/* ======================================================================
+   1. VARIANT IDENTITY
+   Only two pigments exist in this family (cyan = CRM Core, emerald = Admin
+   Enrollment / MMS); amber is reserved for money moments and is never a
+   brand colour. So the four product surfaces are told apart by WHICH
+   pigment leads and HOW LOUDLY the second strand answers:
+
+     crm      cyan leads,    counter quiet  — CRM Core
+     admin    emerald leads, counter quiet  — Admin Enrollment (MMS)
+     advisor  cyan leads,    counter raised — the advisor works a book (CRM)
+                                              but ships enrollments (MMS)
+     member   emerald leads, counter raised — a member IS the record
+                                              enrollment minted; the mirror
+                                              image of the advisor
+     default  neither leads                 — the house, both strands even
+   ====================================================================== */
+
+[data-auth-variant='crm'] {
+  --auth-tone: var(--lp-cyan);
+  --auth-tone-bright: var(--lp-cyan-bright);
+  --auth-counter: var(--lp-emerald);
+  --auth-focus: var(--lp-cyan);
+  --auth-strand-a: var(--lp-cyan);
+  --auth-strand-b: var(--lp-emerald);
+  --auth-counter-weight: 0.34;
+}
+
+[data-auth-variant='admin'] {
+  --auth-tone: var(--lp-emerald);
+  --auth-tone-bright: var(--lp-emerald-bright);
+  --auth-counter: var(--lp-cyan);
+  --auth-focus: var(--lp-emerald);
+  --auth-strand-a: var(--lp-emerald);
+  --auth-strand-b: var(--lp-cyan);
+  --auth-counter-weight: 0.34;
+}
+
+[data-auth-variant='advisor'] {
+  --auth-tone: var(--lp-cyan);
+  --auth-tone-bright: var(--lp-cyan-bright);
+  --auth-counter: var(--lp-emerald);
+  --auth-focus: var(--lp-cyan);
+  --auth-strand-a: var(--lp-cyan);
+  --auth-strand-b: var(--lp-emerald);
+  --auth-counter-weight: 0.7;
+}
+
+[data-auth-variant='member'] {
+  --auth-tone: var(--lp-emerald);
+  --auth-tone-bright: var(--lp-emerald-bright);
+  --auth-counter: var(--lp-cyan);
+  --auth-focus: var(--lp-emerald);
+  --auth-strand-a: var(--lp-emerald);
+  --auth-strand-b: var(--lp-cyan);
+  --auth-counter-weight: 0.7;
+}
+
+[data-auth-variant='default'] {
+  --auth-tone: var(--lp-cyan);
+  --auth-tone-bright: var(--lp-cyan-bright);
+  --auth-counter: var(--lp-emerald);
+  --auth-focus: var(--lp-cyan);
+  --auth-strand-a: var(--lp-cyan);
+  --auth-strand-b: var(--lp-emerald);
+  --auth-counter-weight: 0.92;
+}
+
+/* ======================================================================
+   2. SHELL
+   `100dvh`, not `100vh`: on mobile browsers with a collapsing toolbar the
+   viewport unit is the taller "large" viewport, which pushed the submit
+   button under the chrome. 100vh stays first as the fallback for engines
+   without dvh.
+   ====================================================================== */
+
+.auth-shell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--auth-bg);
+  color: var(--auth-text);
+  font-family: var(--auth-font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+.auth-toolbar {
+  position: absolute;
+  z-index: 30;
+  top: max(0.75rem, env(safe-area-inset-top));
+  right: max(0.75rem, env(safe-area-inset-right));
+}
+
+@media (min-width: 640px) {
+  .auth-toolbar {
+    top: max(1.25rem, env(safe-area-inset-top));
+    right: max(1.25rem, env(safe-area-inset-right));
+  }
+}
+
+/* --- brand side ------------------------------------------------------- */
+
+/* Below lg the full hero is replaced by .auth-brandbar, NOT by nothing:
+   most sign-ins happen on a phone and the page still has to be the product.
+   See section 3. */
+.auth-brand-side {
+  display: none;
+}
+
+/* --- form side -------------------------------------------------------- */
+
+.auth-form-side {
+  position: relative;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--auth-panel);
+  padding: 2.25rem 1.5rem max(2.25rem, env(safe-area-inset-bottom));
+  padding-left: max(1.5rem, env(safe-area-inset-left));
+  padding-right: max(1.5rem, env(safe-area-inset-right));
+}
+
+/* One tone wash at the head of the panel — the product's colour, from the
+   token, instead of the v1 `before:from-cyan-500/15` literal. */
+.auth-form-side::before {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 7rem;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--auth-tone) 11%, transparent),
+    transparent
+  );
+}
+
+.auth-form-slot {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 27rem;
+}
+
+@media (min-width: 640px) {
+  .auth-form-side {
+    padding-block: 3rem max(3rem, env(safe-area-inset-bottom));
+    padding-left: max(2.5rem, env(safe-area-inset-left));
+    padding-right: max(2.5rem, env(safe-area-inset-right));
+  }
+}
+
+@media (min-width: 1024px) {
+  .auth-shell {
+    flex-direction: row;
+  }
+  .auth-compact {
+    display: none;
+  }
+  /* flex, not block: the hero (ours or an app's own, which uses `h-full`)
+     then stretches to the panel without depending on a percentage height
+     resolving against a flex item's cross size. */
+  .auth-brand-side {
+    display: flex;
+    position: relative;
+    flex: 0 0 55%;
+    max-width: 55%;
+    overflow: hidden;
+    background: var(--auth-bg);
+  }
+  .auth-brand-side > * {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .auth-form-side {
+    flex: 1 1 45%;
+    border-left: 1px solid var(--auth-hairline);
+  }
+}
+
+@media (min-width: 1280px) {
+  .auth-brand-side {
+    flex-basis: 58%;
+    max-width: 58%;
+  }
+  .auth-form-side {
+    flex-basis: 42%;
+  }
+}
+
+/* ======================================================================
+   3. COMPACT BRAND BAR  (< lg — the phone's identity)
+   A masthead the height of a nav bar: the strand runs edge to edge and the
+   product wordline sits on it like a station. It is ~5.25rem, so the email
+   field is still above the fold on a 667px viewport.
+   ====================================================================== */
+
+/* The wrapper is what the breakpoint hides, so an app that supplies its own
+   `compact` node still disappears at lg without knowing this class. */
+.auth-compact {
+  flex: none;
+}
+
+.auth-brandbar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 5.25rem;
+  padding-top: env(safe-area-inset-top);
+  overflow: hidden;
+  background: var(--auth-bg);
+  border-bottom: 1px solid var(--auth-hairline);
+}
+
+@media (min-width: 640px) {
+  .auth-brandbar {
+    min-height: 6rem;
+  }
+}
+
+/* Short phones: the masthead gives way before the form does. */
+@media (max-height: 700px) {
+  .auth-brandbar {
+    min-height: 4.25rem;
+  }
+  .auth-form-side {
+    padding-top: 1.75rem;
+  }
+}
+
+/* Child selector, not a bare class: `.auth-rail { position: relative }` in
+   section 5 loads later and would otherwise win the tie, dropping the rail
+   back into flow — which pushed the wordline chip off centre and under the
+   theme toggle. */
+.auth-brandbar > .auth-brandbar-rail {
+  position: absolute;
+  inset: 0;
+  opacity: 0.85;
+}
+
+.auth-brandbar-inner {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  max-width: calc(100% - 6rem);
+  padding: 0.45rem 0.9rem;
+  border-radius: var(--auth-r-pill);
+  background: var(--auth-panel);
+  border: 1px solid var(--auth-hairline);
+  box-shadow: var(--auth-shadow-1);
+}
+
+.auth-brandbar-dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--auth-tone);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--auth-tone) 18%, transparent);
+}
+
+.auth-brandbar-label {
+  font-family: var(--auth-font-mono);
+  font-size: 10px;
+  line-height: 1.4;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--auth-muted-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ======================================================================
+   4. HERO (lg and up)
+   Grid: [rail gutter][copy]. The rail is the brand side's spine — it runs
+   the full height of the panel and dissolves at both ends, so it reads as
+   threading through the page rather than sitting on it.
+   ====================================================================== */
+
+.auth-hero {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  height: 100%;
+  min-height: 100%;
+  isolation: isolate;
+}
+
+.auth-hero-atmos {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      ellipse 58% 46% at 78% 8%,
+      color-mix(in srgb, var(--auth-tone) 13%, transparent),
+      transparent 62%
+    ),
+    radial-gradient(
+      ellipse 46% 38% at 6% 66%,
+      color-mix(in srgb, var(--auth-counter) 10%, transparent),
+      transparent 60%
+    ),
+    var(--auth-bg);
+}
+
+.auth-hero-rail {
+  position: relative;
+  z-index: 1;
+  grid-column: 1;
+  align-self: stretch;
+  padding-block: 2rem;
+  padding-inline-start: 2.75rem;
+}
+
+.auth-hero-col {
+  position: relative;
+  z-index: 1;
+  grid-column: 2;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 2rem;
+  padding: 3.5rem 3rem 3rem 2rem;
+  min-width: 0;
+}
+
+@media (min-width: 1280px) {
+  .auth-hero-rail {
+    padding-inline-start: 3.5rem;
+  }
+  .auth-hero-col {
+    padding: 4rem 4rem 3.5rem 2.5rem;
+  }
+}
+
+.auth-hero-body {
+  align-self: center;
+  min-width: 0;
+}
+
+.auth-hero-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0 0 1.15rem;
+  font-family: var(--auth-font-mono);
+  font-size: 11px;
+  line-height: 1;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--auth-muted-soft);
+}
+
+.auth-hero-eyebrow::before {
+  content: '';
+  flex: none;
+  width: 1.5rem;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(
+    90deg,
+    var(--auth-strand-a) 0%,
+    var(--auth-strand-b) 100%
+  );
+}
+
+.auth-hero-display {
+  margin: 0;
+  font-family: var(--auth-font-display);
+  font-size: clamp(2.4rem, 3.5vw, 3.4rem);
+  font-weight: 700;
+  line-height: 1.04;
+  letter-spacing: -0.035em;
+  color: var(--auth-text-strong);
+  text-wrap: balance;
+}
+
+.auth-hero-lede {
+  margin: 1.15rem 0 0;
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: var(--auth-muted);
+  max-width: 46ch;
+}
+
+.auth-hero-slot {
+  margin-top: 2rem;
+}
+
+.auth-hero-foot {
+  align-self: end;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.auth-hero-footline {
+  margin: 0;
+  font-family: var(--auth-font-mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--auth-muted-soft);
+}
+
+/* Short laptops: drop the hero's breathing room before anything clips. */
+@media (min-width: 1024px) and (max-height: 760px) {
+  .auth-hero-col {
+    padding-block: 2.25rem 2rem;
+    gap: 1.25rem;
+  }
+  .auth-hero-display {
+    font-size: clamp(2rem, 2.8vw, 2.6rem);
+  }
+  .auth-hero-lede {
+    margin-top: 0.85rem;
+    font-size: 1rem;
+  }
+}
+
+/* ======================================================================
+   5. RAIL  (AuthRail — the record rail, calm edition)
+   Same geometry and the same strand tokens as the landing spine; the
+   difference is that this one is FINISHED, not scroll-charged. The auth
+   shell does not scroll, so a progress-driven strand would sit permanently
+   half-lit. Every station reads as on.
+   ====================================================================== */
+
+.auth-rail {
+  position: relative;
+  min-width: 0;
+}
+
+/* `tone` forces a lead colour; the default ('inherit') takes whatever the
+   surrounding [data-auth-variant] set, which is what every auth surface
+   wants — the rail and the page cannot disagree about which product this is. */
+.auth-rail[data-tone='cyan'] {
+  --auth-strand-a: var(--lp-cyan);
+  --auth-strand-b: var(--lp-emerald);
+}
+
+.auth-rail[data-tone='emerald'] {
+  --auth-strand-a: var(--lp-emerald);
+  --auth-strand-b: var(--lp-cyan);
+}
+
+.auth-rail-canvas {
+  position: relative;
+  display: grid;
+  gap: 1.1rem;
+  height: 100%;
+}
+
+.auth-rail[data-orientation='vertical'] {
+  --auth-rail-w: 4.25rem;
+}
+
+.auth-rail[data-orientation='vertical'] .auth-rail-canvas {
+  grid-template-columns: var(--auth-rail-w);
+}
+
+/* A DEFINITE label column, not 1fr: the stations are absolutely positioned
+   inside it, and the rail itself sits in an `auto` grid track on the hero, so
+   a flexible track resolves against nothing and the labels spill across the
+   headline. */
+.auth-rail[data-orientation='vertical'][data-stations='true'] .auth-rail-canvas {
+  grid-template-columns: var(--auth-rail-w) 10.5rem;
+}
+
+.auth-rail[data-orientation='vertical'] .auth-rail-svg {
+  width: var(--auth-rail-w);
+  height: 100%;
+}
+
+.auth-rail[data-orientation='horizontal'] .auth-rail-canvas {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.auth-rail[data-orientation='horizontal'] .auth-rail-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.auth-rail-svg {
+  display: block;
+  overflow: visible;
+}
+
+/* Dissolve both ends so the strand threads through the panel instead of
+   floating in it with two cut edges. Mask only — nothing is repainted, so
+   both themes agree. */
+.auth-rail[data-fade='ends'][data-orientation='vertical'] .auth-rail-svg {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    #000 14%,
+    #000 86%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    #000 14%,
+    #000 86%,
+    transparent 100%
+  );
+}
+
+.auth-rail[data-fade='ends'][data-orientation='horizontal'] .auth-rail-svg {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    #000 12%,
+    #000 88%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    #000 12%,
+    #000 88%,
+    transparent 100%
+  );
+}
+
+/* The SVG is stretched to its container (preserveAspectRatio="none") so the
+   spine always spans the full panel whatever the viewport height; the
+   strokes are held to real pixels with vector-effect, so nothing smears. */
+.auth-rail-strand,
+.auth-rail-rung {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.auth-rail-front .auth-rail-strand {
+  opacity: 0.92;
+}
+
+.auth-rail-back .auth-rail-strand {
+  opacity: 0.3;
+}
+
+.auth-rail-back .auth-rail-strand[data-strand='b'] {
+  opacity: calc(0.3 * var(--auth-counter-weight));
+}
+
+.auth-rail-rung {
+  stroke: var(--lp-strand-dim);
+  opacity: 0.6;
+}
+
+/* The second strand is how loudly the OTHER product answers — see the
+   variant table at the top of this file. Quiet (crm/admin) reads as one
+   dominant ribbon; raised (advisor/member) reads as two sides of a seam. */
+.auth-rail-strand[data-strand='b'] {
+  opacity: calc(0.92 * var(--auth-counter-weight));
+}
+
+.auth-rail-rung[data-primary='true'] {
+  stroke: var(--auth-strand-a);
+  opacity: 0.4;
+}
+
+.auth-rail[data-orientation='vertical'] .auth-rail-strand {
+  stroke-width: 3.6;
+}
+.auth-rail[data-orientation='vertical'] .auth-rail-back .auth-rail-strand {
+  stroke-width: 2;
+}
+.auth-rail[data-orientation='vertical'] .auth-rail-rung {
+  stroke-width: 1.3;
+}
+.auth-rail[data-orientation='vertical'] .auth-rail-rung[data-primary='true'] {
+  stroke-width: 1.8;
+}
+
+.auth-rail[data-orientation='horizontal'] .auth-rail-strand {
+  stroke-width: 2.2;
+}
+.auth-rail[data-orientation='horizontal'] .auth-rail-back .auth-rail-strand {
+  stroke-width: 1.3;
+}
+.auth-rail[data-orientation='horizontal'] .auth-rail-rung {
+  stroke-width: 1;
+}
+.auth-rail[data-orientation='horizontal'] .auth-rail-rung[data-primary='true'] {
+  stroke-width: 1.3;
+}
+
+/* --- stations (opt-in; off by default on auth) ------------------------ */
+
+.auth-rail-stations {
+  position: relative;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+.auth-rail-station {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: var(--auth-station-t);
+  transform: translateY(-50%);
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+}
+
+.auth-rail-station::before {
+  content: '';
+  position: absolute;
+  right: 100%;
+  top: 0.5rem;
+  width: 1.1rem;
+  height: 1px;
+  background: var(--auth-hairline-strong);
+}
+
+.auth-rail-station-dot {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  margin-top: 0.3rem;
+  border-radius: 999px;
+  border: 2px solid transparent;
+  box-shadow: 0 0 0 4px var(--auth-bg);
+}
+
+.auth-rail-station[data-tone='a'] .auth-rail-station-dot {
+  background: var(--auth-strand-a);
+  border-color: var(--auth-strand-a);
+}
+
+.auth-rail-station[data-tone='b'] .auth-rail-station-dot {
+  background: var(--auth-strand-b);
+  border-color: var(--auth-strand-b);
+}
+
+.auth-rail-station-text {
+  display: block;
+  min-width: 0;
+}
+
+.auth-rail-station-index {
+  display: block;
+  margin-bottom: 0.2rem;
+  font-family: var(--auth-font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--auth-muted-soft);
+}
+
+.auth-rail-station-label {
+  display: block;
+  overflow-wrap: break-word;
+  font-family: var(--auth-font-display);
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--auth-text);
+}
+
+.auth-rail-station-caption {
+  display: block;
+  overflow-wrap: break-word;
+  margin-top: 0.25rem;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--auth-muted-soft);
+  max-width: 24ch;
+}
+
+/* Labels need real room. Under 1280px the rail stays as a bare spine rather
+   than squeezing the headline. */
+@media (max-width: 1279px) {
+  .auth-rail[data-orientation='vertical'][data-stations='true']
+    .auth-rail-canvas {
+    grid-template-columns: var(--auth-rail-w);
+  }
+  .auth-rail-stations {
+    display: none;
+  }
+}
+
+/* ======================================================================
+   6. FORM FURNITURE
+   These class names ARE the `authForm` string map in
+   packages/ui/src/components/auth/auth-form-styles.ts. Nine files across
+   four apps spread those strings onto their own markup, so the selectors
+   here must stay single-class and side-effect free.
+
+   They live in plain CSS rather than Tailwind literals on purpose: the CRM
+   and Admin consoles remap Tailwind's `cyan` scale onto Muted Spruce
+   (packages/ui/tailwind.preset.ts), so `text-cyan-700` on an auth page did
+   NOT paint the brand cyan — which is a large part of why auth could never
+   match the landings.
+   ====================================================================== */
+
+.auth-title {
+  margin: 0;
+  font-family: var(--auth-font-display);
+  font-size: clamp(1.65rem, 1.2rem + 1.4vw, 2rem);
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: -0.032em;
+  color: var(--auth-text-strong);
+}
+
+/* Leads with the product's own colour — the same two pigments read in the
+   opposite direction for CRM and MMS, exactly like `.lp-gradient` under
+   [data-strand='mms'] on the landings. Both stops clear AA as body text in
+   both themes, so it is safe at any size. */
+.auth-title-accent {
+  background: linear-gradient(
+    135deg,
+    var(--auth-strand-a) 0%,
+    var(--auth-strand-b) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+.auth-subtitle {
+  margin: 0.6rem 0 0;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--auth-muted);
+}
+
+.auth-eyebrow {
+  display: block;
+  margin: 0 0 0.5rem;
+  font-family: var(--auth-font-mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--auth-tone);
+}
+
+.auth-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  color: var(--auth-text);
+}
+
+.auth-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 44px;
+  font-size: 0.85rem;
+  font-weight: 550;
+  color: var(--auth-tone);
+  text-decoration: none;
+  border-radius: var(--auth-r-xs);
+  transition: color var(--auth-dur-fast) var(--auth-ease);
+}
+
+.auth-link:hover {
+  color: var(--auth-text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* --- fields ----------------------------------------------------------- */
+
+.auth-field {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 3.25rem;
+  padding: 0 1rem 0 3rem;
+  font-family: inherit;
+  font-size: 0.95rem;
+  color: var(--auth-text);
+  background: var(--auth-input-bg);
+  border: 1px solid var(--auth-field-border);
+  border-radius: var(--auth-r-md);
+  outline: none;
+  transition:
+    border-color var(--auth-dur-fast) var(--auth-ease),
+    background var(--auth-dur-fast) var(--auth-ease);
+}
+
+.auth-field::placeholder {
+  color: var(--auth-muted-soft);
+  opacity: 1;
+}
+
+.auth-field:hover {
+  border-color: color-mix(in srgb, var(--auth-tone) 45%, var(--auth-field-border));
+}
+
+.auth-field:focus {
+  border-color: var(--auth-tone);
+  background: var(--auth-panel);
+}
+
+/* >= 3:1 against both the panel and the field ground, in both themes. */
+.auth-field:focus-visible {
+  outline: 2px solid var(--auth-focus);
+  outline-offset: 2px;
+}
+
+.auth-field:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.auth-field-icon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  z-index: 2;
+  width: 1.25rem;
+  height: 1.25rem;
+  transform: translateY(-50%);
+  color: var(--auth-muted-soft);
+  pointer-events: none;
+  transition: color var(--auth-dur-fast) var(--auth-ease);
+}
+
+.group:focus-within .auth-field-icon {
+  color: var(--auth-tone);
+}
+
+/* Same rule for markup that does not carry Tailwind's `group` marker. Split
+   into its own block on purpose: a selector LIST is dropped wholesale by any
+   engine that cannot parse one of its selectors, which would take the
+   `.group` rule above down with it. */
+.auth-field-icon:has(~ .auth-field:focus) {
+  color: var(--auth-tone);
+}
+
+/* v1 shipped a blurred gradient bloom behind every field. Auth at 7am does
+   not want a bloom: this is now a quiet tone halo that only appears on
+   focus. The element is kept because nine call sites render it. */
+.auth-field-glow {
+  position: absolute;
+  inset: -3px;
+  z-index: 0;
+  border-radius: calc(var(--auth-r-md) + 3px);
+  pointer-events: none;
+  opacity: 0;
+  background: color-mix(in srgb, var(--auth-tone) 12%, transparent);
+  transition: opacity var(--auth-dur) var(--auth-ease);
+}
+
+.group:focus-within > .auth-field-glow {
+  opacity: 1;
+}
+
+.auth-field-glow:has(~ .auth-field:focus) {
+  opacity: 1;
+}
+
+/* Trailing control inside a field (show/hide password). 44px hit area. */
+.auth-field-affix {
+  position: absolute;
+  right: 0.35rem;
+  top: 50%;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  transform: translateY(-50%);
+  color: var(--auth-muted);
+  background: transparent;
+  border: 0;
+  border-radius: var(--auth-r-sm);
+  cursor: pointer;
+  transition: color var(--auth-dur-fast) var(--auth-ease);
+}
+
+.auth-field-affix:hover {
+  color: var(--auth-text);
+}
+
+.auth-field-affix:focus-visible {
+  outline: 2px solid var(--auth-focus);
+  outline-offset: 2px;
+}
+
+/* --- checkbox --------------------------------------------------------- */
+
+.auth-checkbox-on {
+  background: var(--auth-tone);
+  border-color: var(--auth-tone);
+  color: var(--auth-btn-fg);
+}
+
+.auth-checkbox-off {
+  background: transparent;
+  border-color: var(--auth-field-border);
+}
+
+.auth-checkbox-off:hover {
+  border-color: var(--auth-muted);
+}
+
+.auth-checkbox-on:focus-visible,
+.auth-checkbox-off:focus-visible {
+  outline: 2px solid var(--auth-focus);
+  outline-offset: 2px;
+}
+
+.auth-checkbox-label {
+  font-size: 0.875rem;
+  color: var(--auth-muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+/* --- buttons ---------------------------------------------------------- */
+
+.auth-btn-primary,
+.auth-btn-secondary {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 3.25rem;
+  padding: 0 1.25rem;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  text-align: center;
+  /* Both are used on <a> as well as <button> (AuthSuccessPanel). */
+  text-decoration: none;
+  border-radius: var(--auth-r-pill);
+  cursor: pointer;
+  overflow: hidden;
+  transition:
+    transform var(--auth-dur) var(--auth-ease),
+    background var(--auth-dur) var(--auth-ease),
+    border-color var(--auth-dur) var(--auth-ease),
+    opacity var(--auth-dur) var(--auth-ease);
+}
+
+.auth-btn-primary {
+  background: var(--auth-btn-bg);
+  color: var(--auth-btn-fg);
+  border: 1px solid transparent;
+  box-shadow: var(--auth-shadow-2);
+}
+
+.auth-btn-primary:hover:not(:disabled) {
+  transform: translateY(-1px) scale(0.995);
+}
+
+.auth-btn-primary:active:not(:disabled) {
+  transform: translateY(0) scale(0.98);
+}
+
+.auth-btn-secondary {
+  background: var(--auth-surface);
+  color: var(--auth-text);
+  border: 1px solid var(--auth-field-border);
+}
+
+.auth-btn-secondary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--auth-text) 6%, transparent);
+}
+
+.auth-btn-primary:disabled,
+.auth-btn-secondary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.auth-btn-primary:focus-visible,
+.auth-btn-secondary:focus-visible {
+  outline: 2px solid var(--auth-focus);
+  outline-offset: 3px;
+}
+
+/* Call sites render this as the button's first child. v1 slid a white sheen
+   across on hover; auth keeps a static inset highlight instead — one less
+   thing moving on the front door. */
+.auth-btn-shimmer {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--auth-btn-fg) 14%, transparent) 0%,
+    transparent 46%
+  );
+}
+
+.auth-btn-primary > *:not(.auth-btn-shimmer),
+.auth-btn-secondary > *:not(.auth-btn-shimmer) {
+  position: relative;
+  z-index: 1;
+}
+
+/* --- alerts ----------------------------------------------------------- */
+
+.auth-alert {
+  display: flex;
+  gap: 0.6rem;
+  padding: 0.85rem 1rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--auth-danger);
+  background: var(--auth-danger-wash);
+  border: 1px solid var(--auth-danger-line);
+  border-radius: var(--auth-r-md);
+}
+
+.auth-alert-icon {
+  flex: none;
+  width: 1.05rem;
+  height: 1.05rem;
+  margin-top: 0.15rem;
+}
+
+/* --- divider / footer ------------------------------------------------- */
+
+.auth-divider-line {
+  width: 100%;
+  border-top: 1px solid var(--auth-hairline);
+}
+
+.auth-divider-text {
+  padding: 0 1rem;
+  background: var(--auth-panel);
+  font-family: var(--auth-font-mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--auth-muted-soft);
+}
+
+.auth-footer {
+  font-size: 0.75rem;
+  line-height: 1.6;
+  text-align: center;
+  color: var(--auth-muted-soft);
+}
+
+.auth-footer .auth-link {
+  min-height: 0;
+  font-size: inherit;
+}
+
+/* --- success ---------------------------------------------------------- */
+
+.auth-success-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: 999px;
+  color: var(--auth-ok);
+  background: var(--auth-ok-wash);
+  border: 1px solid var(--auth-ok-line);
+}
+
+.auth-strong {
+  font-weight: 600;
+  color: var(--auth-text);
+}
+
+.auth-note {
+  font-size: 0.875rem;
+  color: var(--auth-muted);
+}
+
+/* ======================================================================
+   7. LEGACY — still consumed
+   `.login-blob*`, `.auth-grain` and the quote transition classes are used by
+   apps/member-portal's own SoftTealAuthHero and by AuthQuoteRotator. They
+   stay until those call sites move to the variant system.
+   ====================================================================== */
+
 .login-blob,
 .login-quote-transition {
   will-change: transform, opacity;
@@ -45,8 +1162,13 @@
 .login-blob-drift-3 { animation: login-blob-drift-3 12s ease-in-out infinite; }
 .login-blob-drift-4 { animation: login-blob-drift-4 20s ease-in-out infinite; }
 
+/* The rotator's cross-fade. Slower and shorter-travelled than v1 (0.8s /
+   12px): on a sign-in page the eye should not be pulled off the password
+   field. */
 .login-quote-transition {
-  transition: opacity 0.8s var(--auth-ease), transform 0.8s var(--auth-ease);
+  transition:
+    opacity 0.55s var(--auth-ease),
+    transform 0.55s var(--auth-ease);
 }
 
 .login-quote-active {
@@ -56,11 +1178,45 @@
 
 .login-quote-inactive {
   opacity: 0;
-  transform: translateY(12px);
+  transform: translateY(6px);
   pointer-events: none;
 }
 
-/* Subtle grain over auth hero */
+.auth-quote {
+  position: relative;
+  min-height: 5.5rem;
+  margin-top: 2.25rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--auth-hairline);
+}
+
+.auth-quote-item {
+  position: absolute;
+  inset: 1.5rem 0 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.auth-quote-text {
+  margin: 0;
+  font-family: var(--auth-font-display);
+  font-size: 1.02rem;
+  line-height: 1.55;
+  letter-spacing: -0.01em;
+  color: var(--auth-text);
+  max-width: 42ch;
+}
+
+.auth-quote-author {
+  margin: 0.5rem 0 0;
+  font-family: var(--auth-font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--auth-muted-soft);
+}
+
 .auth-grain {
   position: absolute;
   inset: 0;
@@ -79,11 +1235,42 @@
   background: var(--auth-input-bg) !important;
 }
 
+.auth-theme-btn:focus-visible {
+  outline: 2px solid var(--auth-focus) !important;
+  outline-offset: 2px;
+}
+
+/* ======================================================================
+   8. REDUCED MOTION / REDUCED TRANSPARENCY
+   ====================================================================== */
+
 @media (prefers-reduced-motion: reduce) {
   .login-blob {
     animation: none !important;
   }
   .login-quote-transition {
     transition: none;
+  }
+  .auth-field,
+  .auth-field-icon,
+  .auth-field-glow,
+  .auth-field-affix,
+  .auth-link,
+  .auth-btn-primary,
+  .auth-btn-secondary {
+    transition: none;
+  }
+  .auth-btn-primary:hover:not(:disabled),
+  .auth-btn-primary:active:not(:disabled) {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .auth-hero-atmos {
+    background: var(--auth-bg);
+  }
+  .auth-field-glow {
+    display: none;
   }
 }

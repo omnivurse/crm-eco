@@ -1,0 +1,171 @@
+/**
+ * Admin (MMS) auth — the handful of pieces the shared auth layer cannot own,
+ * because their SIZE and GROUPING live at this call site rather than in the
+ * `authForm` class map (packages/ui/src/components/auth/auth-form-styles.ts).
+ *
+ * Everything here resolves through `--auth-*` tokens, which derive from the
+ * landing `--lp-*` palette. No Tailwind colour literals: the Admin console
+ * remaps Tailwind's `cyan`/`emerald` scales in packages/ui/tailwind.preset.ts,
+ * so `text-emerald-700` on this page did not paint the brand emerald — which
+ * is why auth could never match the MMS landing.
+ *
+ * Admin leads EMERALD (`--auth-tone`); cyan answers quietly as the counter
+ * strand (`--auth-counter`). Amber is reserved for money moments on the
+ * landing and is deliberately absent here.
+ *
+ * Both themes come from the tokens, so `html.dark` is designed, not inverted.
+ */
+
+/* --- wordmark --------------------------------------------------------- */
+
+.brandLink {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  border-radius: var(--auth-r-sm);
+}
+
+.brandLink:focus-visible {
+  outline: 2px solid var(--auth-focus);
+  outline-offset: 4px;
+}
+
+/* --- remember me ------------------------------------------------------
+   v1 was a bare 20px <button> with no accessible name, beside a <label>
+   that pointed at nothing. This is ONE control: 44px tall, keyboard
+   operable, named by the text it contains. The toggle handler is unchanged.
+   ---------------------------------------------------------------------- */
+
+.remember {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 44px;
+  padding: 0 0.5rem 0 0;
+  background: transparent;
+  border: 0;
+  border-radius: var(--auth-r-sm);
+  text-align: left;
+  cursor: pointer;
+}
+
+.remember:focus-visible {
+  outline: 2px solid var(--auth-focus);
+  outline-offset: 2px;
+}
+
+.rememberBox {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-width: 2px;
+  border-style: solid;
+  border-radius: var(--auth-r-xs);
+  transition:
+    background var(--auth-dur-fast) var(--auth-ease),
+    border-color var(--auth-dur-fast) var(--auth-ease);
+}
+
+/* --- assurance block --------------------------------------------------
+   The sign-in for a benefits operations console has to read as sober, so
+   these are a ruled footer rather than a row of coloured pills. The strings
+   are unchanged; only the paint is.
+   ---------------------------------------------------------------------- */
+
+.assure {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  /* The vertical gap above comes from the page's own `space-y-8` stack, which
+     out-specifies a single class here — so only the rule is declared. */
+  padding-top: 1.35rem;
+  border-top: 1px solid var(--auth-hairline);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.7rem;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  color: var(--auth-text);
+  background: var(--auth-surface);
+  border: 1px solid var(--auth-hairline-strong);
+  border-radius: var(--auth-r-pill);
+}
+
+.chipIcon {
+  flex: none;
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+/* Lead strand = emerald (this product). Counter strand = cyan, quieter. */
+.chipLead .chipIcon {
+  color: var(--auth-tone);
+}
+
+.chipCounter .chipIcon {
+  color: var(--auth-counter);
+}
+
+/* The mono micro-line is the landing's `.lp-eyebrow` register — the family's
+   own voice for machine facts. `text-transform` is presentation only; the
+   DOM text a screen reader announces is untouched. */
+.marks {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  font-family: var(--auth-font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--auth-muted-soft);
+}
+
+.mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.markIcon {
+  flex: none;
+  width: 0.8125rem;
+  height: 0.8125rem;
+  color: var(--auth-tone);
+}
+
+.markDot {
+  flex: none;
+  width: 3px;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--auth-hairline-strong);
+}
+
+/* --- motion -----------------------------------------------------------
+   The shared sheet already stills the fields, links and buttons; this
+   covers the one transition declared above.
+   ---------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .rememberBox {
+    transition: none;
+  }
+}
