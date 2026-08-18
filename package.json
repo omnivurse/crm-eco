@@ -17,6 +17,7 @@
     "build:advisor-portal": "npm run check:conflicts && npm run build:shared && npm run build --workspace=@crm-eco/advisor-portal",
     "build:website": "npm run check:conflicts && npm run build --workspace=@crm-eco/website",
     "build:doublehelixhub": "npm run check:conflicts && npm run build --workspace=@crm-eco/doublehelixhub",
+    "build:cashpay": "npm run check:conflicts && npm run build --workspace=@crm-eco/cashpay",
     "build:all": "npm run check:conflicts && turbo build",
     "dev": "turbo dev",
     "lint": "turbo lint",

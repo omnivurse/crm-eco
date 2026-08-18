@@ -47,6 +47,7 @@ function extractSubdomain(host: string | null): string | null {
     'admin.doublehelixhub.com',
     'crm.doublehelixhub.com',
     'members.doublehelixhub.com',
+    'cashpay.doublehelixhub.com',
     'localhost',
   ];
   if (roots.includes(lower)) return null;

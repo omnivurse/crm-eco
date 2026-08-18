@@ -2,7 +2,7 @@ import { withWorkflow } from 'workflow/next';
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  transpilePackages: ['@crm-eco/ui', '@crm-eco/lib', '@crm-eco/enrollment'],
+  transpilePackages: ['@crm-eco/ui', '@crm-eco/lib', '@crm-eco/enrollment', '@crm-eco/cash-pay'],
 
   experimental: {
     serverActions: {

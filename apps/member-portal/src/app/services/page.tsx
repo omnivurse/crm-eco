@@ -22,6 +22,20 @@ export default async function ServicesPage() {
         description="Enter your ZIP code to discover available healthcare services near you."
         kicker="Services"
       />
+      <div className="rounded-2xl border border-[rgba(11,109,133,0.12)] bg-white/80 p-4 sm:flex sm:items-center sm:justify-between sm:gap-4">
+        <div>
+          <p className="font-medium text-[var(--mp-ink)]">Compare cash prices</p>
+          <p className="mt-0.5 text-sm text-slate-600">
+            Search published cash prices for hospital, pharmacy (RX), imaging, and labs before you book.
+          </p>
+        </div>
+        <a
+          href="/pricing"
+          className="mt-3 inline-flex shrink-0 items-center justify-center rounded-xl bg-[var(--mp-teal)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--mp-teal-soft)] sm:mt-0"
+        >
+          Open price finder
+        </a>
+      </div>
       <ServicesSearch memberZip={(member as any).zip || ''} />
     </div>
   );

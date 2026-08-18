@@ -42,6 +42,7 @@ const ROOT_DOMAINS = [
   'admin.doublehelixhub.com',
   'crm.doublehelixhub.com',
   'members.doublehelixhub.com',
+  'cashpay.doublehelixhub.com',
   'localhost',
   'localhost:3002',
 ];

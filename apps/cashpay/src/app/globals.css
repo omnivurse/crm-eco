@@ -1,0 +1,43 @@
+@import '@crm-eco/ui/styles/theme.css';
+@import '@crm-eco/ui/styles/landing.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --cashpay-signal: #d97706;
+  --cashpay-crm: #06b6d4;
+  --cashpay-mms: #10b981;
+  --background: 210 20% 98%;
+  --foreground: 222 47% 8%;
+  --card: 0 0% 100%;
+  --muted: 210 20% 96%;
+  --muted-foreground: 215 16% 40%;
+  --border: 214 20% 88%;
+  --input: 214 20% 88%;
+}
+
+html.dark {
+  --background: 222 47% 6%;
+  --foreground: 210 20% 98%;
+  --card: 222 40% 8%;
+  --muted: 222 30% 12%;
+  --muted-foreground: 215 16% 70%;
+  --border: 217 20% 18%;
+  --input: 217 20% 18%;
+}
+
+.lp-root {
+  --lp-signal: var(--cashpay-signal);
+}
+
+.cashpay-rate {
+  color: var(--cashpay-signal);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+html {
+  scroll-behavior: smooth;
+}
