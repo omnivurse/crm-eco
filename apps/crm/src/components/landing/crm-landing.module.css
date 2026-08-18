@@ -1,0 +1,358 @@
+/**
+ * CRM landing — page-scoped composition only.
+ *
+ * This is NOT a second design system: every value below either references an
+ * `--lp-*` token or solves a problem the shared stylesheet cannot know about
+ * (which of the two theme stills is painted, how the hero strand threads the
+ * device, how a wide screenshot stays readable on a phone). Anything reusable
+ * belongs in packages/ui/src/styles/landing.css.
+ *
+ * Class names are doubled (`.x.x`) where they must out-specify the shared
+ * `.lp-device-screen > img` / `.lp-bento > .lp-tile[data-span]` rules.
+ */
+
+/* --- landing type ------------------------------------------------------
+ * `--lp-font-display` is declared on :root in ethereal.css, and a custom
+ * property substitutes its `var()`s where it is DECLARED, not where it is
+ * used. The landing's faces are loaded on this element (next/font, landing
+ * scope only), so :root cannot see them and the stack falls through to the
+ * app's heading face. Re-declaring the two tokens here, on the element that
+ * actually carries `--font-display` / `--font-mono`, is what makes the
+ * display face land. The fallback chain is unchanged: if a face cannot be
+ * fetched at build time the page drops to `--font-heading`.               */
+
+.root.root {
+  --lp-font-display: var(--font-display, var(--font-heading, 'Plus Jakarta Sans')),
+    system-ui, sans-serif;
+  --lp-font-mono: var(--font-mono, 'IBM Plex Mono'), ui-monospace, 'SFMono-Regular',
+    Menlo, monospace;
+}
+
+/* --- theme-paired product stills ---------------------------------------
+ * The theme is a class on <html>, not an OS preference, so <picture> with
+ * prefers-color-scheme cannot follow the nav toggle. Both stills ship and
+ * exactly one is painted.                                                */
+
+.lightShot.lightShot {
+  display: block;
+}
+
+.darkShot.darkShot {
+  display: none;
+}
+
+:global(html.dark) .lightShot.lightShot {
+  display: none;
+}
+
+:global(html.dark) .darkShot.darkShot {
+  display: block;
+}
+
+/* --- hero ---------------------------------------------------------------
+ * The strand runs behind the screen rather than beside it: the record rail
+ * threads the page and the product sits on it. It is taller than the device
+ * and masked at both ends, so it reads as a spine passing through the hero
+ * rather than an ornament parked next to it.                              */
+
+.hero.hero {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.06fr);
+}
+
+.heroStage.heroStage {
+  position: relative;
+  display: block;
+}
+
+/* Tripled + attribute, like the MMS module: the rail declares `--lp-spine-w`
+   on itself through `.lp-spine[data-orientation='vertical']`, which ties this
+   selector on specificity and then wins on source order because landing.css
+   loads after the module. Without this the spine silently rendered at the
+   shared 6.5rem — narrow enough that it stopped overlapping the device and
+   read as an ornament parked in the gutter instead of a spine running behind
+   the screen. */
+/* The viewBox locks the strand's height to its width (5 stations, 1:5), so
+   the width is what keeps the spine the same height as the device it runs
+   behind. It is tracked to the viewport rather than fixed: at 8.5rem the
+   strand overshoots the shorter device on a small laptop and its tail lands
+   in the caption. */
+.heroSpine.heroSpine.heroSpine[data-orientation='vertical'] {
+  --lp-spine-w: clamp(6.5rem, 9.5vw, 8.5rem);
+  position: absolute;
+  left: -1.25rem;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.9;
+}
+
+.heroSpine.heroSpine :global(.lp-spine-canvas) {
+  grid-template-columns: var(--lp-spine-w);
+  gap: 0;
+}
+
+.heroDevice.heroDevice {
+  position: relative;
+  z-index: 1;
+  margin-left: 4.5rem;
+}
+
+/* Stacked hero: the strand steps back into the flow beside the screen, and
+   the still is capped at close to its natural size so it stays crisp. */
+@media (max-width: 900px) {
+  .hero.hero {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .heroStage.heroStage {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Same specificity as the desktop rule above, which it has to unset. */
+  .heroSpine.heroSpine.heroSpine[data-orientation='vertical'] {
+    position: relative;
+    top: auto;
+    left: auto;
+    transform: none;
+    flex: 0 0 auto;
+  }
+
+  .heroDevice.heroDevice {
+    flex: 0 1 auto;
+    width: min(100%, 23rem);
+    margin-left: -2.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .heroSpine.heroSpine {
+    display: none;
+  }
+
+  .heroDevice.heroDevice {
+    margin-left: 0;
+  }
+}
+
+/* --- bento --------------------------------------------------------------
+ * Row 1 leads with the desk; row 2 pairs the record with the controls tile;
+ * row 3 is the coverage band, which is a 5.5:1 strip and therefore only
+ * works across the full grid.                                              */
+
+:global(.lp-bento) > :global(.lp-tile).coverageTile.coverageTile {
+  grid-column: span 6;
+}
+
+/* The desk still is the page's biggest claim: give it room to breathe and
+   keep the copy under it rather than beside it. */
+.deskTile.deskTile :global(.lp-tile-media) {
+  margin-bottom: 0.35rem;
+}
+
+/* --- controls tile ------------------------------------------------------
+ * No honest still exists for encryption / audit / role access, so the tile
+ * is typographic. The strand ornament (SVG, aria-hidden, no station text)
+ * fills the space a screenshot would have taken, per the design spec's
+ * "typographic + strand" fallback — it is never a faked UI.                */
+
+.controlsTile.controlsTile :global(.lp-tile-inner) {
+  overflow: hidden;
+}
+
+/* The ornament is a child of the tile body, so the body drops out of the
+   positioning chain and the copy is lifted above it instead. */
+.controlsTile.controlsTile :global(.lp-tile-body) {
+  position: static;
+}
+
+.controlsTile.controlsTile :global(.lp-tile-label),
+.controlsTile.controlsTile :global(.lp-tile-title),
+.controlsTile.controlsTile :global(.lp-tile-text) {
+  position: relative;
+  z-index: 1;
+}
+
+.controlsStrand.controlsStrand.controlsStrand[data-orientation='vertical'] {
+  --lp-spine-w: 6rem;
+  position: absolute;
+  top: -1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.controlsStrand.controlsStrand :global(.lp-spine-canvas) {
+  grid-template-columns: var(--lp-spine-w);
+  gap: 0;
+}
+
+/* --- close --------------------------------------------------------------- */
+
+.closeCore.closeCore {
+  align-items: stretch;
+}
+
+/* The gradient rule that signs the close now lives in landing.css, so both
+   landings carry it. */
+
+.closeCore.closeCore > div:first-child {
+  align-self: center;
+}
+
+.crosslink.crosslink {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.crosslinkArrow {
+  display: inline-block;
+  vertical-align: -1px;
+  margin-left: 0.3rem;
+  transition: transform var(--lp-dur) var(--lp-ease);
+}
+
+.crosslink:hover .crosslinkArrow {
+  transform: translateX(3px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crosslinkArrow,
+  .crosslink:hover .crosslinkArrow {
+    transition: none;
+    transform: none;
+  }
+}
+
+/* --- ledger chips --------------------------------------------------------
+ * The mono "record" texture, used where a tile's truth is a set of fields
+ * rather than a screenshot. Every chip names something the product already
+ * claims — a field visible in the stills, or a module of MMS.              */
+
+.chips {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 1.15rem 0 0;
+  padding: 0;
+}
+
+.chips > * {
+  font-family: var(--lp-font-mono);
+  font-size: 10px;
+  line-height: 1;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--lp-chip-fg);
+  background: var(--lp-chip-bg);
+  border: 1px solid var(--lp-chip-border);
+  border-radius: var(--lp-r-xs);
+  padding: 0.45rem 0.55rem;
+}
+
+.chipsSignal > *,
+.chipSignal.chipSignal {
+  color: var(--lp-signal);
+  background: var(--lp-signal-wash);
+  border-color: var(--lp-signal-line);
+}
+
+/* --- journey -------------------------------------------------------------
+ * The rail places its own stations against the strand (stem + dot), so the
+ * page only decides how the copy around it sits.                           */
+
+.journey.journey :global(.lp-journey-note) {
+  margin-inline: auto;
+  text-align: center;
+}
+
+/* Below md the journey swaps its horizontal rail for the vertical spine.
+   The SVG's height is locked to its width by the viewBox, so the shared
+   4.25rem spine is too short for five captioned stations and they collide.
+   Widening the spine lengthens it in step, which both fixes the overlap and
+   keeps the strand a real presence on a phone. */
+
+@media (max-width: 768px) {
+  .journey.journey :global(.lp-journey-v) {
+    --lp-spine-w: 7.5rem;
+  }
+
+  .journey.journey :global(.lp-journey-v .lp-spine-station-caption) {
+    font-size: 0.82rem;
+    line-height: 1.45;
+    max-width: none;
+  }
+
+  .journey.journey :global(.lp-journey-note) {
+    text-align: left;
+  }
+}
+
+/* --- wide stills on a phone ---------------------------------------------
+ * A 2.4:1 or 5.5:1 screenshot scaled to a 300px column is a smudge: the
+ * queue text stops being readable, which makes the honest still dishonest
+ * about what it shows. Below md the still is pinned near its natural size
+ * and the frame crops to the leading columns, with a fade that says the
+ * screen continues. Nothing is redrawn — it is the same PNG, cropped.      */
+
+@media (max-width: 768px) {
+  :global(.lp-bento) > :global(.lp-tile).coverageTile.coverageTile {
+    grid-column: span 1;
+  }
+
+  .deskTile.deskTile :global(.lp-tile-media),
+  .fieldsTile.fieldsTile :global(.lp-tile-media),
+  .coverageTile.coverageTile :global(.lp-tile-media) {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .deskTile.deskTile :global(.lp-tile-media)::after,
+  .fieldsTile.fieldsTile :global(.lp-tile-media)::after,
+  .coverageTile.coverageTile :global(.lp-tile-media)::after {
+    content: '';
+    position: absolute;
+    inset: 0 0 0 auto;
+    width: 3.5rem;
+    background: linear-gradient(to right, transparent, var(--lp-bezel-inner));
+    pointer-events: none;
+  }
+
+  .deskShot.deskShot {
+    width: 1100px;
+    max-width: none;
+    height: auto;
+  }
+
+  .fieldsShot.fieldsShot {
+    width: 1000px;
+    max-width: none;
+    height: auto;
+  }
+
+  /* The coverage band is 5.5:1. `object-fit` on the next/image element left
+     the tile blank below md, so it uses the same overflow-crop technique as
+     its two siblings (fixed width, auto height) and is nudged left so the
+     window lands on the membership figures rather than the entity name. */
+  .coverageShot.coverageShot {
+    width: 1180px;
+    max-width: none;
+    height: auto;
+    margin-left: -366px;
+  }
+
+  /* The strand ornament crosses the copy once the controls tile collapses to
+     a single column, so it steps out below md. The base rule carries three
+     classes + an attribute selector, so this has to match that specificity or
+     it silently loses and the ornament reappears at ~700px. */
+  .controlsStrand.controlsStrand.controlsStrand[data-orientation='vertical'],
+  .controlsStrand.controlsStrand {
+    display: none;
+  }
+}

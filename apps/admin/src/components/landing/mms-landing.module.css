@@ -1,0 +1,482 @@
+/**
+ * MMS landing — page-scoped composition only.
+ *
+ * This is NOT a second design system: every value below either references an
+ * `--lp-*` token or solves a problem the shared stylesheet cannot know about
+ * (which of the two theme stills is painted, how the strand sits against the
+ * hero device, how wide the console band runs). Anything reusable belongs in
+ * packages/ui/src/styles/landing.css.
+ *
+ * Class names are doubled (`.x.x`) where they must out-specify the shared
+ * `.lp-device-screen > img` / `.lp-tile-media img` rules.
+ */
+
+/* --- landing typefaces, actually applied --------------------------------
+ * `ethereal.css` composes `--lp-font-display` / `--lp-font-mono` on :root,
+ * and a custom property is substituted on the element it is DECLARED on — so
+ * the landing-scoped `--font-display` from `fonts.ts`, which only exists from
+ * `.lp-root` down, never reaches a token computed higher up. Without this the
+ * page silently renders the display face in the console's Plus Jakarta Sans.
+ * Re-declaring the same two tokens here, on the landing root, is what gives
+ * the page Bricolage Grotesque and IBM Plex Mono. The real fix belongs in
+ * ethereal.css (declare them on `.lp-root`, not `:root`); this stays until
+ * then, and both landings need it.                                         */
+
+.root {
+  --lp-font-display: var(--font-display, var(--font-heading, 'Plus Jakarta Sans')),
+    'Bricolage Grotesque', system-ui, sans-serif;
+  --lp-font-mono: var(--font-mono, 'IBM Plex Mono'), ui-monospace, 'SFMono-Regular',
+    Menlo, monospace;
+}
+
+/* --- theme-paired product stills ---------------------------------------
+ * The theme is a class on <html>, not an OS preference, so <picture> with
+ * prefers-color-scheme cannot follow the nav toggle. Both stills ship and
+ * exactly one is painted.                                                */
+
+.lightShot.lightShot {
+  display: block;
+}
+
+.darkShot.darkShot {
+  display: none;
+}
+
+:global(html.dark) .lightShot.lightShot {
+  display: none;
+}
+
+:global(html.dark) .darkShot.darkShot {
+  display: block;
+}
+
+/* --- hero ---------------------------------------------------------------
+ * A masthead, not a split: the CRM hero puts a portrait device beside the
+ * headline, so MMS does the opposite shape. The headline and the lede sit on
+ * either side of a vertical strand — the spine literally runs between the two
+ * halves — and the console then runs the FULL measure underneath, which is
+ * the only width at which its rows stay legible.                          */
+
+.hero.hero {
+  grid-template-columns: minmax(0, 1.1fr) auto minmax(0, 0.76fr);
+  align-items: start;
+  row-gap: clamp(1.75rem, 3vw, 2.75rem);
+  column-gap: clamp(1.5rem, 3vw, 2.75rem);
+  padding-bottom: clamp(3rem, 5vw, 4.5rem);
+}
+
+.heroCopy.heroCopy {
+  grid-column: 1;
+  max-width: 34rem;
+}
+
+/* A masthead line breaks where the sentence does, not where the box ends. */
+.heroLine {
+  display: block;
+}
+
+.heroCopy.heroCopy h1 {
+  font-size: clamp(2.35rem, 4.5vw, 4rem);
+}
+
+.heroSpineCell {
+  position: relative;
+  grid-column: 2;
+  align-self: stretch;
+  width: 4.5rem;
+  min-height: 12rem;
+}
+
+/* The rail declares `--lp-spine-w` on itself, so the override has to beat
+   `.lp-spine[data-orientation='vertical']` on specificity, not order. */
+.heroSpine.heroSpine[data-orientation='vertical'] {
+  --lp-spine-w: 4.5rem;
+  position: absolute;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  pointer-events: none;
+  opacity: 0.92;
+}
+
+.heroSpine.heroSpine :global(.lp-spine-canvas) {
+  grid-template-columns: var(--lp-spine-w);
+  gap: 0;
+}
+
+.heroAside {
+  grid-column: 3;
+  align-self: end;
+  padding-bottom: 0.25rem;
+}
+
+.heroAside .heroLede {
+  margin-top: 0;
+  font-size: 1.05rem;
+}
+
+.heroStrip {
+  grid-column: 1 / -1;
+}
+
+.heroStage.heroStage {
+  grid-column: 1 / -1;
+  display: block;
+}
+
+@media (max-width: 900px) {
+  .hero.hero {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .heroCopy.heroCopy,
+  .heroAside,
+  .heroStrip,
+  .heroStage.heroStage {
+    grid-column: 1;
+  }
+
+  .heroSpineCell {
+    display: none;
+  }
+
+  .heroAside {
+    align-self: start;
+    max-width: 36rem;
+  }
+}
+
+/* --- product stills, and how they survive a phone -----------------------
+ * These are wide desktop surfaces. At 1440 the console runs the full measure
+ * and its rows are legible; at 390 the same image is a grey smear that claims
+ * nothing. So below md each still is cropped to a real DETAIL of itself — a
+ * crop of a real screenshot is still the real screenshot, and the detail is
+ * chosen to carry the tile's claim (the money card, the queue rows, the
+ * member rows).
+ *
+ * The maths is container-independent: the image is sized as a % of the crop
+ * box and offset by a % of the same box, so the visible region in image
+ * pixels depends only on the ratio between those numbers — it does not drift
+ * between a 360px and a 430px phone.                                       */
+
+.crop {
+  display: block;
+}
+
+.consoleDevice :global(.lp-device-screen) {
+  aspect-ratio: 1296 / 501;
+}
+
+.consoleDevice .crop {
+  width: 100%;
+  height: 100%;
+}
+
+/* NB: no `display` here. These classes sit on the same <img> as
+   `.lightShot` / `.darkShot`, which are what hide the still for the theme
+   that is not painted — a `display` declaration at equal specificity would
+   win on source order and show BOTH stills. */
+.consoleShot.consoleShot,
+.queueShot.queueShot,
+.registryShot.registryShot {
+  width: 100%;
+  height: auto;
+  object-fit: fill;
+}
+
+@media (max-width: 768px) {
+  .crop {
+    overflow: hidden;
+  }
+
+  /* Console -> the commissions card and the amber alert above it: the money
+     moment the legend underneath is talking about. */
+  .consoleDevice :global(.lp-device-screen) {
+    aspect-ratio: 13 / 10;
+  }
+  /* -166% put the left cut *through* the revenue card, leaving orphaned
+     figures with their labels sliced off. Measured against the source (cards at
+     1326-1893, gutter 1266-1325), -188% still cut ~28px inside the commissions
+     card and clipped its border; -180% puts the cut at natural x=1296, inside
+     the gutter, so the crop starts on a whole card. */
+  .consoleShot.consoleShot {
+    width: 360%;
+    max-width: none;
+    margin: 0 0 0 -180%;
+  }
+
+  /* Queue -> the first rows, badge and headline: ACH return, application
+     awaiting review, payout batch. */
+  .cropQueue {
+    aspect-ratio: 121 / 100;
+  }
+  .queueShot.queueShot {
+    width: 260%;
+    max-width: none;
+    margin: -9% 0 0 -9%;
+  }
+
+  /* Registry -> the member rows themselves, names and addresses. */
+  .cropRegistry {
+    aspect-ratio: 98 / 100;
+  }
+  .registryShot.registryShot {
+    width: 447%;
+    max-width: none;
+    margin: -8% 0 0 -13%;
+  }
+}
+
+/* --- console (hero stage) -----------------------------------------------
+ * The legend explains the amber accent in words instead of decorating with
+ * it: the colour is semantic, so it gets a key.                           */
+
+.consoleMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem 1.5rem;
+  margin: 0.9rem 0 0;
+}
+
+.consoleCaption {
+  margin: 0;
+  font-family: var(--lp-font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--lp-muted-soft);
+}
+
+.consoleLegend {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-family: var(--lp-font-mono);
+  font-size: 11px;
+  line-height: 1.4;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--lp-signal);
+}
+
+.consoleLegend::before {
+  content: '';
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--lp-signal);
+  box-shadow: 0 0 0 3px var(--lp-signal-wash);
+}
+
+/* --- bento --------------------------------------------------------------
+ * This tile has no still and stretches to the height of the registry still
+ * beside it, so ~300px of it is empty whatever we do with it. Centring the
+ * copy pooled all of that slack into two vague margins. Splitting it instead
+ * — claim at the top, the ledger row of fields pinned to the floor — spends
+ * the same space on a composition: the tile reads as a framed statement with
+ * its record fields along the bottom edge, which is the mono texture the rest
+ * of the page uses. The billing tile answers the same problem with the strand
+ * ornament; using the strand twice in one bento would make the grid look like
+ * wallpaper, so the two tall tiles solve it differently on purpose.        */
+
+.centeredTile :global(.lp-tile-inner) {
+  /* The row height is set by the tall screenshot neighbour. Centring splits the
+     leftover space above and below the copy instead of pooling it under the
+     chips, so the tile reads as composed rather than unfinished. */
+  justify-content: center;
+}
+
+.centeredTile :global(.lp-tile-body) {
+  margin-top: 0;
+  /* Not `flex: 1`: as the inner's only flex child it would grow into all the
+     free space, leaving the inner's `justify-content: center` nothing to
+     distribute and the copy pooled at the top. */
+  flex: 0 1 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* The chips sit directly under the copy. `margin-top: auto` bottom-pinned
+   them against a row height set by the tall screenshot neighbour, which opened
+   a ~270px empty band mid-card at 1440 and read as an unfinished tile. */
+.centeredTile .chips {
+  margin-top: 1.15rem;
+  padding-top: 0;
+}
+
+/* Once the bento is one column the tile is only as tall as its copy, so
+   there is no slack to distribute and the ledger sits back under the body. */
+@media (max-width: 1080px) {
+  .centeredTile :global(.lp-tile-body) {
+    display: block;
+  }
+
+  .centeredTile .chips {
+    margin-top: 1.15rem;
+    padding-top: 0;
+  }
+}
+
+/* --- billing tile -------------------------------------------------------
+ * The two-row billing tile has no honest still — a bank file is not a
+ * screenshot — so instead of centring the copy in half a panel of empty
+ * wash it takes the spec's "typographic + strand" fallback: the copy sits
+ * at the top and the strand turns through the space a still would have
+ * used. It is an ornament with a meaning, never a UI faked out of divs.
+ *
+ * The strand keeps the BRAND gradient here. Amber is the money semantic and
+ * it is already carried by this tile's label and chips; painting the whole
+ * ornament amber as well would turn the panel monochrome and promote the
+ * accent into a second brand colour, which the spec forbids.               */
+
+.billingTile :global(.lp-tile-inner) {
+  justify-content: flex-start;
+  overflow: hidden;
+}
+
+/* The ornament is absolutely placed against the tile, so the body has to
+   drop out of the positioning chain and the copy is lifted above it. */
+.billingTile :global(.lp-tile-body) {
+  margin-top: 0;
+  position: static;
+}
+
+.billingTile :global(.lp-tile-label),
+.billingTile :global(.lp-tile-title),
+.billingTile :global(.lp-tile-text),
+.billingTile .chips {
+  position: relative;
+  z-index: 1;
+}
+
+/* Tripled + attribute: the rail declares `--lp-spine-w` on itself via
+   `.lp-spine[data-orientation='vertical']`, so the override has to win on
+   specificity rather than on source order (landing.css loads after this). */
+.billingStrand.billingStrand.billingStrand[data-orientation='vertical'] {
+  --lp-spine-w: 5.5rem;
+  position: absolute;
+  bottom: -1.25rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.55;
+}
+
+.billingStrand.billingStrand.billingStrand :global(.lp-spine-canvas) {
+  grid-template-columns: var(--lp-spine-w);
+  gap: 0;
+}
+
+/* Once the bento collapses to one column the tile is only as tall as its
+   copy, so there is no space for an ornament and it steps out. */
+@media (max-width: 1080px) {
+  .billingStrand.billingStrand.billingStrand {
+    display: none;
+  }
+
+  .billingTile :global(.lp-tile-inner) {
+    justify-content: center;
+  }
+}
+
+/* Between 769 and 1080 the shared grid halves every span, which leaves six
+   tiles as "one full row + five halves" — a ragged tile on its own. The last
+   one takes the full row instead. Triple class to out-specify
+   `.lp-bento > .lp-tile[data-span]`. */
+@media (min-width: 769px) and (max-width: 1080px) {
+  :global(.lp-bento) > .fullOnTablet.fullOnTablet.fullOnTablet {
+    grid-column: span 6;
+  }
+}
+
+/* --- ledger chips --------------------------------------------------------
+ * The mono "record" texture, used inside tiles whose truth is a set of fields
+ * or steps rather than a screenshot. Every chip below names something that is
+ * visible in one of the stills, so nothing here is a new claim.           */
+
+.chips {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 1.15rem 0 0;
+  padding: 0;
+}
+
+/* `> *` rather than `li`: the same chip row is used inside the cross-link
+   card, where the children are spans in an anchor rather than list items. */
+.chips > * {
+  font-family: var(--lp-font-mono);
+  font-size: 10px;
+  line-height: 1;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--lp-chip-fg);
+  background: var(--lp-chip-bg);
+  border: 1px solid var(--lp-chip-border);
+  border-radius: var(--lp-r-xs);
+  padding: 0.45rem 0.55rem;
+}
+
+.chipsSignal > *,
+.chipSignal.chipSignal {
+  color: var(--lp-signal);
+  background: var(--lp-signal-wash);
+  border-color: var(--lp-signal-line);
+}
+
+/* --- journey ------------------------------------------------------------
+ * Below md the journey swaps its horizontal rail for the vertical spine. The
+ * SVG's height is locked to its width by the viewBox, so the shared 4.25rem
+ * spine is too short for five captioned stations and they collide. Widening
+ * the spine lengthens it in step.                                         */
+
+@media (max-width: 768px) {
+  .journey.journey :global(.lp-journey-v) {
+    --lp-spine-w: 7rem;
+  }
+
+  .journey.journey :global(.lp-journey-v .lp-spine-station-caption) {
+    font-size: 0.82rem;
+    max-width: none;
+  }
+}
+
+/* --- close --------------------------------------------------------------
+ * The cross-link points at the CRM, so it warms toward cyan on hover — the
+ * other strand's colour, not this page's.                                 */
+
+.crosslink.crosslink {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.crosslink.crosslink:hover {
+  border-color: color-mix(in srgb, var(--lp-cyan) 45%, var(--lp-hairline-strong));
+  background: color-mix(in srgb, var(--lp-cyan) 6%, var(--lp-surface));
+}
+
+.crosslinkArrow {
+  display: inline-block;
+  vertical-align: -1px;
+  margin-left: 0.3rem;
+  transition: transform var(--lp-dur) var(--lp-ease);
+}
+
+.crosslink:hover .crosslinkArrow {
+  transform: translateX(3px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crosslinkArrow,
+  .crosslink:hover .crosslinkArrow {
+    transition: none;
+    transform: none;
+  }
+}

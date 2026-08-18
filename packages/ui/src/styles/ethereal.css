@@ -2,43 +2,115 @@
  * Ethereal Glass marketing tokens (CRM + Admin landings / auth).
  * Namespaced as --lp-* / --auth-* so Admin --adm-* shell tokens stay untouched.
  * Follows html.light / html.dark from each app's ThemeProvider (light default).
+ *
+ * v2 — "Double Helix" landing system.
+ * Both themes are designed independently, not inverted:
+ *   dark  = deep ink with a teal cast, so the strand glow has somewhere to sit
+ *   light = paper with a faint cyan cast, ink text, ambient light not glow
+ * The strand runs cyan -> emerald (CRM leads cyan, MMS leads emerald).
+ * --lp-signal (amber) is SEMANTIC: money moments only (commissions, payouts,
+ * billing). It is never a second brand colour.
+ *
+ * DO NOT change any --auth-* token: the auth pages depend on them.
  */
 
 :root,
 html.light {
-  --lp-void: #f7f8fa;
+  /* --- ground --------------------------------------------------------- */
+  --lp-void: #f4f7f8;
   --lp-panel: #ffffff;
-  --lp-fg: #0f172a;
-  --lp-muted: rgba(15, 23, 42, 0.62);
-  --lp-muted-soft: rgba(15, 23, 42, 0.48);
-  --lp-hairline: rgba(15, 23, 42, 0.1);
-  --lp-cyan: #0891b2;
-  --lp-cyan-bright: #06b6d4;
-  --lp-emerald: #059669;
-  --lp-chip-fg: rgba(15, 23, 42, 0.55);
-  --lp-chip-bg: rgba(15, 23, 42, 0.04);
-  --lp-chip-border: rgba(15, 23, 42, 0.08);
-  --lp-bezel-bg: rgba(15, 23, 42, 0.03);
-  --lp-bezel-inner: rgba(255, 255, 255, 0.92);
-  --lp-island-bg: rgba(255, 255, 255, 0.78);
-  --lp-island-shadow:
-    0 1px 2px rgba(15, 23, 42, 0.06),
-    0 12px 40px rgba(15, 23, 42, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9);
-  --lp-btn-primary-bg: #050505;
+  --lp-panel-raised: #ffffff;
+  --lp-panel-sunk: #eaf0f2;
+  --lp-fg: #0b1720;
+  --lp-fg-strong: #050d13;
+  --lp-muted: rgba(11, 23, 32, 0.66);
+  /* Quiet, not unreadable: this paints the 10-11px mono eyebrows, captions
+     and station indices, so it is held at AA (>= 4.5:1) on both --lp-void
+     and --lp-panel. At 0.48 it measured 3.21:1 and failed. */
+  --lp-muted-soft: rgba(11, 23, 32, 0.62);
+  --lp-hairline: rgba(11, 23, 32, 0.11);
+  --lp-hairline-strong: rgba(11, 23, 32, 0.2);
+
+  /* --- strand --------------------------------------------------------- */
+  --lp-cyan: #0e7490;
+  --lp-cyan-bright: #0891b2;
+  --lp-cyan-deep: #155e75;
+  --lp-emerald: #047857;
+  --lp-emerald-bright: #059669;
+  --lp-emerald-deep: #065f46;
+  --lp-strand-a: #0891b2;
+  --lp-strand-b: #059669;
+  --lp-strand-dim: rgba(11, 23, 32, 0.18);
+  --lp-strand-glow: rgba(8, 145, 178, 0.22);
+
+  /* --- semantic signal (money moments ONLY) ---------------------------- */
+  /* AA on the light ground for small text: #b4770e measured 3.49:1 against
+     --lp-void, below the 4.5 minimum. #95620a measures 4.84:1. The brighter
+     tint stays for large/bold display use and for borders + washes. */
+  --lp-signal: #95620a;
+  --lp-signal-bright: #b4770e;
+  --lp-signal-wash: rgba(180, 119, 14, 0.09);
+  --lp-signal-line: rgba(180, 119, 14, 0.28);
+
+  /* --- chrome --------------------------------------------------------- */
+  --lp-chip-fg: rgba(11, 23, 32, 0.62);
+  --lp-chip-bg: rgba(11, 23, 32, 0.04);
+  --lp-chip-border: rgba(11, 23, 32, 0.09);
+  --lp-bezel-bg: rgba(11, 23, 32, 0.035);
+  --lp-bezel-inner: #ffffff;
+  --lp-island-bg: rgba(255, 255, 255, 0.8);
+  --lp-btn-primary-bg: #0b1720;
   --lp-btn-primary-fg: #ffffff;
-  --lp-btn-primary-ico: rgba(255, 255, 255, 0.12);
-  --lp-mesh-1: rgba(6, 182, 212, 0.12);
-  --lp-mesh-2: rgba(5, 150, 105, 0.1);
-  --lp-mesh-3: rgba(8, 145, 178, 0.06);
-  --lp-surface: rgba(15, 23, 42, 0.03);
-  --lp-surface-strong: rgba(255, 255, 255, 0.85);
-  --lp-shadow: 0 20px 50px rgba(15, 23, 42, 0.1), 0 0 40px rgba(6, 182, 212, 0.06);
+  --lp-btn-primary-ico: rgba(255, 255, 255, 0.14);
+  --lp-inset-hilite: rgba(255, 255, 255, 0.9);
+
+  /* --- atmosphere ------------------------------------------------------ */
+  --lp-mesh-1: rgba(8, 145, 178, 0.11);
+  --lp-mesh-2: rgba(5, 150, 105, 0.09);
+  --lp-mesh-3: rgba(180, 119, 14, 0.05);
+  --lp-surface: rgba(11, 23, 32, 0.03);
+  --lp-surface-strong: rgba(255, 255, 255, 0.86);
+  --lp-grain-opacity: 0.022;
+
+  /* --- radius scale (one scale) ---------------------------------------- */
+  --lp-r-xs: 0.5rem;
+  --lp-r-sm: 0.75rem;
+  --lp-r-md: 1rem;
+  --lp-r-lg: 1.5rem;
+  --lp-r-xl: 2rem;
+  --lp-r-pill: 999px;
+  --lp-radius-panel: var(--lp-r-md);
+
+  /* --- shadow scale (one scale) ---------------------------------------- */
+  --lp-shadow-1: 0 1px 2px rgba(11, 23, 32, 0.05);
+  --lp-shadow-2:
+    0 1px 2px rgba(11, 23, 32, 0.05),
+    0 8px 24px rgba(11, 23, 32, 0.06);
+  --lp-shadow-3:
+    0 2px 4px rgba(11, 23, 32, 0.05),
+    0 24px 60px rgba(11, 23, 32, 0.1);
+  --lp-shadow-glow: 0 0 48px rgba(8, 145, 178, 0.14);
+  --lp-shadow: var(--lp-shadow-3);
+  --lp-island-shadow: var(--lp-shadow-2), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+
+  /* --- gradients ------------------------------------------------------- */
   --lp-gradient: linear-gradient(135deg, #0891b2 0%, #059669 100%);
-  --lp-gradient-text: linear-gradient(135deg, #0891b2 0%, #059669 100%);
-  --lp-radius-panel: 1rem;
-  --lp-grain-opacity: 0.03;
+  --lp-gradient-text: linear-gradient(135deg, #0e7490 0%, #047857 100%);
+  --lp-gradient-signal: linear-gradient(135deg, #b4770e 0%, #047857 100%);
+
+  /* --- type ------------------------------------------------------------ */
+  --lp-font-display: var(--font-display, var(--font-heading, 'Plus Jakarta Sans')),
+    'Bricolage Grotesque', system-ui, sans-serif;
+  --lp-font-body: var(--font-body, var(--font-sans, 'Inter')), system-ui, sans-serif;
+  --lp-font-mono: var(--font-mono, 'IBM Plex Mono'), ui-monospace, 'SFMono-Regular',
+    Menlo, monospace;
+
+  /* --- motion ---------------------------------------------------------- */
   --lp-ease: cubic-bezier(0.32, 0.72, 0, 1);
+  --lp-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --lp-dur-fast: 0.18s;
+  --lp-dur: 0.35s;
+  --lp-dur-slow: 0.9s;
 
   --auth-bg: #f7f8fa;
   --auth-panel: #ffffff;
@@ -56,38 +128,83 @@ html.light {
 }
 
 html.dark {
-  --lp-void: #050505;
-  --lp-panel: #0a0a0a;
-  --lp-fg: #f4f4f5;
-  --lp-muted: rgba(244, 244, 245, 0.55);
-  --lp-muted-soft: rgba(244, 244, 245, 0.4);
-  --lp-hairline: rgba(255, 255, 255, 0.1);
-  --lp-cyan: #06b6d4;
-  --lp-cyan-bright: #22d3ee;
-  --lp-emerald: #059669;
-  --lp-chip-fg: rgba(255, 255, 255, 0.55);
-  --lp-chip-bg: rgba(255, 255, 255, 0.05);
-  --lp-chip-border: rgba(255, 255, 255, 0.08);
-  --lp-bezel-bg: rgba(255, 255, 255, 0.03);
-  --lp-bezel-inner: rgba(10, 10, 10, 0.85);
-  --lp-island-bg: rgba(10, 10, 10, 0.72);
-  --lp-island-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.4),
-    0 12px 40px rgba(0, 0, 0, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  --lp-btn-primary-bg: #ffffff;
-  --lp-btn-primary-fg: #050505;
-  --lp-btn-primary-ico: rgba(0, 0, 0, 0.07);
-  --lp-mesh-1: rgba(6, 182, 212, 0.18);
-  --lp-mesh-2: rgba(5, 150, 105, 0.14);
-  --lp-mesh-3: rgba(8, 145, 178, 0.08);
-  --lp-surface: rgba(255, 255, 255, 0.03);
-  --lp-surface-strong: rgba(10, 10, 10, 0.85);
-  --lp-shadow: 0 20px 50px rgba(0, 0, 0, 0.45), 0 0 40px rgba(6, 182, 212, 0.08);
-  --lp-gradient: linear-gradient(135deg, #06b6d4 0%, #059669 100%);
-  --lp-gradient-text: linear-gradient(135deg, #22d3ee 0%, #34d399 100%);
-  --lp-radius-panel: 1rem;
-  --lp-grain-opacity: 0.04;
+  /* --- ground --------------------------------------------------------- */
+  --lp-void: #050b0c;
+  --lp-panel: #0a1416;
+  --lp-panel-raised: #0f1d20;
+  --lp-panel-sunk: #030809;
+  --lp-fg: #e9f2f3;
+  --lp-fg-strong: #ffffff;
+  --lp-muted: rgba(206, 229, 232, 0.64);
+  /* Same AA floor as the light theme: at 0.44 the mono eyebrows and captions
+     measured 3.58:1 on --lp-void and failed. */
+  --lp-muted-soft: rgba(206, 229, 232, 0.56);
+  --lp-hairline: rgba(150, 214, 221, 0.14);
+  --lp-hairline-strong: rgba(150, 214, 221, 0.26);
+
+  /* --- strand --------------------------------------------------------- */
+  --lp-cyan: #22d3ee;
+  --lp-cyan-bright: #67e8f9;
+  --lp-cyan-deep: #0e7490;
+  --lp-emerald: #34d399;
+  --lp-emerald-bright: #6ee7b7;
+  --lp-emerald-deep: #047857;
+  --lp-strand-a: #22d3ee;
+  --lp-strand-b: #34d399;
+  --lp-strand-dim: rgba(150, 214, 221, 0.2);
+  --lp-strand-glow: rgba(34, 211, 238, 0.3);
+
+  /* --- semantic signal (money moments ONLY) ---------------------------- */
+  --lp-signal: #f5b642;
+  --lp-signal-bright: #fbcf76;
+  --lp-signal-wash: rgba(245, 182, 66, 0.12);
+  --lp-signal-line: rgba(245, 182, 66, 0.34);
+
+  /* --- chrome --------------------------------------------------------- */
+  --lp-chip-fg: rgba(206, 229, 232, 0.66);
+  --lp-chip-bg: rgba(150, 214, 221, 0.06);
+  --lp-chip-border: rgba(150, 214, 221, 0.12);
+  --lp-bezel-bg: rgba(150, 214, 221, 0.05);
+  --lp-bezel-inner: #0a1416;
+  --lp-island-bg: rgba(10, 20, 22, 0.74);
+  --lp-btn-primary-bg: #e9f2f3;
+  --lp-btn-primary-fg: #050b0c;
+  --lp-btn-primary-ico: rgba(5, 11, 12, 0.1);
+  --lp-inset-hilite: rgba(150, 214, 221, 0.09);
+
+  /* --- atmosphere ------------------------------------------------------ */
+  --lp-mesh-1: rgba(34, 211, 238, 0.15);
+  --lp-mesh-2: rgba(52, 211, 153, 0.11);
+  --lp-mesh-3: rgba(245, 182, 66, 0.05);
+  --lp-surface: rgba(150, 214, 221, 0.04);
+  --lp-surface-strong: rgba(10, 20, 22, 0.86);
+  --lp-grain-opacity: 0.03;
+
+  /* --- radius scale (one scale) ---------------------------------------- */
+  --lp-r-xs: 0.5rem;
+  --lp-r-sm: 0.75rem;
+  --lp-r-md: 1rem;
+  --lp-r-lg: 1.5rem;
+  --lp-r-xl: 2rem;
+  --lp-r-pill: 999px;
+  --lp-radius-panel: var(--lp-r-md);
+
+  /* --- shadow scale (one scale) ---------------------------------------- */
+  --lp-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --lp-shadow-2:
+    0 1px 2px rgba(0, 0, 0, 0.5),
+    0 8px 24px rgba(0, 0, 0, 0.42);
+  --lp-shadow-3:
+    0 2px 4px rgba(0, 0, 0, 0.5),
+    0 24px 60px rgba(0, 0, 0, 0.55);
+  --lp-shadow-glow: 0 0 56px rgba(34, 211, 238, 0.18);
+  --lp-shadow: var(--lp-shadow-3);
+  --lp-island-shadow: var(--lp-shadow-2), inset 0 1px 0 rgba(150, 214, 221, 0.09);
+
+  /* --- gradients ------------------------------------------------------- */
+  --lp-gradient: linear-gradient(135deg, #22d3ee 0%, #34d399 100%);
+  --lp-gradient-text: linear-gradient(135deg, #67e8f9 0%, #6ee7b7 100%);
+  --lp-gradient-signal: linear-gradient(135deg, #f5b642 0%, #34d399 100%);
 
   --auth-bg: #050505;
   --auth-panel: #0a0a0a;
