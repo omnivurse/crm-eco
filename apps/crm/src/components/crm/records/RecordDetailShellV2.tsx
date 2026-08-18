@@ -167,6 +167,10 @@ import {
   persistRecordScrollTop,
 } from '@/lib/crm/record-section-persistence';
 import {
+  nextHeaderCompact,
+  reanchorScrollAfterHeaderResize,
+} from '@/lib/crm/record-header-compact';
+import {
   scrollRecordFieldIntoView,
   scrollRecordTargetIntoView,
 } from '@/lib/crm/record-section-scroll';
@@ -183,10 +187,6 @@ import {
   buildRecordSearchableRows,
 } from '@/lib/crm/record-field-search';
 import { setRecordCommandContext } from '@/lib/crm/record-command-context';
-
-/** ScrollY where the hero collapses / expands — wide hysteresis avoids bounce. */
-const HEADER_COMPACT_ENTER = 72;
-const HEADER_COMPACT_EXIT = 12;
 
 /**
  * Related-list chips shown when the user has never customised the strip.
@@ -421,9 +421,9 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
   /** Last measured sticky-header height — used to re-anchor scroll when compact toggles. */
   const prevStickyHeaderHeightRef = useRef<number | null>(null);
   /**
-   * Compact toggle direction for the next sticky-height sync. Re-anchoring
-   * scrollTop without this clamp can cross enter/exit thresholds and flicker
-   * the header (shrink → scroll drops → expand → scroll rises → shrink…).
+   * Compact toggle direction for the next sticky-height sync. Re-anchor
+   * parks above ENTER while compacting so a header settle cannot drop
+   * through EXIT and snap the notes list back to the top.
    */
   const compactTransitionRef = useRef<'none' | 'compacting' | 'expanding'>('none');
   const [headerCompact, setHeaderCompact] = useState(false);
@@ -734,15 +734,11 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
     const onScroll = () => {
       const y = root.scrollTop;
       setHeaderCompact((prev) => {
-        if (!prev && y > HEADER_COMPACT_ENTER) {
-          compactTransitionRef.current = 'compacting';
-          return true;
+        const next = nextHeaderCompact(prev, y);
+        if (next.transition !== 'none') {
+          compactTransitionRef.current = next.transition;
         }
-        if (prev && y <= HEADER_COMPACT_EXIT) {
-          compactTransitionRef.current = 'expanding';
-          return false;
-        }
-        return prev;
+        return next.compact;
       });
     };
 
@@ -780,20 +776,12 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
 
       const transition = compactTransitionRef.current;
       compactTransitionRef.current = 'none';
-
-      if (transition === 'compacting') {
-        // Stay above the expand threshold so re-anchor cannot un-compact.
-        root.scrollTop = Math.max(HEADER_COMPACT_EXIT + 1, root.scrollTop + delta);
-        return;
-      }
-      if (transition === 'expanding') {
-        // User reached the top — park at 0 so grow compensation cannot re-compact.
-        root.scrollTop = 0;
-        return;
-      }
-
-      // Non-compact resize (tabs / chips / wrap): keep the same content under the fold.
-      root.scrollTop = Math.max(0, root.scrollTop + delta);
+      root.scrollTop = reanchorScrollAfterHeaderResize({
+        scrollTop: root.scrollTop,
+        delta,
+        transition,
+        headerCompact,
+      });
     };
 
     syncOffsetAndAnchor();
