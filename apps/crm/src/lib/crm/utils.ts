@@ -13,6 +13,42 @@ export function isClinicalGenderFieldKey(fieldKey?: string | null): boolean {
 }
 
 /**
+ * Normalize one database picklist option to the stored value expected by the
+ * current select controls. Most fields use primitive arrays, while labelled
+ * fields use `{ label, value }` objects.
+ */
+function getFieldOptionValue(option: unknown): string | null {
+  if (
+    typeof option === 'string' ||
+    typeof option === 'number' ||
+    typeof option === 'boolean'
+  ) {
+    return String(option);
+  }
+
+  if (option && typeof option === 'object' && !Array.isArray(option)) {
+    const item = option as { label?: unknown; value?: unknown };
+    const candidate = item.value ?? item.label;
+    if (
+      typeof candidate === 'string' ||
+      typeof candidate === 'number' ||
+      typeof candidate === 'boolean'
+    ) {
+      return String(candidate);
+    }
+  }
+
+  return null;
+}
+
+/** Normalize an option array without leaking `[object Object]` into controls. */
+function normalizeFieldOptionArray(options: unknown[]): string[] {
+  return options
+    .map(getFieldOptionValue)
+    .filter((option): option is string => option !== null);
+}
+
+/**
  * Safely extract options array from field.options
  * Handles cases where options might be a string, object, or undefined.
  * This prevents "map is not a function" errors when field.options
@@ -30,6 +66,7 @@ export function isClinicalGenderFieldKey(fieldKey?: string | null): boolean {
  * // All of these return a valid array:
  * getFieldOptions(['a', 'b'])     // ['a', 'b']
  * getFieldOptions('["a","b"]')    // ['a', 'b'] (JSON string)
+ * getFieldOptions([{ label: 'A', value: 'a' }]) // ['a']
  * getFieldOptions('a, b, c')      // ['a', 'b', 'c'] (comma-separated)
  * getFieldOptions(undefined)      // []
  * getFieldOptions(null)           // []
@@ -41,9 +78,9 @@ export function getFieldOptions(options: unknown, fieldKey?: string | null): str
     return [...CLINICAL_GENDER_OPTIONS];
   }
 
-  // If already an array, return it directly
+  // If already an array, normalize primitive and labelled-object options.
   if (Array.isArray(options)) {
-    return options.map(String); // Ensure all items are strings
+    return normalizeFieldOptionArray(options);
   }
 
   // If it's a string, try to parse it
@@ -60,7 +97,7 @@ export function getFieldOptions(options: unknown, fieldKey?: string | null): str
       try {
         const parsed = JSON.parse(trimmed);
         if (Array.isArray(parsed)) {
-          return parsed.map(String);
+          return normalizeFieldOptionArray(parsed);
         }
       } catch {
         // Not valid JSON, fall through to comma-separated handling

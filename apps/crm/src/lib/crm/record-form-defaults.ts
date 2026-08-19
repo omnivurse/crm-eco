@@ -66,6 +66,7 @@ export const CRM_DATA_JSONB_KEYS_SYNCED_TO_ROW_ON_PATCH: readonly string[] = [
   'current_year_start_date',
   'cancellation_date',
   'group_name',
+  'record_origin',
 ];
 
 /**
