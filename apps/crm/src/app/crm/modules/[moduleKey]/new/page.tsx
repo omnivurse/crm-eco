@@ -10,6 +10,7 @@ import {
 } from '@/lib/crm/queries';
 import { createRecordResult, type CreateRecordInput } from '@/lib/crm/mutations';
 import { disabledModuleRedirect } from '@/lib/crm/nav-profile';
+import { buildCrmCreateDataFromFormData } from '@/lib/crm/create-form-data';
 import { RecordDraftAutosave } from '@/components/crm/records/RecordDraftAutosave';
 import {
   UnsavedFormGuard,
@@ -45,6 +46,9 @@ async function NewRecordContent({ params }: PageProps) {
     getFieldsForModule(crmModule.id),
     getDefaultLayout(crmModule.id),
   ]);
+  const fieldTypes = Object.fromEntries(
+    fields.map((field) => [field.key, field.type]),
+  );
 
   /**
    * Server action wired through `useActionState` (see UnsavedFormGuard).
@@ -76,17 +80,13 @@ async function NewRecordContent({ params }: PageProps) {
     // Whole-form payload is fine for CREATE; blank strings are dropped here
     // (and again defensively in record-create-service) so a new record never
     // carries hundreds of empty keys.
-    const data: Record<string, unknown> = {};
     let force = false;
     formData.forEach((value, key) => {
       if (key === CREATE_FORM_FORCE_FIELD) {
         force = value === '1';
-        return;
       }
-      if (key.startsWith('$ACTION') || key === '_action') return;
-      if (typeof value === 'string' && value.trim() === '') return;
-      data[key] = value;
     });
+    const data = buildCrmCreateDataFromFormData(formData, fieldTypes);
 
     const input: CreateRecordInput = {
       org_id: profile.organization_id,
