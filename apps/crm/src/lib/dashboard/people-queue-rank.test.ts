@@ -111,6 +111,18 @@ describe('extractBrief', () => {
     expect(brief.initials).toBe('JD');
   });
 
+  it('does not treat referral_source or a web referrer URL as the referring member', () => {
+    const r = row({
+      id: 'r-ref',
+      data: {
+        referral_source: 'Jennifer Abbott',
+        referrer: 'https://www.google.com/',
+      },
+    });
+    const brief = extractBrief(r, 'contacts', projectQueueRecordData(r, 'contacts'));
+    expect(brief.referringMember).toBeNull();
+  });
+
   it('members: mailing_city projects onto city; plan/member id fall through the chain', () => {
     const r = row({
       id: 'r2',

@@ -122,7 +122,7 @@ const PLAN_KEYS = [
 ] as const;
 const CITY_KEYS = ['mailing_city', 'city'] as const;
 const STATE_KEYS = ['mailing_state', 'state'] as const;
-const REFERRING_KEYS = ['referring_member', 'referral_source'] as const;
+const REFERRING_KEYS = ['referring_member'] as const;
 const MEMBER_ID_KEYS = [
   'member_number',
   'e123_member_id',

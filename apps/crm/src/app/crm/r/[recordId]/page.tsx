@@ -24,6 +24,7 @@ import { RelatedRecordsPanelClient } from '@/components/crm/records/RelatedRecor
 import { RecordOverviewPanel } from '@/components/crm/records/RecordOverviewPanel';
 import { CommunicationsTab } from '@/components/crm/records/CommunicationsTab';
 import { mergeCrmRecordRowIntoFormDefaults } from '@/lib/crm/record-form-defaults';
+import { isLegacyNotesHistoryHtml } from '@/lib/crm/note-dedupe';
 import { NotesPanel } from './NotesPanel';
 import { LegacyNotesCard } from './LegacyNotesCard';
 import { MergedFromToast } from '@/components/crm/records/MergedFromToast';
@@ -193,10 +194,9 @@ async function RecordDetailContent({ params }: PageProps) {
   // filled-count badges update as reps inline-save without a full refresh.
 
   const recordData = record.data || {};
-  const legacyNotes =
-    typeof recordData.notes_history === 'string' && (recordData.notes_history as string).trim() !== ''
-      ? (recordData.notes_history as string)
-      : null;
+  const notesHistoryRaw =
+    typeof recordData.notes_history === 'string' ? recordData.notes_history : '';
+  const legacyNotes = isLegacyNotesHistoryHtml(notesHistoryRaw) ? notesHistoryRaw : null;
 
   // Count legacy entries so the Notes tab badge reflects them too. The full
   // parser lives in LegacyNotesCard (client-only); for the count we mirror its

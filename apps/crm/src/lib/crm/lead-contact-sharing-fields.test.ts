@@ -4,12 +4,36 @@ import {
   bridgeLegacyCarrierToSharingEntity,
   bridgeLegacyHealthSharingReadPaths,
   buildHealthSharingCanonicalBackfillPatch,
+  hasHealthSharingMarketSignal,
   mergeHealthSharingIntoContactData,
   pickHealthSharingFieldsFromData,
   shouldProjectHealthSharingLegacyFields,
 } from './lead-contact-sharing-fields';
 import { mergeCrmDataJsonIntoRowColumns } from './merge-crm-data-json-to-row';
 import { mergeCrmRecordRowIntoFormDefaults } from './record-form-defaults';
+
+describe('hasHealthSharingMarketSignal', () => {
+  it('is false for date-only payloads', () => {
+    expect(hasHealthSharingMarketSignal({ sharing_effective_date: '2026-09-01' })).toBe(
+      false,
+    );
+  });
+
+  it('is true for sharing entity, member tier, or leads membership name', () => {
+    expect(hasHealthSharingMarketSignal({ sharing_entity: 'Sedera' })).toBe(true);
+    expect(hasHealthSharingMarketSignal({ member_tier: 'Member Only' })).toBe(true);
+    expect(hasHealthSharingMarketSignal({ product_type: 'Sedera Select' })).toBe(true);
+  });
+
+  it('does not treat product_type as HS when an insurance plan is also set', () => {
+    expect(
+      hasHealthSharingMarketSignal({
+        product_type: 'Gold PPO',
+        health_insurance_plan_name: 'Cigna Gold',
+      }),
+    ).toBe(false);
+  });
+});
 
 describe('pickHealthSharingFieldsFromData', () => {
   it('extracts populated sharing keys only', () => {
@@ -102,6 +126,26 @@ describe('mergeCrmDataJsonIntoRowColumns sharing sync', () => {
     expect(updates.carrier_id).toBe('11111111-1111-1111-1111-111111111111');
     expect(updates.original_start_date).toBe('2026-07-01');
   });
+
+  it('does not set healthshare from sharing_effective_date alone', () => {
+    const updates = mergeCrmDataJsonIntoRowColumns(
+      { sharing_effective_date: '2026-09-01' },
+      { moduleKey: 'leads' },
+    );
+    expect(updates.market_type).toBeUndefined();
+  });
+
+  it('sets traditional_insurance from insurance plan + start without a sharing entity', () => {
+    const updates = mergeCrmDataJsonIntoRowColumns(
+      {
+        health_insurance_plan_name: 'Cigna Gold',
+        health_insurance_start_date: '2026-09-01',
+      },
+      { moduleKey: 'leads' },
+    );
+    expect(updates.market_type).toBe('traditional_insurance');
+    expect(updates.original_start_date).toBe('2026-09-01');
+  });
 });
 
 describe('bridgeLegacyHealthSharingReadPaths', () => {
@@ -154,11 +198,32 @@ describe('bridgeLegacyHealthSharingReadPaths', () => {
       start_date: '2021-06-01',
       monthly_contribution: '50',
       monthly_premium: '733',
+      member_tier: 'Member Only',
+      coverage_option: 'Member and Family',
     };
     bridgeLegacyHealthSharingReadPaths(base, 'contacts');
     expect(base.sharing_member_id).toBe('CANONICAL');
     expect(base.sharing_effective_date).toBe('2020-01-01');
     expect(base.monthly_contribution).toBe('50');
+    expect(base.member_tier).toBe('Member Only');
+  });
+
+  it('fills blank member_tier from leftover Zoho coverage_option on HealthShare', () => {
+    const base: Record<string, unknown> = {
+      market_type: 'healthshare',
+      coverage_option: 'Member + Family',
+    };
+    bridgeLegacyHealthSharingReadPaths(base, 'contacts');
+    expect(base.member_tier).toBe('Member + Family');
+  });
+
+  it('does not copy coverage_option onto member_tier for insurance rows', () => {
+    const base: Record<string, unknown> = {
+      market_type: 'traditional_insurance',
+      coverage_option: 'Member + Family',
+    };
+    bridgeLegacyHealthSharingReadPaths(base, 'contacts');
+    expect(base.member_tier).toBeUndefined();
   });
 
   it('form defaults merge projects David Lung end-to-end', () => {
@@ -217,6 +282,7 @@ describe('buildHealthSharingCanonicalBackfillPatch', () => {
         monthly_premium: '733',
         iua_amount: '1250',
         sharing_entity: 'Zion Health',
+        coverage_option: 'Member Only',
       },
       { marketType: 'healthshare', moduleKey: 'contacts' },
     );
@@ -224,6 +290,7 @@ describe('buildHealthSharingCanonicalBackfillPatch', () => {
       sharing_member_id: '677910847',
       sharing_effective_date: '2021-06-01',
       monthly_contribution: '733',
+      member_tier: 'Member Only',
     });
   });
 

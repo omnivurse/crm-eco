@@ -9,9 +9,17 @@
  *   4. Build a partial update payload that only touches non-empty CSV cells
  *      (so a blank column in the export does not wipe an existing value)
  *
- * Kept dependency-free so the same code is callable from a Route Handler,
- * a unit test, or a background worker without dragging in `react`/`next`.
+ * Kept free of react/next/supabase so the same code is callable from a Route
+ * Handler, a unit test, or a background worker. The only runtime import is the
+ * pure date/JSONB normalizer shared with every other `crm_records` write path —
+ * diffing MUST use the same normalization as writing, or formatting drift
+ * ("6/1/2026" vs "2026-06-01", "$450" vs 450) reports as a change every month
+ * and overwrites stored values with the CSV's raw string.
  */
+import {
+  isCrmJsonbDateFieldKey,
+  normalizeDateColumnValue,
+} from '@/lib/crm/merge-crm-data-json-to-row';
 import type { CrmRecord } from '@/lib/crm/types';
 
 /** Standard CrmRecord columns that get written to first-class columns
@@ -154,9 +162,48 @@ export function parseCsvLine(line: string): string[] {
   return result.map((s) => s.trim());
 }
 
-/** Split a CSV blob into lines with CRLF / LF / CR support. */
-function splitLines(text: string): string[] {
-  return text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+/**
+ * Split a CSV blob into logical records, honoring quoted fields that span
+ * newlines (Zoho Street / Description columns routinely do). A naive
+ * split-on-newline truncates the quoted value AND turns the continuation
+ * into a spurious extra row whose cells land under the wrong headers —
+ * which can put a valid-looking match key under the wrong column and update
+ * a record with garbage. Throws on an unterminated quote instead of
+ * guessing.
+ */
+function splitCsvRecords(text: string): string[] {
+  const records: string[] = [];
+  let current = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (ch === '"') {
+      if (inQuotes && text[i + 1] === '"') {
+        current += '""';
+        i++;
+        continue;
+      }
+      inQuotes = !inQuotes;
+      current += ch;
+      continue;
+    }
+    if (!inQuotes && (ch === '\n' || ch === '\r')) {
+      if (ch === '\r' && text[i + 1] === '\n') i++;
+      records.push(current);
+      current = '';
+      continue;
+    }
+    current += ch;
+  }
+  if (inQuotes) {
+    throw new Error(
+      'Unterminated quoted field — the file is not a valid CSV export. ' +
+        'Re-export it rather than editing by hand.',
+    );
+  }
+  records.push(current);
+  return records;
 }
 
 /**
@@ -164,7 +211,7 @@ function splitLines(text: string): string[] {
  * dropped. Throws if the file has no header row or no data rows.
  */
 export function parseCsv(text: string): ParsedCsv {
-  const lines = splitLines(text).filter((l) => l.trim().length > 0);
+  const lines = splitCsvRecords(text).filter((l) => l.trim().length > 0);
   if (lines.length < 2) {
     throw new Error('CSV must include a header row and at least one data row');
   }
@@ -221,25 +268,18 @@ export function canonicalizeHeader(header: string): string | null {
 /**
  * Normalize a date-of-birth value to `YYYY-MM-DD` for match comparison.
  * Returns null when empty/unparseable — those rows never match on name+DOB.
+ *
+ * Delegates to the shared write-path normalizer so match keys and stored
+ * values use the same rules (2-digit-year pivot, sentinel + calendar
+ * validation). The old `new Date(s)` fallback is gone: it parsed in the
+ * server's LOCAL timezone and used V8's own century pivot, silently producing
+ * off-by-one-day or wrong-century keys for formats like "6/1/80".
  */
 export function normalizeDobForMatch(value: unknown): string | null {
   if (value === null || value === undefined) return null;
   const s = String(value).trim();
-  if (!s || s === '0000-00-00') return null;
-
-  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
-
-  const us = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-  if (us) {
-    return `${us[3]}-${us[1].padStart(2, '0')}-${us[2].padStart(2, '0')}`;
-  }
-
-  const d = new Date(s);
-  if (Number.isNaN(d.getTime())) return null;
-  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(
-    d.getUTCDate(),
-  ).padStart(2, '0')}`;
+  if (!s) return null;
+  return normalizeDateColumnValue(s);
 }
 
 /**
@@ -365,6 +405,47 @@ function pushTo<V>(map: Map<string, V[]>, key: string, value: V): void {
 // Update payload construction
 // ---------------------------------------------------------------------------
 
+/**
+ * Keys a CSV update must NEVER write, no matter what the file contains.
+ * Notes and authorship are owned by the CRM; identifiers and soft-delete
+ * bookkeeping are owned by the database. A file carrying these columns is
+ * either the wrong file or an export of internal state — ignore the cells.
+ */
+export const PROTECTED_UPDATE_KEYS: ReadonlySet<string> = new Set([
+  'notes',
+  'notes_history',
+  'created_by',
+  'created_at',
+  'updated_at',
+  'id',
+  'org_id',
+  'organization_id',
+  'module_id',
+  'owner_id',
+  'deleted_at',
+  'deleted_by',
+  'deleted_origin',
+  // Provenance / origin-tier bookkeeping: a re-uploaded CRM export must not
+  // rewrite migration-wave labels, and identity keys must not drift via a
+  // row that matched on a different key.
+  'import_source',
+  'source_record_id',
+  'import_batch_id',
+  'record_type',
+  'zoho_id',
+  // Exporter bookkeeping columns. These are metadata ABOUT the file, not
+  // facts about the person: writing them would make every row of every
+  // monthly export look "changed" even when no real field moved, which is
+  // exactly the noise that makes a delta unreviewable. `modified_time` is
+  // still READ off the row for the stale-export flag — this only stops it
+  // being stored.
+  'modified_time',
+  'last_modified_time',
+  'last_modified',
+  'created_time',
+  'last_activity_time',
+]);
+
 export interface UpdatePayload {
   /** First-class column updates (only non-empty values). */
   columns: Partial<
@@ -374,6 +455,98 @@ export interface UpdatePayload {
   mergedData: Record<string, unknown>;
   /** Field-level diff (existing → new) for audit / preview. */
   delta: Record<string, { from: unknown; to: unknown }>;
+  /**
+   * Keys whose CSV cell could not be applied faithfully (unparseable date,
+   * non-numeric string over a stored number, non-boolean over a stored
+   * boolean, scalar over an array/object) — skipped, never written.
+   */
+  invalidKeys: string[];
+  /**
+   * Keys actually modified inside `mergedData`. The writer sanitizes and
+   * mirrors ONLY these — running the full merged blob through the write-path
+   * normalizer silently nulled legacy values in keys the CSV never touched.
+   */
+  changedDataKeys: string[];
+}
+
+/** Resolution of one incoming CSV cell against the stored value. */
+export type IncomingValueResolution =
+  | { kind: 'skip-invalid' }
+  | { kind: 'unchanged' }
+  | { kind: 'set'; value: unknown };
+
+function parseNumericString(value: string): number | null {
+  const cleaned = value.replace(/[$,\s]/g, '');
+  if (!/^-?\d+(\.\d+)?$/.test(cleaned)) return null;
+  const n = Number(cleaned);
+  return Number.isFinite(n) ? n : null;
+}
+
+function parseBooleanString(value: string): boolean | null {
+  const v = value.trim().toLowerCase();
+  if (v === 'true' || v === 'yes' || v === 'y' || v === '1') return true;
+  if (v === 'false' || v === 'no' || v === 'n' || v === '0') return false;
+  return null;
+}
+
+/**
+ * Compare an incoming CSV string against the stored JSONB value using the
+ * same normalization the write path applies, so formatting drift is not a
+ * "change":
+ *
+ *   - date-like keys: both sides through `normalizeDateColumnValue`; an
+ *     unparseable CSV date is SKIPPED (never written) rather than clobbering
+ *     a stored date with garbage
+ *   - stored numbers: numeric-looking CSV strings ("$475.00", "1,200")
+ *     compare and write as numbers, preserving the stored type
+ *   - stored booleans: "Yes"/"No"/"true"/"1" compare and write as booleans
+ *   - everything else: loose string equality (so number 450 vs "450" is not
+ *     a change), CSV string written on a real difference
+ */
+export function resolveIncomingJsonValue(
+  key: string,
+  existing: unknown,
+  csvValue: string,
+): IncomingValueResolution {
+  if (isCrmJsonbDateFieldKey(key)) {
+    const normalized = normalizeDateColumnValue(csvValue);
+    if (normalized === null) return { kind: 'skip-invalid' };
+    const existingNorm =
+      typeof existing === 'string' || existing instanceof Date
+        ? normalizeDateColumnValue(existing)
+        : null;
+    if (existingNorm === normalized) return { kind: 'unchanged' };
+    return { kind: 'set', value: normalized };
+  }
+
+  if (typeof existing === 'number') {
+    const numeric = parseNumericString(csvValue);
+    if (numeric === null) return { kind: 'skip-invalid' };
+    return numeric === existing
+      ? { kind: 'unchanged' }
+      : { kind: 'set', value: numeric };
+  }
+
+  if (typeof existing === 'boolean') {
+    const bool = parseBooleanString(csvValue);
+    if (bool === null) return { kind: 'skip-invalid' };
+    return bool === existing
+      ? { kind: 'unchanged' }
+      : { kind: 'set', value: bool };
+  }
+
+  // A scalar CSV cell must never replace a structured value (multiselect
+  // arrays, nested objects) — there is no faithful string round-trip.
+  if (typeof existing === 'object' && existing !== null) {
+    return { kind: 'skip-invalid' };
+  }
+
+  if (existing === null || existing === undefined) {
+    return { kind: 'set', value: csvValue };
+  }
+  return String(existing) === csvValue
+    ? { kind: 'unchanged' }
+    : { kind: 'set', value: csvValue };
 }
 
 /**
@@ -396,33 +569,54 @@ export function buildUpdatePayload(
   const { overwriteEmpty = false } = options;
   const columns: UpdatePayload['columns'] = {};
   const delta: UpdatePayload['delta'] = {};
+  const invalidKeys: string[] = [];
+  const changedDataKeys: string[] = [];
   const existingData = (record.data || {}) as Record<string, unknown>;
   const mergedData: Record<string, unknown> = { ...existingData };
 
   for (const [key, rawValue] of Object.entries(row.normalized)) {
+    if (PROTECTED_UPDATE_KEYS.has(key)) continue;
     const value = rawValue.trim();
     if (!overwriteEmpty && value.length === 0) continue;
 
     if (STANDARD_COLUMNS.has(key)) {
       const existing = (record as Record<string, unknown>)[key];
-      if (existing !== value) {
+      // Matching is case-insensitive for email, so a case-only difference is
+      // not a change — rewriting the casing would bump updated_at and write
+      // an audit row for thousands of otherwise-unchanged records.
+      const differs =
+        key === 'email' && typeof existing === 'string'
+          ? existing.toLowerCase() !== value.toLowerCase()
+          : existing !== value;
+      if (differs) {
         (columns as Record<string, unknown>)[key] = value;
         delta[key] = { from: existing ?? null, to: value };
       }
       // Mirror into JSONB so module fields backed by `data->>x` stay aligned.
-      if (existingData[key] !== value) {
+      const mirrorDiffers =
+        key === 'email' && typeof existingData[key] === 'string'
+          ? (existingData[key] as string).toLowerCase() !== value.toLowerCase()
+          : existingData[key] !== value;
+      if (mirrorDiffers) {
         mergedData[key] = value;
+        changedDataKeys.push(key);
       }
     } else {
       const existing = existingData[key];
-      if (existing !== value) {
-        mergedData[key] = value;
-        delta[key] = { from: existing ?? null, to: value };
+      const resolved = resolveIncomingJsonValue(key, existing, value);
+      if (resolved.kind === 'skip-invalid') {
+        invalidKeys.push(key);
+        continue;
+      }
+      if (resolved.kind === 'set') {
+        mergedData[key] = resolved.value;
+        changedDataKeys.push(key);
+        delta[key] = { from: existing ?? null, to: resolved.value };
       }
     }
   }
 
-  return { columns, mergedData, delta };
+  return { columns, mergedData, delta, invalidKeys, changedDataKeys };
 }
 
 // ---------------------------------------------------------------------------

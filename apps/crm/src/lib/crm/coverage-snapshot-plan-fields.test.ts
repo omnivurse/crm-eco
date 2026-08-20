@@ -6,6 +6,7 @@ import {
 } from './premium-field-aliases';
 import {
   ENROLLED_BY_LABEL,
+  HEALTH_INSURANCE_PLAN_LABEL,
   MEMBERSHIP_LABEL,
   coerceCoverageSnapshotFieldValue,
   coverageSnapshotEnrolledByLabel,
@@ -101,19 +102,50 @@ describe('selectCoverageSnapshotPlanFields', () => {
     expect(keys).toContain('monthly_contribution');
     expect(keys).toContain('iua_amount');
     expect(keys).toContain('member_tier');
+    expect(keys).not.toContain('coverage_option');
   });
 
-  it('without values a real tier/IUA can be pushed past the cap by empty plan fields (why populated-first exists)', () => {
+  it('hides coverage_option on HealthShare and member_tier on insurance', () => {
+    const healthshare = selectCoverageSnapshotPlanFields({
+      planType: 'healthshare',
+      fields: patriciaHealthshareFields,
+      values: patriciaHealthshareValues,
+    });
+    expect(healthshare.some((f) => f.key === 'coverage_option')).toBe(false);
+    expect(healthshare.some((f) => f.key === 'member_tier')).toBe(true);
+
+    const insurance = selectCoverageSnapshotPlanFields({
+      planType: 'insurance',
+      fields: [
+        { key: 'coverage_option', label: 'Coverage Option', type: 'text' },
+        { key: 'member_tier', label: 'Member Tier', type: 'select' },
+        { key: 'product', label: 'Product', type: 'text' },
+      ],
+      values: {
+        coverage_option: 'Member + Family',
+        member_tier: 'Member + Family',
+        product: 'Gold PPO',
+      },
+    });
+    expect(insurance.some((f) => f.key === 'member_tier')).toBe(false);
+    expect(insurance.some((f) => f.key === 'coverage_option')).toBe(true);
+  });
+
+  it('without values a real tier can be pushed past the cap by empty plan fields (why populated-first exists)', () => {
     const result = selectCoverageSnapshotPlanFields({
       planType: 'healthshare',
       fields: patriciaHealthshareFields,
     });
     const keys = result.map((f) => f.key);
+    // Skipping coverage_option frees a preferred-key slot, so IUA now makes
+    // the 6-row cap; member_tier still sits after it and is dropped until
+    // populated-first ranking runs (the UI always passes values).
+    expect(keys).not.toContain('coverage_option');
+    expect(keys).toContain('iua_amount');
     expect(keys).not.toContain('member_tier');
-    expect(keys).not.toContain('iua_amount');
   });
 
-  it('relabels product → Membership on HealthShare snapshots only', () => {
+  it('relabels product → Health Sharing Membership on HealthShare snapshots only', () => {
     const healthshare = selectCoverageSnapshotPlanFields({
       planType: 'healthshare',
       fields: patriciaHealthshareFields,
@@ -129,6 +161,17 @@ describe('selectCoverageSnapshotPlanFields', () => {
       values: { product: 'Gold PPO' },
     });
     expect(insurance.find((f) => f.key === 'product')?.label).toBe('Product');
+  });
+
+  it('relabels health_insurance_plan_name → Health Insurance Plan on insurance snapshots', () => {
+    const insurance = selectCoverageSnapshotPlanFields({
+      planType: 'insurance',
+      fields: [{ key: 'health_insurance_plan_name', label: 'Plan Name', type: 'text' }],
+      values: { health_insurance_plan_name: 'Cigna Gold' },
+    });
+    expect(insurance.find((f) => f.key === 'health_insurance_plan_name')?.label).toBe(
+      HEALTH_INSURANCE_PLAN_LABEL,
+    );
   });
 
   it('a capacity-label product ("Health Insurance") ranks below a real plan name', () => {
@@ -188,6 +231,20 @@ describe('coverageSnapshotSkipKeysForPlanType', () => {
     expect(skip).not.toContain('monthly_contribution');
     expect(skip).not.toContain('monthly_share');
     expect(skip).toContain('iua_amount');
+    expect(skip).toContain('member_tier');
+    expect(skip).not.toContain('coverage_option');
+  });
+
+  it('hides coverage_option on HealthShare and leaves member_tier visible', () => {
+    const skip = coverageSnapshotSkipKeysForPlanType('healthshare');
+    expect(skip).toContain('coverage_option');
+    expect(skip).not.toContain('member_tier');
+  });
+
+  it('hides neither household-tier key when plan type is unknown', () => {
+    const skip = coverageSnapshotSkipKeysForPlanType('unknown');
+    expect(skip).not.toContain('coverage_option');
+    expect(skip).not.toContain('member_tier');
   });
 });
 

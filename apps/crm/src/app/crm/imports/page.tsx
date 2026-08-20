@@ -21,8 +21,10 @@ import {
   ArrowLeft,
   FileText,
   RefreshCw,
+  Undo2,
 } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
+import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import {
   Select,
   SelectContent,
@@ -33,6 +35,13 @@ import {
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase-client';
 import { useClientAuth } from '@/hooks/useClientAuth';
+import {
+  CREATE_IMPORT_BATCH_SIZE,
+  isCsvUploadName,
+  isExcelUploadName,
+  mappingsFromCsvHeaders,
+} from '@/lib/imports/csv-create-mappings';
+import { MAX_CSV_BYTES, MAX_CSV_ROWS, parseCsv } from '@/lib/imports/csv-update';
 
 interface ImportModule {
   key: string;
@@ -51,7 +60,18 @@ interface ImportJob {
    * `completed_with_errors` means the run finished but some rows failed to
    * write — see error_count. Previously such runs reported plain `completed`.
    */
-  status: 'pending' | 'processing' | 'completed' | 'completed_with_errors' | 'failed';
+  status:
+    | 'pending'
+    | 'processing'
+    | 'completed'
+    | 'completed_with_errors'
+    | 'failed'
+    | 'cancelled';
+  /** 'csv_update' rows came from the governed update path and are undoable. */
+  source_type?: string;
+  /** True only when per-row before-images were recorded for this job. */
+  can_rollback?: boolean;
+  rolled_back_at?: string | null;
   total_rows: number;
   processed_rows: number;
   /** Combined inserted_count + updated_count (the DB has no success_count). */
@@ -114,6 +134,12 @@ function ImportsPageContent() {
   const [importJobs, setImportJobs] = useState<ImportJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [dragActive, setDragActive] = useState(false);
+  const [undoingJobId, setUndoingJobId] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<string | null>(null);
+
+  const canCreateImport = ['crm_admin', 'crm_manager'].includes(
+    authProfile?.crm_role || '',
+  );
 
   const loadImportJobs = useCallback(async () => {
     if (!authProfile) return;
@@ -170,23 +196,36 @@ function ImportsPageContent() {
     setDragActive(false);
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const droppedFile = e.dataTransfer.files[0];
-      if (
-        droppedFile.type === 'text/csv' ||
-        droppedFile.type === 'application/vnd.ms-excel' ||
-        droppedFile.type ===
-          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-      ) {
-        setFile(droppedFile);
-      } else {
-        toast.error('Please upload a CSV or Excel file');
+      if (isExcelUploadName(droppedFile.name)) {
+        toast.error(
+          'Excel is not imported here. Save as CSV, or use the Import wizard for column mapping.',
+        );
+        return;
       }
+      if (!isCsvUploadName(droppedFile.name) && droppedFile.type !== 'text/csv') {
+        toast.error('Please upload a CSV file');
+        return;
+      }
+      setFile(droppedFile);
     }
   }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
+    const next = e.target.files?.[0];
+    if (!next) return;
+    if (isExcelUploadName(next.name)) {
+      toast.error(
+        'Excel is not imported here. Save as CSV, or use the Import wizard for column mapping.',
+      );
+      e.target.value = '';
+      return;
     }
+    if (!isCsvUploadName(next.name) && next.type !== 'text/csv') {
+      toast.error('Please upload a CSV file');
+      e.target.value = '';
+      return;
+    }
+    setFile(next);
   };
 
   const handleImport = async () => {
@@ -200,11 +239,38 @@ function ImportsPageContent() {
       return;
     }
 
+    if (!canCreateImport) {
+      toast.error('Only admins and managers can create records from a CSV');
+      return;
+    }
+
+    if (isExcelUploadName(file.name) || !isCsvUploadName(file.name)) {
+      toast.error('This create path accepts CSV only. Monthly roster updates use Update existing.');
+      return;
+    }
+
+    if (file.size > MAX_CSV_BYTES) {
+      toast.error(`File is too large (max ${Math.round(MAX_CSV_BYTES / (1024 * 1024))} MB)`);
+      return;
+    }
+
     setUploading(true);
+    setUploadProgress('Reading CSV…');
 
     try {
-      // crm_import_jobs uses module_id (uuid) — resolve from the selected
-      // module key against crm_modules first.
+      const text = await file.text();
+      const parsed = parseCsv(text);
+      if (parsed.rows.length > MAX_CSV_ROWS) {
+        toast.error(`This file has ${parsed.rows.length.toLocaleString()} rows (max ${MAX_CSV_ROWS.toLocaleString()})`);
+        return;
+      }
+
+      const mappings = mappingsFromCsvHeaders(parsed.headers);
+      if (mappings.length === 0) {
+        toast.error('No usable column headers in this CSV');
+        return;
+      }
+
       const { data: moduleRow, error: moduleErr } = await supabase
         .from('crm_modules')
         .select('id')
@@ -214,68 +280,122 @@ function ImportsPageContent() {
 
       if (moduleErr || !moduleRow) {
         toast.error('Selected module is unavailable');
-        setUploading(false);
         return;
       }
 
-      // Create import job record. There are no `module_key`, `success_count`
-      // or `file_path` columns in the live schema — module_key + file_path
-      // are preserved inside the JSONB `stats` field for diagnostics; row
-      // counters live in inserted_count/updated_count/error_count.
-      const { data: job, error: jobError } = await supabase
-        .from('crm_import_jobs')
-        .insert({
-          org_id: authProfile.organization_id,
-          module_id: moduleRow.id,
-          file_name: file.name,
-          status: 'pending',
-          source_type: 'csv_upload',
-          total_rows: 0,
-          processed_rows: 0,
-          inserted_count: 0,
-          updated_count: 0,
-          error_count: 0,
-          created_by: authUser.id,
-          stats: { module_key: selectedModule },
-        })
-        .select()
-        .single();
+      const data = parsed.rows.map((row) => row.raw);
+      const batches = Math.ceil(data.length / CREATE_IMPORT_BATCH_SIZE);
+      let totalSuccess = 0;
+      let totalSkipped = 0;
+      let totalErrors = 0;
 
-      if (jobError) throw jobError;
+      for (let i = 0; i < batches; i++) {
+        const start = i * CREATE_IMPORT_BATCH_SIZE;
+        const end = Math.min(start + CREATE_IMPORT_BATCH_SIZE, data.length);
+        setUploadProgress(
+          batches > 1
+            ? `Creating records… batch ${i + 1}/${batches}`
+            : 'Creating records…',
+        );
 
-      // Upload file to storage
-      const filePath = `${authProfile.organization_id}/imports/${job.id}/${file.name}`;
-      const { error: uploadError } = await supabase.storage
-        .from('crm-attachments')
-        .upload(filePath, file);
+        const res = await fetch('/api/crm/import', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            moduleId: moduleRow.id,
+            organizationId: authProfile.organization_id,
+            mappings,
+            data: data.slice(start, end),
+            fileName:
+              batches > 1 ? `${file.name} (batch ${i + 1}/${batches})` : file.name,
+            skipDuplicates: true,
+            onDuplicate: 'skip',
+          }),
+        });
 
-      if (uploadError) throw uploadError;
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          const reason =
+            typeof body.error === 'string' ? body.error : `Batch ${i + 1} failed`;
+          if (totalSuccess > 0 || totalSkipped > 0) {
+            toast.error(
+              `Stopped after batch ${i + 1}: ${reason}. ${totalSuccess} created, ${totalSkipped} skipped so far.`,
+            );
+          } else {
+            toast.error(reason);
+          }
+          await loadImportJobs();
+          return;
+        }
 
-      // Stash the storage path inside stats (no dedicated column) and
-      // move the job to processing.
-      await supabase
-        .from('crm_import_jobs')
-        .update({
-          status: 'processing',
-          stats: { module_key: selectedModule, file_path: filePath },
-        })
-        .eq('id', job.id);
+        totalSuccess += typeof body.success === 'number' ? body.success : 0;
+        totalSkipped += typeof body.skipped === 'number' ? body.skipped : 0;
+        totalErrors += typeof body.errors === 'number' ? body.errors : 0;
+      }
 
-      toast.success('Import started! Processing will continue in the background.');
+      const parts = [
+        `${totalSuccess} created`,
+        totalSkipped > 0 ? `${totalSkipped} skipped (already exist)` : null,
+        totalErrors > 0 ? `${totalErrors} errors` : null,
+      ].filter(Boolean);
+      toast.success(parts.join(' · '));
 
-      // Reset form
       setFile(null);
-      setSelectedModule('');
-
-      // Refresh job list
-      loadImportJobs();
+      await loadImportJobs();
     } catch (error) {
       console.error('Import error:', error);
-      toast.error('Failed to start import');
+      toast.error(
+        error instanceof Error ? error.message : 'Failed to import CSV',
+      );
     } finally {
       setUploading(false);
+      setUploadProgress(null);
     }
   };
+
+  const undoUpdate = useCallback(
+    async (job: ImportJob) => {
+      const confirmed = await confirmDialog({
+        title: `Undo the update from "${job.file_name}"?`,
+        description:
+          'Each field this file changed is put back to what it was — but ONLY where the ' +
+          'value is still what the file wrote. Anything you or your team edited afterwards ' +
+          'is left exactly as it is. Notes are never affected.',
+        confirmLabel: 'Undo this update',
+        cancelLabel: 'Keep it',
+        destructive: true,
+      });
+      if (!confirmed) return;
+
+      setUndoingJobId(job.id);
+      try {
+        const res = await fetch(`/api/crm/imports/${job.id}/rollback`, {
+          method: 'POST',
+        });
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          toast.error(
+            typeof body.error === 'string' ? body.error : 'Could not undo this update',
+          );
+          return;
+        }
+        const kept = body.skippedChangedKeys ?? 0;
+        toast.success(
+          `Restored ${body.restoredRecords} record${body.restoredRecords === 1 ? '' : 's'}` +
+            (kept > 0
+              ? ` — ${kept} field${kept === 1 ? '' : 's'} edited since the import were left alone`
+              : ''),
+        );
+        await loadImportJobs();
+      } catch (err) {
+        console.error('Undo failed:', err);
+        toast.error('Network error — please retry');
+      } finally {
+        setUndoingJobId(null);
+      }
+    },
+    [loadImportJobs],
+  );
 
   const getStatusIcon = (status: ImportJob['status']) => {
     switch (status) {
@@ -293,20 +413,26 @@ function ImportsPageContent() {
   };
 
   const getStatusBadge = (status: ImportJob['status']) => {
-    const styles: Record<ImportJob['status'], string> = {
+    const styles: Partial<Record<ImportJob['status'], string>> & {
+      [k: string]: string;
+    } = {
       completed: 'bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-400',
       completed_with_errors:
         'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400',
       processing: 'bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400',
       failed: 'bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400',
       pending: 'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400',
+      cancelled: 'bg-slate-100 dark:bg-slate-500/20 text-slate-700 dark:text-slate-300',
     };
-    const labels: Record<ImportJob['status'], string> = {
+    const labels: Partial<Record<ImportJob['status'], string>> & {
+      [k: string]: string;
+    } = {
       completed: 'Completed',
       completed_with_errors: 'Completed with errors',
       processing: 'Processing',
       failed: 'Failed',
       pending: 'Pending',
+      cancelled: 'Undone',
     };
     return (
       <span className={`px-2 py-1 text-xs font-medium rounded-full ${styles[status]}`}>
@@ -335,7 +461,7 @@ function ImportsPageContent() {
               Import Data
             </h1>
             <p className="text-slate-500 dark:text-slate-400">
-              Upload CSV or Excel files to import records into your CRM
+              Create new records from a CSV, or update existing ones from a monthly roster
             </p>
           </div>
         </div>
@@ -420,7 +546,7 @@ function ImportsPageContent() {
               <input
                 type="file"
                 onChange={handleFileChange}
-                accept=".csv,.xlsx,.xls"
+                accept=".csv,text/csv"
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
               />
               {file ? (
@@ -451,31 +577,46 @@ function ImportsPageContent() {
                     <p className="font-medium text-slate-900 dark:text-white">
                       Drop your file here or click to browse
                     </p>
-                    <p className="text-sm text-slate-500">
-                      CSV or Excel files (.csv, .xlsx, .xls)
-                    </p>
+                    <p className="text-sm text-slate-500">CSV only (.csv)</p>
                   </div>
                 </div>
               )}
             </div>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-3">
+              Need to review column mapping first?{' '}
+              <Link
+                href="/crm/import"
+                prefetch={false}
+                className="text-teal-600 dark:text-teal-400 underline"
+              >
+                Open the import wizard
+              </Link>
+            </p>
           </div>
+
+          {!canCreateImport && authProfile ? (
+            <p className="text-sm text-amber-700 dark:text-amber-400">
+              Creating records from a CSV is limited to admins and managers. You can still
+              review import history below.
+            </p>
+          ) : null}
 
           {/* Import Button */}
           <Button
-            onClick={handleImport}
-            disabled={!file || !selectedModule || uploading}
+            onClick={() => void handleImport()}
+            disabled={!file || !selectedModule || uploading || !canCreateImport}
             className="w-full"
             size="lg"
           >
             {uploading ? (
               <>
                 <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                Starting Import...
+                {uploadProgress || 'Creating records…'}
               </>
             ) : (
               <>
                 <Upload className="w-5 h-5 mr-2" />
-                Start Import
+                Create records
               </>
             )}
           </Button>
@@ -512,19 +653,19 @@ function ImportsPageContent() {
             <ul className="text-sm text-slate-500 dark:text-slate-400 space-y-2">
               <li className="flex items-start gap-2">
                 <CheckCircle2 className="w-4 h-4 text-green-500 mt-0.5" />
-                Use our templates for best results
+                This form creates new records and skips existing email / phone / name+DOB
               </li>
               <li className="flex items-start gap-2">
                 <CheckCircle2 className="w-4 h-4 text-green-500 mt-0.5" />
-                First row should contain column headers
+                Monthly roster files belong on Update existing — they must not create duplicates
               </li>
               <li className="flex items-start gap-2">
                 <CheckCircle2 className="w-4 h-4 text-green-500 mt-0.5" />
-                Email field is used for duplicate detection
+                First row must be column headers
               </li>
               <li className="flex items-start gap-2">
                 <CheckCircle2 className="w-4 h-4 text-green-500 mt-0.5" />
-                Maximum 10,000 rows per import
+                Maximum {MAX_CSV_ROWS.toLocaleString()} rows per import
               </li>
             </ul>
           </div>
@@ -581,7 +722,43 @@ function ImportsPageContent() {
                       {job.error_count > 0 && `, ${job.error_count} errors`}
                     </p>
                   )}
+                  {job.rolled_back_at && (
+                    <p className="text-xs text-slate-500 mt-1">
+                      Undone {new Date(job.rolled_back_at).toLocaleDateString()}
+                    </p>
+                  )}
                 </div>
+                {job.source_type === 'csv_update' &&
+                  job.can_rollback &&
+                  !job.rolled_back_at &&
+                  // 'processing' is included on purpose: a resumable apply
+                  // pauses there, and an abandoned one never leaves. Those
+                  // half-applied runs are precisely the ones that need an
+                  // undo. The API refuses while a run could still be live.
+                  (job.status === 'completed' ||
+                    job.status === 'completed_with_errors' ||
+                    job.status === 'processing') && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => void undoUpdate(job)}
+                      disabled={undoingJobId === job.id}
+                      title="Put each changed field back, except where it was edited since"
+                    >
+                      {undoingJobId === job.id ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                          Undoing…
+                        </>
+                      ) : (
+                        <>
+                          <Undo2 className="w-3.5 h-3.5 mr-1.5" />
+                          Undo
+                        </>
+                      )}
+                    </Button>
+                  )}
               </div>
             ))}
           </div>

@@ -48,6 +48,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@crm-eco/ui/components/dialog';
+import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import {
   AlertCircle,
   CheckCircle2,
@@ -303,6 +304,29 @@ export function DuplicatesClient({ modules, canBulkMerge }: DuplicatesClientProp
 
   const handleBulkMerge = useCallback(async () => {
     if (!canBulkMerge) return;
+    // One click here can merge — and soft-delete the losing side of — up to
+    // 1,000 pairs per rule across the whole org. Restoring a loser from Trash
+    // brings back an empty shell (its notes/tasks stay on the keeper), so this
+    // is not meaningfully undoable at scale. Make the operator say yes.
+    const confirmed = await confirmDialog({
+      title: 'Auto-merge every safe duplicate pair?',
+      description: (
+        <>
+          This merges up to <strong>1,000 pairs per rule</strong> across the
+          whole organisation in one pass. Notes, tasks, and attachments move to
+          the record that is kept; the other record goes to Trash.
+          <br />
+          <br />
+          Restoring from Trash does <strong>not</strong> undo a merge — the
+          restored record comes back empty. During a data-repair or import
+          programme, merge pairs one at a time instead.
+        </>
+      ),
+      confirmLabel: 'Auto-merge all safe pairs',
+      cancelLabel: 'Cancel',
+      destructive: true,
+    });
+    if (!confirmed) return;
     setIsBulkMerging(true);
     try {
       const res = await fetch('/api/crm/duplicates/bulk-merge', {

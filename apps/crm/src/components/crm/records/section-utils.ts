@@ -11,6 +11,8 @@ import type {
   LayoutSectionAccent,
   LayoutSectionVariant,
 } from '@/lib/crm/types';
+import { shouldShowEndDateFieldInSection } from '@/lib/crm/coverage-end-date-fields';
+import { shouldShowOwnershipFieldInForm } from '@/lib/crm/ownership-field-dedupe';
 
 /**
  * Fields that must not render inside record forms / drawers.
@@ -456,6 +458,7 @@ export function normalizeLegacySectionHeading(key: string, label: string): strin
   const t = label.trim();
   if (t === '') return 'HealthShare';
   if (/^insurance\b/i.test(t)) return 'HealthShare';
+  if (/membership\s*&\s*product/i.test(t)) return 'Product';
   return label;
 }
 
@@ -516,7 +519,7 @@ export function shouldAlwaysShowEmptySection(
 /** Default heading for extra sections inferred only from {@link CrmField.section}. */
 export function fallbackSectionHeadingFromFieldSection(sectionKey: string): string {
   // Legacy Zoho `insurance` holds product / premium / date rows — not the same as `health_sharing`.
-  if (sectionKey === 'insurance') return 'Membership & Product';
+  if (sectionKey === 'insurance') return 'Insurance';
   if (sectionKey === 'health_sharing') return 'HealthShare';
   return titleCaseSectionKey(sectionKey);
 }
@@ -588,6 +591,18 @@ export function getSectionMeta(
     sectionKeys.add(section);
     if (isRecordFormExcludedField(field.key)) {
       if (getSectionNavGroup(section) === 'notes') notesAnchors.add(section);
+      continue;
+    }
+    if (!shouldShowEndDateFieldInSection(field.key, section)) continue;
+    if (
+      !shouldShowOwnershipFieldInForm({
+        fieldKey: field.key,
+        moduleKey,
+        values: recordData,
+        marketType:
+          typeof recordData?.market_type === 'string' ? recordData.market_type : null,
+      })
+    ) {
       continue;
     }
     if (!grouped[section]) grouped[section] = [];

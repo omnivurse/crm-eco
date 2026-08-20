@@ -21,7 +21,10 @@ export interface CoverageSnapshotPlanField {
 }
 
 /** Snapshot label for the membership/product row on HealthShare records. */
-export const MEMBERSHIP_LABEL = 'Membership';
+export const MEMBERSHIP_LABEL = 'Health Sharing Membership';
+
+/** Snapshot / form label for the major-medical plan name. */
+export const HEALTH_INSURANCE_PLAN_LABEL = 'Health Insurance Plan';
 
 /**
  * ONE label for "who enrolled this member" everywhere. The snapshot's
@@ -126,6 +129,7 @@ export const COVERAGE_SNAPSHOT_PREFERRED_KEYS = [
   'insurance_plan_name',
   'plan_name',
   'product',
+  'product_type',
   'health_insurance_premium',
   'plan_type',
   'coverage_option',
@@ -163,6 +167,9 @@ export function coverageSnapshotSkipKeysForPlanType(
       'insurance_plan_name',
       'health_insurance_premium',
       'monthly_premium',
+      // Household tier lives on member_tier for HealthShare; coverage_option is
+      // the insurance / Zoho leftover and must not share the snapshot.
+      'coverage_option',
     ];
   }
   if (planType === 'insurance') {
@@ -233,13 +240,19 @@ export function selectCoverageSnapshotPlanFields<T extends CoverageSnapshotPlanF
   const labeled = applyCoverageSnapshotAmountLabels(ranked.slice(0, maxFields));
 
   // 4. On HealthShare records the membership name IS the product — relabel the
-  //    product row "Membership" so the snapshot names the member's plan.
+  //    product row so the snapshot names the member's sharing membership.
   const finalFields =
     args.planType === 'healthshare'
       ? labeled.map((f) =>
-          f.key === 'product' ? { ...f, label: MEMBERSHIP_LABEL } : f,
+          f.key === 'product' || f.key === 'product_type'
+            ? { ...f, label: MEMBERSHIP_LABEL }
+            : f,
         )
-      : labeled;
+      : labeled.map((f) =>
+          f.key === 'health_insurance_plan_name' || f.key === 'insurance_plan_name'
+            ? { ...f, label: HEALTH_INSURANCE_PLAN_LABEL }
+            : f,
+        );
 
   if (
     process.env.NODE_ENV !== 'production' &&

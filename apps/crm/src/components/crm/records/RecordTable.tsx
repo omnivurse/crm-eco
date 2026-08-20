@@ -48,7 +48,13 @@ import { RecordQueuedBadge } from '@/components/crm/offline/RecordQueuedBadge';
 import { toDatetimeLocalValue } from '@/lib/crm/datetime-local';
 import { ResizeHandle } from './ResizeHandle';
 import { useColumnResize } from '@/hooks/useColumnResize';
+import { ENROLLED_BY_LABEL } from '@/lib/crm/coverage-snapshot-plan-fields';
 import { pickDefaultListColumns } from '@/lib/crm/default-list-columns';
+import {
+  collapseOwnershipListColumns,
+  isOwnershipListColumnKey,
+} from '@/lib/crm/ownership-field-dedupe';
+import { resolveOwnershipName } from '@/lib/crm/ownership-name';
 import {
   CRM_COLUMN_WIDTHS_RESET_EVENT,
   type ColumnWidthsResetDetail,
@@ -758,7 +764,9 @@ export const RecordTable = memo(function RecordTable({
       (view?.columns && view.columns.length > 0 ? view.columns : undefined) ||
       pickDefaultListColumns(fields);
     // Allow columns that exist in fieldMap or are known system columns
-    return columns.filter((col) => fieldMap[col] || SYSTEM_COLUMNS.includes(col));
+    return collapseOwnershipListColumns(
+      columns.filter((col) => fieldMap[col] || SYSTEM_COLUMNS.includes(col)),
+    );
   }, [explicitColumns, view?.columns, fields, fieldMap]);
 
   // Column width mapping for enterprise-grade horizontal table layout
@@ -931,8 +939,7 @@ export const RecordTable = memo(function RecordTable({
     if (col === 'contact_status') return 'Status';
     if (col === 'owner_id') return 'Owner';
     if (col === 'market_type') return 'Market Type';
-    if (col === 'normalized_advisor_name') return 'Advisor';
-    if (col === 'normalized_agent_name') return 'Agent';
+    if (isOwnershipListColumnKey(col)) return ENROLLED_BY_LABEL;
     if (col === 'normalization_status') return 'Data Quality';
     if (col === 'created_at') return 'Created';
     if (col === 'updated_at') return 'Updated';
@@ -1097,10 +1104,21 @@ export const RecordTable = memo(function RecordTable({
       return <MarketTypeBadge marketType={(record as any).market_type} showIcon />;
     }
 
-    if (col === 'normalized_advisor_name' || col === 'normalized_agent_name') {
-      const value = (record as any)[col];
-      if (!value) return <span className="text-slate-400 dark:text-slate-600">—</span>;
-      return <span className="text-slate-700 dark:text-slate-300 truncate text-sm">{value}</span>;
+    if (isOwnershipListColumnKey(col)) {
+      const resolved = resolveOwnershipName({
+        market_type: record.market_type,
+        normalized_advisor_name: record.normalized_advisor_name,
+        normalized_agent_name: record.normalized_agent_name,
+        data: projected,
+      });
+      if (!resolved.name) {
+        return <span className="text-slate-400 dark:text-slate-600">—</span>;
+      }
+      return (
+        <span className="text-slate-700 dark:text-slate-300 truncate text-sm">
+          {resolved.name}
+        </span>
+      );
     }
 
     if (col === 'normalization_status') {

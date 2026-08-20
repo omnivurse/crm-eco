@@ -6,6 +6,7 @@ import {
   ArrowLeft,
   CheckCircle2,
   AlertCircle,
+  Download,
   Eye,
   FileSpreadsheet,
   Info,
@@ -33,7 +34,10 @@ import {
 } from '@/lib/imports/csv-update';
 import type {
   AmbiguousPreview,
+  ConflictPreview,
+  CrmNewerPreview,
   CsvUpdateResult,
+  DuplicateTargetPreview,
   MatchPreview,
   UnmatchedPreview,
 } from '@/lib/imports/run-csv-update';
@@ -62,8 +66,8 @@ export function UpdateImportClient({ modules, defaultModuleKey }: Props) {
   const [dryRunResult, setDryRunResult] = useState<UpdateResponse | null>(null);
   const [running, setRunning] = useState(false);
   const [applyResult, setApplyResult] = useState<UpdateResponse | null>(null);
-  const [overwriteEmpty, setOverwriteEmpty] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
   const matchedKeyHints = useMemo(() => {
     let withZoho = 0;
@@ -164,12 +168,10 @@ export function UpdateImportClient({ modules, defaultModuleKey }: Props) {
           moduleKey,
           rows: parsedRows.map((r) => ({
             index: r.index,
-            raw: r.raw,
             normalized: r.normalized,
           })),
           matchPriority: DEFAULT_MATCH_PRIORITY,
           dryRun,
-          overwriteEmpty,
           fileName: file?.name,
         }),
       });
@@ -184,21 +186,130 @@ export function UpdateImportClient({ modules, defaultModuleKey }: Props) {
         return;
       }
 
-      const result = (await res.json()) as UpdateResponse;
+      let result = (await res.json()) as UpdateResponse;
       if (dryRun) {
         setDryRunResult(result);
       } else {
+        // A large apply stops at a time budget and reports what is left, so
+        // the platform can never kill it mid-write. Continue automatically
+        // until the file is finished, re-sending the whole file each pass so
+        // duplicate/ambiguity detection stays file-wide.
+        let guard = 0;
+        let incomplete = false;
+        while (result.remainingRowIndices.length > 0 && guard < 200) {
+          guard++;
+          setApplyResult(result);
+          // Carried totals must match what the server counted, or the job row
+          // under-reports the run. Attempts include conflicts (a conflict IS
+          // an attempted write), and skipped counts are recomputed per pass by
+          // the server, so they are deliberately not carried.
+          const carried = {
+            updated: result.updated,
+            errorCount: result.errors.length,
+            writeAttemptCount:
+              result.updated + result.errors.length + result.conflicts,
+            conflictCount: result.conflicts,
+            auditFailureCount: 0,
+          };
+          const next = await fetch('/api/crm/imports/update', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              moduleKey,
+              rows: parsedRows.map((r) => ({
+                index: r.index,
+                normalized: r.normalized,
+              })),
+              matchPriority: DEFAULT_MATCH_PRIORITY,
+              dryRun: false,
+              fileName: file?.name,
+              resumeRowIndices: result.remainingRowIndices,
+              jobId: result.jobId,
+              carryOver: carried,
+            }),
+          });
+          if (!next.ok) {
+            toast.error(
+              `Applied ${result.updated} so far, then the run paused. ` +
+                'Re-run to finish the rest — nothing is lost.',
+            );
+            incomplete = true;
+            break;
+          }
+          const page = (await next.json()) as UpdateResponse;
+          result = {
+            ...page,
+            updated: page.updated + carried.updated,
+            conflicts: page.conflicts + carried.conflictCount,
+            errors: [...result.errors, ...page.errors],
+          };
+        }
         setApplyResult(result);
-        toast.success(
-          `Updated ${result.updated} record${result.updated === 1 ? '' : 's'} — ` +
-            `${result.unmatched} unmatched, ${result.unchanged} unchanged`,
-        );
+        // Both loop exits (a failed pass, and hitting the iteration guard)
+        // leave rows unwritten. Reporting success there would tell the
+        // operator a file finished when it did not.
+        if (incomplete || result.remainingRowIndices.length > 0) {
+          toast.error(
+            `Stopped after ${result.updated} record${result.updated === 1 ? '' : 's'} — ` +
+              `${result.remainingRowIndices.length} row(s) still to apply. ` +
+              'Run the update again to finish; nothing is lost.',
+          );
+        } else {
+          toast.success(
+            `Updated ${result.updated} record${result.updated === 1 ? '' : 's'} — ` +
+              `${result.unmatched} unmatched, ${result.unchanged} unchanged`,
+          );
+        }
       }
     } catch (err) {
       console.error('[csv-update] request failed:', err);
       toast.error('Network error — please retry');
     } finally {
       setRunning(false);
+    }
+  };
+
+  const downloadDelta = async () => {
+    if (parsedRows.length === 0 || !moduleKey) return;
+    setDownloading(true);
+    try {
+      const res = await fetch('/api/crm/imports/update/delta', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          moduleKey,
+          rows: parsedRows.map((r) => ({
+            index: r.index,
+            normalized: r.normalized,
+          })),
+          matchPriority: DEFAULT_MATCH_PRIORITY,
+          fileName: file?.name,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        toast.error(
+          typeof err.error === 'string' ? err.error : 'Could not build the delta',
+        );
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download =
+        res.headers
+          .get('Content-Disposition')
+          ?.match(/filename="([^"]+)"/)?.[1] ?? 'delta.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('[csv-update] delta download failed:', err);
+      toast.error('Network error — please retry');
+    } finally {
+      setDownloading(false);
     }
   };
 
@@ -255,9 +366,11 @@ export function UpdateImportClient({ modules, defaultModuleKey }: Props) {
             </li>
           </ol>
           <p className="mt-2 text-xs text-slate-600 dark:text-slate-400">
-            Unmatched rows are never created. If a key matches more than one record, that row is
-            skipped (fail closed). Empty cells never overwrite existing values unless you toggle
-            &ldquo;Overwrite empty&rdquo; below.
+            Each row is matched by its single best available key (a row with a Zoho ID that finds
+            nothing does not fall back to its email). Unmatched rows are never created. If a key
+            matches more than one record — or two file rows match the same person — those rows are
+            skipped (fail closed). Empty cells never overwrite existing values. Notes are never
+            touched.
           </p>
         </div>
       </div>
@@ -371,30 +484,6 @@ export function UpdateImportClient({ modules, defaultModuleKey }: Props) {
         )}
       </div>
 
-      {/* ── Step 3 — options ───────────────────────────────── */}
-      <div className="glass-card border border-slate-200 dark:border-slate-700 rounded-xl p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <span className="w-6 h-6 rounded-full bg-teal-500 text-white text-xs flex items-center justify-center font-bold">
-            3
-          </span>
-          <h3 className="font-semibold text-slate-900 dark:text-white">Options</h3>
-        </div>
-        <label className="flex items-center gap-3 cursor-pointer text-sm text-slate-700 dark:text-slate-300">
-          <input
-            type="checkbox"
-            checked={overwriteEmpty}
-            onChange={(e) => setOverwriteEmpty(e.target.checked)}
-            className="w-4 h-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
-          />
-          <span>
-            Overwrite existing values with blank cells from the CSV
-            <span className="block text-xs text-slate-500 dark:text-slate-400">
-              Off by default. Leave off if Zoho is missing fields you&apos;ve filled in here.
-            </span>
-          </span>
-        </label>
-      </div>
-
       {/* ── Action buttons ─────────────────────────────────── */}
       <div className="flex flex-wrap gap-3">
         <Button
@@ -412,6 +501,24 @@ export function UpdateImportClient({ modules, defaultModuleKey }: Props) {
             <>
               <Eye className="w-4 h-4 mr-2" />
               Preview matches (dry run)
+            </>
+          )}
+        </Button>
+        <Button
+          onClick={downloadDelta}
+          disabled={downloading || running || parsedRows.length === 0 || !moduleKey}
+          variant="outline"
+          size="lg"
+        >
+          {downloading ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Building full delta…
+            </>
+          ) : (
+            <>
+              <Download className="w-4 h-4 mr-2" />
+              Download full delta (CSV)
             </>
           )}
         </Button>
@@ -457,6 +564,18 @@ export function UpdateImportClient({ modules, defaultModuleKey }: Props) {
               value={result.ambiguous}
               tone={result.ambiguous > 0 ? 'amber' : 'slate'}
             />
+            {result.duplicateTarget > 0 && (
+              <Stat label="Duplicate rows" value={result.duplicateTarget} tone="amber" />
+            )}
+            {result.conflicts > 0 && (
+              <Stat label="Edited mid-run" value={result.conflicts} tone="amber" />
+            )}
+            {result.invalidValues > 0 && (
+              <Stat label="Bad values skipped" value={result.invalidValues} tone="amber" />
+            )}
+            {result.crmNewer > 0 && (
+              <Stat label="CRM newer than file" value={result.crmNewer} tone="amber" />
+            )}
           </div>
 
           <div className="text-xs text-slate-500 dark:text-slate-400 flex flex-wrap gap-x-4 gap-y-1">
@@ -487,6 +606,18 @@ export function UpdateImportClient({ modules, defaultModuleKey }: Props) {
             <PreviewAmbiguousTable rows={result.previewAmbiguous} />
           )}
 
+          {result.previewDuplicateTarget.length > 0 && (
+            <PreviewDuplicateTargetTable rows={result.previewDuplicateTarget} />
+          )}
+
+          {result.previewConflicts.length > 0 && (
+            <PreviewConflictsTable rows={result.previewConflicts} />
+          )}
+
+          {result.previewCrmNewer.length > 0 && (
+            <PreviewCrmNewerTable rows={result.previewCrmNewer} />
+          )}
+
           {result.errors.length > 0 && (
             <div className="rounded-xl border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10 p-4">
               <p className="text-sm font-semibold text-red-700 dark:text-red-300 mb-2 flex items-center gap-2">
@@ -496,7 +627,8 @@ export function UpdateImportClient({ modules, defaultModuleKey }: Props) {
               <ul className="text-xs text-red-700 dark:text-red-300 space-y-0.5 max-h-40 overflow-y-auto">
                 {result.errors.map((e) => (
                   <li key={e.rowIndex}>
-                    Row {e.rowIndex + 1}: {e.error}
+                    {e.rowIndex < 0 ? 'Run error' : `Row ${e.rowIndex + 1}`}:{' '}
+                    {e.error}
                   </li>
                 ))}
               </ul>
@@ -692,6 +824,100 @@ function PreviewAmbiguousTable({ rows }: { rows: AmbiguousPreview[] }) {
               {r.matchedBy}: {r.matchValue}
             </span>
             <span>{r.candidateCount} candidates</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function PreviewDuplicateTargetTable({ rows }: { rows: DuplicateTargetPreview[] }) {
+  return (
+    <div className="rounded-xl border border-amber-200 dark:border-amber-500/30 bg-amber-50/50 dark:bg-amber-500/5 overflow-hidden">
+      <div className="px-4 py-3 border-b border-amber-200 dark:border-amber-500/30">
+        <p className="text-sm font-semibold text-amber-700 dark:text-amber-300">
+          Multiple rows for the same person (not updated)
+        </p>
+        <p className="text-xs text-amber-700/80 dark:text-amber-300/80">
+          Two or more file rows match one record — often household members sharing an email or
+          phone. Fix the file (one row per person, ideally with Zoho IDs) and re-upload.
+        </p>
+      </div>
+      <ul className="divide-y divide-amber-200 dark:divide-amber-500/20 text-xs">
+        {rows.map((r) => (
+          <li key={r.rowIndex} className="px-4 py-2 flex flex-wrap gap-x-4 gap-y-1">
+            <span className="text-amber-900 dark:text-amber-100">Row {r.rowIndex + 1}</span>
+            <Link
+              href={`/crm/r/${r.recordId}`}
+              prefetch={false}
+              className="hover:underline"
+            >
+              {r.recordTitle || 'Untitled record'}
+            </Link>
+            <span>{r.rowsInFile} rows in this file</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function PreviewConflictsTable({ rows }: { rows: ConflictPreview[] }) {
+  return (
+    <div className="rounded-xl border border-sky-200 dark:border-sky-500/30 bg-sky-50/50 dark:bg-sky-500/5 overflow-hidden">
+      <div className="px-4 py-3 border-b border-sky-200 dark:border-sky-500/30">
+        <p className="text-sm font-semibold text-sky-700 dark:text-sky-300">
+          Changed while the update was running (skipped, nothing lost)
+        </p>
+        <p className="text-xs text-sky-700/80 dark:text-sky-300/80">
+          These records were modified during the apply itself, so the file was not written to them.
+          Run a fresh preview and apply again to pick them up.
+        </p>
+      </div>
+      <ul className="divide-y divide-sky-200 dark:divide-sky-500/20 text-xs">
+        {rows.map((r) => (
+          <li key={r.rowIndex} className="px-4 py-2 flex flex-wrap gap-x-4 gap-y-1">
+            <span className="text-sky-900 dark:text-sky-100">Row {r.rowIndex + 1}</span>
+            <Link
+              href={`/crm/r/${r.recordId}`}
+              prefetch={false}
+              className="hover:underline"
+            >
+              {r.recordTitle || 'Untitled record'}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function PreviewCrmNewerTable({ rows }: { rows: CrmNewerPreview[] }) {
+  return (
+    <div className="rounded-xl border border-amber-200 dark:border-amber-500/30 bg-amber-50/50 dark:bg-amber-500/5 overflow-hidden">
+      <div className="px-4 py-3 border-b border-amber-200 dark:border-amber-500/30">
+        <p className="text-sm font-semibold text-amber-700 dark:text-amber-300">
+          CRM edited after this file was exported (applied — review these)
+        </p>
+        <p className="text-xs text-amber-700/80 dark:text-amber-300/80">
+          The file&apos;s Modified Time is older than the CRM&apos;s last edit on these records, so
+          the file may carry stale values. They are still updated — check their deltas before
+          trusting them.
+        </p>
+      </div>
+      <ul className="divide-y divide-amber-200 dark:divide-amber-500/20 text-xs">
+        {rows.map((r) => (
+          <li key={r.rowIndex} className="px-4 py-2 flex flex-wrap gap-x-4 gap-y-1">
+            <span className="text-amber-900 dark:text-amber-100">Row {r.rowIndex + 1}</span>
+            <Link
+              href={`/crm/r/${r.recordId}`}
+              prefetch={false}
+              className="hover:underline"
+            >
+              {r.recordTitle || 'Untitled record'}
+            </Link>
+            <span>file: {r.fileModified}</span>
+            <span>CRM: {r.recordUpdated}</span>
           </li>
         ))}
       </ul>

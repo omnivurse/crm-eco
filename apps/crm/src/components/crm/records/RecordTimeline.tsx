@@ -216,6 +216,30 @@ function AuditEvent({ data }: { data: CrmAuditLogWithActor }) {
     rule_triggered: 'Rule triggered',
   };
 
+  // A CSV update writes action 'import' with meta.source = 'csv_update' and a
+  // field-level {from,to} delta. Name the file as the source and list the
+  // fields it changed — "Imported record" would imply the record came FROM the
+  // file, and the paired trigger row already covers the generic "updated".
+  const auditMeta = (data.meta ?? {}) as { source?: string };
+  if (data.action === 'import' && auditMeta.source === 'csv_update') {
+    const changedFields = Object.keys(
+      (data.diff ?? {}) as Record<string, unknown>,
+    );
+    return (
+      <div className="space-y-1">
+        <p className="text-sm text-slate-300">Updated from a CSV file</p>
+        {changedFields.length > 0 && (
+          <p className="text-xs text-slate-500">
+            {changedFields.slice(0, 6).join(', ')}
+            {changedFields.length > 6
+              ? ` +${changedFields.length - 6} more`
+              : ''}
+          </p>
+        )}
+      </div>
+    );
+  }
+
   // Special rendering for approval events
   if (data.action === 'approval_action' && data.diff) {
     const diff = data.diff as { action?: string; comment?: string; new_status?: string };

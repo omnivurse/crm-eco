@@ -3,9 +3,11 @@
  *
  * `crm_notes` mixes two populations: notes written in this CRM (`created_by`
  * points at a profile) and rows bulk-imported from the legacy Zoho export
- * (`created_by IS NULL` — there is no dedicated `source` column). Users care
- * about the current notes day-to-day, so the panel filters to those by
- * default and keeps the imported history one click away.
+ * (`created_by IS NULL` — there is no dedicated `source` column).
+ *
+ * Default is always **All** (newest first). Filtering to Imported used to hide
+ * notes a rep wrote yesterday — they opened the 2025 history and thought the
+ * new work had disappeared.
  */
 
 export type NoteOriginFilter = 'current' | 'legacy' | 'all';
@@ -41,11 +43,19 @@ export function filterNotesByOrigin<T extends OriginFilterableNote>(
 }
 
 /**
- * Initial filter for a record: "current" whenever at least one current note
- * exists, otherwise "all" so a legacy-only record never opens on an empty list.
+ * Initial filter: always All so a new CRM note cannot hide behind Imported.
+ * `counts` is accepted so call sites stay stable; it does not change the default.
  */
-export function defaultNoteOriginFilter(counts: NoteOriginCounts): NoteOriginFilter {
-  return counts.current > 0 ? 'current' : 'all';
+export function defaultNoteOriginFilter(_counts?: NoteOriginCounts): NoteOriginFilter {
+  return 'all';
+}
+
+/** True when the Imported chip is hiding notes written in this CRM. */
+export function originFilterHidesCurrent(
+  filter: NoteOriginFilter,
+  counts: NoteOriginCounts,
+): boolean {
+  return filter === 'legacy' && counts.current > 0;
 }
 
 /** Filter chips in display order with their labels and counts. */
@@ -53,8 +63,8 @@ export function noteOriginFilterOptions(
   counts: NoteOriginCounts,
 ): Array<{ id: NoteOriginFilter; label: string; count: number }> {
   return [
-    { id: 'current', label: 'Current', count: counts.current },
-    { id: 'legacy', label: 'Legacy', count: counts.legacy },
     { id: 'all', label: 'All', count: counts.all },
+    { id: 'current', label: 'This CRM', count: counts.current },
+    { id: 'legacy', label: 'Imported', count: counts.legacy },
   ];
 }

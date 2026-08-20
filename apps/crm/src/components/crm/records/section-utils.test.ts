@@ -9,6 +9,7 @@ import {
   groupSectionsForNav,
   isPersonCoverageSectionKey,
   isPersonModuleKey,
+  normalizeLegacySectionHeading,
   resolveSectionAccent,
   shouldAlwaysShowEmptySection,
   type SectionMeta,
@@ -61,8 +62,45 @@ describe('section-utils person coverage visibility', () => {
   });
 
   it('labels legacy insurance section distinctly from health_sharing', () => {
-    expect(fallbackSectionHeadingFromFieldSection('insurance')).toBe('Membership & Product');
+    expect(fallbackSectionHeadingFromFieldSection('insurance')).toBe('Insurance');
     expect(fallbackSectionHeadingFromFieldSection('health_sharing')).toBe('HealthShare');
+    expect(normalizeLegacySectionHeading('insurance', 'Membership & Product')).toBe(
+      'Product',
+    );
+    expect(normalizeLegacySectionHeading('insurance', 'Insurance')).toBe('HealthShare');
+  });
+
+  it('does not count matching ownership aliases toward the Ownership badge', () => {
+    const meta = getSectionMeta(
+      [
+        field('producer_name', 'management'),
+        field('advisor', 'management'),
+        field('agent', 'management'),
+        field('referring_member', 'management'),
+      ],
+      {
+        id: 'layout',
+        org_id: 'org',
+        module_id: 'mod',
+        name: 'Default',
+        is_default: true,
+        config: {
+          sections: [{ key: 'management', label: 'Ownership', columns: 2 }],
+        },
+        created_at: '',
+        updated_at: '',
+      },
+      {
+        producer_name: 'Wendy Scipione',
+        advisor: 'Wendy Scipione',
+        agent: '',
+        referring_member: 'Jennifer Abbott',
+      },
+      'contacts',
+    );
+    const ownership = meta.find((s) => s.key === 'management');
+    expect(ownership?.fieldCount).toBe(2);
+    expect(ownership?.filledCount).toBe(2);
   });
 
   it('includes empty coverage layout sections for person modules in nav meta', () => {

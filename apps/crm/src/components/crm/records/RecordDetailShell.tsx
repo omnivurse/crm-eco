@@ -76,6 +76,7 @@ import { CapacityBadges } from '@/components/shared/capacity-badge';
 import { getRecordDisplayName } from '@/lib/crm/display-name';
 import { resolveModulePalette } from './v2/tokens';
 import { getNoteAuthorDisplay } from '@/lib/crm/note-sanitize';
+import { dedupeNotesForDisplay } from '@/lib/crm/note-dedupe';
 import { FollowUpReminderDialog } from './FollowUpReminderDialog';
 import { FollowUpBanner } from './FollowUpBanner';
 
@@ -229,9 +230,11 @@ export const RecordDetailShell = memo(function RecordDetailShell({
   const [followUpRefreshKey, setFollowUpRefreshKey] = useState(0);
   const displayStatus = optimisticStatus || record.status;
 
-  // Sort notes: most recent first
-  const sortedNotes = [...notesProp].sort(
-    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+  // Sort notes: most recent first; collapse Zoho UTC/local twins.
+  const sortedNotes = dedupeNotesForDisplay(
+    [...notesProp].sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    ),
   );
   const recentNotes = sortedNotes.slice(0, 3);
 

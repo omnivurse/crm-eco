@@ -433,3 +433,35 @@ describe('sanitizeCrmDataJsonPatch', () => {
     });
   });
 });
+
+describe('mergeCrmDataJsonIntoRowColumns market type', () => {
+  it('does not set healthshare from sharing_effective_date alone', () => {
+    const updates = mergeCrmDataJsonIntoRowColumns(
+      { sharing_effective_date: '2026-09-01' },
+      { moduleKey: 'leads' },
+    );
+    expect(updates.market_type).toBeUndefined();
+  });
+
+  it('sets traditional_insurance when insurance plan and start are set', () => {
+    const updates = mergeCrmDataJsonIntoRowColumns(
+      {
+        health_insurance_plan_name: 'Cigna Gold',
+        health_insurance_start_date: '2026-09-01',
+      },
+      { moduleKey: 'leads' },
+    );
+    expect(updates.market_type).toBe('traditional_insurance');
+  });
+
+  it('sets healthshare when a real HS signal is present', () => {
+    const updates = mergeCrmDataJsonIntoRowColumns(
+      {
+        sharing_entity: 'Sedera',
+        sharing_effective_date: '2026-09-01',
+      },
+      { moduleKey: 'leads' },
+    );
+    expect(updates.market_type).toBe('healthshare');
+  });
+});

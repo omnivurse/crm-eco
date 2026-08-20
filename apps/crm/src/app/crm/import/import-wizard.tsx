@@ -488,7 +488,6 @@ export function ImportWizard({ modules, organizationId, preselectedModule, smart
           rows,
           matchPriority: DEFAULT_MATCH_PRIORITY,
           dryRun: true,
-          overwriteEmpty: false,
           fileName,
         }),
       });
@@ -528,7 +527,6 @@ export function ImportWizard({ modules, organizationId, preselectedModule, smart
           rows,
           matchPriority: DEFAULT_MATCH_PRIORITY,
           dryRun: false,
-          overwriteEmpty: false,
           fileName,
         }),
       });
@@ -541,7 +539,12 @@ export function ImportWizard({ modules, organizationId, preselectedModule, smart
       setImportResult({
         success: 0,
         updated: result.updated,
-        skipped: result.unmatched + result.unchanged + result.ambiguous,
+        skipped:
+          result.unmatched +
+          result.unchanged +
+          result.ambiguous +
+          result.duplicateTarget +
+          result.conflicts,
         errors: result.errors.length,
         total: result.totalRows,
       });
@@ -1098,6 +1101,15 @@ export function ImportWizard({ modules, organizationId, preselectedModule, smart
                 { label: 'Would update', value: updateDryRun.matched - updateDryRun.unchanged, tone: 'text-emerald-600' },
                 { label: 'Unmatched', value: updateDryRun.unmatched, tone: 'text-amber-600' },
                 { label: 'Ambiguous', value: updateDryRun.ambiguous, tone: 'text-red-600' },
+                ...(updateDryRun.duplicateTarget > 0
+                  ? [{ label: 'Duplicate rows (skipped)', value: updateDryRun.duplicateTarget, tone: 'text-amber-600' }]
+                  : []),
+                ...(updateDryRun.invalidValues > 0
+                  ? [{ label: 'Bad values skipped', value: updateDryRun.invalidValues, tone: 'text-amber-600' }]
+                  : []),
+                ...(updateDryRun.crmNewer > 0
+                  ? [{ label: 'CRM newer than file', value: updateDryRun.crmNewer, tone: 'text-amber-600' }]
+                  : []),
               ].map((stat) => (
                 <div
                   key={stat.label}
@@ -1208,7 +1220,7 @@ export function ImportWizard({ modules, organizationId, preselectedModule, smart
             </h3>
             <p className="text-slate-600 dark:text-slate-400 mb-8">
               {importResult.success === 0 && importResult.updated > 0
-                ? `Updated ${importResult.updated.toLocaleString()} of ${importResult.total.toLocaleString()} rows · ${importResult.skipped.toLocaleString()} unmatched / unchanged / ambiguous`
+                ? `Updated ${importResult.updated.toLocaleString()} of ${importResult.total.toLocaleString()} rows · ${importResult.skipped.toLocaleString()} skipped (unmatched / unchanged / ambiguous / duplicates / conflicts)`
                 : importResult.updated > 0
                   ? `${importResult.success.toLocaleString()} imported · ${importResult.updated.toLocaleString()} updated · ${importResult.total.toLocaleString()} rows`
                   : `Successfully imported ${importResult.success.toLocaleString()} of ${importResult.total.toLocaleString()} records`}

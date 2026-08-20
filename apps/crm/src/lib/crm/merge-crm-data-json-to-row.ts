@@ -4,8 +4,7 @@ import {
   CRM_RECORD_UUID_COLUMN_KEYS,
 } from '@/lib/crm/record-field-registry';
 import {
-  HEALTH_SHARING_DATA_KEYS,
-  leadHasHealthSharingData,
+  hasHealthSharingMarketSignal,
   sharingEntityAsCarrierId,
 } from '@/lib/crm/lead-contact-sharing-fields';
 import {
@@ -394,8 +393,7 @@ export function mergeCrmDataJsonIntoRowColumns(
     }
   }
 
-  const sharingTouched = HEALTH_SHARING_DATA_KEYS.some((key) => d[key] !== undefined);
-  if (sharingTouched && leadHasHealthSharingData(d)) {
+  if (hasHealthSharingMarketSignal(d)) {
     const carrierFromSharing = sharingEntityAsCarrierId(d.sharing_entity);
     if (
       carrierFromSharing &&

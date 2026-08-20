@@ -95,6 +95,28 @@ describe('pickDefaultListColumns', () => {
     expect(pickDefaultListColumns([field('only')], 0)).toEqual(['only']);
   });
 
+  it('skips duplicate ownership aliases so default lists get one Enrolled by column', () => {
+    const cols = pickDefaultListColumns(
+      [
+        field('first_name', { display_order: 1 }),
+        field('last_name', { display_order: 2 }),
+        field('advisor', { display_order: 3 }),
+        field('agent', { display_order: 4 }),
+        field('producer_name', { display_order: 5 }),
+        field('email', { display_order: 6 }),
+        field('phone', { display_order: 7 }),
+        field('contact_status', { display_order: 8 }),
+      ],
+      8,
+    );
+    expect(cols.filter((k) => ['advisor', 'agent', 'producer_name'].includes(k))).toEqual([
+      'producer_name',
+    ]);
+    expect(cols).toContain('producer_name');
+    expect(cols).not.toContain('advisor');
+    expect(cols).not.toContain('agent');
+  });
+
   it('is pure with respect to input order', () => {
     const input = membersLikeFields();
     const snapshot = input.map((f) => f.key);

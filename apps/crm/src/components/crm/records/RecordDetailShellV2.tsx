@@ -170,6 +170,7 @@ import {
   nextHeaderCompact,
   reanchorScrollAfterHeaderResize,
 } from '@/lib/crm/record-header-compact';
+import { dedupeNotesForDisplay } from '@/lib/crm/note-dedupe';
 import {
   scrollRecordFieldIntoView,
   scrollRecordTargetIntoView,
@@ -521,8 +522,10 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
 
   const sortedNotes = useMemo(
     () =>
-      [...notesProp].sort(
-        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+      dedupeNotesForDisplay(
+        [...notesProp].sort(
+          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+        ),
       ),
     [notesProp],
   );

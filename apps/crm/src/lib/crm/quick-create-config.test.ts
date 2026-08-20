@@ -13,6 +13,7 @@ import {
   normalizePhoneDigits,
   phoneLookupVariants,
   quickCreateDraftStorageKey,
+  quickCreateFilledEffectiveDateKey,
   quickCreatePendingNeedsEffectiveDate,
   quickCreateSuggestKeys,
   quickCreateTypedName,
@@ -31,6 +32,8 @@ describe('QUICK_CREATE_FIELDS', () => {
       'date_of_birth',
       'mailing_city',
       'mailing_state',
+      'health_insurance_plan_name',
+      'health_insurance_start_date',
       'product',
       'sharing_effective_date',
       'producer_name',
@@ -45,27 +48,55 @@ describe('QUICK_CREATE_FIELDS', () => {
       'last_name',
     ]);
     const producer = cfg.fields.find((f) => f.key === 'producer_name');
-    expect(producer?.label).toBe('Producer Name');
+    expect(producer?.label).toBe('Enrolled by');
     expect(producer?.hint).toBe('Who enrolled');
+    expect(cfg.fields.find((f) => f.key === 'health_insurance_plan_name')?.label).toBe(
+      'Health Insurance Plan',
+    );
+    expect(cfg.fields.find((f) => f.key === 'product')?.label).toBe(
+      'Health Sharing Membership',
+    );
+    expect(cfg.fields.find((f) => f.key === 'sharing_effective_date')?.label).toBe(
+      'Sharing effective date',
+    );
     expect(cfg.fields.find((f) => f.key === 'contact_status')?.defaultValue).toBe('Pending');
     expect(cfg.fields.find((f) => f.key === 'sharing_entity')?.optionalIfNoOptions).toBe(true);
     // Taxonomy inputs: State is a US-state select, Plan/Producer get datalists.
     expect(cfg.fields.find((f) => f.key === 'mailing_state')?.type).toBe('state');
     expect(cfg.fields.find((f) => f.key === 'product')?.type).toBe('suggest');
+    expect(cfg.fields.find((f) => f.key === 'health_insurance_plan_name')?.type).toBe('suggest');
     expect(cfg.fields.find((f) => f.key === 'producer_name')?.type).toBe('suggest');
     expect(cfg.batchStickyKeys).toEqual(['producer_name', 'sharing_entity', 'contact_status', 'mailing_state']);
-    expect(quickCreateSuggestKeys('contacts')).toEqual(['product', 'producer_name']);
+    expect(quickCreateSuggestKeys('contacts')).toEqual([
+      'health_insurance_plan_name',
+      'product',
+      'producer_name',
+    ]);
   });
 
-  it('leads use the lead-equivalent keys', () => {
+  it('leads use insurance plan + HS membership keys (not product_type as Plan)', () => {
     const keys = QUICK_CREATE_FIELDS.leads.fields.map((f) => f.key);
     expect(keys).toContain('city');
     expect(keys).toContain('state');
+    expect(keys).toContain('health_insurance_plan_name');
+    expect(keys).toContain('health_insurance_start_date');
     expect(keys).toContain('product_type');
     expect(keys).toContain('producer');
     expect(keys).toContain('lead_status');
     expect(keys).not.toContain('mailing_city');
     expect(keys).not.toContain('member_number');
+    const cfg = QUICK_CREATE_FIELDS.leads;
+    expect(cfg.fields.find((f) => f.key === 'health_insurance_plan_name')?.label).toBe(
+      'Health Insurance Plan',
+    );
+    expect(cfg.fields.find((f) => f.key === 'product_type')?.label).toBe(
+      'Health Sharing Membership',
+    );
+    expect(cfg.fields.find((f) => f.key === 'producer')?.label).toBe('Enrolled by');
+    expect(cfg.effectiveDateKeys).toEqual([
+      'health_insurance_start_date',
+      'sharing_effective_date',
+    ]);
   });
 
   it('never defines a deals config', () => {
@@ -193,9 +224,24 @@ describe('validation helpers', () => {
         sharing_effective_date: '09/01/2026',
       }),
     ).toBe(false);
+    expect(
+      quickCreatePendingNeedsEffectiveDate('contacts', {
+        contact_status: 'Pending',
+        health_insurance_start_date: '09/01/2026',
+      }),
+    ).toBe(false);
     expect(quickCreatePendingNeedsEffectiveDate('contacts', { contact_status: 'Active' })).toBe(false);
     expect(quickCreatePendingNeedsEffectiveDate('leads', { lead_status: 'Pending' })).toBe(true);
     expect(quickCreatePendingNeedsEffectiveDate('accounts', {})).toBe(false);
+    expect(
+      quickCreateFilledEffectiveDateKey('leads', {
+        health_insurance_start_date: '09/01/2026',
+        sharing_effective_date: '10/01/2026',
+      }),
+    ).toBe('health_insurance_start_date');
+    expect(
+      quickCreateFilledEffectiveDateKey('leads', { sharing_effective_date: '10/01/2026' }),
+    ).toBe('sharing_effective_date');
   });
 });
 

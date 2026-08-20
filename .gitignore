@@ -80,3 +80,7 @@ pnpm-lock.yaml
 
 # skills.sh bulk installer cache/logs
 scripts/.cache/
+
+# Local Supabase CLI stack artifacts (from `supabase start`)
+supabase/.branches/
+supabase/.temp/

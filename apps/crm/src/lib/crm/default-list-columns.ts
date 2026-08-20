@@ -11,6 +11,11 @@
  * Pure module — safe to import from client and server code alike.
  */
 
+import {
+  isOwnershipListColumnKey,
+  preferredOwnershipListColumnKey,
+} from './ownership-field-dedupe';
+
 /** Minimal shape needed to rank fields (structural subset of CrmField). */
 export interface DefaultColumnCandidate {
   key: string;
@@ -74,8 +79,10 @@ export function pickDefaultListColumns(
   const keySet = new Set(ordered.map((f) => f.key));
 
   const picked: string[] = [];
+  const ownershipKeep = preferredOwnershipListColumnKey(keySet);
   const push = (key: string) => {
     if (picked.length >= limit || picked.includes(key)) return;
+    if (isOwnershipListColumnKey(key) && key !== ownershipKeep) return;
     picked.push(key);
   };
 

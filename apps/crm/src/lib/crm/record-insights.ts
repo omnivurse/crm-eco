@@ -22,6 +22,7 @@
 
 import { createCrmClient, resolveNoteSourceRecordIds } from './queries';
 import { moduleKeyFromJoinedRelation } from './note-aggregate';
+import { dedupeNotesForDisplay } from './note-dedupe';
 import {
   countRecordCampaigns,
   countRecordCadences,
@@ -249,39 +250,28 @@ async function headCountLiveNotes(supabase: Client, ids: string[]): Promise<numb
  * badge never disagrees with the Notes list.
  *
  * Excludes soft-deleted (trashed) notes to match `getNotesForRecords`, which
- * filters `deleted_at IS NULL` (crm_notes gained soft-delete in
- * 202607140005_phase2_soft_delete). When notes come from a single record there
- * are no cross-record duplicates, so an exact head count is correct and
- * cheapest. When aggregated across a lead→contact→member lineage (or deal
- * links), the same imported Zoho note can exist under several `record_id`s, so
- * we dedup by body+timestamp using the identical key as `getNotesForRecords`.
+ * filters `deleted_at IS NULL`. Zoho UTC/local twins and lead→contact copies
+ * are collapsed with `dedupeNotesForDisplay` even on a single record.
  */
 async function countAggregatedNotes(
   supabase: Client,
   noteSourceIds: string[],
 ): Promise<number> {
   if (noteSourceIds.length === 0) return 0;
-  if (noteSourceIds.length === 1) {
-    return headCountLiveNotes(supabase, noteSourceIds);
-  }
   try {
     const { data, error } = await supabase
       .from('crm_notes')
-      .select('body, created_at')
+      .select('body, created_at, created_by')
       .in('record_id', noteSourceIds)
       .is('deleted_at' as never, null)
       .order('created_at', { ascending: false })
       .limit(NOTES_COUNT_LIMIT);
-    // Any read failure falls back to the (still trash-filtered) head count so
-    // the badge is never silently zeroed by a transient error.
     if (error || !data) {
       return headCountLiveNotes(supabase, noteSourceIds);
     }
-    const seen = new Set<string>();
-    for (const row of data as Array<{ body: string | null; created_at: string }>) {
-      seen.add(`${(row.body || '').trim().slice(0, 200)}|${row.created_at}`);
-    }
-    return seen.size;
+    return dedupeNotesForDisplay(
+      data as Array<{ body: string | null; created_at: string; created_by: string | null }>,
+    ).length;
   } catch {
     return headCountLiveNotes(supabase, noteSourceIds);
   }

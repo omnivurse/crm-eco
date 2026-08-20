@@ -34,6 +34,7 @@ import type {
   CrmTerritory,
 } from './types';
 import { moduleKeyFromJoinedRelation, resolveNoteSourceRecordIdsWithClient } from './note-aggregate';
+import { dedupeNotesForDisplay } from './note-dedupe';
 import {
   buildTwinLookup,
   collectTwinLookupKeys,
@@ -1177,23 +1178,10 @@ export async function getNotesForRecords(
   }
 
   const rows = (data || []) as CrmNoteWithAuthor[];
-
-  // Deduplicate: when notes are aggregated across linked records (e.g. a
-  // lead was converted to a contact and both got the same Zoho notes), the
-  // same body + timestamp can appear twice. Keep the first occurrence.
-  if (uniqueIds.length > 1) {
-    const seen = new Set<string>();
-    const deduped: CrmNoteWithAuthor[] = [];
-    for (const note of rows) {
-      const key = `${(note.body || '').trim().slice(0, 200)}|${note.created_at}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      deduped.push(note);
-    }
-    return deduped;
-  }
-
-  return rows;
+  // Always dedupe — Zoho UTC/local twins live on a *single* record, and
+  // lead→contact copies share body+timestamp across ids. Newest-first input
+  // keeps the first hit (see note-dedupe.ts).
+  return dedupeNotesForDisplay(rows);
 }
 
 export async function getNotesForRecordAggregated(
@@ -1987,9 +1975,9 @@ export async function getTimelineForRecord(
     }
   }
 
-  // Add notes
+  // Add notes (same display dedupe as the Notes tab)
   if (notes.data) {
-    for (const item of notes.data) {
+    for (const item of dedupeNotesForDisplay(notes.data as CrmNoteWithAuthor[])) {
       events.push({
         id: item.id,
         type: 'note',

@@ -1,194 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { transformCsvRowToRecord, validateCsvRow } from '@/lib/imports/contacts-mapping';
 import { createClient, getAuthProfile } from '@/lib/supabase-server';
-import { buildNormalizedRecordWrite } from '@/lib/crm/merge-crm-data-json-to-row';
-
-// Type for CRM module
-interface CrmModule {
-  id: string;
-}
 
 /**
- * POST /api/imports/contacts
- * Import contacts from CSV data
- * 
- * Body: { rows: Record<string, string>[], options?: { skipDuplicates?: boolean } }
+ * POST /api/imports/contacts — RETIRED (410).
+ *
+ * This legacy importer bulk-INSERTed crm_records gated by authentication only
+ * (no crm_role check), making it the weakest import door in the app and a
+ * bypass of the governed import paths. It had no remaining UI callers.
+ *
+ * Use instead:
+ *   - /crm/imports/update  → update existing records from a CSV (never inserts)
+ *   - /crm/import          → governed insert importer (crm_admin / crm_manager)
  */
-export async function POST(request: NextRequest) {
-  try {
-    const profile = await getAuthProfile();
-    if (!profile) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    if (!profile.organization_id) {
-      return NextResponse.json({ error: 'No organization found' }, { status: 400 });
-    }
-
-    const supabase = await createClient();
-    
-    // Get Contacts module
-    const { data: moduleData } = await supabase
-      .from('crm_modules')
-      .select('id')
-      .eq('org_id', profile.organization_id)
-      .eq('key', 'contacts')
-      .single();
-    
-    const contactsModule = moduleData as CrmModule | null;
-    
-    if (!contactsModule) {
-      return NextResponse.json({ error: 'Contacts module not found' }, { status: 400 });
-    }
-    
-    // Parse request body
-    const body = await request.json();
-    const { rows, options = {} } = body as { 
-      rows: Record<string, string>[]; 
-      options?: { skipDuplicates?: boolean } 
-    };
-    
-    if (!rows || !Array.isArray(rows) || rows.length === 0) {
-      return NextResponse.json({ error: 'No rows provided' }, { status: 400 });
-    }
-    
-    // Create import job
-    const { data: importJob, error: jobError } = await supabase
-      .from('crm_import_jobs')
-      .insert({
-        org_id: profile.organization_id,
-        module_id: contactsModule.id,
-        source_type: 'csv',
-        file_name: 'contacts_upload.csv',
-        status: 'processing',
-        total_rows: rows.length,
-        started_at: new Date().toISOString(),
-        created_by: profile.id
-      })
-      .select()
-      .single();
-    
-    if (jobError) {
-      console.error('Failed to create import job:', jobError);
-      return NextResponse.json({ error: 'Failed to create import job' }, { status: 500 });
-    }
-    
-    // Process rows
-    const results = {
-      imported: 0,
-      skipped: 0,
-      errors: 0,
-      errorDetails: [] as { row: number; error: string }[]
-    };
-    
-    for (let i = 0; i < rows.length; i++) {
-      const row = rows[i];
-      
-      try {
-        // Validate row
-        const validation = validateCsvRow(row);
-        if (!validation.valid) {
-          results.errors++;
-          results.errorDetails.push({ row: i + 1, error: validation.errors.join('; ') });
-          continue;
-        }
-        
-        // Transform row to CRM record format
-        const { title, status, email, phone, data } = transformCsvRowToRecord(row);
-        
-        // Check for duplicates by email if option enabled
-        if (options.skipDuplicates && email) {
-          const { data: existing } = await supabase
-            .from('crm_records')
-            .select('id')
-            .eq('org_id', profile.organization_id)
-            .eq('module_id', contactsModule.id)
-            .eq('email', email)
-            .limit(1);
-          
-          if (existing && existing.length > 0) {
-            results.skipped++;
-            continue;
-          }
-        }
-        
-        // Normalize JSONB + mirror canonical values onto indexed columns so the
-        // imported contact displays/filters like a form-created one. Spread the
-        // mirrored columns first, then keep the transform's extracted
-        // title/status/email/phone authoritative (purely additive).
-        const norm = buildNormalizedRecordWrite(data, {
-          moduleKey: 'contacts',
-          previousTitle: title,
-        });
-
-        // Insert record
-        const { error: insertError } = await supabase
-          .from('crm_records')
-          .insert({
-            org_id: profile.organization_id,
-            module_id: contactsModule.id,
-            ...norm.columns,
-            title,
-            status,
-            email,
-            phone,
-            data: norm.data,
-            created_by: profile.id
-          });
-        
-        if (insertError) {
-          results.errors++;
-          results.errorDetails.push({ row: i + 1, error: insertError.message });
-        } else {
-          results.imported++;
-        }
-      } catch (err) {
-        results.errors++;
-        results.errorDetails.push({ 
-          row: i + 1, 
-          error: err instanceof Error ? err.message : 'Unknown error' 
-        });
-      }
-    }
-    
-    // Update import job with results
-    await supabase
-      .from('crm_import_jobs')
-      .update({
-        status: results.errors > 0 && results.imported === 0 ? 'failed' : 'completed',
-        completed_at: new Date().toISOString(),
-        processed_rows: rows.length,
-        inserted_count: results.imported,
-        skipped_count: results.skipped,
-        error_count: results.errors,
-        stats: { errorDetails: results.errorDetails.slice(0, 100) } // Limit error details
-      })
-      .eq('id', importJob.id);
-    
-    return NextResponse.json({
-      success: true,
-      jobId: importJob.id,
-      results: {
-        total: rows.length,
-        imported: results.imported,
-        skipped: results.skipped,
-        errors: results.errors,
-        errorDetails: results.errorDetails.slice(0, 20) // Return first 20 errors
-      }
-    });
-    
-  } catch (error) {
-    console.error('Import error:', error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Import failed' },
-      { status: 500 }
-    );
-  }
+export async function POST() {
+  return NextResponse.json(
+    {
+      error:
+        'This import endpoint has been retired. Use /crm/imports/update to update ' +
+        'existing records from a CSV, or /crm/import to create new records.',
+    },
+    { status: 410 },
+  );
 }
 
 /**
  * GET /api/imports/contacts
- * Get import job status
+ * Get import job status (read-only; kept for job-history consumers)
  */
 export async function GET(request: NextRequest) {
   try {
@@ -202,10 +39,10 @@ export async function GET(request: NextRequest) {
     }
 
     const supabase = await createClient();
-    
+
     const { searchParams } = new URL(request.url);
     const jobId = searchParams.get('jobId');
-    
+
     if (jobId) {
       // Get specific job
       const { data: job, error } = await supabase
@@ -214,11 +51,11 @@ export async function GET(request: NextRequest) {
         .eq('id', jobId)
         .eq('org_id', profile.organization_id)
         .single();
-      
+
       if (error) {
         return NextResponse.json({ error: 'Job not found' }, { status: 404 });
       }
-      
+
       return NextResponse.json(job);
     } else {
       // Get recent jobs
@@ -228,11 +65,11 @@ export async function GET(request: NextRequest) {
         .eq('org_id', profile.organization_id)
         .order('created_at', { ascending: false })
         .limit(20);
-      
+
       if (error) {
         return NextResponse.json({ error: 'Failed to fetch jobs' }, { status: 500 });
       }
-      
+
       return NextResponse.json(jobs || []);
     }
   } catch (error) {

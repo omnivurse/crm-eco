@@ -28,6 +28,10 @@
       "schedule": "*/15 * * * *"
     },
     {
+      "path": "/api/cron/reap-stalled-import-jobs",
+      "schedule": "*/15 * * * *"
+    },
+    {
       "path": "/api/cron/age-65-cancellations",
       "schedule": "0 6 * * *"
     },

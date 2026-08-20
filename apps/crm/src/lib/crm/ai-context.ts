@@ -10,6 +10,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { CrmRecord } from './types';
 import { resolveNoteSourceRecordIdsWithClient, moduleKeyFromJoinedRelation } from './note-aggregate';
+import { dedupeNotesForDisplay } from './note-dedupe';
 
 export interface AiRecordContext {
   record: CrmRecord;
@@ -63,7 +64,7 @@ export async function loadAiRecordContext({
       .maybeSingle(),
     supabase
       .from('crm_notes')
-      .select('body, created_at')
+      .select('body, created_at, created_by')
       .in('record_id', noteIds)
       // Exclude trashed notes/tasks — the AI context must mirror the record's
       // live timeline, not resurrect soft-deleted content into the prompt.
@@ -83,7 +84,7 @@ export async function loadAiRecordContext({
     record: record as CrmRecord,
     moduleName: moduleRow?.name ?? null,
     recentNotes:
-      (notes ?? []).map((n) => ({
+      dedupeNotesForDisplay(notes ?? []).map((n) => ({
         // Trim long notes so a single runaway entry doesn't dominate the
         // prompt budget.
         content: String(n.body ?? '').slice(0, 500),

@@ -52,9 +52,14 @@ import {
 import {
   coerceCoverageSnapshotFieldValue,
   coverageSnapshotEnrolledByLabel,
+  HEALTH_INSURANCE_PLAN_LABEL,
   isCapacityProductValue,
   selectCoverageSnapshotPlanFields,
 } from '@/lib/crm/coverage-snapshot-plan-fields';
+import {
+  isVisibleEnrolledByField,
+  shouldShowOwnershipFieldInForm,
+} from '@/lib/crm/ownership-field-dedupe';
 import { resolveCoverageSnapshotPlanType } from '@/lib/crm/coverage-snapshot-plan-type';
 import { selectHeroSharingField } from '@/lib/crm/coverage-snapshot-identity';
 import {
@@ -103,17 +108,18 @@ const getAccent = (accent?: LayoutSectionAccent) => getSectionCardAccent(accent)
 /**
  * CREATE-form defaults for person modules (contacts / leads / members): only the
  * sections a rep needs to enter a new member stay open — Name (core/main),
- * Health Share, Membership & Product (insurance), Address, Ownership &
- * Management (producer / referring), Identifiers. Every other section starts
- * collapsed so the form is not a 40-card wall. This is a UI-only override for
- * mode="create"; it never touches crm_layouts and never applies to edit /
- * detail views. Sections containing a REQUIRED field are always kept open so
- * native validation can focus them.
+ * Health Share, Health Insurance, Address, Ownership & Management (producer /
+ * referring), Identifiers. Every other section starts collapsed so the form is
+ * not a 40-card wall. This is a UI-only override for mode="create"; it never
+ * touches crm_layouts and never applies to edit / detail views. Sections
+ * containing a REQUIRED field are always kept open so native validation can
+ * focus them.
  */
 export const CREATE_FORM_EXPANDED_SECTION_KEYS: readonly string[] = [
   'core',
   'main',
   'health_sharing',
+  'health_insurance',
   'insurance',
   'address',
   'management',
@@ -820,8 +826,21 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
   // Group fields by section
   const fieldsBySection = useMemo(() => {
     const grouped: Record<string, CrmField[]> = {};
+    const marketType =
+      (typeof record?.market_type === 'string' ? record.market_type : null) ??
+      (typeof defaultValues.market_type === 'string' ? defaultValues.market_type : null);
     for (const field of visibleFields) {
       if (!shouldShowEndDateFieldInSection(field.key, field.section || 'main')) {
+        continue;
+      }
+      if (
+        !shouldShowOwnershipFieldInForm({
+          fieldKey: field.key,
+          moduleKey,
+          values: defaultValues,
+          marketType,
+        })
+      ) {
         continue;
       }
       const section = field.section || 'main';
@@ -833,7 +852,7 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
       grouped[key].sort((a, b) => a.display_order - b.display_order);
     }
     return grouped;
-  }, [visibleFields]);
+  }, [visibleFields, defaultValues, moduleKey, record]);
 
   const {
     register,
@@ -933,8 +952,16 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
       },
     ) => {
       const cellReadOnly = readOnly || Boolean(opts?.readOnlyView);
-      const cellLabel = opts?.label ?? field.label;
-      const cellLabelTitle = opts?.labelTitle ?? field.tooltip ?? field.label;
+      const enrolledByLabel = isVisibleEnrolledByField(field.key, moduleKey, defaultValues)
+        ? coverageSnapshotEnrolledByLabel(field)
+        : null;
+      const planLabel =
+        field.key === 'health_insurance_plan_name' || field.key === 'insurance_plan_name'
+          ? HEALTH_INSURANCE_PLAN_LABEL
+          : null;
+      const cellLabel = opts?.label ?? enrolledByLabel?.label ?? planLabel ?? field.label;
+      const cellLabelTitle =
+        opts?.labelTitle ?? enrolledByLabel?.title ?? field.tooltip ?? cellLabel;
       const cellInlineEditable = inlineEditable && !opts?.readOnlyView;
       // Dense side-by-side rows only for static read-only (no click-to-edit).
       // Inline-edit mode must use stacked label→value cells: auto-fit ~220px
@@ -1036,7 +1063,7 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
         </div>
       );
     },
-    [control, defaultValues, errors, inlineEditable, readOnly, register, setValue],
+    [control, defaultValues, errors, inlineEditable, moduleKey, readOnly, register, setValue],
   );
 
   // Find the "hero summary" fields anywhere in the field list — they don't
@@ -1485,7 +1512,14 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
       {renderCoverageSnapshot()}
       {beforeSections}
       {sections.map((section) => {
-        const sectionFields = fieldsBySection[section.key] || [];
+        const snapshotEnrolledByKey =
+          heroEnrolledByField &&
+          heroReferralSnapshotFields.some((f) => f.key === heroEnrolledByField.key)
+            ? heroEnrolledByField.key
+            : undefined;
+        const sectionFields = (fieldsBySection[section.key] || []).filter(
+          (f) => f.key !== snapshotEnrolledByKey,
+        );
         const isHero = section.variant === 'hero';
         const forceCoverageSection = shouldAlwaysShowEmptySection(
           moduleKey,

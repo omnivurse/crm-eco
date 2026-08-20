@@ -193,6 +193,10 @@ export function bridgeLegacyHealthSharingReadPaths(
     firstNonBlank(base, SHARING_EFFECTIVE_DATE_LEGACY_KEYS),
   );
 
+  // Household tier: Zoho stored this as coverage_option; HealthShare form
+  // reads member_tier. Fill only when canonical is blank — never overwrite.
+  fillIfBlank(base, 'member_tier', base.coverage_option);
+
   // Contribution: dedicated HS keys first; for healthshare market, Zoho often
   // stored the share amount in overloaded `monthly_premium`.
   const contribution = firstNonBlank(base, HEALTHSHARE_CONTRIBUTION_KEYS);
@@ -275,4 +279,23 @@ export function leadHasHealthSharingData(
   data: Record<string, unknown> | null | undefined,
 ): boolean {
   return Object.keys(pickHealthSharingFieldsFromData(data)).length > 0;
+}
+
+export function hasHealthSharingMarketSignal(
+  data: Record<string, unknown> | null | undefined,
+): boolean {
+  if (!data || typeof data !== 'object') return false;
+  // Date-only / contribution-only must not classify a row as HealthShare —
+  // insurance creates used to write sharing_effective_date as "effective date".
+  if (!isBlankJsonValue(data.sharing_entity)) return true;
+  if (!isBlankJsonValue(data.member_tier)) return true;
+  if (!isBlankJsonValue(data.sharing_member_id)) return true;
+  // Leads HS membership name (not the insurance plan key).
+  if (
+    !isBlankJsonValue(data.product_type) &&
+    isBlankJsonValue(data.health_insurance_plan_name)
+  ) {
+    return true;
+  }
+  return false;
 }

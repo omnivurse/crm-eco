@@ -6,7 +6,7 @@
  *
  * - Matches each CSV row by zoho_id → email → phone → name+DOB
  * - Updates ONLY matched records; unmatched ignored; ambiguous fail closed
- * - Empty CSV cells never overwrite unless `overwriteEmpty: true`
+ * - Empty CSV cells NEVER overwrite — locked server-side, no client opt-out
  * - `dryRun` (default) returns match counts + previews without writing
  *
  * Authz: CRM admin or manager. Defense-in-depth `org_id` filters on top of RLS.
@@ -37,7 +37,11 @@ const requestSchema = z.object({
     .array(
       z.object({
         index: z.number().int().min(0),
-        raw: z.record(z.string(), z.string()),
+        // Optional: nothing on the server reads it. It is a second full copy
+        // of the file, and a resumable apply re-sends the whole payload on
+        // every pass — a full book would push the request past the platform
+        // body limit for no benefit.
+        raw: z.record(z.string(), z.string()).optional().default({}),
         normalized: z.record(z.string(), z.string()),
       }),
     )
@@ -48,8 +52,21 @@ const requestSchema = z.object({
     .min(1)
     .default([...DEFAULT_MATCH_PRIORITY]),
   dryRun: z.boolean().default(true),
-  overwriteEmpty: z.boolean().default(false),
   fileName: z.string().optional(),
+  // Resumable apply: the FULL file is re-sent and re-resolved every pass, so
+  // duplicate/ambiguity fail-closed decisions never degrade; only these rows
+  // are written.
+  resumeRowIndices: z.array(z.number().int().min(0)).optional(),
+  jobId: z.string().uuid().optional(),
+  carryOver: z
+    .object({
+      updated: z.number().int().min(0),
+      errorCount: z.number().int().min(0),
+      writeAttemptCount: z.number().int().min(0),
+      conflictCount: z.number().int().min(0),
+      auditFailureCount: z.number().int().min(0),
+    })
+    .optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -83,8 +100,16 @@ export async function POST(req: NextRequest) {
   }
 
   const orgId = profile.organization_id;
-  const { rows, moduleKey, matchPriority, dryRun, overwriteEmpty, fileName } =
-    parsed.data;
+  const {
+    rows,
+    moduleKey,
+    matchPriority,
+    dryRun,
+    fileName,
+    resumeRowIndices,
+    jobId,
+    carryOver,
+  } = parsed.data;
 
   const { data: moduleRow, error: moduleErr } = await supabase
     .from('crm_modules')
@@ -103,14 +128,48 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // A resume pass appends ledger rows to an existing job, so the job id must
+  // be proven to belong to this org, to be a csv_update, and to still be
+  // running. Without this, a client could bolt rows onto any job in the org —
+  // including one already rolled back, which would corrupt its before-images
+  // and make its undo restore a state that never existed.
+  if (jobId) {
+    const { data: existingJob, error: jobErr } = await supabase
+      .from('crm_import_jobs')
+      .select('id, source_type, status, rolled_back_at')
+      .eq('id', jobId)
+      .eq('org_id', orgId)
+      .maybeSingle();
+    if (jobErr) {
+      return NextResponse.json({ error: jobErr.message }, { status: 500 });
+    }
+    if (!existingJob) {
+      return NextResponse.json({ error: 'Import job not found' }, { status: 404 });
+    }
+    if (
+      existingJob.source_type !== 'csv_update' ||
+      existingJob.rolled_back_at !== null ||
+      existingJob.status !== 'processing'
+    ) {
+      return NextResponse.json(
+        { error: 'That import run is no longer resumable — start a new update.' },
+        { status: 409 },
+      );
+    }
+  }
+
   try {
     const result = await runCsvUpdate({
       rows,
       moduleKey: moduleRow.key,
       matchPriority,
       dryRun,
-      overwriteEmpty,
+      // Locked: a blank cell in the file can never erase a stored value.
+      overwriteEmpty: false,
       fileName: fileName ?? null,
+      resumeRowIndices,
+      jobId,
+      carryOver,
       lookup: createSupabaseRecordLookup({
         supabase,
         orgId,

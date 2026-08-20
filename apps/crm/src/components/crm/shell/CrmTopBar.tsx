@@ -55,6 +55,10 @@ const NotificationsPanel = dynamic(
   () => import('../NotificationsPanel').then((mod) => mod.NotificationsPanel),
   { ssr: false }
 );
+const DeferredChangeTicker = dynamic(
+  () => import('./DeferredChangeTicker').then((mod) => mod.DeferredChangeTicker),
+  { ssr: false }
+);
 const QuickCreateDrawer = dynamic(
   () => import('@/components/zoho/QuickCreateDrawer').then((mod) => mod.QuickCreateDrawer),
   { ssr: false }
@@ -226,6 +230,10 @@ export const CrmTopBar = memo(function CrmTopBar({
             is empty, so it only appears when the user actually has
             offline/retrying work to review. */}
         <PendingChangesPill />
+
+        {profile.organization_id ? (
+          <DeferredChangeTicker orgId={profile.organization_id} />
+        ) : null}
 
         {/* Notifications */}
         <NotificationsPanel />

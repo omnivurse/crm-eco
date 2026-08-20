@@ -68,8 +68,10 @@ export interface QuickCreateModuleConfig {
   description: string;
   /** Which JSONB key carries the record status (drives Pending→start-date rule). */
   statusKey?: string;
-  /** Which JSONB key is the coverage effective/start date. */
+  /** Which JSONB key is the coverage effective/start date (legacy single-key). */
   effectiveDateKey?: string;
+  /** Insurance start and/or sharing start — Pending is satisfied if any is filled. */
+  effectiveDateKeys?: string[];
   /**
    * Keys that stay filled after "Save & add another" — the batch-entry
    * fields that repeat across a stack of enrollments from the same producer /
@@ -91,6 +93,7 @@ export const QUICK_CREATE_FIELDS: Record<QuickCreateModuleKey, QuickCreateModule
     description: 'The essentials from the enrollment. Everything else can be added later.',
     statusKey: 'contact_status',
     effectiveDateKey: 'sharing_effective_date',
+    effectiveDateKeys: ['health_insurance_start_date', 'sharing_effective_date'],
     batchStickyKeys: ['producer_name', 'sharing_entity', 'contact_status', 'mailing_state'],
     fields: [
       { key: 'first_name', label: 'First name', type: 'text', required: true },
@@ -100,9 +103,11 @@ export const QUICK_CREATE_FIELDS: Record<QuickCreateModuleKey, QuickCreateModule
       { key: 'date_of_birth', label: 'Date of birth', type: 'date', placeholder: 'MM/DD/YYYY' },
       { key: 'mailing_city', label: 'City', type: 'text' },
       { key: 'mailing_state', label: 'State', type: 'state', placeholder: 'e.g. TX' },
-      { key: 'product', label: 'Plan', type: 'suggest' },
-      { key: 'sharing_effective_date', label: 'Effective date', type: 'date', placeholder: 'MM/DD/YYYY' },
-      { key: 'producer_name', label: 'Producer Name', hint: 'Who enrolled', type: 'suggest' },
+      { key: 'health_insurance_plan_name', label: 'Health Insurance Plan', type: 'suggest' },
+      { key: 'health_insurance_start_date', label: 'Coverage start', type: 'date', placeholder: 'MM/DD/YYYY' },
+      { key: 'product', label: 'Health Sharing Membership', type: 'suggest' },
+      { key: 'sharing_effective_date', label: 'Sharing effective date', type: 'date', placeholder: 'MM/DD/YYYY' },
+      { key: 'producer_name', label: 'Enrolled by', hint: 'Who enrolled', type: 'suggest' },
       { key: 'referring_member', label: 'Referring member', type: 'text' },
       { key: 'member_number', label: 'Member #', type: 'text' },
       {
@@ -127,6 +132,7 @@ export const QUICK_CREATE_FIELDS: Record<QuickCreateModuleKey, QuickCreateModule
     description: 'Capture the lead now; the full form is one click away.',
     statusKey: 'lead_status',
     effectiveDateKey: 'sharing_effective_date',
+    effectiveDateKeys: ['health_insurance_start_date', 'sharing_effective_date'],
     batchStickyKeys: ['producer', 'sharing_entity', 'lead_status', 'state'],
     fields: [
       { key: 'first_name', label: 'First name', type: 'text', required: true },
@@ -136,9 +142,11 @@ export const QUICK_CREATE_FIELDS: Record<QuickCreateModuleKey, QuickCreateModule
       { key: 'date_of_birth', label: 'Date of birth', type: 'date', placeholder: 'MM/DD/YYYY' },
       { key: 'city', label: 'City', type: 'text' },
       { key: 'state', label: 'State', type: 'state', placeholder: 'e.g. TX' },
-      { key: 'product_type', label: 'Plan', type: 'suggest' },
-      { key: 'sharing_effective_date', label: 'Effective date', type: 'date', placeholder: 'MM/DD/YYYY' },
-      { key: 'producer', label: 'Producer', hint: 'Who enrolled', type: 'suggest' },
+      { key: 'health_insurance_plan_name', label: 'Health Insurance Plan', type: 'suggest' },
+      { key: 'health_insurance_start_date', label: 'Coverage start', type: 'date', placeholder: 'MM/DD/YYYY' },
+      { key: 'product_type', label: 'Health Sharing Membership', type: 'suggest' },
+      { key: 'sharing_effective_date', label: 'Sharing effective date', type: 'date', placeholder: 'MM/DD/YYYY' },
+      { key: 'producer', label: 'Enrolled by', hint: 'Who enrolled', type: 'suggest' },
       { key: 'referring_member', label: 'Referring member', type: 'text' },
       {
         key: 'lead_status',
@@ -280,16 +288,32 @@ export function missingRequiredQuickCreateFields(
  * The server rejects Pending-class statuses without a coverage start date
  * (`assertCrmPendingHasStartDate`). Surface that BEFORE the round-trip so the
  * user is told which field to fill instead of getting a generic failure.
+ * Insurance coverage start OR sharing effective date both count.
  */
 export function quickCreatePendingNeedsEffectiveDate(
   moduleKey: QuickCreateModuleKey,
   values: Record<string, string>,
 ): boolean {
   const cfg = QUICK_CREATE_FIELDS[moduleKey];
-  if (!cfg.statusKey || !cfg.effectiveDateKey) return false;
+  if (!cfg.statusKey) return false;
+  const dateKeys = cfg.effectiveDateKeys ?? (cfg.effectiveDateKey ? [cfg.effectiveDateKey] : []);
+  if (dateKeys.length === 0) return false;
   const status = values[cfg.statusKey];
   if (!isPendingContactStatus(status)) return false;
-  return !(values[cfg.effectiveDateKey] ?? '').trim();
+  return !dateKeys.some((key) => (values[key] ?? '').trim());
+}
+
+/** Which date key was actually filled (insurance start wins over sharing start). */
+export function quickCreateFilledEffectiveDateKey(
+  moduleKey: QuickCreateModuleKey,
+  values: Record<string, string>,
+): string | undefined {
+  const cfg = QUICK_CREATE_FIELDS[moduleKey];
+  const dateKeys = cfg.effectiveDateKeys ?? (cfg.effectiveDateKey ? [cfg.effectiveDateKey] : []);
+  for (const key of dateKeys) {
+    if ((values[key] ?? '').trim()) return key;
+  }
+  return undefined;
 }
 
 /** Digits only — "(555) 123-4567" → "5551234567". Drops a leading US "1". */

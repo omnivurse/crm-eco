@@ -5,6 +5,7 @@ import {
   filterNotesByOrigin,
   isLegacyNote,
   noteOriginFilterOptions,
+  originFilterHidesCurrent,
 } from './note-filter';
 
 const current = { id: 'a', created_by: 'user-1' };
@@ -44,23 +45,29 @@ describe('filterNotesByOrigin', () => {
 });
 
 describe('defaultNoteOriginFilter', () => {
-  it('defaults to current when any current note exists', () => {
-    expect(defaultNoteOriginFilter({ current: 1, legacy: 500, all: 501 })).toBe('current');
-  });
-  it('defaults to all when only legacy notes exist', () => {
+  it('always defaults to All so current notes cannot hide behind Imported', () => {
+    expect(defaultNoteOriginFilter({ current: 1, legacy: 500, all: 501 })).toBe('all');
     expect(defaultNoteOriginFilter({ current: 0, legacy: 3, all: 3 })).toBe('all');
-  });
-  it('defaults to all when there are no notes', () => {
     expect(defaultNoteOriginFilter({ current: 0, legacy: 0, all: 0 })).toBe('all');
   });
 });
 
+describe('originFilterHidesCurrent', () => {
+  it('is true only when Imported is selected and CRM notes exist', () => {
+    const mixed = { current: 2, legacy: 37, all: 39 };
+    expect(originFilterHidesCurrent('legacy', mixed)).toBe(true);
+    expect(originFilterHidesCurrent('all', mixed)).toBe(false);
+    expect(originFilterHidesCurrent('current', mixed)).toBe(false);
+    expect(originFilterHidesCurrent('legacy', { current: 0, legacy: 3, all: 3 })).toBe(false);
+  });
+});
+
 describe('noteOriginFilterOptions', () => {
-  it('returns Current | Legacy | All with counts', () => {
+  it('returns All | This CRM | Imported with counts (All first = default)', () => {
     expect(noteOriginFilterOptions({ current: 2, legacy: 5, all: 7 })).toEqual([
-      { id: 'current', label: 'Current', count: 2 },
-      { id: 'legacy', label: 'Legacy', count: 5 },
       { id: 'all', label: 'All', count: 7 },
+      { id: 'current', label: 'This CRM', count: 2 },
+      { id: 'legacy', label: 'Imported', count: 5 },
     ]);
   });
 });
