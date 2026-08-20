@@ -363,12 +363,10 @@ export function AdvisorCarrierField({
   if (!carrierType) {
     return (
       <Input
-        name={field.key}
         value={value ?? ''}
         onChange={(e) => onChange(e.target.value)}
         placeholder={`Enter ${field.label.toLowerCase()}`}
         className={cn(error && 'border-destructive')}
-        {...(field.required && { required: true })}
       />
     );
   }
