@@ -359,6 +359,7 @@ const FormFieldRenderer = memo(function FormFieldRenderer({
       input = (
         <Input
           id={field.key}
+          name={field.key}
           className={cn(error && 'border-destructive')}
           // Neutral amount placeholder — do not echo the field label (avoids
           // "Annual deductible" / "Enter annual deductible" visual collision).
@@ -466,16 +467,21 @@ const FormFieldRenderer = memo(function FormFieldRenderer({
 
     case 'boolean':
       input = (
-        <div className="flex items-center space-x-2">
-          <Checkbox
-            id={field.key}
-            checked={!!value}
-            onCheckedChange={(checked) => setValue(field.key, checked)}
-          />
-          <Label htmlFor={field.key} className="text-sm font-normal">
-            {field.tooltip || 'Yes'}
-          </Label>
-        </div>
+        <>
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id={field.key}
+              checked={!!value}
+              onCheckedChange={(checked) => setValue(field.key, checked)}
+            />
+            <Label htmlFor={field.key} className="text-sm font-normal">
+              {field.tooltip || 'Yes'}
+            </Label>
+          </div>
+          {value !== undefined && value !== null && (
+            <input type="hidden" name={field.key} value={value ? 'true' : 'false'} />
+          )}
+        </>
       );
       break;
 
@@ -506,25 +512,30 @@ const FormFieldRenderer = memo(function FormFieldRenderer({
     case 'multiselect': {
       const selectedValues = (value as string[]) || [];
       input = (
-        <div className="space-y-2 border rounded-md p-3 max-h-40 overflow-y-auto">
-          {getFieldOptions(field.options, field.key).map((option) => (
-            <div key={option} className="flex items-center space-x-2">
-              <Checkbox
-                id={`${field.key}-${option}`}
-                checked={selectedValues.includes(option)}
-                onCheckedChange={(checked) => {
-                  const newValues = checked
-                    ? [...selectedValues, option]
-                    : selectedValues.filter((v) => v !== option);
-                  setValue(field.key, newValues);
-                }}
-              />
-              <Label htmlFor={`${field.key}-${option}`} className="text-sm font-normal">
-                {option}
-              </Label>
-            </div>
-          ))}
-        </div>
+        <>
+          <div className="space-y-2 border rounded-md p-3 max-h-40 overflow-y-auto">
+            {getFieldOptions(field.options, field.key).map((option) => (
+              <div key={option} className="flex items-center space-x-2">
+                <Checkbox
+                  id={`${field.key}-${option}`}
+                  checked={selectedValues.includes(option)}
+                  onCheckedChange={(checked) => {
+                    const newValues = checked
+                      ? [...selectedValues, option]
+                      : selectedValues.filter((v) => v !== option);
+                    setValue(field.key, newValues);
+                  }}
+                />
+                <Label htmlFor={`${field.key}-${option}`} className="text-sm font-normal">
+                  {option}
+                </Label>
+              </div>
+            ))}
+          </div>
+          {selectedValues.length > 0 && (
+            <input type="hidden" name={field.key} value={JSON.stringify(selectedValues)} />
+          )}
+        </>
       );
       break;
     }
@@ -532,12 +543,17 @@ const FormFieldRenderer = memo(function FormFieldRenderer({
     case 'user':
     case 'lookup':
       input = (
-        <LookupSearchField
-          field={field}
-          value={value as string | undefined}
-          onChange={(val) => setValue(field.key, val)}
-          error={!!error}
-        />
+        <>
+          <LookupSearchField
+            field={field}
+            value={value as string | undefined}
+            onChange={(val) => setValue(field.key, val)}
+            error={!!error}
+          />
+          {typeof value === 'string' && value !== '' && (
+            <input type="hidden" name={field.key} value={value} />
+          )}
+        </>
       );
       break;
 
