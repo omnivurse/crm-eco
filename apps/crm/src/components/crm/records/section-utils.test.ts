@@ -103,6 +103,42 @@ describe('section-utils person coverage visibility', () => {
     expect(ownership?.filledCount).toBe(2);
   });
 
+  it('does not count matching Street + Mailing Street toward the Address badge', () => {
+    const meta = getSectionMeta(
+      [
+        field('street', 'address'),
+        field('mailing_street', 'address'),
+        field('city', 'address'),
+        field('state', 'address'),
+        field('zip_code', 'address'),
+        field('county', 'address'),
+      ],
+      {
+        id: 'layout',
+        org_id: 'org',
+        module_id: 'mod',
+        name: 'Default',
+        is_default: true,
+        config: {
+          sections: [{ key: 'address', label: 'Address', columns: 2 }],
+        },
+        created_at: '',
+        updated_at: '',
+      },
+      {
+        street: '64197 Peach Valley Road',
+        mailing_street: '64197 Peach Valley Road',
+        city: 'Montrose',
+        state: 'CO',
+        zip_code: '81401',
+      },
+      'leads',
+    );
+    const address = meta.find((s) => s.key === 'address');
+    expect(address?.fieldCount).toBe(5);
+    expect(address?.filledCount).toBe(4);
+  });
+
   it('includes empty coverage layout sections for person modules in nav meta', () => {
     const meta = getSectionMeta(
       [field('sharing_entity', 'health_sharing')],
@@ -131,7 +167,7 @@ describe('section-utils person coverage visibility', () => {
   it('sorts sections in canonical display order (name before coverage before address)', () => {
     const meta = getSectionMeta(
       [
-        field('street', 'address'),
+        field('mailing_street', 'address'),
         field('sharing_entity', 'health_sharing'),
         field('first_name', 'core'),
         field('note', 'notes_history'),
@@ -280,7 +316,7 @@ describe('section-utils person coverage visibility', () => {
 
   it('hides empty read-only sections from nav but keeps inline-editable ones', () => {
     const metaReadOnly = getSectionMeta(
-      [field('street', 'address')],
+      [field('mailing_street', 'address')],
       {
         id: 'layout',
         org_id: 'org',
@@ -296,7 +332,7 @@ describe('section-utils person coverage visibility', () => {
         created_at: '',
         updated_at: '',
       },
-      { street: '123 Main' },
+      { mailing_street: '123 Main' },
       'contacts',
       { inlineEditable: false },
     );

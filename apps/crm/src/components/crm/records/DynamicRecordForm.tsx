@@ -60,6 +60,10 @@ import {
   isVisibleEnrolledByField,
   shouldShowOwnershipFieldInForm,
 } from '@/lib/crm/ownership-field-dedupe';
+import {
+  addressFormLabel,
+  shouldShowAddressFieldInForm,
+} from '@/lib/crm/address-field-dedupe';
 import { resolveCoverageSnapshotPlanType } from '@/lib/crm/coverage-snapshot-plan-type';
 import { selectHeroSharingField } from '@/lib/crm/coverage-snapshot-identity';
 import {
@@ -843,6 +847,15 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
       ) {
         continue;
       }
+      if (
+        !shouldShowAddressFieldInForm({
+          fieldKey: field.key,
+          moduleKey,
+          values: defaultValues,
+        })
+      ) {
+        continue;
+      }
       const section = field.section || 'main';
       if (!grouped[section]) grouped[section] = [];
       grouped[section].push(field);
@@ -959,7 +972,11 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
         field.key === 'health_insurance_plan_name' || field.key === 'insurance_plan_name'
           ? HEALTH_INSURANCE_PLAN_LABEL
           : null;
-      const cellLabel = opts?.label ?? enrolledByLabel?.label ?? planLabel ?? field.label;
+      const cellLabel =
+        opts?.label ??
+        enrolledByLabel?.label ??
+        planLabel ??
+        addressFormLabel(field.key, moduleKey, field.label);
       const cellLabelTitle =
         opts?.labelTitle ?? enrolledByLabel?.title ?? field.tooltip ?? cellLabel;
       const cellInlineEditable = inlineEditable && !opts?.readOnlyView;
@@ -976,6 +993,7 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
         opts && 'displayValue' in opts
           ? opts.displayValue
           : defaultValues[field.key];
+      const labeledField = cellLabel === field.label ? field : { ...field, label: cellLabel };
 
       const valueNode = cellReadOnly ? (
         <div
@@ -986,13 +1004,13 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
         >
           {cellInlineEditable ? (
             <InlineFieldCell
-              field={field}
+              field={labeledField}
               value={cellValue}
               relatedValues={defaultValues}
             />
           ) : (
             <FieldRenderer
-              field={field}
+              field={labeledField}
               value={cellValue}
               relatedValues={defaultValues}
             />
@@ -1000,7 +1018,7 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
         </div>
       ) : (
         <FormFieldRenderer
-          field={field}
+          field={labeledField}
           control={control}
           register={register}
           setValue={setValue}

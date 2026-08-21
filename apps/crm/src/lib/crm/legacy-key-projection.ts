@@ -26,6 +26,8 @@
  *
  * Direction is per-module and is NOT symmetric: contacts define `mailing_city`
  * and store legacy `city`; leads define `city` and store legacy `mailing_city`.
+ * Street is the same split: contacts canonical is `mailing_street` (Zoho);
+ * leads canonical is `street`; members canonical is `address_line1` (E123).
  * The table below encodes the real prod shape, verified against live crm_fields.
  */
 
@@ -44,7 +46,7 @@ const CONTACTS_ALIASES: LegacyAliasTable = {
   mailing_city: ['city'],
   mailing_state: ['state'],
   mailing_zip: ['zip_code', 'postal_code'],
-  mailing_street: ['address_line1'],
+  mailing_street: ['street', 'address_line1'],
   company: ['company_name'],
   secondary_email: ['email2'],
   referral_source: ['referral'],
@@ -53,6 +55,7 @@ const CONTACTS_ALIASES: LegacyAliasTable = {
 
 /** Leads: mirror image of contacts — the plain names are the defined ones. */
 const LEADS_ALIASES: LegacyAliasTable = {
+  street: ['mailing_street', 'address_line1'],
   city: ['mailing_city'],
   state: ['mailing_state'],
   zip_code: ['mailing_zip', 'postal_code'],
@@ -87,6 +90,7 @@ export const MEMBERS_COVERAGE_ALIASES: LegacyAliasTable = {
  */
 const MEMBERS_ALIASES: LegacyAliasTable = {
   gender: ['primary_member_gender'],
+  address_line1: ['mailing_street', 'street'],
   city: ['mailing_city'],
   state: ['mailing_state'],
   zip_code: ['mailing_zip', 'postal_code'],
@@ -137,7 +141,7 @@ export const DEFINE_ONLY_LEGACY_KEYS: Record<string, readonly string[]> = {
     'scheduled_cancel_end_date',
   ],
   members: ['do_not_call', 'referral', 'source', 'company_name', 'phone2', 'email2', 'internal_id', 'advisor_id'],
-  leads: ['producer_name', 'producer_id', 'mailing_street', 'advisor', 'agent'],
+  leads: ['producer_name', 'producer_id', 'advisor', 'agent'],
   advisors: [
     'advisor_code',
     'first_name',

@@ -30,7 +30,10 @@ function readConfig(overrides?: HclClientConfig): {
     /\/$/,
     '',
   );
-  const secretKey = overrides?.secretKey || process.env.HCL_SECRET_KEY || '';
+  const secretKey =
+    overrides && Object.prototype.hasOwnProperty.call(overrides, 'secretKey')
+      ? overrides.secretKey || ''
+      : process.env.HCL_SECRET_KEY || '';
   return {
     baseUrl,
     secretKey,

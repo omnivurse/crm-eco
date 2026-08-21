@@ -146,10 +146,14 @@ export async function POST(req: NextRequest) {
     if (!existingJob) {
       return NextResponse.json({ error: 'Import job not found' }, { status: 404 });
     }
+    // 'failed' is resumable too: the stalled-job reaper can mark a long run
+    // failed, and refusing it there would strand a half-applied file with no
+    // way to finish. What must never be resumed is a run that was undone —
+    // appending to a rolled-back job would corrupt its before-images.
     if (
       existingJob.source_type !== 'csv_update' ||
       existingJob.rolled_back_at !== null ||
-      existingJob.status !== 'processing'
+      !['processing', 'failed'].includes(existingJob.status ?? '')
     ) {
       return NextResponse.json(
         { error: 'That import run is no longer resumable — start a new update.' },

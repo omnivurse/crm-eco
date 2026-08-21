@@ -23,6 +23,7 @@ export {
   loadMsaAllowlistFromEnv,
   msasForState,
   uniqueStates,
+  pickPreferredState,
 } from './msa';
 
 export {

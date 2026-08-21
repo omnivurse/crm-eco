@@ -24,7 +24,7 @@ import { RelatedRecordsPanelClient } from '@/components/crm/records/RelatedRecor
 import { RecordOverviewPanel } from '@/components/crm/records/RecordOverviewPanel';
 import { CommunicationsTab } from '@/components/crm/records/CommunicationsTab';
 import { mergeCrmRecordRowIntoFormDefaults } from '@/lib/crm/record-form-defaults';
-import { isLegacyNotesHistoryHtml } from '@/lib/crm/note-dedupe';
+import { hasLegacyNotesHistory } from '@/lib/crm/note-dedupe';
 import { NotesPanel } from './NotesPanel';
 import { LegacyNotesCard } from './LegacyNotesCard';
 import { MergedFromToast } from '@/components/crm/records/MergedFromToast';
@@ -196,16 +196,25 @@ async function RecordDetailContent({ params }: PageProps) {
   const recordData = record.data || {};
   const notesHistoryRaw =
     typeof recordData.notes_history === 'string' ? recordData.notes_history : '';
-  const legacyNotes = isLegacyNotesHistoryHtml(notesHistoryRaw) ? notesHistoryRaw : null;
+  // Show imported history whenever there IS any, regardless of whether Zoho
+  // wrote it as HTML. Gating on markup hid hundreds of records whose history
+  // is plain text ("11-6-15 He's in CA 'til Mon…") — the exact "my notes
+  // vanished" report this work exists to end. Only short scalars (plan ids,
+  // member numbers) stored in the same key are still suppressed.
+  const legacyNotes = hasLegacyNotesHistory(notesHistoryRaw) ? notesHistoryRaw : null;
 
   // Count legacy entries so the Notes tab badge reflects them too. The full
   // parser lives in LegacyNotesCard (client-only); for the count we mirror its
-  // contract: split on <hr>, drop empties.
+  // contract: split on <hr>, drop empties. Plain-text history has no <hr>, so
+  // it counts as the single entry it renders as.
   const legacyNoteCount = legacyNotes
-    ? legacyNotes
-        .split(/<hr\s*\/?>/gi)
-        .map((c) => c.replace(/<[^>]*>/g, '').trim())
-        .filter((c) => c.length > 0).length
+    ? Math.max(
+        1,
+        legacyNotes
+          .split(/<hr\s*\/?>/gi)
+          .map((c) => c.replace(/<[^>]*>/g, '').trim())
+          .filter((c) => c.length > 0).length,
+      )
     : 0;
 
   // V2 shell prefers insights.counts.notes; fold legacy entries in so the

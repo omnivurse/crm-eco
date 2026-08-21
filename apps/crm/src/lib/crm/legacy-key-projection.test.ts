@@ -118,10 +118,27 @@ describe('projectLegacyKeys', () => {
   });
 
   it('projects the opposite direction on leads (mailing_* -> plain)', () => {
-    const base: Record<string, unknown> = { mailing_city: 'Denver', mailing_state: 'CO' };
+    const base: Record<string, unknown> = {
+      mailing_street: '64197 Peach Valley Road',
+      mailing_city: 'Denver',
+      mailing_state: 'CO',
+    };
     projectLegacyKeys(base, 'leads');
+    expect(base.street).toBe('64197 Peach Valley Road');
     expect(base.city).toBe('Denver');
     expect(base.state).toBe('CO');
+  });
+
+  it('fills contact mailing_street from leftover street before address_line1', () => {
+    const base: Record<string, unknown> = { street: '10 Lead Ave', address_line1: '99 E123 Rd' };
+    projectLegacyKeys(base, 'contacts');
+    expect(base.mailing_street).toBe('10 Lead Ave');
+  });
+
+  it('fills members address_line1 from Zoho mailing_street', () => {
+    const base: Record<string, unknown> = { mailing_street: '1 Sharing Way' };
+    projectLegacyKeys(base, 'members');
+    expect(base.address_line1).toBe('1 Sharing Way');
   });
 
   it('treats blank strings as absent', () => {

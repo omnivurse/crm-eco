@@ -184,3 +184,23 @@ export function uniqueStates(allowlist: MsaAllowlistEntry[]): string[] {
   }
   return out.sort((a, b) => a.localeCompare(b));
 }
+
+/**
+ * First candidate that is actually on the allowlist; otherwise the first
+ * allowlisted state. Prevents pre-selecting Oregon when the key is Alabama-only.
+ */
+export function pickPreferredState(
+  allowlist: MsaAllowlistEntry[],
+  candidates: Array<string | null | undefined>,
+): string | null {
+  const states = uniqueStates(allowlist);
+  if (states.length === 0) return null;
+  const allowed = new Map(states.map((s) => [s.trim().toLowerCase(), s]));
+  for (const candidate of candidates) {
+    const normalized = normalizeStateName(candidate);
+    if (!normalized) continue;
+    const match = allowed.get(normalized.trim().toLowerCase());
+    if (match) return match;
+  }
+  return states[0];
+}

@@ -7,6 +7,7 @@ import {
   loadSpecialtyCatalogFromEnv,
   msasForState,
   normalizeStateName,
+  pickPreferredState,
   resolveSpecialty,
   specialtiesForSearch,
   stateFromZip,
@@ -39,13 +40,16 @@ export async function GET(request: NextRequest) {
     const memberState = normalizeStateName(
       (ctx.member as { state?: string | null }).state || undefined,
     );
-    const preferredState =
-      requestedState || inferred || memberState || uniqueStates(allowlist)[0] || null;
+    const preferredState = pickPreferredState(allowlist, [
+      requestedState,
+      inferred,
+      memberState,
+    ]);
     const specialties = specialtiesForSearch(loadSpecialtyCatalogFromEnv(), allowlist);
     return NextResponse.json(
       {
         states: uniqueStates(allowlist),
-        /** Unique metros; specialty is selected separately (hospital, RX, …). */
+        /** Unique metros. Specialty list is allowlist-scoped. */
         msas: uniqueMsas(allowlist),
         specialties,
         preferredState,
@@ -53,6 +57,17 @@ export async function GET(request: NextRequest) {
         defaultSpecialty: specialties[0]?.hclName || 'Hospital cash prices',
       },
       { headers: limited.headers },
+    );
+  }
+
+  if (allowlist.length === 0) {
+    return NextResponse.json(
+      {
+        error: 'misconfigured',
+        message: 'Price lookup is not configured.',
+        fallback: false,
+      },
+      { status: 503, headers: limited.headers },
     );
   }
 
@@ -123,7 +138,8 @@ export async function GET(request: NextRequest) {
       {
         error: result.code,
         message: result.message,
-        fallback: true,
+        // Backup directory only when this metro is not on the key.
+        fallback: result.code === 'no_msa_mapping',
       },
       { status, headers: limited.headers },
     );

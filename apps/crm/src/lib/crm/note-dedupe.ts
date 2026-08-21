@@ -34,6 +34,11 @@ export function exactNoteDedupeKey(note: DedupeableNote): string {
 /**
  * Legacy-only body fingerprint. Current CRM notes (`created_by` set) return
  * null so two similar same-day notes a rep wrote both stay visible.
+ *
+ * This is a body fingerprint ONLY — it deliberately carries no timestamp,
+ * because the caller decides how far apart two matching bodies may be. See
+ * {@link LEGACY_TWIN_WINDOW_MS}: collapsing on body alone treats a follow-up
+ * call months later as a duplicate of the first one and hides real history.
  */
 export function legacyBodyDedupeKey(note: DedupeableNote): string | null {
   if (note.created_by) return null;
@@ -43,9 +48,35 @@ export function legacyBodyDedupeKey(note: DedupeableNote): string | null {
 }
 
 /**
- * Zoho `notes_history` is an HTML dump of notes. Short scalars (plan IDs,
- * member numbers) were written into the same JSONB key and must not render
- * as a notes card or inflate the Notes badge.
+ * How far apart two identical legacy bodies may sit and still be treated as
+ * the SAME note double-loaded (local vs UTC), rather than as two genuine
+ * outreach attempts.
+ *
+ * Reps legitimately re-send the same templated line — "Left a detailed
+ * message on voicemail" — weeks or months apart. Ignoring the gap collapsed
+ * those into one, which reads to the user as history going missing: exactly
+ * the complaint this module exists to fix. 12h comfortably covers the
+ * timezone twin without reaching a later attempt.
+ */
+export const LEGACY_TWIN_WINDOW_MS = 12 * 60 * 60 * 1000;
+
+/**
+ * Is there imported history here worth rendering at all?
+ *
+ * Zoho wrote both note dumps AND short scalars (plan ids, member numbers)
+ * into the same JSONB key; only the scalars should be suppressed. Length is
+ * the test, NOT markup — a great many imported histories are plain text
+ * ("11-6-15 He's in CA 'til Mon. 12-3-15 Completed his enrollment today…"),
+ * and gating on HTML markers hid every one of them.
+ */
+export function hasLegacyNotesHistory(raw: string | null | undefined): raw is string {
+  return (raw || '').trim().length >= 40;
+}
+
+/**
+ * Does the imported history carry Zoho's HTML markup, so it should be parsed
+ * as HTML rather than rendered as pre-formatted text? This chooses the
+ * RENDERING MODE — it must never decide whether history is shown at all.
  */
 export function isLegacyNotesHistoryHtml(raw: string | null | undefined): raw is string {
   const s = (raw || '').trim();
@@ -58,15 +89,31 @@ export function isLegacyNotesHistoryHtml(raw: string | null | undefined): raw is
 
 export function dedupeNotesForDisplay<T extends DedupeableNote>(notes: readonly T[]): T[] {
   const seenExact = new Set<string>();
-  const seenLegacyBody = new Set<string>();
+  // Timestamps of the legacy notes we KEPT, per body fingerprint. A repeat
+  // body only collapses when it sits within LEGACY_TWIN_WINDOW_MS of one we
+  // already kept — the double-load twin — so the same templated line sent
+  // again weeks later still shows as its own outreach.
+  const keptLegacyTimes = new Map<string, number[]>();
   const out: T[] = [];
+
   for (const note of notes) {
     const exact = exactNoteDedupeKey(note);
     if (seenExact.has(exact)) continue;
+
     const legacy = legacyBodyDedupeKey(note);
-    if (legacy && seenLegacyBody.has(legacy)) continue;
+    const at = legacy ? Date.parse(note.created_at) : Number.NaN;
+
+    if (legacy && Number.isFinite(at)) {
+      const kept = keptLegacyTimes.get(legacy);
+      if (kept?.some((t) => Math.abs(t - at) <= LEGACY_TWIN_WINDOW_MS)) continue;
+    }
+
     seenExact.add(exact);
-    if (legacy) seenLegacyBody.add(legacy);
+    if (legacy && Number.isFinite(at)) {
+      const kept = keptLegacyTimes.get(legacy);
+      if (kept) kept.push(at);
+      else keptLegacyTimes.set(legacy, [at]);
+    }
     out.push(note);
   }
   return out;

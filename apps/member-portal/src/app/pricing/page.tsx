@@ -32,7 +32,7 @@ export default async function PricingPage() {
     <div className="space-y-6">
       <PageHeader
         title="Compare cash prices"
-        description="Search published cash prices for hospital, pharmacy (RX), imaging, and labs by metro, with a backup directory when a market is not loaded yet."
+        description="Search published hospital cash prices by metro. Start with a CPT or HCPCS code when you have one. Markets on this key are listed in the search form."
         kicker="Pricing"
         backHref="/services"
         backLabel="Back to Services"

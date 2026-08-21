@@ -473,6 +473,10 @@ export function createSupabaseCsvUpdateWriter(input: {
             conflict_count: conflictCount,
             audit_failure_count: auditFailureCount,
             paused,
+            // Heartbeat. A resumable apply legitimately stays 'processing'
+            // for the length of the file, and the stalled-job reaper would
+            // otherwise fail it mid-run based on when it FIRST started.
+            last_pass_at: new Date().toISOString(),
           },
         })
         .eq('id', jobId)

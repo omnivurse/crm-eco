@@ -12,6 +12,7 @@ import {
   specialtiesForSearch,
   resolveSpecialty,
   uniqueMsas,
+  pickPreferredState,
 } from './index';
 
 describe('normalizeRate', () => {
@@ -52,6 +53,9 @@ describe('mapHclError', () => {
   it('maps invalid key and mapping miss', () => {
     expect(mapHclError('Invalid Secret Key Or Invalid Parameters.', 401)).toBe('invalid_key');
     expect(mapHclError('No table mapping found for given StateName & MSAName')).toBe(
+      'no_msa_mapping',
+    );
+    expect(mapHclError("Could not find stored procedure 'Sp_Expose_Api_Rates_Paged'.", 400)).toBe(
       'no_msa_mapping',
     );
   });
@@ -114,6 +118,25 @@ describe('msa helpers', () => {
     expect(stateFromZip('97201')).toBe('Oregon');
     expect(stateFromZip('abc')).toBeNull();
   });
+
+  it('maps Alabama ZIP to state', () => {
+    expect(stateFromZip('35203')).toBe('Alabama');
+  });
+
+  it('prefers an allowlisted state and ignores off-key markets', () => {
+    const list = parseMsaAllowlist(
+      JSON.stringify([
+        {
+          stateName: 'Alabama',
+          msaName: 'Birmingham - Huntsville - Gadsden',
+          specialty: 'Hospital cash prices',
+        },
+      ]),
+    );
+    expect(pickPreferredState(list, ['Oregon', 'AL', null])).toBe('Alabama');
+    expect(pickPreferredState(list, [null, '97201'])).toBe('Alabama');
+    expect(pickPreferredState(list, ['Alabama'])).toBe('Alabama');
+  });
 });
 
 describe('specialties', () => {
@@ -141,6 +164,21 @@ describe('specialties', () => {
     const specs = specialtiesForSearch(CASH_PAY_CATALOG, list);
     expect(specs.some((s) => s.hclName === 'Pharmacy')).toBe(true);
     expect(specs.some((s) => s.hclName === 'Hospital cash prices')).toBe(true);
+  });
+
+  it('does not list catalog specialties the key has not mapped', () => {
+    const list = parseMsaAllowlist(
+      JSON.stringify([
+        {
+          stateName: 'Alabama',
+          msaName: 'Birmingham - Huntsville - Gadsden',
+          specialty: 'Hospital cash prices',
+        },
+      ]),
+    );
+    const specs = specialtiesForSearch(CASH_PAY_CATALOG, list);
+    expect(specs).toHaveLength(1);
+    expect(specs[0].hclName).toBe('Hospital cash prices');
   });
 });
 
@@ -220,6 +258,31 @@ describe('getRateDataPaged', () => {
     if (result.ok) {
       expect(result.rates[0].facilityName).toBe('River Hospital');
       expect(result.source).toBe('hcl');
+    }
+  });
+});
+
+const live = process.env.HCL_LIVE_PROBE === '1';
+
+describe.skipIf(!live)('live GetRateDataPaged', () => {
+  it('returns Alabama hospital cash prices', async () => {
+    const result = await getRateDataPaged(
+      {
+        stateName: 'Alabama',
+        msaName: 'Birmingham - Huntsville - Gadsden',
+        specialty: 'Hospital cash prices',
+        pageNumber: 1,
+        pageSize: 5,
+        procedureCode: '10005',
+      },
+      { skipCache: true },
+    );
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.rates.length).toBeGreaterThan(0);
+      expect(result.rates[0].facilityName.length).toBeGreaterThan(0);
+      expect(result.rates[0].rate).toBeGreaterThan(0);
+      expect(result.totalCount).toBeGreaterThan(0);
     }
   });
 });

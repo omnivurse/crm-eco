@@ -15,6 +15,7 @@ import {
   isOwnershipListColumnKey,
   preferredOwnershipListColumnKey,
 } from './ownership-field-dedupe';
+import { isAddressLineListColumnKey } from './address-field-dedupe';
 
 /** Minimal shape needed to rank fields (structural subset of CrmField). */
 export interface DefaultColumnCandidate {
@@ -80,9 +81,14 @@ export function pickDefaultListColumns(
 
   const picked: string[] = [];
   const ownershipKeep = preferredOwnershipListColumnKey(keySet);
+  let seenAddressLine = false;
   const push = (key: string) => {
     if (picked.length >= limit || picked.includes(key)) return;
     if (isOwnershipListColumnKey(key) && key !== ownershipKeep) return;
+    if (isAddressLineListColumnKey(key)) {
+      if (seenAddressLine) return;
+      seenAddressLine = true;
+    }
     picked.push(key);
   };
 

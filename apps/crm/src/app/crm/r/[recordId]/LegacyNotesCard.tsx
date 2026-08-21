@@ -24,6 +24,12 @@ interface ParsedEntry {
   timestamp: string | null;
   bodyHtml: string;
   bodyText: string;
+  /**
+   * Imported history that carries no Zoho markup. Its entries are separated
+   * by newlines, which HTML collapses — so it renders with whitespace
+   * preserved instead of running every dated line into one paragraph.
+   */
+  plainText: boolean;
 }
 
 const PREVIEW_LIMIT = 5;
@@ -52,6 +58,7 @@ function parseNotesHtml(raw: string): ParsedEntry[] {
       timestamp,
       bodyHtml: sanitize(html),
       bodyText: stripHtml(html),
+      plainText: !/<[a-z][^>]*>/i.test(html),
     };
   });
 }
@@ -78,6 +85,7 @@ function LegacyNoteEntry({ entry }: { entry: ParsedEntry }) {
       )}
       <div
         className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed legacy-note-content [&_b]:font-semibold [&_b]:text-slate-800 dark:[&_b]:text-slate-100"
+        style={entry.plainText ? { whiteSpace: 'pre-wrap' } : undefined}
         dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(displayHtml) }}
       />
       {isTruncated && (

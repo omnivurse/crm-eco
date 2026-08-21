@@ -11,6 +11,7 @@ import type {
   LayoutSectionAccent,
   LayoutSectionVariant,
 } from '@/lib/crm/types';
+import { shouldShowAddressFieldInForm } from '@/lib/crm/address-field-dedupe';
 import { shouldShowEndDateFieldInSection } from '@/lib/crm/coverage-end-date-fields';
 import { shouldShowOwnershipFieldInForm } from '@/lib/crm/ownership-field-dedupe';
 
@@ -601,6 +602,15 @@ export function getSectionMeta(
         values: recordData,
         marketType:
           typeof recordData?.market_type === 'string' ? recordData.market_type : null,
+      })
+    ) {
+      continue;
+    }
+    if (
+      !shouldShowAddressFieldInForm({
+        fieldKey: field.key,
+        moduleKey,
+        values: recordData,
       })
     ) {
       continue;

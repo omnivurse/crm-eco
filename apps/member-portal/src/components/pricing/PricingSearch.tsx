@@ -256,12 +256,11 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
           <div className="flex items-start gap-2 text-sm text-slate-600">
             <Info weight="light" className="mt-0.5 h-4 w-4 shrink-0 text-[var(--mp-teal)]" />
             <p>
-              Cash Pay covers published cash / self-pay figures for hospital and facility care,
-              pharmacy (RX / NDC), imaging, labs, and other billed services in the file. Not a
-              quote, not insurance, and coverage varies by metro. Confirm with the provider.
-              Care over your IUA may not be shareable —{' '}
+              These are published hospital cash / self-pay figures for the metros on your
+              organization&apos;s file, not a quote and not insurance. Confirm with the provider.
+              Care over your IUA may not be shareable.{' '}
               <Link href="/needs/new" className="font-medium text-[var(--mp-teal)] underline-offset-2 hover:underline">
-                submit a need
+                Submit a need
               </Link>{' '}
               with your receipt when appropriate.
             </p>
@@ -345,26 +344,28 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
               aria-label="Procedure or NDC code"
             />
 
-            <Select
-              value={selectedProcedureName || '__all__'}
-              onValueChange={(v) => {
-                setSelectedProcedureName(v === '__all__' ? '' : v);
-                const match = procedures.find((p) => p.procedure_name === v);
-                if (match?.procedure_code) setProcedureCode(match.procedure_code);
-              }}
-            >
-              <SelectTrigger aria-label="Procedure name">
-                <SelectValue placeholder="Procedure (backup search)" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__all__">All procedures</SelectItem>
-                {procedures.map((p) => (
-                  <SelectItem key={p.id} value={p.procedure_name}>
-                    {p.procedure_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {procedures.length > 0 && (
+              <Select
+                value={selectedProcedureName || '__all__'}
+                onValueChange={(v) => {
+                  setSelectedProcedureName(v === '__all__' ? '' : v);
+                  const match = procedures.find((p) => p.procedure_name === v);
+                  if (match?.procedure_code) setProcedureCode(match.procedure_code);
+                }}
+              >
+                <SelectTrigger aria-label="Procedure name">
+                  <SelectValue placeholder="Procedure (backup search)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">All procedures</SelectItem>
+                  {procedures.map((p) => (
+                    <SelectItem key={p.id} value={p.procedure_name}>
+                      {p.procedure_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
 
             <Button
               onClick={() => void handleSearch(1)}
@@ -415,7 +416,11 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-sm text-slate-500">
               {source === 'hcl'
-                ? `${totalCount.toLocaleString()} published rate${totalCount === 1 ? '' : 's'} · page ${page}`
+                ? `${totalCount.toLocaleString()} published rate${totalCount === 1 ? '' : 's'} · page ${page}${
+                    !procedureCode && totalCount > 1000
+                      ? '. Add a CPT code to narrow.'
+                      : ''
+                  }`
                 : `${sortedLegacy.length} backup result${sortedLegacy.length === 1 ? '' : 's'} near ${zipCode}`}
             </p>
             <div className="flex items-center gap-2">

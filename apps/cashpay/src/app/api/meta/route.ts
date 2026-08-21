@@ -4,6 +4,7 @@ import {
   loadMsaAllowlistFromEnv,
   loadSpecialtyCatalogFromEnv,
   normalizeStateName,
+  pickPreferredState,
   specialtiesForSearch,
   stateFromZip,
   uniqueMsas,
@@ -38,8 +39,7 @@ export async function GET(request: NextRequest) {
   const zip = searchParams.get('zip')?.trim() || '';
   const requestedState = normalizeStateName(searchParams.get('state') || undefined);
   const inferred = zip && /^\d{5}$/.test(zip) ? stateFromZip(zip) : null;
-  const preferredState =
-    requestedState || inferred || uniqueStates(allowlist)[0] || null;
+  const preferredState = pickPreferredState(allowlist, [requestedState, inferred]);
 
   const specialties = specialtiesForSearch(loadSpecialtyCatalogFromEnv(), allowlist);
   return NextResponse.json({

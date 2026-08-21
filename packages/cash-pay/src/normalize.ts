@@ -42,7 +42,11 @@ export function mapHclError(msg: string | undefined, httpStatus?: number): CashP
   ) {
     return 'invalid_key';
   }
-  if (lower.includes('no table mapping') || lower.includes('msa')) {
+  if (
+    lower.includes('no table mapping') ||
+    lower.includes('could not find stored procedure') ||
+    lower.includes('stored procedure')
+  ) {
     return 'no_msa_mapping';
   }
   return 'upstream';

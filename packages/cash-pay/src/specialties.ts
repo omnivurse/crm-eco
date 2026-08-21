@@ -94,23 +94,44 @@ export function specialtiesForSearch(
   catalog: CashPaySpecialty[],
   allowlist: MsaAllowlistEntry[],
 ): CashPaySpecialty[] {
+  const named = [
+    ...new Set(
+      allowlist
+        .map((e) => e.specialty?.trim())
+        .filter((name): name is string => Boolean(name)),
+    ),
+  ];
+
+  // Only list specialties the key actually has. Pharmacy / imaging / lab
+  // strings 400 on this MSA until HCL maps them.
+  const wanted = named.length > 0
+    ? named
+    : [catalog.find((s) => s.id === 'hospital')?.hclName || catalogDefaultHclName()];
+
   const byHcl = new Map<string, CashPaySpecialty>();
   for (const item of catalog) {
     byHcl.set(item.hclName.trim().toLowerCase(), item);
   }
-  for (const e of allowlist) {
-    const name = e.specialty?.trim();
-    if (!name) continue;
+
+  const out: CashPaySpecialty[] = [];
+  const seen = new Set<string>();
+  for (const name of wanted) {
     const key = name.toLowerCase();
-    if (byHcl.has(key)) continue;
-    byHcl.set(key, {
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const existing = byHcl.get(key);
+    if (existing) {
+      out.push(existing);
+      continue;
+    }
+    out.push({
       id: key.replace(/[^a-z0-9]+/g, '-'),
       label: name,
       hclName: name,
       codeHint: /pharm|rx|ndc|drug/i.test(name) ? 'NDC' : 'CPT / HCPCS',
     });
   }
-  return [...byHcl.values()];
+  return out;
 }
 
 export function resolveSpecialty(

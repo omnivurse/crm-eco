@@ -26,7 +26,7 @@ export default async function ServicesPage() {
         <div>
           <p className="font-medium text-[var(--mp-ink)]">Compare cash prices</p>
           <p className="mt-0.5 text-sm text-slate-600">
-            Search published cash prices for hospital, pharmacy (RX), imaging, and labs before you book.
+            Search published hospital cash prices by metro before you book.
           </p>
         </div>
         <a

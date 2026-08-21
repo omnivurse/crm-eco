@@ -54,6 +54,7 @@ import {
   collapseOwnershipListColumns,
   isOwnershipListColumnKey,
 } from '@/lib/crm/ownership-field-dedupe';
+import { collapseAddressListColumns, addressFormLabel } from '@/lib/crm/address-field-dedupe';
 import { resolveOwnershipName } from '@/lib/crm/ownership-name';
 import {
   CRM_COLUMN_WIDTHS_RESET_EVENT,
@@ -764,8 +765,10 @@ export const RecordTable = memo(function RecordTable({
       (view?.columns && view.columns.length > 0 ? view.columns : undefined) ||
       pickDefaultListColumns(fields);
     // Allow columns that exist in fieldMap or are known system columns
-    return collapseOwnershipListColumns(
-      columns.filter((col) => fieldMap[col] || SYSTEM_COLUMNS.includes(col)),
+    return collapseAddressListColumns(
+      collapseOwnershipListColumns(
+        columns.filter((col) => fieldMap[col] || SYSTEM_COLUMNS.includes(col)),
+      ),
     );
   }, [explicitColumns, view?.columns, fields, fieldMap]);
 
@@ -943,7 +946,11 @@ export const RecordTable = memo(function RecordTable({
     if (col === 'normalization_status') return 'Data Quality';
     if (col === 'created_at') return 'Created';
     if (col === 'updated_at') return 'Updated';
-    return fieldMap[col]?.label || col.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    return addressFormLabel(
+      col,
+      moduleKey,
+      fieldMap[col]?.label || col.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
+    );
   };
 
   // Per-row projected JSONB (legacy Zoho → canonical HS keys) so list columns

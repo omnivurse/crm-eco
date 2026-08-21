@@ -117,6 +117,38 @@ describe('pickDefaultListColumns', () => {
     expect(cols).not.toContain('agent');
   });
 
+  it('skips duplicate street aliases so default lists get one address column', () => {
+    const leadLike = pickDefaultListColumns(
+      [
+        field('first_name', { display_order: 1 }),
+        field('last_name', { display_order: 2 }),
+        field('street', { display_order: 12 }),
+        field('mailing_street', { display_order: 903 }),
+        field('email', { display_order: 5 }),
+        field('phone', { display_order: 6 }),
+        field('contact_status', { display_order: 7 }),
+        field('city', { display_order: 8 }),
+      ],
+      8,
+    );
+    expect(leadLike.filter((k) => ['street', 'mailing_street'].includes(k))).toEqual([
+      'street',
+    ]);
+
+    const contactLike = pickDefaultListColumns(
+      [
+        field('mailing_street', { display_order: 28 }),
+        field('street', { display_order: 933 }),
+        field('email', { display_order: 3 }),
+        field('first_name', { display_order: 1 }),
+      ],
+      4,
+    );
+    expect(contactLike.filter((k) => ['street', 'mailing_street'].includes(k))).toEqual([
+      'mailing_street',
+    ]);
+  });
+
   it('is pure with respect to input order', () => {
     const input = membersLikeFields();
     const snapshot = input.map((f) => f.key);

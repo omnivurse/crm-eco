@@ -1,7 +1,9 @@
-import { describe, expect, it } from 'vitest';
+import {
+  hasLegacyNotesHistory, describe, expect, it } from 'vitest';
 import {
   dedupeNotesForDisplay,
   exactNoteDedupeKey,
+  hasLegacyNotesHistory,
   isLegacyNotesHistoryHtml,
   legacyBodyDedupeKey,
   normalizeNoteBodyForDedupe,
@@ -97,5 +99,55 @@ describe('isLegacyNotesHistoryHtml', () => {
     expect(
       isLegacyNotesHistoryHtml('<b>9-23-25</b>: Ashley enrolled<hr/>Next note'),
     ).toBe(true);
+  });
+});
+
+describe('imported history is shown whether or not Zoho wrote it as HTML', () => {
+  // 703 prod records store plain-text call history in notes_history. Gating
+  // the card on HTML markers hid every one of them — the "my notes vanished"
+  // report this module exists to end.
+  const plain =
+    "11-6-15 He's in CA 'til Mon. next week.  12-3-15 Completed his enrollment today and sent the welcome pack.";
+
+  it('renders plain-text history that carries no markup', () => {
+    expect(hasLegacyNotesHistory(plain)).toBe(true);
+    expect(isLegacyNotesHistoryHtml(plain)).toBe(false);
+  });
+
+  it('still suppresses short scalars stuffed into the same key', () => {
+    expect(hasLegacyNotesHistory('Plan ID 49375CO0060034-00')).toBe(false);
+    expect(hasLegacyNotesHistory('')).toBe(false);
+    expect(hasLegacyNotesHistory(null)).toBe(false);
+  });
+});
+
+describe('legacy twin collapse is bounded by time', () => {
+  const body = 'Left a detailed message on voicemail. Sent email to book the welcome call';
+  const legacy = (id: string, created_at: string) => ({ id, body, created_at, created_by: null });
+
+  it('collapses the UTC/local double-load a few hours apart', () => {
+    const rows = [
+      legacy('a', '2026-03-02T01:00:00Z'),
+      legacy('b', '2026-03-01T19:00:00Z'),
+    ];
+    expect(dedupeNotesForDisplay(rows).map((n) => n.id)).toEqual(['a']);
+  });
+
+  it('keeps the same templated line sent again months later', () => {
+    // Three genuine outreach attempts, 816h / 822h / 2737h apart in prod.
+    const rows = [
+      legacy('sep', '2026-09-01T12:00:00Z'),
+      legacy('jun', '2026-06-01T12:00:00Z'),
+      legacy('mar', '2026-03-01T12:00:00Z'),
+    ];
+    expect(dedupeNotesForDisplay(rows).map((n) => n.id)).toEqual(['sep', 'jun', 'mar']);
+  });
+
+  it('never collapses notes a rep actually wrote', () => {
+    const rep = (id: string, created_at: string) => ({
+      id, body, created_at, created_by: 'user-1',
+    });
+    const rows = [rep('a', '2026-03-01T12:00:00Z'), rep('b', '2026-03-01T13:00:00Z')];
+    expect(dedupeNotesForDisplay(rows).map((n) => n.id)).toEqual(['a', 'b']);
   });
 });
