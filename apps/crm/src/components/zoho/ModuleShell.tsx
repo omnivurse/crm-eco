@@ -7,12 +7,20 @@ import { Input, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHe
 import type { ComboboxOption } from '@crm-eco/ui';
 import { promptDialog } from '@crm-eco/ui/components/prompt-dialog';
 import { cn } from '@crm-eco/ui/lib/utils';
-import { Loader2, Users, SlidersHorizontal } from 'lucide-react';
+import { Filter, Loader2, Users, SlidersHorizontal } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ModuleHeader } from './ModuleHeader';
 import { ViewsDropdown } from './ViewsDropdown';
+import { FilterRailFrame } from '@/components/crm/filters/FilterRailFrame';
+import { FilterSidebar } from '@/components/crm/filters/FilterSidebar';
 import { FilterSidebarTrigger } from '@/components/crm/filters/FilterSidebarTrigger';
+import {
+  FILTER_RAIL_DEFAULT_OPEN,
+  moduleFilterRailTitle,
+  readFilterRailOpen,
+  writeFilterRailOpen,
+} from '@/lib/crm/filter-rail';
 import { TerritoryFilter } from '@/components/crm/filters/TerritoryFilter';
 import { FilterChipsBar } from './FilterChipsBar';
 import { ColumnsButton } from './ColumnsButton';
@@ -149,6 +157,8 @@ export const ModuleShell = memo(function ModuleShell({
   const prefsHydrationStageRef = useRef<'none' | 'local' | 'server'>('none');
   // Which personal saved view is applied (drives the Views trigger label).
   const [activeSavedViewId, setActiveSavedViewId] = useState<string | null>(null);
+  const [filterRailOpen, setFilterRailOpen] = useState(FILTER_RAIL_DEFAULT_OPEN);
+  const filterRailTitle = moduleFilterRailTitle(module);
 
   // Dialog states
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -446,6 +456,26 @@ export const ModuleShell = memo(function ModuleShell({
     window.addEventListener(CRM_CLEAR_LIST_STATE_EVENT, onClear);
     return () => window.removeEventListener(CRM_CLEAR_LIST_STATE_EVENT, onClear);
   }, [module.key, router, listPrefsSave]);
+
+  useEffect(() => {
+    setFilterRailOpen(readFilterRailOpen(module.key));
+  }, [module.key]);
+
+  const toggleFilterRail = useCallback(() => {
+    setFilterRailOpen((prev) => {
+      const next = !prev;
+      writeFilterRailOpen(module.key, next);
+      return next;
+    });
+  }, [module.key]);
+
+  const applyListFilters = useCallback(
+    (newFilters: ViewFilter[]) => {
+      setFilters(newFilters);
+      pushFiltersToUrl(newFilters);
+    },
+    [pushFiltersToUrl],
+  );
 
   const handleSortChange = useCallback((field: string, direction: 'asc' | 'desc') => {
     setSortField(field);
@@ -1358,16 +1388,42 @@ export const ModuleShell = memo(function ModuleShell({
 
             <div className="w-px h-6 bg-slate-200 dark:bg-white/10" />
 
-            <FilterSidebarTrigger
-              fields={fields}
-              filters={filters}
-              orgId={module.org_id}
-              moduleKey={module.key}
-              onFiltersChange={(newFilters) => {
-                setFilters(newFilters);
-                pushFiltersToUrl(newFilters);
-              }}
-            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              aria-pressed={filterRailOpen}
+              aria-label={
+                filters.length > 0
+                  ? `${filterRailTitle} (${filters.length} active)`
+                  : filterRailTitle
+              }
+              onClick={toggleFilterRail}
+              className={cn(
+                'hidden lg:inline-flex h-8 text-xs gap-1.5',
+                (filterRailOpen || filters.length > 0) &&
+                  'border-primary/40 bg-primary/10 text-primary',
+              )}
+            >
+              <Filter className="w-3.5 h-3.5" aria-hidden />
+              Filters
+              {filters.length > 0 && (
+                <span className="flex items-center justify-center w-4.5 h-4.5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold leading-none ml-0.5">
+                  {filters.length}
+                </span>
+              )}
+            </Button>
+
+            <div className="hidden md:block lg:hidden">
+              <FilterSidebarTrigger
+                fields={fields}
+                filters={filters}
+                orgId={module.org_id}
+                moduleKey={module.key}
+                title={filterRailTitle}
+                onFiltersChange={applyListFilters}
+              />
+            </div>
 
             {(viewMode === 'table' || viewMode === 'split') && (
               <>
@@ -1403,16 +1459,35 @@ export const ModuleShell = memo(function ModuleShell({
         />
       </div>
 
-      {/* Table Content */}
+      {/* Table + docked filter rail (lg+). Mobile / tablet keep the dialog. */}
       <ModuleShellProvider value={shellContext}>
-        <div
-          className={cn(
-            'relative',
-            density === 'compact' && '[&_table_td]:py-1.5 [&_table_th]:py-2',
-            density === 'comfortable' && '[&_table_td]:py-4 [&_table_th]:py-3'
-          )}
-        >
-          {children}
+        <div className="flex items-start gap-3">
+          <FilterRailFrame
+            open={filterRailOpen}
+            onToggle={toggleFilterRail}
+            title={filterRailTitle}
+            activeCount={filters.length}
+          >
+            <FilterSidebar
+              fields={fields}
+              filters={filters}
+              orgId={module.org_id}
+              moduleKey={module.key}
+              title={filterRailTitle}
+              variant="docked"
+              onCollapse={toggleFilterRail}
+              onFiltersChange={applyListFilters}
+            />
+          </FilterRailFrame>
+          <div
+            className={cn(
+              'relative min-w-0 flex-1',
+              density === 'compact' && '[&_table_td]:py-1.5 [&_table_th]:py-2',
+              density === 'comfortable' && '[&_table_td]:py-4 [&_table_th]:py-3'
+            )}
+          >
+            {children}
+          </div>
         </div>
       </ModuleShellProvider>
 
@@ -1673,10 +1748,8 @@ export const ModuleShell = memo(function ModuleShell({
                 filters={filters}
                 orgId={module.org_id}
                 moduleKey={module.key}
-                onFiltersChange={(newFilters) => {
-                  setFilters(newFilters);
-                  pushFiltersToUrl(newFilters);
-                }}
+                title={filterRailTitle}
+                onFiltersChange={applyListFilters}
               />
             ),
           },

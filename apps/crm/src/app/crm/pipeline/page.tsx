@@ -2,10 +2,10 @@ import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { TrendingUp, Info } from 'lucide-react';
-import { getCurrentProfile, getModuleByKey, getRecords, getDealStages } from '@/lib/crm/queries';
+import { getCurrentProfile, getModuleByKey, getRecords, getDealStages, getFieldsForModule } from '@/lib/crm/queries';
 import { PipelineClient } from './PipelineClient';
-import { PipelineToolbar } from './PipelineToolbar';
-import type { CrmRecord, CrmDealStage, CrmModule, ViewFilter } from '@/lib/crm/types';
+import { PipelineFilterWorkspace } from './PipelineFilterWorkspace';
+import type { CrmRecord, CrmDealStage, CrmModule, CrmField, ViewFilter } from '@/lib/crm/types';
 
 /** Batch size for pipeline board hydration (org-scoped `crm_records`). */
 const PIPELINE_DEAL_PAGE_SIZE = 500;
@@ -133,24 +133,27 @@ async function PipelineContent({
 
   let deals: CrmRecord[] = [];
   let stages: CrmDealStage[] = [];
+  let dealFields: CrmField[] = [];
   let totalDealsInDb = 0;
   let pipelineTruncated = false;
 
   if (dealsModule) {
     try {
-      const [loadResult, stagesResult] = await Promise.all([
+      const [loadResult, stagesResult, fieldsResult] = await Promise.all([
         loadDealsForPipelineBoard(dealsModule, {
           filters: recordFilters,
           search,
           scope,
         }),
         getDealStages(profile.organization_id),
+        getFieldsForModule(dealsModule.id),
       ]);
 
       deals = loadResult.deals;
       totalDealsInDb = loadResult.totalInDatabase;
       pipelineTruncated = loadResult.pipelineTruncated;
       stages = stagesResult;
+      dealFields = fieldsResult;
     } catch (err) {
       console.error('[Pipeline] Failed to fetch deals/stages:', err);
     }
@@ -243,9 +246,15 @@ async function PipelineContent({
           </p>
         </div>
 
-        <PipelineToolbar stages={stageOptions} canEditStages={canEditStages} />
       </div>
 
+      <PipelineFilterWorkspace
+        fields={dealFields}
+        orgId={profile.organization_id}
+        filters={recordFilters}
+        stages={stageOptions}
+        canEditStages={canEditStages}
+      >
       {/* Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <div className="glass-card rounded-xl p-4 border border-slate-200 dark:border-white/10">
@@ -338,6 +347,7 @@ async function PipelineContent({
       <div className="flex-1 overflow-x-auto pb-4">
         <PipelineClient deals={deals} stages={stages} canEditStages={canEditStages} />
       </div>
+      </PipelineFilterWorkspace>
     </div>
   );
 }

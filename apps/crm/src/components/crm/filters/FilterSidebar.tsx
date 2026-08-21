@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback, useId } from 'react';
+import { useState, useEffect, useMemo, useCallback, useId, useRef } from 'react';
 import {
   Search,
   Check,
   ChevronDown,
+  ChevronLeft,
   ChevronRight,
   X,
   Plus,
@@ -57,6 +58,10 @@ import type {
   SystemFilterPreset,
   RelatedFilterCondition,
 } from '@/lib/crm/types';
+import {
+  type FilterSidebarVariant,
+  shouldCloseFilterHost,
+} from '@/lib/crm/filter-rail';
 import { getFieldOptions } from '@/lib/crm/utils';
 import {
   STATUS_LANES,
@@ -708,6 +713,12 @@ interface FilterSidebarProps {
   orgId?: string;
   /** Module key — powers the live status-values picker. */
   moduleKey?: string;
+  /** Header title. Dialog default is “Filters”; docked rail uses “Filter Contacts by”. */
+  title?: string;
+  /** Dialog closes the host on Apply; docked keeps the rail mounted. */
+  variant?: FilterSidebarVariant;
+  /** Docked rail only — collapse the column without discarding the draft. */
+  onCollapse?: () => void;
 }
 
 const SECTION_TRIGGER_CLASS =
@@ -715,7 +726,17 @@ const SECTION_TRIGGER_CLASS =
 const COUNT_PILL_CLASS =
   'ml-2 px-1.5 py-0.5 text-[10px] bg-primary/15 text-primary rounded-full font-bold';
 
-export function FilterSidebar({ fields, filters, onFiltersChange, onClose, orgId, moduleKey }: FilterSidebarProps) {
+export function FilterSidebar({
+  fields,
+  filters,
+  onFiltersChange,
+  onClose,
+  orgId,
+  moduleKey,
+  title = 'Filters',
+  variant = 'dialog',
+  onCollapse,
+}: FilterSidebarProps) {
   // ── Draft state: nothing reaches the URL/list until Apply ──
   const [draft, setDraft] = useState<ViewFilter[]>(filters);
   const [fieldSearch, setFieldSearch] = useState('');
@@ -726,6 +747,16 @@ export function FilterSidebar({ fields, filters, onFiltersChange, onClose, orgId
 
   const isDirty = !sameFilters(draft, filters);
   const incompleteCount = countIncomplete(draft);
+  const appliedKey = JSON.stringify(filters);
+  const appliedKeyRef = useRef(appliedKey);
+
+  // Docked rail stays mounted — pick up chip / URL removals without wiping
+  // an in-progress draft unless the applied set actually changed.
+  useEffect(() => {
+    if (appliedKeyRef.current === appliedKey) return;
+    appliedKeyRef.current = appliedKey;
+    setDraft(filters);
+  }, [appliedKey, filters]);
 
   const hasStatusFields = useMemo(() => fields.some(isStatusField), [fields]);
   const statusValues = useStatusValues(moduleKey, hasStatusFields);
@@ -942,38 +973,53 @@ export function FilterSidebar({ fields, filters, onFiltersChange, onClose, orgId
     const clean = finalizeDraftFilters(draft);
     setDraft(clean);
     onFiltersChange(clean);
-    onClose?.();
-  }, [draft, onFiltersChange, onClose]);
+    if (shouldCloseFilterHost(variant)) onClose?.();
+  }, [draft, onFiltersChange, onClose, variant]);
 
   const handleCancel = useCallback(() => {
     setDraft(filters);
-    onClose?.();
-  }, [filters, onClose]);
+    if (shouldCloseFilterHost(variant)) onClose?.();
+  }, [filters, onClose, variant]);
 
   const draftCount = draft.length;
 
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-slate-700">
-        <div>
-          <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">Filters</h3>
+      <div className="flex items-start justify-between gap-2 px-4 py-3 border-b border-slate-200 dark:border-slate-700">
+        <div className="min-w-0">
+          <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">{title}</h3>
           <p className="text-xs text-slate-500 dark:text-slate-400">
             {draftCount > 0
               ? `${draftCount} condition${draftCount === 1 ? '' : 's'}${isDirty ? ' · not applied yet' : ''}`
               : 'Pick a field to start narrowing the list'}
           </p>
         </div>
-        {draftCount > 0 && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 text-xs text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10"
-            onClick={() => setDraft([])}
-          >
-            Clear All
-          </Button>
-        )}
+        <div className="flex shrink-0 items-center gap-0.5">
+          {draftCount > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 text-xs text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10"
+              onClick={() => setDraft([])}
+            >
+              Clear All
+            </Button>
+          )}
+          {variant === 'docked' && onCollapse && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 text-slate-500 hover:text-slate-900 dark:hover:text-white"
+              onClick={onCollapse}
+              aria-label={`Collapse ${title}`}
+              title={`Collapse ${title}`}
+            >
+              <ChevronLeft className="h-4 w-4" aria-hidden />
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Accordion Sections */}

@@ -1,17 +1,14 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ExternalLink, Filter, Plus, Settings2 } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
-import { Input } from '@crm-eco/ui/components/input';
-import { Label } from '@crm-eco/ui/components/label';
 import {
   Sheet,
   SheetContent,
   SheetDescription,
-  SheetFooter,
   SheetHeader,
   SheetTitle,
 } from '@crm-eco/ui/components/sheet';
@@ -22,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@crm-eco/ui/components/select';
+import { cn } from '@crm-eco/ui/lib/utils';
 import type { ViewFilter } from '@/lib/crm/types';
 
 export interface PipelineStageOption {
@@ -32,6 +30,12 @@ export interface PipelineStageOption {
 interface PipelineToolbarProps {
   stages: PipelineStageOption[];
   canEditStages: boolean;
+  railOpen?: boolean;
+  filterTitle?: string;
+  filtersCount?: number;
+  onToggleRail?: () => void;
+  /** Dialog trigger shown below lg, where the docked rail is hidden. */
+  filterDialog?: ReactNode;
 }
 
 function isValidViewFilter(f: unknown): f is ViewFilter {
@@ -78,67 +82,30 @@ function readStageEqualsFromFilters(filtersParam: string | null): string {
   }
 }
 
-export function PipelineToolbar({ stages, canEditStages }: PipelineToolbarProps) {
+export function PipelineToolbar({
+  stages,
+  canEditStages,
+  railOpen = false,
+  filterTitle = 'Filter Pipeline by',
+  filtersCount = 0,
+  onToggleRail,
+  filterDialog,
+}: PipelineToolbarProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [filterOpen, setFilterOpen] = useState(false);
   const [customizeOpen, setCustomizeOpen] = useState(false);
 
-  const [draftSearch, setDraftSearch] = useState('');
-  const [draftStage, setDraftStage] = useState('');
-  const [draftScope, setDraftScope] = useState<'all' | 'mine'>('all');
-
-  const filtersActive = useMemo(() => {
-    const search = (searchParams.get('search') || '').trim();
-    const scope = searchParams.get('scope');
-    const filters = searchParams.get('filters');
-    if (search) return true;
-    if (scope === 'mine' || scope === 'downline') return true;
-    if (filters) {
-      try {
-        const p = JSON.parse(filters);
-        return Array.isArray(p) && p.length > 0;
-      } catch {
-        return true;
-      }
-    }
-    return false;
-  }, [searchParams]);
-
-  const syncDraftFromUrl = useCallback(() => {
-    setDraftSearch(searchParams.get('search') || '');
-    setDraftStage(readStageEqualsFromFilters(searchParams.get('filters')));
-    const sc = searchParams.get('scope');
-    setDraftScope(sc === 'mine' ? 'mine' : 'all');
-  }, [searchParams]);
-
-  const onFilterOpenChange = (open: boolean) => {
-    setFilterOpen(open);
-    if (open) syncDraftFromUrl();
-  };
-
-  const applyPipelineFilters = () => {
+  const applyStage = (stageKey: string) => {
     const next = new URLSearchParams(searchParams.toString());
-    if (draftSearch.trim()) next.set('search', draftSearch.trim());
-    else next.delete('search');
-
-    const merged = filtersWithStage(searchParams.get('filters'), draftStage);
+    const merged = filtersWithStage(searchParams.get('filters'), stageKey);
     if (merged.length > 0) next.set('filters', JSON.stringify(merged));
     else next.delete('filters');
-
-    if (draftScope === 'mine') next.set('scope', 'mine');
-    else next.delete('scope');
-
     const qs = next.toString();
     router.push(qs ? `/crm/pipeline?${qs}` : '/crm/pipeline');
-    setFilterOpen(false);
   };
 
-  const clearPipelineFilters = () => {
-    router.push('/crm/pipeline');
-    setFilterOpen(false);
-  };
+  const currentStage = readStageEqualsFromFilters(searchParams.get('filters'));
 
   const dealsMirrorHref = useMemo(() => {
     const p = new URLSearchParams();
@@ -171,18 +138,43 @@ export function PipelineToolbar({ stages, canEditStages }: PipelineToolbarProps)
         <Button
           type="button"
           variant="outline"
-          className="border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-white/20"
-          onClick={() => onFilterOpenChange(true)}
+          aria-pressed={railOpen}
+          aria-label={
+            filtersCount > 0 ? `${filterTitle} (${filtersCount} active)` : filterTitle
+          }
+          className={cn(
+            'hidden lg:inline-flex border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-white/20',
+            (railOpen || filtersCount > 0) && 'border-primary/40 bg-primary/10 text-primary',
+          )}
+          onClick={onToggleRail}
         >
           <Filter className="w-4 h-4 mr-2" />
           Filter
-          {filtersActive && (
-            <span
-              className="ml-2 inline-flex h-2 w-2 rounded-full bg-teal-500"
-              aria-hidden
-            />
+          {filtersCount > 0 && (
+            <span className="ml-2 inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">
+              {filtersCount}
+            </span>
           )}
         </Button>
+
+        <div className="lg:hidden">{filterDialog}</div>
+
+        <Select
+          value={currentStage || '__any__'}
+          onValueChange={(v) => applyStage(v === '__any__' ? '' : v)}
+        >
+          <SelectTrigger className="w-[160px] bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10">
+            <SelectValue placeholder="Any stage" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__any__">Any stage</SelectItem>
+            {stages.map((s) => (
+              <SelectItem key={s.key} value={s.key}>
+                {s.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
         <Button
           type="button"
@@ -203,95 +195,6 @@ export function PipelineToolbar({ stages, canEditStages }: PipelineToolbarProps)
           </Link>
         </Button>
       </div>
-
-      <Sheet open={filterOpen} onOpenChange={onFilterOpenChange}>
-        <SheetContent side="right" className="flex flex-col w-full sm:max-w-md">
-          <SheetHeader>
-            <SheetTitle>Filter pipeline</SheetTitle>
-            <SheetDescription>
-              These options use the same <code className="text-xs">search</code>,{' '}
-              <code className="text-xs">filters</code>, and <code className="text-xs">scope</code>{' '}
-              parameters as the Deals module list, so results stay in sync.
-            </SheetDescription>
-          </SheetHeader>
-
-          <div className="flex-1 space-y-5 py-2 overflow-y-auto scrollbar-thin">
-            <div className="space-y-2">
-              <Label htmlFor="pipeline-search">Search deals</Label>
-              <Input
-                id="pipeline-search"
-                type="search"
-                placeholder="Title, email, phone…"
-                value={draftSearch}
-                onChange={(e) => setDraftSearch(e.target.value)}
-                className="bg-white dark:bg-slate-900/50"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Stage</Label>
-              <Select
-                value={draftStage || '__any__'}
-                onValueChange={(v) => setDraftStage(v === '__any__' ? '' : v)}
-              >
-                <SelectTrigger className="bg-white dark:bg-slate-900/50">
-                  <SelectValue placeholder="Any stage" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__any__">Any stage</SelectItem>
-                  {stages.map((s) => (
-                    <SelectItem key={s.key} value={s.key}>
-                      {s.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Ownership</Label>
-              <Select
-                value={draftScope}
-                onValueChange={(v) => setDraftScope(v as 'all' | 'mine')}
-              >
-                <SelectTrigger className="bg-white dark:bg-slate-900/50">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All deals I can access</SelectItem>
-                  <SelectItem value="mine">My deals only</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              For saved views, bulk actions, and CSV export, open the full Deals workspace.
-            </p>
-
-            <Button variant="outline" size="sm" className="w-full" asChild>
-              <Link href={dealsMirrorHref}>
-                <ExternalLink className="w-3.5 h-3.5 mr-2" />
-                Open in Deals (table)
-              </Link>
-            </Button>
-          </div>
-
-          <SheetFooter className="flex-col sm:flex-col gap-2 border-t border-slate-200 dark:border-white/10 pt-4">
-            <div className="flex gap-2 w-full">
-              <Button type="button" variant="outline" className="flex-1" onClick={clearPipelineFilters}>
-                Clear all
-              </Button>
-              <Button
-                type="button"
-                className="flex-1 bg-teal-600 hover:bg-teal-500 text-white"
-                onClick={applyPipelineFilters}
-              >
-                Apply
-              </Button>
-            </div>
-          </SheetFooter>
-        </SheetContent>
-      </Sheet>
 
       <Sheet open={customizeOpen} onOpenChange={setCustomizeOpen}>
         <SheetContent side="right" className="flex flex-col w-full sm:max-w-md">
@@ -326,6 +229,12 @@ export function PipelineToolbar({ stages, canEditStages }: PipelineToolbarProps)
                 <Link href="/crm/learn/deals/stages">
                   <ExternalLink className="w-3.5 h-3.5 mr-2" />
                   Learn: managing deal stages
+                </Link>
+              </Button>
+              <Button variant="outline" asChild>
+                <Link href={dealsMirrorHref}>
+                  <ExternalLink className="w-3.5 h-3.5 mr-2" />
+                  Open in Deals (table)
                 </Link>
               </Button>
               <Button variant="outline" asChild>

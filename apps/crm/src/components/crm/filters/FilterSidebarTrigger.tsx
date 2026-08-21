@@ -21,6 +21,8 @@ interface FilterSidebarTriggerProps {
   orgId?: string;
   /** Module key — powers the live status-values picker inside the sidebar. */
   moduleKey?: string;
+  /** Dialog heading, e.g. “Filter Contacts by”. */
+  title?: string;
   className?: string;
 }
 
@@ -37,6 +39,7 @@ export function FilterSidebarTrigger({
   onFiltersChange,
   orgId,
   moduleKey,
+  title,
   className,
 }: FilterSidebarTriggerProps) {
   const [open, setOpen] = useState(false);
@@ -70,7 +73,7 @@ export function FilterSidebarTrigger({
         className="sm:max-w-[600px] md:max-w-[700px] p-0 max-h-[85vh] overflow-hidden flex flex-col"
         aria-describedby={undefined}
       >
-        <DialogTitle className="sr-only">Filters</DialogTitle>
+        <DialogTitle className="sr-only">{title ?? 'Filters'}</DialogTitle>
         <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
           {/* Remounts on each open (Radix unmounts content when closed), so the
               draft always starts from the currently applied filters. */}
@@ -81,6 +84,8 @@ export function FilterSidebarTrigger({
             onClose={close}
             orgId={orgId}
             moduleKey={moduleKey}
+            title={title}
+            variant="dialog"
           />
         </div>
       </DialogContent>
