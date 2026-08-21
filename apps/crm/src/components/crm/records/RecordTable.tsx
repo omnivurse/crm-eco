@@ -3,6 +3,7 @@
 import { useState, useMemo, useRef, useEffect, useLayoutEffect, useCallback, memo } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useCrmDensity } from '@/lib/crm/density';
+import { remainingViewportHeight } from '@/lib/crm/remaining-viewport-height';
 import { CRM_STATUS_PICKER_CORE } from '@/lib/crm/status-allowlist';
 import { StatusBadge } from '@/components/ui/status-badge';
 import Link from 'next/link';
@@ -719,10 +720,8 @@ export const RecordTable = memo(function RecordTable({
   useIsomorphicLayoutEffect(() => {
     const el = tableContainerRef.current;
     if (!el || typeof window === 'undefined') return;
-    const BOTTOM_GAP = 56; // shell bottom padding (pb-10) + <main> padding + breathing room
     const measure = () => {
-      const top = el.getBoundingClientRect().top;
-      const next = Math.max(240, Math.round(window.innerHeight - top - BOTTOM_GAP));
+      const next = remainingViewportHeight(el.getBoundingClientRect().top, window.innerHeight);
       setMeasuredMaxH((prev) => (prev === next ? prev : next));
     };
     measure();
@@ -1371,13 +1370,17 @@ export const RecordTable = memo(function RecordTable({
         aria-activedescendant={activeDescId}
         onKeyDown={handleGridKeyDown}
         className={cn(
-          'hidden md:block glass-card rounded-lg border border-slate-200 dark:border-white/10 overflow-auto max-h-[calc(100vh-var(--crm-view-offset))] scrollbar-thin sticky-scrollbar',
+          'hidden md:block h-full glass-card rounded-lg border border-slate-200 dark:border-white/10 overflow-auto max-h-[calc(100vh-var(--crm-view-offset))] scrollbar-thin sticky-scrollbar',
           'focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-teal-500/40',
           isResizing && 'select-none'
         )}
         // Measured cap wins once mounted; the CSS max-h above is the pre-measure
         // (SSR / first-paint) fallback so the table is never briefly unbounded.
-        style={measuredMaxH ? { maxHeight: `${measuredMaxH}px` } : undefined}
+        style={
+          measuredMaxH
+            ? { height: `${measuredMaxH}px`, maxHeight: `${measuredMaxH}px` }
+            : undefined
+        }
       >
       {/* Plain <table>: the @crm-eco/ui <Table> primitive wraps itself in a
           second `overflow-auto` div, which put the horizontal scrollbar below

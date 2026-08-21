@@ -3,7 +3,6 @@
 import type { ReactNode } from 'react';
 import { ChevronRight, Filter } from 'lucide-react';
 import { cn } from '@crm-eco/ui/lib/utils';
-import { FILTER_RAIL_VIEWPORT_HEIGHT } from '@/lib/crm/filter-rail';
 
 interface FilterRailFrameProps {
   open: boolean;
@@ -13,11 +12,7 @@ interface FilterRailFrameProps {
   children: ReactNode;
 }
 
-const STICKY = {
-  top: 'var(--crm-view-offset, 7.25rem)',
-  height: FILTER_RAIL_VIEWPORT_HEIGHT,
-  maxHeight: FILTER_RAIL_VIEWPORT_HEIGHT,
-} as const;
+const STICKY_TOP = { top: 'var(--crm-view-offset, 7.25rem)' } as const;
 
 /**
  * Desktop-only docked filter column. Open = full rail. Collapsed = a slim
@@ -34,10 +29,10 @@ export function FilterRailFrame({
     <>
       <aside
         className={cn(
-          'hidden w-72 shrink-0 sticky self-start min-h-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-white/10 dark:bg-slate-950',
+          'hidden h-full w-72 shrink-0 sticky min-h-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-white/10 dark:bg-slate-950',
           open ? 'lg:flex' : 'lg:hidden',
         )}
-        style={STICKY}
+        style={STICKY_TOP}
         aria-label={title}
         aria-hidden={!open}
       >
@@ -45,8 +40,8 @@ export function FilterRailFrame({
       </aside>
       {!open && (
         <aside
-          className="hidden lg:flex w-10 shrink-0 sticky self-start"
-          style={STICKY}
+          className="hidden h-full w-10 shrink-0 sticky lg:flex"
+          style={STICKY_TOP}
           aria-label={title}
         >
           <button

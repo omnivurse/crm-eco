@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { FilterRailFrame } from '@/components/crm/filters/FilterRailFrame';
 import { FilterSidebar } from '@/components/crm/filters/FilterSidebar';
 import { FilterSidebarTrigger } from '@/components/crm/filters/FilterSidebarTrigger';
+import { FilterWorkspaceRow } from '@/components/crm/filters/FilterWorkspaceRow';
 import type { CrmField, ViewFilter } from '@/lib/crm/types';
 import {
   FILTER_RAIL_DEFAULT_OPEN,
@@ -82,26 +83,29 @@ export function PipelineFilterWorkspace({
         }
       />
 
-      <div className="flex items-start gap-3">
-        <FilterRailFrame
-          open={railOpen}
-          onToggle={toggleRail}
-          title={title}
-          activeCount={filters.length}
-        >
-          <FilterSidebar
-            fields={fields}
-            filters={filters}
-            orgId={orgId}
-            moduleKey="deals"
+      <FilterWorkspaceRow
+        rail={
+          <FilterRailFrame
+            open={railOpen}
+            onToggle={toggleRail}
             title={title}
-            variant="docked"
-            onCollapse={toggleRail}
-            onFiltersChange={applyFilters}
-          />
-        </FilterRailFrame>
-        <div className="min-w-0 flex-1">{children}</div>
-      </div>
+            activeCount={filters.length}
+          >
+            <FilterSidebar
+              fields={fields}
+              filters={filters}
+              orgId={orgId}
+              moduleKey="deals"
+              title={title}
+              variant="docked"
+              onCollapse={toggleRail}
+              onFiltersChange={applyFilters}
+            />
+          </FilterRailFrame>
+        }
+      >
+        {children}
+      </FilterWorkspaceRow>
     </>
   );
 }

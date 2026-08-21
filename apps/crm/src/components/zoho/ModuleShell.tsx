@@ -15,6 +15,7 @@ import { ViewsDropdown } from './ViewsDropdown';
 import { FilterRailFrame } from '@/components/crm/filters/FilterRailFrame';
 import { FilterSidebar } from '@/components/crm/filters/FilterSidebar';
 import { FilterSidebarTrigger } from '@/components/crm/filters/FilterSidebarTrigger';
+import { FilterWorkspaceRow } from '@/components/crm/filters/FilterWorkspaceRow';
 import {
   FILTER_RAIL_DEFAULT_OPEN,
   moduleFilterRailTitle,
@@ -1461,34 +1462,37 @@ export const ModuleShell = memo(function ModuleShell({
 
       {/* Table + docked filter rail (lg+). Mobile / tablet keep the dialog. */}
       <ModuleShellProvider value={shellContext}>
-        <div className="flex items-start gap-3">
-          <FilterRailFrame
-            open={filterRailOpen}
-            onToggle={toggleFilterRail}
-            title={filterRailTitle}
-            activeCount={filters.length}
-          >
-            <FilterSidebar
-              fields={fields}
-              filters={filters}
-              orgId={module.org_id}
-              moduleKey={module.key}
+        <FilterWorkspaceRow
+          rail={
+            <FilterRailFrame
+              open={filterRailOpen}
+              onToggle={toggleFilterRail}
               title={filterRailTitle}
-              variant="docked"
-              onCollapse={toggleFilterRail}
-              onFiltersChange={applyListFilters}
-            />
-          </FilterRailFrame>
+              activeCount={filters.length}
+            >
+              <FilterSidebar
+                fields={fields}
+                filters={filters}
+                orgId={module.org_id}
+                moduleKey={module.key}
+                title={filterRailTitle}
+                variant="docked"
+                onCollapse={toggleFilterRail}
+                onFiltersChange={applyListFilters}
+              />
+            </FilterRailFrame>
+          }
+        >
           <div
             className={cn(
-              'relative min-w-0 flex-1',
+              'relative h-full min-h-0 min-w-0',
               density === 'compact' && '[&_table_td]:py-1.5 [&_table_th]:py-2',
               density === 'comfortable' && '[&_table_td]:py-4 [&_table_th]:py-3'
             )}
           >
             {children}
           </div>
-        </div>
+        </FilterWorkspaceRow>
       </ModuleShellProvider>
 
       {/* Mass Actions Bar */}

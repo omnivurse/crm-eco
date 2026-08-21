@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
   FILTER_RAIL_STORAGE_PREFIX,
-  FILTER_RAIL_VIEWPORT_HEIGHT,
   applyFilterButtonLabel,
   filterModuleByTitle,
   filterRailStorageKey,
@@ -50,13 +49,6 @@ describe('applyFilterButtonLabel', () => {
   it('keeps the dialog label short', () => {
     expect(applyFilterButtonLabel('dialog')).toBe('Apply');
     expect(applyFilterButtonLabel('dialog', 1)).toBe('Apply (1)');
-  });
-});
-
-describe('FILTER_RAIL_VIEWPORT_HEIGHT', () => {
-  it('is a definite height so the Apply footer is not clipped', () => {
-    expect(FILTER_RAIL_VIEWPORT_HEIGHT.startsWith('calc(')).toBe(true);
-    expect(FILTER_RAIL_VIEWPORT_HEIGHT).toContain('dvh');
   });
 });
 

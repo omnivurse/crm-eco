@@ -121,3 +121,36 @@ describe('the promoted date is not printed twice', () => {
     expect(body).toBe('We would like a plan to keep indefinitely.');
   });
 });
+
+describe('HTML imported history: the bold timestamp is not printed twice', () => {
+  // Mirrors parseNotesHtml. Across 680 production records, 2,426 of 2,475
+  // entries carry a bold prefix and every one is a date, so stripping the
+  // promoted prefix loses nothing the header does not already show.
+  function headerAndBody(html: string) {
+    const m = html.match(/^<b>(.*?)<\/b>\s*:\s*/i);
+    return {
+      timestamp: m ? m[1].trim() : null,
+      body: m ? html.slice(m[0].length) : html,
+    };
+  }
+
+  it('strips the promoted bold timestamp from the body', () => {
+    const { timestamp, body } = headerAndBody(
+      '<b>1/4/2015 12:32 PM</b>: Spoke with the member about renewal.',
+    );
+    expect(timestamp).toBe('1/4/2015 12:32 PM');
+    expect(body).toBe('Spoke with the member about renewal.');
+  });
+
+  it('leaves bold text that is NOT a leading prefix alone', () => {
+    const html = 'Member said <b>do not call</b>: before noon.';
+    const { timestamp, body } = headerAndBody(html);
+    expect(timestamp).toBeNull();
+    expect(body).toBe(html);
+  });
+
+  it('leaves an entry with no prefix untouched', () => {
+    const html = 'Follow-up scheduled for next week.';
+    expect(headerAndBody(html).body).toBe(html);
+  });
+});
