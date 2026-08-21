@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   FILTER_RAIL_STORAGE_PREFIX,
+  FILTER_RAIL_VIEWPORT_HEIGHT,
+  applyFilterButtonLabel,
   filterModuleByTitle,
   filterRailStorageKey,
   moduleFilterRailTitle,
@@ -36,6 +38,25 @@ describe('shouldCloseFilterHost', () => {
 
   it('does not unmount a docked rail after Apply', () => {
     expect(shouldCloseFilterHost('docked')).toBe(false);
+  });
+});
+
+describe('applyFilterButtonLabel', () => {
+  it('names the docked primary action Apply Filter so the rail footer is obvious', () => {
+    expect(applyFilterButtonLabel('docked')).toBe('Apply Filter');
+    expect(applyFilterButtonLabel('docked', 2)).toBe('Apply Filter (2)');
+  });
+
+  it('keeps the dialog label short', () => {
+    expect(applyFilterButtonLabel('dialog')).toBe('Apply');
+    expect(applyFilterButtonLabel('dialog', 1)).toBe('Apply (1)');
+  });
+});
+
+describe('FILTER_RAIL_VIEWPORT_HEIGHT', () => {
+  it('is a definite height so the Apply footer is not clipped', () => {
+    expect(FILTER_RAIL_VIEWPORT_HEIGHT.startsWith('calc(')).toBe(true);
+    expect(FILTER_RAIL_VIEWPORT_HEIGHT).toContain('dvh');
   });
 });
 

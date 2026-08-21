@@ -90,3 +90,34 @@ describe('plain-text imported history splits on date-led lines', () => {
     }
   });
 });
+
+describe('the promoted date is not printed twice', () => {
+  // The date becomes the entry header, so it must not also lead the body.
+  function headerAndBody(text: string) {
+    const m = text.match(/^[ \t]*(\d{1,2}[-./]\d{1,2}[-./]\d{2,4})[.:\s-]*/);
+    return { timestamp: m ? m[1] : null, body: m ? text.slice(m[0].length) : text };
+  }
+
+  it('strips the leading date from the body', () => {
+    const { timestamp, body } = headerAndBody('2-18-16 Spoke with Dee extensively.');
+    expect(timestamp).toBe('2-18-16');
+    expect(body).toBe('Spoke with Dee extensively.');
+  });
+
+  it('handles the dotted, colon-suffixed form', () => {
+    const { timestamp, body } = headerAndBody('10.29.15:  Met Else at the event.');
+    expect(timestamp).toBe('10.29.15');
+    expect(body).toBe('Met Else at the event.');
+  });
+
+  it('leaves a date mentioned INSIDE the note untouched', () => {
+    const { body } = headerAndBody('3-15-16 Renewed on 5/1/2016 per the carrier.');
+    expect(body).toBe('Renewed on 5/1/2016 per the carrier.');
+  });
+
+  it('leaves an undated entry completely alone', () => {
+    const { timestamp, body } = headerAndBody('We would like a plan to keep indefinitely.');
+    expect(timestamp).toBeNull();
+    expect(body).toBe('We would like a plan to keep indefinitely.');
+  });
+});

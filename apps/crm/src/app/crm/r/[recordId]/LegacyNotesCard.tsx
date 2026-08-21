@@ -80,14 +80,18 @@ function parsePlainTextNotes(raw: string): ParsedEntry[] {
   return chunks
     .filter((c) => c.length > 0)
     .map((text, idx) => {
-      const dateMatch = text.match(/^[ \t]*(\d{1,2}[-./]\d{1,2}[-./]\d{2,4})/);
+      const dateMatch = text.match(/^[ \t]*(\d{1,2}[-./]\d{1,2}[-./]\d{2,4})[.:\s-]*/);
+      // The date is promoted to the entry header, so drop it from the body
+      // rather than printing it twice. Only the leading token is removed —
+      // any date mentioned inside the note is left alone.
+      const body = dateMatch ? text.slice(dateMatch[0].length) : text;
       return {
         id: idx,
         timestamp: dateMatch ? dateMatch[1] : null,
         // Plain text: never treated as markup, and rendered with its own
         // line breaks intact.
-        bodyHtml: sanitize(text),
-        bodyText: text,
+        bodyHtml: sanitize(body),
+        bodyText: body,
         plainText: true,
       };
     });

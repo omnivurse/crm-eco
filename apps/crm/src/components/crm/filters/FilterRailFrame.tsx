@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react';
 import { ChevronRight, Filter } from 'lucide-react';
 import { cn } from '@crm-eco/ui/lib/utils';
+import { FILTER_RAIL_VIEWPORT_HEIGHT } from '@/lib/crm/filter-rail';
 
 interface FilterRailFrameProps {
   open: boolean;
@@ -14,7 +15,8 @@ interface FilterRailFrameProps {
 
 const STICKY = {
   top: 'var(--crm-view-offset, 7.25rem)',
-  maxHeight: 'calc(100dvh - 8.5rem)',
+  height: FILTER_RAIL_VIEWPORT_HEIGHT,
+  maxHeight: FILTER_RAIL_VIEWPORT_HEIGHT,
 } as const;
 
 /**
@@ -32,7 +34,7 @@ export function FilterRailFrame({
     <>
       <aside
         className={cn(
-          'hidden w-72 shrink-0 sticky self-start flex-col overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-white/10 dark:bg-slate-950',
+          'hidden w-72 shrink-0 sticky self-start min-h-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-white/10 dark:bg-slate-950',
           open ? 'lg:flex' : 'lg:hidden',
         )}
         style={STICKY}

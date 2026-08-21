@@ -60,6 +60,7 @@ import type {
 } from '@/lib/crm/types';
 import {
   type FilterSidebarVariant,
+  applyFilterButtonLabel,
   shouldCloseFilterHost,
 } from '@/lib/crm/filter-rail';
 import { getFieldOptions } from '@/lib/crm/utils';
@@ -984,9 +985,9 @@ export function FilterSidebar({
   const draftCount = draft.length;
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex h-full min-h-0 flex-col">
       {/* Header */}
-      <div className="flex items-start justify-between gap-2 px-4 py-3 border-b border-slate-200 dark:border-slate-700">
+      <div className="flex shrink-0 items-start justify-between gap-2 px-4 py-3 border-b border-slate-200 dark:border-slate-700">
         <div className="min-w-0">
           <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">{title}</h3>
           <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -1023,7 +1024,7 @@ export function FilterSidebar({
       </div>
 
       {/* Accordion Sections */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="min-h-0 flex-1 overflow-y-auto">
         <Accordion type="multiple" defaultValue={['fields', 'owner']} className="w-full">
           {/* ── Section 1: Filter By Fields ── */}
           <AccordionItem value="fields" className="border-b border-slate-200 dark:border-slate-700">
@@ -1328,21 +1329,31 @@ export function FilterSidebar({
         </Accordion>
       </div>
 
-      {/* Footer — the only place the draft leaves the dialog */}
-      <div className="flex items-center justify-between gap-3 border-t border-slate-200 dark:border-slate-700 px-4 py-3 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
-        <p className="text-[11px] text-slate-500 dark:text-slate-400" aria-live="polite">
-          {incompleteCount > 0
-            ? `${incompleteCount} condition${incompleteCount === 1 ? '' : 's'} without a value will be skipped`
-            : isDirty
-              ? 'Changes apply when you press Apply'
-              : ' '}
-        </p>
-        <div className="flex items-center gap-2 shrink-0">
-          <Button variant="outline" size="sm" className="h-8 text-xs" onClick={handleCancel}>
+      {/* Footer — the only place the draft leaves the dialog. shrink-0 so
+          the accordion cannot clip Apply off the bottom of a docked rail. */}
+      <div className="shrink-0 border-t border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-950">
+        {(incompleteCount > 0 || isDirty) && (
+          <p className="mb-2 text-[11px] text-slate-500 dark:text-slate-400" aria-live="polite">
+            {incompleteCount > 0
+              ? `${incompleteCount} condition${incompleteCount === 1 ? '' : 's'} without a value will be skipped`
+              : `Changes apply when you press ${applyFilterButtonLabel(variant)}`}
+          </p>
+        )}
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 shrink-0 text-xs"
+            onClick={handleCancel}
+          >
             Cancel
           </Button>
-          <Button size="sm" className="h-8 text-xs" onClick={handleApply}>
-            Apply{draftCount > 0 ? ` (${draftCount - incompleteCount})` : ''}
+          <Button
+            size="sm"
+            className="h-8 min-w-0 flex-1 text-xs"
+            onClick={handleApply}
+          >
+            {applyFilterButtonLabel(variant, Math.max(0, draftCount - incompleteCount))}
           </Button>
         </div>
       </div>

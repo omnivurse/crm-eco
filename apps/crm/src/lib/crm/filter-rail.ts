@@ -10,6 +10,20 @@ export const FILTER_RAIL_STORAGE_PREFIX = 'crm.filter-rail.';
 /** Default open on desktop so the rail is discoverable (Zoho-like). */
 export const FILTER_RAIL_DEFAULT_OPEN = true;
 
+/**
+ * Definite height (not just max-height). The rail is `overflow-hidden` +
+ * flex-col; without a real height the accordion grows and clips Apply.
+ */
+export const FILTER_RAIL_VIEWPORT_HEIGHT = 'calc(100dvh - 8.5rem)';
+
+export function applyFilterButtonLabel(
+  variant: FilterSidebarVariant,
+  readyCount = 0,
+): string {
+  const suffix = readyCount > 0 ? ` (${readyCount})` : '';
+  return variant === 'docked' ? `Apply Filter${suffix}` : `Apply${suffix}`;
+}
+
 export function filterRailStorageKey(moduleKey: string): string {
   return `${FILTER_RAIL_STORAGE_PREFIX}${moduleKey.trim()}`;
 }
