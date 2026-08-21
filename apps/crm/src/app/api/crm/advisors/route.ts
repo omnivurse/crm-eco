@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, getAuthProfile } from '@/lib/supabase-server';
+import { advisorSearchOrFilter } from '@/lib/crm/advisor-search';
 import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
@@ -36,10 +37,7 @@ export async function GET(request: NextRequest) {
       query = query.eq('is_active', isActive === 'true');
     }
     if (search) {
-      const safe = search.replace(/[%_,().\\]/g, '\\$&');
-      query = query.or(
-        `advisor_name.ilike.%${safe}%,agency_name.ilike.%${safe}%,email.ilike.%${safe}%,producer_code.ilike.%${safe}%,first_name.ilike.%${safe}%,last_name.ilike.%${safe}%`
-      );
+      query = query.or(advisorSearchOrFilter(search));
     }
 
     query = query.range(offset, offset + limit - 1);
