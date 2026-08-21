@@ -23,3 +23,6 @@ export const SEARCH_PLACEHOLDER_ON_RECORD = 'Jump to field, or search name, emai
 
 /** Accessible label for the search input (aria-label / sr-only text). */
 export const SEARCH_ARIA_LABEL = 'Search the CRM by name, email, phone or member number';
+
+/** Sidebar / analytics labels — Members is the CRM module, not the admin roster. */
+export { CRM_MEMBERS_LABEL, MEMBER_ROSTER_LABEL, ADVISORS_LABEL } from './nav-lexicon';

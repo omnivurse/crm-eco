@@ -93,10 +93,10 @@ export default function ChurnAnalysis() {
       {/* KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Overall Churn Rate', value: `${summary.overallChurnRate}%`, icon: TrendingDown, color: 'bg-red-500/10', textColor: 'text-red-600 dark:text-red-400', href: '/crm/members' },
-          { label: '12-Month Churn', value: `${summary.churnRate12m}%`, icon: TrendingDown, color: 'bg-amber-500/10', textColor: 'text-amber-600 dark:text-amber-400', href: '/crm/members' },
-          { label: 'Active Members', value: summary.activeMembers.toLocaleString(), icon: Users, color: 'bg-emerald-500/10', textColor: 'text-emerald-600 dark:text-emerald-400', href: '/crm/members' },
-          { label: 'Cancelled Members', value: summary.cancelledMembers.toLocaleString(), icon: UserX, color: 'bg-slate-500/10', textColor: 'text-slate-600 dark:text-slate-400', href: '/crm/members' },
+          { label: 'Overall Churn Rate', value: `${summary.overallChurnRate}%`, icon: TrendingDown, color: 'bg-red-500/10', textColor: 'text-red-600 dark:text-red-400', href: '/crm/modules/members' },
+          { label: '12-Month Churn', value: `${summary.churnRate12m}%`, icon: TrendingDown, color: 'bg-amber-500/10', textColor: 'text-amber-600 dark:text-amber-400', href: '/crm/modules/members' },
+          { label: 'Active Members', value: summary.activeMembers.toLocaleString(), icon: Users, color: 'bg-emerald-500/10', textColor: 'text-emerald-600 dark:text-emerald-400', href: '/crm/modules/members' },
+          { label: 'Cancelled Members', value: summary.cancelledMembers.toLocaleString(), icon: UserX, color: 'bg-slate-500/10', textColor: 'text-slate-600 dark:text-slate-400', href: '/crm/modules/members' },
         ].map((kpi) => (
           <Link key={kpi.label} href={kpi.href} aria-label={kpi.label} className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500">
             <Card className="glass-card border-slate-200 dark:border-white/10 hover:border-teal-500/50 transition-all h-full">
@@ -118,7 +118,7 @@ export default function ChurnAnalysis() {
           <p className="text-sm text-emerald-700 dark:text-emerald-300">Enrolled This Month</p>
           <p className="text-2xl font-bold text-emerald-800 dark:text-emerald-200">{summary.enrolledThisMonth}</p>
         </Link>
-        <Link href="/crm/members" aria-label="Cancelled This Month" className="p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 hover:border-red-400 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500">
+        <Link href="/crm/modules/members" aria-label="Cancelled This Month" className="p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 hover:border-red-400 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500">
           <p className="text-sm text-red-700 dark:text-red-300">Cancelled This Month</p>
           <p className="text-2xl font-bold text-red-800 dark:text-red-200">{summary.cancelledThisMonth}</p>
         </Link>

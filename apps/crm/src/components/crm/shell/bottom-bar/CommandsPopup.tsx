@@ -16,6 +16,8 @@ import {
 } from 'lucide-react';
 import { cn } from '@crm-eco/ui/lib/utils';
 import type { CrmModule } from '@/lib/crm/types';
+import { resolveCreateIntent } from '@/lib/crm/create-intent';
+import { openCrmQuickCreate } from '@/lib/crm/create-intent-bus';
 
 interface QuickAction {
   id: string;
@@ -99,7 +101,21 @@ interface CommandsPopupProps {
 export function CommandsPopup({ modules, onClose }: CommandsPopupProps) {
   const router = useRouter();
 
+  const dealsEnabled = modules.some((m) => m.key === 'deals' && m.is_enabled);
   const handleAction = (href: string) => {
+    const match = href.match(/^\/crm\/modules\/([^/]+)\/new$/);
+    if (match) {
+      const intent = resolveCreateIntent({ moduleKey: match[1]!, dealsEnabled });
+      if (intent.kind === 'blocked') {
+        onClose();
+        return;
+      }
+      if (intent.kind === 'quick') {
+        openCrmQuickCreate(intent.moduleKey);
+        onClose();
+        return;
+      }
+    }
     router.push(href);
     onClose();
   };
@@ -114,7 +130,9 @@ export function CommandsPopup({ modules, onClose }: CommandsPopupProps) {
 
       {/* Actions Grid */}
       <div className="p-3 grid grid-cols-3 gap-2">
-        {defaultActions.map((action) => (
+        {defaultActions
+          .filter((action) => action.id !== 'new-deal' || dealsEnabled)
+          .map((action) => (
           <button
             key={action.id}
             onClick={() => handleAction(action.href)}

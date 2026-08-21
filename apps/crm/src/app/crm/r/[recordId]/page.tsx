@@ -255,17 +255,6 @@ async function RecordDetailContent({ params }: PageProps) {
             moduleKey={module.key}
             layoutV2Shell={useLayoutV2}
             noteCount={notes.length + legacyNoteCount}
-            belowFields={
-              // Layout V2 shows a compact "Recent notes" strip ABOVE the field
-              // stack (RecordDetailShellV2 → RecentNotesStrip, same aggregated
-              // `notes`), so the full notes card no longer trails 27 section
-              // cards. Legacy imported notes still render below the fields.
-              legacyNotes ? (
-                <div className="mt-4 space-y-4">
-                  <LegacyNotesCard notesHtml={legacyNotes} />
-                </div>
-              ) : undefined
-            }
           />
         ),
 

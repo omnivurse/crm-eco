@@ -362,11 +362,8 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
         treeGroupBy={treeGroupBy}
         dealStages={dealStages}
         moduleSearch={search ?? ''}
-      />
-
-      {/* Pagination + page size */}
-      {total > 0 && (
-        <div className="w-full mt-2 glass-card rounded-lg p-2.5 border border-slate-200 dark:border-white/10 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        listPager={total > 0 ? (
+        <div className="w-full glass-card rounded-lg p-2 border border-slate-200 dark:border-white/10 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-slate-500 dark:text-slate-400">
             Showing <span className="text-slate-900 dark:text-white font-medium">{((page - 1) * pageSize) + 1}</span> to{' '}
             <span className="text-slate-900 dark:text-white font-medium">{Math.min(page * pageSize, total)}</span> of{' '}
@@ -455,7 +452,8 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
             )}
           </div>
         </div>
-      )}
+        ) : null}
+      />
     </>
   );
 }

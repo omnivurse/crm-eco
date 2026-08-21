@@ -158,7 +158,9 @@ import { RecordLinksEditorDialog } from './v2/RecordLinksEditorDialog';
 import { FollowUpReminderDialog } from './FollowUpReminderDialog';
 import { FollowUpBanner } from './FollowUpBanner';
 import { useSyncBroadcast } from '@/hooks/useSyncBroadcast';
-import { RecordFieldSaveProvider } from '@/hooks/useRecordFieldSave';
+import { RecordFieldSaveProvider, useRecordFieldSaveOptional } from '@/hooks/useRecordFieldSave';
+import { NoteComposeProvider } from '@/components/crm/notes/NoteComposeContext';
+import { parseRecordComposeParams } from '@/lib/crm/note-compose';
 import { RecordFieldLocksProvider } from '@/hooks/useRecordFieldLocks';
 import { RecordAiContextProvider } from './v2/RecordAiContext';
 import { useUiPreferences } from '@/hooks/useUiPreferences';
@@ -371,25 +373,30 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
     return () => window.removeEventListener('crm:switch-tab', handler);
   }, []);
 
-  // Deep link: `?pane=notes|emails|attachments|related|timeline` (dashboard
-  // command desk quick actions, notifications). Applied once on mount so a
-  // later in-page pane switch is never overridden by the stale URL.
+  // Deep link: `?pane=notes|emails|attachments|related|timeline` and
+  // `?pane=notes&compose=1` (dashboard command desk). Applied once on mount
+  // so a later in-page pane switch is never overridden by the stale URL.
+  const [notesComposeNonce, setNotesComposeNonce] = useState(0);
+  const requestNoteCompose = useCallback(() => {
+    setNotesComposeNonce((n) => n + 1);
+  }, []);
   const paneParam = searchParams?.get('pane') ?? null;
   useEffect(() => {
-    if (!paneParam) return;
-    if (paneParam === 'timeline') {
+    const parsed = parseRecordComposeParams({
+      get: (name) => searchParams?.get(name) ?? null,
+    });
+    if (!parsed.pane && !paneParam) return;
+    if (parsed.pane === 'timeline' || paneParam === 'timeline') {
       setTopTab('timeline');
       return;
     }
-    if (
-      paneParam === 'notes' ||
-      paneParam === 'emails' ||
-      paneParam === 'attachments' ||
-      paneParam === 'related'
-    ) {
+    if (parsed.pane) {
       setTopTab('overview');
-      setOverviewPane(paneParam);
+      setOverviewPane(parsed.pane);
     }
+    if (parsed.compose) requestNoteCompose();
+    // Mount-only: do not re-apply when the user clears the query.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Modal state (identical to V1 so existing flows keep working)
@@ -418,6 +425,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
   const aiEmailAutoTriggeredRef = useRef(false);
   /** Scroll container for scrolling `[data-field]` / notes pane into view after find */
   const recordMainScrollRef = useRef<HTMLElement | null>(null);
+  const fieldSavePendingRef = useRef(0);
   const recordStickyHeaderRef = useRef<HTMLDivElement | null>(null);
   /** Last measured sticky-header height — used to re-anchor scroll when compact toggles. */
   const prevStickyHeaderHeightRef = useRef<number | null>(null);
@@ -806,10 +814,20 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
     else setShowTaskModal(true);
   }, [onAddTask]);
 
+  const persistMainScroll = useCallback(() => {
+    const el = recordMainScrollRef.current;
+    if (el) persistRecordScrollTop(record.id, el.scrollTop);
+  }, [record.id]);
+
   const handleAddNote = useCallback(() => {
-    if (onAddNote) onAddNote();
-    else setShowNoteModal(true);
-  }, [onAddNote]);
+    if (onAddNote) {
+      onAddNote();
+      return;
+    }
+    setTopTab('overview');
+    setOverviewPane('notes');
+    requestNoteCompose();
+  }, [onAddNote, requestNoteCompose]);
 
   const handleUploadFile = useCallback(() => {
     if (onUploadFile) onUploadFile();
@@ -855,10 +873,11 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
     // No router.refresh() on queued — there's nothing new on the
     // server yet. We refresh on replay success via the queue.
     if (result.ok) {
+      persistMainScroll();
       router.refresh();
       void refreshInsights();
     }
-  }, [record.id, router, taskTitle, taskDescription, taskDueDate, refreshInsights]);
+  }, [record.id, router, taskTitle, taskDescription, taskDueDate, refreshInsights, persistMainScroll]);
 
   const submitNote = useCallback(async () => {
     if (!noteContent.trim()) {
@@ -889,10 +908,11 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
     setNoteContent('');
     if (children.notes) setOverviewPane('notes');
     if (result.ok) {
+      persistMainScroll();
       router.refresh();
       void refreshInsights();
     }
-  }, [record.id, router, noteContent, children.notes, refreshInsights]);
+  }, [record.id, router, noteContent, children.notes, refreshInsights, persistMainScroll]);
 
   const submitFile = useCallback(async () => {
     if (!selectedFile) {
@@ -910,6 +930,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
       setShowUploadModal(false);
       setSelectedFile(null);
       if (children.attachments) setOverviewPane('attachments');
+      persistMainScroll();
       router.refresh();
       void refreshInsights();
     } catch (err) {
@@ -918,7 +939,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
     } finally {
       setIsSubmitting(false);
     }
-  }, [record.id, router, selectedFile, children.attachments]);
+  }, [record.id, router, selectedFile, children.attachments, persistMainScroll]);
 
   const handleSendEmail = useCallback(() => {
     if (!record.email) {
@@ -1018,12 +1039,20 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
       // Record-level edits: revalidate the RSC so updated fields render.
       if (event.table === 'crm_records' && event.type === 'UPDATE') {
         const actor = (event.new?.updated_by as string | undefined) ?? null;
+        if (fieldSavePendingRef.current > 0) {
+          toast.info('A teammate updated this record.', {
+            description: 'Your unsaved edits were kept. Reload when you are ready.',
+            duration: 4000,
+          });
+          return;
+        }
         toast.info('This record was just updated by a teammate.', {
           description: actor
             ? 'Their changes are loading now.'
             : 'Refreshing to pick up their changes.',
           duration: 3000,
         });
+        persistMainScroll();
         router.refresh();
         void refreshInsights();
         return;
@@ -1031,19 +1060,19 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
 
       // Dependent-table inserts/updates: just nudge insights + toast.
       const label: Record<string, string> = {
-        crm_notes: 'A new note was added',
-        crm_tasks: 'Activity list updated',
-        crm_attachments: 'A new attachment was uploaded',
+        crm_notes: 'Someone else added a note',
+        crm_tasks: 'Someone else updated activities',
+        crm_attachments: 'Someone else uploaded a file',
         crm_stage_history: 'Stage was updated',
-        crm_audit_logs: 'Audit log entry added',
+        crm_audit_logs: 'Someone else updated this record',
       };
-      const text = label[event.table] ?? 'This record was updated';
+      const text = label[event.table] ?? 'Someone else updated this record';
       toast.info(text, { duration: 2500 });
       void refreshInsights();
     },
     // `router` and `refreshInsights` are stable across renders. Including
     // them here keeps lint happy without triggering subscription churn.
-    [router, refreshInsights],
+    [router, refreshInsights, persistMainScroll],
   );
 
   useLiveRecord({
@@ -1456,8 +1485,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
       initialUpdatedAt={record.updated_at ?? null}
       fieldLabels={fieldLabelMap}
       onSaved={() => {
-        const el = recordMainScrollRef.current;
-        if (el) persistRecordScrollTop(record.id, el.scrollTop);
+        persistMainScroll();
         scheduleRecordRefresh();
       }}
       onConflict={({ field }) => {
@@ -1470,6 +1498,8 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
         });
       }}
     >
+    <NoteComposeProvider composeNonce={notesComposeNonce} requestCompose={requestNoteCompose}>
+    <FieldSavePendingBridge pendingRef={fieldSavePendingRef} />
     <RecordFieldLocksProvider
       fieldLocks={fieldLocks}
       acquireFieldLock={acquireFieldLock}
@@ -1764,7 +1794,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                     record.email ? 'Compose email to this record' : 'Add an email on this record to enable send'
                   }
                   onClick={() => void handleSendEmail()}
-                  className="inline-flex shrink-0 font-medium"
+                  className="inline-flex shrink-0 font-medium lg:hidden"
                 >
                   <Mail className="w-4 h-4 shrink-0 sm:mr-1.5" />
                   <span className="text-xs font-medium sm:text-sm">
@@ -1777,7 +1807,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                   variant="outline"
                   size="sm"
                   type="button"
-                  className="border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white shrink-0"
+                  className="border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white shrink-0 lg:hidden"
                   onClick={handleEditRecord}
                 >
                   <Edit className="w-4 h-4 min-[380px]:mr-1.5" />
@@ -1880,12 +1910,22 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                     className="bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10"
                   >
                     <DropdownMenuItem
+                      className="hidden lg:flex"
+                      onClick={handleEditRecord}
+                    >
+                      <Edit className="w-4 h-4 mr-2" />
+                      Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
                       disabled={!record.email}
                       onClick={() => void handleSendEmail()}
                       title={!record.email ? 'Add an email address on this record first' : undefined}
                     >
                       <Mail className="w-4 h-4 mr-2 text-rose-600" />
                       Send email
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={openCustomizeDialog}>
+                      Customize related lists
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setShowTemplatePicker(true)}>
                       <StickyNote className="w-4 h-4 mr-2" />
@@ -2031,7 +2071,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
           {/* Related-list + Links cockpit strip — replaces the wide left rail.
               Lives inside the measured sticky header so --record-sticky-offset
               accounts for it and the section jump bar pins directly beneath. */}
-          {topTab === 'overview' && (
+          {topTab === 'overview' && overviewPane !== 'details' && (
             <div className="flex items-stretch border-t border-slate-200 dark:border-white/5 bg-white dark:bg-slate-950">
               <RecordRelatedListChips
                 items={navItems}
@@ -2890,6 +2930,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
     </div>
     </RecordAiContextProvider>
     </RecordFieldLocksProvider>
+    </NoteComposeProvider>
     </RecordFieldSaveProvider>
   );
 });
@@ -3027,6 +3068,16 @@ function RecentNotesStrip({
       )}
     </section>
   );
+}
+
+function FieldSavePendingBridge({
+  pendingRef,
+}: {
+  pendingRef: React.MutableRefObject<number>;
+}) {
+  const ctx = useRecordFieldSaveOptional();
+  pendingRef.current = ctx?.pendingCount ?? 0;
+  return null;
 }
 
 function ComingSoon({

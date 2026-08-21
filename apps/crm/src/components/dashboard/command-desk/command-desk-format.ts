@@ -142,10 +142,16 @@ export function formatCityState(city: string | null | undefined, state: string |
  */
 export function recordHref(
   recordId: string,
-  opts?: { pane?: 'notes' | 'emails' | 'attachments' | 'related' | 'timeline' },
+  opts?: {
+    pane?: 'notes' | 'emails' | 'attachments' | 'related' | 'timeline';
+    compose?: boolean;
+  },
 ): string {
   const base = `/crm/r/${recordId}`;
-  return opts?.pane ? `${base}?pane=${opts.pane}` : base;
+  if (!opts?.pane) return base;
+  const params = new URLSearchParams({ pane: opts.pane });
+  if (opts.compose && opts.pane === 'notes') params.set('compose', '1');
+  return `${base}?${params.toString()}`;
 }
 
 /**

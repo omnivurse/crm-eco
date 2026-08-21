@@ -43,6 +43,7 @@ interface ModuleListClientProps {
   dealStages?: CrmDealStage[];
   /** Same as `?search=` / module toolbar — single source of truth for tree filtering */
   moduleSearch?: string;
+  listPager?: React.ReactNode;
 }
 
 // Inner component that consumes the ModuleShell context and renders the active view
@@ -123,6 +124,7 @@ function ModuleViewContent({
           onBulkDelete={shellContext?.requestDelete}
           totalCount={totalCount}
           activeViewFilterCount={activeViewFilterCount}
+          fillParent
         />
       );
 
@@ -179,6 +181,7 @@ function ModuleViewContent({
           onSelectionChange={setSelectedIds}
           onRowClick={handleRowClick}
           onBulkDelete={shellContext?.requestDelete}
+          fillParent
         />
       );
 
@@ -232,6 +235,7 @@ function ModuleListContent({
   treeGroupBy,
   dealStages,
   moduleSearch,
+  listPager,
 }: ModuleListClientProps) {
   return (
     <ModuleShell
@@ -244,6 +248,7 @@ function ModuleListContent({
       totalCount={totalCount}
       userRole={userRole}
       territories={territories}
+      paneFooter={listPager}
     >
       <ModuleViewContent
         records={records}

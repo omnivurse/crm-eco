@@ -6,6 +6,8 @@ import { useRemainingViewportHeight } from '@/lib/crm/use-remaining-viewport-hei
 interface FilterWorkspaceRowProps {
   rail: ReactNode;
   children: ReactNode;
+  /** Sticky pager inside the records pane, not below the 2× viewport workspace. */
+  footer?: ReactNode;
 }
 
 /**
@@ -15,7 +17,7 @@ interface FilterWorkspaceRowProps {
  * Without that, the rail sizes to its field list (taller than the viewport)
  * while the table uses a remaining-viewport cap — gray gap, clipped rows.
  */
-export function FilterWorkspaceRow({ rail, children }: FilterWorkspaceRowProps) {
+export function FilterWorkspaceRow({ rail, children, footer }: FilterWorkspaceRowProps) {
   const ref = useRef<HTMLDivElement>(null);
   const height = useRemainingViewportHeight(ref);
 
@@ -27,8 +29,13 @@ export function FilterWorkspaceRow({ rail, children }: FilterWorkspaceRowProps) 
       style={{ height: height ?? 240 }}
     >
       <div className="min-h-0 h-full overflow-hidden">{rail}</div>
-      <div className="relative min-h-0 h-full overflow-hidden [&>*]:h-full">
-        {children}
+      <div className="relative min-h-0 h-full overflow-hidden flex flex-col">
+        <div className="min-h-0 flex-1 overflow-hidden [&>*]:h-full">{children}</div>
+        {footer ? (
+          <div className="shrink-0 border-t border-slate-200 bg-white px-2 py-1.5 dark:border-white/10 dark:bg-slate-950">
+            {footer}
+          </div>
+        ) : null}
       </div>
     </div>
   );

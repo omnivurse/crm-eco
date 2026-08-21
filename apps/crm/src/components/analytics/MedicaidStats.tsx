@@ -79,11 +79,11 @@ export default function MedicaidStats() {
       {/* KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         {[
-          { label: 'Total Medicaid', value: summary.totalMedicaidMembers, icon: ShieldPlus, color: 'violet', href: '/crm/members' },
-          { label: 'Active Medicaid', value: summary.activeMedicaid, icon: Users, color: 'emerald', href: '/crm/members' },
-          { label: 'Former Medicaid', value: summary.formerMedicaid, icon: Users, color: 'slate', href: '/crm/members' },
-          { label: 'Transitioning', value: summary.transitioningFromMedicaid, icon: ArrowRightLeft, color: 'amber', href: '/crm/members' },
-          { label: 'New This Month', value: summary.newMedicaidThisMonth, icon: UserPlus, color: 'blue', href: '/crm/members' },
+          { label: 'Total Medicaid', value: summary.totalMedicaidMembers, icon: ShieldPlus, color: 'violet', href: '/crm/modules/members' },
+          { label: 'Active Medicaid', value: summary.activeMedicaid, icon: Users, color: 'emerald', href: '/crm/modules/members' },
+          { label: 'Former Medicaid', value: summary.formerMedicaid, icon: Users, color: 'slate', href: '/crm/modules/members' },
+          { label: 'Transitioning', value: summary.transitioningFromMedicaid, icon: ArrowRightLeft, color: 'amber', href: '/crm/modules/members' },
+          { label: 'New This Month', value: summary.newMedicaidThisMonth, icon: UserPlus, color: 'blue', href: '/crm/modules/members' },
         ].map((kpi) => {
           const colorMap: Record<string, { bg: string; text: string }> = {
             violet: { bg: 'bg-violet-500/10', text: 'text-violet-600 dark:text-violet-400' },

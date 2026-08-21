@@ -34,6 +34,7 @@ import {
 } from '@crm-eco/ui/components/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@crm-eco/ui/components/card';
 import { cn } from '@crm-eco/ui/lib/utils';
+import { EnrolledByPicker } from '@/components/crm/create/EnrolledByPicker';
 import type {
   CrmField,
   CrmLayout,
@@ -552,7 +553,18 @@ const FormFieldRenderer = memo(function FormFieldRenderer({
       break;
 
     default:
-      input = <Input {...commonProps} />;
+      if (field.key === 'producer_name' || field.key === 'producer') {
+        input = (
+          <EnrolledByPicker
+            id={field.key}
+            value={value == null ? '' : String(value)}
+            onChange={(val) => setValue(field.key, val)}
+            aria-label={field.label}
+          />
+        );
+      } else {
+        input = <Input {...commonProps} />;
+      }
   }
 
   return (
@@ -1522,7 +1534,9 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
 
   const renderSections = () => {
     /** Clears sticky overview pills + approximate shell header when scrolling from section nav. */
-    const overviewScrollAid = readOnly ? 'scroll-mt-[175px]' : '';
+    const overviewScrollAid = readOnly
+      ? '[scroll-margin-top:var(--record-sticky-offset,175px)]'
+      : '';
 
     return (
     <>

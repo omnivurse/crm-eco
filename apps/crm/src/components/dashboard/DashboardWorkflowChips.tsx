@@ -77,8 +77,8 @@ function buildWorkflowChips(
     },
     {
       id: 'new-contact',
-      label: 'New Contact',
-      href: '/crm/modules/contacts/new',
+      label: 'Add Member',
+      href: '/crm/modules/contacts',
       icon: UserPlus,
     },
   );
@@ -92,9 +92,9 @@ function buildWorkflowChips(
         icon: UserCheck,
       },
       {
-        id: 'new-deal',
-        label: 'New Deal',
-        href: '/crm/modules/deals/new',
+        id: 'pipeline',
+        label: 'Pipeline',
+        href: '/crm/pipeline',
         icon: DollarSign,
       },
     );

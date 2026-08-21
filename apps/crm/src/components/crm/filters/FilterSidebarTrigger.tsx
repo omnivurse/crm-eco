@@ -4,11 +4,11 @@ import { useCallback, useState } from 'react';
 import { Filter } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  DialogTrigger,
-} from '@crm-eco/ui/components/dialog';
+  Sheet,
+  SheetContent,
+  SheetTitle,
+  SheetTrigger,
+} from '@crm-eco/ui/components/sheet';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { FilterSidebar } from './FilterSidebar';
 import type { CrmField, ViewFilter } from '@/lib/crm/types';
@@ -27,11 +27,10 @@ interface FilterSidebarTriggerProps {
 }
 
 /**
- * FilterSidebarTrigger -- Button that opens the full FilterSidebar in a centered Dialog.
+ * FilterSidebarTrigger -- Button that opens the full FilterSidebar in a drawer.
  *
- * The sidebar edits a local draft; `onFiltersChange` fires once on Apply
- * (Cancel / Escape / backdrop discard the draft), so the list behind the
- * dialog never re-queries mid-edit.
+ * Same draft-until-Apply contract as the docked rail. A weaker dialog is not
+ * used on md–lg.
  */
 export function FilterSidebarTrigger({
   fields,
@@ -47,8 +46,8 @@ export function FilterSidebarTrigger({
   const close = useCallback(() => setOpen(false), []);
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>
         <Button
           variant="outline"
           size="sm"
@@ -67,16 +66,13 @@ export function FilterSidebarTrigger({
             </span>
           )}
         </Button>
-      </DialogTrigger>
-      <DialogContent
-        hideCloseButton
-        className="sm:max-w-[600px] md:max-w-[700px] p-0 max-h-[85vh] overflow-hidden flex flex-col"
-        aria-describedby={undefined}
+      </SheetTrigger>
+      <SheetContent
+        side="right"
+        className="w-full sm:max-w-md p-0 overflow-hidden flex flex-col"
       >
-        <DialogTitle className="sr-only">{title ?? 'Filters'}</DialogTitle>
+        <SheetTitle className="sr-only">{title ?? 'Filters'}</SheetTitle>
         <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-          {/* Remounts on each open (Radix unmounts content when closed), so the
-              draft always starts from the currently applied filters. */}
           <FilterSidebar
             fields={fields}
             filters={filters}
@@ -85,10 +81,10 @@ export function FilterSidebarTrigger({
             orgId={orgId}
             moduleKey={moduleKey}
             title={title}
-            variant="dialog"
+            variant="docked"
           />
         </div>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 }

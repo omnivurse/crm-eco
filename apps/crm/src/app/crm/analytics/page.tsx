@@ -301,7 +301,7 @@ function AnalyticsDashboard() {
           trend={summary.memberGrowthPct > 0 ? 'up' : summary.memberGrowthPct < 0 ? 'down' : 'neutral'}
           icon={Users}
           color="teal"
-          href="/crm/members"
+          href="/crm/modules/members"
         />
         <StatCard
           title="Monthly Revenue"
@@ -442,7 +442,7 @@ function AnalyticsDashboard() {
           <CardContent>
             <div className="space-y-4">
               <Link
-                href="/crm/members"
+                href="/crm/modules/members"
                 aria-label="Total Members"
                 className="flex items-center justify-between p-3 rounded-lg bg-slate-100 dark:bg-slate-800/50 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
               >

@@ -3,6 +3,7 @@
 import { useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { toastCopy } from '@/lib/crm/toast-copy';
 import { AttachmentsPanel } from '@/components/crm/records/AttachmentsPanel';
 import type { CrmAttachmentWithAuthor } from '@/lib/crm/types';
 
@@ -55,10 +56,10 @@ export function AttachmentsSectionClient({
           const message = await parseErrorMessage(response, 'Failed to upload file');
           throw new Error(message);
         }
-        toast.success('File uploaded successfully');
+        toast.success(toastCopy.added('File'));
         router.refresh();
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Failed to upload file');
+        toast.error(toastCopy.failed('upload the file', err, 'Try again'));
         throw err;
       }
     },
@@ -80,7 +81,7 @@ export function AttachmentsSectionClient({
         // second success toast here (that would compete with the Undo one).
         router.refresh();
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Failed to delete attachment');
+        toast.error(toastCopy.failed('delete the file', err, 'Try again'));
         throw err;
       }
     },

@@ -128,10 +128,10 @@ export default function LifecycleStats() {
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         {[
-          { href: '/crm/members', label: 'Tracked Members', value: summary.totalTrackedMembers.toLocaleString(), icon: HeartPulse, bg: 'bg-teal-500/10', text: 'text-teal-600 dark:text-teal-400' },
+          { href: '/crm/modules/members', label: 'Tracked Members', value: summary.totalTrackedMembers.toLocaleString(), icon: HeartPulse, bg: 'bg-teal-500/10', text: 'text-teal-600 dark:text-teal-400' },
           { href: '/crm/enrollment', label: 'Enrolled This Month', value: summary.enrolledThisMonth, icon: UserPlus, bg: 'bg-emerald-500/10', text: 'text-emerald-600 dark:text-emerald-400' },
-          { href: '/crm/members', label: 'Cancelled This Month', value: summary.cancelledThisMonth, icon: UserMinus, bg: 'bg-red-500/10', text: 'text-red-600 dark:text-red-400' },
-          { href: '/crm/members', label: 'Total Returned', value: summary.totalReturned, icon: RotateCcw, bg: 'bg-blue-500/10', text: 'text-blue-600 dark:text-blue-400' },
+          { href: '/crm/modules/members', label: 'Cancelled This Month', value: summary.cancelledThisMonth, icon: UserMinus, bg: 'bg-red-500/10', text: 'text-red-600 dark:text-red-400' },
+          { href: '/crm/modules/members', label: 'Total Returned', value: summary.totalReturned, icon: RotateCcw, bg: 'bg-blue-500/10', text: 'text-blue-600 dark:text-blue-400' },
           { href: '/crm/analytics?tab=churn', label: '12-Month Churn Rate', value: `${summary.churnRate12m}%`, icon: TrendingDown, bg: 'bg-amber-500/10', text: 'text-amber-600 dark:text-amber-400' },
         ].map((kpi) => (
           <Link

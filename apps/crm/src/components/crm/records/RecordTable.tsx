@@ -57,6 +57,7 @@ import {
 } from '@/lib/crm/ownership-field-dedupe';
 import { collapseAddressListColumns, addressFormLabel } from '@/lib/crm/address-field-dedupe';
 import { resolveOwnershipName } from '@/lib/crm/ownership-name';
+import { DISPLAY_ONLY_SORT_HINT, isDisplayOnlySortField } from '@/lib/crm/list-sort-policy';
 import {
   CRM_COLUMN_WIDTHS_RESET_EVENT,
   type ColumnWidthsResetDetail,
@@ -81,6 +82,7 @@ import {
   X,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { toastCopy } from '@/lib/crm/toast-copy';
 import { MarketTypeBadge, NormalizationBadge, OwnershipDisplay } from '@/components/shared/crm-lane-badges';
 import { NeedsAttentionChip } from './NeedsAttentionChip';
 import { mergeCrmRecordRowIntoFormDefaults } from '@/lib/crm/record-form-defaults';
@@ -645,10 +647,10 @@ export const RecordTable = memo(function RecordTable({
           : { data: { [editingCell.field]: storeValue } };
         await onRecordUpdate(editingCell.recordId, updates);
       }
-      toast.success('Updated successfully');
+      toast.success(toastCopy.updated('Record'));
     } catch (error) {
       console.error('Error updating field:', error);
-      toast.error('Failed to update');
+      toast.error(toastCopy.failed('update the record', undefined, 'Try again'));
     } finally {
       setEditingCell(null);
     }
@@ -861,7 +863,7 @@ export const RecordTable = memo(function RecordTable({
   };
 
   const handleSort = (field: string) => {
-    if (!onSort) return;
+    if (!onSort || isDisplayOnlySortField(field)) return;
 
     const newDirection =
       currentSort?.field === field && currentSort?.direction === 'asc' ? 'desc' : 'asc';
@@ -913,11 +915,11 @@ export const RecordTable = memo(function RecordTable({
         throw new Error(error.error || 'Failed to create task');
       }
 
-      toast.success('Task created successfully');
+      toast.success(toastCopy.added('Task'));
       closeTaskDialog();
     } catch (error) {
       console.error('Error creating task:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to create task');
+      toast.error(toastCopy.failed('create the task', error, 'Try again'));
     } finally {
       setIsCreatingTask(false);
     }
@@ -1100,12 +1102,18 @@ export const RecordTable = memo(function RecordTable({
     }
 
     if (col === 'owner_id') {
-      return record.owner_id ? (
+      const ownerName = resolveOwnershipName({
+        market_type: record.market_type,
+        normalized_advisor_name: record.normalized_advisor_name,
+        normalized_agent_name: record.normalized_agent_name,
+        data: projected,
+      }).name;
+      return ownerName ? (
         <span className="inline-flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
           <div className="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
             <User className="w-3 h-3" />
           </div>
-          Assigned
+          {ownerName}
         </span>
       ) : (
         <span className="text-slate-400 dark:text-slate-600">Unassigned</span>
@@ -1415,8 +1423,9 @@ export const RecordTable = memo(function RecordTable({
             {visibleColumns.map((col, colIndex) => (
               <TableHead
                 key={col}
+                title={isDisplayOnlySortField(col) ? DISPLAY_ONLY_SORT_HINT : undefined}
                 aria-sort={
-                  !onSort
+                  !onSort || isDisplayOnlySortField(col)
                     ? undefined
                     : currentSort?.field === col
                       ? currentSort.direction === 'asc'
@@ -1424,9 +1433,9 @@ export const RecordTable = memo(function RecordTable({
                         : 'descending'
                       : 'none'
                 }
-                tabIndex={onSort ? 0 : undefined}
+                tabIndex={onSort && !isDisplayOnlySortField(col) ? 0 : undefined}
                 onKeyDown={
-                  onSort
+                  onSort && !isDisplayOnlySortField(col)
                     ? (e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
                           e.preventDefault();
@@ -1437,7 +1446,7 @@ export const RecordTable = memo(function RecordTable({
                 }
                 className={cn(
                   'relative flex-shrink-0 flex items-center bg-slate-50 dark:bg-slate-900/80 backdrop-blur-sm text-slate-600 dark:text-slate-400 font-medium text-xs uppercase tracking-wider',
-                  onSort && 'cursor-pointer hover:text-slate-900 dark:hover:text-white transition-colors select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring',
+                  onSort && !isDisplayOnlySortField(col) && 'cursor-pointer hover:text-slate-900 dark:hover:text-white transition-colors select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring',
                   colIndex === 0 && 'sticky z-20 after:absolute after:right-0 after:top-0 after:bottom-0 after:w-[3px] after:bg-gradient-to-r after:from-black/[0.06] after:to-transparent dark:after:from-white/[0.08]'
                 )}
                 style={{
@@ -1453,7 +1462,7 @@ export const RecordTable = memo(function RecordTable({
               >
                 <div className="flex items-center gap-1.5 truncate">
                   {getColumnLabel(col)}
-                  {onSort && getSortIcon(col)}
+                  {onSort && !isDisplayOnlySortField(col) && getSortIcon(col)}
                 </div>
                 <ResizeHandle
                   columnKey={col}

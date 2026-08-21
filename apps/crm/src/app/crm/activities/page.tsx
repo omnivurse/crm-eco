@@ -35,6 +35,7 @@ import {
 } from '@crm-eco/ui/components/select';
 import { toast } from 'sonner';
 import { toastItemDeletedWithUndo } from '@/lib/crm/undo-delete';
+import { toastCopy } from '@/lib/crm/toast-copy';
 import { formatDistanceToNow } from 'date-fns';
 
 type ActivityType = 'task' | 'call' | 'meeting' | 'email';
@@ -213,7 +214,7 @@ function ActivitiesPageContent() {
         }
       } catch (error) {
         console.error('Failed to fetch activities:', error);
-        toast.error('Failed to load activities');
+        toast.error(toastCopy.failed('load activities', undefined, 'Try again'));
       } finally {
         setLoading(false);
       }
@@ -266,7 +267,7 @@ function ActivitiesPageContent() {
       setDeleteTarget(null);
     } catch (error) {
       console.error('Delete activity error:', error);
-      toast.error('Failed to delete activity');
+      toast.error(toastCopy.failed('delete the activity', undefined, 'Try again'));
     } finally {
       setIsDeleting(false);
     }
@@ -300,7 +301,7 @@ function ActivitiesPageContent() {
 
       const newActivity = await response.json();
       setActivities((prev) => [newActivity, ...prev]);
-      toast.success('Activity created successfully');
+      toast.success(toastCopy.added('Activity'));
       setShowModal(false);
       setFormData({
         title: '',
@@ -311,7 +312,7 @@ function ActivitiesPageContent() {
       });
     } catch (error) {
       console.error('Error creating activity:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to create activity');
+      toast.error(toastCopy.failed('create the activity', error, 'Try again'));
     } finally {
       setIsSubmitting(false);
     }

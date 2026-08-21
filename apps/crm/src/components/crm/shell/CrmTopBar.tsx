@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, memo, useCallback } from 'react';
+import { useState, memo, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase-client';
@@ -34,6 +34,7 @@ import {
   X,
   BookOpen,
   MessageCircle,
+  Plus,
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { ThemeToggle } from './ThemeToggle';
@@ -44,6 +45,7 @@ import { clearOfflineState } from '@/lib/offline/reset';
 import { openCrmCommandPalette } from '@/lib/crm/command-palette-bus';
 import type { CrmModule, CrmProfile } from '@/lib/crm/types';
 import type { QuickCreateModuleKey } from '@/lib/crm/quick-create-config';
+import { CRM_OPEN_QUICK_CREATE_EVENT } from '@/lib/crm/create-intent-bus';
 
 function openCommandPalette(onOpenCommandPalette?: () => void) {
   if (onOpenCommandPalette) onOpenCommandPalette();
@@ -89,6 +91,15 @@ export const CrmTopBar = memo(function CrmTopBar({
     setQuickCreateModule(moduleKey);
     setQuickCreateOpen(true);
   }, []);
+
+  useEffect(() => {
+    const onOpen = (event: Event) => {
+      const detail = (event as CustomEvent<{ moduleKey?: QuickCreateModuleKey }>).detail;
+      if (detail?.moduleKey) openQuickCreate(detail.moduleKey);
+    };
+    window.addEventListener(CRM_OPEN_QUICK_CREATE_EVENT, onOpen);
+    return () => window.removeEventListener(CRM_OPEN_QUICK_CREATE_EVENT, onOpen);
+  }, [openQuickCreate]);
 
   // ⌘K / Ctrl+K is owned solely by CommandPalette (toggle + clear-on-close).
   // TopBar search button / event bus only *open* the palette — never register
@@ -203,7 +214,16 @@ export const CrmTopBar = memo(function CrmTopBar({
           <TooltipContent side="bottom">Search (⌘K)</TooltipContent>
         </Tooltip>
 
-        {/* Split Create Button - hidden on mobile */}
+        <Button
+          type="button"
+          size="icon"
+          className="sm:hidden h-8 w-8 rounded-md"
+          onClick={() => openQuickCreate('contacts')}
+          aria-label="Add Member"
+          title="Add Member"
+        >
+          <Plus className="w-4 h-4" />
+        </Button>
         <div className="hidden sm:block">
           <SplitCreateButton onQuickCreate={openQuickCreate} modules={modules} />
         </div>

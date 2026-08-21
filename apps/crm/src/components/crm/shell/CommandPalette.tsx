@@ -76,6 +76,8 @@ import {
   type PaletteResultChip,
 } from '@/lib/crm/palette-results';
 import { canDraftAiEmail as roleCanDraftAiEmail } from '@/lib/crm/ai/email-draft-roles';
+import { resolveCreateIntent } from '@/lib/crm/create-intent';
+import { openCrmQuickCreate } from '@/lib/crm/create-intent-bus';
 
 interface CommandPaletteProps {
   open: boolean;
@@ -540,15 +542,34 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
         category: 'Navigation',
         keywords: ['config', 'preferences', 'modules', 'fields'],
       },
-      ...orderedModules.map((module) => ({
-        id: `create-${module.key}`,
-        label: `Create New ${module.name}`,
-        description: `Add a new ${module.name.toLowerCase()} record`,
-        icon: <Plus className="w-4 h-4" />,
-        action: () => navigate(`/crm/modules/${module.key}/new`),
-        category: 'Quick Actions',
-        keywords: ['add', 'new', module.key],
-      })),
+      ...orderedModules.flatMap((module) => {
+        const intent = resolveCreateIntent({
+          moduleKey: module.key,
+          dealsEnabled,
+        });
+        if (intent.kind === 'blocked') return [];
+        const isPerson = module.key === 'contacts' || module.key === 'members';
+        return [
+          {
+            id: `create-${module.key}`,
+            label: isPerson ? 'Add Member' : `Create New ${module.name}`,
+            description: isPerson
+              ? 'Quick add from an enrollment'
+              : `Add a new ${module.name.toLowerCase()} record`,
+            icon: <Plus className="w-4 h-4" />,
+            action: () => {
+              if (intent.kind === 'quick') {
+                openCrmQuickCreate(intent.moduleKey);
+                handleOpenChange(false);
+                return;
+              }
+              navigate(intent.href);
+            },
+            category: 'Quick Actions',
+            keywords: ['add', 'new', module.key],
+          },
+        ];
+      }),
       {
         id: 'action-import',
         label: 'Import Data',
@@ -563,7 +584,7 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
         : []),
     ];
     return commands;
-  }, [orderedModules, navigate, dealsEnabled]);
+  }, [orderedModules, navigate, dealsEnabled, handleOpenChange]);
 
   // Filter "base" commands by the free-text query.
   const filteredBase = useMemo(() => {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { StickyNote, Plus, Pin, Pencil, Trash2, Loader2, User, CalendarDays, ArrowUpDown } from 'lucide-react';
@@ -32,7 +32,28 @@ import { dedupeNotesForDisplay } from '@/lib/crm/note-dedupe';
 import { toast } from 'sonner';
 import { toastItemDeletedWithUndo } from '@/lib/crm/undo-delete';
 import { toastCopy } from '@/lib/crm/toast-copy';
-import type { CrmNoteWithAuthor } from '@/lib/crm/types';
+import { useNoteCompose } from '@/components/crm/notes/NoteComposeContext';
+import type { CrmNote, CrmNoteWithAuthor } from '@/lib/crm/types';
+
+function noteFromCreateResponse(
+  payload: unknown,
+  fallback: { recordId: string; orgId: string; body: string; noteDate: string | null },
+): CrmNoteWithAuthor {
+  const row = payload && typeof payload === 'object' ? (payload as Partial<CrmNote>) : {};
+  const now = new Date().toISOString();
+  return {
+    id: typeof row.id === 'string' ? row.id : `optimistic-${now}`,
+    org_id: typeof row.org_id === 'string' ? row.org_id : fallback.orgId,
+    record_id: typeof row.record_id === 'string' ? row.record_id : fallback.recordId,
+    body: typeof row.body === 'string' ? row.body : fallback.body,
+    is_pinned: row.is_pinned === true,
+    note_date: row.note_date ?? fallback.noteDate,
+    created_by: typeof row.created_by === 'string' ? row.created_by : null,
+    created_at: typeof row.created_at === 'string' ? row.created_at : now,
+    updated_at: typeof row.updated_at === 'string' ? row.updated_at : now,
+    author: { id: 'me', full_name: 'You', avatar_url: null },
+  };
+}
 
 interface NotesPanelProps {
   recordId: string;
@@ -170,6 +191,7 @@ function NoteCard({
 
 export function NotesPanel({ recordId, notes, orgId, hasLegacyNotes = false }: NotesPanelProps) {
   const router = useRouter();
+  const compose = useNoteCompose();
   const [isAdding, setIsAdding] = useState(false);
   const [newNote, setNewNote] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -181,6 +203,21 @@ export function NotesPanel({ recordId, notes, orgId, hasLegacyNotes = false }: N
   const [sortDir, setSortDir] = useState<'newest' | 'oldest'>('newest');
   const [newNoteDate, setNewNoteDate] = useState<string>(() => localDateInputValue());
   const [editNoteDate, setEditNoteDate] = useState<string>('');
+  const [optimisticNotes, setOptimisticNotes] = useState<CrmNoteWithAuthor[]>([]);
+
+  const openComposer = () => {
+    setNewNote('');
+    setNewNoteDate(localDateInputValue());
+    setComposeEpoch((e) => e + 1);
+    setIsAdding(true);
+  };
+
+  useEffect(() => {
+    if (!compose || compose.composeNonce === 0) return;
+    openComposer();
+    // Only react to new compose requests, not to the helper identity.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- nonce is the signal
+  }, [compose?.composeNonce]);
 
   const handleEditSubmit = async () => {
     if (!editingNote) return;
@@ -201,10 +238,16 @@ export function NotesPanel({ recordId, notes, orgId, hasLegacyNotes = false }: N
       }
 
       toast.success(toastCopy.updated('Note'));
+      const edited: CrmNoteWithAuthor = {
+        ...editingNote,
+        body: sanitizedBody,
+        note_date: backdatedNoteDateOrNull(editNoteDate, localDateInputValue(editingNote.created_at)),
+        updated_at: new Date().toISOString(),
+      };
+      setOptimisticNotes((prev) => [edited, ...prev.filter((n) => n.id !== editingNote.id)]);
       setEditingNote(null);
       setEditNoteBody('');
       setEditNoteDate('');
-      router.refresh();
     } catch (error) {
       console.error('Failed to update note:', error);
       toast.error(toastCopy.failed('update the note', error, 'Try again'));
@@ -235,10 +278,17 @@ export function NotesPanel({ recordId, notes, orgId, hasLegacyNotes = false }: N
         throw new Error('Failed to create note');
       }
 
+      const created = await response.json().catch(() => null);
+      const optimistic = noteFromCreateResponse(created, {
+        recordId,
+        orgId,
+        body: sanitizedBody,
+        noteDate: backdatedNoteDateOrNull(newNoteDate, localDateInputValue()),
+      });
+      setOptimisticNotes((prev) => [optimistic, ...prev.filter((n) => n.id !== optimistic.id)]);
       toast.success(toastCopy.added('Note'));
       setNewNote('');
       setIsAdding(false);
-      router.refresh();
     } catch (error) {
       console.error('Failed to create note:', error);
       toast.error(toastCopy.failed('add the note', error, 'Try again'));
@@ -250,7 +300,14 @@ export function NotesPanel({ recordId, notes, orgId, hasLegacyNotes = false }: N
   // This CRM vs imported (Zoho) vs all. Default All so yesterday's work
   // cannot hide behind the Imported chip. Dedupe first so UTC/local twins
   // don't bury new notes under a wall of 2025 copies.
-  const displayNotes = useMemo(() => dedupeNotesForDisplay(notes), [notes]);
+  const displayNotes = useMemo(() => {
+    const byId = new Map(notes.map((n) => [n.id, n]));
+    for (const row of optimisticNotes) {
+      const existing = byId.get(row.id);
+      byId.set(row.id, existing ? { ...existing, ...row } : row);
+    }
+    return dedupeNotesForDisplay([...byId.values()]);
+  }, [notes, optimisticNotes]);
   const originCounts = useMemo(() => countNotesByOrigin(displayNotes), [displayNotes]);
   const [originFilter, setOriginFilter] = useState<NoteOriginFilter>(() =>
     defaultNoteOriginFilter(originCounts),
@@ -284,54 +341,43 @@ export function NotesPanel({ recordId, notes, orgId, hasLegacyNotes = false }: N
         </Link>
       </div>
 
-      {/* Add Note Button */}
-      <Button
-        variant="outline"
-        onClick={() => {
-          setNewNote('');
-          setNewNoteDate(localDateInputValue());
-          setComposeEpoch((e) => e + 1);
-          setIsAdding(true);
-        }}
-        className="w-full border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-white/20 hover:bg-slate-50 dark:hover:bg-white/5"
-      >
-        <Plus className="w-4 h-4 mr-2" />
-        Add Note
-      </Button>
-
-      {/* Add Note Dialog — large overlay */}
-      <Dialog open={isAdding} onOpenChange={setIsAdding}>
-        <DialogContent className="max-w-3xl w-[calc(100%-2rem)] sm:w-[calc(100%-4rem)] sm:max-w-[900px] max-h-[90vh] flex flex-col bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10">
-          <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-white/10">
-            <DialogTitle className="text-lg font-semibold text-slate-900 dark:text-white">
-              Add Note
-            </DialogTitle>
+      {!isAdding ? (
+        <Button
+          variant="outline"
+          onClick={openComposer}
+          className="w-full border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-white/20 hover:bg-slate-50 dark:hover:bg-white/5"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Add Note
+        </Button>
+      ) : (
+        <div
+          className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/40 p-3 space-y-3"
+          onKeyDown={(e) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+              e.preventDefault();
+              void handleSubmit();
+            }
+          }}
+        >
+          <p className="text-sm font-semibold text-slate-900 dark:text-white">Add Note</p>
+          <NoteRichArea key={`compose-${composeEpoch}`} value={newNote} onChange={setNewNote} />
+          <p className="text-xs text-slate-400 dark:text-slate-500">
+            Cmd+Enter to save. Paste from email or Docs keeps formatting when safe.
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <label htmlFor="new-note-date" className="text-xs font-medium text-slate-500 dark:text-slate-400">
+              Note date
+            </label>
+            <input
+              id="new-note-date"
+              type="date"
+              value={newNoteDate}
+              onChange={(e) => setNewNoteDate(e.target.value)}
+              className="h-8 rounded-md border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 px-2 text-sm text-slate-700 dark:text-slate-200"
+            />
           </div>
-
-          <div className="flex-1 overflow-hidden py-4">
-            <NoteRichArea key={`compose-${composeEpoch}`} value={newNote} onChange={setNewNote} />
-            <p className="mt-2 text-xs text-slate-400 dark:text-slate-500">
-              Bold, italic, underline, and color from the toolbar; paste from email or Docs keeps
-              formatting when safe.
-            </p>
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              <label htmlFor="new-note-date" className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                Note date
-              </label>
-              <input
-                id="new-note-date"
-                type="date"
-                value={newNoteDate}
-                onChange={(e) => setNewNoteDate(e.target.value)}
-                className="h-8 rounded-md border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 px-2 text-sm text-slate-700 dark:text-slate-200"
-              />
-              <span className="text-[11px] text-slate-400 dark:text-slate-500">
-                Defaults to today — change it to back-date this note. The exact save time is always recorded.
-              </span>
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-2 pt-4 border-t border-slate-200 dark:border-white/10">
+          <div className="flex justify-end gap-2">
             <Button
               variant="ghost"
               onClick={() => {
@@ -357,8 +403,8 @@ export function NotesPanel({ recordId, notes, orgId, hasLegacyNotes = false }: N
               )}
             </Button>
           </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+      )}
 
       {/* Edit Note Dialog */}
       <Dialog
@@ -527,13 +573,17 @@ export function NotesPanel({ recordId, notes, orgId, hasLegacyNotes = false }: N
             </button>
           </p>
         </div>
-      ) : hasLegacyNotes ? null : (
+      ) : hasLegacyNotes || isAdding ? null : (
         <div className="text-center py-12">
           <StickyNote className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-1">No notes yet</h3>
-          <p className="text-slate-500 dark:text-slate-400">
+          <p className="text-slate-500 dark:text-slate-400 mb-4">
             Add a note to keep track of important information
           </p>
+          <Button type="button" onClick={openComposer}>
+            <Plus className="w-4 h-4 mr-2" />
+            Add first note
+          </Button>
         </div>
       )}
     </div>

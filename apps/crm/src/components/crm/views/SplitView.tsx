@@ -31,6 +31,7 @@ interface SplitViewProps {
   onSelectionChange: (ids: Set<string>) => void;
   onRowClick?: (recordId: string) => void;
   onBulkDelete?: (ids: string[]) => void;
+  fillParent?: boolean;
 }
 
 const STATUS_STYLES: Record<string, { bg: string; text: string; border: string }> = {
@@ -317,6 +318,7 @@ export const SplitView = memo(function SplitView({
   onSelectionChange,
   onRowClick,
   onBulkDelete,
+  fillParent = false,
 }: SplitViewProps) {
   const router = useRouter();
   const [activeRecordId, setActiveRecordId] = useState<string | null>(
@@ -421,8 +423,11 @@ export const SplitView = memo(function SplitView({
   return (
     <div
       ref={containerRef}
-      className="glass-card rounded-2xl border border-slate-200 dark:border-white/10 overflow-hidden flex"
-      style={{ height: 'calc(100vh - var(--crm-view-offset) - 60px)', minHeight: '500px' }}
+      className={cn(
+        'glass-card rounded-2xl border border-slate-200 dark:border-white/10 overflow-hidden flex',
+        fillParent && 'h-full min-h-0',
+      )}
+      style={fillParent ? undefined : { height: 'calc(100vh - var(--crm-view-offset) - 60px)', minHeight: '500px' }}
     >
       {/* Left Panel - Compact List */}
       <div

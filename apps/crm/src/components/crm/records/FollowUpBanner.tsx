@@ -10,6 +10,7 @@ import { memo, useCallback, useEffect, useState } from 'react';
 import { addWeeks, format, formatDistanceToNow, isPast } from 'date-fns';
 import { Bell, BellOff, Check, Clock, Loader2, RotateCw } from 'lucide-react';
 import { toast } from 'sonner';
+import { toastCopy } from '@/lib/crm/toast-copy';
 import { Button } from '@crm-eco/ui/components/button';
 import { cn } from '@crm-eco/ui/lib/utils';
 
@@ -78,10 +79,10 @@ export const FollowUpBanner = memo(function FollowUpBanner({
           }),
         });
         if (!res.ok) throw new Error('Failed');
-        toast.success('Follow-up marked complete');
+        toast.success(toastCopy.updated('Follow-up'));
         setTasks((prev) => prev.filter((t) => t.id !== taskId));
       } catch {
-        toast.error('Failed to complete follow-up');
+        toast.error(toastCopy.failed('complete the follow-up', undefined, 'Try again'));
       } finally {
         setActing(null);
       }
@@ -103,7 +104,7 @@ export const FollowUpBanner = memo(function FollowUpBanner({
         toast.success('Snoozed for 1 week');
         void fetchTasks();
       } catch {
-        toast.error('Failed to snooze');
+        toast.error(toastCopy.failed('snooze the follow-up', undefined, 'Try again'));
       } finally {
         setActing(null);
       }

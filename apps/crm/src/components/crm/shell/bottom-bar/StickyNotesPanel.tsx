@@ -18,6 +18,7 @@ import {
 import { cn } from '@crm-eco/ui/lib/utils';
 import { toast } from 'sonner';
 import { toastItemDeletedWithUndo } from '@/lib/crm/undo-delete';
+import { toastCopy } from '@/lib/crm/toast-copy';
 import type { CrmProfile } from '@/lib/crm/types';
 
 interface StickyNoteData {
@@ -105,7 +106,7 @@ export function StickyNotesPanel({ profile, onClose }: StickyNotesPanelProps) {
         setNotes(data.notes || []);
       }
     } catch {
-      toast.error('Failed to load notes');
+      toast.error(toastCopy.failed('load notes', undefined, 'Try again'));
     } finally {
       setLoading(false);
     }
@@ -149,7 +150,7 @@ export function StickyNotesPanel({ profile, onClose }: StickyNotesPanelProps) {
       } catch (e) {
         if ((e as Error).name !== 'AbortError') {
           if (!ctrl.signal.aborted) {
-            toast.error('Failed to search records');
+            toast.error(toastCopy.failed('search records', undefined, 'Try again'));
           }
         }
       } finally {
@@ -199,7 +200,7 @@ export function StickyNotesPanel({ profile, onClose }: StickyNotesPanelProps) {
         fetchNotes();
       }
     } catch {
-      toast.error('Failed to create note');
+      toast.error(toastCopy.failed('create the note', undefined, 'Try again'));
     } finally {
       setSaving(false);
     }
@@ -225,7 +226,7 @@ export function StickyNotesPanel({ profile, onClose }: StickyNotesPanelProps) {
         fetchNotes();
       }
     } catch {
-      toast.error('Failed to update note');
+      toast.error(toastCopy.failed('update the note', undefined, 'Try again'));
     } finally {
       setSaving(false);
     }
@@ -240,7 +241,7 @@ export function StickyNotesPanel({ profile, onClose }: StickyNotesPanelProps) {
       });
       fetchNotes();
     } catch {
-      toast.error('Failed to update note');
+      toast.error(toastCopy.failed('update the note', undefined, 'Try again'));
     }
   };
 
@@ -254,7 +255,7 @@ export function StickyNotesPanel({ profile, onClose }: StickyNotesPanelProps) {
       fetchNotes();
       toastItemDeletedWithUndo({ entity: 'sticky_note', id, label: 'Note', onUndo: fetchNotes });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to delete note');
+      toast.error(toastCopy.failed('delete the note', err, 'Try again'));
     }
   };
 

@@ -205,6 +205,7 @@ interface ListViewProps {
   totalCount?: number | null;
   /** Filter count of the active saved view (see `useListEmptyState`). */
   activeViewFilterCount?: number | null;
+  fillParent?: boolean;
 }
 
 const ListRow = memo(function ListRow({
@@ -377,6 +378,7 @@ export const ListView = memo(function ListView({
   onBulkDelete,
   totalCount,
   activeViewFilterCount,
+  fillParent = false,
 }: ListViewProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -432,14 +434,14 @@ export const ListView = memo(function ListView({
 
   if (emptyState) {
     return (
-      <div className="glass-card rounded-2xl border border-slate-200 dark:border-white/10">
+      <div className={cn('glass-card rounded-2xl border border-slate-200 dark:border-white/10', fillParent && 'h-full min-h-0')}>
         <ListEmptyStatePanel state={emptyState} moduleKey={moduleKey} />
       </div>
     );
   }
 
   return (
-    <div className="glass-card rounded-2xl border border-slate-200 dark:border-white/10 overflow-hidden">
+    <div className={cn('glass-card rounded-2xl border border-slate-200 dark:border-white/10 overflow-hidden', fillParent && 'h-full min-h-0 flex flex-col')}>
       {/* Select All Header */}
       <div className="flex items-center gap-4 px-4 py-2.5 border-b border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-slate-900/50">
         <Checkbox

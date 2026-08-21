@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from 'lucide-react';
 import { cn } from '@crm-eco/ui/lib/utils';
 import type { SectionMeta } from './section-utils';
 import {
@@ -57,6 +57,10 @@ export function SectionNav({
     () => bands.find((b) => b.group === activeGroup) ?? null,
     [bands, activeGroup],
   );
+  const [subnavOpen, setSubnavOpen] = useState(false);
+  useEffect(() => {
+    setSubnavOpen(false);
+  }, [activeGroup]);
 
   // The strip scrolls horizontally but hides its own scrollbar. Overflow is
   // measured and surfaced as chevron buttons + edge fades instead.
@@ -298,17 +302,38 @@ export function SectionNav({
       {/* Row 2 — per-section pills for the active group only. Hidden when the
           group has a single section (its pill would duplicate the group pill). */}
       {grouped && activeBand && activeBand.sections.length > 1 && (
-        <div
-          id="record-section-nav-sections"
-          role="tablist"
-          aria-label={`${activeBand.label} sections`}
-          onKeyDown={handleRowKeyDown}
-          className={cn(
-            'flex flex-wrap items-center gap-1 border-t border-slate-100 dark:border-white/5',
-            compact ? 'py-1' : 'py-1.5',
+        <div className="border-t border-slate-100 dark:border-white/5">
+          {activeBand.sections.length > 4 && !subnavOpen ? (
+            <button
+              type="button"
+              onClick={() => setSubnavOpen(true)}
+              className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100"
+            >
+              <ChevronDown className="h-3.5 w-3.5" aria-hidden />
+              {activeBand.sections.length} sections in {activeBand.label}
+            </button>
+          ) : (
+            <div
+              id="record-section-nav-sections"
+              role="tablist"
+              aria-label={`${activeBand.label} sections`}
+              onKeyDown={handleRowKeyDown}
+              className={cn('flex flex-wrap items-center gap-1', compact ? 'py-1' : 'py-1.5')}
+            >
+              {activeBand.sections.map(renderSectionPill)}
+              {activeBand.sections.length > 4 && (
+                <button
+                  type="button"
+                  onClick={() => setSubnavOpen(false)}
+                  className="inline-flex items-center gap-0.5 px-1.5 text-[11px] text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                  aria-label="Hide section pills"
+                >
+                  <ChevronUp className="h-3.5 w-3.5" aria-hidden />
+                  Hide
+                </button>
+              )}
+            </div>
           )}
-        >
-          {activeBand.sections.map(renderSectionPill)}
         </div>
       )}
     </div>

@@ -42,6 +42,8 @@ import {
   SelectValue,
 } from '@crm-eco/ui/components/select';
 import { cn } from '@crm-eco/ui/lib/utils';
+import { EnrolledByPicker } from '@/components/crm/create/EnrolledByPicker';
+import { SuggestPicker } from '@/components/crm/create/SuggestPicker';
 import {
   Users,
   UserPlus,
@@ -714,30 +716,30 @@ export function QuickCreateDrawer({
         </select>
       );
     } else if (field.type === 'suggest') {
-      const listId = `${id}-suggestions`;
-      const suggestions = suggestionsFor(field);
-      control = (
-        <>
-          <Input
+      if (field.key === 'producer_name' || field.key === 'producer') {
+        control = (
+          <EnrolledByPicker
             id={id}
-            ref={isFirst ? firstInputRef : undefined}
-            type="text"
-            autoComplete="off"
-            list={suggestions.length > 0 ? listId : undefined}
             value={value}
-            onChange={(e) => setField(field.key, e.target.value)}
+            onChange={(next) => setField(field.key, next)}
             placeholder={field.placeholder}
+            aria-label={field.label}
             className={inputClass}
           />
-          {suggestions.length > 0 && (
-            <datalist id={listId}>
-              {suggestions.map((o) => (
-                <option key={o} value={o} />
-              ))}
-            </datalist>
-          )}
-        </>
-      );
+        );
+      } else {
+        control = (
+          <SuggestPicker
+            id={id}
+            value={value}
+            options={suggestionsFor(field)}
+            onChange={(next) => setField(field.key, next)}
+            placeholder={field.placeholder}
+            aria-label={field.label}
+            className={inputClass}
+          />
+        );
+      }
     } else if (field.type === 'select') {
       const opts = optionsFor(field);
       if (opts.length === 0) {

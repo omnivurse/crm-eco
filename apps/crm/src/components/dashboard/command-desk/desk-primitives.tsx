@@ -135,7 +135,7 @@ type QuickActionItem = Pick<PeopleQueueItem, 'recordId' | 'name' | 'phone' | 'em
 /**
  * Icon-only quick actions. Call/Email render as disabled placeholders when
  * the record has no phone/email so columns stay aligned. Note deep-links to
- * the record page — the V2 shell has no URL param for its Notes pane yet.
+ * the record page Notes pane with the composer open (`?pane=notes&compose=1`).
  */
 export function QuickActions({
   item,
@@ -175,7 +175,7 @@ export function QuickActions({
         </span>
       )}
       <Link
-        href={deskHref(recordHref(item.recordId, { pane: 'notes' }))}
+        href={deskHref(recordHref(item.recordId, { pane: 'notes', compose: true }))}
         className={ICON_BTN}
         aria-label={`Add a note for ${item.name}`}
         title="Add note"

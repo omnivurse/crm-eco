@@ -33,7 +33,7 @@ import {
   DropdownMenuTrigger,
 } from '@crm-eco/ui/components/dropdown-menu';
 import type { CrmModule } from '@/lib/crm/types';
-import { isQuickCreateModuleKey } from '@/lib/crm/quick-create-config';
+import { resolveCreateIntent } from '@/lib/crm/create-intent';
 
 // Contacts/Leads "New …" opens the one-screen quick drawer (with an
 // "Open full form" handoff inside) instead of the 250-field full form.
@@ -41,8 +41,6 @@ const QuickCreateDrawer = dynamic(
   () => import('@/components/zoho/QuickCreateDrawer').then((mod) => mod.QuickCreateDrawer),
   { ssr: false },
 );
-const QUICK_CREATE_HEADER_MODULES = new Set(['contacts', 'leads']);
-
 interface ModuleHeaderProps {
   module: CrmModule;
   totalCount: number;
@@ -74,19 +72,13 @@ export function ModuleHeader({
   const searchParams = useSearchParams();
   const icon = MODULE_ICONS[module.key] || <Users className="w-5 h-5" />;
   const [quickCreateOpen, setQuickCreateOpen] = useState(false);
-  const usesQuickCreate =
-    QUICK_CREATE_HEADER_MODULES.has(module.key) && isQuickCreateModuleKey(module.key);
-  // Members-module records (PIFH `members`, 91 fields) are created by the
-  // enrollment / lead-conversion sync (`linked_member_id`), not by hand — the
-  // quick "Add Member" drawer creates a *Contact*, so it is deliberately NOT
-  // wired here. The full form stays, labelled so it is not mistaken for the
-  // quick path.
+  const createIntent = resolveCreateIntent({ moduleKey: module.key });
+  const usesQuickCreate = createIntent.kind === 'quick';
+  const quickModuleKey = createIntent.kind === 'quick' ? createIntent.moduleKey : null;
   const newLabel =
-    module.key === 'contacts'
+    module.key === 'contacts' || module.key === 'members'
       ? 'Add Member'
-      : module.key === 'members'
-        ? 'New Member record'
-        : `New ${module.name}`;
+      : `New ${module.name}`;
   const colors = resolveModulePalette(module.key);
 
   // Check if tree view is currently active
@@ -281,6 +273,14 @@ export function ModuleHeader({
                     </span>
                   )}
                 </DropdownMenuItem>
+                {module.key === 'members' && (
+                  <DropdownMenuItem asChild className="cursor-pointer gap-2">
+                    <Link href="/crm/modules/members/new">
+                      <Plus className="w-4 h-4" />
+                      New Member record
+                    </Link>
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem
                   onClick={handleMassDelete}
                   className="text-red-600 dark:text-red-400 cursor-pointer gap-2 focus:text-red-600 dark:focus:text-red-400"
@@ -298,11 +298,11 @@ export function ModuleHeader({
           </>
         }
       />
-      {usesQuickCreate && isQuickCreateModuleKey(module.key) && (
+      {usesQuickCreate && quickModuleKey && (
         <QuickCreateDrawer
           open={quickCreateOpen}
           onOpenChange={setQuickCreateOpen}
-          defaultModule={module.key}
+          defaultModule={quickModuleKey}
         />
       )}
     </div>

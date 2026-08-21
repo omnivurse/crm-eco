@@ -9,6 +9,7 @@ import { promptDialog } from '@crm-eco/ui/components/prompt-dialog';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { Filter, Loader2, Users, SlidersHorizontal } from 'lucide-react';
 import { toast } from 'sonner';
+import { toastCopy } from '@/lib/crm/toast-copy';
 import { format } from 'date-fns';
 import { ModuleHeader } from './ModuleHeader';
 import { ViewsDropdown } from './ViewsDropdown';
@@ -85,6 +86,8 @@ interface ModuleShellProps {
   activeViewId?: string;
   totalCount: number;
   children: React.ReactNode;
+  /** Sticky pager inside the records pane (not below the 2× viewport workspace). */
+  paneFooter?: React.ReactNode;
   className?: string;
   userRole?: string | null;
   /** Available territories for territory filter dropdown */
@@ -99,6 +102,7 @@ export const ModuleShell = memo(function ModuleShell({
   activeViewId,
   totalCount,
   children,
+  paneFooter,
   className,
   userRole,
   territories = [],
@@ -1061,7 +1065,7 @@ export const ModuleShell = memo(function ModuleShell({
         description: 'Same filters and sort as this list (up to 100k rows).',
       });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Export failed', { id: toastId });
+      toast.error(toastCopy.failed('export these records', e, 'Try again'), { id: toastId });
     }
   }, [
     selectedCount,
@@ -1463,6 +1467,7 @@ export const ModuleShell = memo(function ModuleShell({
       {/* Table + docked filter rail (lg+). Mobile / tablet keep the dialog. */}
       <ModuleShellProvider value={shellContext}>
         <FilterWorkspaceRow
+          footer={paneFooter}
           rail={
             <FilterRailFrame
               open={filterRailOpen}

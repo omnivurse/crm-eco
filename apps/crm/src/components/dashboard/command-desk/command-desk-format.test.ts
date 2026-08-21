@@ -143,6 +143,9 @@ describe('hrefs', () => {
   it('builds record hrefs, with an optional pane deep link', () => {
     expect(recordHref('abc')).toBe('/crm/r/abc');
     expect(recordHref('abc', { pane: 'notes' })).toBe('/crm/r/abc?pane=notes');
+    expect(recordHref('abc', { pane: 'notes', compose: true })).toBe(
+      '/crm/r/abc?pane=notes&compose=1',
+    );
   });
 });
 

@@ -155,7 +155,7 @@ export function CustomizeRelatedListsDialog({
           <DialogTitle>Customize related lists</DialogTitle>
           <DialogDescription>
             Pin the panels you use most and drag the arrows to reorder them in the
-            record sidebar.
+            header chip strip.
           </DialogDescription>
         </DialogHeader>
 
