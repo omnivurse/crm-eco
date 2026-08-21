@@ -21,6 +21,27 @@ function createAdminClient() {
  * POST /api/crm/sync
  * Backfill all members to CRM contacts
  */
+/**
+ * `members.status` is a LOWERCASE enum ('active', 'inactive', …) while
+ * crm_records uses the capitalised CRM vocabulary. Copying it across verbatim
+ * is what seeded ~1,500 lowercase 'active' rows, so map it exactly the way the
+ * database already does in public.map_member_status_to_crm().
+ */
+const MEMBER_STATUS_TO_CRM: Record<string, string> = {
+  active: 'Active',
+  inactive: 'Inactive',
+  pending: 'Pending',
+  terminated: 'Terminated',
+  paused: 'Paused',
+  prospect: 'Prospect',
+  cancelled: 'Cancelled',
+};
+
+function crmStatusForMember(memberStatus?: string | null): string {
+  const key = (memberStatus ?? '').trim().toLowerCase();
+  return MEMBER_STATUS_TO_CRM[key] ?? 'Active';
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { action } = await request.json();
@@ -115,13 +136,13 @@ export async function POST(request: NextRequest) {
             title,
             email: member.email,
             phone: member.phone,
-            status: member.status || 'Active',
+            status: crmStatusForMember(member.status),
             data: {
               first_name: member.first_name,
               last_name: member.last_name,
               email: member.email,
               phone: member.phone,
-              contact_status: member.status || 'Active',
+              contact_status: crmStatusForMember(member.status),
               linked_member_id: member.id,
               source: 'enrollment_backfill',
             },

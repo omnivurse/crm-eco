@@ -32,35 +32,36 @@ describe('resolveEffectiveStartDate', () => {
 });
 
 describe('resolveActiveStatusForMarket', () => {
-  it('maps healthshare to Active HS Member', () => {
-    expect(resolveActiveStatusForMarket('healthshare')).toBe('Active HS Member');
-  });
-
-  it('defaults to Active when market_type is unset', () => {
+  // Activation resolves to ONE canonical lifecycle value regardless of market.
+  // Encoding the market in the status produced "Active HS Member" /
+  // "Active Insurance Client" — variants that meant exactly "Active" but broke
+  // every filter, badge and count comparing against it. The market itself is
+  // already recorded in `market_type`.
+  it('maps every market to the one canonical Active', () => {
+    expect(resolveActiveStatusForMarket('healthshare')).toBe('Active');
+    expect(resolveActiveStatusForMarket('traditional_insurance')).toBe('Active');
     expect(resolveActiveStatusForMarket(null)).toBe('Active');
+    expect(resolveActiveStatusForMarket('unknown')).toBe('Active');
   });
 
-  it('keeps HS taxonomy from the old status when market_type is null', () => {
-    expect(resolveActiveStatusForMarket(null, 'Pending HS Member')).toBe('Active HS Member');
+  it('does not resurrect a legacy variant from the previous status', () => {
+    for (const old of [
+      'Pending HS Member',
+      'Pending Insurance Client',
+      'Pending Member',
+      'Active HS Member',
+    ]) {
+      expect(resolveActiveStatusForMarket(null, old)).toBe('Active');
+      expect(resolveActiveStatusForMarket('healthshare', old)).toBe('Active');
+    }
   });
 
-  it('maps traditional_insurance to Active Insurance Client', () => {
-    expect(resolveActiveStatusForMarket('traditional_insurance')).toBe('Active Insurance Client');
-  });
-
-  it('market_type wins over old status', () => {
-    expect(resolveActiveStatusForMarket('traditional_insurance', 'Pending HS Member')).toBe(
-      'Active Insurance Client',
-    );
-  });
-
-  it('plain pending member without market_type stays in Member taxonomy', () => {
-    expect(resolveActiveStatusForMarket(null, 'Pending Member')).toBe('Active Member');
-  });
-
-  it('keeps Insurance Client taxonomy from the old status when market_type is null', () => {
-    expect(resolveActiveStatusForMarket(null, 'Pending Insurance Client')).toBe(
-      'Active Insurance Client',
-    );
+  it('never returns a value the status picker would refuse to offer', () => {
+    const produced = [
+      resolveActiveStatusForMarket('healthshare'),
+      resolveActiveStatusForMarket('traditional_insurance'),
+      resolveActiveStatusForMarket(null, 'Pending HS Member'),
+    ];
+    for (const v of produced) expect(v).toBe('Active');
   });
 });

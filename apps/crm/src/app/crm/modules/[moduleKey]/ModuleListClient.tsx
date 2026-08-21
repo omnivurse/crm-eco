@@ -212,6 +212,7 @@ function ModuleViewContent({
           onBulkDelete={shellContext?.requestDelete}
           totalCount={totalCount}
           activeViewFilterCount={activeViewFilterCount}
+          fillParent
         />
       );
   }

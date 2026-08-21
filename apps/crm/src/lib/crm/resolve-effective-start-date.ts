@@ -10,10 +10,19 @@ export const PENDING_CONTACT_STATUSES = [
   'Approved Pending',
 ] as const;
 
-/** Map market_type → active status after the start date arrives. */
+/**
+ * Map market_type → active status after the start date arrives.
+ *
+ * Every market resolves to the SAME lifecycle value. The market itself is
+ * already recorded in `market_type`, so encoding it a second time in the
+ * status produced "Active HS Member" / "Active Insurance Client" — variants
+ * that meant exactly "Active" but broke every filter, badge and count that
+ * compared against it. Status answers "what state is this record in";
+ * `market_type` answers "what kind of coverage".
+ */
 export const ACTIVE_STATUS_BY_MARKET: Record<string, string> = {
-  healthshare: 'Active HS Member',
-  traditional_insurance: 'Active Insurance Client',
+  healthshare: 'Active',
+  traditional_insurance: 'Active',
 };
 
 const JSONB_START_DATE_KEYS = [
@@ -75,15 +84,7 @@ export function resolveActiveStatusForMarket(
   if (normalizedMarket && ACTIVE_STATUS_BY_MARKET[normalizedMarket]) {
     return ACTIVE_STATUS_BY_MARKET[normalizedMarket];
   }
-  if (oldStatus && oldStatus.includes('HS Member')) {
-    return 'Active HS Member';
-  }
-  if (oldStatus && /insurance client/i.test(oldStatus)) {
-    return 'Active Insurance Client';
-  }
-  if (oldStatus === 'Pending Member' || oldStatus === 'Active Member') {
-    // Ambiguous without market_type — keep Member taxonomy rather than demoting.
-    return 'Active Member';
-  }
+  // Legacy inbound spellings all resolve to the one canonical value; the
+  // market/product taxonomy they used to carry lives in `market_type`.
   return 'Active';
 }

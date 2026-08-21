@@ -57,13 +57,16 @@ describe('isActivationDue', () => {
     expect(check.newStatus).toBe('Active');
   });
 
-  it('maps healthshare market to Active HS Member', () => {
+  it('activates a healthshare record to plain Active, not a market-flavoured variant', () => {
     const record = {
       ...base,
       market_type: 'healthshare',
       current_year_start_date: '2026-07-01',
     };
-    expect(isActivationDue(record, '2026-08-01').newStatus).toBe('Active HS Member');
+    // The nightly cron used to write 'Active HS Member' here, which is how the
+    // variant kept coming back after every cleanup. Coverage type stays in
+    // market_type; status carries only the lifecycle state.
+    expect(isActivationDue(record, '2026-08-01').newStatus).toBe('Active');
   });
 });
 

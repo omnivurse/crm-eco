@@ -117,6 +117,11 @@ interface RecordTableProps {
   totalCount?: number | null;
   /** Filter count of the active saved view (see `useListEmptyState` in ListView). */
   activeViewFilterCount?: number | null;
+  /**
+   * When the table sits in FilterWorkspaceRow, fill that pane instead of
+   * measuring a second (often shorter) viewport cap.
+   */
+  fillParent?: boolean;
 }
 
 interface EditingCell {
@@ -547,6 +552,7 @@ export const RecordTable = memo(function RecordTable({
   onRecordUpdate,
   totalCount,
   activeViewFilterCount,
+  fillParent = false,
 }: RecordTableProps) {
   const [internalSelectedIds, setInternalSelectedIds] = useState<Set<string>>(new Set());
   const [isScrolled, setIsScrolled] = useState(false);
@@ -718,6 +724,7 @@ export const RecordTable = memo(function RecordTable({
   // chips wrap, mass-actions bar shows) and re-runs when density flips the chrome.
   const [measuredMaxH, setMeasuredMaxH] = useState<number | null>(null);
   useIsomorphicLayoutEffect(() => {
+    if (fillParent) return;
     const el = tableContainerRef.current;
     if (!el || typeof window === 'undefined') return;
     const measure = () => {
@@ -734,7 +741,7 @@ export const RecordTable = memo(function RecordTable({
       window.removeEventListener('resize', measure);
       ro.disconnect();
     };
-  }, [density]);
+  }, [density, fillParent]);
 
   // Power-user keyboard navigation state (declared here with the other hooks so
   // it precedes any early return). The handler + active-descendant id live down
@@ -1370,16 +1377,21 @@ export const RecordTable = memo(function RecordTable({
         aria-activedescendant={activeDescId}
         onKeyDown={handleGridKeyDown}
         className={cn(
-          'hidden md:block h-full glass-card rounded-lg border border-slate-200 dark:border-white/10 overflow-auto max-h-[calc(100vh-var(--crm-view-offset))] scrollbar-thin sticky-scrollbar',
+          'hidden md:block glass-card rounded-lg border border-slate-200 dark:border-white/10 overflow-auto scrollbar-thin sticky-scrollbar',
+          fillParent
+            ? 'h-full max-h-full'
+            : 'h-full max-h-[calc(100vh-var(--crm-view-offset))]',
           'focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-teal-500/40',
           isResizing && 'select-none'
         )}
-        // Measured cap wins once mounted; the CSS max-h above is the pre-measure
-        // (SSR / first-paint) fallback so the table is never briefly unbounded.
+        // Workspace lists fill the parent pane. Other hosts keep a measured cap
+        // so the table is never briefly unbounded on first paint.
         style={
-          measuredMaxH
-            ? { height: `${measuredMaxH}px`, maxHeight: `${measuredMaxH}px` }
-            : undefined
+          fillParent
+            ? { height: '100%', maxHeight: '100%' }
+            : measuredMaxH
+              ? { height: `${measuredMaxH}px`, maxHeight: `${measuredMaxH}px` }
+              : undefined
         }
       >
       {/* Plain <table>: the @crm-eco/ui <Table> primitive wraps itself in a

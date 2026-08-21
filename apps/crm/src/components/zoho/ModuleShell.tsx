@@ -1485,7 +1485,7 @@ export const ModuleShell = memo(function ModuleShell({
         >
           <div
             className={cn(
-              'relative h-full min-h-0 min-w-0',
+              'relative h-full min-h-0 min-w-0 overflow-hidden',
               density === 'compact' && '[&_table_td]:py-1.5 [&_table_th]:py-2',
               density === 'comfortable' && '[&_table_td]:py-4 [&_table_th]:py-3'
             )}

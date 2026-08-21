@@ -1,12 +1,12 @@
 'use client';
 
 import { useEffect, useLayoutEffect, useState, type RefObject } from 'react';
-
-const useIsomorphicLayoutEffect = typeof document !== 'undefined' ? useLayoutEffect : useEffect;
 import {
   VIEWPORT_FILL_BOTTOM_GAP,
   remainingViewportHeight,
 } from './remaining-viewport-height';
+
+const useIsomorphicLayoutEffect = typeof document !== 'undefined' ? useLayoutEffect : useEffect;
 
 /**
  * Live remaining-viewport height for a workspace row. Re-measures on resize
@@ -35,6 +35,7 @@ export function useRemainingViewportHeight(
     window.addEventListener('resize', measure);
     const ro = new ResizeObserver(measure);
     ro.observe(document.body);
+    ro.observe(el);
     return () => {
       window.removeEventListener('resize', measure);
       ro.disconnect();

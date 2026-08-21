@@ -72,10 +72,11 @@ export function getCoreStatusPickerItems(marketType?: string | null): string[] {
   if (isInsuranceMarket(marketType)) {
     return ['Active', ACTIVE_INSURANCE_CLIENT_STATUS, 'Inactive', 'In-Active', 'Pending', 'Hold'];
   }
+  // 'Active HS Member' / 'Active Member' deliberately absent: they are the
+  // same lifecycle state as 'Active', and offering them let a rep re-create
+  // the variant by hand. Coverage type lives in `market_type`.
   return [
     'Active',
-    'Active HS Member',
-    'Active Member',
     ACTIVE_INSURANCE_CLIENT_STATUS,
     'Inactive',
     'In-Active',

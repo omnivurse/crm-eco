@@ -9,8 +9,11 @@ interface FilterWorkspaceRowProps {
 }
 
 /**
- * Filter rail + records pane share one remaining-viewport height so the
- * table card is not shorter than the rail (gray gap beside a full-dvh rail).
+ * Filter rail + records pane share one remaining-viewport height.
+ *
+ * Load-bearing: the row always has an explicit `height` and `overflow-hidden`.
+ * Without that, the rail sizes to its field list (taller than the viewport)
+ * while the table uses a remaining-viewport cap — gray gap, clipped rows.
  */
 export function FilterWorkspaceRow({ rail, children }: FilterWorkspaceRowProps) {
   const ref = useRef<HTMLDivElement>(null);
@@ -19,12 +22,13 @@ export function FilterWorkspaceRow({ rail, children }: FilterWorkspaceRowProps) 
   return (
     <div
       ref={ref}
-      className="flex items-stretch gap-3"
-      style={height != null ? { height } : { minHeight: 240 }}
+      data-filter-workspace
+      className="grid grid-cols-[auto_minmax(0,1fr)] gap-3 overflow-hidden"
+      style={{ height: height ?? 240 }}
     >
-      {rail}
-      <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
-        <div className="min-h-0 flex-1 [&>*]:h-full">{children}</div>
+      <div className="min-h-0 h-full overflow-hidden">{rail}</div>
+      <div className="relative min-h-0 h-full overflow-hidden [&>*]:h-full">
+        {children}
       </div>
     </div>
   );
