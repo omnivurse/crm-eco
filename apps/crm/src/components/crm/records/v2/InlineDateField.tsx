@@ -222,7 +222,7 @@ export const InlineDateField = memo(function InlineDateField({
     return (
       <span
         className={cn(
-          'relative z-20 flex w-full min-w-0 max-w-full flex-col gap-1',
+          'relative flex w-full min-w-0 max-w-full flex-col gap-1',
           className,
         )}
         data-no-hotkeys

@@ -407,7 +407,7 @@ export const RecordDetailShell = memo(function RecordDetailShell({
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto">
         {/* Header */}
-        <div className="sticky top-0 z-10 isolate bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-white/5">
+        <div className="sticky top-0 z-20 isolate bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-white/5">
           <div className="w-full px-3 sm:px-4 xl:px-5 py-3">
             {/* Breadcrumb + Search */}
             <div className="flex items-center justify-between gap-4 mb-2">

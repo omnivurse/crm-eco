@@ -329,7 +329,7 @@ export const InlineFieldEditor = memo(function InlineFieldEditor({
   return (
     <span
       className={cn(
-        'relative z-20 flex w-full min-w-0 max-w-full',
+        'relative flex w-full min-w-0 max-w-full',
         isTextarea ? 'flex-col gap-1' : 'items-center gap-1',
         className,
       )}

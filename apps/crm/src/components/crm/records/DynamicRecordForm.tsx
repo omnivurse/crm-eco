@@ -1060,7 +1060,6 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
           key={field.key}
           className={cn(
             'relative min-w-0 max-w-full rounded-md',
-            inlineEditable && 'focus-within:z-20',
             fieldSpansFullRow(field) && FULL_ROW_SPAN_CLASS,
           )}
         >

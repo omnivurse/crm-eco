@@ -1490,7 +1490,10 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
             // layers composite content underneath and read as top-half flicker
             // in Chromium/Brave. No padding/height transition either — that
             // fights scroll anchoring and looks like shake/skip.
-            'sticky top-0 z-10 isolate bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-white/5 transition-shadow duration-200 [overflow-anchor:none]',
+            // Stack inside [data-record-find-root]: content 0, SectionNav 15,
+            // this header 20, open inline dropdown 30. Idle field z-20 used
+            // to paint labels through this bar on scroll.
+            'sticky top-0 z-20 isolate bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-white/5 transition-shadow duration-200 [overflow-anchor:none]',
             headerCompact && 'shadow-md shadow-slate-200/50 dark:shadow-black/20',
           )}
         >
