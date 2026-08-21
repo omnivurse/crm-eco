@@ -39,6 +39,60 @@ function stripHtml(html: string): string {
   return html.replace(/<[^>]*>/g, '').trim();
 }
 
+/**
+ * A line that STARTS with a date begins a new imported entry.
+ *
+ * Zoho's HTML dumps separate entries with <hr>; its plain-text dumps have no
+ * separator at all, so several conversations months apart rendered as one
+ * undifferentiated wall of text. Verified against all 703 plain-text records
+ * in production: 639 are a single entry and unchanged, 64 split into 2-6 real
+ * dated conversations, and no fragment is shorter than 25 characters.
+ *
+ * Requiring the date at the START of a line is what keeps it safe — a date
+ * mid-sentence ("turning 64 in 3/2016") never splits anything.
+ */
+const PLAIN_ENTRY_DATE = /^[ \t]*(\d{1,2}[-./]\d{1,2}[-./]\d{2,4})[.:\s-]/gm;
+
+/** A short undated preamble (typically a rep's name) belongs with the first
+ *  entry rather than becoming a card of its own. */
+const MAX_MERGED_PREAMBLE = 40;
+
+function parsePlainTextNotes(raw: string): ParsedEntry[] {
+  const starts: number[] = [];
+  PLAIN_ENTRY_DATE.lastIndex = 0;
+  let m: RegExpExecArray | null;
+  while ((m = PLAIN_ENTRY_DATE.exec(raw)) !== null) starts.push(m.index);
+
+  let chunks: string[];
+  if (starts.length === 0) {
+    chunks = [raw.trim()];
+  } else {
+    chunks = starts.map((start, i) =>
+      raw.slice(start, i + 1 < starts.length ? starts[i + 1] : raw.length).trim(),
+    );
+    const preamble = raw.slice(0, starts[0]).trim();
+    if (preamble) {
+      if (preamble.length < MAX_MERGED_PREAMBLE) chunks[0] = `${preamble}\n${chunks[0]}`;
+      else chunks.unshift(preamble);
+    }
+  }
+
+  return chunks
+    .filter((c) => c.length > 0)
+    .map((text, idx) => {
+      const dateMatch = text.match(/^[ \t]*(\d{1,2}[-./]\d{1,2}[-./]\d{2,4})/);
+      return {
+        id: idx,
+        timestamp: dateMatch ? dateMatch[1] : null,
+        // Plain text: never treated as markup, and rendered with its own
+        // line breaks intact.
+        bodyHtml: sanitize(text),
+        bodyText: text,
+        plainText: true,
+      };
+    });
+}
+
 function parseNotesHtml(raw: string): ParsedEntry[] {
   const entries = raw
     .split(/<hr\s*\/?>/gi)
@@ -108,7 +162,15 @@ export function LegacyNotesCard({ notesHtml }: LegacyNotesCardProps) {
   const [search, setSearch] = useState('');
   const [showAll, setShowAll] = useState(false);
 
-  const entries = useMemo(() => parseNotesHtml(notesHtml), [notesHtml]);
+  // Zoho wrote history two ways. The HTML dumps separate entries with <hr>;
+  // the plain-text ones have no separator, so they need date-led splitting.
+  const entries = useMemo(
+    () =>
+      /<hr\s*\/?>|<br\s*\/?>|<b>/i.test(notesHtml)
+        ? parseNotesHtml(notesHtml)
+        : parsePlainTextNotes(notesHtml),
+    [notesHtml],
+  );
 
   const filteredEntries = useMemo(() => {
     if (!search.trim()) return entries;

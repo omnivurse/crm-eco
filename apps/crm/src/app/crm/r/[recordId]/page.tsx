@@ -203,18 +203,19 @@ async function RecordDetailContent({ params }: PageProps) {
   // member numbers) stored in the same key are still suppressed.
   const legacyNotes = hasLegacyNotesHistory(notesHistoryRaw) ? notesHistoryRaw : null;
 
-  // Count legacy entries so the Notes tab badge reflects them too. The full
-  // parser lives in LegacyNotesCard (client-only); for the count we mirror its
-  // contract: split on <hr>, drop empties. Plain-text history has no <hr>, so
-  // it counts as the single entry it renders as.
+  // Count legacy entries so the Notes tab badge reflects them too. Mirrors
+  // LegacyNotesCard's contract: HTML history splits on <hr>; plain-text
+  // history splits on a date at the start of a line (and is at least one).
   const legacyNoteCount = legacyNotes
-    ? Math.max(
-        1,
-        legacyNotes
-          .split(/<hr\s*\/?>/gi)
-          .map((c) => c.replace(/<[^>]*>/g, '').trim())
-          .filter((c) => c.length > 0).length,
-      )
+    ? /<hr\s*\/?>|<br\s*\/?>|<b>/i.test(legacyNotes)
+      ? Math.max(
+          1,
+          legacyNotes
+            .split(/<hr\s*\/?>/gi)
+            .map((c) => c.replace(/<[^>]*>/g, '').trim())
+            .filter((c) => c.length > 0).length,
+        )
+      : Math.max(1, (legacyNotes.match(/^[ \t]*\d{1,2}[-./]\d{1,2}[-./]\d{2,4}[.:\s-]/gm) || []).length)
     : 0;
 
   // V2 shell prefers insights.counts.notes; fold legacy entries in so the
