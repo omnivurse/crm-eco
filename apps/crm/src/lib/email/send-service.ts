@@ -1,6 +1,15 @@
 import { createClient, getAuthUser, getAuthProfile } from '@/lib/supabase-server';
 import { createLog } from '@/lib/integrations';
 import { decrypt } from '@/lib/integrations/adapters/credentials';
+import {
+  EMAIL_ATTACHMENT_BUCKET,
+  buildResendSendPayload,
+  resolveOutboundAttachments,
+  toSendGridAttachments,
+  type InlineOutboundFile,
+  type OutboundAttachmentRef,
+  type ResolvedOutboundAttachment,
+} from '@/lib/email/outbound-attachments';
 
 // ============================================================================
 // Email Send Service
@@ -44,6 +53,10 @@ export interface SendEmailParams {
   linked_contact_id?: string;
   linked_lead_id?: string;
   linked_deal_id?: string;
+  /** Stored composer uploads (`email-attachments` bucket). */
+  attachments?: OutboundAttachmentRef[];
+  /** Raw files from multipart `/api/communications/send`. */
+  inline_attachments?: InlineOutboundFile[];
 }
 
 export interface SendEmailResult {
@@ -135,10 +148,43 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
   // Auto-generate plain text from HTML if not provided (improves deliverability)
   const bodyText = params.body_text || (params.body_html ? htmlToPlainText(params.body_html) : undefined);
 
+  let outboundAttachments: ResolvedOutboundAttachment[] = [];
+  try {
+    outboundAttachments = await resolveOutboundAttachments({
+      refs: params.attachments ?? [],
+      inline: params.inline_attachments ?? [],
+      organizationId: profile.organization_id,
+      lookup: async (id) => {
+        const { data } = await supabase
+          .from('email_attachments')
+          .select('file_path, file_name, mime_type, org_id')
+          .eq('id', id)
+          .eq('org_id', profile.organization_id)
+          .maybeSingle();
+        return data ?? null;
+      },
+      download: async (path) => {
+        const { data, error } = await supabase.storage
+          .from(EMAIL_ATTACHMENT_BUCKET)
+          .download(path);
+        if (error || !data) {
+          throw new Error('Could not read the attached file.');
+        }
+        return new Uint8Array(await data.arrayBuffer());
+      },
+    });
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to attach files',
+    };
+  }
+
   // Determine provider and send
   let result: SendEmailResult;
   const provider = emailConnection?.provider || 'resend';
   const startTime = Date.now();
+  const sendTimeoutMs = outboundAttachments.length > 0 ? 60_000 : 30_000;
 
   try {
     // Get unsubscribe URL from integration settings for RFC 8058 compliance
@@ -156,6 +202,8 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
         html: params.body_html,
         text: bodyText,
         replyTo: replyTo,
+        attachments: outboundAttachments,
+        timeoutMs: sendTimeoutMs,
       });
     } else if (provider === 'resend' && emailConnection?.api_key_enc) {
       const apiKey = decrypt(emailConnection.api_key_enc);
@@ -169,6 +217,8 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
         text: bodyText,
         reply_to: replyTo,
         unsubscribe_url: unsubscribeUrl,
+        attachments: outboundAttachments,
+        timeoutMs: sendTimeoutMs,
       });
     } else if (process.env.RESEND_API_KEY) {
       // Fallback to system Resend API key when no org integration is configured
@@ -182,6 +232,8 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
         text: bodyText,
         reply_to: replyTo,
         unsubscribe_url: unsubscribeUrl,
+        attachments: outboundAttachments,
+        timeoutMs: sendTimeoutMs,
       });
     } else {
       return {
@@ -218,6 +270,11 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
         linked_contact_id: params.linked_contact_id,
         linked_lead_id: params.linked_lead_id,
         linked_deal_id: params.linked_deal_id,
+        attachments: outboundAttachments.map((attachment) => ({
+          filename: attachment.filename,
+          content_type: attachment.contentType,
+          size: attachment.size,
+        })),
       },
     });
 
@@ -398,11 +455,13 @@ async function sendViaSendGrid(
     html?: string;
     text?: string;
     replyTo?: string;
+    attachments?: ResolvedOutboundAttachment[];
+    timeoutMs?: number;
   }
 ): Promise<SendEmailResult> {
   const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
     method: 'POST',
-    signal: AbortSignal.timeout(30_000),
+    signal: AbortSignal.timeout(params.timeoutMs ?? 30_000),
     headers: {
       'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
@@ -420,6 +479,9 @@ async function sendViaSendGrid(
         params.text ? { type: 'text/plain', value: params.text } : null,
         params.html ? { type: 'text/html', value: params.html } : null,
       ].filter(Boolean),
+      attachments: params.attachments?.length
+        ? toSendGridAttachments(params.attachments)
+        : undefined,
     }),
   });
   
@@ -444,9 +506,11 @@ async function sendViaResend(
     text?: string;
     reply_to?: string;
     unsubscribe_url?: string;
+    attachments?: ResolvedOutboundAttachment[];
+    timeoutMs?: number;
   }
 ): Promise<SendEmailResult> {
-  const payload: Record<string, unknown> = {
+  const payload = buildResendSendPayload({
     from: params.from,
     to: params.to,
     cc: params.cc,
@@ -455,19 +519,13 @@ async function sendViaResend(
     html: params.html,
     text: params.text,
     reply_to: params.reply_to,
-  };
-
-  // Add List-Unsubscribe headers for deliverability (RFC 8058)
-  if (params.unsubscribe_url) {
-    payload.headers = {
-      'List-Unsubscribe': `<${params.unsubscribe_url}>`,
-      'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
-    };
-  }
+    unsubscribe_url: params.unsubscribe_url,
+    attachments: params.attachments,
+  });
 
   const response = await fetch('https://api.resend.com/emails', {
     method: 'POST',
-    signal: AbortSignal.timeout(30_000),
+    signal: AbortSignal.timeout(params.timeoutMs ?? 30_000),
     headers: {
       'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json',

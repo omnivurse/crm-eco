@@ -30,6 +30,7 @@ import { LazyEmailEditor } from './LazyEmailEditor';
 import { EmailAttachments, EmailAttachment } from './EmailAttachments';
 import { SenderSelector } from './SenderSelector';
 import { toast } from 'sonner';
+import { assertComposerAttachmentsReady } from '@/lib/email/outbound-attachments';
 
 interface EmailRecipient {
   email: string;
@@ -261,6 +262,13 @@ export const EmailComposer = memo(function EmailComposer({
     }
 
     if (!onSend) return;
+
+    try {
+      assertComposerAttachmentsReady(attachments);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Attachments are not ready');
+      return;
+    }
 
     setIsSending(true);
     try {

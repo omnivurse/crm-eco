@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { applyAttachmentUploadResult } from '@/lib/email/outbound-attachments';
 import { useDropzone } from 'react-dropzone';
 import {
   Button,
@@ -141,7 +142,8 @@ export function EmailAttachments({
       upload_progress: 0,
     }));
 
-    onAttachmentsChange([...attachments, ...newAttachments]);
+    let next = [...attachments, ...newAttachments];
+    onAttachmentsChange(next);
 
     // Upload files
     for (let i = 0; i < validFiles.length; i++) {
@@ -157,34 +159,34 @@ export function EmailAttachments({
           body: formData,
         });
 
+        const data = await response.json().catch(() => ({})) as {
+          id?: string;
+          file_path?: string;
+          bucket_path?: string;
+          public_url?: string;
+          error?: string;
+        };
+
         if (!response.ok) {
-          throw new Error('Upload failed');
+          throw new Error(data.error || 'Upload failed');
         }
 
-        const data = await response.json();
-
-        // Update attachment with server response
-        const updatedAttachments = attachments.map(a =>
-          a.id === attachment.id
-            ? {
-                ...a,
-                id: data.id,
-                file_path: data.file_path,
-                bucket_path: data.bucket_path,
-                public_url: data.public_url,
-                is_uploading: false,
-              }
-            : a
-        );
-        onAttachmentsChange(updatedAttachments);
-      } catch {
-        // Mark as failed
-        const failedAttachments = attachments.map(a =>
-          a.id === attachment.id
-            ? { ...a, is_uploading: false, error: 'Upload failed' }
-            : a
-        );
-        onAttachmentsChange(failedAttachments);
+        next = applyAttachmentUploadResult(next, attachment.id, {
+          ok: true,
+          attachment: {
+            id: data.id,
+            file_path: data.file_path,
+            bucket_path: data.bucket_path,
+            public_url: data.public_url,
+          },
+        });
+        onAttachmentsChange(next);
+      } catch (error) {
+        next = applyAttachmentUploadResult(next, attachment.id, {
+          ok: false,
+          error: error instanceof Error ? error.message : 'Upload failed',
+        });
+        onAttachmentsChange(next);
       }
     }
 

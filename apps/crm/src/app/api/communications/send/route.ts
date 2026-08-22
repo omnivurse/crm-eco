@@ -2,6 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUser, getAuthProfile, createClient } from '@/lib/supabase-server';
 import { sendEmail, sendSms } from '@/lib/email/send-service';
 import { rateLimitDurable, getRateLimitHeaders } from '@crm-eco/lib/rate-limit';
+import {
+  collectJsonAttachmentRefs,
+  fileToInline,
+  splitRecipientField,
+  type InlineOutboundFile,
+  type OutboundAttachmentRef,
+} from '@/lib/email/outbound-attachments';
 
 const RATE_LIMIT_MAX = 50;
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
@@ -58,6 +65,8 @@ export async function POST(request: NextRequest) {
 
     // Parse body — handle both JSON and FormData
     let body: Record<string, unknown>;
+    let attachmentRefs: OutboundAttachmentRef[] = [];
+    let inlineAttachments: InlineOutboundFile[] = [];
     const contentType = request.headers.get('content-type') || '';
 
     if (contentType.includes('multipart/form-data')) {
@@ -65,16 +74,20 @@ export async function POST(request: NextRequest) {
       body = {};
       for (const [key, value] of formData.entries()) {
         if (typeof value === 'string') {
-          if (key === 'cc' || key === 'bcc') {
-            body[key] = value.split(',').map((e: string) => e.trim()).filter(Boolean);
-          } else {
+          if (key === 'to' || key === 'cc' || key === 'bcc') {
+            body[key] = splitRecipientField(value);
+          } else if (key !== 'attachments') {
             body[key] = value;
           }
+          continue;
         }
-        // File attachments not yet supported in send service — skip
+        if (value instanceof File && (key === 'attachments' || key === 'attachment')) {
+          inlineAttachments.push(await fileToInline(value));
+        }
       }
     } else {
       body = await request.json();
+      attachmentRefs = collectJsonAttachmentRefs(body.attachments);
     }
 
     const { channel, ...params } = body;
@@ -117,6 +130,8 @@ export async function POST(request: NextRequest) {
         linked_contact_id: params.linked_contact_id as string | undefined,
         linked_lead_id: params.linked_lead_id as string | undefined,
         linked_deal_id: params.linked_deal_id as string | undefined,
+        attachments: attachmentRefs,
+        inline_attachments: inlineAttachments,
       });
       
       if (!result.success) {

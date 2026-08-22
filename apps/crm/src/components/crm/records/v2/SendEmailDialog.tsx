@@ -35,6 +35,7 @@ import {
 } from '@/components/email/EmailComposer';
 import { useClientAuth } from '@/hooks/useClientAuth';
 import type { CrmRecord } from '@/lib/crm/types';
+import { composerDataToCommunicationsSendBody } from '@/lib/email/outbound-attachments';
 
 export interface SendEmailDialogProps {
   open: boolean;
@@ -90,14 +91,12 @@ export function SendEmailDialog({
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            channel: 'email',
-            to: data.to.map((r) => r.email),
-            cc: data.cc.map((r) => r.email),
-            bcc: data.bcc.map((r) => r.email),
-            subject: data.subject,
-            body_html: data.body_html,
-            body_text: data.body_text,
-            from_name: profile?.full_name || user?.email,
+            ...composerDataToCommunicationsSendBody({
+              ...data,
+              from_email: data.from_email,
+              from_name: data.from_name || profile?.full_name || user?.email,
+              reply_to: data.from_email,
+            }),
           }),
         });
         const sendBody = (await sendRes.json().catch(() => ({}))) as {

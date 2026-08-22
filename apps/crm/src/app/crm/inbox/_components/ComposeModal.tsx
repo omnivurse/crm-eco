@@ -12,6 +12,7 @@ import {
 } from '@crm-eco/ui/components/dialog';
 import { EmailComposer, type EmailComposerData } from '@/components/email/EmailComposer';
 import { TemplatePicker } from './TemplatePicker';
+import { composerDataToCommunicationsSendBody } from '@/lib/email/outbound-attachments';
 import type { ConversationStatus, ConversationPriority } from '@/lib/inbox/types';
 
 interface EmailRecipient {
@@ -60,18 +61,14 @@ export function ComposeModal({
     const res = await fetch('/api/communications/send', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        channel: 'email',
-        to: data.to.map(r => r.email),
-        subject: data.subject,
-        body_html: data.body_html,
-        body_text: data.body_text,
-        cc: data.cc.map(r => r.email),
-        bcc: data.bcc.map(r => r.email),
-        from_email: fromEmail,
-        from_name: fromName,
-        reply_to: replyTo,
-      }),
+      body: JSON.stringify(
+        composerDataToCommunicationsSendBody({
+          ...data,
+          from_email: fromEmail,
+          from_name: fromName,
+          reply_to: replyTo,
+        }),
+      ),
     });
 
     const result = await res.json();

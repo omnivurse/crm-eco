@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, getAuthProfile } from '@/lib/supabase-server';
+import { emailAttachmentInsertRow } from '@/lib/email/outbound-attachments';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ALLOWED_TYPES = [
@@ -73,17 +74,17 @@ export async function POST(request: NextRequest) {
     // Note: Using type assertion since email_attachments table is not in generated types yet
     const { data: attachment, error: dbError } = await (supabase as any)
       .from('email_attachments')
-      .insert({
-        org_id: profile.organization_id,
-        campaign_id: campaignId || null,
-        template_id: templateId || null,
-        file_name: file.name,
-        file_path: filePath,
-        bucket_path: uploadData.path,
-        file_size: file.size,
-        mime_type: file.type,
-        created_by: profile.id,
-      })
+      .insert(emailAttachmentInsertRow({
+        organizationId: profile.organization_id,
+        fileName: file.name,
+        filePath,
+        bucketPath: uploadData.path,
+        fileSize: file.size,
+        mimeType: file.type,
+        createdBy: profile.id,
+        campaignId,
+        templateId,
+      }))
       .select()
       .single();
 
