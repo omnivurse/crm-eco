@@ -6,26 +6,54 @@
 @tailwind utilities;
 
 :root {
+  --tape: oklch(0.975 0.008 250);
+  --ink: oklch(0.2 0.03 250);
+  --ink-muted: oklch(0.44 0.02 250);
+  --tick: oklch(0.955 0.01 250);
+  --hairline: oklch(0.88 0.012 250);
+  --signal: oklch(0.68 0.15 62);
+  --signal-hover: oklch(0.6 0.16 62);
+  --signal-subtle: oklch(0.93 0.05 62);
+  --cms-needle: oklch(0.48 0.05 70);
+  --focus: var(--signal);
+  --danger: oklch(0.55 0.18 25);
+  --success: oklch(0.52 0.12 150);
+  --overlay: oklch(0.16 0.02 250 / 0.46);
+  --radius-control: 6px;
+  --radius-panel: 10px;
+  --radius-sheet: 16px;
   --cashpay-signal: #d97706;
-  --cashpay-crm: #06b6d4;
-  --cashpay-mms: #10b981;
-  --background: 210 20% 98%;
-  --foreground: 222 47% 8%;
+  --background: 220 20% 97%;
+  --foreground: 222 47% 10%;
   --card: 0 0% 100%;
-  --muted: 210 20% 96%;
-  --muted-foreground: 215 16% 40%;
-  --border: 214 20% 88%;
-  --input: 214 20% 88%;
+  --muted: 220 16% 95%;
+  --muted-foreground: 220 12% 38%;
+  --border: 220 14% 86%;
+  --input: 220 14% 86%;
 }
 
 html.dark {
-  --background: 222 47% 6%;
+  --tape: oklch(0.145 0.02 250);
+  --ink: oklch(0.96 0.01 250);
+  --ink-muted: oklch(0.72 0.02 250);
+  --tick: oklch(0.18 0.02 250);
+  --hairline: oklch(0.3 0.02 250);
+  --signal: oklch(0.76 0.14 62);
+  --signal-hover: oklch(0.82 0.13 62);
+  --signal-subtle: oklch(0.26 0.05 62);
+  --cms-needle: oklch(0.78 0.06 70);
+  --focus: var(--signal);
+  --danger: oklch(0.68 0.16 25);
+  --success: oklch(0.7 0.11 150);
+  --overlay: oklch(0.08 0.02 250 / 0.62);
+  --cashpay-signal: #f59e0b;
+  --background: 222 40% 7%;
   --foreground: 210 20% 98%;
-  --card: 222 40% 8%;
-  --muted: 222 30% 12%;
-  --muted-foreground: 215 16% 70%;
-  --border: 217 20% 18%;
-  --input: 217 20% 18%;
+  --card: 222 36% 9%;
+  --muted: 222 28% 12%;
+  --muted-foreground: 215 14% 72%;
+  --border: 217 18% 20%;
+  --input: 217 18% 20%;
 }
 
 .lp-root {
@@ -33,11 +61,17 @@ html.dark {
 }
 
 .cashpay-rate {
-  color: var(--cashpay-signal);
+  color: var(--signal);
   font-variant-numeric: tabular-nums;
   font-weight: 700;
 }
 
 html {
   scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
 }

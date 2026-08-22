@@ -1,6 +1,5 @@
 /**
- * Cash Pay landing — page-scoped composition only.
- * Shared tokens live in packages/ui landing.css. Do not fork that file.
+ * Cash Pay marketing — page-scoped composition only.
  */
 
 .root.root {
@@ -11,8 +10,9 @@
 }
 
 .hero.hero {
-  grid-template-columns: minmax(0, 1.02fr) minmax(0, 0.98fr);
-  row-gap: clamp(2rem, 4vw, 3rem);
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+  row-gap: clamp(1.5rem, 3vw, 2.5rem);
+  padding-top: clamp(4.5rem, 10vw, 6rem);
 }
 
 .heroCopy.heroCopy {
@@ -21,170 +21,12 @@
   max-width: 34rem;
 }
 
-.heroStrip {
-  grid-column: 1 / -1;
-}
-
-.heroStage.heroStage {
-  --dhh-spine-w: clamp(5.5rem, 7.5vw, 7rem);
-  position: relative;
-  display: block;
-  min-height: calc(5 * var(--dhh-spine-w));
-}
-
-.heroSpine.heroSpine.heroSpine[data-orientation='vertical'] {
-  --lp-spine-w: var(--dhh-spine-w);
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 0;
-  pointer-events: none;
-}
-
-.heroSpine.heroSpine :global(.lp-spine-canvas) {
-  grid-template-columns: var(--lp-spine-w);
-  gap: 0;
-}
-
-.strandTags {
-  display: contents;
-}
-
-.strandTag {
-  position: absolute;
-  z-index: 1;
-  margin: 0;
-  max-width: 11rem;
-}
-
-.strandTag::after {
-  content: '';
-  position: absolute;
-  top: 0.35rem;
-  width: calc(var(--dhh-spine-w) * 0.19 + 0.9rem);
-  height: 1px;
-  background: var(--lp-hairline-strong);
-}
-
-.strandTagA {
-  top: calc(30% - 0.5rem);
-  right: 50%;
-  margin-right: calc(var(--dhh-spine-w) / 2 + 0.9rem);
-  text-align: right;
-}
-
-.strandTagA::after {
-  right: -0.9rem;
-}
-
-.strandTagB {
-  top: calc(70% - 0.5rem);
-  left: 50%;
-  margin-left: calc(var(--dhh-spine-w) / 2 + 0.9rem);
-}
-
-.strandTagB::after {
-  left: -0.9rem;
-}
-
-.strandKind {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-family: var(--lp-font-mono);
-  font-size: 0.68rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--lp-fg-muted);
-}
-
-.strandTagA .strandDot {
-  background: var(--lp-strand-a);
-}
-
-.strandTagB .strandDot {
-  background: var(--lp-strand-b);
-}
-
-.strandDot {
-  width: 0.45rem;
-  height: 0.45rem;
-  border-radius: 999px;
-}
-
-.strandName {
-  display: block;
-  font-weight: 600;
-}
-
-.strandRole {
-  display: block;
-  font-size: 0.85rem;
-  color: var(--lp-fg-muted);
-}
-
-.backboneNote {
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 1;
-  margin: 0;
-  width: max-content;
-  font-family: var(--lp-font-mono);
-  font-size: 0.68rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--lp-fg-muted);
-}
-
-.steps {
-  margin: 0;
-  padding-left: 1.15rem;
-  display: grid;
-  gap: 0.85rem;
-  max-width: 40rem;
-}
-
-.searchPanel {
-  margin-top: 1.25rem;
+.heroStage {
+  min-width: 0;
 }
 
 @media (max-width: 899px) {
   .hero.hero {
     grid-template-columns: 1fr;
-  }
-
-  .heroStage.heroStage {
-    min-height: 0;
-  }
-
-  .heroSpine.heroSpine.heroSpine[data-orientation='vertical'] {
-    position: relative;
-    left: auto;
-    transform: none;
-    margin-inline: auto;
-  }
-
-  .strandTags {
-    display: grid;
-    gap: 0.75rem;
-    margin-top: 1rem;
-  }
-
-  .strandTag {
-    position: static;
-    max-width: none;
-  }
-
-  .strandTag::after {
-    display: none;
-  }
-
-  .backboneNote {
-    position: static;
-    transform: none;
-    margin-top: 0.5rem;
   }
 }

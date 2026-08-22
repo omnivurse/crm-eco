@@ -16,8 +16,13 @@ import {
   hclStateForZip,
   normalizeStateName,
   loadFullHclCatalog,
+  loadHclCatalog,
   loadMsaAllowlistFromEnv,
   uniqueStates,
+  resolveRateQuery,
+  resolvePreferredMarket,
+  resolveLiveSpecialty,
+  summarizeResultSlice,
 } from './index';
 
 describe('normalizeRate', () => {
@@ -173,6 +178,11 @@ describe('msa helpers', () => {
     expect(pickPreferredState(catalog, [hclStateForZip('75201')])).toBe('TX-North Texas DFW');
   });
 
+  it('exposes loadHclCatalog as the nationwide catalog loader', () => {
+    expect(loadHclCatalog().length).toBeGreaterThan(200);
+    expect(loadHclCatalog()).toEqual(loadMsaAllowlistFromEnv());
+  });
+
   it('uses the bundled catalog unless HCL_MSA_ALLOWLIST_ONLY=1', () => {
     const envOnly = loadMsaAllowlistFromEnv({
       HCL_MSA_ALLOWLIST: JSON.stringify([
@@ -190,6 +200,112 @@ describe('msa helpers', () => {
     });
     expect(merged.length).toBeGreaterThan(200);
     expect(uniqueStates(merged)).toContain('Florida');
+  });
+});
+
+describe('resolveRateQuery', () => {
+  const catalog = loadFullHclCatalog();
+
+  it('accepts a catalog-legal Oregon metro', () => {
+    const q = resolveRateQuery({
+      allowlist: catalog,
+      state: 'Oregon',
+      msa: 'Portland-Salem',
+    });
+    expect(q.ok).toBe(true);
+    if (q.ok) {
+      expect(q.stateName).toBe('Oregon');
+      expect(q.msaName).toBe('Portland-Salem');
+      expect(q.specialty).toBe('Hospital cash prices');
+    }
+  });
+
+  it('infers CA-S from a Los Angeles ZIP', () => {
+    const q = resolveRateQuery({
+      allowlist: catalog,
+      zip: '90210',
+      msa: 'Los Angeles - Long Beach - Santa Ana',
+    });
+    if (!q.ok) {
+      const metros = catalog.filter((e) => e.stateName === 'CA-S California').map((e) => e.msaName);
+      const q2 = resolveRateQuery({
+        allowlist: catalog,
+        zip: '90210',
+        msa: metros[0],
+      });
+      expect(q2.ok).toBe(true);
+      if (q2.ok) expect(q2.stateName).toBe('CA-S California');
+      return;
+    }
+    expect(q.stateName).toBe('CA-S California');
+  });
+
+  it('rejects a metro that is not on the catalog', () => {
+    const q = resolveRateQuery({
+      allowlist: catalog,
+      state: 'Oregon',
+      msa: 'Not A Real Metro',
+    });
+    expect(q.ok).toBe(false);
+    if (!q.ok) expect(q.code).toBe('no_msa_mapping');
+  });
+
+  it('rejects an invalid ZIP', () => {
+    const q = resolveRateQuery({
+      allowlist: catalog,
+      zip: '972',
+      state: 'Oregon',
+      msa: 'Portland-Salem',
+    });
+    expect(q.ok).toBe(false);
+    if (!q.ok) expect(q.code).toBe('invalid_input');
+  });
+
+  it('coerces Pharmacy to a live specialty', () => {
+    const live = specialtiesForSearch(CASH_PAY_CATALOG, catalog);
+    expect(live.every((s) => s.hclName !== 'Pharmacy')).toBe(true);
+    const specialty = resolveLiveSpecialty(live, catalog[0], 'Pharmacy');
+    expect(specialty).toBe('Hospital cash prices');
+  });
+
+  it('prefers ZIP region for dropdown defaults', () => {
+    const pref = resolvePreferredMarket({ allowlist: catalog, zip: '94102' });
+    expect(pref.stateName).toBe('CA-N California');
+  });
+
+  it('maps Oregon 97201 to Portland-Salem, not the first catalog metro', () => {
+    const pref = resolvePreferredMarket({ allowlist: catalog, zip: '97201' });
+    expect(pref.stateName).toBe('Oregon');
+    expect(pref.msaName).toBe('Portland-Salem');
+  });
+});
+
+describe('summarizeResultSlice', () => {
+  it('separates slice extrema from file size', () => {
+    const summary = summarizeResultSlice(
+      [
+        { rate: 100, cmsRelativity: 1.1 },
+        { rate: 300, cmsRelativity: 2.0 },
+        { rate: 200, cmsRelativity: 1.4 },
+      ],
+      3_790_000,
+    );
+    expect(summary.scope).toBe('slice');
+    expect(summary.sliceCount).toBe(3);
+    expect(summary.low).toBe(100);
+    expect(summary.median).toBe(200);
+    expect(summary.high).toBe(300);
+    expect(summary.cmsMin).toBe(1.1);
+    expect(summary.cmsMax).toBe(2);
+    expect(summary.fileSize).toBe(3_790_000);
+  });
+
+  it('handles an empty slice without inventing rates', () => {
+    const summary = summarizeResultSlice([], 12);
+    expect(summary.low).toBeNull();
+    expect(summary.median).toBeNull();
+    expect(summary.high).toBeNull();
+    expect(summary.fileSize).toBe(12);
   });
 });
 

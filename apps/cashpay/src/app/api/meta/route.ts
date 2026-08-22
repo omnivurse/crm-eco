@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { rateLimit } from '@crm-eco/lib/rate-limit';
 import {
-  loadMsaAllowlistFromEnv,
+  loadHclCatalog,
   loadSpecialtyCatalogFromEnv,
-  normalizeStateName,
-  pickPreferredState,
+  resolvePreferredMarket,
   specialtiesForSearch,
-  hclStateForZip,
   uniqueMsas,
   uniqueStates,
 } from '@crm-eco/cash-pay';
@@ -21,7 +19,7 @@ function clientIp(request: NextRequest): string {
   );
 }
 
-/** Public allowlist meta for Cash Pay search UI. Never exposes HCL_SECRET_KEY. */
+/** Public catalog meta. Never exposes HCL_SECRET_KEY. */
 export async function GET(request: NextRequest) {
   const limited = rateLimit(`cashpay-meta:${clientIp(request)}`, {
     limit: 60,
@@ -35,19 +33,22 @@ export async function GET(request: NextRequest) {
   }
 
   const { searchParams } = request.nextUrl;
-  const allowlist = loadMsaAllowlistFromEnv();
+  const allowlist = loadHclCatalog();
   const zip = searchParams.get('zip')?.trim() || '';
-  const requestedState = normalizeStateName(searchParams.get('state') || undefined);
-  const inferred = zip && /^\d{5}$/.test(zip) ? hclStateForZip(zip) : null;
-  const preferredState = pickPreferredState(allowlist, [requestedState, inferred]);
-
+  const preferred = resolvePreferredMarket({
+    allowlist,
+    zip,
+    state: searchParams.get('state'),
+  });
   const specialties = specialtiesForSearch(loadSpecialtyCatalogFromEnv(), allowlist);
+
   return NextResponse.json({
     states: uniqueStates(allowlist),
     msas: uniqueMsas(allowlist),
     specialties,
-    preferredState,
-    preferredZip: zip,
+    preferredState: preferred.stateName,
+    preferredMsa: preferred.msaName,
+    preferredZip: preferred.zip || zip,
     defaultSpecialty: specialties[0]?.hclName || 'Hospital cash prices',
   });
 }

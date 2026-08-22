@@ -41,14 +41,21 @@ export function mergeMsaCatalogs(
 }
 
 /**
- * Default: bundled nationwide catalog + optional env overlay.
+ * Bundled nationwide HCL catalog + optional env overlay.
  * Set HCL_MSA_ALLOWLIST_ONLY=1 to restrict to the env list (ops / key-scoping).
  */
-export function loadMsaAllowlistFromEnv(
+export function loadHclCatalog(
   env: NodeJS.ProcessEnv = process.env,
 ): MsaAllowlistEntry[] {
   const extra = parseMsaAllowlist(env.HCL_MSA_ALLOWLIST);
   const restrict = (env.HCL_MSA_ALLOWLIST_ONLY || '').toLowerCase() === '1';
   if (restrict && extra.length > 0) return extra;
   return mergeMsaCatalogs(loadFullHclCatalog(), extra);
+}
+
+/** @deprecated Use loadHclCatalog. Kept so older callers keep compiling. */
+export function loadMsaAllowlistFromEnv(
+  env: NodeJS.ProcessEnv = process.env,
+): MsaAllowlistEntry[] {
+  return loadHclCatalog(env);
 }

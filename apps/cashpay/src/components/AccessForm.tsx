@@ -48,7 +48,7 @@ export function AccessForm() {
   if (status === 'success') {
     return (
       <div className="rounded-2xl border border-emerald-500/25 bg-emerald-500/10 p-6 text-center">
-        <h3 className="font-heading text-lg font-semibold">Thanks — we&rsquo;ll be in touch.</h3>
+        <h3 className="font-heading text-lg font-semibold">Thanks. We will be in touch.</h3>
         <p className="mt-2 text-sm text-muted-foreground">
           Your request landed in our queue. Expect a reply within one business day.
         </p>
@@ -81,7 +81,7 @@ export function AccessForm() {
         <textarea
           name="notes"
           rows={3}
-          className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+          className="min-h-11 w-full rounded-md border border-border bg-background px-3 py-2 text-base sm:text-sm"
         />
       </div>
       <button
@@ -89,7 +89,7 @@ export function AccessForm() {
         disabled={status === 'submitting'}
         className="lp-btn-primary disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {status === 'submitting' ? 'Sending…' : 'Request access'}
+        {status === 'submitting' ? 'Sending…' : 'License this UI'}
       </button>
       {status === 'error' && errorMessage ? (
         <p className="text-sm text-red-500 dark:text-red-400">{errorMessage}</p>
@@ -116,7 +116,7 @@ function Field({
         name={name}
         type={type}
         required={required}
-        className="w-full rounded-md border border-border bg-background px-3 py-2"
+        className="min-h-11 w-full rounded-md border border-border bg-background px-3 py-2 text-base sm:text-sm"
       />
     </label>
   );

@@ -2,7 +2,7 @@
   "name": "@crm-eco/cashpay",
   "version": "0.1.0",
   "private": true,
-  "description": "Double Helix Hub Cash Pay — cash prices for hospital, RX, imaging, and labs (cashpay.doublehelixhub.com).",
+  "description": "Double Helix Hub Cash Pay — published hospital cash prices (cashpay.doublehelixhub.com).",
   "scripts": {
     "dev": "next dev --port 3004",
     "build": "next build",

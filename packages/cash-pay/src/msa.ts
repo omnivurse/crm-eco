@@ -164,6 +164,26 @@ export function parseMsaAllowlist(raw: string | undefined | null): MsaAllowlistE
  * HCL splits CA and TX into regions. Map a US ZIP to the inventory state name
  * GetRateDataPaged expects, then fall back to the generic state.
  */
+/**
+ * Known ZIP3 → HCL Metro. This is not a geocoder — only prefixes we can
+ * defend from CMSA geography (Oregon demo + a few obvious metros).
+ */
+const ZIP3_TO_METRO: Record<string, { stateName: string; msaName: string }> = {
+  '970': { stateName: 'Oregon', msaName: 'Portland-Salem' },
+  '971': { stateName: 'Oregon', msaName: 'Portland-Salem' },
+  '972': { stateName: 'Oregon', msaName: 'Portland-Salem' },
+  '973': { stateName: 'Oregon', msaName: 'Portland-Salem' },
+  '974': { stateName: 'Oregon', msaName: 'Eugene OR' },
+  '975': { stateName: 'Oregon', msaName: 'Medford-Ashland' },
+};
+
+export function preferredMsaForZip(
+  zip: string,
+): { stateName: string; msaName: string } | null {
+  if (!/^\d{5}$/.test(zip)) return null;
+  return ZIP3_TO_METRO[zip.slice(0, 3)] ?? null;
+}
+
 export function hclStateForZip(zip: string): string | null {
   if (!/^\d{5}$/.test(zip)) return null;
   const n = Number(zip);

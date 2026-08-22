@@ -3,14 +3,12 @@ import { requireActiveMembership } from '@/lib/auth/require-active-membership';
 import { memberRateLimit } from '@/lib/api/guard';
 import {
   getRateDataPaged,
-  loadMsaAllowlistFromEnv,
+  loadHclCatalog,
   loadSpecialtyCatalogFromEnv,
-  msasForState,
-  normalizeStateName,
-  pickPreferredState,
-  resolveSpecialty,
+  resolvePreferredMarket,
+  resolveRateQuery,
   specialtiesForSearch,
-  hclStateForZip,
+  summarizeResultSlice,
   uniqueMsas,
   uniqueStates,
 } from '@crm-eco/cash-pay';
@@ -21,9 +19,6 @@ export const dynamic = 'force-dynamic';
  * GET /api/pricing/hcl
  * Auth: active membership. Proxies Health Cost Labs GetRateDataPaged.
  * Never exposes HCL_SECRET_KEY to the browser.
- *
- * Query: zip?, state?, msa?, procedureCode?, category?, page?, pageSize?
- * Meta: ?meta=1 returns allowlisted states/MSAs for the search UI.
  */
 export async function GET(request: NextRequest) {
   const ctx = await requireActiveMembership();
@@ -31,29 +26,26 @@ export async function GET(request: NextRequest) {
   if (!limited.ok) return limited.response!;
 
   const { searchParams } = request.nextUrl;
-  const allowlist = loadMsaAllowlistFromEnv();
+  const allowlist = loadHclCatalog();
 
   if (searchParams.get('meta') === '1') {
     const zip = searchParams.get('zip')?.trim() || '';
-    const requestedState = normalizeStateName(searchParams.get('state') || undefined);
-    const inferred = zip ? hclStateForZip(zip) : null;
-    const memberState = normalizeStateName(
-      (ctx.member as { state?: string | null }).state || undefined,
-    );
-    const preferredState = pickPreferredState(allowlist, [
-      requestedState,
-      inferred,
-      memberState,
-    ]);
+    const memberState = (ctx.member as { state?: string | null }).state || undefined;
+    const preferred = resolvePreferredMarket({
+      allowlist,
+      zip,
+      state: searchParams.get('state'),
+      extraCandidates: [memberState],
+    });
     const specialties = specialtiesForSearch(loadSpecialtyCatalogFromEnv(), allowlist);
     return NextResponse.json(
       {
         states: uniqueStates(allowlist),
-        /** Unique metros. Specialty list is allowlist-scoped. */
         msas: uniqueMsas(allowlist),
         specialties,
-        preferredState,
-        preferredZip: (ctx.member as { zip?: string | null }).zip || zip || '',
+        preferredState: preferred.stateName,
+        preferredMsa: preferred.msaName,
+        preferredZip: (ctx.member as { zip?: string | null }).zip || preferred.zip || zip,
         defaultSpecialty: specialties[0]?.hclName || 'Hospital cash prices',
       },
       { headers: limited.headers },
@@ -71,58 +63,41 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const zip = searchParams.get('zip')?.trim() || '';
-  if (zip && !/^\d{5}$/.test(zip)) {
-    return NextResponse.json(
-      { error: 'invalid_input', message: 'Valid 5-digit ZIP code required' },
-      { status: 400, headers: limited.headers },
-    );
-  }
+  const query = resolveRateQuery({
+    allowlist,
+    zip: searchParams.get('zip'),
+    state: searchParams.get('state') || (ctx.member as { state?: string | null }).state,
+    msa: searchParams.get('msa'),
+    specialty: searchParams.get('specialty'),
+  });
 
-  const stateParam = normalizeStateName(searchParams.get('state') || undefined);
-  const stateName =
-    stateParam || (zip ? hclStateForZip(zip) : null) ||
-    normalizeStateName((ctx.member as { state?: string | null }).state || undefined);
-
-  const msaName = searchParams.get('msa')?.trim() || '';
-  if (!stateName || !msaName) {
+  if (!query.ok) {
     return NextResponse.json(
       {
-        error: 'invalid_input',
-        message: 'State and metro area (MSA) are required for cash-price search.',
+        error: query.code,
+        message: query.message,
+        fallback: query.code === 'no_msa_mapping',
       },
-      { status: 400, headers: limited.headers },
-    );
-  }
-
-  const allowed = msasForState(allowlist, stateName).find(
-    (e) => e.msaName.trim().toLowerCase() === msaName.toLowerCase(),
-  );
-  if (allowlist.length > 0 && !allowed) {
-    return NextResponse.json(
-      {
-        error: 'no_msa_mapping',
-        message: 'This metro area is not enabled for your organization yet.',
-        fallback: true,
-      },
-      { status: 404, headers: limited.headers },
+      { status: query.code === 'invalid_input' ? 400 : 404, headers: limited.headers },
     );
   }
 
   const page = Math.max(1, Number(searchParams.get('page') || '1') || 1);
-  const pageSize = Math.min(50, Math.max(1, Number(searchParams.get('pageSize') || '25') || 25));
+  const pageSize = Math.min(50, Math.max(1, Number(searchParams.get('pageSize') || '50') || 50));
   const procedureCode = searchParams.get('procedureCode')?.trim() || undefined;
   const category = searchParams.get('category')?.trim() || undefined;
-  const specialty = resolveSpecialty(allowed, searchParams.get('specialty'));
+  const hospitalIdRaw = searchParams.get('hospitalId');
+  const hospitalId = hospitalIdRaw ? Number(hospitalIdRaw) : undefined;
 
   const result = await getRateDataPaged({
-    stateName,
-    msaName: allowed?.msaName || msaName,
-    specialty,
+    stateName: query.stateName,
+    msaName: query.msaName,
+    specialty: query.specialty,
     pageNumber: page,
     pageSize,
     procedureCode,
     category,
+    hospitalId: Number.isFinite(hospitalId) ? hospitalId : undefined,
   });
 
   if (!result.ok) {
@@ -138,7 +113,6 @@ export async function GET(request: NextRequest) {
       {
         error: result.code,
         message: result.message,
-        // Backup directory only when this metro is not on the key.
         fallback: result.code === 'no_msa_mapping',
       },
       { status, headers: limited.headers },
@@ -148,13 +122,14 @@ export async function GET(request: NextRequest) {
   return NextResponse.json(
     {
       source: 'hcl',
-      stateName,
-      msaName: allowed?.msaName || msaName,
-      specialty,
+      stateName: query.stateName,
+      msaName: query.msaName,
+      specialty: query.specialty,
       pageNumber: result.pageNumber,
       pageSize: result.pageSize,
       totalCount: result.totalCount,
       hasMore: result.hasMore,
+      slice: summarizeResultSlice(result.rates, result.totalCount),
       rates: result.rates,
     },
     { headers: limited.headers },

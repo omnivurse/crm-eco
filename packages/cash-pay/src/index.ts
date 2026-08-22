@@ -24,11 +24,13 @@ export {
   uniqueStates,
   pickPreferredState,
   hclStateForZip,
+  preferredMsaForZip,
 } from './msa';
 
 export {
   loadFullHclCatalog,
   mergeMsaCatalogs,
+  loadHclCatalog,
   loadMsaAllowlistFromEnv,
 } from './catalog';
 
@@ -47,3 +49,19 @@ export { getRateDataPaged } from './client';
 export type { HclClientConfig } from './client';
 
 export { buildCacheKey, getCached, setCached, clearCache } from './cache';
+
+export {
+  resolveRateQuery,
+  resolvePreferredMarket,
+  resolveLiveSpecialty,
+} from './rate-query';
+export type {
+  RateQueryInput,
+  RateQueryResult,
+  RateQuerySuccess,
+  RateQueryFailure,
+  PreferredMarket,
+} from './rate-query';
+
+export { summarizeResultSlice } from './result-slice';
+export type { SliceTick, ResultSliceSummary } from './result-slice';

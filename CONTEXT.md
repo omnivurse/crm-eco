@@ -152,3 +152,16 @@ locality) comes from the `/codebase-design` skill; the terms below name the
 - **Organization** in UI, `organization_id` in schema, "tenant" in architecture
   discussion — all the same boundary.
 - This platform is **health sharing**, never "insurance".
+- **MSA Rate Card** is a sharing product price matrix. Do not use "MSA" alone for Health Cost Labs geography.
+
+---
+
+## Cash Pay / Health Cost Labs
+
+- **HCL Market** — inventory state or region label HCL invented (`Oregon`, `CA-S California`, `TX-North Texas DFW`). Not a USPS state when split.
+- **HCL Metro** — exact CMSA string `GetRateDataPaged` requires (`Portland-Salem`). Must match the catalog character-for-character.
+- **Cash Rate Tick** — one published facility × procedure code × cash rate row.
+- **Result Slice** — the current page (≤50 ticks). Never present slice min/max as the metro.
+- **File Size** — HCL `totalCount` for the query (often millions).
+- **CMS Relativity** — tick vs Medicare (`cmsRelativity`).
+- **Live Specialty** — a specialty string this API key can fulfill. Today: `Hospital cash prices`. Pharmacy / Imaging / Laboratory 400 until HCL maps them.

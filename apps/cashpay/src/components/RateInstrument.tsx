@@ -1,97 +1,17 @@
 'use client';
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { PushPin, PushPinSlash, X } from '@phosphor-icons/react';
-import styles from './instrument.module.css';
-
-interface Procedure {
-  id: string;
-  procedure_code: string;
-  procedure_name: string;
-  category: string;
-  avg_national_price: number | null;
-}
-
-interface MsaOption {
-  stateName: string;
-  msaName: string;
-  specialty?: string;
-}
-
-interface SpecialtyOption {
-  id: string;
-  label: string;
-  hclName: string;
-  codeHint: string;
-}
-
-interface HclRate {
-  id: number | string;
-  hospitalId: number | null;
-  facilityName: string;
-  city: string;
-  state: string;
-  procedureCode: string;
-  codeDescription: string;
-  category: string;
-  rate: number;
-  paymentMethod: string | null;
-  cmsRelativity: number | null;
-}
-
-interface SliceSummary {
-  sliceCount: number;
-  low: number | null;
-  median: number | null;
-  high: number | null;
-  cmsMin: number | null;
-  cmsMax: number | null;
-  fileSize: number;
-  scope: 'slice';
-}
-
-interface LegacyResult {
-  procedure_id: string;
-  procedure_code: string;
-  procedure_name: string;
-  provider_location_id: string;
-  provider_name: string;
-  city: string;
-  state: string;
-  zip: string;
-  cash_price: number;
-  distance_miles: number | null;
-}
-
-interface PricingSearchProps {
-  memberZip?: string;
-  memberState?: string;
-  procedures: Procedure[];
-}
+import { ThemeToggle } from '@/components/ThemeToggle';
+import { brand } from '@/lib/brand';
+import { formatCash, formatNeedle, tickKey } from '@/lib/format';
+import type { HclRate, MsaOption, SliceSummary, SpecialtyOption } from '@/lib/hcl-types';
+import styles from '@/app/instrument.module.css';
 
 type SortBy = 'price_asc' | 'price_desc';
 
-function formatCash(price: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(price);
-}
-
-function formatNeedle(value: number | null | undefined): string {
-  if (value == null || !Number.isFinite(value)) return '';
-  return `${value.toFixed(2)}x CMS`;
-}
-
-function tickKey(row: { id: number | string; facilityName: string; procedureCode: string }): string {
-  return `${row.id}-${row.facilityName}-${row.procedureCode}`;
-}
-
-function groupByFacility(rows: HclRate[]) {
+function groupByFacility(rows: HclRate[]): Array<{ facility: string; city: string; state: string; ticks: HclRate[] }> {
   const map = new Map<string, HclRate[]>();
   for (const row of rows) {
     const key = row.facilityName.trim() || 'Unknown facility';
@@ -118,27 +38,24 @@ const EMPTY_SLICE: SliceSummary = {
   scope: 'slice',
 };
 
-export function PricingSearch({ memberZip, memberState, procedures }: PricingSearchProps) {
+export function RateInstrument() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const [zipCode, setZipCode] = useState(searchParams.get('zip') || memberZip || '');
+  const [zipCode, setZipCode] = useState(searchParams.get('zip') || '');
   const [allMsas, setAllMsas] = useState<MsaOption[]>([]);
   const [states, setStates] = useState<string[]>([]);
-  const [stateName, setStateName] = useState(searchParams.get('state') || memberState || '');
+  const [stateName, setStateName] = useState(searchParams.get('state') || '');
   const [msaName, setMsaName] = useState(searchParams.get('msa') || '');
   const [procedureCode, setProcedureCode] = useState(searchParams.get('code') || '');
   const [category, setCategory] = useState(searchParams.get('category') || '');
   const [specialty, setSpecialty] = useState('');
   const [specialties, setSpecialties] = useState<SpecialtyOption[]>([]);
-  const [selectedProcedureName, setSelectedProcedureName] = useState('');
   const [page, setPage] = useState(Number(searchParams.get('page') || '1') || 1);
   const [sortBy, setSortBy] = useState<SortBy>('price_asc');
 
-  const [hclRates, setHclRates] = useState<HclRate[]>([]);
-  const [legacyResults, setLegacyResults] = useState<LegacyResult[]>([]);
-  const [source, setSource] = useState<'hcl' | 'legacy' | null>(null);
+  const [rates, setRates] = useState<HclRate[]>([]);
   const [slice, setSlice] = useState<SliceSummary>(EMPTY_SLICE);
   const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -176,9 +93,9 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
   const loadMeta = useCallback(async (zip: string, applyPreferred = false) => {
     setMetaLoading(true);
     try {
-      const params = new URLSearchParams({ meta: '1' });
+      const params = new URLSearchParams();
       if (zip) params.set('zip', zip);
-      const res = await fetch(`/api/pricing/hcl?${params}`);
+      const res = await fetch(`/api/meta?${params}`);
       if (!res.ok) throw new Error('meta failed');
       const data = await res.json();
       setStates(data.states || []);
@@ -193,18 +110,17 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
         setStateName(data.preferredState);
         if (data.preferredMsa) setMsaName(data.preferredMsa);
       } else {
-        setStateName((prev) => prev || data.preferredState || memberState || '');
+        setStateName((prev) => prev || data.preferredState || '');
       }
-      if (data.preferredZip && !zip) setZipCode(data.preferredZip);
     } catch {
-      setNotice('Metro list unavailable. Backup search still works with a ZIP.');
+      setError('Could not load HCL markets. Try again shortly.');
     } finally {
       setMetaLoading(false);
     }
-  }, [memberState]);
+  }, []);
 
   useEffect(() => {
-    void loadMeta(searchParams.get('zip') || memberZip || '');
+    void loadMeta(searchParams.get('zip') || '');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -214,34 +130,11 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
     setMsaName(msas[0]?.msaName || '');
   }, [stateName, msas, msaName, allMsas.length]);
 
-  const runLegacySearch = useCallback(async () => {
-    if (!zipCode || !/^\d{5}$/.test(zipCode)) {
-      setError('Enter a valid 5-digit ZIP for backup search.');
-      return false;
-    }
-    const params = new URLSearchParams({ zip: zipCode });
-    if (selectedProcedureName && selectedProcedureName !== '__all__') {
-      params.set('procedure', selectedProcedureName);
-    }
-    const res = await fetch(`/api/pricing/search?${params}`);
-    if (!res.ok) throw new Error('legacy failed');
-    const data = await res.json();
-    setLegacyResults(data.results || []);
-    setHclRates([]);
-    setSlice(EMPTY_SLICE);
-    setSource('legacy');
-    setHasMore(false);
-    setNotice(
-      'Backup cash-price directory. Published hospital files for this metro are not on this key yet.',
-    );
-    return true;
-  }, [zipCode, selectedProcedureName]);
-
   const search = useCallback(
     async (nextPage = 1) => {
+      setLoading(true);
       setError('');
       setNotice('');
-      setLoading(true);
       setSearched(true);
       setPage(nextPage);
       writeUrl({
@@ -254,77 +147,67 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
       });
 
       try {
-        if (msaName && stateName) {
-          const params = new URLSearchParams({
-            state: stateName,
-            msa: msaName,
-            page: String(nextPage),
-            pageSize: '50',
-          });
-          if (zipCode) params.set('zip', zipCode);
-          if (procedureCode.trim()) params.set('procedureCode', procedureCode.trim());
-          if (category.trim()) params.set('category', category.trim());
-          if (specialty) params.set('specialty', specialty);
-          const res = await fetch(`/api/pricing/hcl?${params}`);
-          const data = await res.json();
-          if (res.ok && data.rates) {
-            setHclRates(data.rates);
-            setLegacyResults([]);
-            setSource('hcl');
-            setSlice(data.slice || EMPTY_SLICE);
-            setHasMore(Boolean(data.hasMore));
-            if ((data.rates || []).length === 0) {
-              setNotice('No ticks in this slice. Add a CPT or pick another metro.');
-            }
-            return;
-          }
-          if (data.error === 'rate_limited') {
-            setError('Too many reads. Wait a moment, then try again.');
-            return;
-          }
-          if (data.fallback) {
-            await runLegacySearch();
-            return;
-          }
-          setError(data.message || 'Unable to read the tape.');
+        const params = new URLSearchParams({
+          state: stateName,
+          msa: msaName,
+          page: String(nextPage),
+          pageSize: '50',
+        });
+        if (zipCode) params.set('zip', zipCode);
+        if (procedureCode.trim()) params.set('procedureCode', procedureCode.trim());
+        if (category.trim()) params.set('category', category.trim());
+        if (specialty) params.set('specialty', specialty);
+
+        const res = await fetch(`/api/rates?${params}`);
+        const data = await res.json();
+
+        if (!res.ok) {
+          setRates([]);
+          setSlice(EMPTY_SLICE);
+          setHasMore(false);
+          setError(
+            data.error === 'rate_limited'
+              ? 'Too many reads. Wait a moment, then try again.'
+              : data.message || 'Search failed',
+          );
           return;
         }
-        await runLegacySearch();
+
+        const list: HclRate[] = data.rates || [];
+        setRates(list);
+        setSlice(data.slice || EMPTY_SLICE);
+        setHasMore(Boolean(data.hasMore));
+        if (list.length === 0) {
+          setNotice('No ticks in this slice. Try another CPT or metro.');
+        }
       } catch {
         setError('Network error. Please try again.');
-        setHclRates([]);
+        setRates([]);
       } finally {
         setLoading(false);
       }
     },
-    [category, msaName, procedureCode, runLegacySearch, specialty, stateName, writeUrl, zipCode],
+    [category, msaName, procedureCode, specialty, stateName, writeUrl, zipCode],
   );
 
   const autoSearched = useRef(false);
   useEffect(() => {
-    if (autoSearched.current || metaLoading) return;
+    if (autoSearched.current || metaLoading || allMsas.length === 0) return;
     const urlState = searchParams.get('state');
     const urlMsa = searchParams.get('msa');
     if (!urlState || !urlMsa) return;
-    if (allMsas.length === 0) return;
     if (stateName !== urlState || msaName !== urlMsa) return;
     autoSearched.current = true;
     void search(Number(searchParams.get('page') || '1') || 1);
   }, [allMsas.length, metaLoading, msaName, search, searchParams, stateName]);
 
-  const sortedHcl = useMemo(() => {
-    return [...hclRates].sort((a, b) =>
+  const sortedRates = useMemo(() => {
+    return [...rates].sort((a, b) =>
       sortBy === 'price_asc' ? a.rate - b.rate : b.rate - a.rate,
     );
-  }, [hclRates, sortBy]);
+  }, [rates, sortBy]);
 
-  const groups = useMemo(() => groupByFacility(sortedHcl), [sortedHcl]);
-
-  const sortedLegacy = useMemo(() => {
-    return [...legacyResults].sort((a, b) =>
-      sortBy === 'price_asc' ? a.cash_price - b.cash_price : b.cash_price - a.cash_price,
-    );
-  }, [legacyResults, sortBy]);
+  const groups = useMemo(() => groupByFacility(sortedRates), [sortedRates]);
 
   const togglePin = (row: HclRate) => {
     setPins((prev) => {
@@ -352,7 +235,7 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
       if (row.hospitalId != null) params.set('hospitalId', String(row.hospitalId));
       if (procedureCode.trim()) params.set('procedureCode', procedureCode.trim());
       if (specialty) params.set('specialty', specialty);
-      const res = await fetch(`/api/pricing/hcl?${params}`);
+      const res = await fetch(`/api/rates?${params}`);
       const data = await res.json();
       const list: HclRate[] = data.rates || [];
       setDrawerRates(
@@ -373,6 +256,19 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
 
   return (
     <div className={`${styles.shell} ${pins.length > 0 ? styles.shellHasTray : ''}`}>
+      <header className={styles.chrome}>
+        <a className={styles.brand} href="/">
+          <span className={styles.brandName}>{brand.product}</span>
+          <span className={styles.brandMeta}>{msaName || 'No metro selected'}</span>
+        </a>
+        <div className={styles.chromeActions}>
+          <a className={styles.licenseLink} href="/#access">
+            License this UI
+          </a>
+          <ThemeToggle />
+        </div>
+      </header>
+
       <div className={styles.stage}>
         <aside className={styles.rail}>
           <form
@@ -382,14 +278,6 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
               void search(1);
             }}
           >
-            <p className={styles.note}>
-              Published cash, not a quote. Sharing still follows your plan and IUA.{' '}
-              <Link href="/needs/new">Submit a need</Link> with the itemized bill when you have
-              one.
-            </p>
-            <p className={styles.note} style={{ marginTop: '-0.35rem' }}>
-              Metro: {msaName || 'none selected'}
-            </p>
             <label className={styles.field}>
               <span className={styles.label}>ZIP</span>
               <input
@@ -507,32 +395,10 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
                 <option value="price_desc">Price: high to low</option>
               </select>
             </label>
-            {procedures.length > 0 ? (
-              <label className={styles.field}>
-                <span className={styles.label}>Backup procedure</span>
-                <select
-                  className={styles.control}
-                  value={selectedProcedureName || '__all__'}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    setSelectedProcedureName(v === '__all__' ? '' : v);
-                    const match = procedures.find((p) => p.procedure_name === v);
-                    if (match?.procedure_code) setProcedureCode(match.procedure_code);
-                  }}
-                >
-                  <option value="__all__">All procedures</option>
-                  {procedures.map((p) => (
-                    <option key={p.id} value={p.procedure_name}>
-                      {p.procedure_name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            ) : null}
             <button
               className={styles.readBtn}
               type="submit"
-              disabled={loading || metaLoading}
+              disabled={loading || !stateName || !msaName}
             >
               {loading ? 'Reading…' : 'Read the tape'}
             </button>
@@ -543,7 +409,7 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
           {error ? <p className={styles.error}>{error}</p> : null}
           {notice ? <p className={styles.note}>{notice}</p> : null}
 
-          {searched && source === 'hcl' ? (
+          {searched ? (
             <>
               <p className={styles.note}>This page, not the metro.</p>
               <div className={styles.strip}>
@@ -573,12 +439,12 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
                 </div>
               </div>
             </>
-          ) : !searched ? (
+          ) : (
             <p className={styles.note}>
               Pick an HCL market and metro, then read the tape. Stats describe this page, not the
               metro.
             </p>
-          ) : null}
+          )}
 
           {loading ? (
             <div aria-busy="true">
@@ -588,7 +454,7 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
             </div>
           ) : null}
 
-          {!loading && searched && source === 'hcl' && sortedHcl.length > 0 ? (
+          {!loading && searched && sortedRates.length > 0 ? (
             <>
               <div className={styles.ledgerWrap}>
                 <table className={styles.ledger}>
@@ -660,13 +526,15 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
               <div className={styles.cards}>
                 {groups.map((group) => (
                   <article key={group.facility} className={styles.card}>
-                    <button
-                      type="button"
-                      className={`${styles.rowBtn} ${styles.facility}`}
-                      onClick={(e) => void openDrawer(group.ticks[0], e.currentTarget)}
-                    >
-                      {group.facility}
-                    </button>
+                    <div className={styles.cardTop}>
+                      <button
+                        type="button"
+                        className={`${styles.rowBtn} ${styles.facility}`}
+                        onClick={(e) => void openDrawer(group.ticks[0], e.currentTarget)}
+                      >
+                        {group.facility}
+                      </button>
+                    </div>
                     <p className={styles.groupMeta}>
                       {[group.city, group.state].filter(Boolean).join(', ')}
                     </p>
@@ -709,35 +577,11 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
             </>
           ) : null}
 
-          {!loading && searched && source === 'hcl' && sortedHcl.length === 0 && !error ? (
+          {searched && !loading && sortedRates.length === 0 && !error ? (
             <p className={styles.note}>No ticks in this slice. Add a CPT or pick another metro.</p>
           ) : null}
 
-          {!loading && searched && source === 'legacy' && sortedLegacy.length === 0 && !error ? (
-            <p className={styles.note}>No backup rows near this ZIP. Try another ZIP or procedure.</p>
-          ) : null}
-
-          {!loading && searched && source === 'legacy' && sortedLegacy.length > 0 ? (
-            <div className={styles.backup}>
-              {sortedLegacy.map((r) => (
-                <div key={`${r.procedure_id}-${r.provider_location_id}`} className={styles.backupCard}>
-                  <div>
-                    <div className={styles.facility}>{r.provider_name}</div>
-                    <p className={styles.groupMeta}>
-                      {r.city}, {r.state} {r.zip}
-                      {r.distance_miles != null ? ` · ${r.distance_miles} mi` : ''}
-                    </p>
-                    <p className={styles.note} style={{ marginBottom: 0 }}>
-                      {r.procedure_name}
-                    </p>
-                  </div>
-                  <div className={styles.rate}>{formatCash(r.cash_price)}</div>
-                </div>
-              ))}
-            </div>
-          ) : null}
-
-          {searched && source === 'hcl' && (page > 1 || hasMore) ? (
+          {searched && (page > 1 || hasMore) ? (
             <div className={styles.pager}>
               <span>
                 Page {page}
