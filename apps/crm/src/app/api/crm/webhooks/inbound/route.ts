@@ -198,7 +198,7 @@ export async function POST(request: NextRequest) {
             moduleKey: resolvedModuleKey,
             previousTitle: (existingByEmail.title as string | null) ?? null,
           });
-          await supabase
+          const { error: updateError } = await supabase
             .from('crm_records')
             .update({
               // On update, don't re-mirror out-of-band-owned columns (advisor /
@@ -214,6 +214,15 @@ export async function POST(request: NextRequest) {
               },
             })
             .eq('id', existingByEmail.id);
+          if (updateError) {
+            // e.g. the status vocabulary guard (23514): never report success
+            // for a write the database refused.
+            const code = (updateError as { code?: string }).code;
+            return NextResponse.json(
+              { success: false, error: updateError.message, code },
+              { status: code === '23514' ? 400 : 500 },
+            );
+          }
 
           record = existingByEmail as CrmRecord;
         }

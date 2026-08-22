@@ -512,7 +512,7 @@ export async function POST(request: NextRequest) {
 
       if (batchError) {
         // If batch fails due to unique constraint, fall back to row-by-row insert
-        if ((batchError as any).code === '23505') {
+        if ((batchError as any).code === '23505' || (batchError as any).code === '23514') {
           for (const row of batch) {
             const { data: singleRecord, error: singleError } = await supabase
               .from('crm_records')

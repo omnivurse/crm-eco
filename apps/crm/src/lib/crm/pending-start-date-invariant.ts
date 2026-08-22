@@ -16,8 +16,11 @@ export type PendingStartDateInvariantResult =
 export function assertCrmPendingHasStartDate(
   status: string | null | undefined,
   record: CrmRecordStartDateInput,
+  moduleKey?: string | null,
 ): PendingStartDateInvariantResult {
-  if (!isPendingContactStatus(status)) {
+  // On leads "Pending" is a pipeline stage, not pending coverage — no start
+  // date is implied.
+  if (moduleKey === 'leads' || !isPendingContactStatus(status)) {
     const startDate = resolveEffectiveStartDate(record);
     return { ok: true, startDate: startDate ?? '' };
   }

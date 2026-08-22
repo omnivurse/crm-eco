@@ -32,7 +32,7 @@ const MEMBER_STATUS_TO_CRM: Record<string, string> = {
   inactive: 'Inactive',
   pending: 'Pending',
   terminated: 'Terminated',
-  paused: 'Paused',
+  paused: 'Inactive',
   prospect: 'Prospect',
   cancelled: 'Cancelled',
 };

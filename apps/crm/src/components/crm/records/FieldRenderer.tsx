@@ -268,6 +268,10 @@ export const FieldRenderer = memo(function FieldRenderer({
       );
 
     case 'number': {
+      // A year is a label, not a quantity — never "2,026".
+      if (/_year$/.test(field.key)) {
+        return <span className={className}>{String(value)}</span>;
+      }
       // A household member's age typed in without a DOB goes stale silently;
       // the trigger keeps the recorded-on date, so show what it most likely
       // is today next to what was written.

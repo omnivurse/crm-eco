@@ -65,11 +65,15 @@ export async function PATCH(
       );
     }
 
-    const pendingStart = assertCrmPendingHasStartDate(status, {
-      current_year_start_date: record.current_year_start_date as string | null,
-      original_start_date: record.original_start_date as string | null,
-      data: (record.data || {}) as Record<string, unknown>,
-    });
+    const pendingStart = assertCrmPendingHasStartDate(
+      status,
+      {
+        current_year_start_date: record.current_year_start_date as string | null,
+        original_start_date: record.original_start_date as string | null,
+        data: (record.data || {}) as Record<string, unknown>,
+      },
+      moduleKey,
+    );
     if (!pendingStart.ok) {
       return NextResponse.json(
         { error: pendingStart.error, code: 'PENDING_REQUIRES_START_DATE' },

@@ -1074,7 +1074,12 @@ export const RecordTable = memo(function RecordTable({
 
     if (col === 'status' || col === 'lead_status' || col === 'contact_status') {
       // Get status value, handling null, undefined, and boolean false properly
-      const rawStatus = record.status ?? record.data?.[col] ?? record.data?.status;
+      // On leads the status column IS the stage; on every other module the
+      // lead_status cell is the pipeline stage stored in JSONB.
+      const rawStatus =
+        col === 'lead_status' && moduleKey !== 'leads'
+          ? record.data?.lead_status
+          : (record.status ?? record.data?.[col] ?? record.data?.status);
       const status = (rawStatus === null || rawStatus === undefined || rawStatus === false || rawStatus === '')
         ? ''
         : String(rawStatus);

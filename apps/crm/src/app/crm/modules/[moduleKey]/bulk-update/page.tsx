@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, Suspense } from 'react';
+import { allowedStatusesForModule } from '@/lib/crm/status-allowlist';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useDebouncedValue } from '@/hooks/useDebouncedSearch';
@@ -119,7 +120,7 @@ function BulkUpdatePageContent() {
   const [fieldValue, setFieldValue] = useState<string>('');
 
   // Get status and stage options from records
-  const statusOptions = Array.from(new Set(records.map(r => r.status).filter(Boolean))) as string[];
+  const statusOptions = [...allowedStatusesForModule(moduleKey)];
   const stageOptions = Array.from(new Set(records.map(r => r.stage).filter(Boolean))) as string[];
 
   // Get select fields that can be bulk updated
@@ -268,7 +269,12 @@ function BulkUpdatePageContent() {
       }
 
       const data = await response.json();
+      const failedRows: Array<{ id: string; reason: string }> = Array.isArray(data.failed) ? data.failed : [];
       const successMessage = `Successfully updated ${data.updated_count} record${data.updated_count !== 1 ? 's' : ''}`;
+      if (failedRows.length > 0) {
+        const firstReason = failedRows[0]?.reason ? `: ${failedRows[0].reason}` : '';
+        toast.error(`${failedRows.length} record${failedRows.length !== 1 ? 's were' : ' was'} not updated${firstReason}`);
+      }
       setSuccess(successMessage);
       toast.success(successMessage);
       setShowUpdateDialog(false);

@@ -101,6 +101,10 @@ export function normalizeStatusKey(raw: string | null | undefined): string {
 const PENDING_EXACT = new Set(PENDING_CONTACT_STATUSES.map(normalizeStatusKey));
 const ACTIVE_EXACT = new Set(ACTIVE_CONTACT_STATUSES.map(normalizeStatusKey));
 const TERMINAL_EXACT = new Set(TERMINAL_CONTACT_STATUSES.map(normalizeStatusKey));
+// Vocabulary 2026-08-22: the closed outcomes belong with cancelled. The open
+// pipeline words (Attempted, Contacted, Qualified, Converted …) deliberately
+// stay in 'other' so they keep their canonical StatusBadge colours.
+const CLOSED_VOCAB = new Set(['lost', 'declined', 'abandoned', 'unqualified']);
 
 /**
  * Bucket a raw status into a lane. Pure; never throws; null/blank → 'other'.
@@ -119,6 +123,7 @@ export function statusLane(raw: string | null | undefined): StatusLane {
   //    lands in pending (judgment call #2).
   if (
     TERMINAL_EXACT.has(key) ||
+    CLOSED_VOCAB.has(key) ||
     key.startsWith('cancel') ||
     key === 'canceled' ||
     key === 'terminated' ||

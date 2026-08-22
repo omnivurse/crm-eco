@@ -79,21 +79,32 @@ export async function POST(
       delete (clonedData as Record<string, unknown>).email;
     }
 
-    const { data: cloned, error: insertError } = await supabase
+    const insertRow = {
+      ...inheritedColumns,
+      org_id: source.org_id,
+      module_id: source.module_id,
+      owner_id: profile.id,
+      title: source.title ? `${source.title} (Copy)` : null,
+      data: clonedData,
+      status: source.status,
+      stage: source.stage,
+      created_by: profile.id,
+    };
+    let { data: cloned, error: insertError } = await supabase
       .from('crm_records')
-      .insert({
-        ...inheritedColumns,
-        org_id: source.org_id,
-        module_id: source.module_id,
-        owner_id: profile.id,
-        title: source.title ? `${source.title} (Copy)` : null,
-        data: clonedData,
-        status: source.status,
-        stage: source.stage,
-        created_by: profile.id,
-      })
+      .insert(insertRow)
       .select()
       .single();
+
+    // A source still on a legacy status: the vocabulary guard refuses it on a
+    // NEW record (23514). Clone without the status rather than fail the clone.
+    if (insertError && (insertError as { code?: string }).code === '23514') {
+      ({ data: cloned, error: insertError } = await supabase
+        .from('crm_records')
+        .insert({ ...insertRow, status: null })
+        .select()
+        .single());
+    }
 
     if (insertError) {
       console.error('Clone insert error:', insertError);

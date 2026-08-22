@@ -32,9 +32,11 @@ export function applyStatusToRecordUpdates(
         ? { ...previousData }
         : {};
   base[key] = status;
-  // Contacts/members: never leave a competing lead_status that remirror logic
-  // or forms could treat as live after conversion.
-  if (moduleKey === 'contacts' || moduleKey === 'members') {
+  // Contacts/members: the historical "Converted" lead_status must never be
+  // treated as live after conversion — strip THAT. A real pipeline stage on a
+  // Prospect / Lost contact (vocabulary 2026-08-22) stays; the column mirror
+  // for these modules is contact_status, never lead_status.
+  if ((moduleKey === 'contacts' || moduleKey === 'members') && base.lead_status === 'Converted') {
     delete base.lead_status;
   }
   updates.data = base;

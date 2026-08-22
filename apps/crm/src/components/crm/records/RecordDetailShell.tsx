@@ -67,10 +67,10 @@ import { MarketTypeBadge, NormalizationBadge, NormalizationBanner, OwnershipDisp
 import { ConvertToContactDialog } from '@/components/crm/records/ConvertToContactDialog';
 import { isLeadRecordConverted, getConvertedContactId } from '@/lib/crm/lead-conversion-result';
 import {
-  getCoreStatusPickerItems,
   isActiveCoverageStatus,
   relabelStatusForMarket,
 } from '@/lib/crm/member-terminology';
+import { statusPickerGroupsForModule } from '@/lib/crm/status-allowlist';
 import { MergeRecordDialog } from '@/components/crm/records/MergeRecordDialog';
 import { CapacityBadges } from '@/components/shared/capacity-badge';
 import { getRecordDisplayName } from '@/lib/crm/display-name';
@@ -489,11 +489,7 @@ export const RecordDetailShell = memo(function RecordDetailShell({
                           </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="start" className="bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10 min-w-[200px] max-h-80 overflow-y-auto">
-                          {[
-                            { label: 'Status', items: getCoreStatusPickerItems((record as any).market_type) },
-                            { label: 'Enrollment', items: ['Enrolled - 2025', 'Enrolled - 2026', 'Enrolled Member', 'Approved Pending'] },
-                            { label: 'Close', items: ['Cancelled', 'Cancellation Pending', 'Terminated', 'Suspended', 'Archived', 'Converted'] },
-                          ].map((group) => (
+                          {statusPickerGroupsForModule(module.key).map((group) => (
                             <div key={group.label}>
                               <div className="px-2 py-1.5 text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider">{group.label}</div>
                               {group.items.map((s) => (

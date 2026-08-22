@@ -120,6 +120,14 @@ describe('statusLane — real prod spellings', () => {
     expect(statusLane('Prospect')).toBe('new');
     expect(statusLane('Attempted Contact Three')).toBe('other');
     expect(statusLane('Florida Group Business')).toBe('other');
+    // vocabulary 2026-08-22: closed outcomes bucket with cancelled
+    expect(statusLane('Lost')).toBe('cancelled');
+    expect(statusLane('Declined')).toBe('cancelled');
+    expect(statusLane('Abandoned')).toBe('cancelled');
+    expect(statusLane('Unqualified')).toBe('cancelled');
+    // open pipeline words keep their own badge colours via 'other'
+    expect(statusLane('Qualified')).toBe('other');
+    expect(statusLane('Attempted')).toBe('other');
   });
 
   it('crm_fields.contact_status options + cron lists', () => {

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useMemo, useEffect, useRef, memo } from 'react';
+import { isAllowedCrmStatus } from '@/lib/crm/status-allowlist';
 import { queuedSend } from '@/lib/offline/queued-send';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Input, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Button, Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue, Combobox } from '@crm-eco/ui';
@@ -587,6 +588,8 @@ export const ModuleShell = memo(function ModuleShell({
     }
     for (const row of liveStatusValues ?? []) {
       if (!row?.value) continue;
+      // the database refuses a change to any other word now
+      if (!isAllowedCrmStatus(row.value, module.key)) continue;
       const prev = merged.get(row.value);
       merged.set(row.value, { value: row.value, count: (prev?.count ?? 0) + (row.count ?? 0) });
     }

@@ -267,7 +267,7 @@ export async function executeCrmRecordPatch(params: {
         previousRecord.original_start_date) as string | null,
       data: (updates.data ?? previousRecord.data) as Record<string, unknown> | null,
     };
-    const pendingStart = assertCrmPendingHasStartDate(resultingStatus, resultingRecord);
+    const pendingStart = assertCrmPendingHasStartDate(resultingStatus, resultingRecord, moduleKey);
     if (!pendingStart.ok) {
       return {
         ok: false,

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { CRM_PIPELINE_STATUSES } from '@/lib/crm/status-allowlist';
+import { CRM_PIPELINE_OPEN } from '@/lib/crm/status-allowlist';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { useClientAuth } from '@/hooks/useClientAuth';
@@ -60,7 +60,7 @@ const CURRENT_COVERAGE_OPTIONS = [
 ];
 
 // The leads pipeline vocabulary (status-allowlist.ts / crm_status_vocabulary).
-const LEAD_STATUS_OPTIONS = CRM_PIPELINE_STATUSES.map((value) => ({ value, label: value }));
+const LEAD_STATUS_OPTIONS = CRM_PIPELINE_OPEN.map((value) => ({ value, label: value }));
 
 // Roles for the point-of-contact on a small-group lead (often not the
 // decision-maker — e.g. the person who takes your call is the Office Manager).
