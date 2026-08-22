@@ -6,6 +6,7 @@ import { Badge } from '@crm-eco/ui/components/badge';
 import { cn } from '@crm-eco/ui/lib/utils';
 import type { CrmField } from '@/lib/crm/types';
 import { formatPhoneOwnerLabel } from '@/lib/crm/phone-owner';
+import { describeRecordedAge } from '@/lib/crm/household-age';
 import {
   isCarrierIdentityField,
   resolveInlineCarrierType,
@@ -266,12 +267,27 @@ export const FieldRenderer = memo(function FieldRenderer({
         </a>
       );
 
-    case 'number':
+    case 'number': {
+      // A household member's age typed in without a DOB goes stale silently;
+      // the trigger keeps the recorded-on date, so show what it most likely
+      // is today next to what was written.
+      const recorded = describeRecordedAge(field.key, value, relatedValues);
+      if (recorded) {
+        return (
+          <span className={className}>
+            {recorded.stored}
+            {recorded.hint && (
+              <span className="ml-1.5 text-xs text-muted-foreground">{recorded.hint}</span>
+            )}
+          </span>
+        );
+      }
       return (
         <span className={className}>
           {typeof value === 'number' ? value.toLocaleString() : String(value)}
         </span>
       );
+    }
 
     case 'currency':
       return (

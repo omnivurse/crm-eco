@@ -414,11 +414,17 @@ const FormFieldRenderer = memo(function FormFieldRenderer({
           />
         );
       } else {
+        // Controlled through value/setValue; drop register()'s ref so RHF
+        // never reads the empty DOM input as '' on submit (which coerced to
+        // 0 and wrote zeros into every blank number field).
+        const { ref: _numRef, ...numCommon } = commonProps;
         input = (
           <Input
-            {...commonProps}
+            {...numCommon}
             type="number"
             step="1"
+            min={field.validation?.min}
+            max={field.validation?.max}
             value={value === null || value === undefined ? '' : String(value)}
             onChange={(e) => {
               const raw = e.target.value;
@@ -750,15 +756,21 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
           break;
 
         case 'number':
-        case 'currency':
-          fieldSchema = z.coerce.number();
-          if (field.validation?.min !== undefined) {
-            fieldSchema = (fieldSchema as z.ZodNumber).min(field.validation.min);
-          }
-          if (field.validation?.max !== undefined) {
-            fieldSchema = (fieldSchema as z.ZodNumber).max(field.validation.max);
-          }
+        case 'currency': {
+          let num = z.coerce.number({ invalid_type_error: `${field.label} must be a number` });
+          if (field.validation?.min !== undefined) num = num.min(field.validation.min);
+          if (field.validation?.max !== undefined) num = num.max(field.validation.max);
+          // '' and null must stay "no value": z.coerce.number() alone turns
+          // '' into 0 and would write zeros into every blank number field.
+          fieldSchema = z.preprocess(
+            (v) =>
+              v === undefined || v === null || (typeof v === 'string' && v.trim() === '')
+                ? null
+                : v,
+            field.required ? num : num.nullable(),
+          );
           break;
+        }
 
         case 'date':
           fieldSchema = z.preprocess(

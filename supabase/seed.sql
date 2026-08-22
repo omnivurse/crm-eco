@@ -63,6 +63,41 @@ INSERT INTO public.crm_fields (org_id, module_id, key, label, type, section) VAL
   ('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-00000000c003','monthly_contribution','Monthly Contribution','currency','health_sharing')
 ON CONFLICT DO NOTHING;
 
+-- The Family slots at their PRE-20260822120000 state (bare "Spouse"/"Child N"
+-- labels, name → dob → ss → address → phone → email order), so the household
+-- relabel/re-order migration exercises the real transition locally.
+INSERT INTO public.crm_fields (org_id, module_id, key, label, type, section, display_order) VALUES
+  ('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-00000000c001','spouse','Spouse','text','family_spouse',32),
+  ('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-00000000c001','spouse_dob','Spouse DOB','date','family_spouse',33),
+  ('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-00000000c001','spouse_ss_number','Spouse SS Number','text','family_spouse',34),
+  ('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-00000000c001','spouse_address','Spouse Address','text','family_spouse',35),
+  ('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-00000000c001','spouse_phone_number','Spouse Phone Number','phone','family_spouse',36),
+  ('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-00000000c001','spouse_email','Spouse Email','email','family_spouse',37),
+  ('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-00000000c001','has_spouse','Has Spouse','boolean','family_spouse',937),
+  ('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-00000000c001','has_kids','Has Children','boolean','family_children',938),
+  ('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-00000000c002','spouse','Spouse','text','family',28),
+  ('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-00000000c002','spouse_dob','Spouse DOB','date','family',29),
+  -- leads carry the yes/no flags in core (as on prod), not in family
+  ('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-00000000c002','has_spouse','Has Spouse','boolean','core',12),
+  ('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-00000000c002','has_kids','Has Kids','boolean','core',13)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO public.crm_fields (org_id, module_id, key, label, type, section, display_order)
+SELECT '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-00000000c001',
+       'child_' || i || sfx.key, 'Child ' || i || sfx.label, sfx.type, 'family_children', 38 + (i - 1) * 6 + sfx.off
+  FROM generate_series(1, 5) i,
+       (VALUES ('', '', 'text', 0), ('_dob', ' DOB', 'date', 1), ('_ss_number', ' SS Number', 'text', 2),
+               ('_address', ' Address', 'text', 3), ('_phone_number', ' Phone Number', 'phone', 4),
+               ('_email', ' Email', 'email', 5)) AS sfx(key, label, type, off)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO public.crm_fields (org_id, module_id, key, label, type, section, display_order)
+SELECT '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-00000000c002',
+       'child_' || i || sfx.key, 'Child ' || i || sfx.label, sfx.type, 'family', 30 + (i - 1) * 2 + sfx.off
+  FROM generate_series(1, 5) i,
+       (VALUES ('', '', 'text', 0), ('_dob', ' DOB', 'date', 1)) AS sfx(key, label, type, off)
+ON CONFLICT DO NOTHING;
+
 -- ---------------------------------------------------------------------------
 -- Advisor hierarchy root, required by 202606280001_pifh_org_agent_hierarchy.
 -- Synthetic identity; the migration matches on the id.

@@ -117,6 +117,8 @@ export const CONTACTS_FIELD_MAPPING: FieldMapping[] = [
   { csvColumn: 'Spouse Address', crmKey: 'spouse_address', type: 'text', section: 'family_spouse' },
   { csvColumn: 'Spouse Phone Number', crmKey: 'spouse_phone_number', type: 'phone', section: 'family_spouse' },
   { csvColumn: 'Spouse Email', crmKey: 'spouse_email', type: 'email', section: 'family_spouse' },
+  { csvColumn: 'Spouse Gender', crmKey: 'spouse_gender', type: 'text', section: 'family_spouse' },
+  { csvColumn: 'Spouse Age', crmKey: 'spouse_age', type: 'number', section: 'family_spouse', transform: parseNumber },
 
   // Children
   { csvColumn: 'Child 1', crmKey: 'child_1', type: 'text', section: 'family_children' },
@@ -125,6 +127,8 @@ export const CONTACTS_FIELD_MAPPING: FieldMapping[] = [
   { csvColumn: 'Child 1 Address', crmKey: 'child_1_address', type: 'text', section: 'family_children' },
   { csvColumn: 'Child 1 Phone Number', crmKey: 'child_1_phone_number', type: 'phone', section: 'family_children' },
   { csvColumn: 'Child 1 Email', crmKey: 'child_1_email', type: 'email', section: 'family_children' },
+  { csvColumn: 'Child 1 Gender', crmKey: 'child_1_gender', type: 'text', section: 'family_children' },
+  { csvColumn: 'Child 1 Age', crmKey: 'child_1_age', type: 'number', section: 'family_children', transform: parseNumber },
 
   { csvColumn: 'Child 2', crmKey: 'child_2', type: 'text', section: 'family_children' },
   { csvColumn: 'Child 2-DOB', crmKey: 'child_2_dob', type: 'date', section: 'family_children', transform: parseDate },
@@ -132,6 +136,8 @@ export const CONTACTS_FIELD_MAPPING: FieldMapping[] = [
   { csvColumn: 'Child 2 Address', crmKey: 'child_2_address', type: 'text', section: 'family_children' },
   { csvColumn: 'Child 2 Phone Number', crmKey: 'child_2_phone_number', type: 'phone', section: 'family_children' },
   { csvColumn: 'Child 2 Email', crmKey: 'child_2_email', type: 'email', section: 'family_children' },
+  { csvColumn: 'Child 2 Gender', crmKey: 'child_2_gender', type: 'text', section: 'family_children' },
+  { csvColumn: 'Child 2 Age', crmKey: 'child_2_age', type: 'number', section: 'family_children', transform: parseNumber },
 
   { csvColumn: 'Child 3', crmKey: 'child_3', type: 'text', section: 'family_children' },
   { csvColumn: 'Child 3 -DOB', crmKey: 'child_3_dob', type: 'date', section: 'family_children', transform: parseDate },
@@ -139,6 +145,8 @@ export const CONTACTS_FIELD_MAPPING: FieldMapping[] = [
   { csvColumn: 'Child 3 Address', crmKey: 'child_3_address', type: 'text', section: 'family_children' },
   { csvColumn: 'Child 3 Phone Number', crmKey: 'child_3_phone_number', type: 'phone', section: 'family_children' },
   { csvColumn: 'Child 3 Email', crmKey: 'child_3_email', type: 'email', section: 'family_children' },
+  { csvColumn: 'Child 3 Gender', crmKey: 'child_3_gender', type: 'text', section: 'family_children' },
+  { csvColumn: 'Child 3 Age', crmKey: 'child_3_age', type: 'number', section: 'family_children', transform: parseNumber },
 
   { csvColumn: 'Child 4', crmKey: 'child_4', type: 'text', section: 'family_children' },
   { csvColumn: 'Child 4 -DOB', crmKey: 'child_4_dob', type: 'date', section: 'family_children', transform: parseDate },
@@ -146,6 +154,8 @@ export const CONTACTS_FIELD_MAPPING: FieldMapping[] = [
   { csvColumn: 'Child 4 Address', crmKey: 'child_4_address', type: 'text', section: 'family_children' },
   { csvColumn: 'Child 4 Phone Number', crmKey: 'child_4_phone_number', type: 'phone', section: 'family_children' },
   { csvColumn: 'Child 4 Email', crmKey: 'child_4_email', type: 'email', section: 'family_children' },
+  { csvColumn: 'Child 4 Gender', crmKey: 'child_4_gender', type: 'text', section: 'family_children' },
+  { csvColumn: 'Child 4 Age', crmKey: 'child_4_age', type: 'number', section: 'family_children', transform: parseNumber },
 
   { csvColumn: 'Child 5', crmKey: 'child_5', type: 'text', section: 'family_children' },
   { csvColumn: 'Child 5 -DOB', crmKey: 'child_5_dob', type: 'date', section: 'family_children', transform: parseDate },
@@ -153,6 +163,8 @@ export const CONTACTS_FIELD_MAPPING: FieldMapping[] = [
   { csvColumn: 'Child 5 Address', crmKey: 'child_5_address', type: 'text', section: 'family_children' },
   { csvColumn: 'Child 5 Phone Number', crmKey: 'child_5_phone_number', type: 'phone', section: 'family_children' },
   { csvColumn: 'Child 5 Email', crmKey: 'child_5_email', type: 'email', section: 'family_children' },
+  { csvColumn: 'Child 5 Gender', crmKey: 'child_5_gender', type: 'text', section: 'family_children' },
+  { csvColumn: 'Child 5 Age', crmKey: 'child_5_age', type: 'number', section: 'family_children', transform: parseNumber },
 
   // Insurance/Product
   { csvColumn: 'Carrier', crmKey: 'carrier', type: 'text', section: 'insurance' },

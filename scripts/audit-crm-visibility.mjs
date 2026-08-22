@@ -49,6 +49,10 @@ const SYSTEM_KEYS = new Set([
   'auto_cancelled_reason', 'linked_member_id', 'contact_status', 'imported_at',
   'import_batch', 'row_number', 'unsubscribed_mode', 'unsubscribed_time',
   'membership_changes', 'scheduled_plan_change', 'dependents_json', 'layout', 'tag',
+  // Provenance written by 20260822130000_household_age_backfill: the original
+  // "Yes - 45"-style text moved out of the Spouse/Child name boxes. Undo data,
+  // not a form field.
+  'household_backfill_source',
   // Mirrors of indexed crm_records columns — surfaced through the column, not
   // as a duplicate JSONB form row.
   'owner_id', 'status', 'stage', 'is_converted', 'import_source',

@@ -89,7 +89,10 @@ function isPersonDisplayNameModule(moduleKey?: string | null): boolean {
 }
 
 /** JSONB keys that store calendar dates (DOB, spouse/child DOBs, *_date fields). */
-const CRM_JSONB_DATE_FIELD_KEY_RE = /(?:^date_of_birth$|_date$|_dob$)/i;
+// `<slot>_age_as_of` (spouse / child_N, 20260822120000) is a date-typed key
+// that does not end in _date; without it here a CSV cell "3/1/2024" would be
+// stored verbatim while every other writer stores ISO.
+const CRM_JSONB_DATE_FIELD_KEY_RE = /(?:^date_of_birth$|_date$|_dob$|_age_as_of$)/i;
 
 function isUuidValue(value: unknown): boolean {
   return typeof value === 'string' && UUID_RE.test(value);

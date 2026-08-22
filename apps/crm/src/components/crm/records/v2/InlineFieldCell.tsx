@@ -15,6 +15,7 @@
 import { memo, useMemo, type ReactNode } from 'react';
 import type { CrmField } from '@/lib/crm/types';
 import { getFieldOptions } from '@/lib/crm/utils';
+import { describeRecordedAge, householdAgeSlot } from '@/lib/crm/household-age';
 import { formatPhoneOwnerLabel, isCleanPhoneValue } from '@/lib/crm/phone-owner';
 import type { FieldSaveTarget } from '@/hooks/useRecordFieldSave';
 import { FieldRenderer } from '../FieldRenderer';
@@ -288,8 +289,32 @@ export const InlineFieldCell = memo(function InlineFieldCell({
           value={value == null ? '' : String(value)}
           type="number"
           placeholder={`Add ${field.label.toLowerCase()}`}
-          validate={(v) =>
-            v === '' || !Number.isNaN(Number(v)) ? null : 'Must be a number'
+          validate={(v) => {
+            if (v === '') return null;
+            const n = Number(v);
+            if (Number.isNaN(n)) return 'Must be a number';
+            const { min, max } = field.validation ?? {};
+            if (min !== undefined && n < min) return `Must be at least ${min}`;
+            if (max !== undefined && n > max) return `Must be at most ${max}`;
+            return null;
+          }}
+          // Household ages: show what the recorded age most likely is today
+          // (person modules render through this cell, not FieldRenderer).
+          display={
+            householdAgeSlot(field.key) && value != null && value !== ''
+              ? (v) => {
+                  const recorded = describeRecordedAge(field.key, v, relatedValues);
+                  if (!recorded) return String(v ?? '');
+                  return (
+                    <>
+                      {recorded.stored}
+                      {recorded.hint && (
+                        <span className="ml-1.5 text-xs text-muted-foreground">{recorded.hint}</span>
+                      )}
+                    </>
+                  );
+                }
+              : undefined
           }
         />
       );

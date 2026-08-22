@@ -6,6 +6,7 @@
  * Unmatched rows are ignored (never inserted). Ambiguous keys fail closed.
  */
 
+import { applyHouseholdCsvRules } from '@/lib/crm/household-age';
 import {
   buildNormalizedRecordWrite,
   normalizeDateColumnValue,
@@ -772,6 +773,14 @@ export async function runCsvUpdate(
       // `status` would override the very change the file just made and leave
       // the indexed column behind (list says one thing, record says another).
       seedContext(STATUS_CONTEXT_KEYS, ['lead_status']);
+      // Household slots: keep "Yes - 45"-style markers out of the Spouse /
+      // Child Name boxes (route them to <slot>_age / has_spouse / has_kids)
+      // and carry the recorded-on date in the write itself, so the rollback
+      // ledger holds the previous date instead of the trigger re-stamping it.
+      applyHouseholdCsvRules(changedPatch, existingData, {
+        fileModifiedIso: parseFileModifiedDate(row.normalized),
+        todayIso: new Date().toISOString().slice(0, 10),
+      });
 
       const norm = buildNormalizedRecordWrite(changedPatch, {
         moduleKey: input.moduleKey,

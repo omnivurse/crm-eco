@@ -1,12 +1,28 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildNormalizedRecordWrite,
+  isCrmJsonbDateFieldKey,
   mergeCrmDataJsonIntoRowColumns,
   normalizeRowColumnValue,
   normalizeDateColumnValue,
   pickUpdateMirrorColumns,
   sanitizeCrmDataJsonPatch,
 } from './merge-crm-data-json-to-row';
+
+describe('isCrmJsonbDateFieldKey', () => {
+  it('treats household "age recorded on" keys as dates alongside *_date / *_dob', () => {
+    expect(isCrmJsonbDateFieldKey('spouse_age_as_of')).toBe(true);
+    expect(isCrmJsonbDateFieldKey('child_3_age_as_of')).toBe(true);
+    expect(isCrmJsonbDateFieldKey('spouse_dob')).toBe(true);
+    expect(isCrmJsonbDateFieldKey('start_date')).toBe(true);
+    expect(isCrmJsonbDateFieldKey('spouse_age')).toBe(false);
+    expect(isCrmJsonbDateFieldKey('spouse')).toBe(false);
+  });
+
+  it('normalises a slash-dated recorded-on cell to ISO through the patch sanitiser', () => {
+    expect(sanitizeCrmDataJsonPatch({ spouse_age_as_of: '3/1/2024' })).toEqual({ spouse_age_as_of: '2024-03-01' });
+  });
+});
 
 describe('pickUpdateMirrorColumns', () => {
   it('drops out-of-band-owned columns but keeps JSONB-authoritative ones', () => {

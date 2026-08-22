@@ -1266,3 +1266,82 @@ describe('runCsvUpdate safety hardening', () => {
     expect(parsed.rows[1].normalized.email).toBe('b@x.com');
   });
 });
+
+describe('runCsvUpdate household slots', () => {
+  function ledgerCapturingWriter(captured: { before: Record<string, unknown>[]; applied: Record<string, unknown>[]; patches: unknown[] }): CsvUpdateWriter {
+    return {
+      async createJob() {
+        return { id: 'job-hh' };
+      },
+      async recordLedgerEntry(input) {
+        captured.before.push(input.target.beforePatch.data);
+        captured.applied.push(input.target.appliedPatch.data);
+        return { ok: true, id: 'ledger-hh' };
+      },
+      async finalizeLedgerEntry() {
+        return { ok: true };
+      },
+      async applyUpdate(target) {
+        captured.patches.push(target.patch);
+        return { ok: true };
+      },
+      async completeJob() {},
+      async audit() {
+        return { ok: true };
+      },
+    };
+  }
+
+  it('routes a "Yes - 45" Spouse cell to the age field instead of the name box', async () => {
+    const captured = { before: [], applied: [], patches: [] } as {
+      before: Record<string, unknown>[]; applied: Record<string, unknown>[]; patches: unknown[];
+    };
+    await runCsvUpdate({
+      moduleKey: 'contacts',
+      dryRun: false,
+      lookup: memoryLookup([rec({ id: 'r1', email: 'a@x.com', data: { email: 'a@x.com' } })]),
+      writer: ledgerCapturingWriter(captured),
+      rows: [
+        {
+          index: 0,
+          raw: {},
+          normalized: { email: 'a@x.com', spouse: 'Yes - 45', modified_time: '2025-09-30 08:00:00' },
+        },
+      ],
+    });
+    expect(captured.applied).toHaveLength(1);
+    const applied = captured.applied[0];
+    expect(applied.spouse).toBeUndefined();
+    expect(applied.spouse_age).toBe(45);
+    expect(applied.has_spouse).toBe(true);
+    expect(applied.spouse_age_as_of).toBe('2025-09-30');
+  });
+
+  it('carries the recorded-on date in the write so the rollback ledger can restore it', async () => {
+    const captured = { before: [], applied: [], patches: [] } as {
+      before: Record<string, unknown>[]; applied: Record<string, unknown>[]; patches: unknown[];
+    };
+    await runCsvUpdate({
+      moduleKey: 'contacts',
+      dryRun: false,
+      lookup: memoryLookup([
+        rec({
+          id: 'r1',
+          email: 'a@x.com',
+          data: { email: 'a@x.com', spouse_age: 45, spouse_age_as_of: '2024-03-01' },
+        }),
+      ]),
+      writer: ledgerCapturingWriter(captured),
+      rows: [
+        {
+          index: 0,
+          raw: {},
+          normalized: { email: 'a@x.com', spouse_age: '46', modified_time: '2025-09-30' },
+        },
+      ],
+    });
+    expect(captured.before[0]?.spouse_age_as_of).toBe('2024-03-01');
+    expect(captured.applied[0]?.spouse_age).toBe(46);
+    expect(captured.applied[0]?.spouse_age_as_of).toBe('2025-09-30');
+  });
+});
