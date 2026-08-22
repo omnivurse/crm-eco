@@ -1,12 +1,11 @@
 /**
- * Double Helix Hub Service Worker
- * Handles caching for offline support and faster loads
+ * Offline cache worker. Keep identifiers generic — this file is public.
  */
 
-const CACHE_VERSION = 13;
-const CACHE_NAME = `dhh-v${CACHE_VERSION}`;
-const STATIC_CACHE_NAME = `dhh-static-v${CACHE_VERSION}`;
-const API_CACHE_NAME = `dhh-api-v${CACHE_VERSION}`;
+const CACHE_VERSION = 14;
+const CACHE_NAME = `app-v${CACHE_VERSION}`;
+const STATIC_CACHE_NAME = `app-static-v${CACHE_VERSION}`;
+const API_CACHE_NAME = `app-api-v${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
 // Static assets to cache on install (must be real files that return 200).
@@ -25,7 +24,7 @@ const STATIC_ASSETS = [
 
 // Last-resort offline shell. Inlined so a broken precache (or first navigation
 // before install completes) still renders a useful page instead of bare text.
-const INLINE_OFFLINE_HTML = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Offline — CRM</title><style>html,body{height:100%}body{margin:0;font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:#0f172a;background:linear-gradient(135deg,#f8fafc,#e2e8f0);display:grid;place-items:center;padding:24px}main{max-width:440px;background:#fff;border-radius:14px;box-shadow:0 10px 30px rgba(15,23,42,.08);padding:28px;text-align:center}h1{margin:0 0 8px;font-size:20px}p{margin:0 0 18px;color:#475569}button{appearance:none;border:0;background:#0891b2;color:#fff;padding:10px 18px;border-radius:8px;font-weight:600;cursor:pointer}button:hover{background:#0e7490}small{display:block;margin-top:14px;color:#94a3b8;font-size:12px}</style></head><body><main><h1>You appear to be offline</h1><p>The page couldn't load. Check your connection and try again.</p><button onclick="location.reload()">Retry</button><small>If this keeps happening, open DevTools → Application → Service Workers → Unregister.</small></main></body></html>`;
+const INLINE_OFFLINE_HTML = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Offline</title><style>html,body{height:100%}body{margin:0;font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:#0f172a;background:#f4f5f7;display:grid;place-items:center;padding:24px}main{max-width:440px;background:#fff;border:1px solid #d8dce3;padding:28px;text-align:center}h1{margin:0 0 8px;font-size:20px}p{margin:0 0 18px;color:#475569}button{appearance:none;border:0;background:#1a1f26;color:#fff;padding:10px 18px;font-weight:600;cursor:pointer}</style></head><body><main><h1>You appear to be offline</h1><p>The page couldn't load. Check your connection and try again.</p><button onclick="location.reload()">Retry</button></main></body></html>`;
 
 function inlineOfflineResponse() {
   return new Response(INLINE_OFFLINE_HTML, {
@@ -39,7 +38,7 @@ function inlineOfflineResponse() {
  * Does NOT use cache.addAll() because a single 404 would reject the whole install.
  */
 self.addEventListener('install', (event) => {
-  console.log('[CRM-SW] Installing service worker...');
+  console.log('[SW] Installing service worker...');
 
   event.waitUntil(
     (async () => {
@@ -51,10 +50,10 @@ self.addEventListener('install', (event) => {
             await cache.put(url, res.clone());
           }
         } catch (e) {
-          console.warn(`[CRM-SW] Skipped caching ${url}:`, e);
+          console.warn(`[SW] Skipped caching ${url}:`, e);
         }
       }
-      console.log('[CRM-SW] Static assets cached');
+      console.log('[SW] Static assets cached');
       return self.skipWaiting();
     })()
   );
@@ -64,7 +63,7 @@ self.addEventListener('install', (event) => {
  * Activate event - clean up old caches
  */
 self.addEventListener('activate', (event) => {
-  console.log('[CRM-SW] Activating service worker...');
+  console.log('[SW] Activating service worker...');
 
   const validCaches = [CACHE_NAME, STATIC_CACHE_NAME, API_CACHE_NAME];
 
@@ -76,13 +75,13 @@ self.addEventListener('activate', (event) => {
           cacheNames
             .filter((name) => !validCaches.includes(name))
             .map((name) => {
-              console.log('[CRM-SW] Deleting old cache:', name);
+              console.log('[SW] Deleting old cache:', name);
               return caches.delete(name);
             })
         );
       })
       .then(() => {
-        console.log('[CRM-SW] Service worker activated');
+        console.log('[SW] Service worker activated');
         return self.clients.claim();
       })
   );
@@ -112,7 +111,9 @@ self.addEventListener('fetch', (event) => {
     url.pathname.includes('/crm-access-denied') ||
     url.pathname.includes('/reset-password') ||
     url.pathname.includes('/update-password') ||
-    url.pathname.includes('/accept-invite')
+    url.pathname.includes('/accept-invite') ||
+    url.pathname === '/lock' ||
+    url.pathname.startsWith('/lock/')
   ) {
     return;
   }
@@ -232,7 +233,7 @@ async function cacheFirst(request, cacheName) {
     safeCachePut(cacheName, request, networkResponse);
     return networkResponse;
   } catch (error) {
-    console.error('[CRM-SW] Cache first fetch failed:', error);
+    console.error('[SW] Cache first fetch failed:', error);
     return new Response('Asset unavailable offline', { status: 503 });
   }
 }
@@ -254,7 +255,7 @@ async function networkFirst(request, cacheName) {
   } catch (error) {
     const cachedResponse = await caches.match(request);
     if (cachedResponse) {
-      console.info('[CRM-SW] Serving cached API response (offline):', request.url);
+      console.info('[SW] Serving cached API response (offline):', request.url);
       return cachedResponse;
     }
 
@@ -276,7 +277,7 @@ async function networkFirstWithOfflineFallback(request) {
   } catch (error) {
     const cachedResponse = await caches.match(request);
     if (cachedResponse) {
-      console.info('[CRM-SW] Serving cached navigation (offline):', request.url);
+      console.info('[SW] Serving cached navigation (offline):', request.url);
       return cachedResponse;
     }
 
@@ -313,6 +314,6 @@ self.addEventListener('message', (event) => {
  */
 self.addEventListener('sync', (event) => {
   if (event.tag === 'sync-pending-actions') {
-    console.log('[CRM-SW] Syncing pending actions...');
+    console.log('[SW] Syncing pending actions...');
   }
 });

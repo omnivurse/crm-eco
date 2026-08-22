@@ -2,7 +2,8 @@ import type { Metadata, Viewport } from 'next';
 import { Inter, Plus_Jakarta_Sans } from 'next/font/google';
 import { brandingToCssText } from '@crm-eco/ui/lib/branding';
 import { createThemeBootScript } from '@crm-eco/ui/lib/theme-boot';
-import { PIN_LOCK_ROBOTS_METADATA } from '@crm-eco/ui/lib/pin-lock';
+import { PIN_LOCK_PAGE_METADATA, PIN_LOCK_ROBOTS_METADATA } from '@crm-eco/ui/lib/pin-lock';
+import { isPinLockRequest } from '@crm-eco/ui/lib/pin-lock-server';
 import { ConfirmDialogHost } from '@crm-eco/ui/components/confirm-dialog';
 import { PromptDialogHost } from '@crm-eco/ui/components/prompt-dialog';
 import { RootProviders } from '@/components/providers/RootProviders';
@@ -26,10 +27,7 @@ const plusJakarta = Plus_Jakarta_Sans({
   fallback: ['system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
 });
 
-/**
- * PWA Metadata Configuration
- */
-export const metadata: Metadata = {
+const APP_METADATA: Metadata = {
   title: 'Double Helix Hub | Health Management Platform',
   description: 'Modern management platform for health sharing and insurance organizations',
   manifest: '/manifest.json',
@@ -50,6 +48,11 @@ export const metadata: Metadata = {
   },
   robots: PIN_LOCK_ROBOTS_METADATA,
 };
+
+export async function generateMetadata(): Promise<Metadata> {
+  if (await isPinLockRequest()) return { ...PIN_LOCK_PAGE_METADATA };
+  return APP_METADATA;
+}
 
 /**
  * Viewport Configuration for PWA
@@ -94,34 +97,41 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // Resolve the active tenant's branding server-side and inject it as a
-  // static <style> so the first paint already reflects the tenant palette.
-  // Mutating CSS custom properties on the client would cause the documented
-  // React #418/#423 hydration mismatch. getActiveTenant() is request-cached
-  // (React cache) and returns null for unauthenticated requests, in which
-  // case brandingToCssText('') falls through to the theme.css defaults.
-  const tenant = await getActiveTenant();
-  const tenantThemeCss = brandingToCssText(tenant?.branding);
+  const isLock = await isPinLockRequest();
+
+  // /lock must never depend on tenant/auth/Supabase. An uncaught throw here
+  // 503s the PIN page and leaks a Next.js Server Components error in console.
+  let tenantThemeCss = '';
+  if (!isLock) {
+    try {
+      const tenant = await getActiveTenant();
+      tenantThemeCss = brandingToCssText(tenant?.branding);
+    } catch {
+      tenantThemeCss = '';
+    }
+  }
 
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        {/* Theme script MUST be first to prevent any flash */}
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
-
-        {/* Tenant branding tokens — server-rendered, overrides theme.css for
-            the active org. Empty string when no custom branding (PIFH). */}
-        {tenantThemeCss ? (
+        {!isLock ? <script dangerouslySetInnerHTML={{ __html: themeScript }} /> : null}
+        {!isLock && tenantThemeCss ? (
           <style id="tenant-theme" dangerouslySetInnerHTML={{ __html: tenantThemeCss }} />
         ) : null}
-
-        {/* DNS prefetch for Supabase */}
-        <link rel="dns-prefetch" href="https://sffisarikcreyyjzdjvb.supabase.co" />
+        {!isLock ? (
+          <link rel="dns-prefetch" href="https://sffisarikcreyyjzdjvb.supabase.co" />
+        ) : null}
       </head>
       <body className={`${inter.variable} ${plusJakarta.variable} font-sans antialiased`}>
-        <RootProviders>{children}</RootProviders>
-        <ConfirmDialogHost />
-        <PromptDialogHost />
+        {isLock ? (
+          children
+        ) : (
+          <>
+            <RootProviders>{children}</RootProviders>
+            <ConfirmDialogHost />
+            <PromptDialogHost />
+          </>
+        )}
       </body>
     </html>
   );

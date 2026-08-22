@@ -16,6 +16,7 @@
     "./lib/theme-boot": "./src/lib/theme-boot.ts",
     "./lib/pin-lock": "./src/lib/pin-lock.ts",
     "./lib/pin-lock-next": "./src/lib/pin-lock-next.ts",
+    "./lib/pin-lock-server": "./src/lib/pin-lock-server.ts",
     "./lib/pin-lock-headers": "./src/lib/pin-lock-headers.js",
     "./lib/density": "./src/lib/density.ts",
     "./lib/sms-privacy-policy": "./src/lib/sms-privacy-policy.ts",

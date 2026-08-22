@@ -1,7 +1,8 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter, Fraunces } from 'next/font/google';
 import './globals.css';
-import { PIN_LOCK_ROBOTS_METADATA } from '@crm-eco/ui/lib/pin-lock';
+import { PIN_LOCK_PAGE_METADATA, PIN_LOCK_ROBOTS_METADATA } from '@crm-eco/ui/lib/pin-lock';
+import { isPinLockRequest } from '@crm-eco/ui/lib/pin-lock-server';
 import { WebsiteChrome } from '@/components/WebsitePinGate';
 
 const inter = Inter({
@@ -23,7 +24,7 @@ const fraunces = Fraunces({
 
 const SITE_URL = 'https://payitforwardhealth.com';
 
-export const metadata: Metadata = {
+const APP_METADATA: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
     default: 'Pay It Forward Health | Community Health Sharing',
@@ -57,6 +58,11 @@ export const metadata: Metadata = {
   },
   robots: PIN_LOCK_ROBOTS_METADATA,
 };
+
+export async function generateMetadata(): Promise<Metadata> {
+  if (await isPinLockRequest()) return { ...PIN_LOCK_PAGE_METADATA };
+  return APP_METADATA;
+}
 
 export const viewport: Viewport = {
   themeColor: '#003A5C',

@@ -7,6 +7,8 @@ const withBundleAnalyzer = bundleAnalyzer({
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  poweredByHeader: false,
+  productionBrowserSourceMaps: false,
   transpilePackages: ['@crm-eco/ui', '@crm-eco/lib', '@crm-eco/shared', '@crm-eco/enrollment'],
 
   experimental: {

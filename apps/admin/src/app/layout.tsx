@@ -2,7 +2,8 @@ import type { Metadata } from 'next';
 import { Plus_Jakarta_Sans } from 'next/font/google';
 import { brandingToCssText } from '@crm-eco/ui/lib/branding';
 import { createThemeBootScript } from '@crm-eco/ui/lib/theme-boot';
-import { PIN_LOCK_ROBOTS_METADATA } from '@crm-eco/ui/lib/pin-lock';
+import { PIN_LOCK_PAGE_METADATA, PIN_LOCK_ROBOTS_METADATA } from '@crm-eco/ui/lib/pin-lock';
+import { isPinLockRequest } from '@crm-eco/ui/lib/pin-lock-server';
 import { ConfirmDialogHost } from '@crm-eco/ui/components/confirm-dialog';
 import { PromptDialogHost } from '@crm-eco/ui/components/prompt-dialog';
 import { Toaster } from '@crm-eco/ui';
@@ -26,7 +27,7 @@ const jakartaHeading = Plus_Jakarta_Sans({
   preload: false,
 });
 
-export const metadata: Metadata = {
+const APP_METADATA: Metadata = {
   title: 'MMS | Benefits Enrollment & Member Management | Double Helix Hub',
   description: 'MMS — benefits enrollment and member management software for health sharing organizations.',
   icons: {
@@ -35,6 +36,11 @@ export const metadata: Metadata = {
   },
   robots: PIN_LOCK_ROBOTS_METADATA,
 };
+
+export async function generateMetadata(): Promise<Metadata> {
+  if (await isPinLockRequest()) return { ...PIN_LOCK_PAGE_METADATA };
+  return APP_METADATA;
+}
 
 /**
  * The Admin shell's actual canvas — `--adm-void`, now an alias for the shared
@@ -62,35 +68,41 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // Soft-fail when local env is missing so /login can still render.
+  const isLock = await isPinLockRequest();
   let tenantThemeCss = '';
-  try {
-    if (
-      process.env.NEXT_PUBLIC_SUPABASE_URL &&
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    ) {
-      const tenant = await getActiveTenant();
-      tenantThemeCss = brandingToCssText(tenant?.branding);
+  if (!isLock) {
+    try {
+      if (
+        process.env.NEXT_PUBLIC_SUPABASE_URL &&
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+      ) {
+        const tenant = await getActiveTenant();
+        tenantThemeCss = brandingToCssText(tenant?.branding);
+      }
+    } catch {
+      tenantThemeCss = '';
     }
-  } catch (err) {
-    console.warn('[Admin Layout] Skipping tenant branding resolve:', err);
   }
 
   return (
     <html lang="en" className="light" suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
-        {tenantThemeCss ? (
+        {!isLock ? <script dangerouslySetInnerHTML={{ __html: themeBootScript }} /> : null}
+        {!isLock && tenantThemeCss ? (
           <style id="tenant-theme" dangerouslySetInnerHTML={{ __html: tenantThemeCss }} />
         ) : null}
       </head>
       <body className={`${jakarta.variable} ${jakartaHeading.variable} font-sans antialiased`}>
-        <ThemeProvider defaultTheme="light">
-          {children}
-          <ConfirmDialogHost />
-          <PromptDialogHost />
-          <Toaster richColors position="top-right" />
-        </ThemeProvider>
+        {isLock ? (
+          children
+        ) : (
+          <ThemeProvider defaultTheme="light">
+            {children}
+            <ConfirmDialogHost />
+            <PromptDialogHost />
+            <Toaster richColors position="top-right" />
+          </ThemeProvider>
+        )}
       </body>
     </html>
   );

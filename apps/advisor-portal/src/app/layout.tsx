@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Fraunces, Plus_Jakarta_Sans } from 'next/font/google';
-import { PIN_LOCK_ROBOTS_METADATA } from '@crm-eco/ui/lib/pin-lock';
+import { PIN_LOCK_PAGE_METADATA, PIN_LOCK_ROBOTS_METADATA } from '@crm-eco/ui/lib/pin-lock';
+import { isPinLockRequest } from '@crm-eco/ui/lib/pin-lock-server';
 import './globals.css';
 import { Toaster } from 'sonner';
 
@@ -26,24 +27,30 @@ const fraunces = Fraunces({
   preload: false,
 });
 
-export const metadata: Metadata = {
+const APP_METADATA: Metadata = {
   title: 'Advisor Portal | Double Helix Hub',
   description: 'Manage your leads, team, and presentations',
   robots: PIN_LOCK_ROBOTS_METADATA,
 };
 
-export default function RootLayout({
+export async function generateMetadata(): Promise<Metadata> {
+  if (await isPinLockRequest()) return { ...PIN_LOCK_PAGE_METADATA };
+  return APP_METADATA;
+}
+
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const isLock = await isPinLockRequest();
   return (
     <html lang="en" suppressHydrationWarning>
       <body
         className={`${plusJakarta.variable} ${plusJakartaHeading.variable} ${fraunces.variable} font-sans`}
       >
         {children}
-        <Toaster position="top-right" richColors />
+        {isLock ? null : <Toaster position="top-right" richColors />}
       </body>
     </html>
   );

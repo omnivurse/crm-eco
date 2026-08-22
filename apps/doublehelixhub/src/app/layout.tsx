@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Plus_Jakarta_Sans } from 'next/font/google';
-import { headers } from 'next/headers';
-import { PIN_LOCK_PATH_HEADER, PIN_LOCK_ROBOTS_METADATA } from '@crm-eco/ui/lib/pin-lock';
+import { PIN_LOCK_PAGE_METADATA, PIN_LOCK_ROBOTS_METADATA } from '@crm-eco/ui/lib/pin-lock';
+import { isPinLockRequest } from '@crm-eco/ui/lib/pin-lock-server';
 import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
 import { ThemeProvider, themeInitScript } from '@/components/theme-provider';
@@ -28,7 +28,7 @@ const SITE_TITLE = 'Double Helix Software | The Operating System for Health Bene
 const SITE_DESCRIPTION =
   'Licensed multi-tenant SaaS for benefits advisors, agencies, and TPAs. CRM Core + Admin Enrollment in one platform.';
 
-export const metadata: Metadata = {
+const APP_METADATA: Metadata = {
   metadataBase: new URL('https://doublehelixhub.com'),
   title: SITE_TITLE,
   description: SITE_DESCRIPTION,
@@ -53,6 +53,11 @@ export const metadata: Metadata = {
   robots: PIN_LOCK_ROBOTS_METADATA,
 };
 
+export async function generateMetadata(): Promise<Metadata> {
+  if (await isPinLockRequest()) return { ...PIN_LOCK_PAGE_METADATA };
+  return APP_METADATA;
+}
+
 export const viewport: Viewport = {
   themeColor: [
     { media: '(prefers-color-scheme: light)', color: '#f7f8fa' },
@@ -71,7 +76,7 @@ export const viewport: Viewport = {
  * are only ever consumed through the --lp-* tokens.
  */
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const isLock = (await headers()).get(PIN_LOCK_PATH_HEADER) === '1';
+  const isLock = await isPinLockRequest();
 
   return (
     <html
@@ -80,7 +85,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       suppressHydrationWarning
     >
       <head>
-        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        {!isLock ? <script dangerouslySetInnerHTML={{ __html: themeInitScript }} /> : null}
       </head>
       <body className="font-sans antialiased">
         {isLock ? (

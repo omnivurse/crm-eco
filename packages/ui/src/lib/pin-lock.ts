@@ -7,12 +7,18 @@
  */
 
 export const PIN_LOCK_PATH = '/lock';
-export const PIN_COOKIE_NAME = 'dh_pin_unlocked';
+/** Neutral cookie — do not use product / org prefixes. */
+export const PIN_COOKIE_NAME = 'lgq_ok';
+/** Previous name; still accepted so existing unlock sessions survive one deploy. */
+export const PIN_COOKIE_NAME_LEGACY = 'dh_pin_unlocked';
+/** Destination after unlock. Kept off the URL so `/crm-login` never appears in the bar. */
+export const PIN_NEXT_COOKIE = 'lgq_next';
 export const PIN_STORAGE_KEY = 'app-pin-unlocked';
 export const PIN_EXPIRY_KEY = 'app-pin-expiry';
 export const PIN_SESSION_HOURS = 12;
 export const PIN_COOKIE_MAX_AGE_SEC = PIN_SESSION_HOURS * 60 * 60;
-export const PIN_LOCK_PATH_HEADER = 'x-dh-pin-lock-path';
+export const PIN_LOCK_PATH_HEADER = 'x-pin-lock-path';
+export const PIN_LOCK_PATH_HEADER_LEGACY = 'x-dh-pin-lock-path';
 
 /** Default preview PIN when env is unset (client-side gate only). */
 export const DEFAULT_SITE_PIN = '012049';
@@ -43,7 +49,13 @@ export const PIN_LOCK_ROBOTS_METADATA = {
 export const PIN_LOCK_PAGE_METADATA = {
   title: { absolute: SITE_PIN_GATE_TITLE },
   description: 'Enter your access PIN to continue.',
+  applicationName: SITE_PIN_GATE_TITLE,
+  keywords: [] as string[],
   robots: PIN_LOCK_ROBOTS_METADATA,
+  appleWebApp: {
+    capable: false,
+    title: SITE_PIN_GATE_TITLE,
+  },
   openGraph: {
     title: SITE_PIN_GATE_TITLE,
     description: 'Enter your access PIN to continue.',
@@ -54,7 +66,7 @@ export const PIN_LOCK_PAGE_METADATA = {
     title: SITE_PIN_GATE_TITLE,
     description: 'Enter your access PIN to continue.',
   },
-} as const;
+};
 
 export function isPinLockEnabled(): boolean {
   return (
@@ -112,15 +124,13 @@ export function sanitizePinLockNext(raw: string | null | undefined): string {
   return value;
 }
 
-export function buildPinLockRedirectPath(nextPathAndSearch: string): string {
-  const safe = sanitizePinLockNext(nextPathAndSearch);
-  if (safe === '/') return PIN_LOCK_PATH;
-  return `${PIN_LOCK_PATH}?next=${encodeURIComponent(safe)}`;
+export function buildPinLockRedirectPath(): string {
+  return PIN_LOCK_PATH;
 }
 
 export type PinLockDecision =
   | { action: 'allow'; lockPath: boolean }
-  | { action: 'redirect'; location: string };
+  | { action: 'redirect'; location: string; next?: string };
 
 export function evaluatePinLockRequest(args: {
   pathname: string;
@@ -147,8 +157,51 @@ export function evaluatePinLockRequest(args: {
     return { action: 'allow', lockPath: false };
   }
 
-  const next = `${pathname}${args.search ?? ''}`;
-  return { action: 'redirect', location: buildPinLockRedirectPath(next) };
+  return {
+    action: 'redirect',
+    location: PIN_LOCK_PATH,
+    next: sanitizePinLockNext(`${pathname}${args.search ?? ''}`),
+  };
+}
+
+export function headersIndicatePinLock(getHeader: (name: string) => string | null): boolean {
+  return getHeader(PIN_LOCK_PATH_HEADER) === '1' || getHeader(PIN_LOCK_PATH_HEADER_LEGACY) === '1';
+}
+
+export function readDocumentCookie(name: string): string | null {
+  if (typeof document === 'undefined') return null;
+  const prefix = `${name}=`;
+  for (const part of document.cookie.split(';')) {
+    const trimmed = part.trim();
+    if (trimmed.startsWith(prefix)) {
+      return decodeURIComponent(trimmed.slice(prefix.length));
+    }
+  }
+  return null;
+}
+
+export function readPinNextTarget(explicit?: string | null): string {
+  const fromQuery =
+    typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('next') : null;
+  return sanitizePinLockNext(explicit || readDocumentCookie(PIN_NEXT_COOKIE) || fromQuery);
+}
+
+export function clearPinNextCookie(): void {
+  if (typeof document === 'undefined') return;
+  const secure = location.protocol === 'https:' ? '; Secure' : '';
+  document.cookie = `${PIN_NEXT_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax${secure}`;
+}
+
+/** Mute browser console on the public lock surface only. */
+export function silencePublicConsole(): void {
+  if (typeof window === 'undefined') return;
+  if (process.env.NODE_ENV !== 'production') return;
+  const noop = () => undefined;
+  console.log = noop;
+  console.info = noop;
+  console.debug = noop;
+  console.warn = noop;
+  console.error = noop;
 }
 
 export function applyNoIndexHeaders(headers: { set: (name: string, value: string) => void }): void {
@@ -165,6 +218,7 @@ export function persistPinUnlock(expiry = pinUnlockExpiry()): void {
   try {
     const secure = typeof location !== 'undefined' && location.protocol === 'https:' ? '; Secure' : '';
     document.cookie = `${PIN_COOKIE_NAME}=${expiry}; Path=/; Max-Age=${PIN_COOKIE_MAX_AGE_SEC}; SameSite=Lax${secure}`;
+    document.cookie = `${PIN_COOKIE_NAME_LEGACY}=; Path=/; Max-Age=0; SameSite=Lax${secure}`;
   } catch {
     /* cookies blocked */
   }

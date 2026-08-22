@@ -2,6 +2,8 @@ import { noIndexRouteHeaders } from '../../packages/ui/src/lib/pin-lock-headers.
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  poweredByHeader: false,
+  productionBrowserSourceMaps: false,
   reactStrictMode: true,
   transpilePackages: ['@crm-eco/lib', '@crm-eco/ui', '@crm-eco/shared'],
 

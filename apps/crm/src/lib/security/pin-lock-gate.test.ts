@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
-  buildPinLockRedirectPath,
   evaluatePinLockRequest,
+  headersIndicatePinLock,
   isPinLockExemptPath,
   isPinUnlockCookieValid,
+  PIN_COOKIE_NAME,
+  PIN_COOKIE_NAME_LEGACY,
   PIN_LOCK_PATH,
+  PIN_LOCK_PATH_HEADER,
   pinLockRobots,
   sanitizePinLockNext,
   WEBSITE_PIN_PUBLIC_PATHS,
@@ -31,13 +34,27 @@ describe('evaluatePinLockRequest', () => {
   it('redirects the landing page to /lock before HTML can ship', () => {
     expect(
       evaluatePinLockRequest({ pathname: '/', search: '' }),
-    ).toEqual({ action: 'redirect', location: PIN_LOCK_PATH });
+    ).toEqual({ action: 'redirect', location: PIN_LOCK_PATH, next: '/' });
     expect(
       evaluatePinLockRequest({ pathname: '/plans', search: '?x=1' }),
     ).toEqual({
       action: 'redirect',
-      location: buildPinLockRedirectPath('/plans?x=1'),
+      location: PIN_LOCK_PATH,
+      next: '/plans?x=1',
     });
+  });
+
+  it('does not put internal destinations in the lock URL', () => {
+    const decision = evaluatePinLockRequest({
+      pathname: '/crm-login',
+      search: '',
+    });
+    expect(decision).toEqual({
+      action: 'redirect',
+      location: PIN_LOCK_PATH,
+      next: '/crm-login',
+    });
+    expect(decision.action === 'redirect' && decision.location.includes('crm')).toBe(false);
   });
 
   it('lets a valid unlock cookie through', () => {
@@ -53,7 +70,7 @@ describe('evaluatePinLockRequest', () => {
         pathname: '/',
         cookieValue: String(Date.now() - 1000),
       }),
-    ).toEqual({ action: 'redirect', location: PIN_LOCK_PATH });
+    ).toEqual({ action: 'redirect', location: PIN_LOCK_PATH, next: '/' });
   });
 
   it('serves /lock without a cookie and bounces unlocked visitors off it', () => {
@@ -97,5 +114,23 @@ describe('pinLockRobots', () => {
     expect(pinLockRobots()).toEqual({
       rules: { userAgent: '*', disallow: '/' },
     });
+  });
+});
+
+describe('pin lock identifiers', () => {
+  it('uses a generic unlock cookie and accepts the legacy name', () => {
+    expect(PIN_COOKIE_NAME).toBe('lgq_ok');
+    expect(PIN_COOKIE_NAME_LEGACY).toBe('dh_pin_unlocked');
+    expect(isPinUnlockCookieValid(String(Date.now() + 60_000))).toBe(true);
+  });
+
+  it('recognizes current and legacy lock-path headers', () => {
+    expect(headersIndicatePinLock((name) => (name === PIN_LOCK_PATH_HEADER ? '1' : null))).toBe(
+      true,
+    );
+    expect(headersIndicatePinLock((name) => (name === 'x-dh-pin-lock-path' ? '1' : null))).toBe(
+      true,
+    );
+    expect(headersIndicatePinLock(() => null)).toBe(false);
   });
 });

@@ -1,7 +1,8 @@
 import type { Metadata, Viewport } from 'next';
 import { Plus_Jakarta_Sans } from 'next/font/google';
 import { brandingToCssText } from '@crm-eco/ui/lib/branding';
-import { PIN_LOCK_ROBOTS_METADATA } from '@crm-eco/ui/lib/pin-lock';
+import { PIN_LOCK_PAGE_METADATA, PIN_LOCK_ROBOTS_METADATA } from '@crm-eco/ui/lib/pin-lock';
+import { isPinLockRequest } from '@crm-eco/ui/lib/pin-lock-server';
 import { ConfirmDialogHost } from '@crm-eco/ui/components/confirm-dialog';
 import { PromptDialogHost } from '@crm-eco/ui/components/prompt-dialog';
 import './globals.css';
@@ -25,7 +26,7 @@ const plusJakartaHeading = Plus_Jakarta_Sans({
   preload: false,
 });
 
-export const metadata: Metadata = {
+const APP_METADATA: Metadata = {
   title: 'Member Portal | Double Helix Hub',
   description: 'Manage your health sharing membership, view benefits, and enroll in new plans.',
   manifest: '/manifest.webmanifest',
@@ -43,6 +44,11 @@ export const metadata: Metadata = {
   robots: PIN_LOCK_ROBOTS_METADATA,
 };
 
+export async function generateMetadata(): Promise<Metadata> {
+  if (await isPinLockRequest()) return { ...PIN_LOCK_PAGE_METADATA };
+  return APP_METADATA;
+}
+
 export const viewport: Viewport = {
   themeColor: '#0b6d85',
   width: 'device-width',
@@ -55,33 +61,46 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // Resolve the active member's tenant branding server-side and emit it as a
-  // static <style> below. This keeps theming hydration-safe (no client
-  // setProperty / client provider in the server layout). `getPortalTenant()` is
-  // a soft resolver — it returns null on public/unauthenticated routes, in
-  // which case `css` is '' and we fall through to the theme.css defaults.
-  const tenant = await getPortalTenant();
-  const css = brandingToCssText(tenant?.branding);
+  const isLock = await isPinLockRequest();
+  let css = '';
+  if (!isLock) {
+    try {
+      const tenant = await getPortalTenant();
+      css = brandingToCssText(tenant?.branding);
+    } catch {
+      css = '';
+    }
+  }
 
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-192x192.png" />
-        <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-96x96.png" />
-        <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-72x72.png" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        {css && (
+        {!isLock ? (
+          <>
+            <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-192x192.png" />
+            <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-96x96.png" />
+            <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-72x72.png" />
+            <meta name="apple-mobile-web-app-capable" content="yes" />
+            <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+          </>
+        ) : null}
+        {!isLock && css ? (
           <style id="tenant-theme" dangerouslySetInnerHTML={{ __html: css }} />
-        )}
+        ) : null}
       </head>
       <body className={`${plusJakarta.variable} ${plusJakartaHeading.variable} font-sans antialiased`}>
-        <ServiceWorkerRegistration />
-        <PortalAppShell>{children}</PortalAppShell>
-        <InstallPrompt />
-        <UpdateToast />
-        <ConfirmDialogHost />
-        <PromptDialogHost />
+        {isLock ? (
+          children
+        ) : (
+          <>
+            <ServiceWorkerRegistration />
+            <PortalAppShell>{children}</PortalAppShell>
+            <InstallPrompt />
+            <UpdateToast />
+            <ConfirmDialogHost />
+            <PromptDialogHost />
+          </>
+        )}
       </body>
     </html>
   );

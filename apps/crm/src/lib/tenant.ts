@@ -99,6 +99,14 @@ interface MembershipRow {
  * can be resolved.
  */
 export const getActiveTenant = cache(async (): Promise<ResolvedTenant | null> => {
+  try {
+    return await resolveActiveTenant();
+  } catch {
+    return null;
+  }
+});
+
+async function resolveActiveTenant(): Promise<ResolvedTenant | null> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
@@ -151,7 +159,7 @@ export const getActiveTenant = cache(async (): Promise<ResolvedTenant | null> =>
     branding: (chosen.branding ?? {}) as Record<string, unknown>,
     plan: chosen.plan,
   };
-});
+}
 
 /**
  * List every organization the current user belongs to (for the switcher UI).
