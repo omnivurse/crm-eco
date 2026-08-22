@@ -10,6 +10,23 @@ import {
   type OutboundAttachmentRef,
   type ResolvedOutboundAttachment,
 } from '@/lib/email/outbound-attachments';
+import { COMMS_FLAGS, isCommsFlagEnabled } from '@/lib/email/comms-flags';
+import {
+  domainFromEmail,
+  generateRfc822MessageId,
+  normalizeRfc822Id,
+} from '@/lib/email/rfc822';
+import {
+  enqueueOutbox,
+  markOutboxAccepted,
+  markOutboxFailed,
+  markOutboxSubmitting,
+  outboxAlreadyAccepted,
+  classifyProviderError,
+  createOutboxAdminClient,
+  type OutboxRow,
+} from '@/lib/email/outbox';
+import { persistOutboundInboxMessage } from '@/lib/email/persist-inbox-reply';
 
 // ============================================================================
 // Email Send Service
@@ -57,6 +74,14 @@ export interface SendEmailParams {
   attachments?: OutboundAttachmentRef[];
   /** Raw files from multipart `/api/communications/send`. */
   inline_attachments?: InlineOutboundFile[];
+  /** Persist outbound copy on this inbox thread (server-side, not the client). */
+  conversation_id?: string;
+  to_name?: string;
+  rfc822_message_id?: string;
+  in_reply_to?: string | null;
+  references?: string[];
+  persist_inbox?: boolean;
+  idempotency_key?: string;
 }
 
 export interface SendEmailResult {
@@ -64,6 +89,9 @@ export interface SendEmailResult {
   message_id?: string;
   provider?: string;
   error?: string;
+  rfc822_message_id?: string;
+  outbox_id?: string;
+  inbox_message_id?: string;
 }
 
 export interface SendSmsParams {
@@ -185,11 +213,94 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
   const provider = emailConnection?.provider || 'resend';
   const startTime = Date.now();
   const sendTimeoutMs = outboundAttachments.length > 0 ? 60_000 : 30_000;
+  const rfc822MessageId =
+    normalizeRfc822Id(params.rfc822_message_id) ||
+    generateRfc822MessageId(domainFromEmail(fromEmail));
+  const inReplyTo = normalizeRfc822Id(params.in_reply_to);
+  const references = (params.references ?? [])
+    .map((id) => normalizeRfc822Id(id))
+    .filter((id): id is string => Boolean(id));
 
   try {
     // Get unsubscribe URL from integration settings for RFC 8058 compliance
     const unsubscribeUrl = (emailConnection?.settings?.unsubscribe_url as string | undefined)
       || (org?.settings as Record<string, unknown> | undefined)?.unsubscribe_url as string | undefined;
+
+    const killSwitch = await isCommsFlagEnabled(
+      supabase,
+      COMMS_FLAGS.killSwitch,
+      profile.organization_id,
+      false,
+    );
+    if (killSwitch) {
+      return { success: false, error: 'Outbound email is paused (crm.comms.kill_switch).' };
+    }
+
+    const useOutbox = await isCommsFlagEnabled(
+      supabase,
+      COMMS_FLAGS.outboxSend,
+      profile.organization_id,
+      false,
+    );
+
+    let outboxRow: OutboxRow | null = null;
+    if (useOutbox) {
+      const idempotencyKey =
+        params.idempotency_key ||
+        (params.conversation_id
+          ? `inbox-reply/${params.conversation_id}/${rfc822MessageId}`
+          : `crm-send/${profile.id}/${rfc822MessageId}`);
+      const outboxAdmin = createOutboxAdminClient();
+      const enqueued = await enqueueOutbox(outboxAdmin, {
+        organizationId: profile.organization_id,
+        idempotencyKey,
+        senderAddress: fromEmail,
+        fromName,
+        replyTo,
+        toAddresses: toEmails,
+        ccAddresses: params.cc,
+        bccAddresses: params.bcc,
+        subject: params.subject,
+        bodyHtml: params.body_html,
+        bodyText,
+        conversationId: params.conversation_id ?? null,
+        linkedContactId: params.linked_contact_id ?? null,
+        linkedLeadId: params.linked_lead_id ?? null,
+        linkedDealId: params.linked_deal_id ?? null,
+        createdBy: user.id,
+        payload: {
+          rfc822_message_id: rfc822MessageId,
+          in_reply_to: inReplyTo,
+          references,
+          persist_inbox: params.persist_inbox !== false && Boolean(params.conversation_id),
+          to_name: params.to_name ?? null,
+          unsubscribe_url: unsubscribeUrl ?? null,
+          source: 'communications.send',
+          attachments: outboundAttachments.map((attachment) => ({
+            filename: attachment.filename,
+            content_type: attachment.contentType,
+            size: attachment.size,
+          })),
+        },
+      });
+      outboxRow = enqueued.row;
+      if (outboxAlreadyAccepted(outboxRow)) {
+        return {
+          success: true,
+          message_id: outboxRow.provider_message_id ?? undefined,
+          provider: outboxRow.provider ?? provider,
+          rfc822_message_id: rfc822MessageId,
+          outbox_id: outboxRow.id,
+        };
+      }
+      await markOutboxSubmitting(outboxAdmin, outboxRow.id, profile.organization_id);
+    }
+
+    const threadHeaders = {
+      message_id: rfc822MessageId,
+      in_reply_to: inReplyTo,
+      references,
+    };
 
     if (provider === 'sendgrid' && emailConnection?.api_key_enc) {
       const apiKey = decrypt(emailConnection.api_key_enc);
@@ -204,6 +315,7 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
         replyTo: replyTo,
         attachments: outboundAttachments,
         timeoutMs: sendTimeoutMs,
+        ...threadHeaders,
       });
     } else if (provider === 'resend' && emailConnection?.api_key_enc) {
       const apiKey = decrypt(emailConnection.api_key_enc);
@@ -219,6 +331,8 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
         unsubscribe_url: unsubscribeUrl,
         attachments: outboundAttachments,
         timeoutMs: sendTimeoutMs,
+        idempotencyKey: outboxRow?.idempotency_key,
+        ...threadHeaders,
       });
     } else if (process.env.RESEND_API_KEY) {
       // Fallback to system Resend API key when no org integration is configured
@@ -234,6 +348,8 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
         unsubscribe_url: unsubscribeUrl,
         attachments: outboundAttachments,
         timeoutMs: sendTimeoutMs,
+        idempotencyKey: outboxRow?.idempotency_key,
+        ...threadHeaders,
       });
     } else {
       return {
@@ -242,6 +358,34 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
         provider: 'none',
       };
     }
+
+    if (outboxRow) {
+      const outboxAdmin = createOutboxAdminClient();
+      if (result.success && result.message_id) {
+        await markOutboxAccepted(
+          outboxAdmin,
+          outboxRow.id,
+          profile.organization_id,
+          result.provider || provider,
+          result.message_id,
+        );
+      } else {
+        await markOutboxFailed(
+          outboxAdmin,
+          outboxRow.id,
+          profile.organization_id,
+          result.error || 'Provider submit failed',
+          classifyProviderError(null, result.error),
+          (outboxRow.attempt_count ?? 0) + 1,
+        );
+      }
+    }
+
+    result = {
+      ...result,
+      rfc822_message_id: rfc822MessageId,
+      outbox_id: outboxRow?.id,
+    };
     
     // Log to sent_emails
     const { error: sentEmailError } = await supabase.from('sent_emails').insert({
@@ -334,6 +478,28 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
       if (activityError) {
         console.error('Failed to log crm_activity:', activityError);
       }
+    }
+
+    if (result.success && params.conversation_id && params.persist_inbox !== false) {
+      const inbox = await persistOutboundInboxMessage(createOutboxAdminClient(), {
+        organizationId: profile.organization_id,
+        conversationId: params.conversation_id,
+        fromAddress: fromEmail,
+        fromName,
+        toAddress: toEmails[0],
+        toName: params.to_name ?? null,
+        ccAddresses: (params.cc ?? []).map((email) => ({ email })),
+        bccAddresses: (params.bcc ?? []).map((email) => ({ email })),
+        subject: params.subject,
+        bodyHtml: params.body_html,
+        bodyText,
+        rfc822MessageId,
+        inReplyTo,
+        references,
+        provider: result.provider || provider,
+        providerMessageId: result.message_id ?? null,
+      });
+      result = { ...result, inbox_message_id: inbox?.id };
     }
 
     return result;
@@ -444,7 +610,7 @@ export async function sendSms(params: SendSmsParams): Promise<SendSmsResult> {
 // Provider Implementations
 // ============================================================================
 
-async function sendViaSendGrid(
+export async function sendViaSendGrid(
   apiKey: string,
   params: {
     from: { email: string; name: string };
@@ -457,8 +623,16 @@ async function sendViaSendGrid(
     replyTo?: string;
     attachments?: ResolvedOutboundAttachment[];
     timeoutMs?: number;
+    message_id?: string;
+    in_reply_to?: string | null;
+    references?: string[];
   }
 ): Promise<SendEmailResult> {
+  const headers: Array<{ key: string; value: string }> = [];
+  if (params.message_id) headers.push({ key: 'Message-ID', value: params.message_id });
+  if (params.in_reply_to) headers.push({ key: 'In-Reply-To', value: params.in_reply_to });
+  if (params.references?.length) headers.push({ key: 'References', value: params.references.join(' ') });
+
   const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
     method: 'POST',
     signal: AbortSignal.timeout(params.timeoutMs ?? 30_000),
@@ -475,6 +649,7 @@ async function sendViaSendGrid(
       from: params.from,
       reply_to: params.replyTo ? { email: params.replyTo } : undefined,
       subject: params.subject,
+      headers: headers.length > 0 ? Object.fromEntries(headers.map((h) => [h.key, h.value])) : undefined,
       content: [
         params.text ? { type: 'text/plain', value: params.text } : null,
         params.html ? { type: 'text/html', value: params.html } : null,
@@ -494,7 +669,7 @@ async function sendViaSendGrid(
   return { success: true, message_id: messageId, provider: 'sendgrid' };
 }
 
-async function sendViaResend(
+export async function sendViaResend(
   apiKey: string,
   params: {
     from: string;
@@ -508,6 +683,10 @@ async function sendViaResend(
     unsubscribe_url?: string;
     attachments?: ResolvedOutboundAttachment[];
     timeoutMs?: number;
+    idempotencyKey?: string;
+    message_id?: string;
+    in_reply_to?: string | null;
+    references?: string[];
   }
 ): Promise<SendEmailResult> {
   const payload = buildResendSendPayload({
@@ -521,15 +700,23 @@ async function sendViaResend(
     reply_to: params.reply_to,
     unsubscribe_url: params.unsubscribe_url,
     attachments: params.attachments,
+    message_id: params.message_id,
+    in_reply_to: params.in_reply_to,
+    references: params.references,
   });
+
+  const headers: Record<string, string> = {
+    'Authorization': `Bearer ${apiKey}`,
+    'Content-Type': 'application/json',
+  };
+  if (params.idempotencyKey) {
+    headers['Idempotency-Key'] = params.idempotencyKey;
+  }
 
   const response = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     signal: AbortSignal.timeout(params.timeoutMs ?? 30_000),
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
+    headers,
     body: JSON.stringify(payload),
   });
 

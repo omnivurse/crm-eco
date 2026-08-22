@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useCallback, useMemo } from 'react';
-import { supabase } from '@/lib/supabase-client';
 import {
   Send,
   Loader2,
@@ -148,13 +147,21 @@ export function ReplyForm({
 
       const attachmentRefs = composerAttachmentsToRefs(attachments);
 
-      // Send via Resend from the monitored mailbox that received the thread
+      const inReplyTo = lastMessage?.message_id || null;
+      const existingRefs = lastMessage?.references_ids || [];
+      const referencesIds = inReplyTo
+        ? [...existingRefs.filter((r: string) => r !== inReplyTo), inReplyTo]
+        : existingRefs;
+
+      // Send via Resend. The server persists the outbound inbox row and
+      // conversation counters (trigger) so the client does not double-write.
       const res = await fetch('/api/communications/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           channel: 'email',
           to: toAddress,
+          to_name: lastInbound?.from_name || selectedConversation.contact_name,
           subject: replySubject,
           body_html: replyHtml,
           body_text: bodyText,
@@ -163,67 +170,15 @@ export function ReplyForm({
           from_name: fromName,
           reply_to: monitoredFrom,
           attachments: attachmentRefs,
+          conversation_id: selectedConversation.id,
+          in_reply_to: inReplyTo,
+          references: referencesIds,
+          persist_inbox: true,
         }),
       });
 
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || 'Failed to send reply');
-
-      // Build threading headers
-      const messageId = result.message_id
-        ? `<${result.message_id}>`
-        : `<${crypto.randomUUID()}@payitforwardhealth.com>`;
-
-      const inReplyTo = lastMessage?.message_id || null;
-      const existingRefs = lastMessage?.references_ids || [];
-      const referencesIds = inReplyTo
-        ? [...existingRefs.filter((r: string) => r !== inReplyTo), inReplyTo]
-        : existingRefs;
-
-      // Insert inbox_messages record
-      const now = new Date().toISOString();
-      const { error: insertError } = await supabase.from('inbox_messages').insert({
-        org_id: authProfile.organization_id,
-        conversation_id: selectedConversation.id,
-        channel: 'email',
-        direction: 'outbound',
-        from_name: fromName,
-        from_address: monitoredFrom,
-        to_address: toAddress,
-        to_name: lastInbound?.from_name || selectedConversation.contact_name,
-        subject: replySubject,
-        body_html: replyHtml,
-        body_text: bodyText,
-        cc_addresses: replyMode === 'reply_all' ? replyAllCc : [],
-        bcc_addresses: [],
-        message_id: messageId,
-        in_reply_to: inReplyTo,
-        references_ids: referencesIds.length > 0 ? referencesIds : null,
-        attachments: attachmentRefs.map((attachment) => ({
-          filename: attachment.file_name,
-          content_type: attachment.mime_type,
-          size: attachment.file_size,
-        })),
-        status: 'sent',
-        sent_at: now,
-        external_id: result.message_id || null,
-        external_provider: result.provider || null,
-        metadata: {},
-      });
-
-      if (insertError) {
-        console.error('Failed to save reply record:', insertError);
-      }
-
-      // Update conversation counters
-      await supabase
-        .from('inbox_conversations')
-        .update({
-          message_count: (selectedConversation.message_count || 0) + 1,
-          last_message_at: now,
-          preview: bodyText.slice(0, 200),
-        })
-        .eq('id', selectedConversation.id);
 
       toast.success('Reply sent');
       setReplyHtml('');

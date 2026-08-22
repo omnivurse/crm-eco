@@ -1,5 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 import type { SequenceStep, EnrollmentStatus } from './types';
+import { enqueueOutbox } from '@/lib/email/outbox';
+import { generateRfc822MessageId, domainFromEmail } from '@/lib/email/rfc822';
+import { isEmailSuppressed } from '@/lib/email/suppression';
 
 // Create admin client for background processing
 function createAdminClient() {
@@ -171,55 +174,60 @@ async function executeEmailStep(
   const subject = processMergeFields(step.subject || '', mergeData);
   const bodyHtml = processMergeFields(step.body_html || '', mergeData);
   const bodyText = processMergeFields(step.body_text || '', mergeData);
+  const orgId = enrollment.sequence.org_id;
+  const recipientName = `${record.data?.first_name || ''} ${record.data?.last_name || ''}`.trim();
 
-  // Create email send record
-  const { data: emailSend, error: sendError } = await supabase
-    .from('email_campaign_recipients')
-    .insert({
-      campaign_id: null, // Not part of a campaign
-      record_id: enrollment.record_id,
-      module_key: enrollment.module_key,
-      email: enrollment.email,
-      first_name: record.data?.first_name,
-      last_name: record.data?.last_name,
-      status: 'pending',
-    })
-    .select()
-    .single();
+  const suppressed = await isEmailSuppressed(async (email) => {
+    const { data } = await supabase
+      .from('email_unsubscribes')
+      .select('id')
+      .eq('org_id', orgId)
+      .eq('email', email)
+      .maybeSingle();
+    return Boolean(data);
+  }, enrollment.email);
 
-  if (sendError) {
-    console.error('Error creating email send record:', sendError);
+  if (suppressed) {
+    await supabase.from('email_sequence_step_executions').insert({
+      enrollment_id: enrollment.id,
+      step_id: step.id,
+      executed_at: new Date().toISOString(),
+      status: 'skipped',
+    });
+    return;
   }
 
-  // Queue email for sending via the live `sent_emails` table.
-  // The email send worker picks up rows where status='queued'.
-  // Sequence/step linkage is preserved in metadata for replay/audit.
-  await supabase.from('sent_emails').insert({
-    organization_id: enrollment.sequence.org_id,
-    enrollment_id: enrollment.id,
-    recipient_email: enrollment.email,
-    recipient_name: `${record.data?.first_name || ''} ${record.data?.last_name || ''}`.trim(),
-    from_email: step.from_email,
-    from_name: step.from_name,
+  const fromEmail = step.from_email || process.env.RESEND_FROM_EMAIL || 'noreply@payitforwardhealth.com';
+  const rfc822MessageId = generateRfc822MessageId(domainFromEmail(fromEmail));
+
+  await enqueueOutbox(supabase, {
+    organizationId: orgId,
+    idempotencyKey: `sequence/${enrollment.id}/${step.id}`,
+    senderAddress: fromEmail,
+    fromName: step.from_name,
+    toAddresses: [enrollment.email],
     subject,
-    body_html: bodyHtml,
-    body_text: bodyText,
-    status: 'queued',
-    email_type: 'sequence',
-    metadata: {
+    bodyHtml,
+    bodyText,
+    linkedContactId: enrollment.module_key === 'Contacts' ? enrollment.record_id : null,
+    linkedLeadId: enrollment.module_key === 'Leads' ? enrollment.record_id : null,
+    payload: {
+      rfc822_message_id: rfc822MessageId,
+      persist_inbox: false,
+      to_name: recipientName,
+      email_type: 'sequence',
+      source: 'sequence',
       sequence_id: enrollment.sequence_id,
+      enrollment_id: enrollment.id,
       step_id: step.id,
-      record_id: enrollment.record_id,
-      module_key: enrollment.module_key,
     },
   });
 
-  // Log the step execution
   await supabase.from('email_sequence_step_executions').insert({
     enrollment_id: enrollment.id,
     step_id: step.id,
     executed_at: new Date().toISOString(),
-    status: 'executed',
+      status: 'pending',
   });
 }
 

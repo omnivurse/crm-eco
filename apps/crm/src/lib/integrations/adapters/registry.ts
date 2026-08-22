@@ -223,7 +223,6 @@ const PLANNED_ADAPTERS: Array<{ providerId: string; type: AdapterType }> = [
   // Email
   { providerId: 'sendgrid', type: 'email' },
   { providerId: 'resend', type: 'email' },
-  { providerId: 'mailgun', type: 'email' },
 
   // SMS
   { providerId: 'twilio', type: 'sms' },

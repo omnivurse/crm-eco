@@ -251,6 +251,9 @@ export function buildResendSendPayload(params: {
   reply_to?: string;
   unsubscribe_url?: string;
   attachments?: ResolvedOutboundAttachment[];
+  message_id?: string;
+  in_reply_to?: string | null;
+  references?: string[];
 }): Record<string, unknown> {
   const payload: Record<string, unknown> = {
     from: params.from,
@@ -263,11 +266,22 @@ export function buildResendSendPayload(params: {
     reply_to: params.reply_to,
   };
 
+  const headers: Record<string, string> = {};
   if (params.unsubscribe_url) {
-    payload.headers = {
-      'List-Unsubscribe': `<${params.unsubscribe_url}>`,
-      'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
-    };
+    headers['List-Unsubscribe'] = `<${params.unsubscribe_url}>`;
+    headers['List-Unsubscribe-Post'] = 'List-Unsubscribe=One-Click';
+  }
+  if (params.message_id) {
+    headers['Message-ID'] = params.message_id;
+  }
+  if (params.in_reply_to) {
+    headers['In-Reply-To'] = params.in_reply_to;
+  }
+  if (params.references && params.references.length > 0) {
+    headers.References = params.references.join(' ');
+  }
+  if (Object.keys(headers).length > 0) {
+    payload.headers = headers;
   }
 
   if (params.attachments && params.attachments.length > 0) {

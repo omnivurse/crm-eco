@@ -132,6 +132,16 @@ export async function POST(request: NextRequest) {
         linked_deal_id: params.linked_deal_id as string | undefined,
         attachments: attachmentRefs,
         inline_attachments: inlineAttachments,
+        conversation_id: params.conversation_id as string | undefined,
+        to_name: params.to_name as string | undefined,
+        rfc822_message_id: params.rfc822_message_id as string | undefined,
+        in_reply_to: params.in_reply_to as string | undefined,
+        references: params.references as string[] | undefined,
+        persist_inbox: params.persist_inbox !== false,
+        idempotency_key:
+          (params.idempotency_key as string | undefined) ||
+          request.headers.get('Idempotency-Key') ||
+          undefined,
       });
       
       if (!result.success) {
@@ -146,6 +156,9 @@ export async function POST(request: NextRequest) {
         channel: 'email',
         message_id: result.message_id,
         provider: result.provider,
+        rfc822_message_id: result.rfc822_message_id,
+        outbox_id: result.outbox_id,
+        inbox_message_id: result.inbox_message_id,
       });
     }
     

@@ -151,6 +151,24 @@ describe('buildResendSendPayload', () => {
     ]);
   });
 
+  it('sends RFC822 threading headers on the Resend payload', () => {
+    const payload = buildResendSendPayload({
+      from: 'Support <support@payitforwardhealth.com>',
+      to: ['member@example.com'],
+      subject: 'Re: Cards',
+      html: '<p>Here they are</p>',
+      message_id: '<abc@payitforwardhealth.com>',
+      in_reply_to: '<parent@member.com>',
+      references: ['<root@member.com>', '<parent@member.com>'],
+    });
+
+    expect(payload.headers).toMatchObject({
+      'Message-ID': '<abc@payitforwardhealth.com>',
+      'In-Reply-To': '<parent@member.com>',
+      References: '<root@member.com> <parent@member.com>',
+    });
+  });
+
   it('reproduces the production miss: no attachments key when the list is omitted', () => {
     const payload = buildResendSendPayload({
       from: 'Wendy <wendy@payitforwardhealth.com>',

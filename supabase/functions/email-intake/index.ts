@@ -1,6 +1,12 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { resolveMailboxAddress } from "../_shared/mailbox-address.ts";
 import { fetchReceivedEmail, mergeHydratedEmail } from "../_shared/resend-inbound.ts";
+import {
+  inboundEventHash,
+  isClosedLoopEnabled,
+  ledgerInboundEvent,
+  markInboundEvent,
+} from "../_shared/inbound-ledger.ts";
 
 const ALLOWED_ORIGINS = (Deno.env.get("ALLOWED_ORIGINS") || "*").split(",").map(s => s.trim());
 
@@ -301,17 +307,18 @@ async function findConversationByThreading(
   supabaseUrl: string,
   headers: SupaHeaders
 ): Promise<string | null> {
-  if (!inReplyTo) return null;
+  const candidates = [inReplyTo, ..._references].filter((id): id is string => Boolean(id));
 
-  // Look up by In-Reply-To → inbox_messages.message_id
-  try {
-    const msgs = await supaFetch(
-      supabaseUrl,
-      `/rest/v1/inbox_messages?message_id=eq.${encodeURIComponent(inReplyTo)}&org_id=eq.${orgId}&select=conversation_id&limit=1`,
-      headers
-    );
-    if (msgs && msgs.length > 0) return msgs[0].conversation_id;
-  } catch { /* continue */ }
+  for (const messageId of candidates) {
+    try {
+      const msgs = await supaFetch(
+        supabaseUrl,
+        `/rest/v1/inbox_messages?message_id=eq.${encodeURIComponent(messageId)}&org_id=eq.${orgId}&select=conversation_id&limit=1`,
+        headers
+      );
+      if (msgs && msgs.length > 0) return msgs[0].conversation_id;
+    } catch { /* continue */ }
+  }
 
   return null;
 }
@@ -838,10 +845,61 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    const toAddresses = Array.isArray(emailData.to) ? emailData.to : [emailData.to];
+    const orgContext = await resolveOrgContext(toAddresses, supabaseUrl, supabaseHeaders);
+    const closedLoop = await isClosedLoopEnabled(
+      supabaseUrl,
+      supabaseHeaders,
+      orgContext?.orgId ?? null,
+    );
+    let ledgerId: string | null = null;
+    if (closedLoop) {
+      const hdrs = emailData.headers || {};
+      const eventHash = await inboundEventHash({
+        provider: "resend",
+        eventId: parsed?.data?.email_id || parsed?.id,
+        messageId: hdrs["message-id"],
+        from: emailData.from,
+        to: emailData.to,
+      });
+      const ledger = await ledgerInboundEvent(supabaseUrl, supabaseHeaders, {
+        provider: "resend",
+        eventHash,
+        eventType: parsed?.type || "email.received",
+        providerEventId: parsed?.data?.email_id || parsed?.id,
+        organizationId: orgContext?.orgId ?? null,
+        payload: { email_id: parsed?.data?.email_id ?? null, type: parsed?.type ?? null },
+      });
+      if (ledger.duplicate) {
+        return new Response(
+          JSON.stringify({ success: true, action: "ignored_duplicate", event_id: ledger.id }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+      ledgerId = ledger.id;
+      await markInboundEvent(supabaseUrl, supabaseHeaders, ledger.id, { status: "processing" });
+    }
+
     const intakeMode = Deno.env.get("INTAKE_MODE") || "inbox";
 
     if (intakeMode === "inbox" || intakeMode === "both") {
       const response = await handleInboxMessage(emailData, supabaseUrl, supabaseHeaders);
+      if (ledgerId) {
+        try {
+          const body = await response.clone().json();
+          await markInboundEvent(supabaseUrl, supabaseHeaders, ledgerId, {
+            status: "processed",
+            processed_at: new Date().toISOString(),
+            conversation_id: body?.conversation_id ?? null,
+            organization_id: orgContext?.orgId ?? null,
+          });
+        } catch {
+          await markInboundEvent(supabaseUrl, supabaseHeaders, ledgerId, {
+            status: "processed",
+            processed_at: new Date().toISOString(),
+          });
+        }
+      }
       if (intakeMode === "both") {
         // Also create ticket (fire and forget)
         try {

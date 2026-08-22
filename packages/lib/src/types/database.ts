@@ -8089,6 +8089,299 @@ export type Database = {
           },
         ]
       }
+      comms_dead_letters: {
+        Row: {
+          correlation_id: string | null
+          created_at: string
+          error: string
+          error_category: string | null
+          id: string
+          org_id: string | null
+          organization_id: string | null
+          payload: Json
+          resolved_at: string | null
+          resolved_by: string | null
+          source: string
+          source_id: string | null
+        }
+        Insert: {
+          correlation_id?: string | null
+          created_at?: string
+          error: string
+          error_category?: string | null
+          id?: string
+          org_id?: string | null
+          organization_id?: string | null
+          payload?: Json
+          resolved_at?: string | null
+          resolved_by?: string | null
+          source: string
+          source_id?: string | null
+        }
+        Update: {
+          correlation_id?: string | null
+          created_at?: string
+          error?: string
+          error_category?: string | null
+          id?: string
+          org_id?: string | null
+          organization_id?: string | null
+          payload?: Json
+          resolved_at?: string | null
+          resolved_by?: string | null
+          source?: string
+          source_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comms_dead_letters_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "my_organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comms_dead_letters_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comms_dead_letters_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "my_organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comms_dead_letters_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      comms_sync_cursors: {
+        Row: {
+          checkpoint: Json
+          connection_ref: string
+          created_at: string
+          cursor_token: string | null
+          full_resync_reason: string | null
+          id: string
+          last_error: string | null
+          last_success_at: string | null
+          lease_until: string | null
+          org_id: string | null
+          organization_id: string
+          provider: string
+          resource_key: string
+          updated_at: string
+        }
+        Insert: {
+          checkpoint?: Json
+          connection_ref: string
+          created_at?: string
+          cursor_token?: string | null
+          full_resync_reason?: string | null
+          id?: string
+          last_error?: string | null
+          last_success_at?: string | null
+          lease_until?: string | null
+          org_id?: string | null
+          organization_id: string
+          provider: string
+          resource_key: string
+          updated_at?: string
+        }
+        Update: {
+          checkpoint?: Json
+          connection_ref?: string
+          created_at?: string
+          cursor_token?: string | null
+          full_resync_reason?: string | null
+          id?: string
+          last_error?: string | null
+          last_success_at?: string | null
+          lease_until?: string | null
+          org_id?: string | null
+          organization_id?: string
+          provider?: string
+          resource_key?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comms_sync_cursors_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "my_organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comms_sync_cursors_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comms_sync_cursors_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "my_organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comms_sync_cursors_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      communication_record_links: {
+        Row: {
+          confidence: number | null
+          conversation_id: string | null
+          created_at: string
+          enrollment_id: string | null
+          id: string
+          is_primary: boolean
+          link_role: string
+          linked_by: string | null
+          message_id: string | null
+          org_id: string | null
+          organization_id: string
+          record_id: string | null
+          sent_email_id: string | null
+          source: string
+          ticket_id: string | null
+        }
+        Insert: {
+          confidence?: number | null
+          conversation_id?: string | null
+          created_at?: string
+          enrollment_id?: string | null
+          id?: string
+          is_primary?: boolean
+          link_role?: string
+          linked_by?: string | null
+          message_id?: string | null
+          org_id?: string | null
+          organization_id: string
+          record_id?: string | null
+          sent_email_id?: string | null
+          source?: string
+          ticket_id?: string | null
+        }
+        Update: {
+          confidence?: number | null
+          conversation_id?: string | null
+          created_at?: string
+          enrollment_id?: string | null
+          id?: string
+          is_primary?: boolean
+          link_role?: string
+          linked_by?: string | null
+          message_id?: string | null
+          org_id?: string | null
+          organization_id?: string
+          record_id?: string | null
+          sent_email_id?: string | null
+          source?: string
+          ticket_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "communication_record_links_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "inbox_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communication_record_links_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "my_organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communication_record_links_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communication_record_links_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "my_organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communication_record_links_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communication_record_links_record_id_fkey"
+            columns: ["record_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contact_coverage_reporting_v"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "communication_record_links_record_id_fkey"
+            columns: ["record_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contact_coverage_reporting_v"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "communication_record_links_record_id_fkey"
+            columns: ["record_id"]
+            isOneToOne: false
+            referencedRelation: "crm_probable_duplicates"
+            referencedColumns: ["left_id"]
+          },
+          {
+            foreignKeyName: "communication_record_links_record_id_fkey"
+            columns: ["record_id"]
+            isOneToOne: false
+            referencedRelation: "crm_probable_duplicates"
+            referencedColumns: ["right_id"]
+          },
+          {
+            foreignKeyName: "communication_record_links_record_id_fkey"
+            columns: ["record_id"]
+            isOneToOne: false
+            referencedRelation: "crm_probable_duplicates_all"
+            referencedColumns: ["left_id"]
+          },
+          {
+            foreignKeyName: "communication_record_links_record_id_fkey"
+            columns: ["record_id"]
+            isOneToOne: false
+            referencedRelation: "crm_probable_duplicates_all"
+            referencedColumns: ["right_id"]
+          },
+          {
+            foreignKeyName: "communication_record_links_record_id_fkey"
+            columns: ["record_id"]
+            isOneToOne: false
+            referencedRelation: "crm_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contact_submissions: {
         Row: {
           created_at: string
@@ -19080,6 +19373,150 @@ export type Database = {
           },
         ]
       }
+      email_send_outbox: {
+        Row: {
+          attempt_count: number
+          bcc_addresses: string[]
+          body_html: string | null
+          body_text: string | null
+          cc_addresses: string[]
+          conversation_id: string | null
+          correlation_id: string | null
+          created_at: string
+          created_by: string | null
+          draft_message_id: string | null
+          error_category: string | null
+          from_name: string | null
+          id: string
+          idempotency_key: string
+          last_error: string | null
+          leased_by: string | null
+          leased_until: string | null
+          linked_contact_id: string | null
+          linked_deal_id: string | null
+          linked_lead_id: string | null
+          next_attempt_at: string
+          org_id: string | null
+          organization_id: string
+          payload: Json
+          provider: string | null
+          provider_accepted_at: string | null
+          provider_message_id: string | null
+          reply_to: string | null
+          sender_address: string | null
+          status: string
+          subject: string
+          to_addresses: string[]
+          updated_at: string
+        }
+        Insert: {
+          attempt_count?: number
+          bcc_addresses?: string[]
+          body_html?: string | null
+          body_text?: string | null
+          cc_addresses?: string[]
+          conversation_id?: string | null
+          correlation_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          draft_message_id?: string | null
+          error_category?: string | null
+          from_name?: string | null
+          id?: string
+          idempotency_key: string
+          last_error?: string | null
+          leased_by?: string | null
+          leased_until?: string | null
+          linked_contact_id?: string | null
+          linked_deal_id?: string | null
+          linked_lead_id?: string | null
+          next_attempt_at?: string
+          org_id?: string | null
+          organization_id: string
+          payload?: Json
+          provider?: string | null
+          provider_accepted_at?: string | null
+          provider_message_id?: string | null
+          reply_to?: string | null
+          sender_address?: string | null
+          status?: string
+          subject: string
+          to_addresses?: string[]
+          updated_at?: string
+        }
+        Update: {
+          attempt_count?: number
+          bcc_addresses?: string[]
+          body_html?: string | null
+          body_text?: string | null
+          cc_addresses?: string[]
+          conversation_id?: string | null
+          correlation_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          draft_message_id?: string | null
+          error_category?: string | null
+          from_name?: string | null
+          id?: string
+          idempotency_key?: string
+          last_error?: string | null
+          leased_by?: string | null
+          leased_until?: string | null
+          linked_contact_id?: string | null
+          linked_deal_id?: string | null
+          linked_lead_id?: string | null
+          next_attempt_at?: string
+          org_id?: string | null
+          organization_id?: string
+          payload?: Json
+          provider?: string | null
+          provider_accepted_at?: string | null
+          provider_message_id?: string | null
+          reply_to?: string | null
+          sender_address?: string | null
+          status?: string
+          subject?: string
+          to_addresses?: string[]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_send_outbox_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "inbox_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_send_outbox_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "my_organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_send_outbox_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_send_outbox_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "my_organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_send_outbox_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_sequence_enrollments: {
         Row: {
           completed_at: string | null
@@ -24713,6 +25150,78 @@ export type Database = {
           },
         ]
       }
+      inbox_internal_notes: {
+        Row: {
+          body: string
+          conversation_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          mentioned_user_ids: string[]
+          org_id: string | null
+          organization_id: string
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          conversation_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          mentioned_user_ids?: string[]
+          org_id?: string | null
+          organization_id: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          conversation_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          mentioned_user_ids?: string[]
+          org_id?: string | null
+          organization_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inbox_internal_notes_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "inbox_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inbox_internal_notes_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "my_organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inbox_internal_notes_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inbox_internal_notes_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "my_organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inbox_internal_notes_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inbox_messages: {
         Row: {
           attachments: Json
@@ -27991,6 +28500,149 @@ export type Database = {
             columns: ["primary_enrollment_id"]
             isOneToOne: false
             referencedRelation: "enrollments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      message_participants: {
+        Row: {
+          address_normalized: string
+          confidence: number | null
+          conversation_id: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          inbox_message_id: string | null
+          org_id: string | null
+          organization_id: string
+          participant_role: string
+          record_id: string | null
+          resolution_status: string
+          sent_email_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          address_normalized: string
+          confidence?: number | null
+          conversation_id?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          inbox_message_id?: string | null
+          org_id?: string | null
+          organization_id: string
+          participant_role: string
+          record_id?: string | null
+          resolution_status?: string
+          sent_email_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          address_normalized?: string
+          confidence?: number | null
+          conversation_id?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          inbox_message_id?: string | null
+          org_id?: string | null
+          organization_id?: string
+          participant_role?: string
+          record_id?: string | null
+          resolution_status?: string
+          sent_email_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_participants_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "inbox_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_participants_inbox_message_id_fkey"
+            columns: ["inbox_message_id"]
+            isOneToOne: false
+            referencedRelation: "inbox_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_participants_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "my_organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_participants_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_participants_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "my_organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_participants_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_participants_record_id_fkey"
+            columns: ["record_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contact_coverage_reporting_v"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "message_participants_record_id_fkey"
+            columns: ["record_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contact_coverage_reporting_v"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "message_participants_record_id_fkey"
+            columns: ["record_id"]
+            isOneToOne: false
+            referencedRelation: "crm_probable_duplicates"
+            referencedColumns: ["left_id"]
+          },
+          {
+            foreignKeyName: "message_participants_record_id_fkey"
+            columns: ["record_id"]
+            isOneToOne: false
+            referencedRelation: "crm_probable_duplicates"
+            referencedColumns: ["right_id"]
+          },
+          {
+            foreignKeyName: "message_participants_record_id_fkey"
+            columns: ["record_id"]
+            isOneToOne: false
+            referencedRelation: "crm_probable_duplicates_all"
+            referencedColumns: ["left_id"]
+          },
+          {
+            foreignKeyName: "message_participants_record_id_fkey"
+            columns: ["record_id"]
+            isOneToOne: false
+            referencedRelation: "crm_probable_duplicates_all"
+            referencedColumns: ["right_id"]
+          },
+          {
+            foreignKeyName: "message_participants_record_id_fkey"
+            columns: ["record_id"]
+            isOneToOne: false
+            referencedRelation: "crm_records"
             referencedColumns: ["id"]
           },
         ]
@@ -34302,6 +34954,108 @@ export type Database = {
           },
           {
             foreignKeyName: "promo_codes_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      provider_inbound_events: {
+        Row: {
+          attempt_count: number
+          connection_ref: string | null
+          conversation_id: string | null
+          created_at: string
+          error: string | null
+          event_hash: string
+          event_type: string
+          id: string
+          message_id: string | null
+          org_id: string | null
+          organization_id: string | null
+          payload: Json
+          payload_ref: string | null
+          processed_at: string | null
+          provider: string
+          provider_event_id: string | null
+          received_at: string
+          signature_valid: boolean
+          status: string
+        }
+        Insert: {
+          attempt_count?: number
+          connection_ref?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          error?: string | null
+          event_hash: string
+          event_type: string
+          id?: string
+          message_id?: string | null
+          org_id?: string | null
+          organization_id?: string | null
+          payload?: Json
+          payload_ref?: string | null
+          processed_at?: string | null
+          provider: string
+          provider_event_id?: string | null
+          received_at?: string
+          signature_valid?: boolean
+          status?: string
+        }
+        Update: {
+          attempt_count?: number
+          connection_ref?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          error?: string | null
+          event_hash?: string
+          event_type?: string
+          id?: string
+          message_id?: string | null
+          org_id?: string | null
+          organization_id?: string | null
+          payload?: Json
+          payload_ref?: string | null
+          processed_at?: string | null
+          provider?: string
+          provider_event_id?: string | null
+          received_at?: string
+          signature_valid?: boolean
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "provider_inbound_events_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "inbox_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "provider_inbound_events_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "my_organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "provider_inbound_events_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "provider_inbound_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "my_organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "provider_inbound_events_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"

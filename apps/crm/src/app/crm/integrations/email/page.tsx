@@ -8,7 +8,7 @@ export default function EmailIntegrationsPage() {
       title="Email Integrations"
       description="Connect email services for sending and tracking"
       icon={<Mail className="w-5 h-5 text-blue-600 dark:text-blue-400" />}
-      providers={['sendgrid', 'resend', 'mailgun']}
+      providers={['sendgrid', 'resend']}
     />
   );
 }

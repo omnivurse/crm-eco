@@ -16,6 +16,10 @@
       "schedule": "* * * * *"
     },
     {
+      "path": "/api/email/outbox/process",
+      "schedule": "* * * * *"
+    },
+    {
       "path": "/api/comms/cron",
       "schedule": "*/2 * * * *"
     },

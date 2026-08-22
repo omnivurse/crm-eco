@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, getAuthProfile } from '@/lib/supabase-server';
+import { createServerClient } from '@supabase/ssr';
 import { z } from 'zod';
-import { Resend } from 'resend';
+import { enqueueOutbox, createOutboxAdminClient } from '@/lib/email/outbox';
+import { processEmailOutbox } from '@/lib/email/outbox-process';
+import { isEmailSuppressed } from '@/lib/email/suppression';
+import { campaignTrackingId, injectCampaignTracking } from '@/lib/email/campaign-tracking';
+import { generateRfc822MessageId, domainFromEmail } from '@/lib/email/rfc822';
 
 const sendCampaignSchema = z.object({
   scheduled_at: z.string().datetime().optional(),
@@ -198,7 +203,7 @@ async function processCampaignEmails(
         // Send emails in parallel for this batch
         const results = await Promise.allSettled(
           batch.map(async (recipient) => {
-            const success = await sendCampaignEmail(campaign, recipient);
+            const success = await enqueueCampaignEmail(supabase, campaign, recipient, orgId);
             return { id: recipient.id as string, success };
           })
         );
@@ -245,6 +250,16 @@ async function processCampaignEmails(
       }
     } // End of while loop
 
+    const service = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { cookies: { getAll() { return []; }, setAll() {} } },
+    );
+    for (let i = 0; i < 20; i += 1) {
+      const processed = await processEmailOutbox(service, 50);
+      if (processed.claimed === 0) break;
+    }
+
     // Update campaign with final stats
     await supabase
       .from('email_campaigns')
@@ -274,45 +289,61 @@ async function processCampaignEmails(
   }
 }
 
-/**
- * Send a single campaign email via Resend
- */
-async function sendCampaignEmail(
+async function enqueueCampaignEmail(
+  supabase: Awaited<ReturnType<typeof createClient>>,
   campaign: Record<string, unknown>,
-  recipient: Record<string, unknown>
+  recipient: Record<string, unknown>,
+  orgId: string,
 ): Promise<boolean> {
   const email = recipient.email as string;
   if (!email) return false;
 
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) {
-    console.error('RESEND_API_KEY is not configured');
-    return false;
-  }
+  const suppressed = await isEmailSuppressed(async (addr) => {
+    const { data } = await supabase
+      .from('email_unsubscribes')
+      .select('id')
+      .eq('org_id', orgId)
+      .eq('email', addr)
+      .maybeSingle();
+    return Boolean(data);
+  }, email);
+  if (suppressed) return false;
 
-  const resend = new Resend(apiKey);
   const fromEmail = (campaign.from_email as string) || process.env.RESEND_FROM_EMAIL;
   if (!fromEmail) {
     console.error('RESEND_FROM_EMAIL environment variable is required');
     return false;
   }
   const fromName = (campaign.from_name as string) || process.env.RESEND_FROM_NAME || 'Double Helix Hub';
+  const trackingId = campaignTrackingId(String(campaign.id), String(recipient.id));
+  const origin =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://crm.doublehelixhub.com');
+  const html = injectCampaignTracking(
+    (campaign.body_html as string) || '',
+    origin,
+    trackingId,
+  );
+  const rfc822MessageId = generateRfc822MessageId(domainFromEmail(fromEmail));
 
-  const { error } = await resend.emails.send({
-    from: `${fromName} <${fromEmail}>`,
-    to: [email],
+  await enqueueOutbox(createOutboxAdminClient(), {
+    organizationId: orgId,
+    idempotencyKey: `campaign/${campaign.id}/${recipient.id}`,
+    senderAddress: fromEmail,
+    fromName,
+    toAddresses: [email],
     subject: (campaign.subject as string) || 'No Subject',
-    html: (campaign.body_html as string) || '',
-    text: (campaign.body_text as string) || undefined,
-    tags: [
-      { name: 'campaign_id', value: campaign.id as string },
-    ],
+    bodyHtml: html,
+    bodyText: (campaign.body_text as string) || undefined,
+    payload: {
+      rfc822_message_id: rfc822MessageId,
+      persist_inbox: false,
+      email_type: 'campaign',
+      source: 'campaign',
+      campaign_id: String(campaign.id),
+      recipient_id: String(recipient.id),
+      tracking_id: trackingId,
+    },
   });
-
-  if (error) {
-    console.error(`Failed to send campaign email to ${email}:`, error.message);
-    return false;
-  }
-
   return true;
 }

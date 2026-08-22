@@ -9,6 +9,8 @@ import { sendMessage } from './providers';
 import { renderTemplate, buildMergeContext } from './mergeFields';
 import { isValidEmail } from './providers/sendgrid';
 import { isValidPhoneNumber, normalizePhoneNumber } from './providers/twilio';
+import { enqueueOutbox, markOutboxAccepted, markOutboxFailed, classifyProviderError, createOutboxAdminClient } from '@/lib/email/outbox';
+import { generateRfc822MessageId, domainFromEmail } from '@/lib/email/rfc822';
 import type {
   MessageChannel,
   CrmMessage,
@@ -479,6 +481,30 @@ export async function sendMessageNow(
     }
   }
   
+  let outboxId: string | null = null;
+  if (message.channel === 'email') {
+    const outboxAdmin = createOutboxAdminClient();
+    const fromEmail = message.from_address || process.env.RESEND_FROM_EMAIL || 'noreply@payitforwardhealth.com';
+    const enqueued = await enqueueOutbox(outboxAdmin, {
+      organizationId: message.org_id,
+      idempotencyKey: `crm-message/${message.id}`,
+      senderAddress: fromEmail,
+      fromName: provider.config.from_name,
+      replyTo: provider.config.reply_to,
+      toAddresses: [message.to_address],
+      subject: message.subject || '(no subject)',
+      bodyHtml: message.body,
+      linkedContactId: message.record_id,
+      payload: {
+        rfc822_message_id: generateRfc822MessageId(domainFromEmail(fromEmail)),
+        persist_inbox: false,
+        email_type: 'crm_message',
+        source: 'dispatcher',
+      },
+    });
+    outboxId = enqueued.row.id;
+  }
+
   // Send via provider
   const result = await sendMessage(message.channel, {
     to: message.to_address,
@@ -494,6 +520,15 @@ export async function sendMessageNow(
   });
   
   if (result.success) {
+    if (outboxId) {
+      await markOutboxAccepted(
+        createOutboxAdminClient(),
+        outboxId,
+        message.org_id,
+        provider.type,
+        result.providerMessageId || message.id,
+      );
+    }
     await updateMessageStatus(message.id, 'sent', {
       provider_message_id: result.providerMessageId,
       sent_at: new Date().toISOString(),
@@ -508,6 +543,16 @@ export async function sendMessageNow(
       status: 'sent',
     };
   } else {
+    if (outboxId) {
+      await markOutboxFailed(
+        createOutboxAdminClient(),
+        outboxId,
+        message.org_id,
+        result.error || 'Provider submit failed',
+        classifyProviderError(null, result.error),
+        message.retry_count + 1,
+      );
+    }
     // Handle failure with retry logic
     const newRetryCount = message.retry_count + 1;
     

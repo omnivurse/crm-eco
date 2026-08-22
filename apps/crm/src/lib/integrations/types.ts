@@ -503,7 +503,7 @@ export const PROVIDER_CONFIGS: Record<IntegrationProvider, ProviderConfig> = {
 
 // Group providers by connection type
 export const PROVIDERS_BY_TYPE: Record<ConnectionType, IntegrationProvider[]> = {
-  email: ['sendgrid', 'resend', 'mailgun'],
+  email: ['sendgrid', 'resend'],
   sms: ['twilio'],
   phone: ['twilio', 'ringcentral', 'goto'],
   video: ['zoom', 'google_meet', 'microsoft_teams', 'goto_meeting'],
