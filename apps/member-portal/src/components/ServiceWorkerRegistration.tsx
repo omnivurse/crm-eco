@@ -137,7 +137,7 @@ async function registerServiceWorker() {
         registration.update();
       }
     });
-  } catch (error) {
-    console.error('[Portal PWA] Service worker registration failed:', error);
+  } catch {
+    /* registration failed */
   }
 }

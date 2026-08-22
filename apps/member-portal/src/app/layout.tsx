@@ -3,6 +3,7 @@ import { Plus_Jakarta_Sans } from 'next/font/google';
 import { brandingToCssText } from '@crm-eco/ui/lib/branding';
 import { PIN_LOCK_PAGE_METADATA, PIN_LOCK_ROBOTS_METADATA } from '@crm-eco/ui/lib/pin-lock';
 import { isPinLockRequest } from '@crm-eco/ui/lib/pin-lock-server';
+import { DevtoolsQuietScript } from '@crm-eco/ui/components/devtools-quiet-script';
 import { ConfirmDialogHost } from '@crm-eco/ui/components/confirm-dialog';
 import { PromptDialogHost } from '@crm-eco/ui/components/prompt-dialog';
 import './globals.css';
@@ -75,6 +76,7 @@ export default async function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <DevtoolsQuietScript />
         {!isLock ? (
           <>
             <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-192x192.png" />

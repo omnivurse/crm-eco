@@ -13,20 +13,24 @@
 
 export type Theme = 'light' | 'dark' | 'system';
 
-/** The single key both consoles read and write. */
-export const THEME_STORAGE_KEY = 'dhh-theme';
+/** Neutral key — do not use product prefixes (visible in DevTools storage). */
+export const THEME_STORAGE_KEY = 'ui-theme';
 
 /**
  * Per-app keys migrated on first read. Order matters only in the pathological
  * case where a browser holds both; the first hit wins.
  */
-export const LEGACY_THEME_STORAGE_KEYS = ['crm-theme', 'admin-theme'] as const;
+export const LEGACY_THEME_STORAGE_KEYS = [
+  'dhh-theme',
+  'crm-theme',
+  'admin-theme',
+] as const;
 
-/** The single density key both consoles read and write. */
-export const DENSITY_STORAGE_KEY = 'dhh-density';
+/** Neutral density key. */
+export const DENSITY_STORAGE_KEY = 'ui-density';
 
-/** Per-app density keys migrated on first read (the CRM owned density alone). */
-export const LEGACY_DENSITY_STORAGE_KEYS = ['crm-density'] as const;
+/** Per-app density keys migrated on first read. */
+export const LEGACY_DENSITY_STORAGE_KEYS = ['dhh-density', 'crm-density'] as const;
 
 export function isTheme(value: unknown): value is Theme {
   return value === 'light' || value === 'dark' || value === 'system';

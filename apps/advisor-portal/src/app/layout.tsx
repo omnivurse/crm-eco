@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Fraunces, Plus_Jakarta_Sans } from 'next/font/google';
 import { PIN_LOCK_PAGE_METADATA, PIN_LOCK_ROBOTS_METADATA } from '@crm-eco/ui/lib/pin-lock';
 import { isPinLockRequest } from '@crm-eco/ui/lib/pin-lock-server';
+import { DevtoolsQuietScript } from '@crm-eco/ui/components/devtools-quiet-script';
 import './globals.css';
 import { Toaster } from 'sonner';
 
@@ -46,6 +47,9 @@ export default async function RootLayout({
   const isLock = await isPinLockRequest();
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <DevtoolsQuietScript />
+      </head>
       <body
         className={`${plusJakarta.variable} ${plusJakartaHeading.variable} ${fraunces.variable} font-sans`}
       >

@@ -4,6 +4,7 @@ import { brandingToCssText } from '@crm-eco/ui/lib/branding';
 import { createThemeBootScript } from '@crm-eco/ui/lib/theme-boot';
 import { PIN_LOCK_PAGE_METADATA, PIN_LOCK_ROBOTS_METADATA } from '@crm-eco/ui/lib/pin-lock';
 import { isPinLockRequest } from '@crm-eco/ui/lib/pin-lock-server';
+import { DevtoolsQuietScript } from '@crm-eco/ui/components/devtools-quiet-script';
 import { ConfirmDialogHost } from '@crm-eco/ui/components/confirm-dialog';
 import { PromptDialogHost } from '@crm-eco/ui/components/prompt-dialog';
 import { Toaster } from '@crm-eco/ui';
@@ -87,6 +88,7 @@ export default async function RootLayout({
   return (
     <html lang="en" className="light" suppressHydrationWarning>
       <head>
+        <DevtoolsQuietScript />
         {!isLock ? <script dangerouslySetInnerHTML={{ __html: themeBootScript }} /> : null}
         {!isLock && tenantThemeCss ? (
           <style id="tenant-theme" dangerouslySetInnerHTML={{ __html: tenantThemeCss }} />

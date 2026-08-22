@@ -3,6 +3,7 @@ import { Inter, Fraunces } from 'next/font/google';
 import './globals.css';
 import { PIN_LOCK_PAGE_METADATA, PIN_LOCK_ROBOTS_METADATA } from '@crm-eco/ui/lib/pin-lock';
 import { isPinLockRequest } from '@crm-eco/ui/lib/pin-lock-server';
+import { DevtoolsQuietScript } from '@crm-eco/ui/components/devtools-quiet-script';
 import { WebsiteChrome } from '@/components/WebsitePinGate';
 
 const inter = Inter({
@@ -77,6 +78,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="scroll-smooth">
+      <head>
+        <DevtoolsQuietScript />
+      </head>
       <body
         className={`${inter.variable} ${fraunces.variable} font-sans antialiased`}
       >

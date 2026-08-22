@@ -14,6 +14,7 @@
     "./lib/utils": "./src/lib/utils.ts",
     "./lib/branding": "./src/lib/branding.ts",
     "./lib/theme-boot": "./src/lib/theme-boot.ts",
+    "./lib/devtools-quiet": "./src/lib/devtools-quiet.ts",
     "./lib/pin-lock": "./src/lib/pin-lock.ts",
     "./lib/pin-lock-next": "./src/lib/pin-lock-next.ts",
     "./lib/pin-lock-server": "./src/lib/pin-lock-server.ts",

@@ -149,15 +149,12 @@ async function registerServiceWorker() {
       scope: '/',
     });
 
-    console.log('[PWA] Service worker registered:', registration.scope);
-
     // Handle updates
     registration.addEventListener('updatefound', () => {
       const newWorker = registration.installing;
       if (newWorker) {
         newWorker.addEventListener('statechange', () => {
           if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-            console.log('[PWA] New version available');
             window.dispatchEvent(new CustomEvent('sw-update-available'));
           }
         });
@@ -176,8 +173,8 @@ async function registerServiceWorker() {
       }
     });
 
-  } catch (error) {
-    console.error('[PWA] Service worker registration failed:', error);
+  } catch {
+    /* registration failed */
   }
 }
 

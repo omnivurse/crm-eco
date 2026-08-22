@@ -2,7 +2,7 @@
  * Offline cache worker. Keep identifiers generic — this file is public.
  */
 
-const CACHE_VERSION = 14;
+const CACHE_VERSION = 15;
 const CACHE_NAME = `app-v${CACHE_VERSION}`;
 const STATIC_CACHE_NAME = `app-static-v${CACHE_VERSION}`;
 const API_CACHE_NAME = `app-api-v${CACHE_VERSION}`;
@@ -38,8 +38,6 @@ function inlineOfflineResponse() {
  * Does NOT use cache.addAll() because a single 404 would reject the whole install.
  */
 self.addEventListener('install', (event) => {
-  console.log('[SW] Installing service worker...');
-
   event.waitUntil(
     (async () => {
       const cache = await caches.open(STATIC_CACHE_NAME);
@@ -49,11 +47,10 @@ self.addEventListener('install', (event) => {
           if (res.ok) {
             await cache.put(url, res.clone());
           }
-        } catch (e) {
-          console.warn(`[SW] Skipped caching ${url}:`, e);
+        } catch {
+          /* skip */
         }
       }
-      console.log('[SW] Static assets cached');
       return self.skipWaiting();
     })()
   );
@@ -63,8 +60,6 @@ self.addEventListener('install', (event) => {
  * Activate event - clean up old caches
  */
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Activating service worker...');
-
   const validCaches = [CACHE_NAME, STATIC_CACHE_NAME, API_CACHE_NAME];
 
   event.waitUntil(
@@ -74,16 +69,10 @@ self.addEventListener('activate', (event) => {
         return Promise.all(
           cacheNames
             .filter((name) => !validCaches.includes(name))
-            .map((name) => {
-              console.log('[SW] Deleting old cache:', name);
-              return caches.delete(name);
-            })
+            .map((name) => caches.delete(name))
         );
       })
-      .then(() => {
-        console.log('[SW] Service worker activated');
-        return self.clients.claim();
-      })
+      .then(() => self.clients.claim())
   );
 });
 
@@ -232,8 +221,7 @@ async function cacheFirst(request, cacheName) {
     const networkResponse = await fetch(request);
     safeCachePut(cacheName, request, networkResponse);
     return networkResponse;
-  } catch (error) {
-    console.error('[SW] Cache first fetch failed:', error);
+  } catch {
     return new Response('Asset unavailable offline', { status: 503 });
   }
 }
@@ -255,7 +243,6 @@ async function networkFirst(request, cacheName) {
   } catch (error) {
     const cachedResponse = await caches.match(request);
     if (cachedResponse) {
-      console.info('[SW] Serving cached API response (offline):', request.url);
       return cachedResponse;
     }
 
@@ -277,7 +264,6 @@ async function networkFirstWithOfflineFallback(request) {
   } catch (error) {
     const cachedResponse = await caches.match(request);
     if (cachedResponse) {
-      console.info('[SW] Serving cached navigation (offline):', request.url);
       return cachedResponse;
     }
 
@@ -306,14 +292,5 @@ self.addEventListener('message', (event) => {
     caches.keys().then((names) => {
       names.forEach((name) => caches.delete(name));
     });
-  }
-});
-
-/**
- * Background sync for offline form submissions (future enhancement)
- */
-self.addEventListener('sync', (event) => {
-  if (event.tag === 'sync-pending-actions') {
-    console.log('[SW] Syncing pending actions...');
   }
 });

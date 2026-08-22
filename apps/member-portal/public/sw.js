@@ -1,17 +1,16 @@
 /**
- * Double Helix Hub Portal Service Worker
- * Deploy-safe caching — never serve stale HTML/RSC or _next/static after a release.
+ * Offline cache worker. Keep identifiers generic — this file is public.
  */
 
-const CACHE_VERSION = 2;
-const CACHE_NAME = `dhh-portal-v${CACHE_VERSION}`;
-const STATIC_CACHE_NAME = `dhh-portal-static-v${CACHE_VERSION}`;
-const API_CACHE_NAME = `dhh-portal-api-v${CACHE_VERSION}`;
+const CACHE_VERSION = 3;
+const CACHE_NAME = `app-v${CACHE_VERSION}`;
+const STATIC_CACHE_NAME = `app-static-v${CACHE_VERSION}`;
+const API_CACHE_NAME = `app-api-v${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
 const STATIC_ASSETS = [OFFLINE_URL, '/manifest.json', '/manifest.webmanifest'];
 
-const INLINE_OFFLINE_HTML = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Offline — Portal</title><style>html,body{height:100%}body{margin:0;font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:#0f172a;background:linear-gradient(135deg,#f8fafc,#e2e8f0);display:grid;place-items:center;padding:24px}main{max-width:440px;background:#fff;border-radius:14px;box-shadow:0 10px 30px rgba(15,23,42,.08);padding:28px;text-align:center}h1{margin:0 0 8px;font-size:20px}p{margin:0 0 18px;color:#475569}button{appearance:none;border:0;background:#0891b2;color:#fff;padding:10px 18px;border-radius:8px;font-weight:600;cursor:pointer}button:hover{background:#0e7490}small{display:block;margin-top:14px;color:#94a3b8;font-size:12px}</style></head><body><main><h1>You appear to be offline</h1><p>The page couldn't load. Check your connection and try again.</p><button onclick="location.reload()">Retry</button><small>If this keeps happening, open DevTools → Application → Service Workers → Unregister.</small></main></body></html>`;
+const INLINE_OFFLINE_HTML = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Offline</title><style>html,body{height:100%}body{margin:0;font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:#0f172a;background:#f4f5f7;display:grid;place-items:center;padding:24px}main{max-width:440px;background:#fff;border:1px solid #d8dce3;padding:28px;text-align:center}h1{margin:0 0 8px;font-size:20px}p{margin:0 0 18px;color:#475569}button{appearance:none;border:0;background:#1a1f26;color:#fff;padding:10px 18px;font-weight:600;cursor:pointer}</style></head><body><main><h1>You appear to be offline</h1><p>The page couldn't load. Check your connection and try again.</p><button onclick="location.reload()">Retry</button></main></body></html>`;
 
 function inlineOfflineResponse() {
   return new Response(INLINE_OFFLINE_HTML, {
@@ -21,8 +20,6 @@ function inlineOfflineResponse() {
 }
 
 self.addEventListener('install', (event) => {
-  console.log('[Portal-SW] Installing service worker...');
-
   event.waitUntil(
     (async () => {
       const cache = await caches.open(STATIC_CACHE_NAME);
@@ -32,8 +29,8 @@ self.addEventListener('install', (event) => {
           if (res.ok) {
             await cache.put(url, res.clone());
           }
-        } catch (e) {
-          console.warn(`[Portal-SW] Skipped caching ${url}:`, e);
+        } catch {
+          /* skip */
         }
       }
       return self.skipWaiting();
@@ -42,8 +39,6 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
-  console.log('[Portal-SW] Activating service worker...');
-
   const validCaches = [CACHE_NAME, STATIC_CACHE_NAME, API_CACHE_NAME];
 
   event.waitUntil(
@@ -53,10 +48,7 @@ self.addEventListener('activate', (event) => {
         Promise.all(
           cacheNames
             .filter((name) => !validCaches.includes(name))
-            .map((name) => {
-              console.log('[Portal-SW] Deleting old cache:', name);
-              return caches.delete(name);
-            })
+            .map((name) => caches.delete(name))
         )
       )
       .then(() => self.clients.claim())
@@ -189,8 +181,7 @@ async function cacheFirst(request, cacheName) {
     const networkResponse = await fetch(request);
     safeCachePut(cacheName, request, networkResponse);
     return networkResponse;
-  } catch (error) {
-    console.error('[Portal-SW] Cache first fetch failed:', error);
+  } catch {
     return new Response('Asset unavailable offline', { status: 503 });
   }
 }
@@ -208,7 +199,6 @@ async function networkFirst(request, cacheName) {
   } catch (error) {
     const cachedResponse = await caches.match(request);
     if (cachedResponse) {
-      console.info('[Portal-SW] Serving cached API response (offline):', request.url);
       return cachedResponse;
     }
 
