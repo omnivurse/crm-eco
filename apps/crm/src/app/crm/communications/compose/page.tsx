@@ -25,10 +25,16 @@ import {
   AlertCircle,
   MailPlus,
   ArrowLeft,
+  Paperclip,
 } from 'lucide-react';
 import { LazyEmailEditor } from '@/components/email/LazyEmailEditor';
+import { EmailAttachments, type EmailAttachment } from '@/components/email/EmailAttachments';
 import { MERGE_FIELDS } from '@/components/email/types';
 import { TemplatePicker } from '@/app/crm/inbox/_components/TemplatePicker';
+import {
+  assertComposerAttachmentsReady,
+  composerAttachmentsToRefs,
+} from '@/lib/email/outbound-attachments';
 
 // ============================================================================
 // Types
@@ -491,6 +497,7 @@ function ComposePageContent() {
   const [subject, setSubject] = useState(prefillSubject);
   const [bodyHtml, setBodyHtml] = useState('');
   const [editorKey, setEditorKey] = useState(0);
+  const [attachments, setAttachments] = useState<EmailAttachment[]>([]);
 
   // Template picker state
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
@@ -668,6 +675,13 @@ function ComposePageContent() {
       return;
     }
 
+    try {
+      assertComposerAttachmentsReady(attachments);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Attachments are not ready');
+      return;
+    }
+
     setSending(true);
 
     try {
@@ -678,6 +692,7 @@ function ComposePageContent() {
       // Determine linked record
       const linkedContactId = recipients.find(r => r.type === 'contact')?.id || undefined;
       const linkedLeadId = recipients.find(r => r.type === 'lead')?.id || undefined;
+      const attachmentRefs = composerAttachmentsToRefs(attachments);
 
       const res = await fetch('/api/communications/send', {
         method: 'POST',
@@ -693,6 +708,7 @@ function ComposePageContent() {
           from_name: authProfile?.full_name || authProfile?.email,
           linked_contact_id: linkedContactId,
           linked_lead_id: linkedLeadId,
+          attachments: attachmentRefs,
         }),
       });
 
@@ -756,6 +772,11 @@ function ComposePageContent() {
             cc_addresses: ccRecipients.map(r => ({ email: r.email, name: r.name })),
             bcc_addresses: bccRecipients.map(r => ({ email: r.email, name: r.name })),
             message_id: messageId,
+            attachments: attachmentRefs.map((attachment) => ({
+              filename: attachment.file_name,
+              content_type: attachment.mime_type,
+              size: attachment.file_size,
+            })),
             status: 'sent',
             sent_at: now,
             external_id: result.message_id || null,
@@ -806,6 +827,7 @@ function ComposePageContent() {
               setBccRecipients([]);
               setSubject('');
               setBodyHtml('');
+              setAttachments([]);
               setEditorKey(prev => prev + 1);
             }}
             className="bg-teal-600 hover:bg-teal-700 text-white"
@@ -953,6 +975,23 @@ function ComposePageContent() {
             />
           </div>
 
+          <div className="border-t border-slate-200 dark:border-slate-700 px-4 py-3 space-y-2">
+            <div className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300">
+              <Paperclip className="w-4 h-4" />
+              Attachments
+              {attachments.filter((attachment) => !attachment.error).length > 0 && (
+                <Badge variant="secondary" className="text-xs">
+                  {attachments.filter((attachment) => !attachment.error).length}
+                </Badge>
+              )}
+            </div>
+            <EmailAttachments
+              attachments={attachments}
+              onAttachmentsChange={setAttachments}
+              disabled={sending}
+            />
+          </div>
+
           {/* Footer / Actions */}
           <div className="border-t border-slate-200 dark:border-slate-700 px-4 py-3 flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
             <div className="flex items-center gap-2 text-xs text-slate-400">
@@ -978,7 +1017,7 @@ function ComposePageContent() {
                 type="button"
                 size="sm"
                 onClick={handleSend}
-                disabled={sending || recipients.length === 0}
+                disabled={sending || recipients.length === 0 || attachments.some((a) => a.is_uploading)}
                 className="gap-1.5 bg-teal-600 hover:bg-teal-700 text-white min-w-[100px]"
               >
                 {sending ? (
