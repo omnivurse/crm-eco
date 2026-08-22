@@ -32,7 +32,7 @@ export default function SearchPage() {
             as="h1"
             eyebrow="Search"
             heading="Compare cash prices"
-            lede="Published cash / self-pay figures for hospital, pharmacy (RX), imaging, and labs. Not a quote. Not insurance."
+            lede="Published hospital cash / self-pay figures for the metros on the file. Not a quote. Not insurance."
           />
           <div className={styles.searchPanel}>
             <CashPaySearch />

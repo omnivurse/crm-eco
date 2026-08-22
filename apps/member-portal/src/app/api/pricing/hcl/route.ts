@@ -10,7 +10,7 @@ import {
   pickPreferredState,
   resolveSpecialty,
   specialtiesForSearch,
-  stateFromZip,
+  hclStateForZip,
   uniqueMsas,
   uniqueStates,
 } from '@crm-eco/cash-pay';
@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
   if (searchParams.get('meta') === '1') {
     const zip = searchParams.get('zip')?.trim() || '';
     const requestedState = normalizeStateName(searchParams.get('state') || undefined);
-    const inferred = zip ? stateFromZip(zip) : null;
+    const inferred = zip ? hclStateForZip(zip) : null;
     const memberState = normalizeStateName(
       (ctx.member as { state?: string | null }).state || undefined,
     );
@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
 
   const stateParam = normalizeStateName(searchParams.get('state') || undefined);
   const stateName =
-    stateParam || (zip ? stateFromZip(zip) : null) ||
+    stateParam || (zip ? hclStateForZip(zip) : null) ||
     normalizeStateName((ctx.member as { state?: string | null }).state || undefined);
 
   const msaName = searchParams.get('msa')?.trim() || '';

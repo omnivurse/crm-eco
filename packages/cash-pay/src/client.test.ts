@@ -13,6 +13,11 @@ import {
   resolveSpecialty,
   uniqueMsas,
   pickPreferredState,
+  hclStateForZip,
+  normalizeStateName,
+  loadFullHclCatalog,
+  loadMsaAllowlistFromEnv,
+  uniqueStates,
 } from './index';
 
 describe('normalizeRate', () => {
@@ -123,6 +128,23 @@ describe('msa helpers', () => {
     expect(stateFromZip('35203')).toBe('Alabama');
   });
 
+  it('maps CA and TX ZIPs to HCL regions', () => {
+    expect(hclStateForZip('97201')).toBe('Oregon');
+    expect(hclStateForZip('35203')).toBe('Alabama');
+    expect(hclStateForZip('90210')).toBe('CA-S California');
+    expect(hclStateForZip('94102')).toBe('CA-N California');
+    expect(hclStateForZip('75201')).toBe('TX-North Texas DFW');
+    expect(hclStateForZip('77001')).toBe('TX-Central Southeast');
+    expect(hclStateForZip('78205')).toBe('TX-South Texas');
+    expect(hclStateForZip('79401')).toBe('TX-Panhandle West Texas');
+  });
+
+  it('preserves HCL regional state names', () => {
+    expect(normalizeStateName('CA-S California')).toBe('CA-S California');
+    expect(normalizeStateName('TX-North Texas DFW')).toBe('TX-North Texas DFW');
+    expect(normalizeStateName('OR')).toBe('Oregon');
+  });
+
   it('prefers an allowlisted state and ignores off-key markets', () => {
     const list = parseMsaAllowlist(
       JSON.stringify([
@@ -136,6 +158,38 @@ describe('msa helpers', () => {
     expect(pickPreferredState(list, ['Oregon', 'AL', null])).toBe('Alabama');
     expect(pickPreferredState(list, [null, '97201'])).toBe('Alabama');
     expect(pickPreferredState(list, ['Alabama'])).toBe('Alabama');
+  });
+
+  it('loads the nationwide HCL catalog and prefers CA/TX regions', () => {
+    const catalog = loadFullHclCatalog();
+    const states = uniqueStates(catalog);
+    expect(catalog.length).toBeGreaterThanOrEqual(200);
+    expect(states.length).toBeGreaterThanOrEqual(50);
+    expect(states).toContain('Oregon');
+    expect(states).toContain('CA-S California');
+    expect(states).toContain('TX-North Texas DFW');
+    expect(pickPreferredState(catalog, ['California'])).toBe('CA-S California');
+    expect(pickPreferredState(catalog, [hclStateForZip('94102')])).toBe('CA-N California');
+    expect(pickPreferredState(catalog, [hclStateForZip('75201')])).toBe('TX-North Texas DFW');
+  });
+
+  it('uses the bundled catalog unless HCL_MSA_ALLOWLIST_ONLY=1', () => {
+    const envOnly = loadMsaAllowlistFromEnv({
+      HCL_MSA_ALLOWLIST: JSON.stringify([
+        { stateName: 'Oregon', msaName: 'Portland-Salem' },
+      ]),
+      HCL_MSA_ALLOWLIST_ONLY: '1',
+    });
+    expect(envOnly).toHaveLength(1);
+    expect(envOnly[0].msaName).toBe('Portland-Salem');
+
+    const merged = loadMsaAllowlistFromEnv({
+      HCL_MSA_ALLOWLIST: JSON.stringify([
+        { stateName: 'Oregon', msaName: 'Portland-Salem' },
+      ]),
+    });
+    expect(merged.length).toBeGreaterThan(200);
+    expect(uniqueStates(merged)).toContain('Florida');
   });
 });
 
@@ -282,6 +336,26 @@ describe.skipIf(!live)('live GetRateDataPaged', () => {
       expect(result.rates.length).toBeGreaterThan(0);
       expect(result.rates[0].facilityName.length).toBeGreaterThan(0);
       expect(result.rates[0].rate).toBeGreaterThan(0);
+      expect(result.totalCount).toBeGreaterThan(0);
+    }
+  });
+
+  it('returns Oregon Portland-Salem hospital cash prices', async () => {
+    const result = await getRateDataPaged(
+      {
+        stateName: 'Oregon',
+        msaName: 'Portland-Salem',
+        specialty: 'Hospital cash prices',
+        pageNumber: 1,
+        pageSize: 5,
+        procedureCode: '99213',
+      },
+      { skipCache: true },
+    );
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.rates.length).toBeGreaterThan(0);
+      expect(result.rates[0].facilityName.length).toBeGreaterThan(0);
       expect(result.totalCount).toBeGreaterThan(0);
     }
   });

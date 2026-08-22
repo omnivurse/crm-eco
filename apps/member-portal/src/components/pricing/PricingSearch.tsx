@@ -10,12 +10,10 @@ import {
   Info,
   CaretLeft,
   CaretRight,
-  ArrowsDownUp,
 } from '@phosphor-icons/react';
 import { Card, CardContent } from '@crm-eco/ui/components/card';
 import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
-import { Badge } from '@crm-eco/ui/components/badge';
 import {
   Select,
   SelectContent,
@@ -88,6 +86,7 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
   const [stateName, setStateName] = useState(memberState || '');
   const [msaName, setMsaName] = useState('');
   const [procedureCode, setProcedureCode] = useState('');
+  const [category, setCategory] = useState('');
   const [specialty, setSpecialty] = useState('');
   const [specialties, setSpecialties] = useState<SpecialtyOption[]>([]);
   const [selectedProcedureName, setSelectedProcedureName] = useState('');
@@ -202,6 +201,7 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
           });
           if (zipCode) params.set('zip', zipCode);
           if (procedureCode) params.set('procedureCode', procedureCode);
+          if (category.trim()) params.set('category', category.trim());
           if (specialty) params.set('specialty', specialty);
           const res = await fetch(`/api/pricing/hcl?${params}`);
           const data = await res.json();
@@ -232,7 +232,7 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
         setLoading(false);
       }
     },
-    [msaName, stateName, zipCode, procedureCode, specialty, runLegacySearch],
+    [msaName, stateName, zipCode, procedureCode, category, specialty, runLegacySearch],
   );
 
   const sortedHcl = useMemo(() => {
@@ -267,118 +267,160 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <div className="relative">
-              <MapPin weight="light" className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <Input
-                type="text"
-                placeholder="ZIP code"
-                value={zipCode}
-                onChange={(e) => setZipCode(e.target.value.replace(/\D/g, '').slice(0, 5))}
-                onBlur={() => zipCode.length === 5 && void loadMeta(zipCode)}
-                className="pl-9"
-                maxLength={5}
-                aria-label="ZIP code"
-              />
-            </div>
+            <label className="block space-y-1.5">
+              <span className="text-xs font-medium uppercase tracking-wider text-slate-500">ZIP</span>
+              <div className="relative">
+                <MapPin weight="light" className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Input
+                  type="text"
+                  placeholder="97201"
+                  value={zipCode}
+                  onChange={(e) => setZipCode(e.target.value.replace(/\D/g, '').slice(0, 5))}
+                  onBlur={() => zipCode.length === 5 && void loadMeta(zipCode)}
+                  className="pl-9"
+                  maxLength={5}
+                  inputMode="numeric"
+                />
+              </div>
+            </label>
 
-            <Select
-              value={stateName || undefined}
-              onValueChange={setStateName}
-              disabled={metaLoading || states.length === 0}
-            >
-              <SelectTrigger aria-label="State">
-                <SelectValue placeholder={metaLoading ? 'Loading states…' : 'State'} />
-              </SelectTrigger>
-              <SelectContent>
-                {states.map((s) => (
-                  <SelectItem key={s} value={s}>
-                    {s}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select
-              value={msaName || undefined}
-              onValueChange={setMsaName}
-              disabled={metaLoading || msas.length === 0}
-            >
-              <SelectTrigger aria-label="Metro area">
-                <SelectValue placeholder={msas.length ? 'Metro area (MSA)' : 'No metro on file'} />
-              </SelectTrigger>
-              <SelectContent>
-                {msas.map((m) => (
-                  <SelectItem key={m.msaName} value={m.msaName}>
-                    {m.msaName}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select
-              value={specialty || undefined}
-              onValueChange={setSpecialty}
-              disabled={metaLoading || specialties.length === 0}
-            >
-              <SelectTrigger aria-label="What to price">
-                <SelectValue placeholder="Hospital, RX, imaging…" />
-              </SelectTrigger>
-              <SelectContent>
-                {specialties.map((s) => (
-                  <SelectItem key={s.id || s.hclName} value={s.hclName}>
-                    {s.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Input
-              type="text"
-              placeholder={
-                specialties.find((s) => s.hclName === specialty)?.codeHint
-                  ? `${specialties.find((s) => s.hclName === specialty)?.codeHint} (optional)`
-                  : 'CPT, HCPCS, or NDC (optional)'
-              }
-              value={procedureCode}
-              onChange={(e) => setProcedureCode(e.target.value.replace(/[^A-Za-z0-9]/g, '').slice(0, 11))}
-              aria-label="Procedure or NDC code"
-            />
-
-            {procedures.length > 0 && (
+            <label className="block space-y-1.5">
+              <span className="text-xs font-medium uppercase tracking-wider text-slate-500">State</span>
               <Select
-                value={selectedProcedureName || '__all__'}
-                onValueChange={(v) => {
-                  setSelectedProcedureName(v === '__all__' ? '' : v);
-                  const match = procedures.find((p) => p.procedure_name === v);
-                  if (match?.procedure_code) setProcedureCode(match.procedure_code);
-                }}
+                value={stateName || undefined}
+                onValueChange={setStateName}
+                disabled={metaLoading || states.length === 0}
               >
-                <SelectTrigger aria-label="Procedure name">
-                  <SelectValue placeholder="Procedure (backup search)" />
+                <SelectTrigger>
+                  <SelectValue placeholder={metaLoading ? 'Loading states…' : 'State'} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="__all__">All procedures</SelectItem>
-                  {procedures.map((p) => (
-                    <SelectItem key={p.id} value={p.procedure_name}>
-                      {p.procedure_name}
+                  {states.map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {s}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+            </label>
+
+            <label className="block space-y-1.5">
+              <span className="text-xs font-medium uppercase tracking-wider text-slate-500">Metro (MSA)</span>
+              <Select
+                value={msaName || undefined}
+                onValueChange={setMsaName}
+                disabled={metaLoading || msas.length === 0}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={msas.length ? 'Metro area (MSA)' : 'No metro on file'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {msas.map((m) => (
+                    <SelectItem key={`${m.stateName}-${m.msaName}`} value={m.msaName}>
+                      {m.msaName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </label>
+
+            <label className="block space-y-1.5">
+              <span className="text-xs font-medium uppercase tracking-wider text-slate-500">What to price</span>
+              <Select
+                value={specialty || undefined}
+                onValueChange={setSpecialty}
+                disabled={metaLoading || specialties.length === 0}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Hospital, RX, imaging…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {specialties.map((s) => (
+                    <SelectItem key={s.id || s.hclName} value={s.hclName}>
+                      {s.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </label>
+
+            <label className="block space-y-1.5">
+              <span className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                {specialties.find((s) => s.hclName === specialty)?.codeHint || 'CPT / HCPCS'}
+              </span>
+              <Input
+                type="text"
+                placeholder="Optional — CPT, HCPCS, or NDC"
+                value={procedureCode}
+                onChange={(e) => setProcedureCode(e.target.value.replace(/[^A-Za-z0-9]/g, '').slice(0, 11))}
+              />
+            </label>
+
+            <label className="block space-y-1.5">
+              <span className="text-xs font-medium uppercase tracking-wider text-slate-500">Category</span>
+              <Input
+                type="text"
+                placeholder="Optional"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+              />
+            </label>
+
+            <label className="block space-y-1.5">
+              <span className="text-xs font-medium uppercase tracking-wider text-slate-500">Sort</span>
+              <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortBy)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="price_asc">Price: low to high</SelectItem>
+                  <SelectItem value="price_desc">Price: high to low</SelectItem>
+                </SelectContent>
+              </Select>
+            </label>
+
+            {procedures.length > 0 && (
+              <label className="block space-y-1.5">
+                <span className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                  Procedure (backup)
+                </span>
+                <Select
+                  value={selectedProcedureName || '__all__'}
+                  onValueChange={(v) => {
+                    setSelectedProcedureName(v === '__all__' ? '' : v);
+                    const match = procedures.find((p) => p.procedure_name === v);
+                    if (match?.procedure_code) setProcedureCode(match.procedure_code);
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Procedure (backup search)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__all__">All procedures</SelectItem>
+                    {procedures.map((p) => (
+                      <SelectItem key={p.id} value={p.procedure_name}>
+                        {p.procedure_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </label>
             )}
 
-            <Button
-              onClick={() => void handleSearch(1)}
-              disabled={loading || metaLoading}
-              className="gap-2 bg-[var(--mp-teal)] hover:bg-[var(--mp-teal-soft)]"
-            >
-              {loading ? (
-                <CircleNotch weight="light" className="h-4 w-4 animate-spin" />
-              ) : (
-                <MagnifyingGlass weight="light" className="h-4 w-4" />
-              )}
-              Compare prices
-            </Button>
+            <div className="flex items-end">
+              <Button
+                onClick={() => void handleSearch(1)}
+                disabled={loading || metaLoading}
+                className="w-full gap-2 bg-[var(--mp-teal)] hover:bg-[var(--mp-teal-soft)]"
+              >
+                {loading ? (
+                  <CircleNotch weight="light" className="h-4 w-4 animate-spin" />
+                ) : (
+                  <MagnifyingGlass weight="light" className="h-4 w-4" />
+                )}
+                Search cash prices
+              </Button>
+            </div>
           </div>
           {error && <p className="text-sm text-red-600">{error}</p>}
           {notice && <p className="text-sm text-amber-700">{notice}</p>}
@@ -413,69 +455,48 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
 
       {!loading && searched && (sortedHcl.length > 0 || sortedLegacy.length > 0) && (
         <div className="space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-sm text-slate-500">
-              {source === 'hcl'
-                ? `${totalCount.toLocaleString()} published rate${totalCount === 1 ? '' : 's'} · page ${page}${
-                    !procedureCode && totalCount > 1000
-                      ? '. Add a CPT code to narrow.'
-                      : ''
-                  }`
-                : `${sortedLegacy.length} backup result${sortedLegacy.length === 1 ? '' : 's'} near ${zipCode}`}
-            </p>
-            <div className="flex items-center gap-2">
-              <ArrowsDownUp weight="light" className="h-4 w-4 text-slate-400" />
-              <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortBy)}>
-                <SelectTrigger className="h-8 w-44 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="price_asc">Price: low to high</SelectItem>
-                  <SelectItem value="price_desc">Price: high to low</SelectItem>
-                </SelectContent>
-              </Select>
+          <p className="text-sm text-slate-500">
+            {source === 'hcl'
+              ? `${totalCount.toLocaleString()} published rate${totalCount === 1 ? '' : 's'} · page ${page}${
+                  !procedureCode && totalCount > 1000
+                    ? '. Add a CPT code to narrow.'
+                    : ''
+                }`
+              : `${sortedLegacy.length} backup result${sortedLegacy.length === 1 ? '' : 's'} near ${zipCode}`}
+          </p>
+
+          {source === 'hcl' && (
+            <div className="overflow-x-auto rounded-lg border border-slate-200">
+              <table className="w-full min-w-[640px] text-left text-sm">
+                <thead className="border-b border-slate-200 bg-slate-50">
+                  <tr>
+                    <th className="px-3 py-2 font-medium text-slate-600">Facility / pharmacy</th>
+                    <th className="px-3 py-2 font-medium text-slate-600">Location</th>
+                    <th className="px-3 py-2 font-medium text-slate-600">Code</th>
+                    <th className="px-3 py-2 font-medium text-slate-600">Description</th>
+                    <th className="px-3 py-2 text-right font-medium text-slate-600">Cash rate</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedHcl.map((r) => (
+                    <tr key={`${r.id}-${r.facilityName}-${r.procedureCode}`} className="border-b border-slate-100">
+                      <td className="px-3 py-2 font-medium text-[var(--mp-ink)]">{r.facilityName}</td>
+                      <td className="px-3 py-2 text-slate-500">
+                        {[r.city, r.state].filter(Boolean).join(', ')}
+                      </td>
+                      <td className="px-3 py-2 font-mono text-xs text-slate-500">{r.procedureCode}</td>
+                      <td className="px-3 py-2 text-slate-600">{r.codeDescription || r.category}</td>
+                      <td className="px-3 py-2 text-right font-semibold text-amber-700">
+                        {formatPrice(r.rate)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          </div>
+          )}
 
           <div className="space-y-3">
-            {source === 'hcl' &&
-              sortedHcl.map((r) => (
-                <Card key={`${r.id}-${r.facilityName}-${r.procedureCode}`}>
-                  <CardContent className="flex flex-col gap-3 pb-4 pt-4 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="min-w-0">
-                      <div className="mb-1 flex flex-wrap items-center gap-2">
-                        <h3 className="font-semibold text-[var(--mp-ink)]">{r.facilityName}</h3>
-                        {r.category && (
-                          <Badge variant="outline" className="text-xs">
-                            {r.category}
-                          </Badge>
-                        )}
-                      </div>
-                      <p className="text-sm text-slate-500">
-                        {[r.city, r.state].filter(Boolean).join(', ')}
-                      </p>
-                      <p className="mt-1 text-sm text-slate-600">
-                        {r.procedureCode && (
-                          <span className="font-mono text-xs text-slate-500">{r.procedureCode} · </span>
-                        )}
-                        {r.codeDescription || 'Procedure'}
-                      </p>
-                      {(r.paymentMethod || r.carrier) && (
-                        <p className="mt-1 text-xs text-slate-400">
-                          {[r.paymentMethod, r.carrier, r.planName].filter(Boolean).join(' · ')}
-                        </p>
-                      )}
-                    </div>
-                    <div className="shrink-0 sm:text-right">
-                      <p className="text-xs uppercase tracking-wider text-slate-500">Cash / listed</p>
-                      <p className="text-2xl font-bold tracking-[-0.03em] text-amber-700">
-                        {formatPrice(r.rate)}
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-
             {source === 'legacy' &&
               sortedLegacy.map((r) => (
                 <Card key={`${r.procedure_id}-${r.provider_location_id}`}>

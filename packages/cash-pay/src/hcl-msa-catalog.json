@@ -1,0 +1,1352 @@
+[
+  {
+    "stateName": "Alabama",
+    "stateCode": "AL",
+    "msaName": "Birmingham - Huntsville - Gadsden",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Alabama",
+    "stateCode": "AL",
+    "msaName": "Mobile - Hattiesburg",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Alabama",
+    "stateCode": "AL",
+    "msaName": "Montgomery - Dothan",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Alaska",
+    "stateCode": "AK",
+    "msaName": "Anchorage AK MSA",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Alaska",
+    "stateCode": "AK",
+    "msaName": "Rural Areas in AK",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Arizona",
+    "stateCode": "AZ",
+    "msaName": "Flagstaff",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Arizona",
+    "stateCode": "AZ",
+    "msaName": "Las Vegas",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Arizona",
+    "stateCode": "AZ",
+    "msaName": "Phoenix AZ MSA",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Arizona",
+    "stateCode": "AZ",
+    "msaName": "Tempe-Mesa",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Arizona",
+    "stateCode": "AZ",
+    "msaName": "Tucson",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Arkansas",
+    "stateCode": "AR",
+    "msaName": "Fayetteville-Springdale-Rogers AR MSA",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Arkansas",
+    "stateCode": "AR",
+    "msaName": "Jonesboro",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Arkansas",
+    "stateCode": "AR",
+    "msaName": "Little Rock - Hot Springs - Pine Bluff",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Arkansas",
+    "stateCode": "AR",
+    "msaName": "Texarkana",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "CA-N California",
+    "stateCode": "CAN",
+    "msaName": "Sacramento-Yolo-Redding",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "CA-N California",
+    "stateCode": "CAN",
+    "msaName": "San Francisco-Oakland-San Jose",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "CA-N California",
+    "stateCode": "CAN",
+    "msaName": "Stockton-Atwater-Amador City",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "CA-S California",
+    "stateCode": "CAS",
+    "msaName": "Bakersfield - Fresno",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "CA-S California",
+    "stateCode": "CAS",
+    "msaName": "Los Angeles Metro - Anaheim",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "CA-S California",
+    "stateCode": "CAS",
+    "msaName": "Riverside-Rancho Cucamongo-San Bernadino",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "CA-S California",
+    "stateCode": "CAS",
+    "msaName": "San Diego MSA",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "CA-S California",
+    "stateCode": "CAS",
+    "msaName": "Santa Barbara - Pasadena - Altadena",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Colorado",
+    "stateCode": "CO",
+    "msaName": "Colorado Springs - Alamosa - Burlington",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Colorado",
+    "stateCode": "CO",
+    "msaName": "Denver-Boulder-Greeley",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Colorado",
+    "stateCode": "CO",
+    "msaName": "Fort Collins-Loveland",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Colorado",
+    "stateCode": "CO",
+    "msaName": "Grand Junction - Cortez",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Connecticut",
+    "stateCode": "CT",
+    "msaName": "Hartford - Middletown",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Connecticut",
+    "stateCode": "CT",
+    "msaName": "Norwich - New Haven - Bridgeport",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Delaware",
+    "stateCode": "DE",
+    "msaName": "Dover DE MSA",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Delaware",
+    "stateCode": "DE",
+    "msaName": "Philadelphia-Wilmington-Atlantic City PA-NJ-DE-MD",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "District of Columbia",
+    "stateCode": "DC",
+    "msaName": "Washington-Baltimore DC-MD-VA-WV CMSA",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Florida",
+    "stateCode": "FL",
+    "msaName": "Ft. Lauderdale-Hollywood-Coral Springs",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Florida",
+    "stateCode": "FL",
+    "msaName": "Jacksonville FL MSA",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Florida",
+    "stateCode": "FL",
+    "msaName": "Melbourne-Daytona Beach",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Florida",
+    "stateCode": "FL",
+    "msaName": "Miami - Pembroke - Florida Keys",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Florida",
+    "stateCode": "FL",
+    "msaName": "Naples - Punta Gorda \u2013 Sarasota",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Florida",
+    "stateCode": "FL",
+    "msaName": "Orlando FL MSA",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Florida",
+    "stateCode": "FL",
+    "msaName": "Stuart - Lake Placid",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Florida",
+    "stateCode": "FL",
+    "msaName": "Tallahassee - Pensacola",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Florida",
+    "stateCode": "FL",
+    "msaName": "Tampa-St. Petersburg-Clearwater FL MSA",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Florida",
+    "stateCode": "FL",
+    "msaName": "West Palm Beach-Boca Raton FL",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Georgia",
+    "stateCode": "GA",
+    "msaName": "Atlanta GA MSA",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Georgia",
+    "stateCode": "GA",
+    "msaName": "Augusta - Savannah - Valdosta",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Georgia",
+    "stateCode": "GA",
+    "msaName": "Columbus - Macon - Tallahassee",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Hawaii",
+    "stateCode": "HI",
+    "msaName": "Honolulu HI MSA",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Idaho",
+    "stateCode": "ID",
+    "msaName": "Boise City ID MSA",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Idaho",
+    "stateCode": "ID",
+    "msaName": "Idaho Falls",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Idaho",
+    "stateCode": "ID",
+    "msaName": "Spokane Valley - ID",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Illinois",
+    "stateCode": "IL",
+    "msaName": "Aledo - Rock Island - Rockford",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Illinois",
+    "stateCode": "IL",
+    "msaName": "Champaign - Springfield - Peoria",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Illinois",
+    "stateCode": "IL",
+    "msaName": "Chicago MSA",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Illinois",
+    "stateCode": "IL",
+    "msaName": "Peru-Hooperston",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Illinois",
+    "stateCode": "IL",
+    "msaName": "SW Illinois",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Indiana",
+    "stateCode": "IN",
+    "msaName": "Evansville - Bloomington \u2013 Lawrenceburg",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Indiana",
+    "stateCode": "IN",
+    "msaName": "Fort Wayne",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Indiana",
+    "stateCode": "IN",
+    "msaName": "Gary - Chesterton - South Bend",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Indiana",
+    "stateCode": "IN",
+    "msaName": "Indianapolis MSA",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Iowa",
+    "stateCode": "IA",
+    "msaName": "Cedar Rapids - Davenport - Dubuque",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Iowa",
+    "stateCode": "IA",
+    "msaName": "Council Bluffs - Sioux City - Des Moines",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Kansas",
+    "stateCode": "KS",
+    "msaName": "Topeka - Overland Park",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Kansas",
+    "stateCode": "KS",
+    "msaName": "Wichita - Salina",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Kentucky",
+    "stateCode": "KY",
+    "msaName": "Clarksville-Hopkinsville",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Kentucky",
+    "stateCode": "KY",
+    "msaName": "Covington - Fort Thomas",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Kentucky",
+    "stateCode": "KY",
+    "msaName": "Lexington KY MSA",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Kentucky",
+    "stateCode": "KY",
+    "msaName": "Louisville KY-IN MSA",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Louisiana",
+    "stateCode": "LA",
+    "msaName": "Baton Rouge LA MSA",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Louisiana",
+    "stateCode": "LA",
+    "msaName": "Lafayette LA MSA",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Louisiana",
+    "stateCode": "LA",
+    "msaName": "Lake Charles LA MSA",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Louisiana",
+    "stateCode": "LA",
+    "msaName": "Monroe LA MSA",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Louisiana",
+    "stateCode": "LA",
+    "msaName": "New Orleans LA MSA",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Louisiana",
+    "stateCode": "LA",
+    "msaName": "Shreveport-Bossier City LA MSA",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Maine",
+    "stateCode": "ME",
+    "msaName": "Augusta",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Maine",
+    "stateCode": "ME",
+    "msaName": "Bangor",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Maine",
+    "stateCode": "ME",
+    "msaName": "Portland - Brunswick",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Maryland",
+    "stateCode": "MD",
+    "msaName": "Cumberland - Hagerstown",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Maryland",
+    "stateCode": "MD",
+    "msaName": "Washington - Baltimore",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Massachusetts",
+    "stateCode": "MA",
+    "msaName": "Boston Metro",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Massachusetts",
+    "stateCode": "MA",
+    "msaName": "Boston Outer Areas",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Massachusetts",
+    "stateCode": "MA",
+    "msaName": "Fall River - Plymouth \u2013 Nantucket",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Massachusetts",
+    "stateCode": "MA",
+    "msaName": "Pittsfield - Springfield \u2013 Worcester",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Michigan",
+    "stateCode": "MI",
+    "msaName": "Detroit-Ann Arbor",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Michigan",
+    "stateCode": "MI",
+    "msaName": "Flint - Saginaw",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Michigan",
+    "stateCode": "MI",
+    "msaName": "Grand Rapids-Muskegon-Holland",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Michigan",
+    "stateCode": "MI",
+    "msaName": "Lansing-East Lansing",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Michigan",
+    "stateCode": "MI",
+    "msaName": "Marquette - Traverse City - Grayling",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Minnesota",
+    "stateCode": "MN",
+    "msaName": "Duluth-Superior",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Minnesota",
+    "stateCode": "MN",
+    "msaName": "Grand Forks",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Minnesota",
+    "stateCode": "MN",
+    "msaName": "Minneapolis-St. Paul MN-WI MSA",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Minnesota",
+    "stateCode": "MN",
+    "msaName": "Rochester",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Minnesota",
+    "stateCode": "MN",
+    "msaName": "Sioux Falls",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Minnesota",
+    "stateCode": "MN",
+    "msaName": "St. Cloud",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Mississippi",
+    "stateCode": "MS",
+    "msaName": "Gulfport - Meridian",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Mississippi",
+    "stateCode": "MS",
+    "msaName": "Tupelo - Jackson",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Missouri",
+    "stateCode": "MO",
+    "msaName": "Columbia",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Missouri",
+    "stateCode": "MO",
+    "msaName": "Jackson MO",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Missouri",
+    "stateCode": "MO",
+    "msaName": "Kansas City - St. Joseph",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Missouri",
+    "stateCode": "MO",
+    "msaName": "Springfield",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Missouri",
+    "stateCode": "MO",
+    "msaName": "St. Louis MSA",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Montana",
+    "stateCode": "MT",
+    "msaName": "Billings",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Montana",
+    "stateCode": "MT",
+    "msaName": "Helena MT",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Montana",
+    "stateCode": "MT",
+    "msaName": "Miles City MT",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Montana",
+    "stateCode": "MT",
+    "msaName": "Missoula MT",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Nebraska",
+    "stateCode": "NE",
+    "msaName": "North Platte - Creighton",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Nebraska",
+    "stateCode": "NE",
+    "msaName": "Omaha - Lincoln",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Nevada",
+    "stateCode": "NV",
+    "msaName": "Las Vegas NV-AZ MSA",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Nevada",
+    "stateCode": "NV",
+    "msaName": "Reno NV",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "New Hampshire",
+    "stateCode": "NH",
+    "msaName": "Lebanon - Littleton",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "New Hampshire",
+    "stateCode": "NH",
+    "msaName": "Manchester - Nashua",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "New Jersey",
+    "stateCode": "NJ",
+    "msaName": "Central NJ",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "New Jersey",
+    "stateCode": "NJ",
+    "msaName": "Morristown-Northwest NJ",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "New Jersey",
+    "stateCode": "NJ",
+    "msaName": "Newark-Paterson-Hackensack",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "New Jersey",
+    "stateCode": "NJ",
+    "msaName": "South NJ",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "New Mexico",
+    "stateCode": "NM",
+    "msaName": "Albuquerque - Santa Fe",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "New Mexico",
+    "stateCode": "NM",
+    "msaName": "Las Cruces",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "New Mexico",
+    "stateCode": "NM",
+    "msaName": "Southeast NM",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "New York",
+    "stateCode": "NY",
+    "msaName": "Albany - Plattsburgh",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "New York",
+    "stateCode": "NY",
+    "msaName": "Brooklyn - Queens - Staten Island",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "New York",
+    "stateCode": "NY",
+    "msaName": "Buffalo - Rochester \u2013 Jamestown",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "New York",
+    "stateCode": "NY",
+    "msaName": "Hyde Park - White Plains - Yonkers",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "New York",
+    "stateCode": "NY",
+    "msaName": "Long Island",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "New York",
+    "stateCode": "NY",
+    "msaName": "New York - New York",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "New York",
+    "stateCode": "NY",
+    "msaName": "Syracuse \u2013 Watertown - Binghamton",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "New York",
+    "stateCode": "NY",
+    "msaName": "The Bronx",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "North Carolina",
+    "stateCode": "NC",
+    "msaName": "Asheville - Hickory - Morganton",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "North Carolina",
+    "stateCode": "NC",
+    "msaName": "Charlotte-Gastonia-Rock Hill NC-SC MSA",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "North Carolina",
+    "stateCode": "NC",
+    "msaName": "Goldsboro - Rocky Mount",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "North Carolina",
+    "stateCode": "NC",
+    "msaName": "Greensboro--Winston-Salem--High Point",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "North Carolina",
+    "stateCode": "NC",
+    "msaName": "Raleigh-Durham-Chapel Hill NC MSA",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "North Carolina",
+    "stateCode": "NC",
+    "msaName": "Wilmington - Jacksonville",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "North Dakota",
+    "stateCode": "ND",
+    "msaName": "Bismark ND",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "North Dakota",
+    "stateCode": "ND",
+    "msaName": "Fargo - Grand Forks",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Ohio",
+    "stateCode": "OH",
+    "msaName": "Canton - Youngstown",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Ohio",
+    "stateCode": "OH",
+    "msaName": "Cincinnati-Hamilton",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Ohio",
+    "stateCode": "OH",
+    "msaName": "Cleveland - outer areas OH",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Ohio",
+    "stateCode": "OH",
+    "msaName": "Cleveland OH",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Ohio",
+    "stateCode": "OH",
+    "msaName": "Columbus - Mansfield",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Ohio",
+    "stateCode": "OH",
+    "msaName": "Dayton-Springfield",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Ohio",
+    "stateCode": "OH",
+    "msaName": "SE Ohio",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Ohio",
+    "stateCode": "OH",
+    "msaName": "Toledo",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Oklahoma",
+    "stateCode": "OK",
+    "msaName": "Oklahoma - Pan Handle",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Oklahoma",
+    "stateCode": "OK",
+    "msaName": "Oklahoma City OK MSA",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Oklahoma",
+    "stateCode": "OK",
+    "msaName": "Tishomingo-Durant-Ada",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Oklahoma",
+    "stateCode": "OK",
+    "msaName": "Tulsa",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Oregon",
+    "stateCode": "OR",
+    "msaName": "Eugene OR",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Oregon",
+    "stateCode": "OR",
+    "msaName": "Medford-Ashland",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Oregon",
+    "stateCode": "OR",
+    "msaName": "Portland-Salem",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Pennsylvania",
+    "stateCode": "PA",
+    "msaName": "Johnstown - Harrisburg \u2013 Reading",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Pennsylvania",
+    "stateCode": "PA",
+    "msaName": "NE Pennsylvania",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Pennsylvania",
+    "stateCode": "PA",
+    "msaName": "NW PA - State College \u2013 Williamsport",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Pennsylvania",
+    "stateCode": "PA",
+    "msaName": "Philadelphia 5 county",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Pennsylvania",
+    "stateCode": "PA",
+    "msaName": "Pittsburgh PA MSA",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Rhode Island",
+    "stateCode": "RI",
+    "msaName": "Providence-Fall River-Warwick",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "South Carolina",
+    "stateCode": "SC",
+    "msaName": "Charleston - Columbia - Myrtle Beach",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "South Carolina",
+    "stateCode": "SC",
+    "msaName": "Greenville-Spartanburg-Anderson",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "South Dakota",
+    "stateCode": "SD",
+    "msaName": "Rapid City",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "South Dakota",
+    "stateCode": "SD",
+    "msaName": "Sioux Falls - Aberdeen",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Tennessee",
+    "stateCode": "TN",
+    "msaName": "Chattanooga",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Tennessee",
+    "stateCode": "TN",
+    "msaName": "Jackson - Union City - Paris",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Tennessee",
+    "stateCode": "TN",
+    "msaName": "Kingsport-Johnson City",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Tennessee",
+    "stateCode": "TN",
+    "msaName": "Knoxville",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Tennessee",
+    "stateCode": "TN",
+    "msaName": "Memphis",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Tennessee",
+    "stateCode": "TN",
+    "msaName": "Nashville Metro",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Tennessee",
+    "stateCode": "TN",
+    "msaName": "Nashville Outer Areas",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "TX-Central Southeast",
+    "stateCode": "TXC",
+    "msaName": "Amarillo",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "TX-Central Southeast",
+    "stateCode": "TXC",
+    "msaName": "Arlington",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "TX-Central Southeast",
+    "stateCode": "TXC",
+    "msaName": "Austin-San Marcos",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "TX-Central Southeast",
+    "stateCode": "TXC",
+    "msaName": "Beaumont-Port Arthur",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "TX-Central Southeast",
+    "stateCode": "TXC",
+    "msaName": "Corpus Christi",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "TX-Central Southeast",
+    "stateCode": "TXC",
+    "msaName": "Dallas - Outer Areas",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "TX-Central Southeast",
+    "stateCode": "TXC",
+    "msaName": "Dallas Metro",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "TX-Central Southeast",
+    "stateCode": "TXC",
+    "msaName": "El Paso - Lubbock - Midland",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "TX-Central Southeast",
+    "stateCode": "TXC",
+    "msaName": "Fort Worth-Comanche-Hillsboro",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "TX-Central Southeast",
+    "stateCode": "TXC",
+    "msaName": "Houston - Galveston",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "TX-Central Southeast",
+    "stateCode": "TXC",
+    "msaName": "Houston Southwest",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "TX-Central Southeast",
+    "stateCode": "TXC",
+    "msaName": "Huntsville-Livingston",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "TX-Central Southeast",
+    "stateCode": "TXC",
+    "msaName": "Killeen-Temple",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "TX-Central Southeast",
+    "stateCode": "TXC",
+    "msaName": "Mexico border",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "TX-Central Southeast",
+    "stateCode": "TXC",
+    "msaName": "San Angelo - Waco - Lufkin",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "TX-Central Southeast",
+    "stateCode": "TXC",
+    "msaName": "San Antonio",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "TX-Central Southeast",
+    "stateCode": "TXC",
+    "msaName": "San Marcos-Round Rock",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "TX-Central Southeast",
+    "stateCode": "TXC",
+    "msaName": "Sugar Land",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "TX-Central Southeast",
+    "stateCode": "TXC",
+    "msaName": "Tyler - Jacksonville - Texarkana",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "TX-Central Southeast",
+    "stateCode": "TXC",
+    "msaName": "Victoria",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "TX-Central Southeast",
+    "stateCode": "TXC",
+    "msaName": "West San Antonio",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "TX-Central Southeast",
+    "stateCode": "TXC",
+    "msaName": "Wichita Falls",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "TX-North Texas DFW",
+    "stateCode": "TXN",
+    "msaName": "Arlington",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "TX-North Texas DFW",
+    "stateCode": "TXN",
+    "msaName": "Dallas - Outer Areas",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "TX-North Texas DFW",
+    "stateCode": "TXN",
+    "msaName": "Dallas Metro",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "TX-North Texas DFW",
+    "stateCode": "TXN",
+    "msaName": "Fort Worth-Comanche-Hillsboro",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "TX-North Texas DFW",
+    "stateCode": "TXN",
+    "msaName": "San Angelo - Waco - Lufkin",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "TX-North Texas DFW",
+    "stateCode": "TXN",
+    "msaName": "Tyler - Jacksonville - Texarkana",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "TX-North Texas DFW",
+    "stateCode": "TXN",
+    "msaName": "Wichita Falls",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "TX-Panhandle West Texas",
+    "stateCode": "TXP",
+    "msaName": "Amarillo",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "TX-Panhandle West Texas",
+    "stateCode": "TXP",
+    "msaName": "El Paso - Lubbock - Midland",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "TX-South Texas",
+    "stateCode": "TXS",
+    "msaName": "Corpus Christi",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "TX-South Texas",
+    "stateCode": "TXS",
+    "msaName": "Mexico border",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "TX-South Texas",
+    "stateCode": "TXS",
+    "msaName": "San Antonio",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "TX-South Texas",
+    "stateCode": "TXS",
+    "msaName": "San Marcos-Round Rock",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "TX-South Texas",
+    "stateCode": "TXS",
+    "msaName": "Victoria",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "TX-South Texas",
+    "stateCode": "TXS",
+    "msaName": "West San Antonio",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Utah",
+    "stateCode": "UT",
+    "msaName": "Ogden",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Utah",
+    "stateCode": "UT",
+    "msaName": "Provo",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Utah",
+    "stateCode": "UT",
+    "msaName": "Richfield",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Utah",
+    "stateCode": "UT",
+    "msaName": "Salt Lake City UT MSA",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Vermont",
+    "stateCode": "VT",
+    "msaName": "Burlington - Montpelier - St. Johnsbury",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Vermont",
+    "stateCode": "VT",
+    "msaName": "South Vermont",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Virginia",
+    "stateCode": "VA",
+    "msaName": "Charlottesville - Roanoke",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Virginia",
+    "stateCode": "VA",
+    "msaName": "Fredericksburg - Alexandria - Fairfax",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Virginia",
+    "stateCode": "VA",
+    "msaName": "Richmond - Petersburg - Norfolk",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Washington",
+    "stateCode": "WA",
+    "msaName": "Mount Vernon - Everett - Vancouver",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Washington",
+    "stateCode": "WA",
+    "msaName": "Seattle-Tacoma",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Washington",
+    "stateCode": "WA",
+    "msaName": "Spokane-Spokane Valley",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Washington",
+    "stateCode": "WA",
+    "msaName": "Yakima - Wenatchee",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "West Virginia",
+    "stateCode": "WV",
+    "msaName": "Charleston - Huntington - Parkersburg",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "West Virginia",
+    "stateCode": "WV",
+    "msaName": "Morgantown - Wheeling - Martinsburg",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Wisconsin",
+    "stateCode": "WI",
+    "msaName": "Eau Claire - Rice Lake area",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Wisconsin",
+    "stateCode": "WI",
+    "msaName": "Green Bay WI MSA",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Wisconsin",
+    "stateCode": "WI",
+    "msaName": "La Crosse",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Wisconsin",
+    "stateCode": "WI",
+    "msaName": "Madison",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Wisconsin",
+    "stateCode": "WI",
+    "msaName": "Milwaukee-Racine",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Wisconsin",
+    "stateCode": "WI",
+    "msaName": "Sheboygan",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Wyoming",
+    "stateCode": "WY",
+    "msaName": "Casper",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Wyoming",
+    "stateCode": "WY",
+    "msaName": "Cheyenne WY",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Wyoming",
+    "stateCode": "WY",
+    "msaName": "Cody WY",
+    "specialty": "Hospital cash prices"
+  },
+  {
+    "stateName": "Wyoming",
+    "stateCode": "WY",
+    "msaName": "Jackson WY",
+    "specialty": "Hospital cash prices"
+  }
+]

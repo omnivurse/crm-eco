@@ -116,9 +116,10 @@ export function normalizeStateName(input: string | null | undefined): string | n
   if (!input) return null;
   const trimmed = input.trim();
   if (!trimmed) return null;
+  // HCL inventory uses regional labels (CA-N California, TX-North Texas DFW).
+  if (/^(CA-[NS]\b|TX-)/i.test(trimmed)) return trimmed;
   const upper = trimmed.toUpperCase();
   if (STATE_ABBREV[upper]) return STATE_ABBREV[upper];
-  // Title-case full name if already looks like one
   return trimmed
     .split(/\s+/)
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
@@ -159,10 +160,37 @@ export function parseMsaAllowlist(raw: string | undefined | null): MsaAllowlistE
   }
 }
 
-export function loadMsaAllowlistFromEnv(
-  env: NodeJS.ProcessEnv = process.env,
-): MsaAllowlistEntry[] {
-  return parseMsaAllowlist(env.HCL_MSA_ALLOWLIST);
+/**
+ * HCL splits CA and TX into regions. Map a US ZIP to the inventory state name
+ * GetRateDataPaged expects, then fall back to the generic state.
+ */
+export function hclStateForZip(zip: string): string | null {
+  if (!/^\d{5}$/.test(zip)) return null;
+  const n = Number(zip);
+  const p3 = Number(zip.slice(0, 3));
+  if (n >= 90000 && n <= 93199) return 'CA-S California';
+  if (n >= 93200 && n <= 96199) return 'CA-N California';
+  if (p3 >= 750 && p3 <= 762) return 'TX-North Texas DFW';
+  if ((p3 >= 763 && p3 <= 769) || (p3 >= 790 && p3 <= 796)) return 'TX-Panhandle West Texas';
+  if (p3 >= 770 && p3 <= 778) return 'TX-Central Southeast';
+  if (p3 >= 779 && p3 <= 789) return 'TX-South Texas';
+  return stateFromZip(zip);
+}
+
+function expandStateCandidates(input: string): string[] {
+  const normalized = normalizeStateName(input);
+  if (!normalized) return [];
+  if (normalized === 'California') return ['CA-S California', 'CA-N California', normalized];
+  if (normalized === 'Texas') {
+    return [
+      'TX-North Texas DFW',
+      'TX-Central Southeast',
+      'TX-South Texas',
+      'TX-Panhandle West Texas',
+      normalized,
+    ];
+  }
+  return [normalized];
 }
 
 export function msasForState(
@@ -187,7 +215,7 @@ export function uniqueStates(allowlist: MsaAllowlistEntry[]): string[] {
 
 /**
  * First candidate that is actually on the allowlist; otherwise the first
- * allowlisted state. Prevents pre-selecting Oregon when the key is Alabama-only.
+ * allowlisted state. A member ZIP in an unmapped state must not pre-select it.
  */
 export function pickPreferredState(
   allowlist: MsaAllowlistEntry[],
@@ -197,10 +225,13 @@ export function pickPreferredState(
   if (states.length === 0) return null;
   const allowed = new Map(states.map((s) => [s.trim().toLowerCase(), s]));
   for (const candidate of candidates) {
-    const normalized = normalizeStateName(candidate);
-    if (!normalized) continue;
-    const match = allowed.get(normalized.trim().toLowerCase());
-    if (match) return match;
+    if (!candidate?.trim()) continue;
+    const exact = allowed.get(candidate.trim().toLowerCase());
+    if (exact) return exact;
+    for (const name of expandStateCandidates(candidate)) {
+      const match = allowed.get(name.trim().toLowerCase());
+      if (match) return match;
+    }
   }
   return states[0];
 }

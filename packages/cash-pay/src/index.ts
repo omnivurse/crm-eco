@@ -20,11 +20,17 @@ export {
   normalizeStateName,
   stateFromZip,
   parseMsaAllowlist,
-  loadMsaAllowlistFromEnv,
   msasForState,
   uniqueStates,
   pickPreferredState,
+  hclStateForZip,
 } from './msa';
+
+export {
+  loadFullHclCatalog,
+  mergeMsaCatalogs,
+  loadMsaAllowlistFromEnv,
+} from './catalog';
 
 export {
   CASH_PAY_CATALOG,

@@ -6,7 +6,7 @@ import {
   normalizeStateName,
   pickPreferredState,
   specialtiesForSearch,
-  stateFromZip,
+  hclStateForZip,
   uniqueMsas,
   uniqueStates,
 } from '@crm-eco/cash-pay';
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
   const allowlist = loadMsaAllowlistFromEnv();
   const zip = searchParams.get('zip')?.trim() || '';
   const requestedState = normalizeStateName(searchParams.get('state') || undefined);
-  const inferred = zip && /^\d{5}$/.test(zip) ? stateFromZip(zip) : null;
+  const inferred = zip && /^\d{5}$/.test(zip) ? hclStateForZip(zip) : null;
   const preferredState = pickPreferredState(allowlist, [requestedState, inferred]);
 
   const specialties = specialtiesForSearch(loadSpecialtyCatalogFromEnv(), allowlist);

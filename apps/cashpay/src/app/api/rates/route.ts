@@ -6,7 +6,7 @@ import {
   msasForState,
   normalizeStateName,
   resolveSpecialty,
-  stateFromZip,
+  hclStateForZip,
 } from '@crm-eco/cash-pay';
 
 export const dynamic = 'force-dynamic';
@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
   }
 
   const stateParam = normalizeStateName(searchParams.get('state') || undefined);
-  const stateName = stateParam || (zip ? stateFromZip(zip) : null);
+  const stateName = stateParam || (zip ? hclStateForZip(zip) : null);
   const msaName = searchParams.get('msa')?.trim() || '';
 
   if (!stateName || !msaName) {
