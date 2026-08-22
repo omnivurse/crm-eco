@@ -46,15 +46,16 @@ describe('member-terminology', () => {
   });
 
   it('exposes Active Insurance Client in the status picker', () => {
-    expect(getCoreStatusPickerItems('traditional_insurance')).toContain(
+    // One vocabulary for every market — the variants are deliberately NOT
+    // offered; a rep picking one by hand was the last way to re-create them.
+    expect(getCoreStatusPickerItems('traditional_insurance')).not.toContain(
       ACTIVE_INSURANCE_CLIENT_STATUS,
     );
-    expect(getCoreStatusPickerItems('healthshare')).toContain(ACTIVE_INSURANCE_CLIENT_STATUS);
-    // The variants are deliberately NOT offered — a rep picking one by hand
-    // was the last remaining way to re-create them.
     expect(getCoreStatusPickerItems('healthshare')).not.toContain('Active Member');
     expect(getCoreStatusPickerItems('healthshare')).not.toContain('Active HS Member');
+    expect(getCoreStatusPickerItems('healthshare')).not.toContain('In-Active');
     expect(getCoreStatusPickerItems('healthshare')).toContain('Active');
+    expect(getCoreStatusPickerItems('healthshare')).toContain('Prospect');
   });
 
   it('treats Active Insurance Client as an active coverage status', () => {

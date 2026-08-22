@@ -25,6 +25,18 @@ describe('mergeCrmRecordRowIntoFormDefaults status overlay', () => {
     expect(form.contact_status).toBe('Active');
     expect(form.lead_status).toBeUndefined();
   });
+
+  it('keeps a real pipeline stage visible on a Prospect contact', () => {
+    const form = mergeCrmRecordRowIntoFormDefaults(
+      {
+        status: 'Prospect',
+        data: { lead_status: 'Qualified', contact_status: 'Hot Prospect - ready to move' },
+      },
+      { moduleKey: 'contacts' },
+    );
+    expect(form.contact_status).toBe('Prospect');
+    expect(form.lead_status).toBe('Qualified');
+  });
 });
 
 describe('mergeCrmRecordRowIntoFormDefaults null indexed columns', () => {

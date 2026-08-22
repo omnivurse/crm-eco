@@ -98,6 +98,22 @@ SELECT '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-00000000
        (VALUES ('', '', 'text', 0), ('_dob', ' DOB', 'date', 1)) AS sfx(key, label, type, off)
 ON CONFLICT DO NOTHING;
 
+-- Status / pipeline / relationship picklists at their PRE-20260822150000
+-- options (as on prod), so the vocabulary migration exercises the real rewrite.
+INSERT INTO public.crm_fields (org_id, module_id, key, label, type, section, options) VALUES
+  ('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-00000000c001','contact_status','Contact Status','select','core','["Active","Inactive","Pending","Cancelled","Deceased","Terminated"]'),
+  ('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-00000000c001','lead_status','Lead Status','select','core','["New","Contacted","Qualified","Unqualified","Converted","Lost"]'),
+  ('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-00000000c001','relationship_type','Relationship','select','main','["Member","Advisor","Agency","DPC Provider","Provider","Employee"]'),
+  ('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-00000000c001','record_type','Record Type','select','management','["individual","group","unknown"]'),
+  ('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-00000000c002','contact_status','Contact Status','select','core','["New","Contacted","In Process","Qualified","Future Prospect","Pending","Converted","Unqualified","Lost"]'),
+  ('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-00000000c002','lead_status','Lead Status','select','core','["New","Contacted","In Process","Qualified","Future Prospect","Pending","Converted","Unqualified","Lost"]'),
+  ('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-00000000c002','relationship_type','Relationship','select','main','["Member","Advisor","Agency","DPC Provider","Provider","Employee"]'),
+  ('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-00000000c002','record_type','Record Type','select','management','["individual","group","unknown"]'),
+  ('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-00000000c003','contact_status','Contact Status','select','core','["Active","Inactive","Pending","Cancelled","Deceased","Terminated"]'),
+  ('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-00000000c003','lead_status','Lead Status','select','core','["New","Contacted","Qualified","Unqualified","Converted","Lost"]'),
+  ('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-00000000c003','relationship_type','Relationship','select','main','["Member","Advisor","Agency","DPC Provider","Provider","Employee"]')
+ON CONFLICT DO NOTHING;
+
 -- ---------------------------------------------------------------------------
 -- Advisor hierarchy root, required by 202606280001_pifh_org_agent_hierarchy.
 -- Synthetic identity; the migration matches on the id.

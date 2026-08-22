@@ -8,6 +8,7 @@
   ],
   "scripts": {
     "audit:crm-visibility": "node scripts/audit-crm-visibility.mjs",
+    "audit:crm-vocabulary": "node scripts/audit-crm-vocabulary.mjs",
     "check:conflicts": "node scripts/check-merge-conflicts.js",
     "build": "npm run check:conflicts && vite build",
     "build:shared": "npm run check:conflicts && npm run build --workspace=@crm-eco/shared",

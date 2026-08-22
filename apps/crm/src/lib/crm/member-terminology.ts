@@ -1,3 +1,4 @@
+import { CRM_LIFECYCLE_OPEN } from './status-allowlist';
 /**
  * Market-aware terminology for a converted / active person.
  *
@@ -68,21 +69,11 @@ export function getEnrollActionLabel(marketType?: string | null): string {
 }
 
 /** Core status options shown in the record header picker. */
-export function getCoreStatusPickerItems(marketType?: string | null): string[] {
-  if (isInsuranceMarket(marketType)) {
-    return ['Active', ACTIVE_INSURANCE_CLIENT_STATUS, 'Inactive', 'In-Active', 'Pending', 'Hold'];
-  }
-  // 'Active HS Member' / 'Active Member' deliberately absent: they are the
-  // same lifecycle state as 'Active', and offering them let a rep re-create
-  // the variant by hand. Coverage type lives in `market_type`.
-  return [
-    'Active',
-    ACTIVE_INSURANCE_CLIENT_STATUS,
-    'Inactive',
-    'In-Active',
-    'Pending',
-    'Hold',
-  ];
+export function getCoreStatusPickerItems(_marketType?: string | null): string[] {
+  // One vocabulary for every market: coverage type lives in `market_type`,
+  // so "Active Insurance Client" / "Active HS Member" / "In-Active" / "Hold"
+  // are no longer offered — each was a way to re-create a variant by hand.
+  return [...CRM_LIFECYCLE_OPEN];
 }
 
 /** Whether a status should use the green "active coverage" badge styling. */

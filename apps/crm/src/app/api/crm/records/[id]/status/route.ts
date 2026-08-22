@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { createClient, getAuthProfile } from '@/lib/supabase-server';
 import { applyStatusToRecordUpdates } from '@/lib/crm/status-sync';
-import { isAllowedCrmStatus } from '@/lib/crm/status-allowlist';
+import { allowedStatusesForModule, isAllowedCrmStatus } from '@/lib/crm/status-allowlist';
 import { assertCrmPendingHasStartDate } from '@/lib/crm/pending-start-date-invariant';
 
 export const dynamic = 'force-dynamic';
@@ -55,6 +55,15 @@ export async function PATCH(
 
     const previousStatus = record.status;
     const moduleKey = (record as { crm_modules?: { key?: string } }).crm_modules?.key;
+    if (!isAllowedCrmStatus(status, moduleKey)) {
+      return NextResponse.json(
+        {
+          error: `"${status}" is not a valid status for this module`,
+          allowed: allowedStatusesForModule(moduleKey),
+        },
+        { status: 400 },
+      );
+    }
 
     const pendingStart = assertCrmPendingHasStartDate(status, {
       current_year_start_date: record.current_year_start_date as string | null,

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { CRM_PIPELINE_STATUSES } from '@/lib/crm/status-allowlist';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { useClientAuth } from '@/hooks/useClientAuth';
@@ -58,16 +59,8 @@ const CURRENT_COVERAGE_OPTIONS = [
   { value: 'other', label: 'Other' },
 ];
 
-const LEAD_STATUS_OPTIONS = [
-  { value: 'New', label: 'New' },
-  { value: 'Not Contacted', label: 'Not Contacted' },
-  { value: 'Contacted', label: 'Contacted' },
-  { value: 'Working', label: 'Working' },
-  { value: 'Qualified', label: 'Qualified' },
-  { value: 'Not Qualified', label: 'Not Qualified' },
-  { value: 'Hot Prospect - ready to move', label: 'Hot Prospect' },
-  { value: 'Lost Opportunity', label: 'Lost Opportunity' },
-];
+// The leads pipeline vocabulary (status-allowlist.ts / crm_status_vocabulary).
+const LEAD_STATUS_OPTIONS = CRM_PIPELINE_STATUSES.map((value) => ({ value, label: value }));
 
 // Roles for the point-of-contact on a small-group lead (often not the
 // decision-maker — e.g. the person who takes your call is the Office Manager).
@@ -85,14 +78,19 @@ const CONTACT_ROLE_OPTIONS = [
 function mapLegacyStatus(status: string): string {
   const legacy: Record<string, string> = {
     new: 'New',
+    'not contacted': 'New',
     contacted: 'Contacted',
-    working: 'Working',
+    working: 'Contacted',
+    'attempted to contact': 'Attempted',
     qualified: 'Qualified',
+    'hot prospect - ready to move': 'Qualified',
     unqualified: 'Unqualified',
+    'not qualified': 'Unqualified',
     converted: 'Converted',
     lost: 'Lost',
+    'lost opportunity': 'Lost',
   };
-  return legacy[status] ?? status;
+  return legacy[status.trim().toLowerCase()] ?? status;
 }
 
 const INITIAL_FORM_DATA = {

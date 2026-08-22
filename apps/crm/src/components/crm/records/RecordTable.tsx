@@ -4,7 +4,7 @@ import { useState, useMemo, useRef, useEffect, useLayoutEffect, useCallback, mem
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useCrmDensity } from '@/lib/crm/density';
 import { remainingViewportHeight } from '@/lib/crm/remaining-viewport-height';
-import { CRM_STATUS_PICKER_CORE } from '@/lib/crm/status-allowlist';
+import { allowedStatusesForModule } from '@/lib/crm/status-allowlist';
 import { StatusBadge } from '@/components/ui/status-badge';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
@@ -605,7 +605,7 @@ export const RecordTable = memo(function RecordTable({
   }, []);
 
   // Status options — shared allowlist subset (see status-allowlist.ts)
-  const STATUS_OPTIONS = [...CRM_STATUS_PICKER_CORE];
+  const STATUS_OPTIONS = [...allowedStatusesForModule(moduleKey)];
 
   // Handle inline edit save
   const handleInlineEditSave = useCallback(async (value: unknown) => {

@@ -94,12 +94,12 @@ import { ConvertToContactDialog } from '@/components/crm/records/ConvertToContac
 import { ConvertLeadButton } from '@/components/crm/records/ConvertLeadButton';
 import { ConvertLeadMenu } from './v2/ConvertLeadMenu';
 import {
-  getCoreStatusPickerItems,
   getEnrollActionLabel,
   getMemberNoun,
   isActiveCoverageStatus,
   relabelStatusForMarket,
 } from '@/lib/crm/member-terminology';
+import { statusPickerGroupsForModule } from '@/lib/crm/status-allowlist';
 import { statusLane, statusToneForValue, sanitizeReturnTo, withReturnTo } from '@/lib/crm/status-lanes';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { toastCopy } from '@/lib/crm/toast-copy';
@@ -1741,11 +1741,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                           align="start"
                           className="bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10 min-w-[200px] max-h-80 overflow-y-auto"
                         >
-                          {[
-                            { label: 'Status', items: getCoreStatusPickerItems(recordMarketType) },
-                            { label: 'Enrollment', items: ['Enrolled - 2025', 'Enrolled - 2026', 'Enrolled Member', 'Approved Pending'] },
-                            { label: 'Close', items: ['Cancelled', 'Cancellation Pending', 'Terminated', 'Suspended', 'Archived', 'Converted'] },
-                          ].map((group) => (
+                          {statusPickerGroupsForModule(module.key).map((group) => (
                             <div key={group.label}>
                               <DropdownMenuLabel className="px-2 py-1.5 text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider">
                                 {group.label}

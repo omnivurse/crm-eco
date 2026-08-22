@@ -131,9 +131,12 @@ export function mergeCrmRecordRowIntoFormDefaults(
       base.lead_status = row.status;
     } else if (moduleKey === 'contacts' || moduleKey === 'members') {
       base.contact_status = row.status;
-      // Converted leads often keep historical lead_status in JSONB — strip it so
-      // form PATCH does not remirror "Converted" onto an Active contact/member.
-      delete base.lead_status;
+      // Converted leads often keep historical lead_status in JSONB — strip THAT
+      // so form PATCH does not remirror "Converted" onto an Active contact/member.
+      // A real pipeline stage on a Prospect / Lost contact (the 2026-08-22
+      // vocabulary moved "Hot Prospect", "Contacted" … into lead_status) stays
+      // visible; the write mirror never maps lead_status onto contacts anyway.
+      if (base.lead_status === 'Converted') delete base.lead_status;
     } else {
       // Other modules: prefer contact_status mirror; clear competing lead_status.
       base.contact_status = row.status;
