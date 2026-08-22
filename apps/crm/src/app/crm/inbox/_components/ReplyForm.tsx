@@ -13,9 +13,14 @@ import {
 import { toast } from 'sonner';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { LazyEmailEditor } from '@/components/email/LazyEmailEditor';
+import { EmailAttachments, type EmailAttachment } from '@/components/email/EmailAttachments';
 import type { InboxConversation, InboxMessage } from '@/lib/inbox/types';
 import type { SharedMailbox } from '@/lib/inbox/shared-mailboxes';
 import { resolveReplyFromAddress } from '@/lib/inbox/reply-from';
+import {
+  assertComposerAttachmentsReady,
+  composerAttachmentsToRefs,
+} from '@/lib/email/outbound-attachments';
 
 type ReplyMode = 'reply' | 'reply_all' | 'forward';
 
@@ -45,6 +50,7 @@ export function ReplyForm({
   const [sending, setSending] = useState(false);
   const [replyMode, setReplyMode] = useState<ReplyMode>('reply');
   const [showModeMenu, setShowModeMenu] = useState(false);
+  const [attachments, setAttachments] = useState<EmailAttachment[]>([]);
 
   // Find the last inbound message for threading
   const lastInbound = useMemo(() => {
@@ -102,6 +108,14 @@ export function ReplyForm({
       const quotedBody = buildQuotedBody(lastMessage, replyHtml);
       onForward(fwdSubject, quotedBody);
       setReplyHtml('');
+      setAttachments([]);
+      return;
+    }
+
+    try {
+      assertComposerAttachmentsReady(attachments);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Attachments are not ready');
       return;
     }
 
@@ -132,6 +146,8 @@ export function ReplyForm({
       // Build CC list for Reply All
       const ccEmails = replyMode === 'reply_all' ? replyAllCc.map(r => r.email) : [];
 
+      const attachmentRefs = composerAttachmentsToRefs(attachments);
+
       // Send via Resend from the monitored mailbox that received the thread
       const res = await fetch('/api/communications/send', {
         method: 'POST',
@@ -146,6 +162,7 @@ export function ReplyForm({
           from_email: monitoredFrom,
           from_name: fromName,
           reply_to: monitoredFrom,
+          attachments: attachmentRefs,
         }),
       });
 
@@ -182,6 +199,11 @@ export function ReplyForm({
         message_id: messageId,
         in_reply_to: inReplyTo,
         references_ids: referencesIds.length > 0 ? referencesIds : null,
+        attachments: attachmentRefs.map((attachment) => ({
+          filename: attachment.file_name,
+          content_type: attachment.mime_type,
+          size: attachment.file_size,
+        })),
         status: 'sent',
         sent_at: now,
         external_id: result.message_id || null,
@@ -205,6 +227,7 @@ export function ReplyForm({
 
       toast.success('Reply sent');
       setReplyHtml('');
+      setAttachments([]);
       onReplySent(selectedConversation.id);
     } catch (error) {
       console.error('Failed to send reply:', error);
@@ -225,6 +248,7 @@ export function ReplyForm({
     replyAllCc,
     onReplySent,
     onForward,
+    attachments,
   ]);
 
   const modeOptions: { mode: ReplyMode; label: string; icon: React.ReactNode }[] = [
@@ -303,11 +327,20 @@ export function ReplyForm({
         </div>
       </div>
 
+      <div className="px-3 lg:px-4 pb-2">
+        <EmailAttachments
+          attachments={attachments}
+          onAttachmentsChange={setAttachments}
+          disabled={sending}
+          compact
+        />
+      </div>
+
       {/* Send button */}
       <div className="px-3 lg:px-4 pb-3 flex justify-end">
         <button
           onClick={handleSendReply}
-          disabled={(!replyHtml.trim() || replyHtml === '<p></p>') || sending}
+          disabled={(!replyHtml.trim() || replyHtml === '<p></p>') || sending || attachments.some((a) => a.is_uploading)}
           className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium rounded-lg transition-colors"
         >
           {sending ? (
