@@ -1,26 +1,21 @@
-'use client';
-
-import { usePathname } from 'next/navigation';
-import { SitePinLockGate } from '@crm-eco/ui/components/pin-lock-overlay';
+import { headers } from 'next/headers';
+import { PIN_LOCK_PATH_HEADER } from '@crm-eco/ui/lib/pin-lock';
+import { SiteHeader } from '@/components/SiteHeader';
+import { SiteFooter } from '@/components/SiteFooter';
 
 /**
- * Paths left public for legal / banking review while the rest of the
- * marketing site stays behind the shared PIN gate.
+ * Marketing chrome is omitted on `/lock` so the PIN page is the only HTML
+ * visitors see. Legal review paths still get the normal header.
  */
-const PUBLIC_PATHS = ['/legal/privacy', '/legal/sms-privacy'] as const;
+export async function WebsiteChrome({ children }: { children: React.ReactNode }) {
+  const isLock = (await headers()).get(PIN_LOCK_PATH_HEADER) === '1';
+  if (isLock) return <>{children}</>;
 
-function isPublicPath(pathname: string): boolean {
-  return PUBLIC_PATHS.some(
-    (path) => pathname === path || pathname.startsWith(`${path}/`),
+  return (
+    <div className="min-h-screen flex flex-col">
+      <SiteHeader />
+      <main className="flex-1">{children}</main>
+      <SiteFooter />
+    </div>
   );
-}
-
-export function WebsitePinGate() {
-  const pathname = usePathname();
-
-  if (isPublicPath(pathname)) {
-    return null;
-  }
-
-  return <SitePinLockGate alwaysOn />;
 }

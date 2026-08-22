@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Plus_Jakarta_Sans } from 'next/font/google';
-import { LeadGenQuotePinGate } from '@crm-eco/ui/components/pin-lock-overlay';
+import { headers } from 'next/headers';
+import { PIN_LOCK_PATH_HEADER, PIN_LOCK_ROBOTS_METADATA } from '@crm-eco/ui/lib/pin-lock';
 import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
 import { ThemeProvider, themeInitScript } from '@/components/theme-provider';
@@ -49,6 +50,7 @@ export const metadata: Metadata = {
     description: SITE_DESCRIPTION,
     images: ['/og.png'],
   },
+  robots: PIN_LOCK_ROBOTS_METADATA,
 };
 
 export const viewport: Viewport = {
@@ -68,7 +70,9 @@ export const viewport: Viewport = {
  * read --font-body / --font-heading and are unaffected — these two variables
  * are only ever consumed through the --lp-* tokens.
  */
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const isLock = (await headers()).get(PIN_LOCK_PATH_HEADER) === '1';
+
   return (
     <html
       lang="en"
@@ -79,16 +83,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body className="font-sans antialiased">
-        <ThemeProvider>
-          <LeadGenQuotePinGate />
-          <div className="dh-mesh" aria-hidden />
-          <div className="dh-grain" aria-hidden />
-          <div className="relative z-[1] flex min-h-[100dvh] flex-col">
-            <SiteHeader />
-            <div className="flex-1">{children}</div>
-            <SiteFooter />
-          </div>
-        </ThemeProvider>
+        {isLock ? (
+          children
+        ) : (
+          <ThemeProvider>
+            <div className="dh-mesh" aria-hidden />
+            <div className="dh-grain" aria-hidden />
+            <div className="relative z-[1] flex min-h-[100dvh] flex-col">
+              <SiteHeader />
+              <div className="flex-1">{children}</div>
+              <SiteFooter />
+            </div>
+          </ThemeProvider>
+        )}
       </body>
     </html>
   );

@@ -1,7 +1,11 @@
 import { createServerClient } from '@supabase/ssr';
 import { type NextRequest, NextResponse } from 'next/server';
+import { enforcePinLock } from '@crm-eco/ui/lib/pin-lock-next';
 
 export async function middleware(request: NextRequest) {
+  const pin = enforcePinLock(request);
+  if (pin) return pin;
+
   let supabaseResponse = NextResponse.next({
     request,
   });
@@ -35,6 +39,7 @@ export async function middleware(request: NextRequest) {
 
   // Public routes that don't require authentication
   const publicRoutes = [
+    '/lock',
     '/signin',
     '/signup',
     '/login',

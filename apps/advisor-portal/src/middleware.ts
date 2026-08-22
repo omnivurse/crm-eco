@@ -1,7 +1,11 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
+import { enforcePinLock } from '@crm-eco/ui/lib/pin-lock-next';
 
 export async function middleware(request: NextRequest) {
+    const pin = enforcePinLock(request);
+    if (pin) return pin;
+
     let supabaseResponse = NextResponse.next({
         request,
     });
@@ -34,7 +38,7 @@ export async function middleware(request: NextRequest) {
     const pathname = request.nextUrl.pathname;
 
     // Public routes
-    const publicRoutes = ['/login', '/shared', '/reset-password', '/update-password', '/legal'];
+    const publicRoutes = ['/lock', '/login', '/shared', '/reset-password', '/update-password', '/legal'];
     if (publicRoutes.some(route => pathname.startsWith(route))) {
         if (user && pathname === '/login') {
             return NextResponse.redirect(new URL('/dashboard', request.url));

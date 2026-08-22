@@ -1,9 +1,8 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter, Fraunces } from 'next/font/google';
 import './globals.css';
-import { WebsitePinGate } from '@/components/WebsitePinGate';
-import { SiteHeader } from '@/components/SiteHeader';
-import { SiteFooter } from '@/components/SiteFooter';
+import { PIN_LOCK_ROBOTS_METADATA } from '@crm-eco/ui/lib/pin-lock';
+import { WebsiteChrome } from '@/components/WebsitePinGate';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -56,7 +55,7 @@ export const metadata: Metadata = {
     description:
       'An affordable, community-driven alternative to health insurance. Join a caring community that shares medical costs together.',
   },
-  robots: { index: true, follow: true },
+  robots: PIN_LOCK_ROBOTS_METADATA,
 };
 
 export const viewport: Viewport = {
@@ -75,12 +74,7 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${fraunces.variable} font-sans antialiased`}
       >
-        <WebsitePinGate />
-        <div className="min-h-screen flex flex-col">
-          <SiteHeader />
-          <main className="flex-1">{children}</main>
-          <SiteFooter />
-        </div>
+        <WebsiteChrome>{children}</WebsiteChrome>
       </body>
     </html>
   );

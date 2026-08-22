@@ -5,6 +5,7 @@ import { PortalHeader } from '@/components/PortalHeader';
 import { BottomNav } from '@/components/BottomNav';
 
 const MINIMAL_CHROME_PREFIXES = [
+  '/lock',
   '/signin',
   '/signup',
   '/login',

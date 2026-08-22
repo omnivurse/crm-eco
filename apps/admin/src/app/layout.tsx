@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { Plus_Jakarta_Sans } from 'next/font/google';
 import { brandingToCssText } from '@crm-eco/ui/lib/branding';
 import { createThemeBootScript } from '@crm-eco/ui/lib/theme-boot';
-import { LeadGenQuotePinGate } from '@crm-eco/ui/components/pin-lock-overlay';
+import { PIN_LOCK_ROBOTS_METADATA } from '@crm-eco/ui/lib/pin-lock';
 import { ConfirmDialogHost } from '@crm-eco/ui/components/confirm-dialog';
 import { PromptDialogHost } from '@crm-eco/ui/components/prompt-dialog';
 import { Toaster } from '@crm-eco/ui';
@@ -33,6 +33,7 @@ export const metadata: Metadata = {
     icon: [{ url: '/favicon-32.png', type: 'image/png', sizes: '32x32' }],
     apple: [{ url: '/apple-touch-icon.png', type: 'image/png', sizes: '180x180' }],
   },
+  robots: PIN_LOCK_ROBOTS_METADATA,
 };
 
 /**
@@ -85,7 +86,6 @@ export default async function RootLayout({
       </head>
       <body className={`${jakarta.variable} ${jakartaHeading.variable} font-sans antialiased`}>
         <ThemeProvider defaultTheme="light">
-          <LeadGenQuotePinGate />
           {children}
           <ConfirmDialogHost />
           <PromptDialogHost />

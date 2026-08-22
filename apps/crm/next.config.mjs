@@ -1,4 +1,5 @@
 import bundleAnalyzer from '@next/bundle-analyzer';
+import { noIndexRouteHeaders } from '../../packages/ui/src/lib/pin-lock-headers.js';
 
 const withBundleAnalyzer = bundleAnalyzer({
   enabled: process.env.ANALYZE === 'true',
@@ -70,6 +71,7 @@ const nextConfig = {
   // Headers for static asset caching
   async headers() {
     return [
+      ...noIndexRouteHeaders(),
       {
         source: '/_next/static/:path*',
         headers: [

@@ -2,10 +2,23 @@
 
 import * as React from 'react';
 import { cn } from '../lib/utils';
+import {
+  getSitePin,
+  isPinLockEnabled,
+  persistPinUnlock,
+  readClientPinUnlockExpiry,
+  sanitizePinLockNext,
+  SITE_PIN_GATE_TITLE,
+} from '../lib/pin-lock';
 
-const PIN_STORAGE_KEY = 'app-pin-unlocked';
-const PIN_EXPIRY_KEY = 'app-pin-expiry';
-const SESSION_HOURS = 12;
+export {
+  DEFAULT_SITE_PIN,
+  getSitePin,
+  isPinLockEnabled,
+  PIN_LOCK_PAGE_METADATA,
+  PIN_LOCK_ROBOTS_METADATA,
+  SITE_PIN_GATE_TITLE,
+} from '../lib/pin-lock';
 
 interface PinLockOverlayProps {
   pin: string;
@@ -14,84 +27,21 @@ interface PinLockOverlayProps {
   alwaysOn?: boolean;
 }
 
-/** Default preview PIN when env is unset (client-side gate only). */
-export const DEFAULT_SITE_PIN = '012049';
-
-/** Misleading title shown on every app’s PIN gate to deter casual discovery. */
-export const SITE_PIN_GATE_TITLE = 'Lead Generation Quote System';
-
-/**
- * Opt-in PIN gate for apps that set `NEXT_PUBLIC_ENABLE_PIN_LOCK=true`.
- * Prefer `LeadGenQuotePinGate` for the standard monorepo disguise gate.
- */
-export function isPinLockEnabled(): boolean {
-  return (
-    process.env.NEXT_PUBLIC_ENABLE_PIN_LOCK === 'true' ||
-    process.env.VITE_ENABLE_PIN_LOCK === 'true'
-  );
+interface PinLockScreenProps {
+  pin: string;
+  appName: string;
+  onUnlock: () => void;
 }
 
-/** PIN from env (`NEXT_PUBLIC_SITE_PIN` / `VITE_SITE_PIN`) or default preview PIN. */
-export function getSitePin(): string {
-  const fromEnv =
-    process.env.NEXT_PUBLIC_SITE_PIN?.trim() ||
-    process.env.VITE_SITE_PIN?.trim();
-  return fromEnv && fromEnv.length > 0 ? fromEnv : DEFAULT_SITE_PIN;
-}
-
-/** Drop-in gate for app root layouts. */
-export function SitePinLockGate({
-  appName = SITE_PIN_GATE_TITLE,
-  alwaysOn = false,
-}: {
-  appName?: string;
-  alwaysOn?: boolean;
-}) {
-  return <PinLockOverlay pin={getSitePin()} appName={appName} alwaysOn={alwaysOn} />;
-}
-
-/**
- * Standard monorepo PIN gate — always on, shared PIN, shared disguise title and styling.
- * Mount once in each app’s root layout.
- */
-export function LeadGenQuotePinGate() {
-  return <SitePinLockGate appName={SITE_PIN_GATE_TITLE} alwaysOn />;
-}
-
-/**
- * Full-screen PIN gate that blocks access until the correct PIN is entered.
- * Persists unlock state in sessionStorage for SESSION_HOURS hours.
- */
-export function PinLockOverlay({
-  pin,
-  appName = SITE_PIN_GATE_TITLE,
-  alwaysOn = false,
-}: PinLockOverlayProps) {
-  const pinLockEnabled = alwaysOn || isPinLockEnabled();
-  const [locked, setLocked] = React.useState(true);
+function PinLockScreen({ pin, appName, onUnlock }: PinLockScreenProps) {
   const [entered, setEntered] = React.useState('');
   const [error, setError] = React.useState(false);
-  const [mounted, setMounted] = React.useState(false);
   const inputRefs = React.useRef<(HTMLInputElement | null)[]>([]);
 
-  React.useEffect(() => {
-    setMounted(true);
-    try {
-      const expiry = sessionStorage.getItem(PIN_EXPIRY_KEY);
-      if (expiry && Date.now() < parseInt(expiry, 10)) {
-        setLocked(false);
-      }
-    } catch { /* sessionStorage unavailable */ }
-  }, []);
-
   const handleUnlock = React.useCallback(() => {
-    const expiryMs = Date.now() + SESSION_HOURS * 60 * 60 * 1000;
-    try {
-      sessionStorage.setItem(PIN_STORAGE_KEY, 'true');
-      sessionStorage.setItem(PIN_EXPIRY_KEY, String(expiryMs));
-    } catch { /* sessionStorage unavailable */ }
-    setLocked(false);
-  }, []);
+    persistPinUnlock();
+    onUnlock();
+  }, [onUnlock]);
 
   const handleDigit = React.useCallback(
     (digit: string, index: number) => {
@@ -156,10 +106,8 @@ export function PinLockOverlay({
     [pin, handleUnlock],
   );
 
-  if (!pinLockEnabled || !mounted || !locked) return null;
-
   return (
-    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-[#f4f5f7] px-4 font-sans">
+    <div className="flex min-h-[100dvh] items-center justify-center bg-[#f4f5f7] px-4 font-sans">
       <div
         className="w-full max-w-md border border-[#d8dce3] bg-white px-8 py-10 shadow-sm"
         role="dialog"
@@ -169,13 +117,11 @@ export function PinLockOverlay({
         <div className="mb-8 border-b border-[#e8eaed] pb-6">
           <h1
             id="pin-lock-title"
-            className="text-[15px] font-semibold tracking-wide text-[#1a1f26] uppercase"
+            className="text-[15px] font-semibold uppercase tracking-wide text-[#1a1f26]"
           >
             {appName}
           </h1>
-          <p className="mt-2 text-sm text-[#5f6773]">
-            Enter your access PIN to continue.
-          </p>
+          <p className="mt-2 text-sm text-[#5f6773]">Enter your access PIN to continue.</p>
         </div>
 
         <div className="mb-2">
@@ -221,9 +167,7 @@ export function PinLockOverlay({
           </p>
         )}
 
-        <p className="mt-8 text-center text-xs text-[#8b939e]">
-          Authorized personnel only.
-        </p>
+        <p className="mt-8 text-center text-xs text-[#8b939e]">Authorized personnel only.</p>
       </div>
 
       <style>{`
@@ -235,6 +179,79 @@ export function PinLockOverlay({
           80% { transform: translateX(3px); }
         }
       `}</style>
+    </div>
+  );
+}
+
+/** Dedicated /lock page — this is the HTML that ships before unlock. */
+export function PinLockPage({
+  next = '/',
+  appName = SITE_PIN_GATE_TITLE,
+}: {
+  next?: string;
+  appName?: string;
+}) {
+  const destination = sanitizePinLockNext(next);
+  const pin = getSitePin();
+
+  React.useEffect(() => {
+    const expiry = readClientPinUnlockExpiry();
+    if (!expiry) return;
+    persistPinUnlock(expiry);
+    window.location.replace(destination);
+  }, [destination]);
+
+  return (
+    <PinLockScreen
+      pin={pin}
+      appName={appName}
+      onUnlock={() => {
+        window.location.replace(destination);
+      }}
+    />
+  );
+}
+
+/** Drop-in gate for app root layouts. Prefer the /lock route + middleware. */
+export function SitePinLockGate({
+  appName = SITE_PIN_GATE_TITLE,
+  alwaysOn = false,
+}: {
+  appName?: string;
+  alwaysOn?: boolean;
+}) {
+  return <PinLockOverlay pin={getSitePin()} appName={appName} alwaysOn={alwaysOn} />;
+}
+
+export function LeadGenQuotePinGate() {
+  return <SitePinLockGate appName={SITE_PIN_GATE_TITLE} alwaysOn />;
+}
+
+/**
+ * Overlay fallback. SSR-visible (no mounted gate) so it cannot flash the
+ * landing page if a layout still mounts it. Middleware + /lock is the real gate.
+ */
+export function PinLockOverlay({
+  pin,
+  appName = SITE_PIN_GATE_TITLE,
+  alwaysOn = false,
+}: PinLockOverlayProps) {
+  const pinLockEnabled = alwaysOn || isPinLockEnabled();
+  const [locked, setLocked] = React.useState(true);
+
+  React.useEffect(() => {
+    const expiry = readClientPinUnlockExpiry();
+    if (expiry) {
+      persistPinUnlock(expiry);
+      setLocked(false);
+    }
+  }, []);
+
+  if (!pinLockEnabled || !locked) return null;
+
+  return (
+    <div className="fixed inset-0 z-[99999]">
+      <PinLockScreen pin={pin} appName={appName} onUnlock={() => setLocked(false)} />
     </div>
   );
 }

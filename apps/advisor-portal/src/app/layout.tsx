@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { Fraunces, Plus_Jakarta_Sans } from 'next/font/google';
-import { LeadGenQuotePinGate } from '@crm-eco/ui/components/pin-lock-overlay';
+import { PIN_LOCK_ROBOTS_METADATA } from '@crm-eco/ui/lib/pin-lock';
 import './globals.css';
 import { Toaster } from 'sonner';
 
@@ -29,6 +29,7 @@ const fraunces = Fraunces({
 export const metadata: Metadata = {
   title: 'Advisor Portal | Double Helix Hub',
   description: 'Manage your leads, team, and presentations',
+  robots: PIN_LOCK_ROBOTS_METADATA,
 };
 
 export default function RootLayout({
@@ -41,7 +42,6 @@ export default function RootLayout({
       <body
         className={`${plusJakarta.variable} ${plusJakartaHeading.variable} ${fraunces.variable} font-sans`}
       >
-        <LeadGenQuotePinGate />
         {children}
         <Toaster position="top-right" richColors />
       </body>

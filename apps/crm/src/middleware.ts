@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
+import { enforcePinLock } from '@crm-eco/ui/lib/pin-lock-next';
 import {
   MFA_STEP_UP_PATH,
   hasVerifiedTotpFactor,
@@ -176,6 +177,9 @@ function redirectWithCookies(
 // ---------------------------------------------------------------------------
 
 export async function middleware(request: NextRequest) {
+  const pin = enforcePinLock(request);
+  if (pin) return pin;
+
   let supabaseResponse = NextResponse.next({ request });
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -190,6 +194,7 @@ export async function middleware(request: NextRequest) {
     );
     const pathname = request.nextUrl.pathname;
     const publicPrefixes = [
+      '/lock',
       '/crm-login',
       '/crm-access-denied',
       '/login',
@@ -233,6 +238,7 @@ export async function middleware(request: NextRequest) {
 
   // ── Public routes ────────────────────────────────────────────────────
   const publicPrefixes = [
+    '/lock',
     '/crm-login',
     '/crm-access-denied',
     '/login',

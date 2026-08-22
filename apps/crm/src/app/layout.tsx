@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Inter, Plus_Jakarta_Sans } from 'next/font/google';
 import { brandingToCssText } from '@crm-eco/ui/lib/branding';
 import { createThemeBootScript } from '@crm-eco/ui/lib/theme-boot';
-import { LeadGenQuotePinGate } from '@crm-eco/ui/components/pin-lock-overlay';
+import { PIN_LOCK_ROBOTS_METADATA } from '@crm-eco/ui/lib/pin-lock';
 import { ConfirmDialogHost } from '@crm-eco/ui/components/confirm-dialog';
 import { PromptDialogHost } from '@crm-eco/ui/components/prompt-dialog';
 import { RootProviders } from '@/components/providers/RootProviders';
@@ -48,6 +48,7 @@ export const metadata: Metadata = {
   other: {
     'mobile-web-app-capable': 'yes',
   },
+  robots: PIN_LOCK_ROBOTS_METADATA,
 };
 
 /**
@@ -118,7 +119,6 @@ export default async function RootLayout({
         <link rel="dns-prefetch" href="https://sffisarikcreyyjzdjvb.supabase.co" />
       </head>
       <body className={`${inter.variable} ${plusJakarta.variable} font-sans antialiased`}>
-        <LeadGenQuotePinGate />
         <RootProviders>{children}</RootProviders>
         <ConfirmDialogHost />
         <PromptDialogHost />

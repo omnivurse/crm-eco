@@ -1,3 +1,5 @@
+import { noIndexRouteHeaders } from '../../packages/ui/src/lib/pin-lock-headers.js';
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   transpilePackages: ['@crm-eco/ui', '@crm-eco/lib', '@crm-eco/shared', '@crm-eco/enrollment'],
@@ -30,6 +32,7 @@ const nextConfig = {
 
   async headers() {
     return [
+      ...noIndexRouteHeaders(),
       {
         source: '/_next/static/:path*',
         headers: [

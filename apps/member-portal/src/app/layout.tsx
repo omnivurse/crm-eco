@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Plus_Jakarta_Sans } from 'next/font/google';
 import { brandingToCssText } from '@crm-eco/ui/lib/branding';
-import { LeadGenQuotePinGate } from '@crm-eco/ui/components/pin-lock-overlay';
+import { PIN_LOCK_ROBOTS_METADATA } from '@crm-eco/ui/lib/pin-lock';
 import { ConfirmDialogHost } from '@crm-eco/ui/components/confirm-dialog';
 import { PromptDialogHost } from '@crm-eco/ui/components/prompt-dialog';
 import './globals.css';
@@ -40,6 +40,7 @@ export const metadata: Metadata = {
   other: {
     'mobile-web-app-capable': 'yes',
   },
+  robots: PIN_LOCK_ROBOTS_METADATA,
 };
 
 export const viewport: Viewport = {
@@ -75,7 +76,6 @@ export default async function RootLayout({
         )}
       </head>
       <body className={`${plusJakarta.variable} ${plusJakartaHeading.variable} font-sans antialiased`}>
-        <LeadGenQuotePinGate />
         <ServiceWorkerRegistration />
         <PortalAppShell>{children}</PortalAppShell>
         <InstallPrompt />

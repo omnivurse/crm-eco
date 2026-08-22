@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
+import { enforcePinLock } from '@crm-eco/ui/lib/pin-lock-next';
 
 /**
  * Admin Portal Middleware
@@ -16,6 +17,7 @@ import { createServerClient } from '@supabase/ssr';
 const ADMIN_ROLES = ['owner', 'super_admin', 'admin', 'staff'];
 
 const PUBLIC_ROUTES = [
+  '/lock',
   '/login',
   '/access-denied',
   '/reset-password',
@@ -69,6 +71,9 @@ function extractSubdomain(host: string | null): string | null {
 }
 
 export async function middleware(request: NextRequest) {
+  const pin = enforcePinLock(request);
+  if (pin) return pin;
+
   let supabaseResponse = NextResponse.next({ request });
   const pathname = request.nextUrl.pathname;
 

@@ -1,4 +1,5 @@
 import { withWorkflow } from 'workflow/next';
+import { noIndexRouteHeaders } from '../../packages/ui/src/lib/pin-lock-headers.js';
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -12,6 +13,7 @@ const nextConfig = {
 
   async headers() {
     return [
+      ...noIndexRouteHeaders(),
       {
         source: '/_next/static/:path*',
         headers: [
