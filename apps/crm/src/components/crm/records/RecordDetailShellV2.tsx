@@ -169,6 +169,7 @@ import {
   persistRecordScrollTop,
 } from '@/lib/crm/record-section-persistence';
 import {
+  lockRecordHeaderCompact,
   nextHeaderCompact,
   reanchorScrollAfterHeaderResize,
 } from '@/lib/crm/record-header-compact';
@@ -436,6 +437,11 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
    */
   const compactTransitionRef = useRef<'none' | 'compacting' | 'expanding'>('none');
   const [headerCompact, setHeaderCompact] = useState(false);
+  /** Notes / related / timeline: keep the hero compact so reading cannot skip. */
+  const lockHeaderCompact = lockRecordHeaderCompact({
+    topTab,
+    overviewPane,
+  });
 
   // When the Command Palette lands here with `?ai=email`, request a fresh AI
   // follow-up draft and open SendEmailDialog pre-filled, then scrub the query
@@ -613,15 +619,19 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
   }, [refreshInsights]);
 
   // Restore scroll if something upstream still triggered a route refresh.
+  // Pane must match — a Details persist must not skip the Notes list.
   useEffect(() => {
-    const scrollTop = consumePersistedScrollTop(record.id);
+    const scrollTop = consumePersistedScrollTop(record.id, {
+      pane: overviewPane,
+      tab: topTab,
+    });
     if (scrollTop == null) return;
     const el = recordMainScrollRef.current;
     if (!el) return;
     requestAnimationFrame(() => {
       el.scrollTop = scrollTop;
     });
-  }, [record.id, record.updated_at]);
+  }, [record.id, record.updated_at, overviewPane, topTab]);
 
   useEffect(() => {
     return () => {
@@ -738,11 +748,17 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
   ]);
 
   // Collapse the hero header once the user scrolls — keeps title + key fields pinned.
+  // Locked panes (Notes, related lists, timeline) stay compact so a modest
+  // wheel to read the first note cannot shrink the hero and skip the list.
   useEffect(() => {
     const root = recordMainScrollRef.current;
     if (!root) return;
 
     const onScroll = () => {
+      if (lockHeaderCompact) {
+        setHeaderCompact(true);
+        return;
+      }
       const y = root.scrollTop;
       setHeaderCompact((prev) => {
         const next = nextHeaderCompact(prev, y);
@@ -755,14 +771,18 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
 
     root.addEventListener('scroll', onScroll, { passive: true });
     return () => root.removeEventListener('scroll', onScroll);
-  }, [record.id]);
+  }, [record.id, lockHeaderCompact]);
 
-  // Don't compensate against the previous record's header height on navigation.
+  // New record, pane, or tab = new document under the sticky header. Reset
+  // scroll and ignore the next header-height sample (chip strip appearing
+  // used to add ~72px to leftover Details scrollTop — the notes skip).
   useLayoutEffect(() => {
     prevStickyHeaderHeightRef.current = null;
     compactTransitionRef.current = 'none';
-    setHeaderCompact(false);
-  }, [record.id]);
+    setHeaderCompact(lockHeaderCompact);
+    const root = recordMainScrollRef.current;
+    if (root) root.scrollTop = 0;
+  }, [record.id, overviewPane, topTab, lockHeaderCompact]);
 
   // When the sticky header height changes (compact toggle, tab strip, chips),
   // Chromium/Brave leave scrollTop alone while the in-flow header shrinks —
@@ -779,6 +799,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
       prevStickyHeaderHeightRef.current = nextH;
       root.style.setProperty('--record-sticky-offset', `${Math.ceil(nextH + 12)}px`);
 
+      if (lockHeaderCompact) return;
       if (prevH == null) return;
       const delta = nextH - prevH;
       // Keep compactTransitionRef until a real height delta arrives — the first
@@ -799,7 +820,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
     const ro = new ResizeObserver(syncOffsetAndAnchor);
     ro.observe(header);
     return () => ro.disconnect();
-  }, [record.id, headerCompact, topTab]);
+  }, [record.id, headerCompact, topTab, overviewPane, lockHeaderCompact]);
 
   // -------------------------------------------------------------------------
   // Action handlers (preserve V1 behaviour)
@@ -816,8 +837,13 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
 
   const persistMainScroll = useCallback(() => {
     const el = recordMainScrollRef.current;
-    if (el) persistRecordScrollTop(record.id, el.scrollTop);
-  }, [record.id]);
+    if (el) {
+      persistRecordScrollTop(record.id, el.scrollTop, {
+        pane: overviewPane,
+        tab: topTab,
+      });
+    }
+  }, [record.id, overviewPane, topTab]);
 
   const handleAddNote = useCallback(() => {
     if (onAddNote) {
@@ -1509,7 +1535,12 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
     <div className={cn('flex h-full min-h-0', className)}>
       <main
         ref={recordMainScrollRef}
-        className="flex-1 min-h-0 overflow-y-auto [scrollbar-gutter:stable] [overflow-anchor:none]"
+        className={cn(
+          'flex-1 min-h-0 overflow-y-auto [scrollbar-gutter:stable]',
+          // Details: none, so Chromium cannot fight hero compact.
+          // Notes: auto, so tall imported HTML / images do not skip mid-read.
+          lockHeaderCompact ? '[overflow-anchor:auto]' : '[overflow-anchor:none]',
+        )}
         data-record-find-root
       >
         {/* Sticky header — compacts on scroll so title + key fields stay visible */}

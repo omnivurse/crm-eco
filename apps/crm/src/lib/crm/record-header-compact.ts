@@ -14,6 +14,38 @@ export const HEADER_COMPACT_EXIT = 12;
 
 export type CompactTransition = 'none' | 'compacting' | 'expanding';
 
+/**
+ * Notes / related panes / timeline must not toggle the hero mid-read.
+ * A modest wheel to read the first note used to compact the header (~280px)
+ * and skip the list. Lock compact so ResizeObserver never re-anchors.
+ */
+export function lockRecordHeaderCompact(args: {
+  topTab: string;
+  overviewPane: string;
+}): boolean {
+  return args.topTab !== 'overview' || args.overviewPane !== 'details';
+}
+
+/**
+ * The document under the sticky header is new after a pane/tab switch.
+ * Keep leftover Details scrollTop and the chip-strip grow compensation
+ * would land the user halfway down the notes list.
+ */
+export function scrollTopAfterRecordChromeChange(args: {
+  prevPane: string;
+  nextPane: string;
+  prevTab?: string;
+  nextTab?: string;
+  prevScrollTop: number;
+}): number {
+  const prevTab = args.prevTab ?? 'overview';
+  const nextTab = args.nextTab ?? 'overview';
+  if (args.prevPane === args.nextPane && prevTab === nextTab) {
+    return Math.max(0, args.prevScrollTop);
+  }
+  return 0;
+}
+
 export function nextHeaderCompact(
   prevCompact: boolean,
   scrollTop: number,

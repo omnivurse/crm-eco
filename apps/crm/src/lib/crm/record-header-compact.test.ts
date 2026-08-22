@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest';
 import {
   HEADER_COMPACT_ENTER,
   HEADER_COMPACT_EXIT,
+  lockRecordHeaderCompact,
   nextHeaderCompact,
   reanchorScrollAfterHeaderResize,
+  scrollTopAfterRecordChromeChange,
   type CompactTransition,
 } from './record-header-compact';
 
@@ -138,5 +140,43 @@ describe('reanchorScrollAfterHeaderResize', () => {
         headerCompact: false,
       }),
     ).toBe(592);
+  });
+});
+
+describe('lockRecordHeaderCompact', () => {
+  it('locks on Notes so a modest wheel cannot collapse the hero', () => {
+    expect(lockRecordHeaderCompact({ topTab: 'overview', overviewPane: 'notes' })).toBe(true);
+    expect(lockRecordHeaderCompact({ topTab: 'overview', overviewPane: 'details' })).toBe(false);
+    expect(lockRecordHeaderCompact({ topTab: 'timeline', overviewPane: 'details' })).toBe(true);
+  });
+});
+
+describe('scrollTopAfterRecordChromeChange (chip-strip notes skip)', () => {
+  it('documents the skip: leftover Details scroll + chip grow lands past the first note', () => {
+    const leftover = 400;
+    const afterChipGrow = reanchorScrollAfterHeaderResize({
+      scrollTop: leftover,
+      delta: 72,
+      transition: 'none',
+      headerCompact: false,
+    });
+    expect(afterChipGrow).toBe(472);
+  });
+
+  it('resets to the top of Notes so the first note is readable', () => {
+    expect(
+      scrollTopAfterRecordChromeChange({
+        prevPane: 'details',
+        nextPane: 'notes',
+        prevScrollTop: 400,
+      }),
+    ).toBe(0);
+    expect(
+      scrollTopAfterRecordChromeChange({
+        prevPane: 'notes',
+        nextPane: 'notes',
+        prevScrollTop: 240,
+      }),
+    ).toBe(240);
   });
 });

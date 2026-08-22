@@ -54,23 +54,74 @@ export function persistActiveSection(recordId: string, sectionKey: string): void
   }
 }
 
-export function persistRecordScrollTop(recordId: string, scrollTop: number): void {
+export type RecordScrollChrome = {
+  pane: string;
+  tab: string;
+};
+
+export type PersistedRecordScroll = RecordScrollChrome & { top: number };
+
+/** Accepts today's JSON payload and the legacy raw-number string. */
+export function parsePersistedRecordScroll(raw: string): PersistedRecordScroll | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  if (!trimmed.startsWith('{')) {
+    const n = Number(trimmed);
+    return Number.isFinite(n) ? { top: n, pane: 'details', tab: 'overview' } : null;
+  }
+  try {
+    const parsed = JSON.parse(trimmed) as unknown;
+    if (!parsed || typeof parsed !== 'object') return null;
+    const top = (parsed as { top?: unknown }).top;
+    if (typeof top !== 'number' || !Number.isFinite(top)) return null;
+    const pane = (parsed as { pane?: unknown }).pane;
+    const tab = (parsed as { tab?: unknown }).tab;
+    return {
+      top,
+      pane: typeof pane === 'string' && pane ? pane : 'details',
+      tab: typeof tab === 'string' && tab ? tab : 'overview',
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function persistRecordScrollTop(
+  recordId: string,
+  scrollTop: number,
+  chrome?: RecordScrollChrome,
+): void {
   if (typeof window === 'undefined') return;
   try {
-    window.sessionStorage.setItem(scrollKey(recordId), String(Math.round(scrollTop)));
+    const payload: PersistedRecordScroll = {
+      top: Math.round(scrollTop),
+      pane: chrome?.pane ?? 'details',
+      tab: chrome?.tab ?? 'overview',
+    };
+    window.sessionStorage.setItem(scrollKey(recordId), JSON.stringify(payload));
   } catch {
     /* ignore */
   }
 }
 
-export function consumePersistedScrollTop(recordId: string): number | null {
+export function consumePersistedScrollTop(
+  recordId: string,
+  chrome?: RecordScrollChrome,
+): number | null {
   if (typeof window === 'undefined') return null;
   try {
     const raw = window.sessionStorage.getItem(scrollKey(recordId));
     if (raw == null) return null;
+    const parsed = parsePersistedRecordScroll(raw);
+    if (!parsed) {
+      window.sessionStorage.removeItem(scrollKey(recordId));
+      return null;
+    }
+    if (chrome && (parsed.pane !== chrome.pane || parsed.tab !== chrome.tab)) {
+      return null;
+    }
     window.sessionStorage.removeItem(scrollKey(recordId));
-    const n = Number(raw);
-    return Number.isFinite(n) ? n : null;
+    return parsed.top;
   } catch {
     return null;
   }

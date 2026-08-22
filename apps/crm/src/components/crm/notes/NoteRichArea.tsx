@@ -22,7 +22,7 @@ function NoteFormattingToolbar({ editorRef, flushFromEditor }: NoteToolbarProps)
     (commandId: string, cmdValue?: string) => {
       const el = editorRef.current;
       if (!el) return;
-      el.focus();
+      el.focus({ preventScroll: true });
       document.execCommand(commandId, false, cmdValue);
       flushFromEditor();
     },
@@ -145,7 +145,7 @@ export function NoteRichArea({ value, onChange, placeholder, className }: NoteRi
             const reader = new FileReader();
             reader.onload = () => {
               const dataUrl = reader.result as string;
-              editorRef.current?.focus();
+              editorRef.current?.focus({ preventScroll: true });
               document.execCommand(
                 'insertHTML',
                 false,
@@ -162,11 +162,11 @@ export function NoteRichArea({ value, onChange, placeholder, className }: NoteRi
       const html = clipboardData.getData('text/html');
       if (html) {
         const sanitized = DOMPurify.sanitize(html, SANITIZE_NOTE_HTML_CONFIG);
-        editorRef.current?.focus();
+        editorRef.current?.focus({ preventScroll: true });
         document.execCommand('insertHTML', false, sanitized);
       } else {
         const text = clipboardData.getData('text/plain');
-        editorRef.current?.focus();
+        editorRef.current?.focus({ preventScroll: true });
         document.execCommand('insertText', false, text);
       }
 
