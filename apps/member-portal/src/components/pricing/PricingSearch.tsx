@@ -214,7 +214,7 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
     setMsaName(msas[0]?.msaName || '');
   }, [stateName, msas, msaName, allMsas.length]);
 
-  const runLegacySearch = useCallback(async () => {
+  const runLegacySearch = useCallback(async (noticeOverride?: string) => {
     if (!zipCode || !/^\d{5}$/.test(zipCode)) {
       setError('Enter a valid 5-digit ZIP for backup search.');
       return false;
@@ -232,7 +232,8 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
     setSource('legacy');
     setHasMore(false);
     setNotice(
-      'Backup cash-price directory. Published hospital files for this metro are not on this key yet.',
+      noticeOverride ||
+        'Backup cash-price directory. Published hospital files for this metro are not on this key yet.',
     );
     return true;
   }, [zipCode, selectedProcedureName]);
@@ -283,7 +284,11 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
             return;
           }
           if (data.fallback) {
-            await runLegacySearch();
+            await runLegacySearch(
+              data.error === 'misconfigured' || data.error === 'invalid_key'
+                ? 'Live hospital file is not configured here. Showing the backup directory.'
+                : undefined,
+            );
             return;
           }
           setError(data.message || 'Unable to read the tape.');

@@ -113,7 +113,10 @@ export async function GET(request: NextRequest) {
       {
         error: result.code,
         message: result.message,
-        fallback: result.code === 'no_msa_mapping',
+        fallback:
+          result.code === 'no_msa_mapping' ||
+          result.code === 'misconfigured' ||
+          result.code === 'invalid_key',
       },
       { status, headers: limited.headers },
     );
