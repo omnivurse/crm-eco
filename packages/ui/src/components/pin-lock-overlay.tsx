@@ -11,14 +11,7 @@ import {
   SITE_PIN_GATE_TITLE,
 } from '../lib/pin-lock';
 
-export {
-  DEFAULT_SITE_PIN,
-  getSitePin,
-  isPinLockEnabled,
-  PIN_LOCK_PAGE_METADATA,
-  PIN_LOCK_ROBOTS_METADATA,
-  SITE_PIN_GATE_TITLE,
-} from '../lib/pin-lock';
+export { DEFAULT_SITE_PIN, getSitePin, isPinLockEnabled, SITE_PIN_GATE_TITLE } from '../lib/pin-lock';
 
 interface PinLockOverlayProps {
   pin: string;
