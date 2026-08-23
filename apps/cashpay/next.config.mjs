@@ -1,6 +1,12 @@
+import { noIndexRouteHeaders } from '../../packages/ui/src/lib/pin-lock-headers.js';
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  poweredByHeader: false,
   transpilePackages: ['@crm-eco/ui', '@crm-eco/cash-pay', '@crm-eco/lib'],
+  async headers() {
+    return noIndexRouteHeaders();
+  },
   experimental: {
     optimizePackageImports: ['lucide-react', '@phosphor-icons/react'],
   },

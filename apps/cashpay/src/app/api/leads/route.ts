@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { rateLimit } from '@crm-eco/lib/rate-limit';
+import { requirePinUnlock } from '@/lib/require-pin';
 import {
   getServiceClient,
   DOUBLE_HELIX_ORG_ID,
@@ -45,6 +46,9 @@ function validate(body: unknown): LeadPayload | { error: string } {
 }
 
 export async function POST(request: NextRequest) {
+  const locked = requirePinUnlock(request);
+  if (locked) return locked;
+
   const limited = rateLimit(`cashpay-leads:${clientIp(request)}`, {
     limit: 8,
     windowMs: 60_000,

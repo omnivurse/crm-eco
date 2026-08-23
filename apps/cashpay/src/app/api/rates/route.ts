@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { rateLimit } from '@crm-eco/lib/rate-limit';
 import { getRateDataPaged, resolveRateQuery, summarizeResultSlice } from '@crm-eco/cash-pay';
+import { requirePinUnlock } from '@/lib/require-pin';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,9 +14,12 @@ function clientIp(request: NextRequest): string {
 }
 
 /**
- * GET /api/rates — public HCL proxy. Never exposes HCL_SECRET_KEY.
+ * GET /api/rates — HCL proxy after PIN unlock. Never exposes HCL_SECRET_KEY.
  */
 export async function GET(request: NextRequest) {
+  const locked = requirePinUnlock(request);
+  if (locked) return locked;
+
   const limited = rateLimit(`cashpay-rates:${clientIp(request)}`, {
     limit: 20,
     windowMs: 60_000,

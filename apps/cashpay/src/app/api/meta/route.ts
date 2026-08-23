@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { rateLimit } from '@crm-eco/lib/rate-limit';
+import { requirePinUnlock } from '@/lib/require-pin';
 import {
   loadHclCatalog,
   loadSpecialtyCatalogFromEnv,
@@ -19,8 +20,11 @@ function clientIp(request: NextRequest): string {
   );
 }
 
-/** Public catalog meta. Never exposes HCL_SECRET_KEY. */
+/** Catalog meta after PIN unlock. Never exposes HCL_SECRET_KEY. */
 export async function GET(request: NextRequest) {
+  const locked = requirePinUnlock(request);
+  if (locked) return locked;
+
   const limited = rateLimit(`cashpay-meta:${clientIp(request)}`, {
     limit: 60,
     windowMs: 60_000,

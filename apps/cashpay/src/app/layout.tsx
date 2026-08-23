@@ -1,10 +1,13 @@
 import type { Metadata, Viewport } from 'next';
+import { PIN_LOCK_PAGE_METADATA, PIN_LOCK_ROBOTS_METADATA } from '@crm-eco/ui/lib/pin-lock';
+import { isPinLockRequest } from '@crm-eco/ui/lib/pin-lock-server';
+import { DevtoolsQuietScript } from '@crm-eco/ui/components/devtools-quiet-script';
 import { ThemeProvider, themeInitScript } from '@/components/theme-provider';
 import { landingFontVars } from '@/lib/fonts';
 import { brand } from '@/lib/brand';
 import './globals.css';
 
-export const metadata: Metadata = {
+const APP_METADATA: Metadata = {
   metadataBase: new URL(brand.siteUrl),
   title: {
     default: `${brand.product} · ${brand.name}`,
@@ -31,7 +34,13 @@ export const metadata: Metadata = {
   icons: {
     icon: [{ url: '/favicon.svg', type: 'image/svg+xml' }],
   },
+  robots: PIN_LOCK_ROBOTS_METADATA,
 };
+
+export async function generateMetadata(): Promise<Metadata> {
+  if (await isPinLockRequest()) return { ...PIN_LOCK_PAGE_METADATA };
+  return APP_METADATA;
+}
 
 export const viewport: Viewport = {
   themeColor: [
@@ -42,17 +51,20 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const isLock = await isPinLockRequest();
+
   return (
     <html lang="en" className={landingFontVars} suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        <DevtoolsQuietScript />
+        {!isLock ? <script dangerouslySetInnerHTML={{ __html: themeInitScript }} /> : null}
       </head>
       <body
         className="min-h-[100dvh] antialiased"
-        style={{ ['--cashpay-signal' as string]: brand.signal }}
+        style={isLock ? undefined : { ['--cashpay-signal' as string]: brand.signal }}
       >
-        <ThemeProvider>{children}</ThemeProvider>
+        {isLock ? children : <ThemeProvider>{children}</ThemeProvider>}
       </body>
     </html>
   );
