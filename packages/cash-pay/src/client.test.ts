@@ -6,7 +6,6 @@ import {
   parseMsaAllowlist,
   stateFromZip,
   msasForState,
-  getRateDataPaged,
   clearCache,
   CASH_PAY_CATALOG,
   specialtiesForSearch,
@@ -24,6 +23,7 @@ import {
   resolveLiveSpecialty,
   summarizeResultSlice,
 } from './index';
+import { getRateDataPaged } from './client';
 
 describe('normalizeRate', () => {
   it('maps a documented ratesList row', () => {

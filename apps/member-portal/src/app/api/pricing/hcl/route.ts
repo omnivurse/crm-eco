@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireActiveMembership } from '@/lib/auth/require-active-membership';
 import { memberRateLimit } from '@/lib/api/guard';
 import {
-  getRateDataPaged,
   loadHclCatalog,
   loadSpecialtyCatalogFromEnv,
   resolvePreferredMarket,
@@ -12,6 +11,7 @@ import {
   uniqueMsas,
   uniqueStates,
 } from '@crm-eco/cash-pay';
+import { getRateDataPaged } from '@crm-eco/cash-pay/server';
 
 export const dynamic = 'force-dynamic';
 

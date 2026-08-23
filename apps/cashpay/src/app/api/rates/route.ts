@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { rateLimit } from '@crm-eco/lib/rate-limit';
-import { getRateDataPaged, resolveRateQuery, summarizeResultSlice } from '@crm-eco/cash-pay';
+import { resolveRateQuery, summarizeResultSlice } from '@crm-eco/cash-pay';
+import { getRateDataPaged } from '@crm-eco/cash-pay/server';
 import { requirePinUnlock } from '@/lib/require-pin';
 
 export const dynamic = 'force-dynamic';

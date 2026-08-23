@@ -45,9 +45,6 @@ export {
 } from './specialties';
 export type { CashPaySpecialty } from './specialties';
 
-export { getRateDataPaged } from './client';
-export type { HclClientConfig } from './client';
-
 export { buildCacheKey, getCached, setCached, clearCache } from './cache';
 
 export {
