@@ -574,3 +574,347 @@ test.describe('manager-only actions hidden from crm_agent (PERM-1)', () => {
     );
   });
 });
+
+// ---------------------------------------------------------------------------
+// RP-errors — the record page's THREE failure doors.
+//
+// `what_ten_means` for Record page / Contact 360 ends with "error / not-found /
+// cross-tenant record ids render explicit states", and until this block no
+// recorded row ever opened a missing, foreign or malformed id: RP-M2 only
+// proved the layout notice is ABSENT on the healthy path. These rows walk the
+// failure path itself and grade the result against four ways it could be wrong:
+//
+//   raw        — a framework page (Next's own 404/500, the dev error overlay,
+//                "Application error: a client-side exception has occurred")
+//   empty      — a shell with a chrome and no explanation
+//   redirected — a silent bounce to the dashboard or the login page
+//   boundary   — error.tsx's "Unable to load this record", which says something
+//                broke but never names WHAT was not found
+//
+// Only `not-found` — a human sentence naming the missing record plus a way
+// back — counts as an explicit state.
+//
+// RP-cross-tenant creates a whole throwaway second tenant with the LOCAL
+// service key and deletes it in the same test's `finally`, so the fixture
+// returns to its documented counts. RLS making a foreign record
+// indistinguishable from a missing one IS the correct outcome, and the row
+// asserts exactly that: the same explicit state, and not one sentinel value
+// from the other org anywhere in the DOM.
+// ---------------------------------------------------------------------------
+
+/** A well-formed uuid that no row owns (checked by the row itself, not assumed). */
+const RP_MISSING_ID = '00000000-0000-0000-0000-0000000f0404';
+/** Not a uuid at all: Postgres answers 22P02, and the page must still explain itself. */
+const RP_MALFORMED_ID = 'not-a-uuid';
+
+/**
+ * The throwaway tenant. Every string is a sentinel that appears nowhere else in
+ * the fixture (seed-walk-fixture.mjs never writes a "Zzforeign*"), so ONE
+ * occurrence in the operator's DOM is a cross-tenant leak, not a coincidence.
+ */
+const RP_FOREIGN = {
+  orgId: '00000000-0000-0000-0000-0000000f0e01',
+  orgName: 'Walk Foreign Org (e2e)',
+  orgSlug: 'walk-foreign-e2e',
+  moduleId: '00000000-0000-0000-0000-0000000f0e02',
+  recordId: '00000000-0000-0000-0000-0000000f0e03',
+  title: 'Zzforeign Tenantleak',
+  phone: '5559990001',
+  email: 'zzforeign.tenantleak@example.invalid',
+  city: 'Zzforeignville',
+} as const;
+
+/** Copy that means a framework page rendered, not a product state. */
+const RAW_ERROR_COPY: ReadonlyArray<RegExp> = [
+  /Unhandled Runtime Error/i, // dev overlay
+  /Application error: a (client|server)-side exception has occurred/i, // prod error page
+  /Internal Server Error/i,
+  /Call Stack/i,
+];
+
+/**
+ * The app's ROOT 404 (`src/app/not-found.tsx`). It is a product page, not a
+ * framework one — but it is the whole-site "this URL is wrong" page: it never
+ * names the record, and it drops the recovery search that
+ * `src/app/crm/r/[recordId]/not-found.tsx` was written to offer. Landing here
+ * from a record URL means the segment boundary was bypassed, so it is graded
+ * separately rather than lumped in with `raw`.
+ */
+const ROOT_404_COPY = /This page could not be found/i;
+
+type RecordFailureState = {
+  kind: 'not-found' | 'root-404' | 'boundary' | 'raw' | 'empty' | 'redirected';
+  status: number | null;
+  pathname: string;
+  bodyChars: number;
+  rawCopy: string;
+  /** The first heading the page actually rendered — the evidence behind `kind`. */
+  headline: string;
+};
+
+/**
+ * Opens `/crm/r/<id>` and grades what came back. Reads only — no clicks, so a
+ * caller can run it inside a 0-click task.
+ */
+async function openRecordFailureDoor(
+  page: import('@playwright/test').Page,
+  recordId: string,
+  expectedPathname: string,
+): Promise<RecordFailureState> {
+  const res = await page.goto(`/crm/r/${recordId}`, { waitUntil: 'domcontentloaded' });
+  const status = res?.status() ?? null;
+  // The page streams inside a Suspense boundary, so give the real answer time
+  // to replace the skeleton before grading it.
+  const heading = page.getByRole('heading', { name: 'Record not found' });
+  await heading
+    .waitFor({ state: 'visible', timeout: 30_000 })
+    .catch(() => {
+      /* graded below — a miss is a finding, not an exception */
+    });
+
+  const pathname = new URL(page.url()).pathname;
+  const bodyText = (await page.locator('body').innerText().catch(() => '')) ?? '';
+  const rawHit = RAW_ERROR_COPY.find((re) => re.test(bodyText));
+  const headingCount = await heading.count();
+
+  let kind: RecordFailureState['kind'];
+  if (pathname !== expectedPathname) kind = 'redirected';
+  else if (rawHit) kind = 'raw';
+  else if (headingCount > 0) kind = 'not-found';
+  else if (ROOT_404_COPY.test(bodyText)) kind = 'root-404';
+  else if (/Unable to load this record/i.test(bodyText)) kind = 'boundary';
+  else kind = 'empty';
+
+  // Scoped to <main>: the CRM shell's own headings ("CRM MENU") are chrome, not
+  // this page's answer.
+  const headline =
+    (await page
+      .locator('main h1, main h2')
+      .locator('visible=true')
+      .first()
+      .innerText()
+      .catch(() => '')) ?? '';
+
+  return {
+    kind,
+    status,
+    pathname,
+    bodyChars: bodyText.trim().length,
+    rawCopy: rawHit ? String(rawHit) : 'none',
+    headline: headline.trim().slice(0, 80),
+  };
+}
+
+/** Asserts the explicit state and records every grade into walk.json. */
+async function assertExplicitNotFound(
+  page: import('@playwright/test').Page,
+  walk: import('../walk-fixture').Walk,
+  state: RecordFailureState,
+): Promise<void> {
+  walk.note('httpStatus', state.status);
+  walk.note('landedPathname', state.pathname);
+  walk.note('stateKind', state.kind);
+  walk.note('rawErrorCopy', state.rawCopy);
+  walk.note('bodyChars', state.bodyChars);
+  walk.note('headline', state.headline);
+
+  // A 5xx is a raw failure however the body reads.
+  expect(state.status ?? 0, `HTTP ${state.status} — the failure door must not be a server error`).toBeLessThan(500);
+  expect(
+    state.kind,
+    [
+      `expected the explicit "Record not found" state, got "${state.kind}"`,
+      `headline: "${state.headline}"`,
+      `raw copy: ${state.rawCopy}`,
+      `landed: ${state.pathname}`,
+      state.kind === 'root-404'
+        ? 'the app ROOT 404 (src/app/not-found.tsx) rendered instead of src/app/crm/r/[recordId]/not-found.tsx — the record-specific sentence and recovery search never reach the user'
+        : '',
+    ]
+      .filter(Boolean)
+      .join(' · '),
+  ).toBe('not-found');
+
+  // …a human sentence that names what was not found…
+  const sentence = page.getByText(/This record may have been merged, deleted, or moved/i).first();
+  await expect(sentence, 'the state must explain itself in a sentence, not just a code').toBeVisible();
+  walk.note('explanationSentence', ((await sentence.innerText()) ?? '').trim().slice(0, 120));
+
+  // …plus a way back that actually goes somewhere.
+  const back = page.getByRole('link', { name: /Back to CRM/i }).first();
+  await expect(back, 'the state must offer a way back').toBeVisible();
+  walk.note('backHref', await back.getAttribute('href'));
+  expect(await back.getAttribute('href')).toBe('/crm');
+
+  // …and the recovery search, so the door is not a dead end.
+  walk.note('recoverySearchInputs', await page.getByPlaceholder(/Search by name, email, or phone/i).count());
+  expect(await page.getByPlaceholder(/Search by name, email, or phone/i).count()).toBeGreaterThan(0);
+
+  // Not a raw framework page: the Next dev ERROR overlay must not have opened.
+  // `<nextjs-portal>` itself is on every dev page (it hosts the dev-tools
+  // indicator), so the signal is the dialog inside it, read through the shadow
+  // root — not the host element's presence.
+  const devOverlay = page.locator(
+    'nextjs-portal [data-nextjs-dialog], nextjs-portal [data-nextjs-error-overlay], nextjs-portal [data-nextjs-call-stack]',
+  );
+  walk.note('devErrorOverlays', await devOverlay.count());
+  expect(await devOverlay.count(), 'the Next dev ERROR overlay must not be open').toBe(0);
+
+  // Not an empty shell: the page carries real prose, not just chrome.
+  expect(state.bodyChars, 'an explicit state is prose, not an empty shell').toBeGreaterThan(60);
+}
+
+test.describe('record failure doors (RP-errors)', () => {
+  test('a missing and a cross-tenant record id both render the explicit not-found state', async ({
+    page,
+    request,
+    bareRequest,
+    walk,
+  }, testInfo) => {
+    const project = testInfo.project.name;
+    await assertTrapsInTest({ page, request, bareRequest, project });
+
+    const restHeaders = {
+      apikey: LOCAL_SUPABASE_SERVICE_ROLE_KEY,
+      Authorization: `Bearer ${LOCAL_SUPABASE_SERVICE_ROLE_KEY}`,
+      'Content-Type': 'application/json',
+      Prefer: 'return=representation,resolution=merge-duplicates',
+    };
+    const rest = (p: string) => `${LOCAL_SUPABASE_URL}/rest/v1/${p}`;
+
+    // ---- RP-not-found -----------------------------------------------------
+    await walk.task(
+      'RP-not-found',
+      'A well-formed record id that does not exist renders an explicit "Record not found" state (0 clicks)',
+      0,
+      async () => {
+        // The id is only "missing" if it really is: prove it with the service key.
+        const probe = await request.get(rest(`crm_records?id=eq.${RP_MISSING_ID}&select=id`), { headers: restHeaders });
+        const rows = (await probe.json()) as unknown[];
+        walk.note('rowsWithThatId', Array.isArray(rows) ? rows.length : -1);
+        expect(Array.isArray(rows) && rows.length, `${RP_MISSING_ID} must not exist for this row to mean anything`).toBe(0);
+
+        const state = await openRecordFailureDoor(page, RP_MISSING_ID, `/crm/r/${RP_MISSING_ID}`);
+        await assertExplicitNotFound(page, walk, state);
+      },
+      { soft: true },
+    );
+
+    // ---- RP-cross-tenant --------------------------------------------------
+    let foreignReady = false;
+    try {
+      const orgRes = await request.post(rest('organizations'), {
+        headers: restHeaders,
+        data: { id: RP_FOREIGN.orgId, name: RP_FOREIGN.orgName, slug: RP_FOREIGN.orgSlug },
+      });
+      const modRes = await request.post(rest('crm_modules'), {
+        headers: restHeaders,
+        data: {
+          id: RP_FOREIGN.moduleId,
+          org_id: RP_FOREIGN.orgId,
+          key: 'contacts',
+          name: 'Contact',
+          name_plural: 'Contacts',
+          is_enabled: true,
+        },
+      });
+      const recRes = await request.post(rest('crm_records'), {
+        headers: restHeaders,
+        data: {
+          id: RP_FOREIGN.recordId,
+          org_id: RP_FOREIGN.orgId,
+          module_id: RP_FOREIGN.moduleId,
+          title: RP_FOREIGN.title,
+          phone: RP_FOREIGN.phone,
+          email: RP_FOREIGN.email,
+          data: { first_name: 'Zzforeign', last_name: 'Tenantleak', mailing_city: RP_FOREIGN.city },
+        },
+      });
+      foreignReady = orgRes.ok() && modRes.ok() && recRes.ok();
+
+      await walk.task(
+        'RP-cross-tenant',
+        "A record in ANOTHER org renders the SAME explicit state, and no value of that org's record reaches the DOM (0 clicks)",
+        0,
+        async () => {
+          walk.note('foreignSeeded', foreignReady);
+          expect(foreignReady, 'the throwaway tenant must exist for this row to mean anything').toBe(true);
+
+          const state = await openRecordFailureDoor(page, RP_FOREIGN.recordId, `/crm/r/${RP_FOREIGN.recordId}`);
+          // RLS making a foreign id indistinguishable from a missing one is the
+          // CORRECT outcome — same door, same words, no hint that it exists.
+          await assertExplicitNotFound(page, walk, state);
+          walk.note('sameStateAsMissing', state.kind === 'not-found');
+
+          const html = await page.content();
+          const sentinels: ReadonlyArray<[string, string]> = [
+            ['title', RP_FOREIGN.title],
+            ['firstName', 'Zzforeign'],
+            ['lastName', 'Tenantleak'],
+            ['phone', RP_FOREIGN.phone],
+            ['email', RP_FOREIGN.email],
+            ['city', RP_FOREIGN.city],
+            ['orgName', RP_FOREIGN.orgName],
+            ['orgSlug', RP_FOREIGN.orgSlug],
+            ['orgId', RP_FOREIGN.orgId],
+          ];
+          const leaked = sentinels.filter(([, value]) => html.includes(value)).map(([name]) => name);
+          walk.note('sentinelsChecked', sentinels.length);
+          walk.note('sentinelsLeaked', leaked.length === 0 ? 'none' : leaked.join(','));
+          expect(leaked, `cross-tenant values in the DOM: ${leaked.join(', ')}`).toEqual([]);
+        },
+        { soft: true },
+      );
+    } finally {
+      // Reverse order, and the audit rows AFTER the record — deleting the
+      // record writes one more audit row of its own.
+      const del = async (p: string) => {
+        await request
+          .delete(rest(p), { headers: { apikey: LOCAL_SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${LOCAL_SUPABASE_SERVICE_ROLE_KEY}` } })
+          .catch(() => null);
+      };
+      await del(`crm_records?id=eq.${RP_FOREIGN.recordId}`);
+      await del(`crm_audit_log?entity_id=eq.${RP_FOREIGN.recordId}`);
+      await del(`crm_modules?id=eq.${RP_FOREIGN.moduleId}`);
+      await del(`organizations?id=eq.${RP_FOREIGN.orgId}`);
+      const residue = await request.get(rest(`crm_records?id=eq.${RP_FOREIGN.recordId}&select=id`), { headers: restHeaders });
+      expect(((await residue.json()) as unknown[]).length, 'the throwaway tenant must be gone').toBe(0);
+    }
+
+  });
+
+  // A separate test on purpose. Opening a non-uuid id is what surfaced PI-2
+  // (`resolve-record.ts:169` logging a Postgres 22P02 through to the browser
+  // console), and the page-issue trap grades per test — keeping this door in
+  // its own test means the PI-2 line reddens THIS row's trap and not the two
+  // rows above it.
+  test('/crm/r/not-a-uuid renders the explicit state, not a 500', async ({ page, request, bareRequest, walk }, testInfo) => {
+    const project = testInfo.project.name;
+    await assertTrapsInTest({ page, request, bareRequest, project });
+
+    await walk.task(
+      'RP-malformed-id',
+      '/crm/r/not-a-uuid renders the explicit state, not a 500 (0 clicks)',
+      0,
+      async () => {
+        const state = await openRecordFailureDoor(page, RP_MALFORMED_ID, `/crm/r/${RP_MALFORMED_ID}`);
+        await assertExplicitNotFound(page, walk, state);
+        // RECORDED FINDING — the UI half of this row is clean (the assertions
+        // above all hold), but opening the door emits a browser console.error,
+        // so the page-issue trap reddens the row and it stays red on purpose.
+        // The defect is product code and is deliberately NOT fixed here:
+        //   src/lib/crm/resolve-record.ts:169 logs
+        //   `[resolve-record] audit entity_id_tombstone: invalid input syntax
+        //   for type uuid: "not-a-uuid"` because the probe built at
+        //   resolve-record.ts:141-149 feeds the raw path segment to
+        //   `.eq('entity_id', cursor)` on a uuid column. Guard the probe with a
+        //   uuid test (or skip it for a non-uuid cursor) and this row goes green.
+        walk.note(
+          'knownDefect',
+          'PI-2 · src/lib/crm/resolve-record.ts:169 console.errors a Postgres 22P02 for every non-uuid record id (probe at resolve-record.ts:141-149)',
+        );
+      },
+      { soft: true },
+    );
+  });
+});

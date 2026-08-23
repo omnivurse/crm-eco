@@ -17,6 +17,13 @@ const sizeToDisplayCount: Record<WidgetSize, number> = {
   full: 10,
 };
 
+/**
+ * A11Y-2 (axe `scrollable-region-focusable`, found by the wave-4 chrome sweep):
+ * the list caps at 400px and scrolls, but an `ActivityItem` holds nothing
+ * focusable — so a keyboard-only user could never reach the rows below the
+ * fold. The scroller carries `tabIndex={0}` (arrow-key scrolling) and a named
+ * `role="region"` so a screen reader announces it on arrival.
+ */
 export default function RecentActivityWidget({
   data: activity,
   size,
@@ -46,7 +53,13 @@ export default function RecentActivityWidget({
           subtitle="Actions will appear here"
         />
       ) : (
-        <div className="space-y-1 max-h-[400px] overflow-y-auto">
+        <div
+          className="space-y-1 max-h-[400px] overflow-y-auto"
+          tabIndex={0}
+          role="region"
+          aria-label="Recent activity"
+          data-testid="crm-widget-recent-activity-scroll"
+        >
           {activities.slice(0, displayCount).map((item) => (
             <ActivityItem key={item.id} activity={item} />
           ))}

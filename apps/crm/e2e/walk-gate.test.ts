@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { gradeWalk, summarizeWalk } from './walk-gate';
+import { gradeGuardProof, gradeWalk, summarizeWalk } from './walk-gate';
+import type { GuardProofJson } from './walk-gate';
 import type { WalkJson } from './walk-report';
 
 function doc(overrides: Partial<WalkJson> = {}): WalkJson {
@@ -85,5 +86,46 @@ describe('gradeWalk', () => {
     expect(md).toContain('### CRM walk — FAIL');
     expect(md).toContain('| tasks | 0 | 1 |');
     expect(md).toContain('T3 [desktop-1440] clicks=3/1');
+  });
+});
+
+describe('gradeGuardProof (EV-GUARD)', () => {
+  const proof = (over: Partial<GuardProofJson> = {}): GuardProofJson => ({
+    proof: 'EV-GUARD',
+    pass: true,
+    commit: '49c16870deadbeef',
+    rule: 'crm-toast/no-raw-toast-copy',
+    preCommit: { exitCode: 1, rejected: true },
+    prePush: { exitCode: 1, rejected: true },
+    git: { treeRestored: true },
+    checks: [{ name: 'pre-commit path REJECTS a new raw toast', pass: true }],
+    ...over,
+  });
+
+  it('accepts a proof where both guards rejected and the tree was restored', () => {
+    expect(gradeGuardProof(proof())).toEqual([]);
+    expect(gradeGuardProof(proof(), '49c16870deadbeef')).toEqual([]);
+  });
+
+  it('fails when the run folder has no proof at all', () => {
+    expect(gradeGuardProof(null)[0]).toContain('guard-proof.json missing');
+  });
+
+  it('names the red checks when the proof failed', () => {
+    const r = gradeGuardProof(proof({ pass: false, checks: [{ name: 'rejection names the rule', pass: false }] }));
+    expect(r[0]).toContain('rejection names the rule');
+  });
+
+  it('does not trust a pass flag over the recorded exit codes', () => {
+    expect(gradeGuardProof(proof({ preCommit: { exitCode: 0, rejected: false } })).join(' ')).toContain('pre-commit run exited 0');
+    expect(gradeGuardProof(proof({ prePush: { exitCode: 0, rejected: false } })).join(' ')).toContain('ratchet exited 0');
+  });
+
+  it('fails a proof that left the tree changed', () => {
+    expect(gradeGuardProof(proof({ git: { treeRestored: false } })).join(' ')).toContain('working tree changed');
+  });
+
+  it('fails a proof recorded against a different commit than the walk', () => {
+    expect(gradeGuardProof(proof({ commit: 'ffffffffdeadbeef' }), '49c16870deadbeef').join(' ')).toContain('stale evidence');
   });
 });

@@ -103,3 +103,56 @@ describe('resolveTaskOutcome (soft mode, EV-5)', () => {
     });
   });
 });
+
+describe('resolveTaskOutcome — browser errors redden the row (TRAP-CONSOLE)', () => {
+  const clean = { failure: null, clicks: 1, budget: 4, soft: false };
+
+  it('a console.error fails a task whose assertions all held and was under budget', () => {
+    const out = resolveTaskOutcome({
+      ...clean,
+      browserIssues: [{ kind: 'console', text: 'Warning: Each child in a list should have a unique "key" prop.' }],
+    });
+    expect(out.pass).toBe(false);
+    expect(out.reason).toMatch(/1 browser error \(1 console\.error\)/);
+    expect(out.reason).toMatch(/unique "key" prop/);
+  });
+
+  it('an uncaught exception fails the row and is named as uncaught', () => {
+    const out = resolveTaskOutcome({ ...clean, browserIssues: [{ kind: 'pageerror', text: 'TypeError: x is not a function' }] });
+    expect(out.pass).toBe(false);
+    expect(out.reason).toMatch(/1 browser error \(1 uncaught\)/);
+  });
+
+  it('a SOFT row is not exempt — soft is for future work, not for browser errors', () => {
+    const out = resolveTaskOutcome({ ...clean, soft: true, browserIssues: [{ kind: 'console', text: 'boom' }] });
+    expect(out.pass).toBe(false);
+  });
+
+  it('does not rethrow: the walk keeps recording, the page-errors trap fails the run at teardown', () => {
+    const out = resolveTaskOutcome({ ...clean, browserIssues: [{ kind: 'console', text: 'boom' }] });
+    expect(out.rethrow).toBeNull();
+  });
+
+  it('reports every reason — a console error is not masked by an assertion failure or a budget breach', () => {
+    const out = resolveTaskOutcome({
+      failure: new Error('expected 3 rows, got 0'),
+      clicks: 9,
+      budget: 4,
+      soft: false,
+      browserIssues: [{ kind: 'console', text: 'boom' }, { kind: 'pageerror', text: 'bang' }],
+    });
+    expect(out.reason).toContain('expected 3 rows, got 0');
+    expect(out.reason).toMatch(/2 browser errors \(1 console\.error, 1 uncaught\)/);
+    expect(out.reason).toContain('over click budget (9 > 4)');
+  });
+
+  it('no browser issues is unchanged behaviour (a clean row still passes)', () => {
+    expect(resolveTaskOutcome({ ...clean, browserIssues: [] })).toEqual({ pass: true, reason: null, rethrow: null, assertBudget: true });
+    expect(resolveTaskOutcome(clean).pass).toBe(true);
+  });
+
+  it('truncates a giant message in the reason instead of pasting a stack', () => {
+    const out = resolveTaskOutcome({ ...clean, browserIssues: [{ kind: 'console', text: 'y'.repeat(1_000) }] });
+    expect((out.reason ?? '').length).toBeLessThan(220);
+  });
+});

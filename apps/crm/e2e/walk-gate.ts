@@ -15,6 +15,13 @@
  *   npm run walk:crm:gate -- --dir <run dir>
  *   npm run walk:crm:gate -- --allow-soft LS-mobile-filter,T2-above-fold
  *   npm run walk:crm:gate -- --summary "$GITHUB_STEP_SUMMARY"
+ *   npm run walk:crm:gate -- --require-guard-proof   # also demand guard-proof.json
+ *
+ * `--require-guard-proof` (EV-GUARD) is opt-in on purpose: the commit-time toast
+ * guard has no Playwright row, so its evidence is a separate artifact written by
+ * `npm run walk:crm:guard-proof -- --out-dir <run dir>`. CI asks for it; a local
+ * `npm run walk:crm:gate` over an older run folder must not go red for missing a
+ * file that folder never had.
  *
  * Exit codes: 0 every trap and task passed · 1 at least one failure · 2 no
  * walk.json to grade (the run never produced evidence).
@@ -110,6 +117,45 @@ export function gradeWalk(doc: WalkJson, options: GateOptions = {}): GateResult 
   };
 }
 
+/**
+ * EV-GUARD evidence — the JSON `e2e/guard-proof.mjs` writes. Only the fields the
+ * gate grades are typed; the script records the full command output as well.
+ */
+export interface GuardProofJson {
+  proof?: string;
+  pass?: boolean;
+  commit?: string;
+  rule?: string;
+  preCommit?: { exitCode?: number | null; rejected?: boolean };
+  prePush?: { exitCode?: number | null; rejected?: boolean };
+  git?: { treeRestored?: boolean };
+  checks?: { name: string; pass: boolean }[];
+}
+
+/**
+ * Grade a guard-proof.json. Pure — no fs, no process. `null` means the run folder
+ * had none, which is itself a failure when the caller asked for the proof.
+ *
+ * It re-derives the verdict from the recorded facts rather than trusting the
+ * script's own `pass` flag: a proof whose pre-commit run exited 0, or that left
+ * the tree dirty, is not evidence however it labelled itself.
+ */
+export function gradeGuardProof(doc: GuardProofJson | null, expectedCommit?: string): string[] {
+  const failures: string[] = [];
+  if (!doc) return ['guard-proof.json missing — the commit-time guard was never proven for this run'];
+  if (doc.pass !== true) {
+    const red = (doc.checks ?? []).filter((c) => !c.pass).map((c) => c.name);
+    failures.push(`GUARD-PROOF failed${red.length > 0 ? `: ${red.join('; ')}` : ''}`);
+  }
+  if (doc.preCommit?.exitCode === 0) failures.push('GUARD-PROOF pre-commit run exited 0 — the guard did not reject the raw toast');
+  if (doc.prePush?.exitCode === 0) failures.push('GUARD-PROOF pre-push ratchet exited 0 — the extra raw site was not rejected');
+  if (doc.git?.treeRestored !== true) failures.push('GUARD-PROOF left the working tree changed — the proof is not repeatable');
+  if (expectedCommit && doc.commit && doc.commit !== expectedCommit) {
+    failures.push(`GUARD-PROOF is from commit ${doc.commit.slice(0, 8)}, the walk from ${expectedCommit.slice(0, 8)} — stale evidence`);
+  }
+  return failures;
+}
+
 /** GitHub-flavoured markdown for $GITHUB_STEP_SUMMARY (also readable in a terminal). */
 export function summarizeWalk(doc: WalkJson, result: GateResult): string {
   const tasks = doc.tasks as unknown as WalkTaskRow[];
@@ -180,6 +226,15 @@ function main(): void {
       .filter(Boolean),
   ];
   const result = gradeWalk(doc, { allowSoft });
+  if (argv.includes('--require-guard-proof')) {
+    const proofFile = path.join(dir, 'guard-proof.json');
+    const proof = fs.existsSync(proofFile) ? (JSON.parse(fs.readFileSync(proofFile, 'utf8')) as GuardProofJson) : null;
+    const guardFailures = gradeGuardProof(proof, doc.commit);
+    if (guardFailures.length > 0) {
+      result.failures.push(...guardFailures);
+      result.ok = false;
+    }
+  }
   const summary = summarizeWalk(doc, result);
   console.log(summary);
   const summaryAt = argv.indexOf('--summary');

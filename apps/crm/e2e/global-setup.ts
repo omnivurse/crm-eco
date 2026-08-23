@@ -25,6 +25,7 @@ import {
 } from './env';
 import {
   TrapFailure,
+  armPageIssueTrap,
   assertTrap,
   pinCookie,
   readStatusVocabulary,
@@ -33,6 +34,7 @@ import {
   trapLayoutV2,
   trapNavProfile,
   trapNoLockRedirect,
+  trapNoPageIssues,
   trapNotEmpty,
   trapNotPinPage,
   trapPinGate,
@@ -222,6 +224,10 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
   // Negative run (E2E_SKIP_PIN_COOKIE=1): arm nothing — pin-gate above already failed; this keeps the two honest together.
   if (!NEGATIVE.skipPinCookie) await context.addCookies([pinCookie(baseURL)]);
   const page = await context.newPage();
+  // Login is part of the walk. Until this was armed, /crm-login and the first
+  // /crm render were the one stretch nothing watched — arm before the first
+  // goto so the graded window starts at the very first byte.
+  armPageIssueTrap(page);
   const supabaseHosts = new Set<string>();
   page.on('request', (req) => {
     try {
@@ -281,6 +287,15 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
       layoutV2 = v2.pass;
       keep(v2, 'post-login');
     }
+    // Last, over everything the setup browser loaded (login → /crm → the
+    // anchor record). Recorded but NOT thrown: a browser error here must not
+    // stop the run from producing the rest of its evidence, and it cannot be
+    // swallowed either — walk-gate fails on any red trap row.
+    const setupIssues: TrapResult = { ...trapNoPageIssues(page, `login and the post-login sweep as ${role}`), phase: 'post-login' };
+    traps.push(setupIssues);
+    recordTrap(setupIssues);
+    console.log(`  ${setupIssues.pass ? 'PASS' : 'FAIL'}  TRAP ${setupIssues.name.padEnd(20)} ${setupIssues.detail}`);
+    if (!setupIssues.pass) await failShot('page-errors-setup');
   } catch (err) {
     // Every setup failure leaves a screenshot — not only trap failures.
     await failShot(err instanceof TrapFailure ? err.trap.name : 'setup-failure');

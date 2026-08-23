@@ -3,7 +3,9 @@
  *
  *   T1 find by phone      ⌘K → digits → Records bucket → Enter      2 keypresses + digits / 2 clicks (mobile)
  *   T2 coverage at a glance  0 clicks on the record page
- *   T3 Add Note           1 click + ⌘Enter, then again with the `n` hotkey (0 clicks)
+ *   T3 Add Note           1 click + ⌘Enter, then again with the `n` hotkey (0 clicks);
+ *                         T3-draft/T3-refocus price the interruption (1 click) and
+ *                         prove a half-typed draft survives a second compose request
  *   T4 Add Member         1 click + Enter (10 values by type+Tab in config order), ≤1 click to see it on the list (D1)
  *   T5 oldest Pending → Call   1 click from the desk, 2 clicks from /crm/modules/contacts
  *
@@ -133,7 +135,7 @@ test.describe('persona walk (D12)', () => {
     );
   });
 
-  test('T3 Add Note — button + ⌘Enter, then the n hotkey', async ({ page, request, bareRequest, walk }, testInfo) => {
+  test('T3 Add Note — button + ⌘Enter, the n hotkey, and no draft loss when interrupted', async ({ page, request, bareRequest, walk }, testInfo) => {
     const project = testInfo.project.name;
     // POST /api/crm/notes requires a writer role — crm_viewer is refused with 403,
     // so T3/T3-hotkey walk the writing personas. The viewer contract is asserted by
@@ -149,34 +151,28 @@ test.describe('persona walk (D12)', () => {
     const editorFocused = () =>
       page.evaluate(() => (document.activeElement as HTMLElement | null)?.isContentEditable === true);
 
-    const composeAndSave = async (label: string, opts: { proveDraftSurvives?: boolean } = {}) => {
+    /** T3-refocus evidence: did the second compose request put the caret back? */
+    let refocusAfterSecondCompose: boolean | null = null;
+
+    /** The one "ask for the composer" gesture, wherever this breakpoint puts it. */
+    const clickAddNote = async (label: string) => {
+      const headerButton = page.getByTestId('crm-record-add-note');
+      const mobileNote = page.locator("nav[aria-label='Quick actions'] button", { hasText: /^Note$/ });
+      if (await headerButton.isVisible()) {
+        await walk.click(headerButton, label);
+        return 'header';
+      }
+      await walk.click(mobileNote, `${label} (action bar)`);
+      return 'mobile action bar';
+    };
+
+    const composeAndSave = async (label: string) => {
       await expect
         .poll(editorFocused, { message: 'focus must land in the contenteditable composer' })
         .toBe(true);
       const editor = page.getByTestId('crm-notes-composer').locator('[contenteditable]').first();
       const body = `Walk ${label} ${suffix}`;
       await walk.type(editor, body, 'type the note');
-
-      if (opts.proveDraftSurvives) {
-        // Task efficiency is only a 10 when an interrupted user cannot lose
-        // work. Ask for the composer a SECOND time on top of a half-typed
-        // note and prove the draft is still there. `n` is ignored while focus
-        // sits in a contenteditable (useRecordHotkeys.shouldIgnoreEvent), so
-        // Tab out first — keystrokes only, the row's 1-click budget stands.
-        for (let i = 0; i < 3 && (await editorFocused()); i += 1) {
-          await walk.press('Tab', 'Tab out of the composer');
-        }
-        expect(await editorFocused(), 'focus must leave the editor before the n hotkey can fire').toBe(false);
-        await walk.press('n', "'n' again on top of a half-typed note");
-        await expect(page.getByTestId('crm-notes-composer'), 'the composer must stay open').toHaveCount(1);
-        const draft = ((await editor.innerText()) ?? '').trim();
-        walk.note(`${label}.draftAfterSecondCompose`, draft.slice(0, 80));
-        expect(draft, 'a second compose request must NOT wipe the half-typed note').toContain(body);
-        // …and it puts the caret back, so ⌘Enter still saves without a click.
-        expect(await editorFocused(), 'the re-opened composer must re-focus the editor').toBe(true);
-        walk.note(`${label}.draftSurvivedSecondCompose`, true);
-      }
-
       const before = notePosts.filter((r) => r.method === 'POST').length;
       await walk.press(`${modKey()}+Enter`, '⌘Enter saves');
       await expect
@@ -191,16 +187,9 @@ test.describe('persona walk (D12)', () => {
       await expect(toast).toHaveText(added('Note'));
     };
 
-    await walk.task('T3', 'Add a note: Add Note → type → ⌘Enter, with no draft loss on a second compose', 1, async () => {
-      const headerButton = page.getByTestId('crm-record-add-note');
-      const mobileNote = page.locator("nav[aria-label='Quick actions'] button", { hasText: /^Note$/ });
-      if (await headerButton.isVisible()) {
-        await walk.click(headerButton, 'Add Note');
-      } else {
-        walk.note('entry', 'mobile action bar');
-        await walk.click(mobileNote, 'Note (action bar)');
-      }
-      await composeAndSave('T3', { proveDraftSurvives: true });
+    await walk.task('T3', 'Add a note: Add Note → type → ⌘Enter', 1, async () => {
+      walk.note('entry', await clickAddNote('Add Note'));
+      await composeAndSave('T3');
     });
 
     await walk.task('T3-hotkey', "Add a note with the 'n' hotkey (no clicks)", 0, async () => {
@@ -208,6 +197,103 @@ test.describe('persona walk (D12)', () => {
       await walk.press('n', "'n' hotkey");
       await composeAndSave('T3-hotkey');
     });
+
+    // ── the "…and no draft loss" half of the T3 clause ─────────────────────
+    // Its own row on purpose. `what_ten_means` prices the UNINTERRUPTED task at
+    // "1 click + type + ⌘Enter" and T3 above still records exactly that; being
+    // interrupted is a different task with a different price, so it gets its own
+    // budget instead of being smuggled into T3's.
+    //
+    // COST ACCOUNTING — the interruption is ONE CLICK: asking for the composer
+    // again by pressing `n` does not work and must not be used here, because
+    // `useRecordHotkeys.shouldIgnoreEvent` (useRecordHotkeys.ts:62-77) ignores a
+    // bare letter whenever focus sits in an INPUT — and the first Tab out of the
+    // editor lands on `<input id="new-note-date">` (NotesPanel.tsx:411). A `n`
+    // pressed there is swallowed, so the composer is never asked a second time
+    // and "the draft survived" would be vacuously true. Clicking Add Note again
+    // is the gesture that provably issues a second compose request
+    // (RecordDetailShellV2.tsx:888-896 → requestNoteCompose), so this row spends
+    // 1 click and says so, rather than widening T3's budget.
+    await walk.task(
+      'T3-draft',
+      'Interrupted mid-note: asking for the composer AGAIN over a half-typed draft keeps the text, does not POST it, and ⌘Enter still saves (1 click)',
+      1,
+      async () => {
+        await expect(page.getByTestId('crm-notes-composer'), 'start from a closed composer').toHaveCount(0);
+        // Open it with the hotkey so the row's single click is spent on the
+        // interruption, not on getting in.
+        await walk.press('n', "'n' opens the composer");
+        await expect
+          .poll(editorFocused, { message: 'focus must land in the contenteditable composer' })
+          .toBe(true);
+        const editor = page.getByTestId('crm-notes-composer').locator('[contenteditable]').first();
+        const body = `Walk T3-draft ${suffix}`;
+        await walk.type(editor, body, 'type half a note');
+
+        const postsBeforeInterrupt = notePosts.filter((r) => r.method === 'POST').length;
+        walk.note('interruptionEntry', await clickAddNote('Add Note AGAIN, on top of the draft'));
+        walk.note('interruptionClicks', 1);
+
+        await expect(page.getByTestId('crm-notes-composer'), 'the composer must stay open').toHaveCount(1);
+        const draft = ((await editor.innerText()) ?? '').trim();
+        walk.note('draftAfterSecondCompose', draft.slice(0, 80));
+        // Exact, not `toContain`: a second compose that re-seeded the editor
+        // would leave the draft DOUBLED — a different bug with the same "the
+        // text is still there" symptom.
+        expect(draft, 'a second compose request must NOT wipe or duplicate the half-typed note').toBe(body);
+
+        // The caret is a SEPARATE promise from the draft, so it is graded on its
+        // own row (T3-refocus) — folding them together would let a caret
+        // regression read as data loss, or let a green row imply a contract the
+        // product only half keeps. Poll rather than read once: the re-focus is a
+        // React effect a tick behind the click.
+        refocusAfterSecondCompose = await editorFocused();
+        for (let i = 0; i < 25 && !refocusAfterSecondCompose; i += 1) {
+          await page.waitForTimeout(200);
+          refocusAfterSecondCompose = await editorFocused();
+        }
+        walk.note('refocusedAfterSecondCompose', refocusAfterSecondCompose);
+
+        // An interruption must not silently commit the unfinished note either.
+        walk.note('postsDuringInterrupt', notePosts.filter((r) => r.method === 'POST').length - postsBeforeInterrupt);
+        expect(
+          notePosts.filter((r) => r.method === 'POST').length,
+          're-opening the composer must not POST the unfinished note',
+        ).toBe(postsBeforeInterrupt);
+
+        // …and the draft is still a real, savable note. If the caret did not
+        // come back on its own, put it back WITHOUT a click (T3-refocus is the
+        // row that grades that failure) so the save leg still measures itself.
+        if (!refocusAfterSecondCompose) await editor.focus();
+        const before = notePosts.filter((r) => r.method === 'POST').length;
+        await walk.press(`${modKey()}+Enter`, '⌘Enter saves the recovered draft');
+        await expect
+          .poll(() => notePosts.filter((r) => r.method === 'POST' && r.status !== null).length, { timeout: 20_000 })
+          .toBeGreaterThan(before);
+        const post = notePosts.filter((r) => r.method === 'POST').at(-1)!;
+        walk.note('postStatus', post.status);
+        expect(post.status, 'the recovered draft must save (2xx)').toBeGreaterThanOrEqual(200);
+        expect(post.status).toBeLessThan(300);
+        walk.note('draftSurvivedSecondCompose', true);
+      },
+    );
+
+    // Split out of T3-draft deliberately: the DRAFT surviving an interruption and
+    // the CARET coming back are two different promises, and folding them together
+    // would let a caret regression read as data loss. Both are HARD rows: they
+    // pass on the recorded walk, so nothing here is declared soft.
+    await walk.task(
+      'T3-refocus',
+      'Re-opening the composer over a draft puts the caret back (NotesPanel openComposer / note-composer.ts focusSignal)',
+      0,
+      async () => {
+        walk.note('refocused', refocusAfterSecondCompose);
+        expect(
+          refocusAfterSecondCompose,
+          'a repeat compose while already composing must re-focus the editor — NotesPanel.tsx:220 states it and note-composer.ts:28 bumps focusSignal for it',
+        ).toBe(true);
+      },
+    );
   });
 
   test('T4 Add Member — 1 click + Enter, then see it on the list (D1)', async ({ page, request, bareRequest, walk }, testInfo) => {

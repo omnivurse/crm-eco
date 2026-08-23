@@ -110,14 +110,14 @@ function AttachmentRow({
   const size = formatFileSize(attachment.file_size);
 
   return (
-    <div className="flex items-center gap-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-900/30 border border-slate-200 dark:border-white/5 hover:border-white/10 transition-colors group">
-      <div className="p-2 rounded-lg bg-slate-800/50 text-slate-400">
+    <div className="flex items-center gap-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-900/30 border border-slate-200 dark:border-white/5 hover:border-slate-300 dark:hover:border-white/10 transition-colors group">
+      <div className="p-2 rounded-lg bg-slate-100 text-slate-500 dark:bg-slate-800/50 dark:text-slate-400">
         {icon}
       </div>
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <h4 className="font-medium text-white truncate">
+          <h4 className="font-medium text-slate-900 dark:text-white truncate">
             {attachment.file_name}
           </h4>
           {isDownloading && (
@@ -146,7 +146,7 @@ function AttachmentRow({
           size="icon"
           onClick={handleDownload}
           disabled={isDownloading}
-          className="h-8 w-8 text-slate-400 hover:text-white hover:bg-white/10"
+          className="h-8 w-8 text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-white/10"
         >
           {isDownloading ? (
             <Loader2 className="w-4 h-4 animate-spin" />
@@ -160,7 +160,7 @@ function AttachmentRow({
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 text-slate-400 hover:text-white hover:bg-white/10"
+              className="h-8 w-8 text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-white/10"
             >
               <MoreHorizontal className="w-4 h-4" />
             </Button>
@@ -168,18 +168,18 @@ function AttachmentRow({
           <DropdownMenuContent align="end" className="glass-card border-slate-200 dark:border-white/10">
             <DropdownMenuItem
               onClick={handleDownload}
-              className="text-slate-300 focus:text-white focus:bg-white/10"
+              className="text-slate-700 focus:text-slate-900 focus:bg-slate-100 dark:text-slate-300 dark:focus:text-white dark:focus:bg-white/10"
             >
               <ExternalLink className="w-4 h-4 mr-2" />
               Open in new tab
             </DropdownMenuItem>
             {onDelete && (
               <>
-                <DropdownMenuSeparator className="bg-white/10" />
+                <DropdownMenuSeparator className="bg-slate-200 dark:bg-white/10" />
                 <DropdownMenuItem
                   onClick={handleDelete}
                   disabled={isDeleting}
-                  className="text-red-400 focus:text-red-300 focus:bg-red-500/10"
+                  className="text-red-600 focus:text-red-700 dark:text-red-400 dark:focus:text-red-300 focus:bg-red-500/10"
                 >
                   {isDeleting ? (
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -247,14 +247,14 @@ function UploadZone({
             {getFileIcon(selectedFile.type)}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-medium text-white truncate">{selectedFile.name}</p>
+            <p className="font-medium text-slate-900 dark:text-white truncate">{selectedFile.name}</p>
             <p className="text-sm text-slate-400">{formatFileSize(selectedFile.size)}</p>
           </div>
           <Button
             variant="ghost"
             size="icon"
             onClick={handleCancel}
-            className="h-8 w-8 text-slate-400 hover:text-white"
+            className="h-8 w-8 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
           >
             <X className="w-4 h-4" />
           </Button>
@@ -264,14 +264,14 @@ function UploadZone({
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Add a description (optional)"
-          className="mb-4 bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10 text-slate-900 dark:text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
+          className="mb-4 bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
         />
 
         <div className="flex justify-end gap-2">
           <Button
             variant="ghost"
             onClick={handleCancel}
-            className="text-slate-400 hover:text-white"
+            className="text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
           >
             Cancel
           </Button>
@@ -308,7 +308,7 @@ function UploadZone({
         'flex flex-col items-center justify-center gap-3',
         isDragOver
           ? 'border-teal-500 bg-teal-500/5'
-          : 'border-slate-700 hover:border-slate-600 hover:bg-slate-50 dark:bg-slate-900/30'
+          : 'border-slate-500 hover:border-slate-600 dark:hover:border-slate-400 hover:bg-slate-50 dark:bg-slate-900/30'
       )}
     >
       <input
@@ -317,11 +317,11 @@ function UploadZone({
         onChange={handleFileSelect}
         className="hidden"
       />
-      <div className="p-3 rounded-full bg-slate-800/50 text-slate-400">
+      <div className="p-3 rounded-full bg-slate-100 text-slate-500 dark:bg-slate-800/50 dark:text-slate-400">
         <Upload className="w-6 h-6" />
       </div>
       <div className="text-center">
-        <p className="text-sm font-medium text-white">
+        <p className="text-sm font-medium text-slate-900 dark:text-white">
           {isDragOver ? 'Drop file here' : 'Click to upload or drag and drop'}
         </p>
         <p className="text-xs text-slate-500 mt-1">
@@ -357,9 +357,9 @@ export function AttachmentsPanel({
   if (isLoading) {
     return (
       <div className={cn('space-y-4', className)}>
-        <div className="h-32 bg-slate-800/30 rounded-xl animate-pulse" />
+        <div className="h-32 bg-slate-200/70 dark:bg-slate-800/30 rounded-xl animate-pulse" />
         {[...Array(3)].map((_, i) => (
-          <div key={i} className="h-20 bg-slate-800/30 rounded-xl animate-pulse" />
+          <div key={i} className="h-20 bg-slate-200/70 dark:bg-slate-800/30 rounded-xl animate-pulse" />
         ))}
       </div>
     );
@@ -387,8 +387,8 @@ export function AttachmentsPanel({
       ) : (
         !onUpload && (
           <div className="text-center py-12">
-            <File className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-white mb-1">No attachments</h3>
+            <File className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-1">No attachments</h3>
             <p className="text-slate-400">
               Files uploaded to this record will appear here
             </p>

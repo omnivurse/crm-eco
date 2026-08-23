@@ -29,7 +29,10 @@ npm run workspace:hygiene || exit 1
 echo "Checking the toast copy ratchet (FB-2)..."
 # ~2s. The ESLint rule is bypassable (`const m = '…'; toast.success(m)`); this
 # per-directory count is the guard that actually holds the line.
-(cd apps/crm && npx vitest run --silent src/lib/crm/toast-raw-ratchet.test.ts) || exit 1
+# NB: vitest 4 parses `--silent <path>` as `--silent=<path>` and throws, which
+# made this hook exit 1 on a clean tree — a permanently-red hook is a bypassed
+# hook. `--silent=true` is the form the CLI itself suggests.
+(cd apps/crm && npx vitest run --silent=true src/lib/crm/toast-raw-ratchet.test.ts) || exit 1
 
 echo "Running type check before push..."
 # Every workspace that defines a `typecheck` script, not just CRM. apps/admin had

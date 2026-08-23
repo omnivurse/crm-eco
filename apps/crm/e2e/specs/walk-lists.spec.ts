@@ -13,9 +13,24 @@ import { FIXTURE, LOCAL_SUPABASE_SERVICE_ROLE_KEY, LOCAL_SUPABASE_URL, PIFH_ORG_
 import { assertTrapsInTest } from '../traps';
 import { armPendingStateLatch, firstInt, isMobileProject, parseShowing, pathWithQuery, readPendingStateLatch, runSuffix, toastTitles, trackRequests } from '../walk-helpers';
 import { DISPLAY_ONLY_FIELD_BADGE, DISPLAY_ONLY_FIELD_HINT } from '../../src/lib/crm/list-field-policy';
+import {
+  FILTER_RAIL_DEFAULT_OPEN,
+  FILTER_RAIL_STORAGE_PREFIX,
+  filterRailStorageKey,
+  legacyFilterRailStorageKey,
+} from '../../src/lib/crm/filter-rail';
 
 const LIST = `/crm/modules/${FIXTURE.anchor.moduleKey}`;
 const PENDING_CHIP = '[data-testid="crm-lane-chip"][data-lane="lane-pending"]';
+
+/** LOCAL PostgREST (service role) — fixture rows and the LS-9 org flag. */
+const REST = `${LOCAL_SUPABASE_URL}/rest/v1`;
+const REST_HEADERS = {
+  apikey: LOCAL_SUPABASE_SERVICE_ROLE_KEY,
+  Authorization: `Bearer ${LOCAL_SUPABASE_SERVICE_ROLE_KEY}`,
+  'Content-Type': 'application/json',
+  Prefer: 'return=representation',
+} as const;
 
 test.describe('lists walk', () => {
   test('rail, lane chip, rail filter, pager, back restores, ?page=abc, select-all', async ({ page, request, bareRequest, walk }, testInfo) => {
@@ -27,10 +42,18 @@ test.describe('lists walk', () => {
     const showing = () => page.getByTestId('crm-pager-showing').first();
     const readShowing = async () => parseShowing((await showing().textContent()) ?? '');
     const railOpen = () => page.locator('[data-testid="crm-filter-rail"][data-state="open"]');
+    // A lane chip renders its count span only once the status-values fetch is
+    // `ready` (QuickFilterChips: `count !== null`). While the fetch is still
+    // `idle` the chip carries NO aria-busy either, so waiting on aria-busy
+    // alone can hand the spec a chip whose text has no number — the race that
+    // made the graded admin run record `chipCount: null`.
     const chipReady = async (lane: string) => {
       const chip = page.locator(`[data-testid="crm-lane-chip"][data-lane="${lane}"]`);
       await expect(chip).toBeVisible();
       await expect(chip).not.toHaveAttribute('aria-busy', 'true', { timeout: 30_000 });
+      await expect(chip.getByTestId('crm-lane-chip-count'), `the ${lane} chip must carry a resolved count`).toBeVisible({
+        timeout: 30_000,
+      });
       return chip;
     };
 
@@ -215,57 +238,92 @@ test.describe('lists walk', () => {
 
     await page.goto(LIST, { waitUntil: 'domcontentloaded' });
     await expect(showing()).toBeVisible({ timeout: 30_000 });
-    await walk.task(
-      'LS-select-all',
-      'Lane chip → Select all rows → "Select all N": selection count equals the filtered pager N',
-      3,
-      async () => {
-        // The fixture's Pending lane fits on one page, so the cross-page "Select
-        // all N" control (the P0: it ignores rail filters) only appears on a lane
-        // larger than the page size — prefer that lane, fall back to Pending.
-        const pageSize = FIXTURE.listPageSize;
-        let lane = 'lane-pending';
-        for (const candidate of ['lane-active', 'lane-pending']) {
-          const c = page.locator(`[data-testid="crm-lane-chip"][data-lane="${candidate}"]`);
-          if ((await c.count()) === 0) continue;
-          await expect(c).not.toHaveAttribute('aria-busy', 'true', { timeout: 30_000 });
-          const n = firstInt((await c.textContent()) ?? '');
-          if (n !== null && n > pageSize) {
-            lane = candidate;
-            break;
-          }
-        }
-        walk.note('lane', lane);
-        const chip = await chipReady(lane);
-        const before = await readShowing();
-        await walk.click(chip, `${lane} chip`);
-        await expect(chip).toHaveAttribute('aria-pressed', 'true');
-        await expect.poll(async () => (await readShowing())?.total, { timeout: 30_000 }).not.toBe(before?.total);
-        const total = (await readShowing())?.total ?? null;
-        walk.note('pagerTotal', total);
-        await walk.click(page.getByRole('checkbox', { name: 'Select all rows' }), 'Select all rows (page)');
-        const selectAllN = page.getByRole('button', { name: /^Select all \d/ });
-        if ((await selectAllN.count()) > 0) {
-          const offered = firstInt((await selectAllN.first().textContent()) ?? '');
+
+    // LS-1's P0 — the cross-page "Select all N" must offer the FILTERED total —
+    // only renders on a lane BIGGER than one page (MassActionsBar hides it once
+    // the page selection already is the whole lane). The seeded fixture's
+    // biggest lane (Active, 16) fits on page 1, so the row used to fall back to
+    // a single-page lane and the cross-page control was never exercised on ANY
+    // recorded run. Top the Active lane up past the page size for the length of
+    // this task, then delete the rows again so the fixture counts return.
+    const laneChip = await chipReady('lane-active');
+    const activeBefore = firstInt((await laneChip.textContent()) ?? '');
+    expect(activeBefore, 'the Active lane chip must carry a count before the top-up').not.toBeNull();
+    const topUp = Math.max(0, FIXTURE.listPageSize + 3 - (activeBefore ?? 0));
+    const selectAllSuffix = runSuffix();
+    const modulesRes = await request.get(`${REST}/crm_modules?org_id=eq.${PIFH_ORG_ID}&key=eq.${FIXTURE.anchor.moduleKey}&select=id`, {
+      headers: REST_HEADERS,
+    });
+    const contactsModuleId = ((await modulesRes.json()) as Array<{ id: string }>)[0]?.id;
+    expect(contactsModuleId, 'the local fixture must have a contacts module').toBeTruthy();
+    const seededIds: string[] = [];
+    if (topUp > 0) {
+      // first_name 'Walk' is the prune convention (scripts/e2e/seed-walk-fixture.mjs).
+      const made = await request.post(`${REST}/crm_records`, {
+        headers: REST_HEADERS,
+        data: Array.from({ length: topUp }, (_, i) => ({
+          org_id: PIFH_ORG_ID,
+          module_id: contactsModuleId,
+          title: `Walk Bulk${selectAllSuffix}${i}`,
+          status: 'Active',
+          data: {
+            first_name: 'Walk',
+            last_name: `Bulk${selectAllSuffix}${i}`,
+            contact_status: 'Active',
+            walk_fixture: 'true',
+          },
+        })),
+      });
+      expect(made.status(), 'top up the Active lane past one page').toBeLessThan(300);
+      seededIds.push(...((await made.json()) as Array<{ id: string }>).map((r) => r.id));
+    }
+
+    try {
+      await page.goto(LIST, { waitUntil: 'domcontentloaded' });
+      await expect(showing()).toBeVisible({ timeout: 30_000 });
+      await walk.task(
+        'LS-select-all',
+        'Lane chip → Select all rows → "Select all N": selection count equals the filtered pager N',
+        3,
+        async () => {
+          const lane = 'lane-active';
+          walk.note('lane', lane);
+          walk.note('seededForCrossPage', topUp);
+          const chip = await chipReady(lane);
+          const chipCount = firstInt((await chip.textContent()) ?? '');
+          walk.note('chipCount', chipCount);
+          expect(chipCount, 'the lane must exceed one page or the cross-page control cannot appear').toBeGreaterThan(
+            FIXTURE.listPageSize,
+          );
+          const before = await readShowing();
+          await walk.click(chip, `${lane} chip`);
+          await expect(chip).toHaveAttribute('aria-pressed', 'true');
+          await expect.poll(async () => (await readShowing())?.total, { timeout: 30_000 }).not.toBe(before?.total);
+          const total = (await readShowing())?.total ?? null;
+          walk.note('pagerTotal', total);
+          expect(total, 'the filtered pager must report a total').not.toBeNull();
+          expect(chipCount, 'lane chip count must equal the filtered pager N').toBe(total);
+          await walk.click(page.getByRole('checkbox', { name: 'Select all rows' }), 'Select all rows (page)');
+          const selectAllN = page.getByRole('button', { name: /^Select all \d/ }).first();
+          await expect(
+            selectAllN,
+            'a lane larger than one page must offer the cross-page "Select all N" (LS-1)',
+          ).toBeVisible({ timeout: 20_000 });
+          const offered = firstInt((await selectAllN.textContent()) ?? '');
           walk.note('selectAllOffered', offered);
-          await walk.click(selectAllN.first(), `Select all ${offered}`);
+          await walk.click(selectAllN, `Select all ${offered}`);
           const toast = page.locator('[data-sonner-toast] [data-title]').filter({ hasText: /^Selected \d/ }).first();
           await expect(toast).toBeVisible({ timeout: 20_000 });
           const selected = firstInt((await toast.textContent()) ?? '');
           walk.note('toastSelected', selected);
-          expect(offered, '"Select all N" must offer the filtered total').toBe(total);
+          expect(offered, '"Select all N" must offer the filtered total, not the module total').toBe(total);
           expect(selected, 'toast count must equal the filtered pager N').toBe(total);
-        } else {
-          // MassActionsBar renders the count twice (one copy display:none per breakpoint).
-          const selectedText = page.getByText(/^\d+ selected$/).locator('visible=true').first();
-          await expect(selectedText).toBeVisible();
-          const selected = firstInt((await selectedText.textContent()) ?? '');
-          walk.note('selectedOnPage', selected);
-          expect(selected, 'single-page lane: every filtered row selected').toBe(total);
-        }
-      },
-      { soft: true },
-    );
+        },
+        { soft: true },
+      );
+    } finally {
+      for (const id of seededIds) await request.delete(`${REST}/crm_records?id=eq.${id}`, { headers: REST_HEADERS });
+    }
   });
 
   test('mobile-390: single-sheet filter in ≤4 taps', async ({ page, request, bareRequest, walk }, testInfo) => {
@@ -287,6 +345,13 @@ test.describe('lists walk', () => {
         // the D11 "chip equals pager" comparison silently skip while the row
         // still reported PASS — so the chip's absence now fails the row.
         await expect(chip.first(), 'the Pending lane chip must be on the phone list to compare against').toBeVisible({ timeout: 30_000 });
+        // …and wait for the count itself: an unresolved chip (status-values
+        // still `idle`) has no aria-busy and no number, which is how the graded
+        // admin run recorded `chipCount: null` while the row reported PASS.
+        await expect(
+          chip.first().getByTestId('crm-lane-chip-count'),
+          'the Pending chip must carry a resolved count to compare the pager against',
+        ).toBeVisible({ timeout: 30_000 });
         const chipCount = firstInt((await chip.first().textContent()) ?? '');
         walk.note('chipCount', chipCount);
         // LS-10: below md the toolbar collapses behind ONE "Filters & View"
@@ -654,13 +719,8 @@ test.describe('leads pager honesty (LS-7b)', () => {
     await assertTrapsInTest({ page, request, bareRequest, project });
     const suffix = runSuffix();
     const LEADS = '/crm/modules/leads';
-    const restHeaders = {
-      apikey: LOCAL_SUPABASE_SERVICE_ROLE_KEY,
-      Authorization: `Bearer ${LOCAL_SUPABASE_SERVICE_ROLE_KEY}`,
-      'Content-Type': 'application/json',
-      Prefer: 'return=representation',
-    };
-    const rest = `${LOCAL_SUPABASE_URL}/rest/v1/crm_records`;
+    const restHeaders = REST_HEADERS;
+    const rest = `${REST}/crm_records`;
 
     const showing = () => page.getByTestId('crm-pager-showing').first();
     const readShowing = async () => parseShowing((await showing().textContent()) ?? '');
@@ -725,13 +785,12 @@ test.describe('leads pager honesty (LS-7b)', () => {
           const promised = s!.to - s!.from + 1;
           // The desktop table virtualises: on a long page only the visible
           // window is in the DOM, so exact equality is only meaningful while
-          // the promised range fits one screen — which the leads fixture does.
-          if (promised <= 10) {
-            expect(rows, 'the list must render every row the range promises').toBe(promised);
-          } else {
-            walk.note('virtualised', true);
-            expect(rows, 'a virtualised page still renders rows').toBeGreaterThan(0);
-          }
+          // the promised range fits one screen. The leads fixture is two rows,
+          // and a guarded `if (promised <= 10)` would silently drop the
+          // headline assertion the day it stopped being — so the fixture
+          // contract is asserted FIRST and the equality then runs every time.
+          expect(promised, 'the leads fixture must stay inside the non-virtualised window (≤10 rows)').toBeLessThanOrEqual(10);
+          expect(rows, 'the list must render every row the range promises').toBe(promised);
           expect(rows, 'rows on the page can never exceed what the range promises').toBeLessThanOrEqual(promised);
           expect(promised, 'the range can never promise more than the total').toBeLessThanOrEqual(s!.total);
           // The converted row counts in neither the total nor the rows.
@@ -750,6 +809,289 @@ test.describe('leads pager honesty (LS-7b)', () => {
       );
     } finally {
       for (const id of ids) await request.delete(`${rest}?id=eq.${id}`, { headers: restHeaders });
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// LS-rail-remembered — the docked rail's open/collapsed state is remembered
+// across a module hop AND a hard reload, is applied on the first rendered
+// frame (no open-then-snap), and is scoped to the viewer: another user's saved
+// state on the same browser profile — and the pre-scoping unscoped key — must
+// never be read (lib/crm/filter-rail.ts `filterRailStorageKey`).
+// ---------------------------------------------------------------------------
+declare global {
+  interface Window {
+    /** Every distinct `data-state` the rail has shown, oldest first, with the ms since navigation start. */
+    __walkRailStates?: Array<{ state: string; at: number }>;
+  }
+}
+
+test.describe('rail state is remembered per viewer (LS-rail-remembered)', () => {
+  test('collapse survives a module hop + reload, and never leaks to another viewer', async ({ page, request, bareRequest, walk }, testInfo) => {
+    const project = testInfo.project.name;
+    test.skip(isMobileProject(project), 'the docked rail is lg+ chrome');
+    await assertTrapsInTest({ page, request, bareRequest, project });
+
+    // Armed before the first navigation, re-armed on every document: records
+    // the ORDER of rail states, so an open-then-snap flash is visible as
+    // ['open','collapsed'] instead of being smoothed over by a settled read.
+    await page.addInitScript(() => {
+      window.__walkRailStates = [];
+      const capture = () => {
+        const state = document.querySelector('[data-testid="crm-filter-rail"]')?.getAttribute('data-state');
+        if (!state) return;
+        const seen = window.__walkRailStates!;
+        if (seen[seen.length - 1]?.state !== state) seen.push({ state, at: Math.round(performance.now()) });
+      };
+      new MutationObserver(capture).observe(document.documentElement ?? document, {
+        subtree: true,
+        childList: true,
+        attributes: true,
+        attributeFilter: ['data-state'],
+      });
+      document.addEventListener('DOMContentLoaded', capture);
+      capture();
+    });
+
+    const showing = () => page.getByTestId('crm-pager-showing').first();
+    const rail = () => page.getByTestId('crm-filter-rail');
+    const railState = () => rail().getAttribute('data-state');
+    const railStateLog = () => page.evaluate(() => window.__walkRailStates ?? []);
+    const stateSequence = async () => (await railStateLog()).map((e) => e.state).join(' → ');
+    /** How long the FIRST (wrong) state stayed on screen before hydration replaced it; 0 = no flash. */
+    const flashMs = async () => {
+      const log = await railStateLog();
+      return log.length > 1 ? log[1].at - log[0].at : 0;
+    };
+    const railKeys = () =>
+      page.evaluate((prefix) => {
+        const out: string[] = [];
+        for (let i = 0; i < window.localStorage.length; i++) {
+          const key = window.localStorage.key(i);
+          if (key && key.startsWith(prefix)) out.push(`${key}=${window.localStorage.getItem(key)}`);
+        }
+        return out.sort();
+      }, FILTER_RAIL_STORAGE_PREFIX);
+
+    // The "other viewer" is a real second walk persona, so the scoping proof is
+    // a real foreign profile id, not a made-up uuid.
+    const otherEmail = walkRole() === 'admin' ? FIXTURE.users.operator.email : FIXTURE.users.admin.email;
+    const otherRes = await request.get(`${REST}/profiles?email=eq.${encodeURIComponent(otherEmail)}&select=id`, {
+      headers: REST_HEADERS,
+    });
+    const otherProfileId = ((await otherRes.json()) as Array<{ id: string }>)[0]?.id;
+    expect(otherProfileId, `the local fixture must have a ${otherEmail} profile to scope against`).toBeTruthy();
+
+    await page.goto(LIST, { waitUntil: 'domcontentloaded' });
+    await expect(showing()).toBeVisible({ timeout: 30_000 });
+    const railTitle = (await rail().getAttribute('aria-label')) ?? '';
+
+    await walk.task(
+      'LS-rail-remembered',
+      'Collapse the rail → other module → back → reload: still collapsed on the first frame; re-open persists; another viewer gets the default',
+      2,
+      async () => {
+        walk.note('railTitle', railTitle);
+        expect(await railState(), 'a fresh viewer starts on the default (open) rail').toBe('open');
+
+        await walk.click(page.getByRole('button', { name: `Collapse ${railTitle}` }), 'Collapse the rail');
+        await expect(rail()).toHaveAttribute('data-state', 'collapsed');
+        const afterCollapse = await railKeys();
+        walk.note('storedKeys', afterCollapse.join(' | ') || '(none)');
+        expect(afterCollapse.length, 'exactly one rail key is written, and it is viewer-scoped').toBe(1);
+        expect(afterCollapse[0], 'the rail key must carry the viewer id (crm.filter-rail.u:<profile>:<module>)').toMatch(
+          /^crm\.filter-rail\.u:[0-9a-f-]{36}:contacts=0$/,
+        );
+
+        // Another module and back — the collapse must survive the round trip.
+        await page.goto('/crm/modules/members', { waitUntil: 'domcontentloaded' });
+        await expect(page.getByTestId('crm-filter-rail')).toBeVisible({ timeout: 30_000 });
+        await page.goto(LIST, { waitUntil: 'domcontentloaded' });
+        await expect(showing()).toBeVisible({ timeout: 30_000 });
+        walk.note('stateAfterModuleHop', await railState());
+        expect(await railState(), 'the collapse must survive a module hop').toBe('collapsed');
+
+        // …and a hard reload. The recorded sequence (every distinct data-state
+        // since document start) is kept for the first-frame assertion, which
+        // runs LAST so a flash does not cost the rest of this row's evidence.
+        await page.reload({ waitUntil: 'domcontentloaded' });
+        await expect(showing()).toBeVisible({ timeout: 30_000 });
+        expect(await railState(), 'the collapse must survive a reload').toBe('collapsed');
+        const collapsedSequence = await stateSequence();
+        walk.note('stateSequenceAfterReload', collapsedSequence);
+        walk.note('flashMsAfterReload', await flashMs());
+
+        // Restore it open — that must persist too.
+        await walk.click(page.getByTestId('crm-filter-toggle'), `Show ${railTitle}`);
+        await expect(rail()).toHaveAttribute('data-state', 'open');
+        await page.reload({ waitUntil: 'domcontentloaded' });
+        await expect(showing()).toBeVisible({ timeout: 30_000 });
+        walk.note('stateAfterRestore', await railState());
+        walk.note('storedAfterRestore', (await railKeys()).join(' | ') || '(none)');
+        expect(await railState(), 're-opening the rail must persist as well').toBe('open');
+        expect(await stateSequence(), 'the re-opened rail must render open on the first frame').toBe('open');
+
+        // Per-viewer scoping: hand the browser the OTHER persona's collapsed
+        // state plus the pre-scoping unscoped key, and take this viewer's own
+        // key away. Neither may be read — this viewer gets the default.
+        const mineKey = (await railKeys()).map((entry) => entry.split('=')[0]).find((k) => k.endsWith(`:${FIXTURE.anchor.moduleKey}`));
+        expect(mineKey, 'this viewer must have a stored rail key for the contacts list').toBeTruthy();
+        const foreignKey = filterRailStorageKey(FIXTURE.anchor.moduleKey, otherProfileId!);
+        const legacyKey = legacyFilterRailStorageKey(FIXTURE.anchor.moduleKey);
+        walk.note('foreignKey', foreignKey);
+        expect(foreignKey, 'the foreign key must differ from this viewer\'s').not.toBe(mineKey);
+        await page.evaluate(
+          ([mine, foreign, legacy]) => {
+            window.localStorage.removeItem(mine);
+            window.localStorage.setItem(foreign, '0');
+            window.localStorage.setItem(legacy, '0');
+          },
+          [mineKey!, foreignKey, legacyKey] as const,
+        );
+        await page.reload({ waitUntil: 'domcontentloaded' });
+        await expect(showing()).toBeVisible({ timeout: 30_000 });
+        const stateForOtherViewer = await railState();
+        walk.note('stateWithOnlyForeignKeys', stateForOtherViewer);
+        walk.note('keysAfterForeignReload', (await railKeys()).join(' | ') || '(none)');
+        expect(
+          stateForOtherViewer,
+          'another viewer\'s saved rail state (and the legacy unscoped key) must never be read — this viewer gets the default',
+        ).toBe(FILTER_RAIL_DEFAULT_OPEN ? 'open' : 'collapsed');
+        expect(
+          await page.evaluate((key) => window.localStorage.getItem(key), legacyKey),
+          'the pre-scoping unscoped key is purged, never read',
+        ).toBeNull();
+        expect(
+          await page.evaluate((key) => window.localStorage.getItem(key), foreignKey),
+          "another viewer's key is left untouched, not stolen",
+        ).toBe('0');
+
+        // LAST, so everything above is recorded even when this is red: the
+        // stored state must be on screen from the FIRST rendered frame. A
+        // settled read would hide an open-then-snap flash, so the assertion is
+        // on the whole sequence — 'open → collapsed' means the viewer watched
+        // the rail snap shut after paint.
+        expect(collapsedSequence, 'the rail must render collapsed on the first frame (no open-then-snap flash)').toBe(
+          'collapsed',
+        );
+      },
+      { soft: true },
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// LS-trim-surface (LS-9 / decision D11) — with `crm.lists.trim_surface` ON for
+// PIFH the Zoho-leftover related-module filters sit behind "Show all" and the
+// pipeline/schedule view modes behind "More views"; with the flag OFF the
+// surface is the untrimmed one (hidden, never removed). The flag is flipped on
+// the LOCAL stack only and restored to its prior value in `finally`.
+// ---------------------------------------------------------------------------
+const TRIM_FLAG_KEY = 'crm.lists.trim_surface';
+/**
+ * Mirrors the catalogues the trim reads from — FilterSidebar `RELATED_MODULES`
+ * (27 rows, 17 of them `defaultHidden`) and ViewModeSwitcher
+ * `VIEW_MODE_OPTIONS` (7 choosable modes) trimmed to ModuleShell's
+ * `PRIMARY_VIEW_MODES` (table / list / split). Exact numbers on purpose: this
+ * row is the evidence for "27 → 10" and "7 → 3".
+ */
+const TRIM = { relatedOn: 10, relatedOff: 27, viewModesOn: 3, viewModesOff: 7 } as const;
+
+test.describe('list surface trim (LS-9 / D11)', () => {
+  test('flag ON trims related modules + view modes behind a reveal; flag OFF is the full surface', async ({ page, request, bareRequest, walk }, testInfo) => {
+    const project = testInfo.project.name;
+    test.skip(isMobileProject(project), 'the docked rail + toolbar switcher are lg+ chrome');
+    await assertTrapsInTest({ page, request, bareRequest, project });
+
+    const flagUrl = `${REST}/crm_feature_flags?flag_key=eq.${TRIM_FLAG_KEY}&organization_id=eq.${PIFH_ORG_ID}`;
+    const readFlag = async (): Promise<boolean | null> => {
+      const res = await request.get(`${flagUrl}&select=enabled`, { headers: REST_HEADERS });
+      const rows = (await res.json()) as Array<{ enabled: boolean }>;
+      return rows.length > 0 ? rows[0].enabled : null;
+    };
+    const setFlag = async (enabled: boolean) => {
+      const res = await request.patch(flagUrl, { headers: REST_HEADERS, data: { enabled } });
+      expect(res.status(), `set ${TRIM_FLAG_KEY}=${enabled}`).toBeLessThan(300);
+    };
+    const priorFlag = await readFlag();
+    expect(priorFlag, `the local fixture must carry a PIFH ${TRIM_FLAG_KEY} row (seed-walk-fixture.mjs)`).not.toBeNull();
+
+    const showing = () => page.getByTestId('crm-pager-showing').first();
+    const rail = () => page.locator('[data-testid="crm-filter-rail"][data-state="open"]');
+    // Each related-module row wraps its Has/None pair in `role=group`
+    // aria-label="{label} condition" — one group per rendered row.
+    const relatedRows = () => rail().locator('[role="group"][aria-label$=" condition"]');
+    const showAllRelated = () => rail().getByRole('button', { name: /^Show all \(\d+ more related modules\)$/ });
+    const viewRadios = () => page.getByRole('radiogroup', { name: 'View mode' }).locator('visible=true').first().getByRole('radio');
+    const moreViews = () => page.getByRole('button', { name: 'More views' }).locator('visible=true');
+    const openRelatedSection = async (label: string) => {
+      const trigger = rail().getByRole('button', { name: /^Filter By Related Modules/ });
+      await expect(trigger, 'the rail must offer a Filter By Related Modules section').toBeVisible({ timeout: 30_000 });
+      await walk.click(trigger, label);
+      await expect(relatedRows().first()).toBeVisible({ timeout: 15_000 });
+    };
+
+    try {
+      if (priorFlag !== true) await setFlag(true);
+      await page.goto(LIST, { waitUntil: 'domcontentloaded' });
+      await expect(showing()).toBeVisible({ timeout: 30_000 });
+
+      await walk.task(
+        'LS-trim-surface',
+        'Flag ON: related modules 10 + "Show all (17 more)" → 27, view modes 3 + "More views" → 7; flag OFF: the full surface, no reveal',
+        4,
+        async () => {
+          walk.note('flagBefore', String(priorFlag));
+          await expect(rail(), 'the docked rail must be open to read the trimmed surface').toBeVisible({ timeout: 30_000 });
+
+          // ── Related-module filters: trimmed, with the rest one click away ──
+          await openRelatedSection('Filter By Related Modules (flag on)');
+          const trimmed = await relatedRows().count();
+          walk.note('relatedRowsTrimmed', trimmed);
+          expect(trimmed, 'the trimmed rail lists only the modules a health-share desk uses').toBe(TRIM.relatedOn);
+          const showAllLabel = ((await showAllRelated().textContent()) ?? '').replace(/\s+/g, ' ').trim();
+          walk.note('showAllLabel', showAllLabel);
+          const hidden = firstInt(showAllLabel);
+          expect(hidden, 'the "Show all" affordance must say how many rows are hidden').not.toBeNull();
+          expect(trimmed + (hidden ?? 0), 'trimmed + hidden must be the whole catalogue (hidden, never removed)').toBe(
+            TRIM.relatedOff,
+          );
+          await walk.click(showAllRelated(), 'Show all related modules');
+          await expect.poll(() => relatedRows().count(), { timeout: 15_000 }).toBe(TRIM.relatedOff);
+          walk.note('relatedRowsRevealed', await relatedRows().count());
+
+          // ── View modes: the primary three, the rest behind "More views" ──
+          const onRadios = await viewRadios().count();
+          walk.note('viewModeRadiosTrimmed', onRadios);
+          expect(onRadios, 'only the primary view modes stay as radios').toBe(TRIM.viewModesOn);
+          await expect(moreViews().first(), 'the trimmed switcher must offer a "More views" reveal').toBeVisible();
+          await walk.click(moreViews().first(), 'More views');
+          const moreItems = await page.getByRole('menuitemradio').count();
+          walk.note('viewModeMenuItems', moreItems);
+          expect(onRadios + moreItems, 'radios + menu must be the whole view-mode catalogue').toBe(TRIM.viewModesOff);
+          await walk.press('Escape', 'close More views');
+
+          // ── Flag OFF: byte-identical to the pre-flag surface ──
+          await setFlag(false);
+          await page.goto(LIST, { waitUntil: 'domcontentloaded' });
+          await expect(showing()).toBeVisible({ timeout: 30_000 });
+          await openRelatedSection('Filter By Related Modules (flag off)');
+          const untrimmed = await relatedRows().count();
+          walk.note('relatedRowsFlagOff', untrimmed);
+          expect(untrimmed, 'flag off renders every related module, no reveal').toBe(TRIM.relatedOff);
+          expect(await showAllRelated().count(), 'flag off hides nothing, so there is nothing to "Show all"').toBe(0);
+          const offRadios = await viewRadios().count();
+          walk.note('viewModeRadiosFlagOff', offRadios);
+          expect(offRadios, 'flag off renders every view mode as a radio').toBe(TRIM.viewModesOff);
+          expect(await moreViews().count(), 'flag off has no "More views" overflow').toBe(0);
+        },
+        { soft: true },
+      );
+    } finally {
+      if (priorFlag !== null) await setFlag(priorFlag);
+      const restored = await readFlag();
+      expect(restored, `${TRIM_FLAG_KEY} must be restored to its prior value`).toBe(priorFlag);
     }
   });
 });

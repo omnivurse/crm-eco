@@ -25,9 +25,15 @@
  *       The two persona tasks with the mouse unplugged: ⌘K → digits → Enter
  *       opens the record; `n` → type → ⌘Enter saves a note. Zero clicks.
  *
- * Desktop-1440 + the operator persona only — the axe pass is a per-surface
- * audit, not a per-breakpoint one, and the drawer/palette entry points differ
- * below lg (those breakpoints are covered by the drawer and persona specs).
+ * Desktop-1440 + the operator persona — the entry points for the drawer and
+ * the palette differ below lg, so those two surfaces are audited where they
+ * are actually reachable.
+ *
+ * EVERYTHING ELSE — every other breakpoint, every other role, and the record
+ * panes behind `?pane=` — is swept by A11Y-2 at the bottom of this file, which
+ * carries the full project/role matrix. Read that block before quoting any
+ * "0 serious/critical" number: the two tasks cover different surfaces on
+ * purpose, and each records the surfaces it opened in walk.json (`scanned`).
  */
 import AxeBuilder from '@axe-core/playwright';
 import type { Result as AxeResult } from 'axe-core';
@@ -121,11 +127,18 @@ function ruleSummary(violations: AxeResult[]): string {
     .join(', ');
 }
 
-/** First node of each blocking violation, with its selector — the fix list. */
+/**
+ * Each blocking violation with its selector AND the first node's markup — the
+ * fix list. The markup matters: a selector like `.border-b-0` names no file,
+ * and the chrome sweep audits surfaces whose owner is not obvious from a class.
+ */
 function blockingDetail(violations: AxeResult[]): string {
   return violations
     .filter((v) => v.impact === 'serious' || v.impact === 'critical')
-    .map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).slice(0, 4).join(' | ')}`)
+    .map(
+      (v) =>
+        `${v.id}[${v.impact}]: ${v.nodes.map((n) => n.target.join(' ')).slice(0, 4).join(' | ')}\n    ${(v.nodes[0]?.html ?? '').slice(0, 160)}`,
+    )
     .join('\n');
 }
 
@@ -179,7 +192,25 @@ async function assertInkTokens(page: Page, walk: Walk, theme: 'light' | 'dark'):
   expect(resolved, `the ${theme} dim-chrome ink tokens must resolve`).toEqual(expected);
 }
 
-async function auditSurface(page: Page, walk: Walk, surface: string, noteKey = ''): Promise<void> {
+/**
+ * Where a pass accumulates its evidence. The four-surface sweep and the chrome
+ * sweep keep separate books so neither can be quoted as the other.
+ *
+ * `blocking` changes WHEN the semantics gate fires, never WHETHER. Without it
+ * the first bad surface throws and the remaining surfaces — and the whole dark
+ * leg — go unscanned, so one defect hides the next. With it every surface is
+ * audited and ONE row (`A11Y-axe-chrome-semantics`) asserts the whole list is
+ * empty. Same gate, more evidence behind it. The main sink leaves it undefined
+ * and keeps failing per surface, exactly as before.
+ */
+interface ContrastSink {
+  nodes: Map<string, number>;
+  detail: ContrastNode[];
+  blocking?: string[];
+}
+const mainSink: ContrastSink = { nodes: contrastNodes, detail: contrastDetail };
+
+async function auditSurface(page: Page, walk: Walk, surface: string, noteKey = '', sink: ContrastSink = mainSink): Promise<void> {
   const results = await new AxeBuilder({ page }).analyze();
   const semantics = results.violations.filter(
     (v) => v.id !== CONTRAST_RULE && !isKnownException(v.id, v.nodes.map((n) => n.target.join(' '))),
@@ -196,11 +227,11 @@ async function auditSurface(page: Page, walk: Walk, surface: string, noteKey = '
   walk.note(`${noteKey}minor`, counts.minor);
   walk.note(`${noteKey}contrastNodes`, contrastCount.critical + contrastCount.serious + contrastCount.moderate + contrastCount.minor);
   walk.note(`${noteKey}rules`, ruleSummary(results.violations));
-  contrastNodes.set(surface, contrastCount.critical + contrastCount.serious + contrastCount.moderate + contrastCount.minor);
+  sink.nodes.set(surface, contrastCount.critical + contrastCount.serious + contrastCount.moderate + contrastCount.minor);
   for (const violation of contrast) {
     for (const node of violation.nodes) {
       const data = (node.any?.[0]?.data ?? {}) as Record<string, unknown>;
-      contrastDetail.push({
+      sink.detail.push({
         surface,
         ratio: ratioNumber(data.contrastRatio),
         expected: ratioNumber(data.expectedContrastRatio),
@@ -218,10 +249,13 @@ async function auditSurface(page: Page, walk: Walk, surface: string, noteKey = '
     exceptionNodes.set(surface, ruleSummary(tracked));
   }
   await walk.shot(`axe ${surface}`);
-  expect(
-    counts.critical + counts.serious,
-    `axe serious/critical on ${surface}:\n${blockingDetail(semantics)}`,
-  ).toBe(0);
+  const blocking = counts.critical + counts.serious;
+  const detail = `axe serious/critical on ${surface}:\n${blockingDetail(semantics)}`;
+  if (sink.blocking) {
+    if (blocking > 0) sink.blocking.push(detail);
+    return;
+  }
+  expect(blocking, detail).toBe(0);
 }
 
 test.describe('a11y walk (A11Y-1)', () => {
@@ -473,5 +507,383 @@ test.describe('a11y walk (A11Y-1)', () => {
       expect(post.status).toBeLessThan(300);
       await expect(toastTitles(page).filter({ hasText: added('Note') }).first()).toBeVisible();
     });
+  });
+});
+
+/* ==========================================================================
+ * A11Y-2 — the chrome sweep. WHY IT EXISTS: everything above is desktop-1440
+ * + operator, so "0 serious/critical including contrast" was a true statement
+ * about ONE persona at ONE width on FOUR surfaces, and silent about the rest.
+ * Three whole classes of chrome had never been axe-scanned:
+ *
+ *   · the phone / tablet chrome — the nav drawer that replaces the sidebar
+ *     below lg, and the single "Filters & View" sheet that replaces the list
+ *     toolbar below md. Different DOM, different tokens;
+ *   · the admin-only chrome — the Settings sidebar's long link list, and the
+ *     mass-actions bar that only a writer role can raise;
+ *   · the record's OTHER panes. The record scan above only ever sees the
+ *     Overview pane; Timeline and Files mount behind `?pane=` and carry
+ *     components (RecordTimeline, AttachmentsPanel) that no walk had opened.
+ *
+ * ── THE MATRIX (what each project/role actually scans) ────────────────────
+ *
+ *   A11Y-axe-chrome        every project × every role, LIGHT theme
+ *     always .............. command desk · contacts list · record Overview ·
+ *                           record Timeline pane · record Files pane
+ *     mobile-390 only ..... nav drawer · "Filters & View" sheet
+ *     admin only .......... Settings page + its sidebar link list
+ *     operator/admin, ≥1024 mass-actions bar (viewer has no row checkboxes;
+ *                           the phone list has no select-all column)
+ *
+ *   A11Y-axe-chrome-dark   every project × every role, DARK theme
+ *     always .............. record Timeline pane · record Files pane
+ *     mobile-390 only ..... nav drawer
+ *     admin only .......... Settings sidebar
+ *     (the desk/list/Overview tokens are already walked in dark by
+ *     A11Y-axe-dark; re-scanning them at three widths buys nothing, so the
+ *     dark leg spends its runtime on the panes and chrome nothing else sees.)
+ *
+ *   A11Y-contrast-chrome   color-contrast over everything the two tasks above
+ *                          scanned, as its own gate and its own token-pair fix
+ *                          list (`contrast-chrome-<project>-<role>.json`).
+ *
+ * Every task records `scanned` in walk.json — the list of surfaces it really
+ * opened on THIS project/role — so the claim in the report is re-derivable
+ * from the artifact instead of being read off this comment.
+ *
+ * ── WHAT THE WIDENED SWEEP FOUND (2026-08-23) ────────────────────────────
+ * Both gate rows below are RED on every project/role, and every finding is in
+ * a component this wave does not own. They are listed here so the next reader
+ * knows the rows are reporting product defects, not spec bugs:
+ *
+ *   aria-required-children (critical) — RecordRelatedListChips.tsx:246 declares
+ *     role="tablist" and puts the "Customize related lists" button (:290)
+ *     inside it as a non-`tab` child. Every pane except Overview, every
+ *     project, both themes.
+ *   button-name (critical) — the mass-actions bar's overflow trigger, and the
+ *     card-view row checkboxes on the phone list (ListView.tsx:255).
+ *   color-contrast — NextUpRail.tsx:29 `text-muted-foreground/70` 3.79:1;
+ *     RecordRelatedListChips.tsx:118 white on bg-violet-500 4.23:1;
+ *     FilterableTimeline.tsx:144 white on bg-white/20 over the active chip
+ *     4.43:1; ListView.tsx:188-191 avatar initials, white on bg-emerald-500
+ *     2.53 / bg-blue-500 3.67 / bg-indigo-500 4.46:1.
+ *   duplicate React key (console.error, admin only) —
+ *     app/crm/settings/page.tsx:228 keys the cards by `card.href`, and :59 and
+ *     :147 both point at /crm/settings/fields.
+ *
+ * The two panes this wave DOES own — RecordTimeline, AttachmentsPanel — are
+ * clean in both themes; see record-panes-contrast.test.ts for their ratios.
+ * ======================================================================== */
+const chromeSink: ContrastSink = { nodes: new Map(), detail: [], blocking: [] };
+
+/**
+ * The effective painted background of an element: the first opaque ancestor
+ * colour with every translucent layer above it composited back down (the same
+ * walk axe does internally). Recorded so the ratios asserted in
+ * `record-panes-contrast.test.ts` stand on a MEASURED ground rather than an
+ * assumed white, and so a future re-skin of the record pane shows up here.
+ */
+async function probeGround(page: Page, walk: Walk, selector: string, key: string): Promise<void> {
+  const ground = await page.evaluate((sel) => {
+    const el = document.querySelector(sel) as HTMLElement | null;
+    if (!el) return null;
+    const layers: Array<[number, number, number, number]> = [];
+    let node: HTMLElement | null = el;
+    let gradient = false;
+    while (node) {
+      const style = getComputedStyle(node);
+      if (style.backgroundImage && style.backgroundImage.includes('gradient')) gradient = true;
+      const m = /rgba?\(([^)]+)\)/.exec(style.backgroundColor);
+      if (m) {
+        const parts = m[1].split(',').map((v) => Number(v.trim()));
+        const [r, g, b] = parts;
+        const a = parts.length > 3 ? parts[3] : 1;
+        if (a > 0) {
+          layers.push([r, g, b, a]);
+          if (a >= 1) break;
+        }
+      }
+      node = node.parentElement;
+    }
+    let out: [number, number, number] = [255, 255, 255];
+    for (let i = layers.length - 1; i >= 0; i -= 1) {
+      const [r, g, b, a] = layers[i];
+      out = [r, g, b].map((v, j) => Math.round(v * a + out[j] * (1 - a))) as [number, number, number];
+    }
+    const hex = `#${out.map((v) => v.toString(16).padStart(2, '0')).join('')}`;
+    return gradient ? `${hex} (+gradient overlay)` : hex;
+  }, selector);
+  walk.note(key, ground ?? 'not rendered');
+}
+
+test.describe('a11y chrome sweep (A11Y-2)', () => {
+  test('axe: the desk, the record panes and the per-breakpoint / per-role chrome', async ({
+    page,
+    request,
+    bareRequest,
+    walk,
+  }, testInfo) => {
+    const project = testInfo.project.name;
+    const role = walkRole();
+    // The nav drawer and the collapsed toolbar are BELOW lg / md; 1024 is lg,
+    // so tablet-1024 takes the desktop branch for both. That is the product's
+    // breakpoint, not a shortcut — asserted below, not assumed.
+    const phone = project === 'mobile-390';
+    const { anchor } = await assertTrapsInTest({ page, request, bareRequest, project });
+    expect(anchor, 'fixture anchor (Wendy Walker) must resolve').not.toBeNull();
+
+    const scanned: string[] = [];
+    const at = (name: string): string => {
+      scanned.push(name);
+      return `${project}/${role} · ${name}`;
+    };
+    const paneUrl = (pane: string): string =>
+      `${anchor!.url}${anchor!.url.includes('?') ? '&' : '?'}pane=${pane}`;
+
+    /** `?pane=timeline` — the Timeline top tab (RecordTimeline). */
+    const openTimelinePane = async (): Promise<void> => {
+      await page.goto(paneUrl('timeline'), { waitUntil: 'domcontentloaded' });
+      await expect(
+        page
+          .getByRole('button', { name: /^All \(\d+\)$/ })
+          .or(page.getByRole('heading', { name: 'No timeline events' })),
+        'the Timeline pane must mount (filter bar or its empty state)',
+      ).toBeVisible({ timeout: 60_000 });
+    };
+
+    /** `?pane=attachments` — the Files pane (AttachmentsPanel). */
+    const openFilesPane = async (): Promise<void> => {
+      await page.goto(paneUrl('attachments'), { waitUntil: 'domcontentloaded' });
+      await expect(
+        page
+          .getByText('Click to upload or drag and drop')
+          .or(page.getByRole('heading', { name: 'No attachments' })),
+        'the Files pane must mount (upload zone for a writer, empty state for a viewer)',
+      ).toBeVisible({ timeout: 60_000 });
+    };
+
+    await walk.task(
+      'A11Y-axe-chrome',
+      `axe on the ${project} chrome as ${role}, light (0 serious/critical)`,
+      2,
+      async () => {
+        // 1. The command desk — the landing surface, never audited before.
+        await page.goto('/crm', { waitUntil: 'domcontentloaded' });
+        await expect(page.getByRole('heading').first()).toBeVisible({ timeout: 30_000 });
+        await auditSurface(page, walk, at('the command desk'), 'desk ', chromeSink);
+
+        // 2. The list AT THIS WIDTH — cards + collapsed toolbar below md,
+        //    table + rail above lg.
+        await page.goto('/crm/modules/contacts', { waitUntil: 'domcontentloaded' });
+        await expect(page.getByTestId('crm-pager-showing').first()).toBeVisible({ timeout: 30_000 });
+        await auditSurface(page, walk, at('the contacts list'), 'list ', chromeSink);
+
+        // 3. The record AT THIS WIDTH — the phone action bar is lg:hidden chrome.
+        await page.goto(anchor!.url, { waitUntil: 'domcontentloaded' });
+        await expect(page.getByRole('group', { name: 'Add note' })).toBeVisible({ timeout: 60_000 });
+        await auditSurface(page, walk, at('the record (Overview)'), 'record ', chromeSink);
+
+        // 4. The record's OTHER panes. Both mount components no walk had ever
+        //    opened, and both are reached by URL — zero clicks.
+        await openTimelinePane();
+        await probeGround(page, walk, '.glass-card', 'light timeline card ground');
+        await auditSurface(page, walk, at('the record Timeline pane'), 'timeline ', chromeSink);
+
+        await openFilesPane();
+        // `.border-dashed` is the upload zone root — the tile's own ground.
+        await probeGround(page, walk, '.border-dashed, main', 'light files pane ground');
+        await auditSurface(page, walk, at('the record Files pane'), 'files ', chromeSink);
+
+        // 5. Phone only: the nav drawer replaces the whole sidebar below lg,
+        //    and the toolbar collapses behind one "Filters & View" sheet.
+        if (phone) {
+          const menu = page.getByRole('button', { name: 'Open menu' }).first();
+          await expect(menu, 'the phone shell must carry a nav trigger').toBeVisible({ timeout: 30_000 });
+          await walk.click(menu, 'Open menu');
+          await expect(page.getByTestId('crm-mobile-nav-drawer')).toBeVisible({ timeout: 20_000 });
+          await auditSurface(page, walk, at('the mobile nav drawer'), 'navDrawer ', chromeSink);
+          await walk.press('Escape', 'close the nav drawer');
+
+          await page.goto('/crm/modules/contacts', { waitUntil: 'domcontentloaded' });
+          await expect(page.getByTestId('crm-pager-showing').first()).toBeVisible({ timeout: 30_000 });
+          const filters = page.getByRole('button', { name: /Filters & View/ }).first();
+          await expect(filters, 'below md the toolbar must collapse behind one sheet').toBeVisible({ timeout: 30_000 });
+          await walk.click(filters, 'Filters & View');
+          const sheet = page.getByRole('dialog').locator('visible=true').first();
+          await expect(sheet).toBeVisible();
+          await auditSurface(page, walk, at('the mobile Filters & View sheet'), 'filterSheet ', chromeSink);
+          // Escape, never Apply — the sweep must leave the fixture as it found it.
+          await walk.press('Escape', 'close the filter sheet');
+        } else {
+          // The claim "lg+ has no drawer" is asserted, not assumed.
+          expect(
+            await page.getByTestId('crm-mobile-nav-drawer').locator('visible=true').count(),
+            'above lg the sidebar is inline — no drawer to scan',
+          ).toBe(0);
+          walk.note('navDrawer', 'lg+ renders the sidebar inline (audited with the list)');
+        }
+
+        // 6. Admin only: the Settings surface. NV-inventory counts 28 links for
+        //    an admin and 0 for everyone else — none had ever been scanned.
+        if (role === 'admin') {
+          await page.goto('/crm/settings', { waitUntil: 'domcontentloaded' });
+          await expect(page.getByRole('heading').first()).toBeVisible({ timeout: 30_000 });
+          const links = await page.getByTestId('crm-sidenav-item').locator('visible=true').count();
+          walk.note('settingsSidebarLinks', links);
+          expect(links, 'the admin Settings sidebar must actually be on screen to be scanned').toBeGreaterThan(0);
+          await auditSurface(page, walk, at('the Settings sidebar'), 'settings ', chromeSink);
+        } else {
+          walk.note('settingsSidebarLinks', 0);
+        }
+
+        // 7. Writer roles, ≥1024: the mass-actions bar. crm_viewer has no row
+        //    checkboxes at all (PERM-1-bulk-actions' sibling contract), and the
+        //    phone list has no select-all column.
+        if (role !== 'viewer' && !phone) {
+          await page.goto('/crm/modules/contacts', { waitUntil: 'domcontentloaded' });
+          await expect(page.getByTestId('crm-pager-showing').first()).toBeVisible({ timeout: 30_000 });
+          const selectAll = page.getByRole('checkbox', { name: 'Select all rows' }).first();
+          await expect(selectAll, 'a writer role must have a select-all checkbox to raise the bulk bar').toBeVisible({
+            timeout: 30_000,
+          });
+          await walk.click(selectAll, 'Select all rows');
+          // Wait on the bar's OWN copy, not on a manage-only button:
+          // MassActionsBar.tsx gates Assign/Status/Delete behind
+          // canManageRecords(), which is false for crm_agent — the operator
+          // persona. Keying on `crm-bulk-status` scanned nothing for the very
+          // persona the sweep runs as.
+          // RecordTable.tsx:1397 renders the same "N selected" copy in the
+          // md:hidden card-view header, so `.first()` picked a hidden twin.
+          const bulkBar = page.getByText(/^\d+ selected$/).locator('visible=true').first();
+          await expect(bulkBar, 'select-all must raise the mass-actions bar').toBeVisible({ timeout: 20_000 });
+          walk.note('bulkManageActions', await page.getByTestId('crm-bulk-status').count());
+          await auditSurface(page, walk, at('the mass-actions bar'), 'bulk ', chromeSink);
+          // Clearing the selection is state-only — nothing is written.
+          await walk.press('Escape', 'clear the selection');
+        } else {
+          walk.note('massActionsBar', role === 'viewer' ? 'crm_viewer has no row checkboxes' : 'no select-all column on a phone');
+        }
+
+        walk.note('scanned', scanned.join(' · '));
+        walk.note('surfaces', scanned.length);
+      },
+    );
+
+    // DARK. The theme flip is an init script and cannot be un-injected, so it
+    // runs last on this page — same constraint as A11Y-axe-dark above.
+    await walk.task(
+      'A11Y-axe-chrome-dark',
+      `axe on the ${project} record panes and ${role} chrome, dark (0 serious/critical)`,
+      1,
+      async () => {
+        const darkScanned: string[] = [];
+        const darkAt = (name: string): string => {
+          darkScanned.push(name);
+          return `${project}/${role} · dark · ${name}`;
+        };
+        await page.addInitScript(() => {
+          try {
+            window.localStorage.setItem('ui-theme', 'dark');
+          } catch {
+            // Storage blocked — the poll below fails loudly rather than auditing light twice.
+          }
+        });
+        await page.emulateMedia({ colorScheme: 'dark' });
+
+        await openTimelinePane();
+        await expect
+          .poll(() => page.evaluate(() => document.documentElement.classList.contains('dark')), {
+            message: 'the dark chrome pass must actually be in dark theme',
+          })
+          .toBe(true);
+        await probeGround(page, walk, '.glass-card', 'dark timeline card ground');
+        await auditSurface(page, walk, darkAt('the record Timeline pane'), 'darkTimeline ', chromeSink);
+
+        await openFilesPane();
+        await probeGround(page, walk, '.border-dashed, main', 'dark files pane ground');
+        await auditSurface(page, walk, darkAt('the record Files pane'), 'darkFiles ', chromeSink);
+
+        if (phone) {
+          const menu = page.getByRole('button', { name: 'Open menu' }).first();
+          await expect(menu).toBeVisible({ timeout: 30_000 });
+          await walk.click(menu, 'Open menu');
+          await expect(page.getByTestId('crm-mobile-nav-drawer')).toBeVisible({ timeout: 20_000 });
+          await auditSurface(page, walk, darkAt('the mobile nav drawer'), 'darkNavDrawer ', chromeSink);
+          await walk.press('Escape', 'close the nav drawer');
+        }
+
+        if (role === 'admin') {
+          await page.goto('/crm/settings', { waitUntil: 'domcontentloaded' });
+          await expect(page.getByRole('heading').first()).toBeVisible({ timeout: 30_000 });
+          await auditSurface(page, walk, darkAt('the Settings sidebar'), 'darkSettings ', chromeSink);
+        }
+
+        walk.note('scanned', darkScanned.join(' · '));
+        walk.note('surfaces', darkScanned.length);
+        // Mirror of the semantics book, recorded HERE because the two gate rows
+        // below run in series: whichever fails first ends the test, and the
+        // other row's evidence would never reach walk.json. The gates still
+        // gate; this only makes the evidence survive a red run.
+        walk.note('blockingSurfaces', chromeSink.blocking!.length);
+        walk.note(
+          'blocking',
+          chromeSink.blocking!.map((b) => b.replace(/\s+/g, ' ')).join('  ‖  ').slice(0, 1800) || 'none',
+        );
+      },
+    );
+
+    // Contrast on the chrome, in its own book and its own gate — the same
+    // token-pair shape the four-surface row uses, so a regression here is as
+    // arguable in fix terms as the ones CLOSE-3 closed.
+    await walk.task(
+      'A11Y-contrast-chrome',
+      `axe color-contrast across the ${project}/${role} chrome, light and dark (0 nodes)`,
+      0,
+      async () => {
+        let total = 0;
+        for (const [surface, count] of chromeSink.nodes) {
+          walk.note(surface, count);
+          total += count;
+        }
+        const byPair = new Map<string, { count: number; ratio: number; expected: number }>();
+        for (const node of chromeSink.detail) {
+          const key = pairKey(node);
+          const seen = byPair.get(key);
+          if (seen) seen.count += 1;
+          else byPair.set(key, { count: 1, ratio: node.ratio, expected: node.expected });
+        }
+        const pairs = Array.from(byPair.entries()).sort((a, b) => a[1].ratio - b[1].ratio);
+        walk.note('pairs', pairs.length);
+        walk.note(
+          'worstPairs',
+          pairs.map(([key, v]) => `${key} = ${v.ratio}:1 (need ${v.expected}:1) ×${v.count}`).join(' | ') || 'none',
+        );
+        writeFileSync(
+          path.join(runDir(), `contrast-chrome-${project}-${role}.json`),
+          `${JSON.stringify({ project, role, total, pairs: Object.fromEntries(byPair), nodes: chromeSink.detail }, null, 2)}\n`,
+        );
+        walk.note('total', total);
+        expect(total, `color-contrast nodes across the ${project}/${role} chrome`).toBe(0);
+      },
+    );
+
+    // THE semantics gate for the whole sweep. It is deliberately one row over
+    // every surface both tasks above opened: a per-surface throw would stop at
+    // the first bad pane and leave the rest of the matrix unscanned, which is
+    // how `RecordRelatedListChips` sat unseen behind `?pane=` in the first
+    // place. Failing here names every rule, selector and markup snippet at once.
+    await walk.task(
+      'A11Y-axe-chrome-semantics',
+      `axe serious/critical across every ${project}/${role} surface swept above (0)`,
+      0,
+      async () => {
+        walk.note('blockingSurfaces', chromeSink.blocking!.length);
+        walk.note('surfacesScanned', chromeSink.nodes.size);
+        expect(
+          chromeSink.blocking,
+          `axe serious/critical on the ${project}/${role} chrome — every swept surface, not just the first`,
+        ).toEqual([]);
+      },
+    );
   });
 });

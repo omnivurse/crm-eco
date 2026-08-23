@@ -166,6 +166,12 @@ export function browserCounterInitScript(keys: { storage: string; typing: string
 // Task outcome (EV-5 soft mode)
 // ---------------------------------------------------------------------------
 
+/** One graded browser-console line charged to a task (see traps.ts PageIssue). */
+export interface TaskBrowserIssue {
+  kind: 'console' | 'pageerror';
+  text: string;
+}
+
 export interface TaskOutcomeInput {
   /** The error `fn` threw, or null when it returned. */
   failure: unknown;
@@ -176,6 +182,14 @@ export interface TaskOutcomeInput {
    * failing the test — for budgets/assertions about work a later wave ships.
    */
   soft: boolean;
+  /**
+   * Graded browser errors logged inside this task's window (allowlisted noise
+   * already removed). A row that produced one is NEVER a pass — not even a
+   * soft row, and not even when every assertion held: "0 failures" printed
+   * beside a red dev-overlay badge is exactly the false result this harness
+   * exists to prevent.
+   */
+  browserIssues?: readonly TaskBrowserIssue[];
 }
 
 export interface TaskOutcome {
@@ -212,14 +226,35 @@ export function describeFailure(failure: unknown): string {
 export function resolveTaskOutcome(input: TaskOutcomeInput): TaskOutcome {
   const overBudget = input.clicks > input.budget;
   const failed = input.failure !== null && input.failure !== undefined;
-  const pass = !failed && !overBudget;
-  let reason: string | null = null;
-  if (failed) reason = describeFailure(input.failure);
-  else if (overBudget) reason = `over click budget (${input.clicks} > ${input.budget})`;
+  const issues = input.browserIssues ?? [];
+  const pass = !failed && !overBudget && issues.length === 0;
+  // Every reason the row is red, not just the first — a console error must not
+  // be masked by an assertion failure that happened to be reported ahead of it.
+  const parts: string[] = [];
+  if (failed) parts.push(describeFailure(input.failure));
+  if (issues.length > 0) parts.push(describeBrowserIssues(issues));
+  if (overBudget) parts.push(`over click budget (${input.clicks} > ${input.budget})`);
   return {
     pass,
-    reason,
+    reason: parts.length > 0 ? parts.join(' · ') : null,
+    // Browser issues do not abort the task: the walk keeps recording so every
+    // remaining row is still evidence. The run is failed at fixture teardown by
+    // the `page-errors` trap, and this row is already red for the gate.
     rethrow: failed && !input.soft ? input.failure : null,
     assertBudget: !input.soft,
   };
+}
+
+/** "2 browser errors (1 console.error, 1 uncaught): Warning: Each child…" */
+export function describeBrowserIssues(issues: readonly TaskBrowserIssue[]): string {
+  const console_ = issues.filter((i) => i.kind === 'console').length;
+  const uncaught = issues.length - console_;
+  const kinds = [
+    console_ > 0 ? `${console_} console.error` : null,
+    uncaught > 0 ? `${uncaught} uncaught` : null,
+  ].filter(Boolean).join(', ');
+  const first = issues[0]?.text ?? '';
+  const head = `${issues.length} browser error${issues.length === 1 ? '' : 's'} (${kinds})`;
+  const trimmed = first.length > 160 ? `${first.slice(0, 157)}…` : first;
+  return trimmed ? `${head}: ${trimmed}` : head;
 }

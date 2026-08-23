@@ -420,7 +420,14 @@ export async function assertTrapsInTest(args: {
   // Last: everything the trap sweep itself loaded (list, record, /crm) must
   // have loaded without a browser error. The fixture re-asserts at teardown
   // over the whole test.
-  keep(trapNoPageIssues(args.page, `the trap sweep on ${args.project}`));
+  // Recorded red like any other trap, but only an UNDIAGNOSED error aborts the
+  // spec — see hasUntrackedPageIssue. A PI-n defect must not cost the walk its
+  // entire evidence base.
+  const sweepIssues = trapNoPageIssues(args.page, `the trap sweep on ${args.project}`);
+  const sweepTagged = { ...sweepIssues, phase: 'in-test' as const, project: args.project };
+  results.push(sweepTagged);
+  recordTrap(sweepTagged);
+  if (hasUntrackedPageIssue(args.page)) assertTrap(sweepTagged);
   return { traps: results, anchor: notEmpty.anchor, navProfile: nav.navProfile };
 }
 
@@ -445,14 +452,22 @@ export interface PageIssue {
   kind: 'pageerror' | 'console';
   text: string;
   url: string;
+  /** PI-n diagnosis when this line is a defect the walk has already identified. Graded all the same. */
+  known?: string;
 }
 
 const pageIssues = new WeakMap<Page, PageIssue[]>();
 
 /**
- * Console noise that is not the application talking. Kept deliberately short
- * and specific — each entry names WHY it cannot be an app defect. Anything
- * that is not on this list fails the trap.
+ * Lines the trap does not redden the run for. Kept deliberately short and
+ * specific — each entry names WHY, and `splitPageIssues` carries the line AND
+ * the reason into walk.json, so a suppressed line is disclosed, never hidden.
+ * Anything not on this list fails the trap.
+ *
+ * Two kinds live here and the `why` says which:
+ *   · dev-server noise that is not the application talking at all;
+ *   · PI-n — a real defect the walk FOUND, diagnosed and handed to the owner,
+ *     matched narrowly enough that nothing else can hide behind it.
  */
 const PAGE_ISSUE_IGNORE: ReadonlyArray<{ pattern: RegExp; why: string }> = [
   // The dev server streams HMR over a websocket that Playwright tears down at
@@ -463,9 +478,104 @@ const PAGE_ISSUE_IGNORE: ReadonlyArray<{ pattern: RegExp; why: string }> = [
   { pattern: /failed to load resource.*\b(favicon\.ico|apple-touch-icon)/i, why: 'dev-only icon probe 404' },
 ];
 
-function ignoredPageIssue(text: string): string | null {
+/**
+ * PI-n — defects the walk FOUND and diagnosed. They are deliberately NOT on the
+ * suppression list: a known defect is still a RED row. This list only staples
+ * the id and the one-line diagnosis onto the line so a reader of walk.json
+ * knows what they are looking at instead of re-diagnosing it. Allowlisting it
+ * would rebuild the exact false result this trap exists to kill — green rows
+ * printed beside a red dev-overlay badge.
+ */
+const PAGE_ISSUE_KNOWN: ReadonlyArray<{ id: string; pattern: RegExp; note: string }> = [
+  // The red "1 Issue" the Next dev overlay showed in the wave-3 record-page
+  // screenshot, which nothing in the harness was listening for. Verified from
+  // artifacts/crm-walk/2026-08-23T16-33-57-035Z/page-errors.jsonl.
+  //
+  //   WHAT: a React `useId` hydration mismatch across the CRM shell chrome. The
+  //   server and the client generate different Radix ids
+  //   (`id="radix-_R_2hotiqbn6lb_"` vs `id="radix-_R_ke7cmitplb_"`), so React
+  //   reports an attribute mismatch on EIGHT shell controls, not one:
+  //     · SplitCreateButton.tsx:185 — the "Add Member" ⌄ trigger (id)
+  //     · CrmTopBar.tsx:295 — the second top-bar dropdown trigger (id)
+  //     · BottomBar.tsx:57/84/111/146/173 — Chats, Channels, Contacts,
+  //       Quick Actions, Sticky Notes (aria-controls)
+  //   CAUSE: the shell interleaves `next/dynamic({ ssr: false })` children with
+  //   those triggers (CrmShell.tsx:18-30, CrmTopBar.tsx:58-68), so the client
+  //   tree does not have the same hook order as the server tree and `useId`
+  //   diverges. The `<LoadableComponent>` markers sit next to the mismatched
+  //   nodes in the reported tree.
+  //   SEVERITY: React says of this class "This won't be patched up" — the
+  //   server-rendered value stays in the DOM. Five of the eight are
+  //   `aria-controls`, so the a11y wiring, not just cosmetics, is at stake.
+  //   It surfaces on /crm, /crm/modules/contacts and /crm/r/<id>.
+  //   NOT FIXED HERE: the fix is in the shell's dynamic-import layout, which is
+  //   product code outside this wave's file ownership.
+  {
+    id: 'PI-1',
+    pattern: /A tree hydrated but some attributes of the server rendered HTML didn't match[\s\S]*radix-/,
+    note: 'PI-1 React useId hydration mismatch on 8 CRM-shell controls (SplitCreateButton.tsx:185, CrmTopBar.tsx:295, BottomBar.tsx:57/84/111/146/173) — caused by next/dynamic({ssr:false}) children in CrmShell.tsx:18-30 / CrmTopBar.tsx:58-68. Product fix required.',
+  },
+  // Found by this trap on its first graded run, on /crm/r/not-a-uuid.
+  //
+  //   WHAT: `resolve-record.ts:169` logs
+  //   `[resolve-record] audit entity_id_tombstone: invalid input syntax for
+  //   type uuid: "not-a-uuid"` — a server console.error that `next dev`
+  //   forwards to the browser console.
+  //   CAUSE: the `entity_id_tombstone` probe (resolve-record.ts:141-149) feeds
+  //   the raw path segment to `.eq('entity_id', cursor)` on a uuid column, so
+  //   Postgres rejects the comparison for ANY non-uuid record id. The page
+  //   still renders the not-found state, so nothing before this listened.
+  //   NOT FIXED HERE: guarding the probe with a uuid test is product code.
+  {
+    id: 'PI-2',
+    pattern: /\[resolve-record\] audit [a-z_]+: *(Server *)?invalid input syntax for type uuid/i,
+    note: 'PI-2 resolve-record.ts:169 logs a console.error for every non-uuid record id — the entity_id_tombstone probe (resolve-record.ts:141-149) sends the raw path segment to a uuid column. Guard the probe with a uuid test.',
+  },
+];
+
+/** The PI-n diagnosis for this line, or null when it is an unknown error. */
+export function knownPageIssue(text: string): { id: string; note: string } | null {
+  for (const entry of PAGE_ISSUE_KNOWN) if (entry.pattern.test(text)) return { id: entry.id, note: entry.note };
+  return null;
+}
+
+/** Why this line is suppressed, or null when it is graded as a real error. */
+export function ignoredPageIssue(text: string): string | null {
   for (const entry of PAGE_ISSUE_IGNORE) if (entry.pattern.test(text)) return entry.why;
   return null;
+}
+
+/** A suppressed line, carried into walk.json WITH the reason it was dropped. */
+export interface SuppressedPageIssue extends PageIssue {
+  why: string;
+}
+
+export interface PageIssueSplit {
+  /** Graded: every one of these fails the trap and reddens the task row. */
+  real: PageIssue[];
+  /** Allowlisted. Never hidden — walk.json carries them and the reason. */
+  suppressed: SuppressedPageIssue[];
+}
+
+/**
+ * Partition collected issues into graded and allowlisted. Nothing is discarded:
+ * a filter whose output nobody can read is indistinguishable from a cover-up,
+ * so the suppressed lines travel into walk.json next to the reason.
+ */
+export function splitPageIssues(issues: readonly PageIssue[]): PageIssueSplit {
+  const real: PageIssue[] = [];
+  const suppressed: SuppressedPageIssue[] = [];
+  for (const issue of issues) {
+    const why = ignoredPageIssue(issue.text);
+    if (why !== null) {
+      suppressed.push({ ...issue, why });
+      continue;
+    }
+    // Graded. A PI-n match only labels it — it never moves it to `suppressed`.
+    const known = knownPageIssue(issue.text);
+    real.push(known ? { ...issue, known: known.note } : issue);
+  }
+  return { real, suppressed };
 }
 
 /** Attach the collectors. Safe to call repeatedly — only the first call binds. */
@@ -474,12 +584,27 @@ export function armPageIssueTrap(page: Page): PageIssue[] {
   if (existing) return existing;
   const issues: PageIssue[] = [];
   pageIssues.set(page, issues);
+  // The text is kept WHOLE — a React hydration error puts the offending element
+  // in its tail, and a 400-char preview cuts exactly that off. Only the trap
+  // detail is truncated; the full entries are dumped to page-errors.jsonl.
+  const push = (issue: PageIssue) => {
+    issues.push(issue);
+    const dir = process.env.WALK_RUN_DIR;
+    if (dir) {
+      try {
+        fs.mkdirSync(dir, { recursive: true });
+        fs.appendFileSync(path.join(dir, 'page-errors.jsonl'), `${JSON.stringify(issue)}\n`);
+      } catch {
+        /* the trap must never be the thing that fails the run */
+      }
+    }
+  };
   page.on('pageerror', (err) => {
-    issues.push({ kind: 'pageerror', text: `${err.name}: ${err.message}`.slice(0, 400), url: safeUrl(page) });
+    push({ kind: 'pageerror', text: `${err.name}: ${err.message}`, url: safeUrl(page) });
   });
   page.on('console', (msg) => {
     if (msg.type() !== 'error') return;
-    issues.push({ kind: 'console', text: msg.text().slice(0, 400), url: safeUrl(page) });
+    push({ kind: 'console', text: msg.text(), url: safeUrl(page) });
   });
   return issues;
 }
@@ -499,6 +624,37 @@ export function pageIssuesSoFar(page: Page): readonly PageIssue[] {
 }
 
 /**
+ * Does this page carry a browser error the walk has NOT already diagnosed?
+ *
+ * The distinction is between the VERDICT and the ABORT, and they are not the
+ * same decision:
+ *   · VERDICT — a PI-n line still makes `page-errors` red, walk.json red and
+ *     `walk:crm:gate` exit 1. A diagnosed defect is still a defect and the
+ *     programme does not get to print "0 failures" next to it.
+ *   · ABORT — only an UNKNOWN error stops the run. PI-1 lives in the shared
+ *     CRM shell, so it is on /crm, every list and every record; throwing on it
+ *     at the top of every spec would abort all 387 rows before the first one
+ *     was measured and leave the owner with a red exit code and no evidence at
+ *     all. That is a brick, not a gate.
+ * So: record red, keep walking, and stop dead the moment something new appears.
+ */
+export function hasUntrackedPageIssue(page: Page): boolean {
+  const collected = pageIssues.get(page);
+  if (!collected) return true; // never armed — the loudest failure of all
+  return splitPageIssues(collected).real.some((i) => !i.known);
+}
+
+/**
+ * The issues collected AFTER `from` (a `pageIssuesSoFar(page).length` taken
+ * earlier). The walk fixture takes that mark when a task starts, so a task row
+ * is charged only with what the browser logged inside its own window — noise
+ * from between tasks still reaches the per-test `page-errors` trap.
+ */
+export function pageIssuesSince(page: Page, from: number): readonly PageIssue[] {
+  return (pageIssues.get(page) ?? []).slice(Math.max(0, from));
+}
+
+/**
  * page-errors: no uncaught exception and no console.error since the trap was
  * armed. `window` is the label that says which slice of the walk was graded.
  * Not armed at all is itself a failure — a silent trap is worse than none.
@@ -507,11 +663,17 @@ export function trapNoPageIssues(page: Page, window: string): TrapResult {
   const name = 'page-errors';
   const collected = pageIssues.get(page);
   if (!collected) return trapResult(name, false, `the page-issue collectors were never armed — ${window} was not watched`);
-  const real = collected.filter((i) => ignoredPageIssue(i.text) === null);
-  const ignored = collected.length - real.length;
-  const suffix = ignored > 0 ? ` (${ignored} dev-only entr${ignored === 1 ? 'y' : 'ies'} ignored)` : '';
+  const { real, suppressed } = splitPageIssues(collected);
+  const ignored = suppressed.length;
+  // Name them, do not merely count them: a PASS row that says "1 entry ignored"
+  // is exactly as unreadable as the red badge nobody explained.
+  const reasons = Array.from(new Set(suppressed.map((i) => i.why)));
+  const suffix = ignored > 0 ? ` (${ignored} suppressed: ${reasons.join(' | ')})` : '';
   if (real.length > 0) {
-    const lines = real.slice(0, 8).map((i) => `    [${i.kind}] ${i.url} — ${i.text}`).join('\n');
+    const lines = real
+      .slice(0, 8)
+      .map((i) => `    [${i.kind}] ${i.url} — ${i.known ? `${i.known} :: ` : ''}${i.text.replace(/\s+/g, ' ').slice(0, 400)}`)
+      .join('\n');
     return trapResult(
       name,
       false,

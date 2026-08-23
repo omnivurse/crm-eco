@@ -5,10 +5,16 @@
  * seeded member by phone / member # / name and a page by typing "task",
  * /crm/modules/deals + /crm/pipeline behaviour, and (NV-8/D10) the one mobile
  * module switcher: no tab strip, no bottom bar, the drawer grid flush under the
- * top bar.
+ * top bar — plus NV-hop-distance, the minimum number of moves from each of the
+ * three origins (Dashboard, the Revenue tab, a record page) to each of the
+ * eight persona destinations (the counting rule is documented at that row), and
+ * NV-gated-dead-end, which follows the links a role-gated destination is still
+ * offered from.
  *
- * Inventory facts land in walk.json `tasks[].notes`; parity/sticky assertions
- * are soft (they describe Wave-2 work and WILL fail today).
+ * Inventory facts land in walk.json `tasks[].notes`. `NV-cross-tab`,
+ * `NV-hop-distance` and `NV-gated-dead-end` are HARD — a regression there turns
+ * `playwright test` red on its own; the remaining soft rows describe later-wave
+ * work.
  */
 import { expect, test } from '../walk-fixture';
 import { FIXTURE, walkRole } from '../env';
@@ -405,6 +411,444 @@ test.describe('mobile module switcher (NV-8)', () => {
         walk.note('plusOpensAddMember', true);
       },
       { soft: true },
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// NV-hop-distance — the FIRST clause of the plan's `what_ten_means` for
+// Navigation: "every persona destination ≤2 moves from Dashboard, Revenue tab
+// and a record page". `NV-inventory` counts links and `aria-current`; nothing
+// counted DISTANCE, which is the reason the 2026-08-23 regrade held Navigation
+// at 9.5. This row measures it.
+//
+// COUNTING RULE — one rule, applied identically to every route, and written
+// into walk.json as `countingRule` so a grader can re-derive every number:
+//   1. A MOVE is one counted user action that carries the user forward: one
+//      `walk.click` or one `walk.press`. Nothing else is a move.
+//   2. TYPING IS NOT A MOVE. `walk.type` records characters, never keypresses
+//      (walk-fixture.ts) — narrowing a list is not travelling. The command
+//      palette therefore costs exactly 2 however it is driven: open (⌘K press
+//      on lg+, the mobile search-icon click below lg) + commit (click the row,
+//      or press Enter on the armed row). This row drives the click form; the
+//      typed form (open + type + Enter) is the same 2 by rule 2.
+//   3. Sitting at the ORIGIN is not a move: every measurement starts from an
+//      uncounted `goto` (see `goOrigin`, which may reload when `next dev`
+//      serves a shell-less first paint), modelling a user already there.
+//   4. A pair scores the MINIMUM over the routes below, tried cheapest-first —
+//      every 1-move route is attempted before any 2-move route, so a recorded
+//      2 means no 1-move route exists at that origin.
+//   5. A route counts only when it ARRIVES. The SETTLED location (after
+//      `networkidle`, so a gate that redirects after first paint cannot be
+//      scored as an arrival) must be the destination's own path, or the path
+//      that destination canonically redirects to — `/crm/tasks` is a one-line
+//      `redirect('/crm/activities?type=task')` (app/crm/tasks/page.tsx), and
+//      following a redirect is part of the move that started it, not a second
+//      move. Each canonical landing is probed once with an uncounted `goto`, so
+//      this is the app's own answer, not an assumption. A permission bounce is
+//      never an arrival.
+// Routes: `sidebar` (1) · `palette` (2) · `tab+sidebar` (2, lg+) ·
+//         `menu+sidebar` (2, below lg, where the rail lives in the menu sheet).
+//
+// ROLE-DEPENDENCE (the trap earlier waves hit): the sidebar link set is
+// role-dependent. This row runs as the operator (crm_agent) by default.
+// `/crm/import` is the one persona destination behind a role gate
+// (`managerOrAdmin` on CRM_NAV_ITEMS.import — the same predicate
+// app/crm/import/page.tsx uses). For crm_agent / crm_viewer it is therefore
+// NOT a destination of theirs: it is excluded from the ≤2 distance verdict,
+// recorded `n/a`, and its distance is measured under WALK_ROLE=admin, where it
+// is a normal 1-move sidebar hop. Every other destination is identical for all
+// three roles.
+//
+// Whether the shell nevertheless OFFERS a gated destination is a different
+// question, and it is the last clause of the same `what_ten_means` ("crm_agent
+// sees no admin-only dead ends"), so it gets its own row: NV-gated-dead-end,
+// at the end of this file. It is RED — see its diagnosis and file:line.
+// ---------------------------------------------------------------------------
+
+/**
+ * The idle persona set (D10) with the label the sidebar and the palette render
+ * for each ("Go to <label>"). Mirror of `PERSONA_IDLE_PAGE_HREFS`
+ * (apps/crm/src/lib/crm/palette-pages.ts:115) — not imported, because
+ * palette-pages pulls in `@/contexts/ModuleContext` and the e2e tsconfig has
+ * neither the `@/` alias nor JSX (the same reason `nav-tabs.ts` is a mirror).
+ * The first palette open asserts this list against the app's own idle rows, so
+ * the mirror cannot drift silently.
+ */
+const PERSONA_DESTINATIONS: ReadonlyArray<{ key: string; label: string; href: string }> = [
+  { key: 'members', label: 'Members', href: '/crm/modules/members' },
+  { key: 'member-roster', label: 'Member Roster', href: '/crm/members' },
+  { key: 'tasks', label: 'Tasks', href: '/crm/tasks' },
+  { key: 'calendar', label: 'Calendar', href: '/crm/calendar' },
+  { key: 'inbox', label: 'Inbox', href: '/crm/inbox' },
+  { key: 'reports', label: 'Reports', href: '/crm/reports' },
+  { key: 'workqueue', label: 'Workqueue', href: '/crm/workqueue' },
+  { key: 'import', label: 'Import Data', href: '/crm/import' },
+];
+
+const HOP_COUNTING_RULE =
+  'move = one walk.click or one walk.press that carries the user forward; typing is not a move ' +
+  '(palette = open + commit = 2 either way); arriving at the origin is uncounted setup; ' +
+  'a pair scores the minimum over routes tried cheapest-first (1-move routes before 2-move ones); ' +
+  'a route counts only when it ARRIVES — the settled location must be the destination path or the path that ' +
+  'destination canonically redirects to (probed once with an uncounted goto), because following a redirect is ' +
+  'part of the move that started it, not a second move; a permission bounce is never an arrival.';
+
+function escapeRe(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+type HopAttempt = { cost: number; route: string; ok: boolean; detail: string };
+
+test.describe('persona hop distance (NV-hop-distance)', () => {
+  test('every persona destination is ≤2 moves from Dashboard, the Revenue tab and a record page', async ({
+    page,
+    request,
+    bareRequest,
+    walk,
+  }, testInfo) => {
+    const project = testInfo.project.name;
+    const mobile = isMobileProject(project);
+    // 24 measured pairs, each an uncounted navigation plus up to two
+    // screenshotted moves. The 120 s default is a harness limit, not a product
+    // budget — the product budget is the per-pair `<= 2` assertion below.
+    test.setTimeout(900_000);
+    const { anchor } = await assertTrapsInTest({ page, request, bareRequest, project });
+    expect(anchor).not.toBeNull();
+
+    const role = walkRole();
+    // `/crm/import` is `managerOrAdmin`; the fixture's only such role is admin.
+    const importReachable = role === 'admin';
+    const isAvailable = (key: string) => key !== 'import' || importReachable;
+
+    const origins: ReadonlyArray<{ key: string; path: string }> = [
+      { key: 'dashboard', path: '/crm' },
+      { key: 'revenue', path: '/crm/revenue' },
+      { key: 'record', path: anchor!.url },
+    ];
+
+    const destPath = (href: string) => href.split('?')[0];
+    /** Never `.first()`: both breakpoint twins are in the DOM, one display:none. */
+    const sidebarLinkFor = (href: string) => page.locator(`${SIDENAV}[href="${href}"]`).locator('visible=true');
+    // Waiting for the shell to paint after an uncounted `goto`. The generous
+    // timeout is for `next dev` compiling a route the first time, not a product
+    // budget — nothing here is graded.
+    const SHELL_TIMEOUT_MS = 25_000;
+    const settleShell = async (timeout = SHELL_TIMEOUT_MS) => {
+      if (mobile) {
+        await expect(page.getByTestId('crm-topbar-search-mobile')).toBeVisible({ timeout });
+      } else {
+        await expect
+          .poll(async () => page.locator(SIDENAV).locator('visible=true').count(), { timeout })
+          .toBeGreaterThan(0);
+      }
+    };
+    /**
+     * Put the browser at an origin. UNCOUNTED setup — no move is spent here, so
+     * a reload when `next dev` serves a shell-less first paint is free and is
+     * not a retry of anything graded. Three attempts, then the failure stands.
+     */
+    const goOrigin = async (path: string) => {
+      for (let attempt = 1; ; attempt += 1) {
+        await page.goto(path, { waitUntil: 'domcontentloaded' });
+        try {
+          await settleShell();
+          return;
+        } catch (err) {
+          if (attempt >= 3) throw err;
+        }
+      }
+    };
+    /**
+     * Where each destination actually OPENS. Some persona links are canonical
+     * redirects — `/crm/tasks` is a one-line `redirect('/crm/activities?type=task')`
+     * (app/crm/tasks/page.tsx) — and following a redirect is part of the one
+     * move that started it, not a second move. Probed once per destination with
+     * an UNCOUNTED `goto`, so the arrival test is the app's own answer to "what
+     * does this link open?" rather than an assumption. Role-gated destinations
+     * are deliberately left out: for them the strict path is the whole point.
+     */
+    const canonical = new Map<string, string>();
+
+    const arrived = async (dest: (typeof PERSONA_DESTINATIONS)[number]) => {
+      const want = destPath(dest.href);
+      const targets = new Set([want, canonical.get(dest.key) ?? want]);
+      try {
+        await page.waitForURL((u) => targets.has(u.pathname), { timeout: 30_000 });
+      } catch {
+        return false;
+      }
+      // A permission gate that redirects from inside a Suspense boundary lands
+      // AFTER first paint (walk-roles.spec.ts PERM-viewer-gated-link records the
+      // same trap), so the destination pathname is true for a beat and then
+      // gone. Settle, then read again: a bounce must never be scored as a hop.
+      await page.waitForLoadState('networkidle').catch(() => undefined);
+      return targets.has(new URL(page.url()).pathname);
+    };
+
+    let paletteAudited = false;
+
+    await walk.task(
+      'NV-hop-distance',
+      `Minimum moves from each origin (Dashboard, Revenue tab, record page) to each persona destination (${PERSONA_DESTINATIONS.length}) — every pair must be ≤ 2`,
+      // Ceiling implied by the contract itself: 3 origins × 8 destinations × 2
+      // moves, counted in CLICKS. On lg+ the palette's open is a keypress, so
+      // the click total sits below the ceiling; below lg both moves are clicks
+      // and a full 24-pair matrix lands exactly on it. Nothing here is a
+      // per-task UX budget — the graded assertion is the per-pair `<= 2`.
+      origins.length * PERSONA_DESTINATIONS.length * 2,
+      async () => {
+        walk.note('countingRule', HOP_COUNTING_RULE);
+        walk.note('role', role);
+        walk.note('sidebarSurface', mobile ? 'menu sheet (below lg) — no 1-move sidebar route exists' : 'docked rail');
+        walk.note('origins', origins.map((o) => `${o.key}=${o.path}`).join(' | '));
+        walk.note('destinations', PERSONA_DESTINATIONS.map((d) => `${d.key}=${d.href}`).join(' | '));
+        walk.note(
+          'roleGated',
+          importReachable
+            ? 'none (crm_admin may use Import Data)'
+            : 'import (/crm/import is managerOrAdmin — excluded from the ≤2 verdict for this role; whether the shell still offers a link to it is measured below)',
+        );
+
+        // ── canonical landings (uncounted setup, not moves) ───────────────
+        for (const dest of PERSONA_DESTINATIONS) {
+          if (!isAvailable(dest.key)) continue;
+          await page.goto(dest.href, { waitUntil: 'domcontentloaded' });
+          await page.waitForLoadState('networkidle').catch(() => undefined);
+          canonical.set(dest.key, new URL(page.url()).pathname);
+          walk.note(`canonical.${dest.key}`, `${dest.href} opens ${pathWithQuery(page)}`);
+        }
+
+        // ── routes, cheapest first ────────────────────────────────────────
+        const routeSidebar = async (dest: (typeof PERSONA_DESTINATIONS)[number], originKey: string): Promise<HopAttempt | null> => {
+          // The docked rail is lg+ chrome. Below lg the ONLY sidebar is the nav
+          // sheet, and while it is closed it is rendered OFF-CANVAS (translated
+          // out of the viewport) rather than `display:none` — so CSS, and
+          // Playwright's `visible=true`, still call its links visible. An
+          // earlier version of this row matched one and burned 20 s on
+          // "element is outside of the viewport". A link the user cannot see is
+          // not a 1-move route; below lg the sheet costs its own move and is
+          // measured by `routeMenuSidebar`.
+          if (mobile) return null;
+          const link = sidebarLinkFor(dest.href);
+          const n = await link.count();
+          if (n === 0) return null; // no 1-move route here — 0 actions spent
+          if (n > 1) throw new Error(`NV-hop-distance: ${n} visible sidebar links for ${dest.href} — ambiguous selector`);
+          await walk.click(link, `${originKey} › sidebar ${dest.label}`);
+          const ok = await arrived(dest);
+          return { cost: 1, route: 'sidebar link', ok, detail: pathWithQuery(page) };
+        };
+
+        const routePalette = async (dest: (typeof PERSONA_DESTINATIONS)[number], originKey: string): Promise<HopAttempt> => {
+          if (mobile) {
+            await walk.click(page.getByTestId('crm-topbar-search-mobile'), `${originKey} › open search`);
+          } else {
+            await walk.press(`${modKey()}+k`, `${originKey} › open palette (⌘K)`);
+          }
+          const input = page.getByTestId('crm-palette-input');
+          await expect(input).toBeVisible({ timeout: 15_000 });
+          const dialog = page.getByRole('dialog');
+          const results = dialog.getByTestId('crm-palette-result');
+          // Match the row's LABEL element, not the button's raw textContent: the
+          // button also carries the tab/section description, and its textContent
+          // is not whitespace-normalised, so an anchored `hasText` on the button
+          // matches nothing. `<p>{cmd.label}</p>` (CommandPalette.tsx:897) is the
+          // label, and an exact match keeps "Members" off "Member Roster".
+          const rowFor = (label: string) =>
+            results.filter({ has: page.locator('p', { hasText: new RegExp(`^${escapeRe(`Go to ${label}`)}$`) }) });
+
+          if (!paletteAudited) {
+            // The idle palette (no query typed) is the D10 persona set. Audit
+            // it once, for free, while it is open: it pins the mirror above to
+            // the app AND proves a role-gated destination has no hidden route.
+            paletteAudited = true;
+            const labels = await results.evaluateAll((els) =>
+              els.map((el) => (el.querySelector('p')?.textContent ?? '').replace(/\s+/g, ' ').trim()),
+            );
+            walk.note('paletteIdleRows', labels.join(' | ') || '(none)');
+            const missing: string[] = [];
+            const leaked: string[] = [];
+            for (const d of PERSONA_DESTINATIONS) {
+              const present = (await rowFor(d.label).count()) > 0;
+              if (isAvailable(d.key) && !present) missing.push(d.key);
+              if (!isAvailable(d.key) && present) leaked.push(d.key);
+            }
+            walk.note('paletteIdleMissing', missing.join(',') || 'none');
+            walk.note('paletteIdleLeaked', leaked.join(',') || 'none');
+            expect(missing, `the idle palette must offer every persona destination this role has: ${missing.join(', ')}`).toEqual([]);
+            expect(leaked, `a role-gated destination must not appear in the palette: ${leaked.join(', ')}`).toEqual([]);
+          }
+
+          const row = rowFor(dest.label);
+          const n = await row.count();
+          if (n !== 1) return { cost: 2, route: 'palette', ok: false, detail: `${n} idle palette rows named "Go to ${dest.label}"` };
+          await walk.click(row, `${originKey} › palette ${dest.label}`);
+          const ok = await arrived(dest);
+          return { cost: 2, route: 'palette (open + row)', ok, detail: pathWithQuery(page) };
+        };
+
+        const routeTabSidebar = async (dest: (typeof PERSONA_DESTINATIONS)[number], originKey: string): Promise<HopAttempt | null> => {
+          if (mobile) return null; // no tab strip below lg (NV-8 / D10)
+          const tabKey = topModuleForPath(destPath(dest.href));
+          const tab = page.locator(`${TAB}[data-crm-module="${tabKey}"]`).locator('visible=true');
+          if ((await tab.count()) !== 1) return null;
+          await walk.click(tab, `${originKey} › ${tabKey} tab`);
+          await settleShell();
+          await expect
+            .poll(async () => sidebarLinkFor(dest.href).count(), { timeout: 15_000 })
+            .toBe(1)
+            .catch(() => undefined);
+          const link = sidebarLinkFor(dest.href);
+          if ((await link.count()) !== 1) return { cost: 2, route: 'tab+sidebar', ok: false, detail: `no sidebar link for ${dest.href} under the ${tabKey} tab` };
+          await walk.click(link, `${originKey} › sidebar ${dest.label}`);
+          const ok = await arrived(dest);
+          return { cost: 2, route: `${tabKey} tab + sidebar link`, ok, detail: pathWithQuery(page) };
+        };
+
+        const routeMenuSidebar = async (dest: (typeof PERSONA_DESTINATIONS)[number], originKey: string): Promise<HopAttempt | null> => {
+          if (!mobile) return null;
+          await walk.click(page.getByRole('button', { name: 'Open menu' }), `${originKey} › Open menu`);
+          await expect(page.getByTestId('crm-mobile-nav-drawer')).toBeVisible({ timeout: 15_000 });
+          const link = sidebarLinkFor(dest.href);
+          if ((await link.count()) !== 1) return { cost: 2, route: 'menu+sidebar', ok: false, detail: `the sheet has no link for ${dest.href}` };
+          await walk.click(link, `${originKey} › sheet ${dest.label}`);
+          const ok = await arrived(dest);
+          return { cost: 2, route: 'menu sheet + sidebar link', ok, detail: pathWithQuery(page) };
+        };
+
+        // ── the matrix ────────────────────────────────────────────────────
+        const overBudget: string[] = [];
+        let maxMoves = 0;
+        let measured = 0;
+        let skipped = 0;
+
+        for (const origin of origins) {
+          for (const dest of PERSONA_DESTINATIONS) {
+            const cell = `hop.${origin.key}.${dest.key}`;
+            if (!isAvailable(dest.key)) {
+              // NOT a destination for this persona, so it is excluded from the
+              // ≤2 distance verdict. Whether the shell nevertheless offers this
+              // role a route to it is a different question with a different
+              // answer — it gets its own row, NV-gated-dead-end, below.
+              skipped += 1;
+              walk.note(cell, `n/a for ${role} — ${dest.href} is managerOrAdmin-gated (the shell's offer is graded by NV-gated-dead-end)`);
+              continue;
+            }
+            measured += 1;
+
+            const attempts: HopAttempt[] = [];
+            let moves: number | null = null;
+            let winner = '';
+            // Cheapest first. Below lg there is NO 1-move route: the docked rail
+            // is lg+ chrome and the nav sheet costs its own move to open.
+            for (const route of mobile ? [routePalette, routeMenuSidebar] : [routeSidebar, routePalette, routeTabSidebar]) {
+              await goOrigin(origin.path);
+              const attempt = await route(dest, origin.key);
+              if (!attempt) continue; // route does not exist here; nothing spent
+              attempts.push(attempt);
+              if (attempt.ok) {
+                moves = attempt.cost;
+                winner = attempt.route;
+                break;
+              }
+            }
+
+            if (moves === null) {
+              const tried = attempts.map((a) => `${a.route}(${a.cost}) → ${a.detail}`).join(' ; ') || 'no route existed';
+              walk.note(cell, `NO ROUTE ≤2 — tried: ${tried}`);
+              overBudget.push(`${origin.key} → ${dest.key}: no route of 2 moves or fewer (tried ${tried})`);
+              continue;
+            }
+            maxMoves = Math.max(maxMoves, moves);
+            const rejected = attempts.filter((a) => !a.ok).map((a) => `${a.route}(${a.cost}) failed`);
+            walk.note(
+              cell,
+              `${moves} move${moves === 1 ? '' : 's'} · ${winner} · landed ${pathWithQuery(page)}${rejected.length ? ` · rejected: ${rejected.join(', ')}` : ''}`,
+            );
+            if (moves > 2) overBudget.push(`${origin.key} → ${dest.key}: ${moves} moves via ${winner}`);
+          }
+        }
+
+        walk.note('pairsMeasured', measured);
+        walk.note('pairsRoleGated', skipped);
+        walk.note('maxMoves', maxMoves);
+        walk.note('over2Moves', overBudget.length);
+        expect(measured, 'the matrix must measure at least one pair per origin').toBeGreaterThanOrEqual(origins.length);
+        // THE DISTANCE VERDICT — the plan's `what_ten_means` first clause.
+        expect(overBudget, `persona destinations further than 2 moves: ${overBudget.join(' | ')}`).toEqual([]);
+      },
+      // HARD: this is the Navigation "what ten means" clause. A destination
+      // that drifts to 3 moves must turn `playwright test` red on its own.
+    );
+
+    // ── NV-gated-dead-end ─────────────────────────────────────────────────
+    // The LAST clause of the same `what_ten_means`: "crm_agent sees no
+    // admin-only dead ends". `NV-inventory` counts sidebar links; it never
+    // follows one, so a link that is shown and then refused has always read as
+    // a link. This row follows them.
+    //
+    // For every origin, and every persona destination this role may NOT use, it
+    // asks: does the shell still offer a link? and if so, where does clicking it
+    // land? An offered link that bounces is an admin-only dead end.
+    const gatedDestinations = PERSONA_DESTINATIONS.filter((d) => !isAvailable(d.key));
+    await walk.task(
+      'NV-gated-dead-end',
+      `Role-gated persona destinations (${gatedDestinations.length}) must not be linked from any of the ${origins.length} origins for ${role} — 1 click each to prove where an offered link lands`,
+      origins.length * gatedDestinations.length,
+      async () => {
+        walk.note('role', role);
+        walk.note(
+          'gatedDestinations',
+          gatedDestinations.map((d) => `${d.key}=${d.href}`).join(' | ') ||
+            'none — every persona destination is usable by this role',
+        );
+        if (mobile) {
+          // Below lg the rail lives in the closed, `inert` menu sheet, so no
+          // sidebar link is offered on this surface at all. Say so rather than
+          // recording a hollow pass.
+          walk.note('surface', 'below lg the sidebar is inside the closed menu sheet — no docked link is offered here');
+        }
+        /** Role-gated destinations the shell STILL offers this role a link to. */
+        const offers: string[] = [];
+        for (const origin of origins) {
+          for (const dest of gatedDestinations) {
+            await goOrigin(origin.path);
+            const link = sidebarLinkFor(dest.href);
+            const count = mobile ? 0 : await link.count();
+            let detail = `sidebarLinks=${count}`;
+            if (count === 1) {
+              await walk.click(link, `${origin.key} › gated sidebar ${dest.label}`);
+              const reached = await arrived(dest);
+              const landed = pathWithQuery(page);
+              detail += ` · clicking it landed ${landed} (${reached ? 'ARRIVED — the page gate leaked' : 'bounced'})`;
+              offers.push(`${origin.key} → ${dest.key}: sidebar link → ${landed}`);
+            }
+            walk.note(`gated.${origin.key}.${dest.key}`, detail);
+          }
+        }
+        walk.note('deadEndLinks', offers.length);
+        walk.note('deadEndDetail', offers.join(' | ') || 'none');
+        // FOUND BY THIS ROW — product defect, deliberately NOT fixed here.
+        // The CRM tab is the ONE tab whose sidebar is never role-gated:
+        // ZohoContextualSidebar.tsx:338 returns `buildFullCrmNav(CRM_NAV_ITEMS,
+        // navModules)` with no `visibleNavItemsForRole(..., crmRole)` wrapper,
+        // unlike :333 (settings) and :340 (every other tab). So a crm_agent /
+        // crm_viewer is offered "Import Data" → /crm/import, which
+        // app/crm/import/page.tsx:30-31 bounces to
+        // /crm?error=no_import_permission. D10 decided to gate exactly this and
+        // CRM_NAV_ITEMS.import already carries `managerOrAdmin`; the palette
+        // honours it (palette-pages.ts:65, and `paletteIdleLeaked = none`
+        // above), the Revenue/Operations tabs honour it — the CRM sidebar does
+        // not. Fixing it is a one-line change in product code this wave does
+        // not own.
+        expect(
+          offers,
+          `${role} is offered a sidebar link the page refuses (admin-only dead end) — D10 gating missing at ` +
+            `src/components/crm/shell/ZohoContextualSidebar.tsx:338 (buildFullCrmNav without visibleNavItemsForRole): ${offers.join(' | ')}`,
+        ).toEqual([]);
+      },
+      // HARD: "crm_agent sees no admin-only dead ends" is a `what_ten_means`
+      // clause. It is RED today, and that is the finding.
     );
   });
 });

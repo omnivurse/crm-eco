@@ -53,12 +53,12 @@ const EVENT_ICONS: Record<TimelineEventType, React.ReactNode> = {
 };
 
 const EVENT_COLORS: Record<TimelineEventType, { bg: string; text: string; border: string }> = {
-  stage_change: { bg: 'bg-purple-500/10', text: 'text-purple-400', border: 'border-purple-500/30' },
-  activity: { bg: 'bg-blue-500/10', text: 'text-blue-400', border: 'border-blue-500/30' },
-  note: { bg: 'bg-amber-500/10', text: 'text-amber-400', border: 'border-amber-500/30' },
-  attachment: { bg: 'bg-cyan-500/10', text: 'text-cyan-400', border: 'border-cyan-500/30' },
+  stage_change: { bg: 'bg-purple-500/10', text: 'text-purple-600 dark:text-purple-400', border: 'border-purple-500/30' },
+  activity: { bg: 'bg-blue-500/10', text: 'text-blue-600 dark:text-blue-400', border: 'border-blue-500/30' },
+  note: { bg: 'bg-amber-500/10', text: 'text-amber-600 dark:text-amber-400', border: 'border-amber-500/30' },
+  attachment: { bg: 'bg-cyan-500/10', text: 'text-cyan-600 dark:text-cyan-400', border: 'border-cyan-500/30' },
   audit: { bg: 'bg-slate-500/10', text: 'text-slate-400', border: 'border-slate-500/30' },
-  message: { bg: 'bg-green-500/10', text: 'text-green-400', border: 'border-green-500/30' },
+  message: { bg: 'bg-green-500/10', text: 'text-green-700 dark:text-green-400', border: 'border-green-500/30' },
 };
 
 const ACTIVITY_TYPE_ICONS: Record<string, React.ReactNode> = {
@@ -79,13 +79,13 @@ function StageChangeEvent({ data }: { data: CrmStageHistoryWithUser }) {
       <div className="flex items-center gap-2 flex-wrap">
         {data.from_stage && (
           <>
-            <Badge variant="outline" className="bg-slate-800/50 border-slate-600 text-slate-300">
+            <Badge variant="outline" className="bg-slate-100 dark:bg-slate-800/50 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300">
               {data.from_stage}
             </Badge>
             <ArrowRight className="w-4 h-4 text-slate-500" />
           </>
         )}
-        <Badge variant="outline" className="bg-teal-500/10 border-teal-500/30 text-teal-400">
+        <Badge variant="outline" className="bg-teal-500/10 border-teal-500/30 text-teal-700 dark:text-teal-400">
           {data.to_stage}
         </Badge>
       </div>
@@ -107,14 +107,14 @@ function ActivityEvent({ data }: { data: CrmTaskWithAssignee }) {
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-2">
-        <span className="font-medium text-white">{data.title}</span>
+        <span className="font-medium text-slate-900 dark:text-white">{data.title}</span>
         <Badge 
           variant="outline" 
           className={cn(
             'capitalize',
             data.status === 'completed' 
-              ? 'bg-green-500/10 border-green-500/30 text-green-400'
-              : 'bg-slate-800/50 border-slate-600 text-slate-300'
+              ? 'bg-green-500/10 border-green-500/30 text-green-700 dark:text-green-400'
+              : 'bg-slate-100 dark:bg-slate-800/50 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300'
           )}
         >
           {data.status}
@@ -148,7 +148,7 @@ function NoteEvent({ data }: { data: CrmNoteWithAuthor }) {
   return (
     <div className="space-y-2">
       <p className={cn(
-        'text-sm text-slate-300 whitespace-pre-wrap',
+        'text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap',
         !expanded && isLong && 'line-clamp-3'
       )}>
         {data.body}
@@ -158,7 +158,7 @@ function NoteEvent({ data }: { data: CrmNoteWithAuthor }) {
           variant="ghost"
           size="sm"
           onClick={() => setExpanded(!expanded)}
-          className="h-6 px-2 text-xs text-slate-400 hover:text-white"
+          className="h-6 px-2 text-xs text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
         >
           {expanded ? (
             <>
@@ -189,11 +189,11 @@ function AttachmentEvent({ data }: { data: CrmAttachmentWithAuthor }) {
 
   return (
     <div className="flex items-center gap-3">
-      <div className="p-2 rounded-lg bg-slate-800/50">
-        <Paperclip className="w-4 h-4 text-slate-400" />
+      <div className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800/50">
+        <Paperclip className="w-4 h-4 text-slate-500 dark:text-slate-400" />
       </div>
       <div>
-        <p className="text-sm font-medium text-white">{data.file_name}</p>
+        <p className="text-sm font-medium text-slate-900 dark:text-white">{data.file_name}</p>
         <p className="text-xs text-slate-500">
           {data.mime_type} {sizeStr && `• ${sizeStr}`}
         </p>
@@ -227,7 +227,7 @@ function AuditEvent({ data }: { data: CrmAuditLogWithActor }) {
     );
     return (
       <div className="space-y-1">
-        <p className="text-sm text-slate-300">Updated from a CSV file</p>
+        <p className="text-sm text-slate-700 dark:text-slate-300">Updated from a CSV file</p>
         {changedFields.length > 0 && (
           <p className="text-xs text-slate-500">
             {changedFields.slice(0, 6).join(', ')}
@@ -253,7 +253,7 @@ function AuditEvent({ data }: { data: CrmAuditLogWithActor }) {
       <div className="space-y-2">
         <div className="flex items-center gap-2">
           {actionIcon}
-          <span className="text-sm text-slate-300 capitalize">
+          <span className="text-sm text-slate-700 dark:text-slate-300 capitalize">
             {diff.action === 'request_changes' ? 'Requested changes' : diff.action || 'Decision made'}
           </span>
           {diff.new_status && (
@@ -283,7 +283,7 @@ function AuditEvent({ data }: { data: CrmAuditLogWithActor }) {
       <div className="space-y-1">
         <div className="flex items-center gap-2">
           <ClipboardCheck className="w-4 h-4 text-orange-400" />
-          <span className="text-sm text-slate-300">Approval requested</span>
+          <span className="text-sm text-slate-700 dark:text-slate-300">Approval requested</span>
         </div>
         {diff.action_type && (
           <p className="text-xs text-slate-500">
@@ -298,14 +298,14 @@ function AuditEvent({ data }: { data: CrmAuditLogWithActor }) {
     return (
       <div className="flex items-center gap-2">
         <Check className="w-4 h-4 text-green-400" />
-        <span className="text-sm text-slate-300">Approved action was applied</span>
+        <span className="text-sm text-slate-700 dark:text-slate-300">Approved action was applied</span>
       </div>
     );
   }
 
   return (
     <div className="space-y-1">
-      <p className="text-sm text-slate-300">
+      <p className="text-sm text-slate-700 dark:text-slate-300">
         {actionLabels[data.action] || data.action}
       </p>
       {data.action === 'update' && data.diff && (
@@ -355,7 +355,7 @@ function TimelineItem({ event }: { event: TimelineEvent }) {
   return (
     <div className="relative flex gap-4 pb-6 last:pb-0">
       {/* Timeline line */}
-      <div className="absolute left-5 top-10 bottom-0 w-px bg-white/10 last:hidden" />
+      <div className="absolute left-5 top-10 bottom-0 w-px bg-slate-200 dark:bg-white/10 last:hidden" />
       
       {/* Icon */}
       <div className={cn(
@@ -378,7 +378,7 @@ function TimelineItem({ event }: { event: TimelineEvent }) {
           <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">
             {event.type.replace('_', ' ')}
           </span>
-          <span className="text-slate-600">•</span>
+          <span className="text-slate-400">•</span>
           <time
             dateTime={event.timestamp}
             title={formatNoteRelative(event.timestamp)}
@@ -387,13 +387,13 @@ function TimelineItem({ event }: { event: TimelineEvent }) {
             {formatNoteTimestamp(event.timestamp) || '—'}
           </time>
           {formatNoteRelative(event.timestamp) && (
-            <span className="text-[11px] text-slate-600 hidden sm:inline">
+            <span className="text-[11px] text-slate-500 hidden sm:inline">
               ({formatNoteRelative(event.timestamp)})
             </span>
           )}
           {userName && (
             <>
-              <span className="text-slate-600">•</span>
+              <span className="text-slate-400">•</span>
               <span className="text-xs text-slate-400 flex items-center gap-1">
                 <User className="w-3 h-3" />
                 {userName}
@@ -403,7 +403,7 @@ function TimelineItem({ event }: { event: TimelineEvent }) {
         </div>
         
         {/* Event content */}
-        <div className="glass-card rounded-xl p-4 border border-white/5">
+        <div className="glass-card rounded-xl p-4 border border-slate-200 dark:border-white/5">
           {renderContent()}
         </div>
       </div>
@@ -428,10 +428,10 @@ export function RecordTimeline({ events, isLoading, className }: RecordTimelineP
       <div className={cn('space-y-4', className)}>
         {[...Array(5)].map((_, i) => (
           <div key={i} className="flex gap-4 animate-pulse">
-            <div className="w-10 h-10 rounded-full bg-slate-800/50" />
+            <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-800/50" />
             <div className="flex-1 space-y-2">
-              <div className="h-4 w-32 bg-slate-800/50 rounded" />
-              <div className="h-20 bg-slate-800/30 rounded-xl" />
+              <div className="h-4 w-32 bg-slate-200 dark:bg-slate-800/50 rounded" />
+              <div className="h-20 bg-slate-200/70 dark:bg-slate-800/30 rounded-xl" />
             </div>
           </div>
         ))}
@@ -451,7 +451,7 @@ export function RecordTimeline({ events, isLoading, className }: RecordTimelineP
             'rounded-full',
             filter === 'all' 
               ? 'bg-primary hover:bg-primary/90 text-primary-foreground' 
-              : 'glass border-white/10 text-slate-300 hover:text-white'
+              : 'glass border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
           )}
         >
           All ({events.length})
@@ -470,12 +470,12 @@ export function RecordTimeline({ events, isLoading, className }: RecordTimelineP
                 'rounded-full',
                 filter === type 
                   ? 'bg-primary hover:bg-primary/90 text-primary-foreground' 
-                  : 'glass border-white/10 text-slate-300 hover:text-white'
+                  : 'glass border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
               )}
             >
               {icon}
               <span className="ml-1.5 capitalize">{type.replace('_', ' ')}s</span>
-              <span className="ml-1 text-xs opacity-70">({count})</span>
+              <span className="ml-1 text-xs opacity-80">({count})</span>
             </Button>
           );
         })}
@@ -490,8 +490,8 @@ export function RecordTimeline({ events, isLoading, className }: RecordTimelineP
         </div>
       ) : (
         <div className="text-center py-12">
-          <Clock className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-white mb-1">No timeline events</h3>
+          <Clock className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-1">No timeline events</h3>
           <p className="text-slate-400">
             {filter === 'all' 
               ? 'Activity will appear here as it happens'

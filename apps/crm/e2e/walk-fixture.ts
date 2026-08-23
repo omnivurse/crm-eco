@@ -16,7 +16,17 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { test as base, expect, type Locator, type Page, type APIRequestContext } from '@playwright/test';
 import { runDir } from './env';
-import { armPageIssueTrap, recordTrap, trapNoPageIssues } from './traps';
+import {
+  armPageIssueTrap,
+  hasUntrackedPageIssue,
+  pageIssuesSince,
+  pageIssuesSoFar,
+  recordTrap,
+  splitPageIssues,
+  trapNoPageIssues,
+  type PageIssue,
+  type SuppressedPageIssue,
+} from './traps';
 import {
   MODIFIER_KEYS,
   WALK_STORAGE_KEY,
@@ -49,6 +59,16 @@ export interface WalkTaskRecord {
   pass: boolean;
   /** Soft tasks record pass=false instead of failing the test (future-wave assertions). */
   soft: boolean;
+  /** Graded `console.error` calls the browser made inside this task's window. */
+  consoleErrors: number;
+  /** Graded uncaught exceptions (`pageerror`) inside this task's window. */
+  pageErrors: number;
+  /** Diagnosed (PI-n) lines seen in this row's window — disclosed, not charged. */
+  knownIssues?: PageIssue[];
+  /** The graded lines themselves — what turned the row red. */
+  browserIssues?: PageIssue[];
+  /** Allowlisted lines, carried WITH the reason each was dropped. Never hidden. */
+  suppressedIssues?: SuppressedPageIssue[];
   /** Why pass=false (assertion message / over budget); absent when it passed. */
   reason?: string;
   project: string;
@@ -138,6 +158,16 @@ async function setTypingFlag(page: Page, on: boolean): Promise<void> {
 export function createWalk(page: Page, meta: { project: string; testTitle: string; shotRoot: string; runRoot: string }): Walk {
   const counter = new WalkCounter();
   const records: WalkTaskRecord[] = [];
+  /**
+   * How many collected page issues have already been charged to a row. Every
+   * issue the browser logs is charged to exactly one task — including the ones
+   * logged while the spec was navigating BETWEEN tasks, which is where a
+   * hydration error on a fresh page load actually lands. Charging only what
+   * happens strictly inside a task would leave a row green while the page it
+   * just opened was logging an error, which is the false result this trap
+   * exists to kill.
+   */
+  let consumedIssues = 0;
   let active: {
     id: string;
     label: string;
@@ -146,6 +176,8 @@ export function createWalk(page: Page, meta: { project: string; testTitle: strin
     startedAt: number;
     steps: WalkStep[];
     baseline: BrowserTally;
+    /** pageIssuesSoFar().length when the task opened — its console window starts here. */
+    issueCursor: number;
     shotIndex: number;
     notes: Record<string, WalkNoteValue>;
   } | null = null;
@@ -226,7 +258,22 @@ export function createWalk(page: Page, meta: { project: string; testTitle: strin
       counter.reset();
       await resetBrowserTally(page);
       const baseline = await readBrowserTally(page);
-      active = { id, label, budget, soft, startedAt: performance.now(), steps: [], baseline, shotIndex: 0, notes: {} };
+      active = {
+        id,
+        label,
+        budget,
+        soft,
+        startedAt: performance.now(),
+        steps: [],
+        baseline,
+        // Not `pageIssuesSoFar().length`: the window opens where the previous
+        // row's window closed, so the navigation a spec does just before the
+        // task is charged to the task it was setting up. The first row of a
+        // test therefore carries the trap sweep's own page loads.
+        issueCursor: consumedIssues,
+        shotIndex: 0,
+        notes: {},
+      };
       let result: T;
       let failure: unknown = null;
       try {
@@ -244,7 +291,19 @@ export function createWalk(page: Page, meta: { project: string; testTitle: strin
         keypresses: Math.max(0, after.keypresses - baseline.keypresses),
       };
       const ms = Math.round(performance.now() - active.startedAt);
-      const outcome = resolveTaskOutcome({ failure, clicks: tally.clicks, budget, soft });
+      const { real: browserIssues, suppressed: suppressedIssues } = splitPageIssues(pageIssuesSince(page, active.issueCursor));
+      consumedIssues = pageIssuesSoFar(page).length;
+      // A task row answers ONE question: does this task work, in this budget?
+      // PI-n is a diagnosed defect in the shared CRM shell, so it is on every
+      // page the walk opens — charging it to each row turned 20 of 67 rows red
+      // for something none of them measures, and buried whether NV-cross-tab or
+      // A11Y-keyboard-T1 actually still work. The VERDICT is not softened: each
+      // PI-n line still reddens the per-test and setup `page-errors` traps, so
+      // walk.json and `walk:crm:gate` are red either way, and the lines are
+      // carried on the row itself (`knownIssues`) rather than dropped.
+      const chargeable = browserIssues.filter((i) => !i.known);
+      const knownIssues = browserIssues.filter((i) => i.known);
+      const outcome = resolveTaskOutcome({ failure, clicks: tally.clicks, budget, soft, browserIssues: chargeable });
       const record: WalkTaskRecord = {
         id,
         label,
@@ -255,6 +314,13 @@ export function createWalk(page: Page, meta: { project: string; testTitle: strin
         budget,
         pass: outcome.pass,
         soft,
+        consoleErrors: chargeable.filter((i) => i.kind === 'console').length,
+        pageErrors: chargeable.filter((i) => i.kind === 'pageerror').length,
+        ...(chargeable.length > 0 ? { browserIssues: chargeable } : {}),
+        // Diagnosed defects seen inside this row's window. Not charged to the
+        // row, never hidden from it.
+        ...(knownIssues.length > 0 ? { knownIssues } : {}),
+        ...(suppressedIssues.length > 0 ? { suppressedIssues } : {}),
         ...(outcome.reason ? { reason: outcome.reason } : {}),
         project: meta.project,
         viewport: viewportString(),
@@ -321,7 +387,11 @@ export const test = base.extend<WalkFixtures>({
     // on its own — the report can never sit next to an unexplained red badge.
     const issues = trapNoPageIssues(page, `${testInfo.title} [${testInfo.project.name}]`);
     recordTrap({ ...issues, phase: 'in-test', project: testInfo.project.name });
-    if (!issues.pass) throw new Error(`TRAP:${issues.name} — ${issues.detail}`);
+    // Red in walk.json and red at the gate either way. The THROW is reserved
+    // for an error the walk has not already diagnosed: PI-n lives in the shared
+    // shell, so throwing on it here would fail every spec in the suite and the
+    // owner would get an exit code instead of 387 measured rows.
+    if (hasUntrackedPageIssue(page)) throw new Error(`TRAP:${issues.name} — ${issues.detail}`);
   },
 });
 

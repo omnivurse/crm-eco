@@ -62,6 +62,11 @@ cd apps/crm && npm run walk:crm
 
 # 7. grade the run the way CI does
 npm run walk:crm:gate
+
+# 8. prove the commit-time guard (EV-GUARD; ~4s, no browser, no dev server)
+npm run walk:crm:guard-proof
+#   node e2e/guard-proof.mjs --out-dir "$(cat e2e/artifacts/crm-walk/latest.txt)"
+#   → then: npm run walk:crm:gate -- --require-guard-proof
 ```
 
 **Afterwards**: leave port 3000 free (the runner stops the dev server it
@@ -213,6 +218,63 @@ that recorded `pass: false`, and a run that recorded **nothing**. It fails on
 
 Exit codes: `0` green · `1` failures · `2` no `walk.json` to grade. Unit tests:
 `apps/crm/e2e/walk-gate.test.ts` (`npm run walk:crm:unit`).
+
+With `--require-guard-proof` it additionally demands a `guard-proof.json` in the
+same run folder and grades it (see below). The flag is **opt-in**: CI passes it,
+but a local regrade over an older run folder must not go red for missing a file
+that folder never had.
+
+### The guard proof (`apps/crm/e2e/guard-proof.mjs`) — EV-GUARD
+
+Every other claim in the regrade is backed by a row in `walk.json` anyone can
+re-open. The claim *"a commit-time guard provably rejects a new raw toast"*
+cannot be a Playwright row — there is no browser in a git hook — so it gets the
+same standard in a different shape: one command, one JSON artifact.
+
+```sh
+cd apps/crm && npm run walk:crm:guard-proof
+```
+
+It writes a scratch component at
+`apps/crm/src/components/crm/records/__guard_proof_scratch__.tsx` — under one of
+the `WALKED_PATHS` globs in `eslint.config.mjs`, where the toast rule is an
+**error**, and under `src/`, where the vitest ratchet counts it — stages it, and
+runs the real hook paths against it:
+
+| step | what runs | must |
+| --- | --- | --- |
+| CONTROL | the ratchet on the tree as it stands | exit `0` — otherwise a later red proves nothing |
+| NEGATIVE | pre-commit path, scratch copy taken from a **variable** | not name the rule — the gate is not simply always-red |
+| POSITIVE | `node --max-old-space-size=4096 apps/crm/e2e/lint-changed.mjs --staged <file>` with a raw `toast.success('…')` | exit non-zero **and** name `crm-toast/no-raw-toast-copy` |
+| RATCHET | `vitest run src/lib/crm/toast-raw-ratchet.test.ts` with the extra raw site | exit non-zero and name the directory that rose |
+| CLEANUP | delete the file, `git rm --cached` the index entry | `git status --porcelain -uall` byte-identical to the snapshot taken first |
+
+Cleanup runs from a `finally`, so a mid-flight throw still restores the tree, and
+"restored" is **asserted** against the before-snapshot rather than assumed. Git
+writes never go beyond the index on that single path — no commit, stash, reset,
+checkout or branch.
+
+Evidence lands in `e2e/artifacts/crm-walk/<ISO>/guard-proof.json` (pointer:
+`artifacts/crm-walk/latest-guard-proof.txt`) recording the commit, every command
+with its exit code and tail of output, the rule name, the ratchet baseline before
+and after, the status byte counts, and a `pass` boolean. Pass `--out-dir <run
+dir>` to drop it beside a `walk.json` so `walk:crm:gate --require-guard-proof`
+can grade it. `gradeGuardProof()` re-derives the verdict from the recorded exit
+codes rather than trusting the script's own `pass` flag, and rejects a proof
+recorded against a different commit than the walk.
+
+**Verify the proof can go red** before trusting it — a proof that cannot fail
+proves nothing. Neuter `isRaw` in the ESLint rule and the POSITIVE rows go red;
+add the scratch path to `ALLOWED_FILES` in the ratchet test and the RATCHET rows
+go red. Both were exercised on `066eb1ce`.
+
+> **Known defect (not fixed here):** `.husky/pre-push` runs
+> `npx vitest run --silent src/lib/crm/toast-raw-ratchet.test.ts`. Under vitest 4
+> the bare `--silent` swallows the following path (`Unexpected value
+> "--silent=src/…"`), so that line exits `1` on a **clean** tree — it blocks every
+> push and can never discriminate a real raw-toast regression. The proof records
+> this as `prePush.hookLineDiscriminating: false` and prints it as a DEFECT; its
+> own ratchet assertions use `--silent=true`.
 
 ## 4. How a regrade uses it (EV-5F)
 

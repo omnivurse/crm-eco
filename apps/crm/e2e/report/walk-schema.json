@@ -111,7 +111,9 @@
           "ms",
           "budget",
           "pass",
-          "steps"
+          "steps",
+          "consoleErrors",
+          "pageErrors"
         ],
         "properties": {
           "id": {
@@ -193,6 +195,105 @@
                 "boolean",
                 "null"
               ]
+            }
+          },
+          "consoleErrors": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "pageErrors": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "browserIssues": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind",
+                "text",
+                "url"
+              ],
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "console",
+                    "pageerror"
+                  ]
+                },
+                "text": {
+                  "type": "string"
+                },
+                "url": {
+                  "type": "string"
+                },
+                "known": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "knownIssues": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind",
+                "text",
+                "url"
+              ],
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "console",
+                    "pageerror"
+                  ]
+                },
+                "text": {
+                  "type": "string"
+                },
+                "url": {
+                  "type": "string"
+                },
+                "known": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "suppressedIssues": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind",
+                "text",
+                "url",
+                "why"
+              ],
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "console",
+                    "pageerror"
+                  ]
+                },
+                "text": {
+                  "type": "string"
+                },
+                "url": {
+                  "type": "string"
+                },
+                "why": {
+                  "type": "string"
+                }
+              }
             }
           }
         }

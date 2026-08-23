@@ -6,7 +6,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import type { Page } from '@playwright/test';
-import { armPageIssueTrap, pageIssuesSoFar, trapNoPageIssues } from './traps';
+import { armPageIssueTrap, hasUntrackedPageIssue, pageIssuesSince, pageIssuesSoFar, splitPageIssues, trapNoPageIssues } from './traps';
 
 type Handler = (arg: unknown) => void;
 
@@ -83,14 +83,16 @@ describe('page-errors trap', () => {
     expect(trapNoPageIssues(page, 'w').pass).toBe(true);
   });
 
-  it('ignores only the two named dev-server entries, and says how many it dropped', () => {
+  it('suppresses only the named dev-server entries, and names each reason it dropped', () => {
     const { page, emitConsole } = fakePage();
     armPageIssueTrap(page);
     emitConsole('error', 'WebSocket connection to \'ws://localhost:3000/_next/webpack-hmr\' failed');
     emitConsole('error', 'Failed to load resource: the server responded with a status of 404 (favicon.ico)');
     const result = trapNoPageIssues(page, 'the list');
     expect(result.pass).toBe(true);
-    expect(result.detail).toMatch(/2 dev-only entries ignored/);
+    expect(result.detail).toMatch(/2 suppressed:/);
+    expect(result.detail).toContain('dev-only HMR socket');
+    expect(result.detail).toContain('dev-only icon probe 404');
   });
 
   it('does not let a dev-only entry mask a real one in the same run', () => {
@@ -101,7 +103,8 @@ describe('page-errors trap', () => {
     const result = trapNoPageIssues(page, 'the list');
     expect(result.pass).toBe(false);
     expect(result.detail).toMatch(/1 browser error/);
-    expect(result.detail).toMatch(/1 dev-only entry ignored/);
+    expect(result.detail).toMatch(/1 suppressed:/);
+    expect(result.detail).toContain('dev-only HMR socket');
   });
 
   it('is idempotent — arming twice binds one pair of listeners, not two', () => {
@@ -114,11 +117,16 @@ describe('page-errors trap', () => {
     expect(pageIssuesSoFar(page)).toHaveLength(1);
   });
 
-  it('truncates a giant message instead of pasting a stack into walk.json', () => {
+  it('keeps the message WHOLE but truncates the trap detail (a hydration diff lives in the tail)', () => {
     const { page, emitPageError } = fakePage();
     armPageIssueTrap(page);
-    emitPageError('Error', 'x'.repeat(5_000));
-    expect(pageIssuesSoFar(page)[0].text.length).toBeLessThanOrEqual(400);
+    emitPageError('Error', `${'x'.repeat(5_000)}THE-ACTUAL-DIFF`);
+    // Whole in the ledger…
+    expect(pageIssuesSoFar(page)[0].text).toContain('THE-ACTUAL-DIFF');
+    // …preview in the one-line detail.
+    const detail = trapNoPageIssues(page, 'w').detail;
+    expect(detail).not.toContain('THE-ACTUAL-DIFF');
+    expect(detail.length).toBeLessThan(700);
   });
 
   it('caps the detail listing at 8 entries and counts the rest', () => {
@@ -131,11 +139,178 @@ describe('page-errors trap', () => {
     expect(result.detail).not.toContain('boom-8');
   });
 
+  // ── PI-1: the defect this trap was built to find ──
+  it('does NOT suppress the diagnosed Radix useId hydration mismatch — a known defect is still a red row', () => {
+    const { page, emitConsole } = fakePage();
+    armPageIssueTrap(page);
+    emitConsole(
+      'error',
+      "A tree hydrated but some attributes of the server rendered HTML didn't match the client properties.\n" +
+        '  <button type="button"\n+ id="radix-_R_ke7cmitplb_"\n- id="radix-_R_2hotiqbn6lb_"\n aria-haspopup="menu">',
+    );
+    const result = trapNoPageIssues(page, 'the record page');
+    // Allowlisting it would rebuild the very false result this trap exists to
+    // kill: a green row printed beside a red dev-overlay badge.
+    expect(result.pass).toBe(false);
+    expect(result.detail).toMatch(/1 browser error/);
+    // …and the reader is told what it is instead of re-diagnosing it.
+    expect(result.detail).toContain('PI-1');
+    expect(result.detail).toContain('SplitCreateButton.tsx:185');
+  });
+
+  it('staples the PI-n diagnosis onto the graded issue for walk.json', () => {
+    const { page, emitConsole } = fakePage();
+    armPageIssueTrap(page);
+    emitConsole(
+      'error',
+      "A tree hydrated but some attributes of the server rendered HTML didn't match the client properties.\n id=\"radix-_R_1a_\"",
+    );
+    const split = splitPageIssues(pageIssuesSoFar(page));
+    expect(split.suppressed).toHaveLength(0);
+    expect(split.real).toHaveLength(1);
+    expect(split.real[0].known).toMatch(/^PI-1 /);
+  });
+
+  it('an unknown error carries no PI-n label — the tag is evidence, not decoration', () => {
+    const { page, emitPageError } = fakePage();
+    armPageIssueTrap(page);
+    emitPageError('TypeError', 'x is not a function');
+    expect(splitPageIssues(pageIssuesSoFar(page)).real[0].known).toBeUndefined();
+  });
+
+  it('PI-1 is matched narrowly — a hydration mismatch WITHOUT a radix id is an unlabelled failure', () => {
+    const { page, emitConsole } = fakePage();
+    armPageIssueTrap(page);
+    emitConsole(
+      'error',
+      "A tree hydrated but some attributes of the server rendered HTML didn't match the client properties.\n" +
+        '  <time\n+ dateTime="2026-08-23"\n- dateTime="2026-08-22">',
+    );
+    const result = trapNoPageIssues(page, 'the record page');
+    expect(result.pass).toBe(false);
+    expect(result.detail).toMatch(/1 browser error/);
+    expect(result.detail).not.toContain('PI-1');
+  });
+
+  it('PI-2 labels the resolve-record uuid console.error — and still fails the trap', () => {
+    const { page, emitConsole } = fakePage('http://localhost:3000/crm/r/not-a-uuid');
+    armPageIssueTrap(page);
+    emitConsole('error', '%c%s%c [resolve-record] audit entity_id_tombstone: Server invalid input syntax for type uuid: "not-a-uuid"');
+    const result = trapNoPageIssues(page, 'the malformed-id door');
+    expect(result.pass).toBe(false);
+    expect(result.detail).toContain('PI-2');
+    expect(result.detail).toContain('resolve-record.ts:169');
+  });
+
+  it('a suppressed line is still carried whole, with its reason, for walk.json', () => {
+    const { page, emitConsole } = fakePage();
+    armPageIssueTrap(page);
+    emitConsole('error', "WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr' failed");
+    const { real, suppressed } = splitPageIssues(pageIssuesSoFar(page));
+    expect(real).toHaveLength(0);
+    expect(suppressed).toHaveLength(1);
+    expect(suppressed[0].why).toMatch(/HMR/);
+    expect(suppressed[0].text).toContain('webpack-hmr');
+  });
+
+  // ── the verdict / abort split ──
+  it('a diagnosed PI-n line is RED but does not abort the run', () => {
+    const { page, emitConsole } = fakePage();
+    armPageIssueTrap(page);
+    emitConsole(
+      'error',
+      "A tree hydrated but some attributes of the server rendered HTML didn't match the client properties.\n" +
+        '  <button\n+ id="radix-_R_ke7cmitplb_"\n- id="radix-_R_2hotiqbn6lb_">',
+    );
+    // Verdict: still a failure — the programme cannot claim "0 failures".
+    expect(trapNoPageIssues(page, 'w').pass).toBe(false);
+    // Abort: no. PI-1 is in the shared shell; throwing here would cost every row.
+    expect(hasUntrackedPageIssue(page)).toBe(false);
+  });
+
+  it('an UNDIAGNOSED error is red AND aborts', () => {
+    const { page, emitPageError } = fakePage();
+    armPageIssueTrap(page);
+    emitPageError('TypeError', 'x.map is not a function');
+    expect(trapNoPageIssues(page, 'w').pass).toBe(false);
+    expect(hasUntrackedPageIssue(page)).toBe(true);
+  });
+
+  it('a PI-n line cannot shield an undiagnosed one in the same run', () => {
+    const { page, emitConsole, emitPageError } = fakePage();
+    armPageIssueTrap(page);
+    emitConsole('error', "A tree hydrated but some attributes of the server rendered HTML didn't match\n+ id=\"radix-a\"");
+    emitPageError('TypeError', 'boom');
+    expect(hasUntrackedPageIssue(page)).toBe(true);
+  });
+
+  it('labels a PI-n line with `known` — the field the task row filters on', () => {
+    const { page, emitConsole, emitPageError } = fakePage();
+    armPageIssueTrap(page);
+    emitConsole('error', "A tree hydrated but some attributes of the server rendered HTML didn't match\n+ id=\"radix-a\"");
+    emitPageError('TypeError', 'boom');
+    const { real } = splitPageIssues(pageIssuesSoFar(page));
+    expect(real).toHaveLength(2);
+    // walk-fixture charges the row with `real.filter(i => !i.known)`.
+    const chargeable = real.filter((i) => !i.known);
+    const known = real.filter((i) => i.known);
+    expect(chargeable.map((i) => i.kind)).toEqual(['pageerror']);
+    expect(known).toHaveLength(1);
+    expect(known[0].known).toMatch(/PI-1/);
+  });
+
+  it('never armed is treated as the loudest failure, not as silence', () => {
+    const { page } = fakePage();
+    expect(hasUntrackedPageIssue(page)).toBe(true);
+  });
+
+  it('a clean page neither fails nor aborts', () => {
+    const { page } = fakePage();
+    armPageIssueTrap(page);
+    expect(trapNoPageIssues(page, 'w').pass).toBe(true);
+    expect(hasUntrackedPageIssue(page)).toBe(false);
+  });
+
   it('survives a page whose url() is not parseable (mid-navigation)', () => {
     const { page, emitPageError } = fakePage('');
     armPageIssueTrap(page);
     emitPageError('Error', 'boom');
     expect(pageIssuesSoFar(page)[0].url).toBe('');
     expect(trapNoPageIssues(page, 'w').pass).toBe(false);
+  });
+});
+
+describe('per-task console evidence', () => {
+  it('splitPageIssues keeps the suppressed line AND why it was dropped', () => {
+    const { page, emitConsole } = fakePage();
+    armPageIssueTrap(page);
+    emitConsole('error', "WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr' failed");
+    emitConsole('error', 'Warning: Each child in a list should have a unique "key" prop.');
+    const split = splitPageIssues(pageIssuesSoFar(page));
+    expect(split.real.map((i) => i.text)).toEqual([
+      'Warning: Each child in a list should have a unique "key" prop.',
+    ]);
+    // The dropped line survives into walk.json with its justification — a
+    // filter whose output nobody can read is indistinguishable from a cover-up.
+    expect(split.suppressed).toHaveLength(1);
+    expect(split.suppressed[0].text).toMatch(/webpack-hmr/);
+    expect(split.suppressed[0].why).toMatch(/HMR/i);
+  });
+
+  it('pageIssuesSince windows a task: only what happened after the mark', () => {
+    const { page, emitConsole } = fakePage();
+    armPageIssueTrap(page);
+    emitConsole('error', 'before the task');
+    const cursor = pageIssuesSoFar(page).length;
+    emitConsole('error', 'during the task');
+    expect(pageIssuesSince(page, cursor).map((i) => i.text)).toEqual(['during the task']);
+    // …and the earlier line is still graded by the per-test trap.
+    expect(trapNoPageIssues(page, 'the whole test').pass).toBe(false);
+  });
+
+  it('an unarmed page yields an empty window instead of throwing', () => {
+    const { page } = fakePage();
+    expect(pageIssuesSince(page, 0)).toEqual([]);
+    expect(splitPageIssues(pageIssuesSince(page, 0)).real).toEqual([]);
   });
 });

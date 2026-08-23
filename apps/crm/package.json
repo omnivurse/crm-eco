@@ -17,6 +17,7 @@
     "walk:crm:ui": "playwright test -c e2e/playwright.config.ts --ui",
     "walk:crm:ci": "cross-env PLAYWRIGHT_JSON_OUTPUT_NAME=report/last-run.json playwright test -c e2e/playwright.config.ts --reporter=list,github,json",
     "walk:crm:gate": "tsx e2e/walk-gate.ts",
+    "walk:crm:guard-proof": "node e2e/guard-proof.mjs",
     "walk:crm:unit": "vitest run -c e2e/vitest.config.ts",
     "walk:crm:check": "sh e2e/check-no-raw-actions.sh && tsc --noEmit -p e2e/tsconfig.json && node e2e/lint-changed.mjs",
     "lint:changed": "node e2e/lint-changed.mjs",
