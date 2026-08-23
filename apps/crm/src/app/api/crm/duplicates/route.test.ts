@@ -11,6 +11,16 @@ vi.mock('@/lib/supabase-server', () => ({
   }),
 }));
 
+// The list query goes through the service-role conduit (the security_invoker
+// view re-evaluates crm_records RLS inside the pair self-join and hit
+// statement_timeout on prod), so the route builds a @supabase/supabase-js
+// client directly. Same query stub — what changes is which client runs it.
+vi.mock('@supabase/supabase-js', () => ({
+  createClient: () => ({
+    from: (table: string) => mockSupabaseQuery(table),
+  }),
+}));
+
 import { GET } from './route';
 
 function chainableQuery(result: {
@@ -31,6 +41,18 @@ function chainableQuery(result: {
 describe('GET /api/crm/duplicates', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // The route fails closed without the service credentials.
+    process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co';
+    process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-service-key';
+  });
+
+  it('fails closed (500) when the service key is not configured', async () => {
+    delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+    mockGetAuthProfile.mockResolvedValue(buildProfile({ crm_role: 'crm_admin' }));
+    const req = buildRequest('http://localhost/api/crm/duplicates');
+    const res = await GET(req);
+    expect(res.status).toBe(500);
+    expect(mockSupabaseQuery).not.toHaveBeenCalled();
   });
 
   it('returns 401 when unauthenticated', async () => {

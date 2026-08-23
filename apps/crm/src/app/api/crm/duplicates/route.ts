@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { createClient, getAuthProfile } from '@/lib/supabase-server';
+import { createClient as createServiceClient } from '@supabase/supabase-js';
+import { getAuthProfile } from '@/lib/supabase-server';
 
 /**
  * GET /api/crm/duplicates
@@ -50,11 +51,24 @@ export async function GET(request: NextRequest) {
     }
 
     const { confidence, module_id, search, page, page_size } = parsed.data;
-    const supabase = await createClient();
 
-    // The view already enforces RLS (security_invoker), so we only
-    // need to filter on caller-visible columns. The .eq('org_id', ...)
-    // filter is defense-in-depth.
+    // Service-role conduit (same pattern as records/[id]/diagnose): the view
+    // is security_invoker, so under a user JWT the crm_records RLS policies
+    // are re-evaluated inside the pair self-join — at this tenant's size that
+    // exceeds statement_timeout (57014, seen in prod since 2026-08-17) and the
+    // page 500s. The service client answers the identical query in ~1-2s.
+    // Authorization does not weaken: this route already rejects everyone but
+    // crm_admin/crm_manager above, and every query is pinned to the caller's
+    // own organization_id below. Fail closed if the key is absent.
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!url || !serviceKey) {
+      return NextResponse.json({ error: 'Service role unavailable' }, { status: 500 });
+    }
+    const supabase = createServiceClient(url, serviceKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+
     let query = supabase
       .from('crm_probable_duplicates')
       .select('*', { count: 'exact' })

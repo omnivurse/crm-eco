@@ -30,6 +30,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { toast } from 'sonner';
+
+import { toastCopy } from '@/lib/crm/toast-copy';
 import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
 import { Label } from '@crm-eco/ui/components/label';
@@ -296,7 +298,7 @@ export function DuplicatesClient({ modules, canBulkMerge }: DuplicatesClientProp
       setDismissTarget(null);
       setDismissReason('');
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to dismiss pair');
+      toast.error(toastCopy.failed('dismiss the pair', err));
     } finally {
       setIsDismissing(false);
     }
@@ -347,7 +349,7 @@ export function DuplicatesClient({ modules, canBulkMerge }: DuplicatesClientProp
       );
       await loadPairs();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to run bulk merge');
+      toast.error(toastCopy.failed('run the bulk merge', err));
     } finally {
       setIsBulkMerging(false);
     }
@@ -467,7 +469,14 @@ export function DuplicatesClient({ modules, canBulkMerge }: DuplicatesClientProp
       {error && (
         <div className="p-4 rounded-lg border border-red-200 dark:border-red-900/40 bg-red-50 dark:bg-red-950/20 text-sm text-red-700 dark:text-red-300 flex items-center gap-2">
           <AlertCircle className="w-4 h-4" />
-          {error}
+          <span className="flex-1">{error}</span>
+          <button
+            type="button"
+            onClick={loadPairs}
+            className="shrink-0 rounded-md border border-red-300 dark:border-red-800 px-2.5 py-1 text-xs font-semibold hover:bg-red-100 dark:hover:bg-red-900/30"
+          >
+            Try again
+          </button>
         </div>
       )}
 
@@ -481,7 +490,12 @@ export function DuplicatesClient({ modules, canBulkMerge }: DuplicatesClientProp
           ))}
         </div>
       ) : pairs.length === 0 ? (
-        <EmptyState hasFilters={confidence !== 'all' || moduleId !== 'all' || !!debouncedSearch} />
+        // A failed load must never read as "all caught up" — the error banner
+        // above is the honest state; offering the celebratory empty state
+        // beside it tells the operator the opposite of the truth.
+        error ? null : (
+          <EmptyState hasFilters={confidence !== 'all' || moduleId !== 'all' || !!debouncedSearch} />
+        )
       ) : (
         <ul className="space-y-3">
           {pairs.map((pair) => (
