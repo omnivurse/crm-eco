@@ -25,7 +25,22 @@ BEGIN
     WHERE id = v_root_id
       AND organization_id = v_org_id
   ) THEN
-    RAISE EXCEPTION 'PIFH org agent root % not found in org %', v_root_id, v_org_id;
+    -- This is a prod-data backfill: the root row is a specific legacy advisor
+    -- that only exists on the production database (where this migration has
+    -- long been applied). On a FRESH database — supabase start locally, the
+    -- CI walk runner — there are no advisors at all, and raising here aborted
+    -- the entire migration chain, which is why local stacks stalled at this
+    -- point and the first CI walk run died before Postgres came up. A fresh
+    -- DB has nothing to backfill: skip loudly instead of failing.
+    IF EXISTS (
+      SELECT 1 FROM public.advisors WHERE organization_id = v_org_id
+    ) THEN
+      -- Advisors exist but the designated root is missing: that is real
+      -- drift on a populated database and still deserves a hard stop.
+      RAISE EXCEPTION 'PIFH org agent root % not found in org %', v_root_id, v_org_id;
+    END IF;
+    RAISE NOTICE 'PIFH org agent hierarchy: no advisors for org % (fresh database) — backfill skipped', v_org_id;
+    RETURN;
   END IF;
 
   UPDATE public.advisors
