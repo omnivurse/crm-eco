@@ -25,6 +25,7 @@ import {
   Code2,
   Building2,
   ListChecks,
+  HeartPulse,
 } from 'lucide-react';
 import { getCurrentProfile } from '@/lib/crm/queries';
 import { isCrmManagerOrAdminRole } from '@/lib/crm/nav-profile';
@@ -70,6 +71,14 @@ const settingsCards: SettingCard[] = [
     description: 'Choose what people can pick from menus like Membership / Plan — add, rename, hide, and reorder',
     href: '/crm/settings/field-options',
     icon: <ListChecks className="w-6 h-6" />,
+    managerOrAdmin: true,
+    highlight: true,
+  },
+  {
+    title: 'Data Health',
+    description: 'One score for how clean the book is — every check explains itself and links to the fix',
+    href: '/crm/data-health',
+    icon: <HeartPulse className="w-6 h-6" />,
     managerOrAdmin: true,
     highlight: true,
   },
@@ -242,7 +251,12 @@ async function SettingsContent() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {visibleCards.map((card) => (
           <Link
-            key={card.href}
+            // Keyed by TITLE, not href: two cards deliberately point at
+            // /crm/settings/fields, and keying on the href made React log
+            // "Encountered two children with the same key" on every render of
+            // this page — which is what the click-walk's page-errors trap
+            // aborts on. Titles are unique.
+            key={card.title}
             href={card.href}
             className="group glass-card border border-slate-200 dark:border-slate-700 rounded-xl p-6 hover:border-teal-500/50 transition-all"
           >

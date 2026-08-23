@@ -21,7 +21,8 @@
     "walk:crm:unit": "vitest run -c e2e/vitest.config.ts",
     "walk:crm:check": "sh e2e/check-no-raw-actions.sh && tsc --noEmit -p e2e/tsconfig.json && node e2e/lint-changed.mjs",
     "lint:changed": "node e2e/lint-changed.mjs",
-    "toast:ratchet:update": "cross-env TOAST_RATCHET_UPDATE=1 vitest run src/lib/crm/toast-raw-ratchet.test.ts"
+    "toast:ratchet:update": "cross-env TOAST_RATCHET_UPDATE=1 vitest run src/lib/crm/toast-raw-ratchet.test.ts",
+    "data-health:ratchet:update": "cross-env DATA_HEALTH_RATCHET_UPDATE=1 vitest run src/lib/crm/data-health/ratchet.test.ts"
   },
   "dependencies": {
     "@crm-eco/enrollment": "*",
@@ -72,6 +73,7 @@
     "lucide-react": "^0.312.0",
     "next": "16.1.6",
     "openai": "^4.104.0",
+    "postgres": "^3.4.8",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-dropzone": "^14.3.8",

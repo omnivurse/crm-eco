@@ -382,6 +382,25 @@ export const GIZMO_TIP_REGISTRY: Record<string, GizmoTipSet> = {
     ],
   },
 
+  // ── Data Health ──
+  '/crm/data-health': {
+    pageLabel: 'Data Health',
+    tips: [
+      {
+        id: 'data-health-score',
+        title: 'One honest number',
+        body: 'The score sweeps every record with deterministic checks — nothing here changes your data. Open "What moves this number" to see exactly how it is calculated.',
+        icon: 'heart-pulse',
+      },
+      {
+        id: 'data-health-act',
+        title: 'Every card links to the fix',
+        body: 'Each check explains what it found in plain language. Where a fix screen exists — like Review Duplicates or Dropdown lists — the card links you straight there.',
+        icon: 'lightbulb',
+      },
+    ],
+  },
+
   // ── Documents ──
   '/crm/documents': {
     pageLabel: 'Documents',

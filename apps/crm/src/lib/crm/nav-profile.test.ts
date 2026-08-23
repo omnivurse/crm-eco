@@ -201,6 +201,66 @@ describe('visibleNavItemsForRole (NV-M1)', () => {
     expect(managerHrefs.filter((h) => h.startsWith('/crm/import')).length).toBeGreaterThanOrEqual(2);
   });
 
+  // /crm/data-health redirects anyone but crm_admin | crm_manager (its
+  // page.tsx uses the exact gate /crm/duplicates uses), so its CRM sidebar
+  // link carries `managerOrAdmin` — agents/viewers are never offered a bounce.
+  it('Data Health is offered to managers and admins only', () => {
+    const hrefsFor = (role: string | null) =>
+      visibleNavItemsForRole(buildFullCrmNav(CRM_NAV_ITEMS, PIFH_MODULES), role)
+        .filter((i) => !i.separator)
+        .map((i) => i.href);
+    expect(hrefsFor('crm_admin')).toContain('/crm/data-health');
+    expect(hrefsFor('crm_manager')).toContain('/crm/data-health');
+    for (const role of ['crm_agent', 'crm_viewer', null]) {
+      expect(hrefsFor(role)).not.toContain('/crm/data-health');
+    }
+  });
+
+  // The CRM tab's own menu must compose the filter the same way the other tabs
+  // do — ZohoContextualSidebar's `activeTopModule === 'crm'` branch returned
+  // buildFullCrmNav() RAW, so a viewer saw every managerOrAdmin link in it.
+  // This asserts the composition the sidebar (and lib/crm/palette-pages.ts)
+  // now uses: build, THEN filter.
+  it('the CRM tab menu, composed as the sidebar composes it, gates every manager/admin link', () => {
+    const composed = (role: string | null) =>
+      visibleNavItemsForRole(buildFullCrmNav(CRM_NAV_ITEMS, PIFH_MODULES), role)
+        .filter((i) => !i.separator)
+        .map((i) => i.href);
+    for (const role of ['crm_agent', 'crm_viewer', null]) {
+      const hrefs = composed(role);
+      expect(hrefs).not.toContain('/crm/data-health');
+      expect(hrefs).not.toContain('/crm/import');
+      // …and the ungated links are all still there.
+      expect(hrefs).toContain('/crm/duplicates');
+      expect(hrefs).toContain('/crm/tasks');
+    }
+    for (const role of ['crm_admin', 'crm_manager']) {
+      expect(composed(role)).toContain('/crm/data-health');
+      expect(composed(role)).toContain('/crm/import');
+    }
+  });
+
+  // The Settings sidebar reaches the SAME page (and so does the Settings index
+  // card beside "Dropdown lists"), so it must carry the SAME gate — a link an
+  // agent can see but not open is the bounce NV-2 exists to prevent.
+  it('Settings › Data Health carries the same manager/admin gate', () => {
+    const settings = getNavItemsForModule('settings');
+    const item = settings
+      .filter((i): i is Extract<NavItem, { separator?: false }> => !i.separator)
+      .find((i) => i.key === 'data-health');
+    expect(item?.href).toBe('/crm/data-health');
+    expect(item?.managerOrAdmin).toBe(true);
+
+    const hrefsFor = (role: string | null) =>
+      visibleNavItemsForRole(settings, role)
+        .filter((i) => !i.separator)
+        .map((i) => i.href);
+    expect(hrefsFor('crm_manager')).toContain('/crm/data-health');
+    for (const role of ['crm_agent', 'crm_viewer', null]) {
+      expect(hrefsFor(role)).not.toContain('/crm/data-health');
+    }
+  });
+
   // NV-2 cross-tab (admin run): Operations › Data Jobs opens the jobs tab of
   // /crm/settings/system-health, which redirects anyone but crm_admin to
   // /crm/settings — a bounce that also swaps the sidebar out from under the

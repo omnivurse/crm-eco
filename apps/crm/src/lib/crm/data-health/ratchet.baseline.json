@@ -1,0 +1,25 @@
+{
+  "formulaVersion": 2,
+  "asOf": "2026-08-23",
+  "score": 76.1,
+  "counts": {
+    "vocabulary.status": 0,
+    "vocabulary.product": 0,
+    "vocabulary.producer": 20,
+    "refs.orphan-notes": 0,
+    "refs.orphan-tasks": 0,
+    "refs.orphan-attachments": 0,
+    "refs.trash-batch": 2,
+    "refs.linked-member": 1,
+    "twins.contact-member": 64,
+    "dates.impossible": 7,
+    "dates.pending-no-start": 41,
+    "dupes.open-pairs": 78,
+    "lifecycle.no-owner": 21,
+    "lifecycle.stale-pending": 41,
+    "lifecycle.null-status": 5,
+    "ingest.stuck-imports": 0,
+    "completeness.unreachable": 65,
+    "completeness.member-core": 4
+  }
+}

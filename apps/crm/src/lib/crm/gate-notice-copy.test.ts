@@ -39,8 +39,14 @@ describe('crmGateNoticeCopy', () => {
 
   it('every key a CRM page redirects with has copy — no silent bounces left', () => {
     // Grep for `/crm?error=` in src/app/crm: import, r/new, imports/update,
-    // duplicates. Each one lands on the desk, so each one has to speak.
-    const keys = ['no_import_permission', 'no_create_permission', 'insufficient_permissions', 'admin_only'];
+    // duplicates, data-health. Each one lands on the desk, so each one has to speak.
+    const keys = [
+      'no_import_permission',
+      'no_create_permission',
+      'insufficient_permissions',
+      'admin_only',
+      'data_health_admin_only',
+    ];
     expect(Object.values(CRM_GATE_REASON).sort()).toEqual([...keys].sort());
     for (const key of keys) {
       const copy = crmGateNoticeCopy(key);
@@ -49,6 +55,17 @@ describe('crmGateNoticeCopy', () => {
       expect(copy!.title, key).not.toContain('this record');
       expect(`${copy!.title} ${copy!.description}`, key).toMatch(WALK_EXPLANATION);
     }
+  });
+
+  it('names Data Health — never Review Duplicates — when the data health gate bounces', () => {
+    const copy = crmGateNoticeCopy(CRM_GATE_REASON.dataHealthAdminOnly)!;
+    expect(copy.title).toContain('Data Health');
+    // The bug this key exists to prevent: /crm/data-health used to redirect
+    // with `admin_only`, so a bounced viewer was told to go review duplicates.
+    expect(`${copy.title} ${copy.description}`).not.toMatch(/duplicate/i);
+    expect(copy.description).toMatch(/dashboard/i);
+    expect(copy.description).toMatch(/admin/i);
+    expect(CRM_GATE_REASON.dataHealthAdminOnly).not.toBe(CRM_GATE_REASON.adminOnly);
   });
 
   it('renders nothing for a missing, unknown or non-string reason', () => {

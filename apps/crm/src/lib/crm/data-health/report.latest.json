@@ -1,0 +1,305 @@
+{
+  "version": 1,
+  "formulaVersion": 2,
+  "generatedAt": "2026-08-23T21:13:01.785Z",
+  "asOf": "2026-08-23",
+  "org": "00000000-0000-0000-0000-000000000001",
+  "score": 76.1,
+  "context": {
+    "liveRecords": 16284,
+    "allRecords": 16353,
+    "members": 997,
+    "enrollments": 1098,
+    "notes": 194658,
+    "tasks": 4,
+    "attachments": 1,
+    "trashedRecords": 69,
+    "dismissedDuplicatePairs": 3
+  },
+  "rules": [
+    {
+      "key": "vocabulary.status",
+      "label": "Records using a retired status word",
+      "severity": "warn",
+      "count": 0,
+      "sampleIds": []
+    },
+    {
+      "key": "vocabulary.product",
+      "label": "Product names off the dropdown list (no list curated yet)",
+      "severity": "warn",
+      "count": 0,
+      "sampleIds": [],
+      "contextValue": 13574
+    },
+    {
+      "key": "vocabulary.producer",
+      "label": "Enrolled-by spellings not on the advisor roster",
+      "severity": "warn",
+      "count": 20,
+      "sampleIds": [
+        "133b83fe-0b45-463a-8a98-e46c1ae9c1a5",
+        "4f402af1-6235-4f8d-81fa-49eed51d558c",
+        "2eee1357-e662-41c1-af3e-39eb3c0a9f2d",
+        "047a2cc6-5f91-4f43-93bb-d7ed1a136719",
+        "7660e2b5-f80e-4a36-9824-225e3bc8cf46",
+        "0083e53a-8f12-4ba4-b69e-5577589e9a23",
+        "7c896be5-7ce7-471c-8eba-5578323d73d2",
+        "03f344b4-46b0-4c94-8e9d-69ef7f939d5c",
+        "1d030384-e4bd-467d-baa7-f5b8378dc7a2",
+        "3abb7410-5666-4de8-9842-77d0a3589432",
+        "d152a1af-6a41-4b47-9003-999ff1ff66d4",
+        "00c2f861-7249-47b0-a2e6-91841fa8b383",
+        "1de917fc-62b0-4afc-871d-8a507a3672d4",
+        "17997f45-b5cf-4ea9-b202-23206e55aa64",
+        "b606c0c9-45c7-4c94-be5c-d4c308a00714",
+        "3e61bdc5-c8bc-4273-9e83-13366f4e3265",
+        "32a57cc0-4486-494c-80d4-c3b57532ee01",
+        "ed98e339-14b0-44b0-ae12-835a09a4180f",
+        "053f5418-d700-4828-8e83-0e2b6cb1d3ef",
+        "05f98ebe-dfb3-4896-9e05-2ce29dbd768c"
+      ],
+      "contextValue": 733
+    },
+    {
+      "key": "refs.orphan-notes",
+      "label": "Notes attached to a missing record",
+      "severity": "error",
+      "count": 0,
+      "sampleIds": [],
+      "contextValue": 194658
+    },
+    {
+      "key": "refs.orphan-tasks",
+      "label": "Tasks attached to a missing record",
+      "severity": "error",
+      "count": 0,
+      "sampleIds": [],
+      "contextValue": 4
+    },
+    {
+      "key": "refs.orphan-attachments",
+      "label": "Attachments on a missing record",
+      "severity": "error",
+      "count": 0,
+      "sampleIds": [],
+      "contextValue": 1
+    },
+    {
+      "key": "refs.trash-batch",
+      "label": "Trashed records with no restorable trash batch",
+      "severity": "error",
+      "count": 2,
+      "sampleIds": [
+        "4aa89f45-04b8-454b-aac0-ecedc4b5a4a4",
+        "7edaaf3a-f444-4a66-aaae-4fceffe3eea9"
+      ],
+      "contextValue": 67
+    },
+    {
+      "key": "refs.linked-member",
+      "label": "Contacts linked to a member that does not exist",
+      "severity": "error",
+      "count": 1,
+      "sampleIds": [
+        "56daf891-1508-40b6-aa22-4b1f0de27c4d"
+      ]
+    },
+    {
+      "key": "twins.contact-member",
+      "label": "Member profiles that disagree with their contact",
+      "severity": "warn",
+      "count": 64,
+      "sampleIds": [
+        "07931c3a-831f-4355-95ea-61f915307080",
+        "09c8f352-f8a4-4e18-b779-27e633da43ff",
+        "0cff0e0e-980f-427f-a1f4-d4eae5602aae",
+        "14ca5874-3050-4cc5-95e2-a32f8eb3237d",
+        "1892c380-defc-4a2f-8846-a49878cc2ab9",
+        "1a4ec97f-97dd-47c6-a54e-7affbdd03ffe",
+        "1dcc3b72-cf6f-4a51-81fb-ba350b59e408",
+        "28ed652a-855b-41fe-a89e-12008090b3b7",
+        "29688004-4587-4d96-9991-35e28b659f1a",
+        "29ac5e1a-b3a0-4b56-bc52-0b499d54bd7e",
+        "2d60805e-b5da-4e81-9a01-097fdd0c8765",
+        "2e1164b3-b03e-48f6-9193-a85706c3b827",
+        "2fc36c17-af7a-4255-af79-023c510cfca7",
+        "3369a21c-3196-48c8-acea-3874334b5332",
+        "35a40be8-55bb-43cd-a8f7-0bc3a10ef8f0",
+        "449c252f-b643-45b9-8e02-aab80cbdb1fe",
+        "47cb29de-69cf-442f-9795-801df239c6f2",
+        "4edb9b23-5c0a-4177-810b-6033b689a42c",
+        "5314e7e6-15b2-401b-bfb5-6c5f429c5475",
+        "536cd732-5842-4cc9-bfaf-5286e55be4dd"
+      ]
+    },
+    {
+      "key": "dates.impossible",
+      "label": "Dates that cannot be right",
+      "severity": "error",
+      "count": 7,
+      "sampleIds": [
+        "117ea64b-2a5d-4d8b-a6cf-6c155b320ed9",
+        "278af077-41ee-4c4c-b562-466580a3eaad",
+        "4046267c-a11c-4d25-90f7-a96e84e1914d",
+        "4fbd7407-e1ec-4472-b30b-2e70ab9c2bdf",
+        "65fffa3c-1eca-4585-9ccf-34519f8da066",
+        "ebc6288d-656c-495d-84da-a86fb7ac25eb",
+        "50cee6a3-4cf1-4b1c-b822-940abb2c0385"
+      ]
+    },
+    {
+      "key": "dates.pending-no-start",
+      "label": "Pending coverage with no start date",
+      "severity": "error",
+      "count": 41,
+      "sampleIds": [
+        "03b18e39-628b-44e7-89ed-4636a354cd00",
+        "0c877529-d2c9-4b5c-b361-7e9360f942b9",
+        "0daf4f6b-c08b-4108-b704-49f2f751e5f2",
+        "121aab22-f816-443b-bff2-c20c738d5f6c",
+        "13a973ab-349f-48f9-97b9-9b92dd50c175",
+        "1d656aa3-d098-4bdb-96ba-f89f7e6fbfec",
+        "1f8092b8-e26f-46bd-8013-a3b48580e65d",
+        "2c0e1ae8-2d26-4659-a8cd-8995fb6e882d",
+        "2ce66123-9b6a-4dd1-8b59-1cbabda75458",
+        "2ebddca7-b0b6-43ff-a82d-2df0c58d5fdf",
+        "2efc1502-16d7-4113-a3ca-08ddeb9f4504",
+        "384f63a1-f4a9-4e61-b787-c93fb19a62a0",
+        "3b5829d3-5390-4e02-9805-278f83359a08",
+        "3d4cc370-dcde-4604-bfc2-579b210e44b9",
+        "4184b9db-e534-465f-9596-84f21a9db4e3",
+        "47b2224b-9207-4bf8-8a71-a7ba5af49c6d",
+        "4b1c7316-b132-4c62-8222-0a802d42b6d9",
+        "4b5cb947-7d82-48e0-be77-d33eda84789b",
+        "4f5bb736-c4b9-479a-9fd8-a10cebf9fd5a",
+        "5c411e15-7e94-46c1-abd5-48891d788d65"
+      ]
+    },
+    {
+      "key": "dupes.open-pairs",
+      "label": "Possible duplicate pairs awaiting review",
+      "severity": "info",
+      "count": 78,
+      "sampleIds": [],
+      "contextValue": 3
+    },
+    {
+      "key": "lifecycle.no-owner",
+      "label": "Records nobody owns",
+      "severity": "warn",
+      "count": 21,
+      "sampleIds": [
+        "015b752e-742d-4f83-9f02-7df21b7cb420",
+        "16b16908-0591-4b6d-82e0-60ebbcd33f46",
+        "218c1c78-df5c-4d5e-ba4f-96d1490ddcb8",
+        "285f442c-160d-42ad-b030-4eb66dca897c",
+        "33b7297b-ccca-4662-bcc0-a89ee41c5d5d",
+        "40620f6f-41a2-462a-beee-4b085a56177c",
+        "481c261f-d17c-4772-ae7a-1d572fe2af0e",
+        "56daf891-1508-40b6-aa22-4b1f0de27c4d",
+        "5e0e69a1-12ee-46e6-9b71-50f6a40e3a49",
+        "67467359-8f8a-4eec-8a95-7319cc1ee267",
+        "84507d92-f6d1-4d2f-a35c-479af12e1406",
+        "8745a268-426e-4612-8d4a-03af29dbcea7",
+        "89683cde-0049-4a45-aabc-f46667d3bff2",
+        "8b9cb439-2f64-4cee-9343-3b60f035f4b4",
+        "a469758b-8b3b-49a6-8937-16688ab43493",
+        "c37ccac5-1667-40be-9dd3-3c9a0dbf75d3",
+        "df3daa28-877e-4bb1-86dd-ffb6b9475467",
+        "edf42208-1100-452c-bf46-9b17cc8d51f5",
+        "ef8c607b-f6c9-406d-830d-0f3c3a4ba325",
+        "f908100a-7427-4667-883b-20f4223141f1"
+      ]
+    },
+    {
+      "key": "lifecycle.stale-pending",
+      "label": "Pending for more than 45 days",
+      "severity": "info",
+      "count": 41,
+      "sampleIds": [
+        "03b18e39-628b-44e7-89ed-4636a354cd00",
+        "0c877529-d2c9-4b5c-b361-7e9360f942b9",
+        "0daf4f6b-c08b-4108-b704-49f2f751e5f2",
+        "121aab22-f816-443b-bff2-c20c738d5f6c",
+        "13a973ab-349f-48f9-97b9-9b92dd50c175",
+        "1d656aa3-d098-4bdb-96ba-f89f7e6fbfec",
+        "1f8092b8-e26f-46bd-8013-a3b48580e65d",
+        "2c0e1ae8-2d26-4659-a8cd-8995fb6e882d",
+        "2ce66123-9b6a-4dd1-8b59-1cbabda75458",
+        "2ebddca7-b0b6-43ff-a82d-2df0c58d5fdf",
+        "2efc1502-16d7-4113-a3ca-08ddeb9f4504",
+        "384f63a1-f4a9-4e61-b787-c93fb19a62a0",
+        "3b5829d3-5390-4e02-9805-278f83359a08",
+        "3d4cc370-dcde-4604-bfc2-579b210e44b9",
+        "4184b9db-e534-465f-9596-84f21a9db4e3",
+        "47b2224b-9207-4bf8-8a71-a7ba5af49c6d",
+        "4b1c7316-b132-4c62-8222-0a802d42b6d9",
+        "4b5cb947-7d82-48e0-be77-d33eda84789b",
+        "4f5bb736-c4b9-479a-9fd8-a10cebf9fd5a",
+        "5c411e15-7e94-46c1-abd5-48891d788d65"
+      ]
+    },
+    {
+      "key": "lifecycle.null-status",
+      "label": "Records with a blank status",
+      "severity": "warn",
+      "count": 5,
+      "sampleIds": [
+        "4d3dd717-c4e9-48d9-81d1-da46a6501bed",
+        "57bb120d-1ef0-454d-abb9-03df9f2ebdd9",
+        "71aaf7ba-b1f8-4b7f-a11b-4988063ac379",
+        "841bcc5a-ad0a-43f0-b144-a48400519372",
+        "9255fd43-fb63-434d-a0b3-0d170015721b"
+      ]
+    },
+    {
+      "key": "ingest.stuck-imports",
+      "label": "Imports stuck mid-run for over two hours",
+      "severity": "warn",
+      "count": 0,
+      "sampleIds": [],
+      "contextValue": 0
+    },
+    {
+      "key": "completeness.unreachable",
+      "label": "People we could not contact",
+      "severity": "warn",
+      "count": 65,
+      "sampleIds": [
+        "0083e53a-8f12-4ba4-b69e-5577589e9a23",
+        "0568be02-2c41-4c19-857d-f8c24ec6196f",
+        "090338cf-e747-41fc-9607-e95d9e01572f",
+        "0ce350f6-dbe1-420e-a451-5780065415a4",
+        "0d5bc0c7-12cb-4234-a26f-57b1eb337718",
+        "0e961be0-2ff1-4ff2-9735-1dc6fdc4d6a5",
+        "10ef3918-d406-458e-a989-63025efeace2",
+        "1178de8e-3ca1-4cb6-9fc0-b5c5c522cc57",
+        "128dbb3f-6c24-4012-be16-95c9af8de686",
+        "1a1fa422-43e7-4c60-975b-73d013f81029",
+        "204074df-c72c-4810-bb6d-139645fe6f36",
+        "21ba0ae9-73b3-4d78-9fea-6b405d85b7fc",
+        "2357d7aa-dcaa-42b1-b78f-e296c3531d91",
+        "298a76ec-9bd0-441b-8ea9-10a2ff63e148",
+        "3107a29c-cfee-4238-835d-1596f209aaa4",
+        "3510f39e-3c1c-44e9-96f1-ba2a5d34bb1c",
+        "3818c80b-b3fb-4cbc-8ab7-72363e8a90de",
+        "38d819a7-23bc-4215-b8c6-aac798088177",
+        "3c83fdc1-f133-4704-9ab6-d7bc6c180551",
+        "42707701-adf7-42db-9c31-e6e8c290af60"
+      ]
+    },
+    {
+      "key": "completeness.member-core",
+      "label": "Members with no number and no dated coverage",
+      "severity": "warn",
+      "count": 4,
+      "sampleIds": [
+        "4cbe3249-a945-4be0-96d7-e780d36b9556",
+        "5179001c-40c7-418d-8a28-08af9e7fcb68",
+        "b87ad083-d76e-42cd-8bfb-c533f6754cba",
+        "cd0c26de-5b0f-493a-ac8f-65c61c1f7eb6"
+      ]
+    }
+  ]
+}

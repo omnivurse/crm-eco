@@ -27,6 +27,16 @@ export const CRM_GATE_REASON = {
   insufficientPermissions: 'insufficient_permissions',
   /** `/crm/duplicates` refused: crm_admin | crm_manager only. */
   adminOnly: 'admin_only',
+  /**
+   * `/crm/data-health` refused: crm_admin | crm_manager only.
+   *
+   * It needs its OWN key even though the gate is identical to Review
+   * Duplicates': reusing `admin_only` told a bounced viewer "Couldn't open
+   * Review Duplicates … Ask an admin to review the duplicates" after they
+   * clicked Data Health — an explanation about a page they never asked for is
+   * worse than none, because it sends them somewhere wrong.
+   */
+  dataHealthAdminOnly: 'data_health_admin_only',
 } as const;
 
 export type CrmGateReason = (typeof CRM_GATE_REASON)[keyof typeof CRM_GATE_REASON];
@@ -61,6 +71,11 @@ const GATE_NOTICE_COPY: Record<CrmGateReason, CrmGateNoticeCopy> = {
     title: toastCopy.failed('open Review Duplicates', 'merging is limited to managers and admins'),
     description:
       "You're back on the dashboard — your role doesn't include merge permission. Ask an admin to review the duplicates.",
+  },
+  [CRM_GATE_REASON.dataHealthAdminOnly]: {
+    title: toastCopy.failed('open Data Health', 'the data health report is limited to managers and admins'),
+    description:
+      "You're back on the dashboard — your role doesn't include permission to see the data health report. Ask an admin to check how clean the book is.",
   },
 };
 

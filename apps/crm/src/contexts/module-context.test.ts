@@ -91,23 +91,26 @@ describe('resolveStickyTopModule', () => {
     ).toBe('crm');
   });
 
-  it('every cross-tab sidebar link keeps its tab — the 16 links the plan enumerates', () => {
+  it('every cross-tab sidebar link keeps its tab — the 17 links the plan enumerates', () => {
     const links = crossTabLinks();
     const byTab = new Map<string, string[]>();
     for (const l of links) byTab.set(l.tab, [...(byTab.get(l.tab) ?? []), l.key]);
     // NV-2 approach list: CRM→Inbox; Comms→Templates/Signatures/Email Domains/
     // Notifications/Call Logs; Revenue→Documents/Carriers/Premium Compare;
     // Ops→Import/Data Jobs; Analytics→Reports/Scorecards/Forecast;
-    // Settings→Recycle Bin/Developer Hub.
+    // Settings→Data Health/Recycle Bin/Developer Hub. (Data Health lives in the
+    // CRM tab's Data Quality section beside Review Duplicates; Settings links
+    // the same page for the admin who starts there, so it is cross-tab by
+    // design — and, like the other two, must not swap the tab out mid-click.)
     expect(Object.fromEntries(byTab)).toEqual({
       crm: ['inbox'],
       communications: ['templates', 'signatures', 'domains', 'call-logs', 'notifications'],
       revenue: ['documents', 'carriers', 'premium-compare'],
       operations: ['import', 'data-jobs'],
       analytics: ['reports', 'scorecards', 'forecast-analytics'],
-      settings: ['trash', 'developer'],
+      settings: ['data-health', 'trash', 'developer'],
     });
-    expect(links).toHaveLength(16);
+    expect(links).toHaveLength(17);
 
     const swapped: string[] = [];
     for (const l of links) {

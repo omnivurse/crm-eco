@@ -262,6 +262,14 @@ export const CRM_NAV_ITEMS: NavItem[] = [
 
     { key: 'sec-data-quality', separator: true, sectionTitle: 'Data Quality' },
     { key: 'duplicates', label: 'Review Duplicates', icon: 'git-merge', href: '/crm/duplicates' },
+    // Data Health lives HERE, beside Review Duplicates, because this is the
+    // section a person already opens when they are asking "is the book clean?"
+    // — Settings is where you go to change a setting. It is also linked from
+    // the Settings index for the admin who starts there.
+    // /crm/data-health redirects anyone but crm_admin | crm_manager (its
+    // page.tsx, same gate as /crm/duplicates) — the link carries the same
+    // predicate so agents/viewers are never offered a bounce (NV-2).
+    { key: 'data-health', label: 'Data Health', icon: 'heart-pulse', href: '/crm/data-health', managerOrAdmin: true },
 ];
 
 // ---------------------------------------------------------------------------
@@ -426,6 +434,9 @@ export const SETTINGS_NAV_ITEMS: NavItem[] = [
     { key: 'notifications', label: 'Notifications', icon: 'bell', href: '/crm/settings/comms' },
 
     { key: 'sec-data', separator: true, sectionTitle: 'Data Management' },
+    // Same page as the CRM sidebar's Data Quality entry and the Settings card
+    // below it — one screen, reachable from wherever the admin started.
+    { key: 'data-health', label: 'Data Health', icon: 'heart-pulse', href: '/crm/data-health', managerOrAdmin: true },
     { key: 'imports', label: 'Imports', icon: 'upload', href: '/crm/settings/mappings' },
     { key: 'export', label: 'Export', icon: 'download', href: '/crm/settings/system-health?tab=export', adminOnly: true },
     { key: 'data-admin', label: 'Data Admin', icon: 'database', href: '/crm/settings/system-health', adminOnly: true },

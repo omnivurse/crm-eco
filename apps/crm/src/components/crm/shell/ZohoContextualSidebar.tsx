@@ -335,7 +335,13 @@ export function ZohoContextualSidebar({
             return buildSimpleNav(navModules);
         }
         if (activeTopModule === 'crm') {
-            return buildFullCrmNav(CRM_NAV_ITEMS, navModules);
+            // The role filter belongs here too. Without it the CRM tab was the
+            // ONE menu that showed gated links to everyone: a viewer saw
+            // "Import Data" and "Data Health" and got bounced to
+            // /crm?error=admin_only on click — the exact NV-2 dead end the
+            // predicate exists to prevent. The command palette already
+            // composes it this way (lib/crm/palette-pages.ts).
+            return visibleNavItemsForRole(buildFullCrmNav(CRM_NAV_ITEMS, navModules), crmRole);
         }
         return visibleNavItemsForRole(getNavItemsForModule(activeTopModule), crmRole);
     }, [isSimple, activeTopModule, navModules, crmRole]);
