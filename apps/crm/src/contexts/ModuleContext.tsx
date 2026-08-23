@@ -262,10 +262,6 @@ export const CRM_NAV_ITEMS: NavItem[] = [
 
     { key: 'sec-data-quality', separator: true, sectionTitle: 'Data Quality' },
     { key: 'duplicates', label: 'Review Duplicates', icon: 'git-merge', href: '/crm/duplicates' },
-    // /crm/data-health redirects anyone but crm_admin | crm_manager (its
-    // page.tsx, same gate as /crm/duplicates) — the link carries the same
-    // predicate so agents/viewers are never offered a bounce (NV-2).
-    { key: 'data-health', label: 'Data Health', icon: 'heart-pulse', href: '/crm/data-health', managerOrAdmin: true },
 ];
 
 // ---------------------------------------------------------------------------
