@@ -403,6 +403,9 @@ export const SETTINGS_NAV_ITEMS: NavItem[] = [
     { key: 'sec-custom', separator: true, sectionTitle: 'Customization' },
     { key: 'modules', label: 'Modules', icon: 'layers', href: '/crm/settings/modules', adminOnly: true },
     { key: 'fields', label: 'Fields', icon: 'list', href: '/crm/settings/fields', adminOnly: true },
+    // Plain-language name on purpose — the business owner curates pick lists
+    // here (e.g. Membership / Plan). Deep-linkable via ?module=&field=.
+    { key: 'field-options', label: 'Dropdown lists', icon: 'check-square', href: '/crm/settings/field-options', managerOrAdmin: true },
     { key: 'layouts', label: 'Layouts', icon: 'layout', href: '/crm/settings/layouts', adminOnly: true },
     { key: 'blueprints', label: 'Blueprints', icon: 'git-branch', href: '/crm/settings/blueprints', adminOnly: true },
     { key: 'validation', label: 'Validation Rules', icon: 'shield-check', href: '/crm/settings/customization', adminOnly: true },

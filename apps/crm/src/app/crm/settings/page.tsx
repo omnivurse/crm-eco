@@ -24,8 +24,10 @@ import {
   Puzzle,
   Code2,
   Building2,
+  ListChecks,
 } from 'lucide-react';
 import { getCurrentProfile } from '@/lib/crm/queries';
+import { isCrmManagerOrAdminRole } from '@/lib/crm/nav-profile';
 
 interface SettingCard {
   title: string;
@@ -33,6 +35,8 @@ interface SettingCard {
   href: string;
   icon: React.ReactNode;
   adminOnly?: boolean;
+  /** Visible to crm_admin AND crm_manager (isCrmManagerOrAdminRole). */
+  managerOrAdmin?: boolean;
   highlight?: boolean;
 }
 
@@ -59,6 +63,14 @@ const settingsCards: SettingCard[] = [
     href: '/crm/settings/fields',
     icon: <Paintbrush className="w-6 h-6" />,
     adminOnly: true,
+    highlight: true,
+  },
+  {
+    title: 'Dropdown lists',
+    description: 'Choose what people can pick from menus like Membership / Plan — add, rename, hide, and reorder',
+    href: '/crm/settings/field-options',
+    icon: <ListChecks className="w-6 h-6" />,
+    managerOrAdmin: true,
     highlight: true,
   },
   {
@@ -206,7 +218,12 @@ async function SettingsContent() {
   }
 
   const isAdmin = profile.crm_role === 'crm_admin';
-  const visibleCards = settingsCards.filter(card => !card.adminOnly || isAdmin);
+  const isManagerOrAdmin = isCrmManagerOrAdminRole(profile.crm_role);
+  const visibleCards = settingsCards.filter(card => {
+    if (card.adminOnly && !isAdmin) return false;
+    if (card.managerOrAdmin && !isManagerOrAdmin) return false;
+    return true;
+  });
 
   return (
     <div className="space-y-6">

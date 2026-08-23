@@ -1,0 +1,411 @@
+{
+  "$schema": "crm-eco/product-option-proposal-lean/v1",
+  "census_generated_at": "2026-08-23T01:44:23.622Z",
+  "census_source": "scripts/e2e/product-options.proposed.json (scripts/audit-crm-product-vocabulary.mjs)",
+  "fields": {
+    "contacts": {
+      "field_key": "product",
+      "field_id": "d5496922-9252-45f8-8587-6058720be2c5"
+    },
+    "leads": {
+      "field_key": "product_type",
+      "field_id": "8c2c34b2-ea50-4845-8633-68c4d8e805a9"
+    }
+  },
+  "options": [
+    {
+      "value": "Health Sharing",
+      "label": "Health Sharing",
+      "display_order": 0,
+      "count_total": 2654,
+      "count_by_module": {
+        "contacts": 1951,
+        "leads": 703
+      }
+    },
+    {
+      "value": "Secure HSA",
+      "label": "Secure HSA",
+      "display_order": 1,
+      "count_total": 2604,
+      "count_by_module": {
+        "contacts": 2601,
+        "leads": 3
+      }
+    },
+    {
+      "value": "Care Plus",
+      "label": "Care Plus",
+      "display_order": 2,
+      "count_total": 1100,
+      "count_by_module": {
+        "contacts": 1100
+      }
+    },
+    {
+      "value": "Health Insurance",
+      "label": "Health Insurance",
+      "display_order": 3,
+      "count_total": 907,
+      "count_by_module": {
+        "contacts": 848,
+        "leads": 59
+      }
+    },
+    {
+      "value": "MPowering Secure Care",
+      "label": "MPowering Secure Care",
+      "display_order": 4,
+      "count_total": 655,
+      "count_by_module": {
+        "contacts": 655
+      }
+    },
+    {
+      "value": "Secure",
+      "label": "Secure",
+      "display_order": 5,
+      "count_total": 625,
+      "count_by_module": {
+        "contacts": 625
+      }
+    },
+    {
+      "value": "Premium HSA",
+      "label": "Premium HSA",
+      "display_order": 6,
+      "count_total": 532,
+      "count_by_module": {
+        "contacts": 531,
+        "leads": 1
+      }
+    },
+    {
+      "value": "To Be Determined",
+      "label": "To Be Determined",
+      "display_order": 7,
+      "count_total": 497,
+      "count_by_module": {
+        "contacts": 497
+      }
+    },
+    {
+      "value": "MPowering Care Plus",
+      "label": "MPowering Care Plus",
+      "display_order": 8,
+      "count_total": 476,
+      "count_by_module": {
+        "contacts": 473,
+        "leads": 3
+      }
+    },
+    {
+      "value": "MPB Group Plan (Individual)",
+      "label": "MPB Group Plan (Individual)",
+      "display_order": 9,
+      "count_total": 418,
+      "count_by_module": {
+        "contacts": 418
+      }
+    },
+    {
+      "value": "Premium Care",
+      "label": "Premium Care",
+      "display_order": 10,
+      "count_total": 404,
+      "count_by_module": {
+        "contacts": 402,
+        "leads": 2
+      }
+    },
+    {
+      "value": "Partially Self Directed",
+      "label": "Partially Self Directed",
+      "display_order": 11,
+      "count_total": 398,
+      "count_by_module": {
+        "contacts": 398
+      }
+    },
+    {
+      "value": "MPB CareZ - Worksite - Bridge",
+      "label": "MPB CareZ - Worksite - Bridge",
+      "display_order": 12,
+      "count_total": 303,
+      "count_by_module": {
+        "contacts": 303
+      }
+    },
+    {
+      "value": "Secure Care - Zion Essential with HSA MEC",
+      "label": "Secure Care - Zion Essential with HSA MEC",
+      "display_order": 13,
+      "count_total": 268,
+      "count_by_module": {
+        "contacts": 268
+      }
+    },
+    {
+      "value": "Provider Directed - Redirect",
+      "label": "Provider Directed - Redirect",
+      "display_order": 14,
+      "count_total": 205,
+      "count_by_module": {
+        "contacts": 205
+      }
+    },
+    {
+      "value": "MPowering Direct Care",
+      "label": "MPowering Direct Care",
+      "display_order": 15,
+      "count_total": 147,
+      "count_by_module": {
+        "contacts": 147
+      }
+    },
+    {
+      "value": "Healthcare Essentials",
+      "label": "Healthcare Essentials",
+      "display_order": 16,
+      "count_total": 143,
+      "count_by_module": {
+        "contacts": 143
+      }
+    },
+    {
+      "value": "Direct",
+      "label": "Direct",
+      "display_order": 17,
+      "count_total": 140,
+      "count_by_module": {
+        "contacts": 140
+      }
+    },
+    {
+      "value": "MEC+ Essentials",
+      "label": "MEC+ Essentials",
+      "display_order": 18,
+      "count_total": 128,
+      "count_by_module": {
+        "contacts": 128
+      }
+    },
+    {
+      "value": "Self Directed Plan",
+      "label": "Self Directed Plan",
+      "display_order": 19,
+      "count_total": 119,
+      "count_by_module": {
+        "contacts": 119
+      }
+    },
+    {
+      "value": "Co-Pay Plan",
+      "label": "Co-Pay Plan",
+      "display_order": 20,
+      "count_total": 91,
+      "count_by_module": {
+        "contacts": 91
+      }
+    },
+    {
+      "value": "Group Health Insurance",
+      "label": "Group Health Insurance",
+      "display_order": 21,
+      "count_total": 70,
+      "count_by_module": {
+        "contacts": 70
+      }
+    },
+    {
+      "value": "MPB Direct",
+      "label": "MPB Direct",
+      "display_order": 22,
+      "count_total": 66,
+      "count_by_module": {
+        "contacts": 66
+      }
+    },
+    {
+      "value": "Redirect Health Plan (GROUP)",
+      "label": "Redirect Health Plan (GROUP)",
+      "display_order": 23,
+      "count_total": 64,
+      "count_by_module": {
+        "contacts": 64
+      }
+    },
+    {
+      "value": "Essentials",
+      "label": "Essentials",
+      "display_order": 24,
+      "count_total": 49,
+      "count_by_module": {
+        "contacts": 48,
+        "leads": 1
+      }
+    },
+    {
+      "value": "Insurance",
+      "label": "Insurance",
+      "display_order": 25,
+      "count_total": 43,
+      "count_by_module": {
+        "contacts": 43
+      }
+    },
+    {
+      "value": "OPD Complete",
+      "label": "OPD Complete",
+      "display_order": 26,
+      "count_total": 38,
+      "count_by_module": {
+        "contacts": 38
+      }
+    },
+    {
+      "value": "MPB CareZ - Worksite",
+      "label": "MPB CareZ - Worksite",
+      "display_order": 27,
+      "count_total": 37,
+      "count_by_module": {
+        "contacts": 37
+      }
+    },
+    {
+      "value": "MPB CareZ -Connected Worksite",
+      "label": "MPB CareZ -Connected Worksite",
+      "display_order": 28,
+      "count_total": 35,
+      "count_by_module": {
+        "contacts": 35
+      }
+    },
+    {
+      "value": "MPB Care",
+      "label": "MPB Care",
+      "display_order": 29,
+      "count_total": 33,
+      "count_by_module": {
+        "contacts": 33
+      }
+    },
+    {
+      "value": "MPB Care Plus",
+      "label": "MPB Care Plus",
+      "display_order": 30,
+      "count_total": 30,
+      "count_by_module": {
+        "contacts": 30
+      }
+    },
+    {
+      "value": "Minimum Essential Coverage (MEC) Included",
+      "label": "Minimum Essential Coverage (MEC) Included",
+      "display_order": 31,
+      "count_total": 26,
+      "count_by_module": {
+        "contacts": 26
+      }
+    },
+    {
+      "value": "Partially Self Directed (GROUP)",
+      "label": "Partially Self Directed (GROUP)",
+      "display_order": 32,
+      "count_total": 25,
+      "count_by_module": {
+        "contacts": 25
+      }
+    },
+    {
+      "value": "Sedera Select+ (Modified) T1 -Self Directed-",
+      "label": "Sedera Select+ (Modified) T1 -Self Directed-",
+      "display_order": 33,
+      "count_total": 25,
+      "count_by_module": {
+        "contacts": 25
+      }
+    },
+    {
+      "value": "Co-Pay Plan (GROUP)",
+      "label": "Co-Pay Plan (GROUP)",
+      "display_order": 34,
+      "count_total": 24,
+      "count_by_module": {
+        "contacts": 24
+      }
+    },
+    {
+      "value": "MPB Care Plus CV",
+      "label": "MPB Care Plus CV",
+      "display_order": 35,
+      "count_total": 23,
+      "count_by_module": {
+        "contacts": 23
+      }
+    },
+    {
+      "value": "Sedera Select+ (Modified) T2 - Partially Self Directed",
+      "label": "Sedera Select+ (Modified) T2 - Partially Self Directed",
+      "display_order": 36,
+      "count_total": 18,
+      "count_by_module": {
+        "contacts": 18
+      }
+    },
+    {
+      "value": "Secure Care -Co-Pay",
+      "label": "Secure Care -Co-Pay",
+      "display_order": 37,
+      "count_total": 15,
+      "count_by_module": {
+        "contacts": 15
+      }
+    },
+    {
+      "value": "MPB Secure - REDIRECT",
+      "label": "MPB Secure - REDIRECT",
+      "display_order": 38,
+      "count_total": 14,
+      "count_by_module": {
+        "contacts": 14
+      }
+    },
+    {
+      "value": "MPowering HSA MEC - For Secure Care",
+      "label": "MPowering HSA MEC - For Secure Care",
+      "display_order": 39,
+      "count_total": 12,
+      "count_by_module": {
+        "contacts": 12
+      }
+    },
+    {
+      "value": "Secure Copay",
+      "label": "Secure Copay",
+      "display_order": 40,
+      "count_total": 12,
+      "count_by_module": {
+        "contacts": 12
+      }
+    },
+    {
+      "value": "MPowering Direct",
+      "label": "MPowering Direct",
+      "display_order": 41,
+      "count_total": 10,
+      "count_by_module": {
+        "leads": 10
+      }
+    },
+    {
+      "value": "Other (dental, vision etc.)",
+      "label": "Other (dental, vision etc.)",
+      "display_order": 42,
+      "count_total": 10,
+      "count_by_module": {
+        "contacts": 10
+      }
+    }
+  ]
+}
