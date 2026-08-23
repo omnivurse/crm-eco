@@ -2,8 +2,7 @@ import { Suspense, type ComponentType } from 'react';
 import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { Button } from '@crm-eco/ui/components/button';
+import { ChevronLeft } from 'lucide-react';
 import {
   getCachedCurrentProfile,
   getModuleByKey,
@@ -18,9 +17,9 @@ import {
   createCrmClient,
 } from '@/lib/crm/queries';
 import type { AdvisorTreeData, AgentTreeData } from '@/lib/crm/queries';
-import { ModuleListClient } from './ModuleListClient';
+import { ModuleListClient, type ListPagerModel } from './ModuleListClient';
 import type { CrmModule, CrmField, CrmView, CrmRecord, ViewSort, ViewFilter, TreeGroupBy, CrmDealStage } from '@/lib/crm/types';
-import { CRM_RECORD_PAGE_SIZES, parseCrmRecordPageSize } from '@/lib/crm/record-list-constants';
+import { parseCrmRecordPageSize } from '@/lib/crm/record-list-constants';
 import { habitPreferredViewId, resolveListQueryState } from '@/lib/crm/list-query-resolve';
 
 /* ---------- Contacts tab components (lazy-loaded) ---------- */
@@ -70,7 +69,8 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
   }
   if (!profile) return notFound();
 
-  const page = parseInt(pageStr || '1', 10);
+  // `?page=abc` / `?page=0` / `?page=-3` all render page 1 (never NaN in the pager).
+  const page = Math.max(1, parseInt(pageStr || '1', 10) || 1);
   const pageSize = parseCrmRecordPageSize(pageSizeParam);
 
   // Step 1: module + territories in parallel (both only need org_id)
@@ -198,6 +198,9 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
   let recordsModuleId = crmModule.id;
   let records: CrmRecord[] = [];
   let total = 0;
+  // The rows query threw: zero rows then means "unknown", not "empty" — the
+  // client renders "Couldn't load {noun}" + Try again instead of the Create CTA.
+  let loadError = false;
   try {
     const result = await getRecords({
       moduleId: crmModule.id,
@@ -216,6 +219,7 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
     total = result.total;
   } catch (err) {
     console.error('[ModulePage] Failed to fetch records:', err);
+    loadError = true;
   }
 
   // Compatibility fallback:
@@ -240,6 +244,7 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
           recordsModuleId = membersModule.id;
           records = fallback.records;
           total = fallback.total;
+          loadError = false;
           console.warn('[ModulePage] Using contacts fallback records from members module', {
             organizationId: profile.organization_id,
             membersModuleId: membersModule.id,
@@ -304,23 +309,36 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
 
   const totalPages = Math.ceil(total / pageSize);
 
-  const buildListQuery = (overrides: { page?: number; pageSize?: number }) => {
-    const p = overrides.page ?? page;
-    const sz = overrides.pageSize ?? pageSize;
-    const params = new URLSearchParams();
-    params.set('page', String(p));
-    params.set('page_size', String(sz));
-    if (viewId) params.set('view', viewId);
-    if (search) params.set('search', search);
-    if (scope) params.set('scope', scope);
-    if (sortField) params.set('sortField', sortField);
-    if (sortDirection) params.set('sortDirection', sortDirection);
-    if (filtersParam) params.set('filters', filtersParam);
-    if (territoryId) params.set('territory', territoryId);
-    if (viewMode) params.set('viewMode', viewMode);
-    if (treeGroupBy) params.set('treeGroupBy', treeGroupBy);
-    return `/crm/modules/${moduleKey}?${params.toString()}`;
-  };
+  // Pager links carry every list param except paging itself (the client
+  // ListPager writes page / page_size — same contract the old server links
+  // used, and what `forwardListUrlQueryParams` / the ids endpoint read).
+  const baseQuery: Record<string, string> = {};
+  if (viewId) baseQuery.view = viewId;
+  if (search) baseQuery.search = search;
+  if (scope) baseQuery.scope = scope;
+  if (sortField) baseQuery.sortField = sortField;
+  if (sortDirection) baseQuery.sortDirection = sortDirection;
+  if (filtersParam) baseQuery.filters = filtersParam;
+  if (territoryId) baseQuery.territory = territoryId;
+  if (viewMode) baseQuery.viewMode = viewMode;
+  if (treeGroupBy) baseQuery.treeGroupBy = treeGroupBy;
+
+  // One noun for the total — the same module noun the chips and the empty
+  // state use ("Showing 1 to 25 of 35 contacts").
+  const pager: ListPagerModel | null = total > 0
+    ? {
+        page,
+        pageSize,
+        total,
+        totalPages,
+        moduleKey,
+        baseQuery,
+        noun: {
+          one: (crmModule.name || 'record').toLowerCase(),
+          other: (crmModule.name_plural || 'records').toLowerCase(),
+        },
+      }
+    : null;
 
   return (
     <>
@@ -339,97 +357,9 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
         treeGroupBy={treeGroupBy}
         dealStages={dealStages}
         moduleSearch={search ?? ''}
-        listPager={total > 0 ? (
-        <div className="w-full glass-card rounded-lg p-2 border border-slate-200 dark:border-white/10 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-slate-500 dark:text-slate-400" data-testid="crm-pager-showing">
-            Showing <span className="text-slate-900 dark:text-white font-medium">{((page - 1) * pageSize) + 1}</span> to{' '}
-            <span className="text-slate-900 dark:text-white font-medium">{Math.min(page * pageSize, total)}</span> of{' '}
-            <span className="text-slate-900 dark:text-white font-medium">{total.toLocaleString()}</span> results
-          </p>
-
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300">
-              <span className="whitespace-nowrap text-slate-500 dark:text-slate-400">Per page</span>
-              <div className="inline-flex rounded-lg border border-slate-200 dark:border-white/10 overflow-hidden">
-                {CRM_RECORD_PAGE_SIZES.map((sz) => (
-                  <Link
-                    key={sz}
-                    href={buildListQuery({ page: 1, pageSize: sz })}
-                    prefetch={false}
-                    className={`px-3 py-1.5 text-xs font-medium transition-colors ${
-                      pageSize === sz
-                        ? 'bg-teal-100 dark:bg-teal-500/20 text-teal-800 dark:text-teal-300'
-                        : 'bg-white dark:bg-slate-900/40 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/5'
-                    }`}
-                  >
-                    {sz}
-                  </Link>
-                ))}
-              </div>
-            </div>
-
-            {totalPages > 1 && (
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-9 px-3 rounded-lg border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white disabled:opacity-50"
-                  disabled={page <= 1}
-                  asChild
-                >
-                  <Link href={buildListQuery({ page: page - 1 })} prefetch={false} data-testid="crm-pager-prev">
-                    <ChevronLeft className="w-4 h-4 mr-1" />
-                    Previous
-                  </Link>
-                </Button>
-
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                    let pageNum: number;
-                    if (totalPages <= 5) {
-                      pageNum = i + 1;
-                    } else if (page <= 3) {
-                      pageNum = i + 1;
-                    } else if (page >= totalPages - 2) {
-                      pageNum = totalPages - 4 + i;
-                    } else {
-                      pageNum = page - 2 + i;
-                    }
-
-                    return (
-                      <Link
-                        key={pageNum}
-                        href={buildListQuery({ page: pageNum })}
-                        prefetch={false}
-                        className={`w-9 h-9 rounded-lg flex items-center justify-center text-sm font-medium transition-colors ${
-                          pageNum === page
-                            ? 'bg-teal-100 dark:bg-teal-500/20 text-teal-700 dark:text-teal-400 border border-teal-200 dark:border-teal-500/30'
-                            : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5'
-                        }`}
-                      >
-                        {pageNum}
-                      </Link>
-                    );
-                  })}
-                </div>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-9 px-3 rounded-lg border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white disabled:opacity-50"
-                  disabled={page >= totalPages}
-                  asChild
-                >
-                  <Link href={buildListQuery({ page: page + 1 })} prefetch={false} data-testid="crm-pager-next">
-                    Next
-                    <ChevronRight className="w-4 h-4 ml-1" />
-                  </Link>
-                </Button>
-              </div>
-            )}
-          </div>
-        </div>
-        ) : null}
+        pager={pager}
+        loadError={loadError}
+        viewerId={profile.id}
       />
     </>
   );

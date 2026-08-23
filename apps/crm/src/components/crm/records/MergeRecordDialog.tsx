@@ -25,6 +25,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { toastCopy } from '@/lib/crm/toast-copy';
 import {
   Dialog,
   DialogContent,
@@ -226,19 +227,18 @@ export function MergeRecordDialog({
 
       const notesMoved = data.moved_notes ?? 0;
       const tasksMoved = data.moved_tasks ?? 0;
-      toast.success(
-        `Merged successfully${
-          notesMoved || tasksMoved
-            ? ` — moved ${notesMoved} note${notesMoved === 1 ? '' : 's'}` +
-              (tasksMoved ? ` and ${tasksMoved} task${tasksMoved === 1 ? '' : 's'}` : '')
-            : ''
-        }`,
-      );
+      const moved = [
+        notesMoved ? `${notesMoved} ${toastCopy.pluralize('note', notesMoved)}` : null,
+        tasksMoved ? `${tasksMoved} ${toastCopy.pluralize('task', tasksMoved)}` : null,
+      ].filter(Boolean);
+      toast.success(toastCopy.counted('record', 2, 'Merged'), {
+        description: moved.length ? `Moved ${moved.join(' and ')} to the kept record.` : undefined,
+      });
       onOpenChange(false);
       onMerged?.({ keeperId: keeper.id, duplicateId: selected.id });
       router.refresh();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to merge records');
+      toast.error(toastCopy.failed('merge the records', err, 'Try again'));
     } finally {
       setIsMerging(false);
     }

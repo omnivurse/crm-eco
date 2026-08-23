@@ -1,11 +1,20 @@
-import { describe, expect, it } from 'vitest';
+// @vitest-environment jsdom
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  FILTER_RAIL_DEFAULT_OPEN,
+  railKeyTargetInOwnKeyScope,
   FILTER_RAIL_STORAGE_PREFIX,
   applyFilterButtonLabel,
   filterModuleByTitle,
   filterRailStorageKey,
+  legacyFilterRailStorageKey,
   moduleFilterRailTitle,
+  parseFilterRailOpen,
+  purgeLegacyFilterRailKey,
+  readFilterRailOpen,
   shouldCloseFilterHost,
+  subscribeFilterRailOpen,
+  writeFilterRailOpen,
 } from './filter-rail';
 
 describe('filterModuleByTitle', () => {
@@ -52,9 +61,96 @@ describe('applyFilterButtonLabel', () => {
   });
 });
 
-describe('filterRailStorageKey', () => {
-  it('is per-module', () => {
-    expect(filterRailStorageKey('contacts')).toBe(`${FILTER_RAIL_STORAGE_PREFIX}contacts`);
-    expect(filterRailStorageKey('leads')).toBe(`${FILTER_RAIL_STORAGE_PREFIX}leads`);
+describe('filterRailStorageKey (LS-8: scoped by viewer)', () => {
+  it('is per-module AND per-profile, distinct from the legacy unscoped key', () => {
+    expect(filterRailStorageKey('contacts', 'u1')).toBe(`${FILTER_RAIL_STORAGE_PREFIX}u:u1:contacts`);
+    expect(filterRailStorageKey('leads', 'u1')).toBe(`${FILTER_RAIL_STORAGE_PREFIX}u:u1:leads`);
+    expect(filterRailStorageKey('contacts', 'u2')).not.toBe(filterRailStorageKey('contacts', 'u1'));
+    expect(legacyFilterRailStorageKey('contacts')).toBe(`${FILTER_RAIL_STORAGE_PREFIX}contacts`);
+    expect(legacyFilterRailStorageKey('contacts')).not.toBe(filterRailStorageKey('contacts', 'u1'));
   });
 });
+
+describe('parseFilterRailOpen', () => {
+  it('decodes 1/0 and defaults anything else', () => {
+    expect(parseFilterRailOpen('1')).toBe(true);
+    expect(parseFilterRailOpen('0')).toBe(false);
+    expect(parseFilterRailOpen(null)).toBe(FILTER_RAIL_DEFAULT_OPEN);
+    expect(parseFilterRailOpen('yes')).toBe(FILTER_RAIL_DEFAULT_OPEN);
+  });
+});
+
+// Node ≥22 pre-declares a `localStorage` global (undefined without
+// --localstorage-file), so vitest's jsdom environment does not install
+// jsdom's Storage. Install a minimal in-memory Storage for these cases.
+function memoryStorage(): Storage {
+  const map = new Map<string, string>();
+  return {
+    get length() { return map.size; },
+    clear: () => map.clear(),
+    getItem: (k: string) => (map.has(k) ? map.get(k)! : null),
+    key: (i: number) => Array.from(map.keys())[i] ?? null,
+    removeItem: (k: string) => { map.delete(k); },
+    setItem: (k: string, v: string) => { map.set(k, String(v)); },
+  } as Storage;
+}
+
+describe('read / write / purge (localStorage)', () => {
+  beforeEach(() => {
+    Object.defineProperty(window, 'localStorage', { value: memoryStorage(), configurable: true, writable: true });
+  });
+
+  it('remembers per viewer: user B on the same browser gets the default', () => {
+    writeFilterRailOpen('contacts', false, 'userA');
+    expect(readFilterRailOpen('contacts', 'userA')).toBe(false);
+    expect(readFilterRailOpen('contacts', 'userB')).toBe(FILTER_RAIL_DEFAULT_OPEN);
+    expect(readFilterRailOpen('leads', 'userA')).toBe(FILTER_RAIL_DEFAULT_OPEN);
+  });
+
+  it('fails closed without a viewer: neither reads nor writes', () => {
+    writeFilterRailOpen('contacts', false, null);
+    expect(window.localStorage.length).toBe(0);
+    window.localStorage.setItem(legacyFilterRailStorageKey('contacts'), '0');
+    expect(readFilterRailOpen('contacts', null)).toBe(FILTER_RAIL_DEFAULT_OPEN);
+    // The legacy unscoped value is never a hydration source, even with a viewer.
+    expect(readFilterRailOpen('contacts', 'userA')).toBe(FILTER_RAIL_DEFAULT_OPEN);
+  });
+
+  it('purges only the legacy unscoped key', () => {
+    window.localStorage.setItem(legacyFilterRailStorageKey('contacts'), '0');
+    writeFilterRailOpen('contacts', false, 'userA');
+    purgeLegacyFilterRailKey('contacts');
+    expect(window.localStorage.getItem(legacyFilterRailStorageKey('contacts'))).toBeNull();
+    expect(readFilterRailOpen('contacts', 'userA')).toBe(false);
+  });
+
+  it('notifies subscribers on write so useSyncExternalStore re-reads', () => {
+    const listener = vi.fn();
+    const unsubscribe = subscribeFilterRailOpen(listener);
+    writeFilterRailOpen('contacts', true, 'userA');
+    expect(listener).toHaveBeenCalledTimes(1);
+    unsubscribe();
+    writeFilterRailOpen('contacts', false, 'userA');
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('railKeyTargetInOwnKeyScope (LS-8 Escape guard)', () => {
+  const build = (html: string): Element => {
+    document.body.innerHTML = html;
+    return document.getElementById('t')!;
+  };
+
+  it('a value input inside the rail ACCORDION (data-state=open) is NOT its own key scope', () => {
+    const t = build('<div data-state="open"><div data-state="open"><input id="t" /></div></div>');
+    expect(railKeyTargetInOwnKeyScope(t)).toBe(false);
+  });
+
+  it('open popper content, dialogs and expanded triggers keep their own Escape', () => {
+    expect(railKeyTargetInOwnKeyScope(build('<div data-radix-popper-content-wrapper=""><input id="t" /></div>'))).toBe(true);
+    expect(railKeyTargetInOwnKeyScope(build('<div role="dialog"><input id="t" /></div>'))).toBe(true);
+    expect(railKeyTargetInOwnKeyScope(build('<div role="listbox"><input id="t" /></div>'))).toBe(true);
+    expect(railKeyTargetInOwnKeyScope(build('<button id="t" aria-expanded="true"></button>'))).toBe(true);
+  });
+});
+

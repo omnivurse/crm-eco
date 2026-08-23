@@ -210,7 +210,7 @@ describe('QuickCreateDrawer — Enrolled by (DE-3)', () => {
     const data = posts()[0].body?.data as Record<string, string>;
     expect(data.producer_name).toBe('Wen Producer');
     expect(data[PRODUCER_RECORD_ID_KEY]).toBe('adv-1');
-    expect(toastSuccess).toHaveBeenCalledWith('Member added');
+    expect(toastSuccess).toHaveBeenCalledWith('Member added', expect.objectContaining({ action: expect.objectContaining({ label: 'View in list' }) }));
   });
 
   it('typing over a picked name detaches the id (free text is written as typed)', async () => {
@@ -344,6 +344,6 @@ describe('QuickCreateDrawer — Pending lead parity (DE-6)', () => {
     expect(data.lead_status).toBe('Pending');
     expect(data).not.toHaveProperty('health_insurance_start_date');
     expect(data).not.toHaveProperty('sharing_effective_date');
-    expect(toastSuccess).toHaveBeenCalledWith('Lead added');
+    expect(toastSuccess).toHaveBeenCalledWith('Lead added', expect.objectContaining({ action: expect.objectContaining({ label: 'View in list' }) }));
   });
 });

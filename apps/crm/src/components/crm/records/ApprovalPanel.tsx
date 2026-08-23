@@ -1,6 +1,7 @@
 'use client';
 
 import { toast } from 'sonner';
+import { toastCopy } from '@/lib/crm/toast-copy';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase-client';
 import { useClientAuth } from '@/hooks/useClientAuth';
@@ -150,10 +151,10 @@ export function ApprovalPanel({ recordId, onApprovalChange }: ApprovalPanelProps
           setHistory(historyData.history || []);
         }
       } else {
-        toast.error(result.error || 'Failed to process approval');
+        toast.error(toastCopy.failed('process the approval', result.error, 'Try again'));
       }
     } catch (error) {
-      toast.error('Failed to process approval');
+      toast.error(toastCopy.failed('process the approval', error, 'Try again'));
     } finally {
       setProcessing(false);
       setActionType(null);
@@ -352,7 +353,7 @@ export function ApprovalPanel({ recordId, onApprovalChange }: ApprovalPanelProps
             <Textarea
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              placeholder={actionType === 'approve' ? 'Optional comment...' : 'Required comment...'}
+              placeholder={actionType === 'approve' ? 'Optional comment…' : 'Required comment…'}
               rows={3}
             />
           </div>

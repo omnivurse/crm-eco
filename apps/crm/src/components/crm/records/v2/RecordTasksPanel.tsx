@@ -11,6 +11,7 @@ import { Button } from '@crm-eco/ui/components/button';
 import { Badge } from '@crm-eco/ui/components/badge';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { toast } from 'sonner';
+import { toastCopy } from '@/lib/crm/toast-copy';
 
 interface CrmTaskRow {
   id: string;
@@ -65,10 +66,10 @@ export function RecordTasksPanel({ recordId, mode, className }: RecordTasksPanel
         credentials: 'same-origin',
       });
       if (!res.ok) throw new Error('Failed to complete');
-      toast.success('Activity marked complete');
+      toast.success(toastCopy.updated('Activity'), { description: 'Marked complete' });
       await load();
-    } catch {
-      toast.error('Could not complete activity');
+    } catch (err) {
+      toast.error(toastCopy.failed('complete the activity', err, 'Try again'));
     } finally {
       setCompletingId(null);
     }

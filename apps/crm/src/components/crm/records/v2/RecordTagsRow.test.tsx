@@ -81,3 +81,22 @@ describe('RecordTagsRow — queued save wording', () => {
     expect(toastInfo).not.toHaveBeenCalled();
   });
 });
+
+describe('RecordTagsRow — inline validation (FB-6)', () => {
+  it('shows a role=alert helper instead of a toast when the tag cap is reached', async () => {
+    const full = Array.from({ length: 20 }, (_, i) => `tag-${i}`);
+    render(<RecordTagsRow recordId="rec-2" recordData={{ tags: full }} />);
+
+    await addTag('one-too-many');
+
+    expect(screen.getByRole('alert').textContent).toBe('You can add up to 20 tags per record');
+    expect(toastError).not.toHaveBeenCalled();
+    expect(queuedSend).not.toHaveBeenCalled();
+    // Typing again clears the message.
+    const input = screen.getByPlaceholderText('Tag name, Enter to save');
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'x' } });
+    });
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+});

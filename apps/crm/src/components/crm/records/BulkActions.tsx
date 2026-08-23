@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { cn } from '@crm-eco/ui/lib/utils';
+import { ADVISOR_LABEL } from '@/lib/crm/nav-lexicon';
 import { Button } from '@crm-eco/ui/components/button';
 import {
   DropdownMenu,
@@ -73,7 +74,7 @@ export function BulkActions({
             className="h-8 px-2.5 text-sm text-teal-700 dark:text-teal-300 hover:bg-teal-100 dark:hover:bg-teal-500/20"
           >
             <UserPlus className="w-3.5 h-3.5 mr-1.5" />
-            Assign Advisor / Agent
+            Assign {ADVISOR_LABEL}
           </Button>
 
           <Button

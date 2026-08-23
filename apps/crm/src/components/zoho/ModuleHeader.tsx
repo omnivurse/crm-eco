@@ -33,7 +33,9 @@ import {
   DropdownMenuTrigger,
 } from '@crm-eco/ui/components/dropdown-menu';
 import type { CrmModule } from '@/lib/crm/types';
+import { canCreateRecords } from '@/lib/crm/can-create-records';
 import { resolveCreateIntent } from '@/lib/crm/create-intent';
+import { useClientAuth } from '@/hooks/useClientAuth';
 
 // Contacts/Leads "New …" opens the one-screen quick drawer (with an
 // "Open full form" handoff inside) instead of the 250-field full form.
@@ -72,15 +74,24 @@ export function ModuleHeader({
   const searchParams = useSearchParams();
   const icon = MODULE_ICONS[module.key] || <Users className="w-5 h-5" />;
   const [quickCreateOpen, setQuickCreateOpen] = useState(false);
+  // DE-M1: never offer create to crm_viewer (the API 403 stays the backstop).
+  // Fails closed while the profile is still loading.
+  const { profile } = useClientAuth();
+  const canCreate = canCreateRecords(profile?.crm_role);
   const createIntent = resolveCreateIntent({ moduleKey: module.key });
   // Export is pointless with zero rows and nothing selected (D9 / FB-1).
   const exportDisabled = totalCount === 0 && selectedCount === 0;
   const usesQuickCreate = createIntent.kind === 'quick';
   const quickModuleKey = createIntent.kind === 'quick' ? createIntent.moduleKey : null;
-  const newLabel =
-    module.key === 'contacts' || module.key === 'members'
-      ? 'Add Member'
-      : `New ${module.name}`;
+  // D1: Contacts is the hand-entry list; "Add Member" on Members saves to
+  // Contacts too (the toast says so and returns here), and the "New Member
+  // record" dropdown item stays for the full members form.
+  const isMemberEntry = module.key === 'contacts' || module.key === 'members';
+  const newLabel = isMemberEntry ? 'Add Member' : `New ${module.name}`;
+  const quickCreateTitle =
+    module.key === 'members'
+      ? 'Add Member — quick create; saves in Contacts (Members fills from enrollment)'
+      : `${newLabel} — quick create (full form available inside)`;
   const colors = resolveModulePalette(module.key);
 
   // Check if tree view is currently active
@@ -202,18 +213,19 @@ export function ModuleHeader({
               Export
             </Button>
 
-            {usesQuickCreate ? (
+            {!canCreate ? null : usesQuickCreate ? (
               <Button
                 size="sm"
                 className="h-9 shadow-sm"
                 onClick={() => setQuickCreateOpen(true)}
-                title={`${newLabel} — quick create (full form available inside)`}
+                title={quickCreateTitle}
+                data-testid="crm-module-create"
               >
                 <Plus className="w-4 h-4 mr-1.5" />
                 {newLabel}
               </Button>
             ) : (
-              <Button size="sm" className="h-9 shadow-sm" asChild>
+              <Button size="sm" className="h-9 shadow-sm" asChild data-testid="crm-module-create">
                 <Link
                   href={`/crm/modules/${module.key}/new`}
                   title={
@@ -280,7 +292,7 @@ export function ModuleHeader({
                     </span>
                   )}
                 </DropdownMenuItem>
-                {module.key === 'members' && (
+                {module.key === 'members' && canCreate && (
                   <DropdownMenuItem asChild className="cursor-pointer gap-2">
                     <Link href="/crm/modules/members/new">
                       <Plus className="w-4 h-4" />
@@ -305,7 +317,7 @@ export function ModuleHeader({
           </>
         }
       />
-      {usesQuickCreate && quickModuleKey && (
+      {canCreate && usesQuickCreate && quickModuleKey && (
         <QuickCreateDrawer
           open={quickCreateOpen}
           onOpenChange={setQuickCreateOpen}

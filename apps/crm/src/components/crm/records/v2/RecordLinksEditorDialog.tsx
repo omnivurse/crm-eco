@@ -13,6 +13,7 @@ import {
 import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
 import { toast } from 'sonner';
+import { toastCopy } from '@/lib/crm/toast-copy';
 import type { RecordRelatedListLink } from './RecordRelatedListNav';
 
 export interface RecordLinksEditorDialogProps {
@@ -105,10 +106,10 @@ export function RecordLinksEditorDialog({
         external: true,
       }));
       onSaved?.(saved);
-      toast.success('Links updated');
+      toast.success(toastCopy.updated('Links'));
       onOpenChange(false);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not save links');
+      toast.error(toastCopy.failed('save the links', err, 'Try again'));
     } finally {
       setSaving(false);
     }
@@ -138,7 +139,7 @@ export function RecordLinksEditorDialog({
               <Input
                 value={row.href}
                 onChange={(e) => updateRow(row.id, { href: e.target.value })}
-                placeholder="https://..."
+                placeholder="https://…"
               />
               <Button
                 type="button"

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FilterRailFrame } from '@/components/crm/filters/FilterRailFrame';
 import { FilterSidebar } from '@/components/crm/filters/FilterSidebar';
@@ -11,9 +11,11 @@ import {
   FILTER_RAIL_DEFAULT_OPEN,
   filterModuleByTitle,
   readFilterRailOpen,
+  subscribeFilterRailOpen,
   writeFilterRailOpen,
 } from '@/lib/crm/filter-rail';
 import { PipelineToolbar, type PipelineStageOption } from './PipelineToolbar';
+import { useClientAuth } from '@/hooks/useClientAuth';
 
 const PIPELINE_RAIL_KEY = 'pipeline';
 
@@ -36,20 +38,29 @@ export function PipelineFilterWorkspace({
 }: PipelineFilterWorkspaceProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [railOpen, setRailOpen] = useState(FILTER_RAIL_DEFAULT_OPEN);
   const title = filterModuleByTitle('Pipeline');
-
-  useEffect(() => {
-    setRailOpen(readFilterRailOpen(PIPELINE_RAIL_KEY));
-  }, []);
+  // LS-8: rail state is scoped to the viewer (filterRailStorageKey(module, profile))
+  // — without a profile id read/write fail closed and nothing persists. Same
+  // client-cached profile + useSyncExternalStore pattern as ModuleShell, so
+  // there is no open-then-snap hydration flash either.
+  const { profile } = useClientAuth();
+  const viewerId = profile?.id ?? null;
+  const storedRailOpen = useSyncExternalStore(
+    subscribeFilterRailOpen,
+    () => readFilterRailOpen(PIPELINE_RAIL_KEY, viewerId),
+    () => FILTER_RAIL_DEFAULT_OPEN,
+  );
+  // Session-only fallback while the profile is still loading (write fails closed).
+  const [fallbackOpen, setFallbackOpen] = useState(FILTER_RAIL_DEFAULT_OPEN);
+  const railOpen = viewerId ? storedRailOpen : fallbackOpen;
 
   const toggleRail = useCallback(() => {
-    setRailOpen((prev) => {
-      const next = !prev;
-      writeFilterRailOpen(PIPELINE_RAIL_KEY, next);
-      return next;
-    });
-  }, []);
+    if (viewerId) {
+      writeFilterRailOpen(PIPELINE_RAIL_KEY, !storedRailOpen, viewerId);
+    } else {
+      setFallbackOpen((prev) => !prev);
+    }
+  }, [viewerId, storedRailOpen]);
 
   const applyFilters = useCallback(
     (next: ViewFilter[]) => {

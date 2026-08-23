@@ -29,6 +29,7 @@ import {
   type ReactNode,
 } from 'react';
 import { toast } from 'sonner';
+import { toastCopy } from '@/lib/crm/toast-copy';
 import { mutationQueue } from '@/lib/offline/mutation-queue';
 import { makeIdempotencyKey } from '@/lib/offline/queued-send';
 import { resolveFieldSaveTarget } from '@/lib/crm/record-field-registry';
@@ -168,7 +169,7 @@ export function RecordFieldSaveProvider({
     (field: string, value: unknown, target: FieldSaveTarget, reason: string) => {
       const label =
         perCallLabelRef.current.get(field) ?? fieldLabelsRef.current?.[field] ?? field;
-      toast.error(`Couldn't save ${label} — ${reason}`, {
+      toast.error(toastCopy.failed(`save ${label}`, reason), {
         id: `record-field-save-error:${recordId}:${field}`,
         duration: 8000,
         action: {

@@ -57,7 +57,7 @@
  *     node scripts/e2e/seed-walk-fixture.mjs
  *   node scripts/e2e/seed-walk-fixture.mjs --verify-only   # checks, no writes
  *   node scripts/e2e/seed-walk-fixture.mjs --prune-walk-rows # + delete the rows a
- *       previous walk created (first_name 'Walk' records, 'Walk T3…' notes on the
+ *       previous walk created (first_name 'Walk' records, 'Walk …' notes on the
  *       anchor) so every recorded walk starts from the same lane counts
  *
  * Exit codes: 0 seeded + verified · 1 verification failed · 2 refused/config.
@@ -727,7 +727,7 @@ function pruneWalkRows() {
     `with gone as (delete from public.crm_records where org_id = '${ORG_ID}' and data->>'first_name' = 'Walk' returning id) select count(*) from gone`,
   );
   const notes = psql(
-    `with gone as (delete from public.crm_notes where org_id = '${ORG_ID}' and record_id = '${uuid5('record:contact:wendy-walker')}' and body like 'Walk T3%' returning id) select count(*) from gone`,
+    `with gone as (delete from public.crm_notes where org_id = '${ORG_ID}' and record_id = '${uuid5('record:contact:wendy-walker')}' and body like 'Walk %' returning id) select count(*) from gone`,
   );
   console.log(`pruned walk rows  ${records} record(s) with first_name 'Walk', ${notes} 'Walk T3…' note(s) on the anchor`);
 }

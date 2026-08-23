@@ -192,8 +192,15 @@ test.describe('quick-create drawer walk', () => {
         const posts = postCount();
         await walk.press('Enter', 'Enter saves the lead');
         const validation = form().getByRole('alert').filter({ hasText: /effective date|start date/i }).first();
+        // Read the outcome from the tracker armed before the press (a
+        // waitForResponse registered after `walk.press` resolves can miss a
+        // POST that already completed during the press + screenshot).
+        const completedPost = () => recordPosts.filter((r) => r.method === 'POST').slice(posts).find((r) => r.status !== null);
         const res = await Promise.race([
-          page.waitForResponse((r) => /\/api\/crm\/records(\?|$)/.test(r.url()) && r.request().method() === 'POST', { timeout: 15_000 }).then((r) => r.status()),
+          expect
+            .poll(() => completedPost()?.status ?? null, { timeout: 15_000 })
+            .not.toBeNull()
+            .then(() => completedPost()!.status as number),
           validation.waitFor({ state: 'visible', timeout: 15_000 }).then(() => 'validation' as const),
         ]).catch(() => 'timeout' as const);
         walk.note('outcome', typeof res === 'number' ? `POST ${res}` : res);

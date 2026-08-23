@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_QUICK_FILTER_PRESETS,
+  PENDING_LANE_SORT,
+  laneCountOfAllLabel,
+  laneCountsAreNarrowed,
   laneIsEmpty,
   presetIsActive,
   presetsForModule,
@@ -41,6 +44,28 @@ describe('presetsForModule', () => {
     expect(presetsForModule('carriers').some((p) => p.id === 'closed-won')).toBe(false);
     expect(presetsForModule(undefined)).toBe(DEFAULT_QUICK_FILTER_PRESETS);
     expect(DEFAULT_QUICK_FILTER_PRESETS.map((p) => p.id)).toEqual(['mine', 'recent-week', 'new-this-week']);
+  });
+});
+
+describe('preset sort (TE-3b / D2: the Pending chip also sorts created_at asc)', () => {
+  it('contacts/members Pending lane carries the desk sort; no other chip sorts', () => {
+    for (const key of ['contacts', 'members']) {
+      const presets = presetsForModule(key);
+      const pending = presets.find((p) => p.id === 'lane-pending')!;
+      expect(pending.sort).toEqual({ field: 'created_at', direction: 'asc' });
+      expect(pending.sort).toEqual(PENDING_LANE_SORT);
+      for (const other of presets.filter((p) => p.id !== 'lane-pending')) {
+        expect(other.sort, `${other.id} must stay filter-only`).toBeUndefined();
+      }
+    }
+    for (const key of ['leads', 'deals', undefined]) {
+      expect(presetsForModule(key).every((p) => p.sort === undefined)).toBe(true);
+    }
+  });
+
+  it('resolving the lane keeps the sort on the concrete preset', () => {
+    const pending = presetsForModule('contacts').find((p) => p.id === 'lane-pending')!;
+    expect(resolveLanePreset(pending, CONTACT_VALUES, 'contact_status').preset.sort).toEqual(PENDING_LANE_SORT);
   });
 });
 
@@ -109,5 +134,40 @@ describe('presetIsActive', () => {
     const mine = presetsForModule('contacts').find((p) => p.id === 'mine')!;
     expect(presetIsActive(mine, [], 'mine')).toBe(true);
     expect(presetIsActive(mine, [], 'all')).toBe(false);
+  });
+});
+
+describe('laneCountsAreNarrowed (LS-5 / D11 option A: module-wide counts say "of all {noun}" on a narrowed list)', () => {
+  const bare = { search: '', scope: 'all' as const, territory: null, viewId: null };
+
+  it('bare list → not narrowed', () => {
+    expect(laneCountsAreNarrowed({ query: bare, currentFilters: [] })).toBe(false);
+  });
+
+  it("a lane chip's own status filter is NOT narrowing (its count is the list it opens)", () => {
+    const pending = [{ field: 'contact_status', operator: 'in', value: ['Pending', 'Approved Pending'] }];
+    expect(laneCountsAreNarrowed({ query: bare, currentFilters: pending })).toBe(false);
+    expect(laneCountsAreNarrowed({ query: bare, currentFilters: [{ field: 'status', operator: 'equals', value: 'New' }] })).toBe(false);
+    expect(laneCountsAreNarrowed({ query: bare, currentFilters: [{ field: 'lead_status', operator: 'equals', value: 'New' }] })).toBe(false);
+  });
+
+  it('search / scope / territory / a non-status filter → narrowed', () => {
+    expect(laneCountsAreNarrowed({ query: { ...bare, search: 'wen' }, currentFilters: [] })).toBe(true);
+    expect(laneCountsAreNarrowed({ query: { ...bare, scope: 'mine' }, currentFilters: [] })).toBe(true);
+    expect(laneCountsAreNarrowed({ query: { ...bare, territory: 'ter-1' }, currentFilters: [] })).toBe(true);
+    expect(laneCountsAreNarrowed({ query: bare, currentFilters: [{ field: 'city', operator: 'equals', value: 'Austin' }] })).toBe(true);
+  });
+
+  it('?view= narrows only when the view filters (unknown count → URL presence decides)', () => {
+    const view = { ...bare, viewId: 'view-1' };
+    expect(laneCountsAreNarrowed({ query: view, currentFilters: [], activeViewFilterCount: 0 })).toBe(false);
+    expect(laneCountsAreNarrowed({ query: view, currentFilters: [], activeViewFilterCount: 2 })).toBe(true);
+    expect(laneCountsAreNarrowed({ query: view, currentFilters: [] })).toBe(true);
+  });
+
+  it('the label uses the module noun and a formatted count', () => {
+    expect(laneCountOfAllLabel(6415, 'contacts')).toBe('6,415 of all contacts');
+    expect(laneCountOfAllLabel(3, 'members')).toBe('3 of all members');
+    expect(laneCountOfAllLabel(1, undefined)).toBe('1 of all records');
   });
 });

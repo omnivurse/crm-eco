@@ -45,6 +45,8 @@ export function RecordTagsRow({
   const [inputOpen, setInputOpen] = useState(false);
   const [draft, setDraft] = useState('');
   const [saving, setSaving] = useState(false);
+  /** FB-6: inline validation message shown beside the tag input. */
+  const [tagError, setTagError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Keep local state synced if the parent re-renders with a fresh record.
@@ -100,14 +102,16 @@ export function RecordTagsRow({
     (value: string) => {
       const normalized = value.trim().replace(/\s+/g, ' ');
       if (!normalized) return;
+      // FB-6: inline validation (role=alert beside the input), not a toast.
       if (normalized.length > MAX_TAG_LENGTH) {
-        toast.error(`Tags must be ${MAX_TAG_LENGTH} characters or fewer`);
+        setTagError(`Tags must be ${MAX_TAG_LENGTH} characters or fewer`);
         return;
       }
       if (tags.length >= MAX_TAGS) {
-        toast.error(`You can add up to ${MAX_TAGS} tags per record`);
+        setTagError(`You can add up to ${MAX_TAGS} tags per record`);
         return;
       }
+      setTagError(null);
       if (tags.some((t) => t.toLowerCase() === normalized.toLowerCase())) {
         setDraft('');
         return;
@@ -171,26 +175,48 @@ export function RecordTagsRow({
         <input
           ref={inputRef}
           value={draft}
-          onChange={(e) => setDraft(e.target.value)}
+          onChange={(e) => {
+            setDraft(e.target.value);
+            if (tagError) setTagError(null);
+          }}
           onKeyDown={handleKeyDown}
           onBlur={() => {
             if (draft.trim()) {
               addTag(draft);
             } else {
               setInputOpen(false);
+              setTagError(null);
             }
           }}
           maxLength={MAX_TAG_LENGTH}
+          aria-invalid={tagError ? true : undefined}
+          aria-describedby={tagError ? 'crm-record-tag-help' : undefined}
           placeholder="Tag name, Enter to save"
           className="h-6 px-2 rounded-full text-xs bg-white dark:bg-slate-900 border border-teal-400 dark:border-teal-500 text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-teal-500/30 min-w-[140px]"
         />
+      )}
+
+      {!readOnly && inputOpen && tagError && (
+        <span id="crm-record-tag-help" role="alert" className="text-xs text-rose-600 dark:text-rose-400">
+          {tagError}
+        </span>
       )}
 
       {!readOnly && !inputOpen && (
         <button
           type="button"
           onClick={() => setInputOpen(true)}
-          className="inline-flex items-center gap-1 h-6 px-2 rounded-full text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-500/10 border border-dashed border-slate-300 dark:border-white/10"
+          data-testid="crm-record-add-tags"
+          className={cn(
+            'inline-flex items-center gap-1 h-6 px-2 rounded-full text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-500/10 border border-dashed border-slate-300 dark:border-white/10',
+            // RP-5 / D6c: on a tagless record the dashed pill is on demand —
+            // invisible at rest, shown when the identity block (`group/identity`
+            // on the record header) is hovered / focused-within or the pill
+            // itself has focus. Still in the tab order and still tappable
+            // (opacity does not block pointer events).
+            tags.length === 0 &&
+              'opacity-0 transition-opacity focus-visible:opacity-100 focus:opacity-100 group-hover/identity:opacity-100 group-focus-within/identity:opacity-100',
+          )}
         >
           <Plus className="w-3 h-3" />
           {tags.length === 0 ? 'Add Tags' : 'Add'}

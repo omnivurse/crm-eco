@@ -1,23 +1,12 @@
 /**
- * Columns whose list cell is an overlay (twin / resolved name) must not
- * advertise server sort — `getRecords` orders `data->>field`, which is not
- * what the cell shows.
+ * Sort-side aliases of `list-field-policy` (LS-4 widened the policy from
+ * "no server sort" to "no server sort AND no filter"; the module-aware
+ * predicate lives in list-field-policy.ts). Kept so existing imports
+ * (RecordTable) keep compiling — new code should import list-field-policy.
  */
 
-export const DISPLAY_ONLY_SORT_FIELDS = [
-  'advisor_name',
-  'normalized_advisor_name',
-  'normalized_agent_name',
-  'plan_name',
-  'product',
-  'effective_date',
-  'sharing_effective_date',
-  'owner_id',
-] as const;
-
-export function isDisplayOnlySortField(field: string): boolean {
-  return (DISPLAY_ONLY_SORT_FIELDS as readonly string[]).includes(field);
-}
-
-export const DISPLAY_ONLY_SORT_HINT =
-  'Sorted by stored value — turn off until display-sort exists';
+export {
+  DISPLAY_ONLY_LIST_FIELDS as DISPLAY_ONLY_SORT_FIELDS,
+  DISPLAY_ONLY_FIELD_HINT as DISPLAY_ONLY_SORT_HINT,
+  isDisplayOnlyListField as isDisplayOnlySortField,
+} from './list-field-policy';

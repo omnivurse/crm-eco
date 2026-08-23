@@ -25,7 +25,6 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Avatar, AvatarFallback, AvatarImage } from '@crm-eco/ui/components/avatar';
-import { LayoutV2Toggle } from '@/components/crm/shell/LayoutV2Toggle';
 
 interface ProfileData {
     id: string;
@@ -371,7 +370,6 @@ export default function ProfilePage() {
                                     <option value="system">System</option>
                                 </select>
                             </div>
-                            <LayoutV2Toggle />
                         </div>
                     </div>
 

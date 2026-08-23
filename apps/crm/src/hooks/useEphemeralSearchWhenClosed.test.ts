@@ -18,10 +18,6 @@ describe('shell search overlay ephemeral contracts', () => {
     process.cwd(),
     'src/components/crm/shell/CommandPalette.tsx',
   );
-  const overlayPath = join(
-    process.cwd(),
-    'src/components/zoho/GlobalSearchOverlay.tsx',
-  );
   const topBarPath = join(
     process.cwd(),
     'src/components/crm/shell/CrmTopBar.tsx',
@@ -33,12 +29,6 @@ describe('shell search overlay ephemeral contracts', () => {
     expect(src).toContain("from '@/hooks/useEphemeralSearchWhenClosed'");
     // Must not pass the raw parent setter — that skips synchronous clear.
     expect(src).toMatch(/<Dialog\s+open=\{open\}\s+onOpenChange=\{handleOpenChange\}/);
-  });
-
-  it('GlobalSearchOverlay shares the same clear-on-close contract', () => {
-    const src = readFileSync(overlayPath, 'utf8');
-    expect(src).toContain('useEphemeralSearchWhenClosed');
-    expect(src).toMatch(/onOpenChange=\{handleOpenChange\}/);
   });
 
   it('CrmTopBar does not register a competing ⌘K keydown (avoids open/toggle race)', () => {

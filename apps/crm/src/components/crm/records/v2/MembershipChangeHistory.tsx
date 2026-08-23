@@ -26,6 +26,7 @@ import {
   Bell,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { toastCopy } from '@/lib/crm/toast-copy';
 import { Button } from '@crm-eco/ui/components/button';
 import { Badge } from '@crm-eco/ui/components/badge';
 import { Input } from '@crm-eco/ui/components/input';
@@ -763,20 +764,17 @@ export const MembershipChangeHistory = memo(function MembershipChangeHistory({
           if (task.id) {
             nextChange = { ...change, follow_up_task_id: task.id };
           }
-          toast.success('Plan change logged', {
+          toast.success(toastCopy.added('Plan change'), {
             description: `Follow-up reminder set for ${formatDate(change.date)}. Leave current product as-is until then.`,
           });
         } catch (err) {
           console.error('[MembershipChangeHistory] follow-up create failed:', err);
-          toast.error('Plan change saved, but follow-up reminder failed', {
-            description:
-              err instanceof Error
-                ? err.message
-                : 'Add a task manually on the Activities tab.',
+          toast.error(toastCopy.failed('set the follow-up reminder', err), {
+            description: 'The plan change was saved. Add a task manually on the Activities tab.',
           });
         }
       } else {
-        toast.success('Plan change logged');
+        toast.success(toastCopy.added('Plan change'));
       }
 
       // Scheduled-change lane (CRM-only records): a strictly-future plan
@@ -833,7 +831,7 @@ export const MembershipChangeHistory = memo(function MembershipChangeHistory({
             ...(nextChange.from_monthly && { from_monthly: nextChange.from_monthly }),
             scheduled_at: new Date().toISOString(),
           });
-          toast.success('Plan change scheduled', {
+          toast.success(toastCopy.saved('Scheduled plan change'), {
             description: `Product, IUA and monthly update automatically on ${formatDate(nextChange.date)}.`,
           });
         } else if (wasScheduled && currentSpc?.change_id === nextChange.id) {
@@ -856,7 +854,7 @@ export const MembershipChangeHistory = memo(function MembershipChangeHistory({
       if (saveCtx && currentSpc?.change_id === id) {
         setLocalSpc(null);
         await saveCtx.save('scheduled_plan_change', null);
-        toast.success('Scheduled plan change cancelled');
+        toast.success(toastCopy.deleted('Scheduled plan change'));
       }
     },
     [sourceChanges, currentSpc, persistChanges, saveCtx],
@@ -875,7 +873,7 @@ export const MembershipChangeHistory = memo(function MembershipChangeHistory({
     if (!saveCtx) return;
     setLocalSpc(null);
     await saveCtx.save('scheduled_plan_change', null);
-    toast.success('Scheduled plan change cancelled');
+    toast.success(toastCopy.deleted('Scheduled plan change'));
   }, [saveCtx]);
 
   const visibleChanges = collapsed ? changes.slice(0, 3) : changes;

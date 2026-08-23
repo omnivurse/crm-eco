@@ -50,8 +50,34 @@ export const SANITIZE_NOTE_HTML_CONFIG = {
   ADD_ATTR: ['src', 'alt', 'width', 'height'],
 };
 
-/** Sanitize note HTML before persistence or XSS-safe display (client-safe). */
+/**
+ * Server fallback (no DOM → DOMPurify has no `sanitize`): strip the executable
+ * surface — script/style/iframe/object/embed blocks, `on*=` handlers and
+ * `javascript:` / `data:` URLs — so the streamed HTML is never the raw body.
+ * The browser re-runs the full DOMPurify pass on mount (NotesPanel / the notes
+ * sheet call `sanitizeNoteHtml` inside a client component), so this only has
+ * to be safe, not exhaustive. Exported for the unit test.
+ */
+export function stripHazardousHtml(html: string): string {
+  return html
+    .replace(/<\s*(script|style|iframe|object|embed|noscript|template|link|meta|base|form)\b[\s\S]*?(<\s*\/\s*\1\s*>|$)/gi, '')
+    .replace(/\s+on[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+    .replace(/(\s(?:href|src|action|formaction|xlink:href)\s*=\s*)(["']?)\s*(?:javascript|vbscript|data):[^"'\s>]*\2/gi, '$1$2$2');
+}
+
+/** DOMPurify only works where it found a DOM (browser / jsdom test env). */
+function domPurifyAvailable(): boolean {
+  return typeof window !== 'undefined' && typeof DOMPurify.sanitize === 'function' && DOMPurify.isSupported !== false;
+}
+
+/**
+ * Sanitize note HTML before persistence or XSS-safe display.
+ * Client: DOMPurify with the note allow-list. Server (RP-7 streams the Notes
+ * pane, so NoteCard now renders during SSR): the hazard strip above — never
+ * the raw input, and never a thrown "DOMPurify.sanitize is not a function".
+ */
 export function sanitizeNoteHtml(html: string): string {
+  if (!domPurifyAvailable()) return stripHazardousHtml(html);
   return DOMPurify.sanitize(html, SANITIZE_NOTE_HTML_CONFIG);
 }
 

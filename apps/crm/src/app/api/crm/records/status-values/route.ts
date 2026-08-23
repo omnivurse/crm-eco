@@ -1,5 +1,5 @@
 /**
- * GET /api/crm/records/status-values?module_key=contacts
+ * GET /api/crm/records/status-values?module_key=contacts[&search=…&scope=…&territory=…&filters=…]
  *
  * Distinct raw `crm_records.status` values for ONE module of the caller's
  * org, with a count and the read-side lane each spelling belongs to
@@ -10,9 +10,10 @@
  * Response:
  *   {
  *     module_key: string,
- *     values: Array<{ value: string; count: number; lane: StatusLane }>, // count desc
+ *     values: Array<{ value: string; count: number; lane: StatusLane }>, // count desc, whole module
  *     lanes:  Array<{ lane: StatusLane; count: number }>,               // contract order
  *     total: number,                                                     // rows with a status
+ *     narrowed: boolean,                                                 // lanes counted under the list query
  *   }
  *
  * Counting: one `execute_report_aggregation` RPC (existing, SECURITY DEFINER,
@@ -24,8 +25,19 @@
  * members / admins see the org-wide rows in the list too, so the RPC counts
  * are already exact for them.
  *
- * Caching: `Cache-Control: private, max-age=60` (per browser, per user) —
- * counts drift by a minute at most; the list itself is never cached.
+ * Narrowing (LS-5 option B, server half): when the request carries the list's
+ * row-set params — the same keys `buildListQuery` writes (`search`, `scope`,
+ * `territory`, `filters`; `view` is NOT resolved here) — the `lanes` are
+ * re-counted through the RLS client with the ONE shared predicate builder
+ * (`applyRecordListQuery`, the same code behind the pager total and "Select
+ * all N"), with any status-field filter stripped so each lane is counted
+ * against the rest of the narrowing. `values` stay module-wide (the lane chips
+ * need every spelling to build their `in` filter); `narrowed: true` says the
+ * lanes are the narrowed ones.
+ *
+ * Caching: `Cache-Control: no-store` — the client keeps its own 60s promise
+ * cache (lib/crm/status-values-client) and invalidates it after bulk status
+ * changes / trash / undo, so the browser cache must never serve a stale copy.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -38,10 +50,25 @@ import {
   statusValuesRpcArgs,
   type StatusLane,
 } from '@/lib/crm/status-lanes';
+import {
+  LIST_QUERY_URL_KEYS,
+  readListUrlQueryState,
+  resolveListQueryState,
+} from '@/lib/crm/list-query-resolve';
+import { applyRecordListQuery, getFieldsForModule } from '@/lib/crm/queries';
+import type { ViewFilter } from '@/lib/crm/types';
 
 export const dynamic = 'force-dynamic';
 
-const CACHE_HEADERS = { 'Cache-Control': 'private, max-age=60' };
+const CACHE_HEADERS = { 'Cache-Control': 'no-store' };
+
+/** Filters on these keys ARE the lane (status) — stripped before a lane re-count. */
+const STATUS_FILTER_FIELDS = new Set(['status', 'contact_status', 'lead_status']);
+
+/** The row-set params that narrow lane counts (`view` is not resolved here). */
+const NARROWING_KEYS = LIST_QUERY_URL_KEYS.filter(
+  (k) => k !== 'view' && k !== 'sortField' && k !== 'sortDirection',
+);
 
 /**
  * Roles whose crm_records SELECT policy is narrower than the org.
@@ -58,6 +85,11 @@ const CACHE_HEADERS = { 'Cache-Control': 'private, max-age=60' };
  * matching the RLS-scoped list.
  */
 const ROW_RESTRICTED_ROLES = new Set(['advisor']);
+
+/** Drop the status-field filters so a lane re-count does not AND itself away. */
+function stripStatusFilters(filters: ViewFilter[]): ViewFilter[] {
+  return filters.filter((f) => !STATUS_FILTER_FIELDS.has(f.field));
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -99,20 +131,39 @@ export async function GET(request: NextRequest) {
     const values = counts.map((v) => ({ ...v, lane: statusLane(v.value) }));
     const byLane = groupStatusValuesByLane(counts);
 
+    // Narrowing: same URL keys as the list page; resolved without saved views
+    // (`view` is ignored here — the client strips it before asking).
+    const url = readListUrlQueryState(searchParams);
+    const narrowed = NARROWING_KEYS.some((k) => Boolean(url[k]));
+    const listState = narrowed
+      ? resolveListQueryState({ views: [], defaultView: null, url })
+      : null;
+    const searchKeys =
+      listState?.search ? (await getFieldsForModule(moduleRow.id).catch(() => [])).map((f) => f.key) : undefined;
+
     const lanes: Array<{ lane: StatusLane; count: number }> = [];
     const rowRestricted = ROW_RESTRICTED_ROLES.has(String(profile.role ?? ''));
     for (const { id: lane } of STATUS_LANES) {
       const laneRows = byLane[lane];
       let count = laneRows.reduce((n, v) => n + v.count, 0);
-      if (rowRestricted && laneRows.length > 0) {
-        // Re-count under RLS so the chip equals the (RLS-scoped) list.
-        const { count: rlsCount, error } = await supabase
+      if ((rowRestricted || listState) && laneRows.length > 0) {
+        // Re-count under RLS (and under the list's narrowing) so the chip
+        // equals the list it opens. ONE predicate builder with the list page.
+        const base = supabase
           .from('crm_records')
           .select('id', { count: 'exact', head: true })
-          .eq('org_id', orgId)
-          .eq('module_id', moduleRow.id)
-          .is('deleted_at' as never, null)
-          .in('status', laneRows.map((v) => v.value));
+          .eq('module_id', moduleRow.id);
+        const { query } = await applyRecordListQuery(base, {
+          moduleId: moduleRow.id,
+          orgId,
+          moduleKey,
+          filters: listState ? stripStatusFilters(listState.filters) : [],
+          search: listState?.search,
+          searchDataJsonKeys: searchKeys,
+          scope: listState?.scope ?? 'all',
+          territoryId: listState?.territoryId,
+        });
+        const { count: rlsCount, error } = await query.in('status', laneRows.map((v) => v.value));
         if (!error && typeof rlsCount === 'number') count = rlsCount;
       }
       lanes.push({ lane, count });
@@ -124,6 +175,7 @@ export async function GET(request: NextRequest) {
         values,
         lanes,
         total: counts.reduce((n, v) => n + v.count, 0),
+        narrowed: Boolean(listState),
       },
       { headers: CACHE_HEADERS },
     );

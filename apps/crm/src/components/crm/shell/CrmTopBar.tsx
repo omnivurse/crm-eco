@@ -43,9 +43,11 @@ import { ConnectivityModeToggle } from '@/components/crm/offline/ConnectivityMod
 import { PendingChangesPill } from '@/components/crm/offline/PendingChangesPill';
 import { clearOfflineState } from '@/lib/offline/reset';
 import { openCrmCommandPalette } from '@/lib/crm/command-palette-bus';
+import { SEARCH_PLACEHOLDER } from '@/lib/crm/search-copy';
 import type { CrmModule, CrmProfile } from '@/lib/crm/types';
 import type { QuickCreateModuleKey } from '@/lib/crm/quick-create-config';
 import { CRM_OPEN_QUICK_CREATE_EVENT } from '@/lib/crm/create-intent-bus';
+import { canCreateRecords } from '@/lib/crm/can-create-records';
 
 function openCommandPalette(onOpenCommandPalette?: () => void) {
   if (onOpenCommandPalette) onOpenCommandPalette();
@@ -84,6 +86,10 @@ export const CrmTopBar = memo(function CrmTopBar({
   const [quickCreateOpen, setQuickCreateOpen] = useState(false);
   const [quickCreateModule, setQuickCreateModule] = useState<QuickCreateModuleKey>('contacts');
   const router = useRouter();
+  // DE-M1: crm_viewer never sees "+ Create" / "Add Member" (POST 403 stays
+  // the backstop). The server-auth profile prop is the same source the API
+  // reads, so there is no loading flicker.
+  const canCreate = canCreateRecords(profile.crm_role);
 
   // "+ Create" (and the quick menu entries) open the QuickCreateDrawer —
   // Add Member by default — instead of routing to the 250-field full form.
@@ -191,11 +197,14 @@ export const CrmTopBar = memo(function CrmTopBar({
         {/* Search Button — opens global search overlay */}
         <button
           onClick={() => openCommandPalette(onOpenCommandPalette)}
-          className="hidden sm:flex items-center gap-2 h-8 px-2.5 rounded-md border border-border bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors text-[13px] min-w-[160px] lg:min-w-[220px]"
+          // md+ only: below md the un-truncated promise (≈245 px) would push the
+          // right-hand controls off a 640 px row, so the icon button takes over.
+          className="hidden md:flex items-center gap-2 h-8 px-2.5 rounded-md border border-border bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors text-[13px] min-w-[160px] lg:min-w-[220px]"
           data-testid="crm-topbar-search"
         >
           <Search className="w-4 h-4 flex-shrink-0" />
-          <span className="truncate">Search people or work…</span>
+          {/* NV-1: the shared promise, never truncated (the pill grows to fit). */}
+          <span className="whitespace-nowrap">{SEARCH_PLACEHOLDER}</span>
           <kbd className="ml-auto hidden lg:inline-flex items-center gap-0.5 text-[10px] font-medium text-slate-400 dark:text-slate-500 bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded px-1.5 py-0.5">
             ⌘K
           </kbd>
@@ -205,9 +214,9 @@ export const CrmTopBar = memo(function CrmTopBar({
             <Button
               variant="ghost"
               size="icon"
-              className="sm:hidden h-8 w-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
+              className="md:hidden h-8 w-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
               onClick={() => openCommandPalette(onOpenCommandPalette)}
-              aria-label="Search (⌘K)"
+              aria-label={SEARCH_PLACEHOLDER}
               data-testid="crm-topbar-search-mobile"
             >
               <Search className="w-4 h-4" />
@@ -216,20 +225,24 @@ export const CrmTopBar = memo(function CrmTopBar({
           <TooltipContent side="bottom">Search (⌘K)</TooltipContent>
         </Tooltip>
 
-        <Button
-          type="button"
-          size="icon"
-          className="sm:hidden h-8 w-8 rounded-md"
-          onClick={() => openQuickCreate('contacts')}
-          aria-label="Add Member"
-          title="Add Member"
-          data-testid="crm-create-primary-mobile"
-        >
-          <Plus className="w-4 h-4" />
-        </Button>
-        <div className="hidden sm:block">
-          <SplitCreateButton onQuickCreate={openQuickCreate} modules={modules} />
-        </div>
+        {canCreate && (
+          <>
+            <Button
+              type="button"
+              size="icon"
+              className="sm:hidden h-8 w-8 rounded-md"
+              onClick={() => openQuickCreate('contacts')}
+              aria-label="Add Member"
+              title="Add Member"
+              data-testid="crm-create-primary-mobile"
+            >
+              <Plus className="w-4 h-4" />
+            </Button>
+            <div className="hidden sm:block">
+              <SplitCreateButton onQuickCreate={openQuickCreate} modules={modules} crmRole={profile.crm_role} />
+            </div>
+          </>
+        )}
 
         {/* Theme Toggle - hidden on the narrowest mobile widths.
             (`xs` is not a defined breakpoint, so the old `xs:block` never
@@ -369,13 +382,17 @@ export const CrmTopBar = memo(function CrmTopBar({
         </DropdownMenu>
       </div>
 
-      {/* Quick Create Drawer — mounted once here; opened via + Create / menu */}
-      <QuickCreateDrawer
-        open={quickCreateOpen}
-        onOpenChange={setQuickCreateOpen}
-        defaultModule={quickCreateModule}
-        modules={modules}
-      />
+      {/* Quick Create Drawer — mounted once here; opened via + Create / menu.
+          Not mounted for crm_viewer, so the palette/commands create bus cannot
+          open a form that would only 403. */}
+      {canCreate && (
+        <QuickCreateDrawer
+          open={quickCreateOpen}
+          onOpenChange={setQuickCreateOpen}
+          defaultModule={quickCreateModule}
+          modules={modules}
+        />
+      )}
     </header>
     </TooltipProvider>
   );

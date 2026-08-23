@@ -44,7 +44,7 @@ import {
   type TwinSourceRow,
 } from './resolve-record-twin';
 import type { MemberCrmRecordCandidate } from './resolve-member-crm-record';
-import { applyCrmRecordTextSearch, applyHideConvertedLeadsFilter, isConvertedLeadRow } from './record-search';
+import { applyCrmRecordTextSearch, applyHideConvertedLeadsFilter } from './record-search';
 import { alignMisalignedRecordModule } from './align-record-module';
 import { resolveCrmRecordFilterField } from './report-field-path';
 
@@ -856,9 +856,6 @@ export async function getRecords(options: RecordQueryOptions): Promise<RecordQue
     hideConvertedLeads,
   } = options;
 
-  const shouldHideConvertedLeads =
-    hideConvertedLeads ?? moduleKey === 'leads';
-
   const baseQuery = includeCount
     ? supabase
         .from('crm_records')
@@ -901,14 +898,16 @@ export async function getRecords(options: RecordQueryOptions): Promise<RecordQue
 
   if (error) throw error;
 
+  // LS-7b / D11: converted leads are excluded IN the query
+  // (`applyHideConvertedLeadsFilter` inside `applyRecordListQuery`), so the
+  // exact count, this page's rows and the ids endpoint agree — no post-range
+  // row drop here, otherwise "Showing 1 to 25 of N" could list fewer rows
+  // than it promises.
   const rows = (data || []) as CrmRecord[];
   const seenIds = new Set<string>();
   const records = rows.filter((r) => {
     if (seenIds.has(r.id)) return false;
     seenIds.add(r.id);
-    if (shouldHideConvertedLeads && isConvertedLeadRow({ module_key: moduleKey ?? 'leads', status: r.status, data: r.data as Record<string, unknown> | null })) {
-      return false;
-    }
     return true;
   });
 

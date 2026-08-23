@@ -76,9 +76,9 @@ test.describe('navigation walk', () => {
         let sidebarText: string | null = null;
         if (!mobile) {
           // ZohoContextualSidebar's SidebarSearchTrigger: a text pill when expanded,
-          // an icon button (aria-label "Search (⌘K)") when collapsed. Never the top bar.
+          // an icon button (aria-label = SEARCH_PLACEHOLDER since NV-1) when collapsed. Never the top bar.
           const expanded = page.locator('button:visible:not([data-testid^="crm-topbar-search"])').filter({ hasText: /^\s*Search/ }).first();
-          const collapsed = page.locator('button:visible[aria-label="Search (⌘K)"]:not([data-testid^="crm-topbar-search"])').first();
+          const collapsed = page.locator(`button:visible[aria-label="${SEARCH_PLACEHOLDER}"]:not([data-testid^="crm-topbar-search"])`).first();
           if ((await expanded.count()) > 0) sidebarText = (await expanded.textContent())?.replace(/⌘K/, '').trim() ?? null;
           else if ((await collapsed.count()) > 0) sidebarText = await collapsed.getAttribute('aria-label');
         }
@@ -129,23 +129,37 @@ test.describe('navigation walk', () => {
             continue;
           }
           await walk.click(el, `${link.tab} › ${link.key}`);
-          // ModuleContext resolves the tab from the pathname in an effect after
-          // the client transition — reading the sidebar before it runs records
-          // the OLD tab's sidebar as "not swapped". Settle on the URL, then on
-          // the tab the mirrored resolver predicts (nav-tabs.ts), then read.
+          // ModuleContext resolves the tab in an effect after the client
+          // transition (D10 sticky: the tab STAYS when the clicked link is active
+          // for the new location, else the URL decides). Reading the sidebar
+          // before that effect runs would record the OLD sidebar as "not
+          // swapped" even when it is about to swap. Settle on the URL, then on
+          // evidence the hop committed — the clicked link carries aria-current
+          // (sticky) OR the tab became what the path resolver predicts (swap) —
+          // then a short grace so a late swap cannot hide, then read.
           const linkPath = link.href.split('?')[0];
-          const expectedTab = topModuleForPath(linkPath);
+          const byPathTab = topModuleForPath(linkPath);
           await page.waitForURL((u) => u.pathname === linkPath, { timeout: 30_000 }).catch(() => undefined);
           await expect(page.locator(TAB).first()).toBeVisible({ timeout: 30_000 });
+          const clickedCurrent = page.locator(`${SIDENAV}[data-nav-key="${link.key}"][aria-current="page"]:visible`);
           await expect
-            .poll(activeTabKey, { timeout: 15_000, message: `tab after ${link.href}` })
-            .toBe(expectedTab)
+            .poll(async () => (await activeTabKey()) === byPathTab || (await clickedCurrent.count()) > 0, {
+              timeout: 15_000,
+              message: `hop after ${link.href} did not commit`,
+            })
+            .toBe(true)
             .catch(() => undefined);
+          await page.waitForTimeout(400);
           const afterTab = await activeTabKey();
           const afterKeys = (await sidebarLinks()).map((l) => l.key).join(',');
           const swapped = afterKeys !== beforeKeys;
           if (swapped) swaps += 1;
-          walk.note(`crossTab.${link.tab}.${link.key}`, `${link.href} → tab=${afterTab} swapped=${swapped}`);
+          // A hop the app redirects (e.g. a permission bounce to /crm?error=…)
+          // cannot stay sticky — the note keeps the landed path so the verdict
+          // can be read as "link shown to a role it refuses" rather than D10.
+          const landed = pathWithQuery(page);
+          const redirected = landed.split('?')[0] !== linkPath;
+          walk.note(`crossTab.${link.tab}.${link.key}`, `${link.href} → tab=${afterTab} swapped=${swapped}${redirected ? ` redirected=${landed}` : ''}`);
         }
         walk.note('crossTabLinks', crossTab.length);
         walk.note('sidebarSwaps', swaps);
@@ -223,3 +237,77 @@ test.describe('navigation walk', () => {
     );
   });
 });
+
+// ---------------------------------------------------------------------------
+// NV-4 — ⌘K "View all results" lands on /crm/search with the same member.
+// NV-7 — record pages highlight their module's sidebar link (aria-current).
+// ---------------------------------------------------------------------------
+test.describe('search parity + record sidebar state', () => {
+  test('NV-4 View all results; NV-7 record-page aria-current', async ({ page, request, bareRequest, walk }, testInfo) => {
+    const project = testInfo.project.name;
+    const mobile = isMobileProject(project);
+    const { anchor } = await assertTrapsInTest({ page, request, bareRequest, project });
+    expect(anchor).not.toBeNull();
+
+    await page.goto('/crm', { waitUntil: 'domcontentloaded' });
+    await walk.task(
+      'NV-4-view-all',
+      "⌘K phone → 'View all results' → /crm/search lists the same member",
+      mobile ? 2 : 1,
+      async () => {
+        if (mobile) {
+          await walk.click(page.getByTestId('crm-topbar-search-mobile'), 'open search');
+        } else {
+          await walk.press(`${modKey()}+k`, 'open palette (⌘K)');
+        }
+        const input = page.getByTestId('crm-palette-input');
+        await expect(input).toBeVisible();
+        await walk.type(input, FIXTURE.anchor.phone, 'type phone digits');
+        const viewAll = page.getByRole('dialog').getByText(/View all results/).first();
+        await expect(viewAll, "the palette must offer 'View all results'").toBeVisible({ timeout: 15_000 });
+        await walk.click(viewAll, 'View all results');
+        await expect(page).toHaveURL(/\/crm\/search\?q=/);
+        const hit = page
+          .getByTestId('crm-search-result')
+          .filter({ hasText: new RegExp(`${FIXTURE.anchor.firstName}\\s+${FIXTURE.anchor.lastName}`, 'i') })
+          .first();
+        await expect(hit, '/crm/search must list the member the palette found').toBeVisible({ timeout: 30_000 });
+        walk.note('url', pathWithQuery(page));
+      },
+      { soft: true },
+    );
+
+    await walk.task(
+      'NV-7-record-aria-current',
+      "Open records highlight their module's sidebar link (contacts anchor + members twin)",
+      0,
+      async () => {
+        if (mobile) {
+          walk.note('skipped', 'sidebar lives in the mobile sheet');
+          return;
+        }
+        await page.goto(anchor!.url, { waitUntil: 'domcontentloaded' });
+        const contactsLink = page.locator(`${SIDENAV}[data-nav-key="module-contacts"][aria-current="page"]:visible`);
+        await expect(contactsLink, 'contacts record must light the Contacts link').toBeVisible({ timeout: 30_000 });
+        walk.note('contactsCurrent', true);
+        const currentCount = await page.locator(`${SIDENAV}[aria-current="page"]:visible`).count();
+        walk.note('ariaCurrentLinks', currentCount);
+        expect(currentCount, 'exactly one aria-current sidebar link').toBe(1);
+
+        // The members twin (same phone, members module) must light Members.
+        const res = await request.get(`/api/crm/search?q=${encodeURIComponent(FIXTURE.anchor.memberNumber)}&limit=10`);
+        const body = (await res.json()) as { results?: Array<{ id: string; moduleKey: string; url: string }> };
+        const twin = (body.results ?? []).find((r) => r.moduleKey === 'members');
+        walk.note('membersTwinFound', Boolean(twin));
+        if (twin) {
+          await page.goto(twin.url, { waitUntil: 'domcontentloaded' });
+          const membersLink = page.locator(`${SIDENAV}[data-nav-key="module-members"][aria-current="page"]:visible`);
+          await expect(membersLink, 'members record must light the Members link').toBeVisible({ timeout: 30_000 });
+          walk.note('membersCurrent', true);
+        }
+      },
+      { soft: true },
+    );
+  });
+});
+

@@ -664,6 +664,10 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
     [fields],
   );
 
+  // No layout → one "Information" section so every field still renders. This
+  // is the degraded render for BOTH "no default layout row" (configuration)
+  // and "layout fetch rejected" (transient); the record page (RP-M2) owns the
+  // visible notice + Retry that tells them apart — this form stays silent.
   const layoutConfig = layout?.config || { sections: [{ key: 'main', label: 'Information', columns: 2 }] };
   const isCreateForm = !readOnly && mode === 'create' && !record;
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(() => {
@@ -1008,6 +1012,8 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
         label?: string;
         /** Hover title for the label; defaults to the field's tooltip / label. */
         labelTitle?: string;
+        /** Extra classes on the cell root (e.g. snapshot max-md:hidden for empty cells). */
+        className?: string;
       },
     ) => {
       const cellReadOnly = readOnly || Boolean(opts?.readOnlyView);
@@ -1082,6 +1088,7 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
             className={cn(
               'flex min-w-0 items-baseline gap-3 border-b border-border/40 py-1.5 overflow-hidden',
               fieldSpansFullRow(field) && FULL_ROW_SPAN_CLASS,
+              opts?.className,
             )}
           >
             <Label
@@ -1108,6 +1115,7 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
           data-field-key={field.key}
           className={cn(
             'relative min-w-0 max-w-full rounded-md',
+            opts?.className,
             fieldSpansFullRow(field) && FULL_ROW_SPAN_CLASS,
           )}
         >
@@ -1410,6 +1418,16 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
   // Market Type chip in the header (emerald = HealthShare, blue = Insurance,
   // slate = unclassified). Cells still render through renderFieldCell, so
   // inline editing is unchanged.
+  /**
+   * RP-6: on a phone the at-rest snapshot is a true glance — carrier, plan,
+   * effective date, who enrolled, member # — so a cell is shown below md only
+   * when it has a value AND is in that glance set ("Add iua amount" rows and
+   * secondary context pushed Enrolled by / Recent notes below the 390px
+   * fold). From md up every cell stays (inline editing unchanged everywhere).
+   */
+  const snapshotCellPhoneClass = (key: string, phoneGlance: boolean): string | undefined =>
+    hasValue(key) && phoneGlance ? undefined : 'max-md:hidden';
+
   const renderCoverageSnapshot = () => {
     if (!sections.some((s) => s.variant === 'hero')) return null;
     // A brand-new record has nothing on file yet — the summary banner would
@@ -1446,6 +1464,11 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
     const AccentIcon = accent.Icon;
 
     const staticView = snapshotStatic;
+    const firstPopulatedPlanKey =
+      heroProductPlanSnapshotFields.find((f) => {
+        const display = coerceCoverageSnapshotFieldValue(f.key, defaultValues[f.key]);
+        return display !== null && display !== undefined && display !== '';
+      })?.key ?? null;
     const carrierHasValue = heroSharingField ? hasValue(heroSharingField.key) : false;
     const showDate =
       Boolean(heroStartDateField) &&
@@ -1455,7 +1478,7 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
     const isEmpty = staticView && !carrierHasValue && !hasDetail && !hasReferral;
 
     const divider = (
-      <div className={cn('hidden w-px self-stretch lg:block', accent.divider)} aria-hidden />
+      <div className={cn('hidden w-px self-stretch xl:block', accent.divider)} aria-hidden />
     );
 
     return (
@@ -1463,16 +1486,19 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
         data-testid="crm-record-snapshot"
         className={cn('rounded-xl border bg-gradient-to-br to-transparent shadow-sm ring-1', accent.wrap)}
       >
-        <div className="flex flex-col gap-x-6 gap-y-3 p-3 lg:flex-row lg:flex-wrap lg:items-stretch">
+        {/* RP-6: the side-by-side identity rail only from xl up — between
+            1024 and 1279 it left the detail grid a single ~150px column that
+            pushed the whole snapshot below the fold (walk T2-above-fold). */}
+        <div className="flex flex-col gap-x-6 gap-y-2 p-3 xl:gap-y-3 xl:flex-row xl:flex-wrap xl:items-stretch">
           {/* Identity rail — coverage type + carrier / sharing entity */}
-          <div className="flex items-start gap-3 lg:w-64 lg:shrink-0">
+          <div className="flex items-start gap-3 xl:w-64 xl:shrink-0">
             <span
               className={cn(
-                'mt-0.5 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl',
+                'mt-0.5 inline-flex h-8 w-8 xl:h-10 xl:w-10 shrink-0 items-center justify-center rounded-xl',
                 accent.iconWrap,
               )}
             >
-              <AccentIcon className="h-5 w-5" />
+              <AccentIcon className="h-4 w-4 xl:h-5 xl:w-5" />
             </span>
             <div className="min-w-0 flex-1">
               <div className={cn('text-[10px] font-semibold uppercase tracking-[0.16em]', accent.eyebrow)}>
@@ -1504,9 +1530,9 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
           </div>
 
           {isEmpty ? (
-            <div className="flex flex-1 items-center border-t border-dashed pt-3 lg:border-0 lg:pt-0">
+            <div className="flex flex-1 items-center border-t border-dashed pt-3 xl:border-0 xl:pt-0">
               {divider}
-              <p className="text-sm text-muted-foreground lg:pl-6">
+              <p className="text-sm text-muted-foreground xl:pl-6">
                 No coverage details on file yet — add a carrier, plan, and effective date to
                 complete this member&apos;s snapshot.
               </p>
@@ -1519,10 +1545,12 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
                   want everything at a glance; the earlier three-rail layout
                   stacked one field per row and left two rails mostly empty. */}
               <div
-                className="grid flex-1 gap-x-6 gap-y-2 border-t border-dashed pt-3 lg:border-0 lg:pt-0"
+                className="grid flex-1 gap-x-4 gap-y-1.5 border-t border-dashed pt-2 xl:gap-x-6 xl:gap-y-2 xl:border-0 xl:pt-0"
                 style={{
+                  // RP-6: 8.75rem packs 2 columns at 390 and 4 at 1024 —
+                  // 13rem collapsed both to a single tall column.
                   gridTemplateColumns:
-                    'repeat(auto-fill, minmax(min(100%, 13rem), 1fr))',
+                    'repeat(auto-fill, minmax(min(100%, 8.75rem), 1fr))',
                 }}
               >
                 {heroProductPlanSnapshotFields.map((field) =>
@@ -1530,6 +1558,13 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
                     row: true,
                     tightLabel: true,
                     readOnlyView: !readOnly,
+                    // Phone glance keeps the FIRST populated plan/product cell
+                    // and any member-id/number cell (the member # is part of
+                    // the glance set wherever the module stores it).
+                    className: snapshotCellPhoneClass(
+                      field.key,
+                      field.key === firstPopulatedPlanKey || /member.?(number|id)$/i.test(field.key),
+                    ),
                     // Capacity aliases ("Health Insurance") must not read as a
                     // Membership / plan name — show the empty placeholder instead.
                     displayValue: coerceCoverageSnapshotFieldValue(
@@ -1544,6 +1579,7 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
                     row: true,
                     tightLabel: true,
                     readOnlyView: !readOnly,
+                    className: snapshotCellPhoneClass(heroStartDateField.key, true),
                   })}
                 {heroReferralSnapshotFields.map((field) => {
                   // "Who enrolled" wears ONE label everywhere (matches the
@@ -1558,6 +1594,11 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
                     row: true,
                     tightLabel: true,
                     readOnlyView: !readOnly,
+                    // Phone glance: who enrolled + member id; referral context is md+.
+                    className: snapshotCellPhoneClass(
+                      field.key,
+                      field.key === heroEnrolledByField?.key || field.key === heroMemberIdField?.key,
+                    ),
                     ...(enrolledBy
                       ? { label: enrolledBy.label, labelTitle: enrolledBy.title }
                       : {}),

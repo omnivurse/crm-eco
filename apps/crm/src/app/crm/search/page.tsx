@@ -5,6 +5,13 @@ import { getCurrentProfile } from '@/lib/crm/queries';
 import { createClient } from '@/lib/supabase-server';
 import { notFound } from 'next/navigation';
 import { moduleChipClass } from '@/components/crm/records/v2/tokens';
+import {
+  resolveSearchRows,
+  searchRowDisplayTitle,
+  type GlobalSearchRow,
+} from '@/lib/crm/record-search';
+import { getRecordSearchMatches } from '@/lib/crm/search-match';
+import { SearchMatchChips } from '@/components/crm/records/SearchMatchChips';
 
 interface PageProps {
   searchParams: Promise<{ q?: string; module?: string }>;
@@ -18,20 +25,8 @@ const MODULE_ICONS: Record<string, React.ReactNode> = {
 };
 
 
-interface SearchRecord {
-  id: string;
-  title: string | null;
-  email: string | null;
-  phone: string | null;
-  status: string | null;
-  data: Record<string, unknown>;
-  crm_modules: {
-    id: string;
-    key: string;
-    name: string;
-    name_plural: string | null;
-  };
-}
+/** Same cap as the palette API's default so "View all results" never shows fewer. */
+const PAGE_RESULT_LIMIT = 50;
 
 async function SearchResults({ query, moduleFilter }: { query: string; moduleFilter?: string }) {
   let profile;
@@ -45,23 +40,18 @@ async function SearchResults({ query, moduleFilter }: { query: string; moduleFil
 
   const supabase = await createClient();
 
-  let searchQuery = (await supabase)
-    .from('crm_records')
-    .select(`
-      id, title, email, phone, status, data,
-      crm_modules!inner ( id, key, name, name_plural )
-    `)
-    .eq('org_id', profile.organization_id)
-    .textSearch('search', query, { type: 'websearch', config: 'english' })
-    .limit(50);
-
-  if (moduleFilter) {
-    searchQuery = searchQuery.eq('crm_modules.key', moduleFilter);
-  }
-
-  const { data: records, error } = await searchQuery;
-
-  if (error) {
+  // NV-4: the SAME resolver the ⌘K palette uses (/api/crm/search) — phone
+  // format variants, member #, typo-tolerant names — scoped by the same
+  // profile.organization_id, so "View all results" lists the same people.
+  let results: GlobalSearchRow[];
+  try {
+    results = await resolveSearchRows(supabase, profile.organization_id, {
+      query,
+      moduleFilter: moduleFilter?.trim() || null,
+      limit: PAGE_RESULT_LIMIT,
+    });
+  } catch (err) {
+    console.error('[Search] resolveSearchRows failed:', err);
     return (
       <div className="text-center py-12">
         <p className="text-red-500">Search failed. Please try a different query.</p>
@@ -69,12 +59,10 @@ async function SearchResults({ query, moduleFilter }: { query: string; moduleFil
     );
   }
 
-  const results = (records || []) as unknown as SearchRecord[];
-
-  // Group by module
-  const grouped: Record<string, SearchRecord[]> = {};
+  // Group by module (rank order preserved within each group)
+  const grouped: Record<string, GlobalSearchRow[]> = {};
   for (const r of results) {
-    const key = r.crm_modules?.key || 'unknown';
+    const key = r.module_key || 'unknown';
     if (!grouped[key]) grouped[key] = [];
     grouped[key].push(r);
   }
@@ -101,8 +89,8 @@ async function SearchResults({ query, moduleFilter }: { query: string; moduleFil
       </p>
 
       {Object.entries(grouped).map(([moduleKey, moduleRecords]) => {
-        const mod = moduleRecords[0]?.crm_modules;
-        const moduleName = mod?.name_plural || mod?.name || moduleKey;
+        const mod = moduleRecords[0];
+        const moduleName = mod?.module_name_plural || mod?.module_name || moduleKey;
         const colorClass = moduleChipClass(moduleKey);
         const icon = MODULE_ICONS[moduleKey] || <Search className="w-4 h-4" />;
 
@@ -120,14 +108,21 @@ async function SearchResults({ query, moduleFilter }: { query: string; moduleFil
                 const data = record.data || {};
                 const firstName = data.first_name as string || '';
                 const lastName = data.last_name as string || '';
-                const displayName = [firstName, lastName].filter(Boolean).join(' ') || record.title || 'Untitled';
+                const displayName = [firstName, lastName].filter(Boolean).join(' ') || searchRowDisplayTitle(record);
                 const email = record.email || data.email as string || '';
                 const phone = record.phone || data.phone as string || '';
+                // Same "why did this match?" chips as the palette row.
+                const matches = getRecordSearchMatches(
+                  { title: record.title, email: record.email, phone: record.phone, status: record.status, data },
+                  query,
+                  { maxMatches: 3 },
+                );
 
                 return (
                   <Link
                     key={record.id}
                     href={`/crm/r/${record.id}`}
+                    data-testid="crm-search-result"
                     className="flex items-center gap-4 px-5 py-3 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group"
                   >
                     <div className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-sm font-medium text-slate-600 dark:text-slate-300 shrink-0">
@@ -146,6 +141,7 @@ async function SearchResults({ query, moduleFilter }: { query: string; moduleFil
                           </span>
                         )}
                       </div>
+                      <SearchMatchChips matches={matches} className="mt-1" />
                     </div>
                   </Link>
                 );

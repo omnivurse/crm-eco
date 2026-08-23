@@ -299,8 +299,9 @@ test.describe('persona walk (D12)', () => {
         // "Pat Pending" — both layouts are in the DOM, so match the visible copy.
         const [first, last] = pat.name.split(' ');
         const patText = page.getByText(new RegExp(`^${first}(\\s+${last})?$`)).locator('visible=true');
-        // Pending sorts created_at desc, so the oldest row is last; the mobile
-        // card list is virtualised — scrolling (not counted) renders it.
+        // The Pending chip sorts created_at asc (TE-3b), so the oldest row is
+        // first; the mobile card list is virtualised — scrolling (not counted)
+        // renders it when it is not.
         walk.note('scrollSteps', await revealByScrolling(patText));
         await expect(patText.first()).toBeVisible({ timeout: 20_000 });
         // Only a VISIBLE tel: anchor counts — the mobile card list (md:hidden) is in

@@ -265,6 +265,7 @@ export const InlineFieldEditor = memo(function InlineFieldEditor({
 
   if (!editing) {
     return (
+      <>
       <span
         role="button"
         tabIndex={0}
@@ -302,6 +303,14 @@ export const InlineFieldEditor = memo(function InlineFieldEditor({
           <Pencil className="w-3 h-3 text-slate-300 dark:text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
         )}
       </span>
+      {/* RP-M1 / D7: the silent emerald check is the visual voice; this
+          always-mounted polite live region makes it perceivable to AT. It is
+          a sibling, not a child, of the role=button span (button children are
+          presentational, so a nested status would be ignored). No toast. */}
+      <span role="status" aria-live="polite" className="sr-only" data-testid="crm-inline-save-status">
+        {isSaved ? 'Saved' : ''}
+      </span>
+      </>
     );
   }
 

@@ -193,7 +193,7 @@ export function DataPrivacyPanel({
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      toast.success('Record exported');
+      toast.success(toastCopy.counted('record', 1, 'Exported'));
     } catch (err) {
       toast.error(toastCopy.failed('export the record', err, 'Try again'));
       console.error(err);
@@ -202,7 +202,7 @@ export function DataPrivacyPanel({
 
   const handleRequestErasure = useCallback(async () => {
     if (initial.erasure_requested_at) {
-      toast.info('Erasure already requested for this record');
+      toast.info(toastCopy.failed('request erasure', 'it was already requested for this record'));
       return;
     }
     const confirmed = await confirmDialog({

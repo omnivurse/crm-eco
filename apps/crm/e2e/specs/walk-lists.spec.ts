@@ -8,9 +8,10 @@
  * honesty, select-all under the rail filter) and record pass=false today.
  */
 import { expect, test } from '../walk-fixture';
-import { FIXTURE } from '../env';
+import { FIXTURE, walkRole } from '../env';
 import { assertTrapsInTest } from '../traps';
-import { firstInt, isMobileProject, parseShowing, pathWithQuery, runSuffix, toastTitles, trackRequests } from '../walk-helpers';
+import { armPendingStateLatch, firstInt, isMobileProject, parseShowing, pathWithQuery, readPendingStateLatch, runSuffix, toastTitles, trackRequests } from '../walk-helpers';
+import { DISPLAY_ONLY_FIELD_BADGE, DISPLAY_ONLY_FIELD_HINT } from '../../src/lib/crm/list-field-policy';
 
 const LIST = `/crm/modules/${FIXTURE.anchor.moduleKey}`;
 const PENDING_CHIP = '[data-testid="crm-lane-chip"][data-lane="lane-pending"]';
@@ -94,17 +95,14 @@ test.describe('lists walk', () => {
         await expect(pendingLane).toBeVisible({ timeout: 30_000 });
         await walk.click(pendingLane, 'Pending lane');
         const before = await readShowing();
-        const pendingState = page.locator('[aria-busy="true"], [role="progressbar"], .animate-pulse');
+        // The pending state (LS-3: useTransition → aria-busy / progressbar) can
+        // be shorter than a round-trip to the runner on a warm dev server, so a
+        // poll from the outside races it. Arm a MutationObserver in the page
+        // BEFORE Apply; it latches the first matching node (present or added)
+        // and the runner reads the latch after the click.
+        await armPendingStateLatch(page);
         await walk.click(page.getByTestId('crm-filter-apply'), 'Apply');
-        let sawPending = false;
-        const deadline = Date.now() + 2_000;
-        while (Date.now() < deadline) {
-          if ((await pendingState.count()) > 0) {
-            sawPending = true;
-            break;
-          }
-          await page.waitForTimeout(50);
-        }
+        const sawPending = await readPendingStateLatch(page, 2_000);
         walk.note('pendingStateSeen', sawPending);
         await expect.poll(async () => (await readShowing())?.total, { timeout: 30_000 }).not.toBe(before?.total);
         const after = await readShowing();
@@ -311,3 +309,201 @@ test.describe('lists walk', () => {
     );
   });
 });
+
+// ---------------------------------------------------------------------------
+// LS-4 — members twin-overlay fields are display-only: the rail refuses them
+// with the user-voice reason and the chips-bar Sort menu never offers them.
+// ---------------------------------------------------------------------------
+test.describe('members display-only fields (LS-4)', () => {
+  test('rail shows Plan as display-only; Sort menu skips twin fields', async ({ page, request, bareRequest, walk }, testInfo) => {
+    const project = testInfo.project.name;
+    test.skip(isMobileProject(project), 'docked rail + chips bar are lg+ chrome');
+    await assertTrapsInTest({ page, request, bareRequest, project });
+    await page.goto('/crm/modules/members', { waitUntil: 'domcontentloaded' });
+    const rail = page.locator('[data-testid="crm-filter-rail"][data-state="open"]');
+    await expect(rail).toBeVisible({ timeout: 30_000 });
+
+    await walk.task(
+      'LS-4-rail-display-only',
+      "Members rail: Plan/Product/Effective date rows are disabled with the 'display only' badge + reason",
+      1,
+      async () => {
+        const fieldsTrigger = rail.getByRole('button', { name: /^Filter By Fields/ });
+        if ((await fieldsTrigger.count()) > 0 && (await fieldsTrigger.getAttribute('aria-expanded')) === 'false') {
+          await walk.click(fieldsTrigger, 'expand Filter By Fields');
+        }
+        const displayOnlyRows = rail.locator('button[data-display-only]');
+        const labels = (await displayOnlyRows.allTextContents()).map((t) => t.replace(/\s+/g, ' ').trim());
+        walk.note('displayOnlyRows', labels.join(' | ') || '(none)');
+        expect(labels.length, 'members must mark twin-overlay fields display-only').toBeGreaterThan(0);
+        expect(labels.some((l) => /plan|product/i.test(l)), 'a Plan/Product row must be display-only').toBe(true);
+        const planRow = displayOnlyRows.filter({ hasText: /plan|product/i }).first();
+        await expect(planRow).toBeDisabled();
+        walk.note('reasonTitle', await planRow.getAttribute('title'));
+        expect(await planRow.getAttribute('title')).toBe(DISPLAY_ONLY_FIELD_HINT);
+        await expect(planRow.getByText(DISPLAY_ONLY_FIELD_BADGE)).toBeVisible();
+      },
+      { soft: true },
+    );
+
+    await walk.task(
+      'LS-4-sort-menu',
+      'Sort menu on /crm/modules/members never lists Plan / Effective date',
+      1,
+      async () => {
+        // The chips bar renders once a filter or sort is active — arrive sorted.
+        await page.goto('/crm/modules/members?sortField=created_at&sortDir=desc', { waitUntil: 'domcontentloaded' });
+        const sortButton = page.locator('button:visible').filter({ hasText: /^Sort:/ }).first();
+        await expect(sortButton, 'the chips-bar Sort menu must exist').toBeVisible({ timeout: 30_000 });
+        await walk.click(sortButton, 'Sort menu');
+        const items = (await page.getByRole('menuitem').allTextContents()).map((t) => t.replace(/\s+/g, ' ').trim());
+        walk.note('sortItems', items.join(' | '));
+        expect(items.length).toBeGreaterThan(0);
+        expect(
+          items.some((l) => /plan|product|effective/i.test(l)),
+          'display-only twin fields must not be sortable',
+        ).toBe(false);
+        await walk.press('Escape', 'close Sort menu');
+      },
+      { soft: true },
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// LS-5 — after a bulk status change the lane chips recount on the next paint.
+// Runs against a throwaway walk record so the seeded lanes stay untouched.
+// ---------------------------------------------------------------------------
+test.describe('lane-chip recount after bulk status (LS-5)', () => {
+  test('bulk Pending→Active moves the chip counts', async ({ page, request, bareRequest, walk }, testInfo) => {
+    const project = testInfo.project.name;
+    test.skip(isMobileProject(project), 'bulk bar + chips are lg+ chrome');
+    // PATCH /api/crm/records/bulk requires crm_admin | crm_manager.
+    test.skip(walkRole() !== 'admin', 'run with WALK_ROLE=admin (bulk update is manager/admin-only)');
+    await assertTrapsInTest({ page, request, bareRequest, project });
+    const suffix = runSuffix();
+
+    // Pat Pending's own status string = a guaranteed Pending-lane vocabulary value.
+    const searchRes = await request.get(`/api/crm/search?q=${FIXTURE.pendingOldest.phone}&limit=5`);
+    const searchBody = (await searchRes.json()) as { results?: Array<{ subtitle?: string }> };
+    const pendingStatus = searchBody.results?.[0]?.subtitle?.split(' · ').pop()?.trim() || 'Pending';
+
+    const modsRes = await request.get('/api/crm/modules');
+    const mods = (await modsRes.json()) as Array<{ id: string; org_id: string; key: string }>;
+    const contacts = mods.find((m) => m.key === 'contacts')!;
+    const createRes = await request.post('/api/crm/records', {
+      data: {
+        org_id: contacts.org_id,
+        module_id: contacts.id,
+        status: pendingStatus,
+        data: {
+          first_name: 'Walk',
+          last_name: `Recount${suffix}`,
+          contact_status: pendingStatus,
+          // DE-6 guard: a Pending create must carry a coverage start date.
+          sharing_effective_date: FIXTURE.anchor.sharingEffectiveDate,
+          walk_fixture: 'true',
+        },
+      },
+    });
+    expect(createRes.status(), 'fixture create for the recount walk').toBeLessThan(300);
+    const created = (await createRes.json()) as { id?: string; record?: { id?: string } };
+    const recordId = created.id ?? created.record?.id;
+    expect(recordId).toBeTruthy();
+
+    const chip = (lane: string) => page.locator(`[data-testid="crm-lane-chip"][data-lane="${lane}"]`);
+    const chipCount = async (lane: string) => {
+      await expect(chip(lane)).toBeVisible({ timeout: 30_000 });
+      await expect(chip(lane)).not.toHaveAttribute('aria-busy', 'true', { timeout: 30_000 });
+      return firstInt((await chip(lane).textContent()) ?? '');
+    };
+
+    try {
+      // The search narrows the table to OUR row; chip counts stay module-wide.
+      await page.goto(`${LIST}?search=Recount${suffix}`, { waitUntil: 'domcontentloaded' });
+      await expect(page.getByTestId('crm-pager-showing').first()).toBeVisible({ timeout: 30_000 });
+      const pendingBefore = await chipCount('lane-pending');
+      const activeBefore = await chipCount('lane-active');
+
+      await walk.task(
+        'LS-5-bulk-recount',
+        'Select the row → Status → Active → chips recount on the next paint (5 clicks)',
+        5,
+        async () => {
+          walk.note('pendingBefore', pendingBefore);
+          walk.note('activeBefore', activeBefore);
+          expect(pendingBefore, 'the walk row must land in the Pending lane count').not.toBeNull();
+          await walk.click(page.getByRole('checkbox', { name: 'Select all rows' }), 'select the row');
+          const statusButton = page.locator('button:visible').filter({ hasText: /^Status$/ }).first();
+          await expect(statusButton).toBeVisible();
+          await walk.click(statusButton, 'Status (bulk bar)');
+          await walk.click(page.getByRole('combobox', { name: 'New status' }), 'New status');
+          await walk.click(page.getByRole('option', { name: /^Active\b/ }).first(), 'Active');
+          await walk.click(page.getByRole('button', { name: 'Update Status' }), 'Update Status');
+          await expect(toastTitles(page).filter({ hasText: 'Status updated' }).first()).toBeVisible({ timeout: 30_000 });
+          await expect
+            .poll(async () => chipCount('lane-pending'), { timeout: 30_000, message: 'pending chip must drop by 1' })
+            .toBe((pendingBefore ?? 0) - 1);
+          const activeAfter = await chipCount('lane-active');
+          walk.note('pendingAfter', await chipCount('lane-pending'));
+          walk.note('activeAfter', activeAfter);
+          expect(activeAfter, 'active chip must gain the row').toBe((activeBefore ?? 0) + 1);
+        },
+        { soft: true },
+      );
+    } finally {
+      await request.delete(`/api/crm/records/${recordId}`);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// LS-8 — rail keyboard: Enter in a value input applies the draft, Esc restores
+// it to the applied set.
+// ---------------------------------------------------------------------------
+test.describe('rail keyboard (LS-8)', () => {
+  test('Enter applies, Esc restores the draft', async ({ page, request, bareRequest, walk }, testInfo) => {
+    const project = testInfo.project.name;
+    test.skip(isMobileProject(project), 'docked rail is lg+ chrome');
+    await assertTrapsInTest({ page, request, bareRequest, project });
+    await page.goto(LIST, { waitUntil: 'domcontentloaded' });
+    const showing = () => page.getByTestId('crm-pager-showing').first();
+    await expect(showing()).toBeVisible({ timeout: 30_000 });
+    const rail = page.locator('[data-testid="crm-filter-rail"][data-state="open"]');
+    await expect(rail).toBeVisible();
+
+    await walk.task(
+      'LS-8-enter-esc',
+      'First Name filter: type → Enter applies (URL + pager narrow); edit → Esc restores the applied value',
+      2,
+      async () => {
+        const fieldsTrigger = rail.getByRole('button', { name: /^Filter By Fields/ });
+        if ((await fieldsTrigger.count()) > 0 && (await fieldsTrigger.getAttribute('aria-expanded')) === 'false') {
+          await walk.click(fieldsTrigger, 'expand Filter By Fields');
+        }
+        const firstName = rail.locator('button').filter({ hasText: /^First Name/ }).first();
+        await expect(firstName).toBeVisible();
+        await walk.click(firstName, 'First Name field');
+        const valueInput = rail.locator('input[placeholder="Value…"]').first();
+        await expect(valueInput).toBeVisible();
+        const before = parseShowing((await showing().textContent()) ?? '')?.total ?? null;
+        await walk.type(valueInput, FIXTURE.anchor.firstName, 'type the value');
+        await walk.press('Enter', 'Enter applies');
+        await expect.poll(async () => parseShowing((await showing().textContent()) ?? '')?.total, { timeout: 30_000 }).not.toBe(before);
+        walk.note('urlAfterEnter', pathWithQuery(page));
+        expect(pathWithQuery(page)).toMatch(/filters=/);
+        const applied = parseShowing((await showing().textContent()) ?? '')?.total ?? null;
+        walk.note('totalAfterEnter', applied);
+        expect(applied, 'Enter must apply the draft').not.toBeNull();
+        expect(applied!).toBeLessThan(before ?? Number.MAX_SAFE_INTEGER);
+        // Esc restores the dirty draft to the applied value.
+        await walk.type(valueInput, 'Zzz-draft-edit', 'dirty the draft');
+        await walk.press('Escape', 'Esc restores');
+        await expect.poll(() => valueInput.inputValue(), { timeout: 10_000 }).toBe(FIXTURE.anchor.firstName);
+        walk.note('valueAfterEsc', await valueInput.inputValue());
+      },
+      { soft: true },
+    );
+  });
+});
+

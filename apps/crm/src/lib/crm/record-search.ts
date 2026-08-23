@@ -9,6 +9,8 @@
  * (chained `.or()` groups are AND'd).
  */
 
+import { isConvertedLeadRow } from '@crm-eco/lib';
+
 export {
   applyHideConvertedLeadsFilter,
   isConvertedLeadRow,
@@ -53,7 +55,6 @@ const SEARCH_KEY_PRIORITY = [
 const PRIORITY_RANK = new Map(SEARCH_KEY_PRIORITY.map((k, i) => [k, i]));
 
 export async function fetchModuleDataJsonKeysForSearch(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   supabase: any,
   moduleId: string,
   maxKeys = 80,
@@ -80,7 +81,6 @@ export async function fetchModuleDataJsonKeysForSearch(
  * Field keys across all (or one) module(s) in an org — for global CRM search fallbacks.
  */
 export async function fetchOrgDataJsonKeysForSearch(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   supabase: any,
   orgId: string,
   moduleKey: string | null = null,
@@ -222,7 +222,6 @@ export function mergeUniqueByIdPreserveOrder<T extends { id: string }>(
  * Module-scoped search loads crm_fields keys; global spotlight uses a fixed core set.
  */
 export async function resolveSearchDataJsonKeys(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   supabase: any,
   orgId: string,
   moduleKey: string | null,
@@ -413,4 +412,340 @@ export function applyCrmRecordTextSearch<Q extends OrQuery>(
     q = q.or(buildWordSearchOrClause(p, dataJsonKeys));
   }
   return q as Q;
+}
+
+// ---------------------------------------------------------------------------
+// Global search resolver (NV-4) — ONE resolver for the ⌘K palette
+// (/api/crm/search) and the /crm/search page. Hybrid full-text + trigram RPC
+// (`crm_smart_search`), digit-normalised phone lookup (`crm_phone_lookup`),
+// member-# identifier pass, ilike fallbacks when an RPC is missing. Both
+// callers scope by `profile.organization_id`; trashed rows are excluded on
+// every path; converted leads are dropped (audit trail only).
+// ---------------------------------------------------------------------------
+
+/**
+ * Row shape returned by the `crm_smart_search` Postgres RPC (and what every
+ * other path is normalised to). Mirrors the function's RETURNS TABLE (...).
+ */
+export interface GlobalSearchRow {
+  id: string;
+  title: string | null;
+  email: string | null;
+  phone: string | null;
+  status: string | null;
+  module_id: string;
+  data: Record<string, unknown> | null;
+  module_key: string;
+  module_name: string;
+  module_name_plural: string | null;
+  match_type: 'exact' | 'fuzzy';
+  rank: number;
+}
+
+export interface ResolveSearchRowsOptions {
+  query: string;
+  /** `crm_modules.key` to narrow to, or null for every module. */
+  moduleFilter?: string | null;
+  /** Max rows (callers clamp; the API caps at 100). */
+  limit: number;
+  /** Trigram similarity threshold 0..1 (lower = more hits). Default 0.2. */
+  threshold?: number;
+}
+
+/** Default trigram similarity threshold shared by both callers. */
+export const GLOBAL_SEARCH_DEFAULT_THRESHOLD = 0.2;
+
+/**
+ * Below this many RPC hits we also run the identifier/address ilike pass.
+ * A name search that already returns a full page skips the extra query.
+ */
+const SUPPLEMENT_BELOW = 5;
+
+/** Phone-ish input: ≥4 digits, ≤15, (almost) nothing but digits/separators, no '@'. */
+function classifyDigits(searchQuery: string): { digits: string; phoneOnly: boolean; hasPhoneRun: boolean } {
+  const digits = searchQuery.replace(/[^0-9]/g, '');
+  const compactLen = Math.max(searchQuery.replace(/\s/g, '').length, 1);
+  const digitRatio = digits.length / compactLen;
+  const hasPhoneRun = digits.length >= 4 && digits.length <= 15 && !searchQuery.includes('@');
+  return { digits, hasPhoneRun, phoneOnly: hasPhoneRun && digitRatio >= 0.88 };
+}
+
+/**
+ * Resolve the rows a global search should show, in rank order, with converted
+ * leads removed. Never throws on a failed secondary pass (logged, skipped).
+ *
+ *  - Phone-only query (digits / formatted phone): `crm_phone_lookup`; a bare
+ *    digit run ALSO runs the member-# identifier pass (PIFH member numbers are
+ *    all-digit) and merges it behind the phone hits.
+ *  - Anything else: `crm_smart_search` (typo-tolerant), supplemented by the
+ *    JSONB ilike pass when thin, plus phone hits when the text carries a
+ *    phone fragment ("Jane 5551212").
+ */
+export async function resolveSearchRows(
+  supabase: any,
+  orgId: string,
+  opts: ResolveSearchRowsOptions,
+): Promise<GlobalSearchRow[]> {
+  const searchQuery = opts.query.trim();
+  if (!searchQuery) return [];
+  const moduleFilter = opts.moduleFilter && opts.moduleFilter.trim().length > 0 ? opts.moduleFilter.trim() : null;
+  const limit = opts.limit;
+  const threshold = opts.threshold ?? GLOBAL_SEARCH_DEFAULT_THRESHOLD;
+  const { digits, phoneOnly, hasPhoneRun } = classifyDigits(searchQuery);
+
+  let rows: GlobalSearchRow[] = [];
+
+  if (phoneOnly) {
+    // PIFH member numbers are all-digit, so "1234567" is a phone fragment
+    // AND a possible member number. Run both; phone hits stay first.
+    const identifierPass = isNumericIdentifierQuery(searchQuery)
+      ? identifierSearch(supabase, orgId, { query: searchQuery, moduleFilter, limit }).catch((e) => {
+          console.warn('[search] identifier pass failed:', e);
+          return [] as GlobalSearchRow[];
+        })
+      : Promise.resolve([] as GlobalSearchRow[]);
+    const [phoneRows, identifierRows] = await Promise.all([
+      phoneSearch(supabase, orgId, { rawQuery: searchQuery, digits, moduleFilter, limit }),
+      identifierPass,
+    ]);
+    rows = mergeUniqueByIdPreserveOrder(phoneRows, identifierRows, limit);
+  } else {
+    rows = await smartSearch(supabase, orgId, { query: searchQuery, moduleFilter, limit, threshold });
+
+    if (hasPhoneRun) {
+      const phoneRows = await phoneSearch(supabase, orgId, {
+        rawQuery: searchQuery,
+        digits,
+        moduleFilter,
+        limit: Math.min(limit, 40),
+      });
+      rows = mergeUniqueByIdPreserveOrder(rows, phoneRows, limit);
+    }
+  }
+
+  // Converted leads are intentionally kept as an audit trail, but they must
+  // not surface in search beside the Contact they became — that pairing is
+  // exactly what looks like a duplicate to reps. The lead stays reachable
+  // from the contact's "converted from" link.
+  return rows.filter((record) => !isConvertedLeadRow(record));
+}
+
+/**
+ * Call the typo-tolerant `crm_smart_search` RPC.
+ * Falls back to a simple ilike on title/email if the RPC is unavailable
+ * (e.g. on a database where the migration hasn't run yet).
+ */
+async function smartSearch(
+  supabase: any,
+  orgId: string,
+  opts: { query: string; moduleFilter: string | null; limit: number; threshold: number },
+): Promise<GlobalSearchRow[]> {
+  const { data, error } = await supabase.rpc('crm_smart_search', {
+    p_org_id: orgId,
+    p_query: opts.query,
+    p_module_key: opts.moduleFilter,
+    p_limit: opts.limit,
+    p_similarity_threshold: opts.threshold,
+  });
+
+  if (!error && Array.isArray(data)) {
+    const rows = data as GlobalSearchRow[];
+
+    // The RPC matches on `crm_records.search`, a GENERATED tsvector whose
+    // expression covers names/phone/email but NOT the identifier and address
+    // keys Zoho-era rows are actually looked up by — searching a real member
+    // number returned zero results. When the RPC comes back (near-)empty, run
+    // the JSONB ilike pass, which does cover those keys, and merge.
+    // Only on a thin result set, so ordinary name searches cost one query.
+    if (rows.length >= SUPPLEMENT_BELOW) return rows;
+
+    const supplement = await ilikeFallback(supabase, orgId, opts).catch((e) => {
+      console.warn('[search] identifier supplement failed:', e);
+      return [] as GlobalSearchRow[];
+    });
+    if (supplement.length === 0) return rows;
+
+    // RPC hits keep their ranking and stay first; supplement fills in behind.
+    return mergeUniqueByIdPreserveOrder(rows, supplement, opts.limit);
+  }
+
+  if (error) {
+    console.warn('[search] crm_smart_search RPC failed, falling back to ilike:', error.message);
+  }
+
+  return ilikeFallback(supabase, orgId, opts);
+}
+
+/**
+ * Phone search.
+ *
+ * Primary path: `crm_phone_lookup` RPC. The RPC strips non-digits from both
+ * sides before comparing, so a query of `8005558888` matches DB rows stored
+ * as `(800) 555-8888`, `1-800-555-8888`, `+1 800 555 8888`, etc., and also
+ * scans the common `data->>'…phone…'` keys.
+ *
+ * Fallback (RPC not deployed yet): several common formatted variants of the
+ * same number against the indexed `phone` column plus the JSONB phone keys.
+ */
+async function phoneSearch(
+  supabase: any,
+  orgId: string,
+  opts: { rawQuery: string; digits: string; moduleFilter: string | null; limit: number },
+): Promise<GlobalSearchRow[]> {
+  const { data: rpcData, error: rpcError } = await supabase.rpc('crm_phone_lookup', {
+    p_org_id: orgId,
+    p_query: opts.digits,
+    p_module_key: opts.moduleFilter,
+    p_limit: opts.limit,
+  });
+
+  if (!rpcError && Array.isArray(rpcData)) {
+    return rpcData as GlobalSearchRow[];
+  }
+
+  if (rpcError) {
+    console.warn('[search] crm_phone_lookup RPC failed, falling back to multi-format ilike:', rpcError.message);
+  }
+
+  return phoneIlikeFallback(supabase, orgId, opts);
+}
+
+const GLOBAL_SEARCH_SELECT = `
+      id, title, email, phone, status, module_id, data,
+      crm_modules!inner ( id, key, name, name_plural )
+    `;
+
+/** Normalise a `crm_records` + `crm_modules` join row to the RPC row shape. */
+function joinRowToSearchRow(
+  row: any,
+  rank: number,
+): GlobalSearchRow {
+  return {
+    id: row.id,
+    title: row.title,
+    email: row.email,
+    phone: row.phone,
+    status: row.status,
+    module_id: row.module_id,
+    data: row.data,
+    module_key: row.crm_modules.key,
+    module_name: row.crm_modules.name,
+    module_name_plural: row.crm_modules.name_plural,
+    match_type: 'exact',
+    rank,
+  };
+}
+
+/**
+ * Multi-format phone fallback used when `crm_phone_lookup` is unavailable.
+ * PostgREST's `.or()` can't regexp_replace inline, so enumerate the common
+ * presentations and ilike-substring each one.
+ */
+async function phoneIlikeFallback(
+  supabase: any,
+  orgId: string,
+  opts: { rawQuery: string; digits: string; moduleFilter: string | null; limit: number },
+): Promise<GlobalSearchRow[]> {
+  const dataJsonKeys = await resolveSearchDataJsonKeys(supabase, orgId, opts.moduleFilter);
+  const filter = buildPhoneSearchOrFilter(opts.rawQuery, { dataJsonKeys });
+  if (!filter) return [];
+
+  let qb = supabase
+    .from('crm_records')
+    .select(GLOBAL_SEARCH_SELECT)
+    .eq('org_id', orgId)
+    // Keep soft-deleted (trashed) records out of the phone fallback — the
+    // smart-search RPC already excludes them; this path must match.
+    .is('deleted_at', null)
+    .or(filter)
+    .limit(opts.limit);
+
+  if (opts.moduleFilter) {
+    qb = qb.eq('crm_modules.key', opts.moduleFilter);
+  }
+
+  const { data, error } = await qb;
+  if (error) {
+    console.error('[search] phone ilike fallback failed:', error);
+    return [];
+  }
+  return (data || []).map((row: any) => joinRowToSearchRow(row, 1));
+}
+
+/**
+ * Identifier pass for numeric queries: substring ilike on the member-id JSONB
+ * keys (`IDENTIFIER_SEARCH_JSON_KEYS`). Org-scoped, trashed rows excluded,
+ * same row shape as the other paths so results merge cleanly.
+ */
+async function identifierSearch(
+  supabase: any,
+  orgId: string,
+  opts: { query: string; moduleFilter: string | null; limit: number },
+): Promise<GlobalSearchRow[]> {
+  const filter = buildIdentifierSearchOrFilter(opts.query);
+  if (!filter) return [];
+
+  let qb = supabase
+    .from('crm_records')
+    .select(GLOBAL_SEARCH_SELECT)
+    .eq('org_id', orgId)
+    .is('deleted_at', null)
+    .or(filter)
+    // Stable order so an over-limit identifier match returns the same rows
+    // on every call (most recently touched first).
+    .order('updated_at', { ascending: false })
+    .limit(opts.limit);
+
+  if (opts.moduleFilter) {
+    qb = qb.eq('crm_modules.key', opts.moduleFilter);
+  }
+
+  const { data, error } = await qb;
+  if (error) {
+    console.error('[search] identifier pass failed:', error);
+    return [];
+  }
+  return (data || []).map((row: any) => joinRowToSearchRow(row, 0.75));
+}
+
+/**
+ * Last-resort fallback used when the RPC errors out (and the thin-result
+ * supplement). Pure ilike — no fuzzy tolerance, but it still tries multiple
+ * phone formats and the JSONB identifier/address keys.
+ */
+async function ilikeFallback(
+  supabase: any,
+  orgId: string,
+  opts: { query: string; moduleFilter: string | null; limit: number },
+): Promise<GlobalSearchRow[]> {
+  const dataJsonKeys = await resolveSearchDataJsonKeys(supabase, orgId, opts.moduleFilter);
+
+  let qb = supabase
+    .from('crm_records')
+    .select(GLOBAL_SEARCH_SELECT)
+    .eq('org_id', orgId)
+    // Last-resort ilike path must also hide trashed records, matching the
+    // crm_smart_search RPC (202607140004_crm_search_exclude_trashed).
+    .is('deleted_at', null)
+    .limit(opts.limit);
+
+  if (opts.moduleFilter) {
+    qb = qb.eq('crm_modules.key', opts.moduleFilter);
+  }
+
+  qb = applyCrmRecordTextSearch(qb, opts.query, { dataJsonKeys });
+
+  const { data, error } = await qb;
+  if (error) {
+    console.error('[search] ilike fallback failed:', error);
+    return [];
+  }
+  return (data || []).map((row: any) => joinRowToSearchRow(row, 0.5));
+}
+
+/** Display title for a search row: `title`, else first + last name, else "Untitled". */
+export function searchRowDisplayTitle(row: Pick<GlobalSearchRow, 'title' | 'data'>): string {
+  const data = (row.data || {}) as Record<string, unknown>;
+  const fallbackName = [data.first_name, data.last_name].filter(Boolean).join(' ').trim();
+  return row.title?.trim() || fallbackName || 'Untitled';
 }

@@ -190,6 +190,11 @@ function NoteCard({
   );
 }
 
+/** True when the rich-area draft has no visible text (empty, `<p><br></p>`, whitespace). */
+export function isBlankNoteHtml(html: string): boolean {
+  return html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim() === '';
+}
+
 export function NotesPanel({ recordId, notes, orgId, hasLegacyNotes = false }: NotesPanelProps) {
   const router = useRouter();
   const compose = useNoteCompose();
@@ -211,10 +216,18 @@ export function NotesPanel({ recordId, notes, orgId, hasLegacyNotes = false }: N
   // One rule for every entry point (pane button, header button, `n`, deep
   // link): never wipe a draft — a repeat compose while already composing only
   // re-focuses the editor; a fresh open resets + remounts (autoFocus).
-  const openComposer = () => {
+  //
+  // TE-6: a compose request may carry a prefill (note templates). It seeds the
+  // draft only when there is nothing to lose — composer closed, or open with a
+  // blank draft — and does so through a FRESH open (epoch remount + autoFocus)
+  // because the rich area never overwrites a focused editor. The picked note
+  // date survives. A non-empty draft is never overwritten; the request then
+  // only re-focuses the editor exactly like a plain compose.
+  const openComposer = (prefill?: string | null) => {
+    const seeding = !!prefill && (!isAdding || isBlankNoteHtml(newNote));
     const next = openNoteComposer(
       {
-        isAdding,
+        isAdding: seeding ? false : isAdding,
         draft: newNote,
         noteDate: newNoteDate,
         epoch: composeEpoch,
@@ -222,8 +235,8 @@ export function NotesPanel({ recordId, notes, orgId, hasLegacyNotes = false }: N
       },
       localDateInputValue(),
     );
-    setNewNote(next.draft);
-    setNewNoteDate(next.noteDate);
+    setNewNote(seeding ? prefill : next.draft);
+    setNewNoteDate(isAdding ? newNoteDate : next.noteDate);
     setComposeEpoch(next.epoch);
     setComposeFocusSignal(next.focusSignal);
     setIsAdding(next.isAdding);
@@ -231,9 +244,10 @@ export function NotesPanel({ recordId, notes, orgId, hasLegacyNotes = false }: N
 
   useEffect(() => {
     if (!compose || compose.composeNonce === 0) return;
-    openComposer();
+    openComposer(compose.composePrefill);
     // Only react to new compose requests (nonce), not to the helper identity;
     // openComposer is re-created per render so it always sees current state.
+    // The prefill travels with its nonce (set in the same requestCompose call).
   }, [compose?.composeNonce]);
 
   const handleEditSubmit = async () => {
@@ -361,7 +375,7 @@ export function NotesPanel({ recordId, notes, orgId, hasLegacyNotes = false }: N
       {!isAdding ? (
         <Button
           variant="outline"
-          onClick={openComposer}
+          onClick={() => openComposer()}
           className="w-full border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-white/20 hover:bg-slate-50 dark:hover:bg-white/5"
         >
           <Plus className="w-4 h-4 mr-2" />
@@ -603,9 +617,9 @@ export function NotesPanel({ recordId, notes, orgId, hasLegacyNotes = false }: N
           <StickyNote className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-1">No notes yet</h3>
           <p className="text-slate-500 dark:text-slate-400 mb-4">
-            Add a note to keep track of important information
+            The last conversation, next step, and anything the member told you go here.
           </p>
-          <Button type="button" onClick={openComposer}>
+          <Button type="button" onClick={() => openComposer()}>
             <Plus className="w-4 h-4 mr-2" />
             Add first note
           </Button>

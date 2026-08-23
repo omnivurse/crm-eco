@@ -2,7 +2,8 @@ import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { TrendingUp, Info } from 'lucide-react';
-import { getCurrentProfile, getModuleByKey, getRecords, getDealStages, getFieldsForModule } from '@/lib/crm/queries';
+import { getCurrentProfile, getModuleByKey, getAllModules, getRecords, getDealStages, getFieldsForModule } from '@/lib/crm/queries';
+import { disabledModuleRedirect, moduleHref, navigableModules } from '@/lib/crm/nav-profile';
 import { PipelineClient } from './PipelineClient';
 import { PipelineFilterWorkspace } from './PipelineFilterWorkspace';
 import type { CrmRecord, CrmDealStage, CrmModule, CrmField, ViewFilter } from '@/lib/crm/types';
@@ -129,6 +130,24 @@ async function PipelineContent({
     dealsModule = await getModuleByKey(profile.organization_id, 'deals');
   } catch (err) {
     console.error('[Pipeline] Failed to get deals module:', err);
+  }
+
+  // NV-5 / D10: the kanban only exists for an ENABLED deals module. Otherwise
+  // send the user where their people live — the enabled same-name sibling
+  // (PIFH: deals → members) via the shared disabled-module guard, never an
+  // empty board with default stages.
+  if (!dealsModule || dealsModule.is_enabled === false) {
+    let allModules: Awaited<ReturnType<typeof getAllModules>> = [];
+    try {
+      allModules = await getAllModules(profile.organization_id);
+    } catch (err) {
+      console.error('[Pipeline] Failed to list modules for redirect:', err);
+    }
+    const firstEnabled = navigableModules(allModules)[0];
+    const target = dealsModule
+      ? disabledModuleRedirect(dealsModule, allModules)
+      : firstEnabled ? moduleHref(firstEnabled.key) : '/crm';
+    redirect(target ?? '/crm');
   }
 
   let deals: CrmRecord[] = [];

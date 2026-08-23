@@ -29,6 +29,7 @@ import {
   DialogTitle,
 } from '@crm-eco/ui/components/dialog';
 import { toast } from 'sonner';
+import { toastCopy } from '@/lib/crm/toast-copy';
 import {
   EmailComposer,
   type EmailComposerData,
@@ -135,7 +136,7 @@ export function SendEmailDialog({
           console.warn('[SendEmailDialog] activity log error:', logErr);
         }
 
-        toast.success('Email sent');
+        toast.success(toastCopy.counted('email', 1, 'Sent'));
         onOpenChange(false);
         onSent?.();
       } finally {

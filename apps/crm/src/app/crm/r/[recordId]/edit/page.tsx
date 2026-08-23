@@ -564,7 +564,7 @@ export default function EditRecordPage() {
         formRef.current?.reset(latestValuesRef.current);
         isDirtyRef.current = false;
         setIsDirty(false);
-        if (saved) toast.success('Auto-saved', { duration: 2000 });
+        if (saved) toast.success(toastCopy.saved('Changes'), { description: 'Auto-saved', duration: 2000 });
       } catch {
         // silent — user will save manually
       }
@@ -787,7 +787,7 @@ export default function EditRecordPage() {
               {saving ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Saving...
+                  {toastCopy.loadingCopy('Saving')}
                 </>
               ) : (
                 <>
@@ -842,7 +842,7 @@ export default function EditRecordPage() {
           {saving ? (
             <>
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Saving...
+              {toastCopy.loadingCopy('Saving')}
             </>
           ) : (
             <>

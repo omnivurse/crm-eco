@@ -12,7 +12,6 @@ import {
   Mail,
   Phone,
   Inbox,
-  Plus,
   Calendar,
   ExternalLink,
   X,
@@ -21,6 +20,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import type { CrmRecord, CrmField } from '@/lib/crm/types';
+import { ListEmptyStatePanel, useListEmptyState } from './ListView';
 
 interface SplitViewProps {
   records: CrmRecord[];
@@ -32,6 +32,12 @@ interface SplitViewProps {
   onRowClick?: (recordId: string) => void;
   onBulkDelete?: (ids: string[]) => void;
   fillParent?: boolean;
+  /** Filtered total from the server (see `useListEmptyState` in ListView). */
+  totalCount?: number | null;
+  /** Filter count of the active saved view (see `useListEmptyState` in ListView). */
+  activeViewFilterCount?: number | null;
+  /** The server could not load the rows (FB-8: retry, never "Create Record"). */
+  loadError?: boolean;
 }
 
 const STATUS_STYLES: Record<string, { bg: string; text: string; border: string }> = {
@@ -319,8 +325,13 @@ export const SplitView = memo(function SplitView({
   onRowClick,
   onBulkDelete,
   fillParent = false,
+  totalCount,
+  activeViewFilterCount,
+  loadError,
 }: SplitViewProps) {
   const router = useRouter();
+  // FB-8: one filter-aware empty state with ListView / RecordTable.
+  const emptyState = useListEmptyState(records.length, moduleKey, totalCount, activeViewFilterCount, loadError);
   const [activeRecordId, setActiveRecordId] = useState<string | null>(
     records.length > 0 ? records[0].id : null
   );
@@ -402,20 +413,10 @@ export const SplitView = memo(function SplitView({
     }
   }, [activeRecordId]);
 
-  if (records.length === 0) {
+  if (emptyState) {
     return (
-      <div className="glass-card rounded-2xl border border-slate-200 dark:border-white/10 p-12 text-center">
-        <div className="p-4 rounded-full bg-slate-100 dark:bg-slate-800/50 inline-block mb-4">
-          <Inbox className="w-10 h-10 text-slate-400 dark:text-slate-600" />
-        </div>
-        <p className="text-lg font-medium text-slate-900 dark:text-white mb-1">No records found</p>
-        <p className="text-sm text-slate-500 mb-4">Create records to use the split view.</p>
-        <Button  asChild>
-          <Link href={`/crm/modules/${moduleKey}/new`}>
-            <Plus className="w-4 h-4 mr-2" />
-            Create Record
-          </Link>
-        </Button>
+      <div className="glass-card rounded-2xl border border-slate-200 dark:border-white/10">
+        <ListEmptyStatePanel state={emptyState} moduleKey={moduleKey} />
       </div>
     );
   }

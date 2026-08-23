@@ -13,6 +13,9 @@ import type { PeopleQueueAction, PeopleQueueItem } from '@/lib/dashboard/people-
 import { StatusBadge } from '@/components/ui/status-badge';
 import { statusToneForValue, withReturnTo } from '@/lib/crm/status-lanes';
 import { initialsFor, mailtoHref, recordHref, telHref } from './command-desk-format';
+// TE-8: CallLink lives in its own client module (it carries an onClick);
+// this file stays a server-safe module because server components call deskHref().
+import { CallLink } from '@/components/crm/records/CallLink';
 
 /* ------------------------------------------------------------------ */
 /*  Back-to-dashboard: every desk → record link carries ?returnTo=/crm  */
@@ -157,9 +160,9 @@ export function QuickActions({
         </Link>
       ) : null}
       {tel ? (
-        <a href={tel} className={ICON_BTN} aria-label={`Call ${item.name}`} title={`Call ${item.phone}`}>
+        <CallLink phone={item.phone} className={ICON_BTN} aria-label={`Call ${item.name}`} title={`Call ${item.phone}`}>
           <Phone className="h-4 w-4" aria-hidden />
-        </a>
+        </CallLink>
       ) : (
         <span className={ICON_BTN_DISABLED} role="img" aria-label="No phone on file" title="No phone on file">
           <Phone className="h-4 w-4" aria-hidden />

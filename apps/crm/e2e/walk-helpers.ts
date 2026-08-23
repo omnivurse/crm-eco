@@ -189,3 +189,43 @@ export async function isFullyInViewport(locator: Locator): Promise<boolean> {
   if (!vp || !box) return false;
   return box.y >= 0 && box.x >= 0 && box.y + box.height <= vp.height && box.x + box.width <= vp.width;
 }
+
+/** Selector for the visible "working" affordances a list may show while it re-queries (LS-3). */
+export const PENDING_STATE_SELECTOR = '[aria-busy="true"], [role="progressbar"], .animate-pulse';
+
+declare global {
+  interface Window {
+    __walkPendingLatch?: { seen: boolean; selector: string; stop: () => void };
+  }
+}
+
+/**
+ * Arms an in-page MutationObserver that latches the first node matching
+ * PENDING_STATE_SELECTOR (already present or added/attributed later). Use it
+ * BEFORE the action that should show a pending state — the state can be
+ * shorter than one runner round-trip, so polling from outside races it.
+ */
+export async function armPendingStateLatch(page: Page, selector: string = PENDING_STATE_SELECTOR): Promise<void> {
+  await page.evaluate((sel) => {
+    window.__walkPendingLatch?.stop();
+    const latch = { seen: document.querySelector(sel) !== null, selector: sel, stop: () => undefined as void };
+    const obs = new MutationObserver(() => {
+      if (!latch.seen && document.querySelector(sel) !== null) latch.seen = true;
+    });
+    obs.observe(document.documentElement, { subtree: true, childList: true, attributes: true, attributeFilter: ['aria-busy', 'role', 'class'] });
+    latch.stop = () => obs.disconnect();
+    window.__walkPendingLatch = latch;
+  }, selector);
+}
+
+/** Reads (and disarms) the latch, waiting up to `withinMs` for it to trip. */
+export async function readPendingStateLatch(page: Page, withinMs = 2_000): Promise<boolean> {
+  const deadline = Date.now() + withinMs;
+  let seen = false;
+  while (!seen && Date.now() < deadline) {
+    seen = await page.evaluate(() => window.__walkPendingLatch?.seen === true);
+    if (!seen) await page.waitForTimeout(50);
+  }
+  await page.evaluate(() => window.__walkPendingLatch?.stop());
+  return seen;
+}

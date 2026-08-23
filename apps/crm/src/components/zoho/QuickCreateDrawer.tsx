@@ -11,7 +11,11 @@
  * - "Open full form" hands the typed values to the full create form through
  *   the same sessionStorage draft `RecordDraftAutosave` restores.
  * - Success → toast + navigate to the record; the drawer keeps its state until
- *   the pathname confirms we landed on the new record.
+ *   the pathname confirms we landed on the new record. The toast carries a
+ *   "View in list" action back to the ORIGINATING list (D1 / TE-4 —
+ *   `resolveCreateReturnList`: Contacts by default; Members when opened from
+ *   /crm/modules/members, with the honest note that Members fills from
+ *   enrollment). "Done" after a batch returns to that same list.
  * - "Save & add another" (button or Shift+Enter) saves through the SAME path,
  *   toasts, resets the form but keeps the batch-sticky fields (producer /
  *   sharing entity / status / state — `batchStickyKeys` in the config), keeps
@@ -70,11 +74,12 @@ import {
   ListPlus,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { captureCreateOrigin, resolveCreateReturnList } from '@/lib/crm/create-intent';
 import { CrmRecordCreateError, postCrmRecord } from '@/lib/crm/create-record-client';
 import { dateValueToInputDisplay, maskDateTyping } from '@/lib/crm/date-field-bounds';
 import type { FieldValuesResponse } from '@/lib/crm/field-values';
 import { formatPhoneDisplay } from '@/lib/crm/phone-normalize';
-import { toastCopy } from '@/lib/crm/toast-copy';
+import { MEMBERS_FILLS_FROM_ENROLLMENT, toastCopy } from '@/lib/crm/toast-copy';
 import { usStateOptionsWith } from '@/lib/crm/us-states';
 import { optionsWithCurrent } from '@/lib/crm/utils';
 import {
@@ -244,6 +249,12 @@ export function QuickCreateDrawer({
   valuesRef.current = values;
   /** Which outcome the in-flight submit was started for (so "Create anyway"/Retry repeat it). */
   const submitModeRef = useRef<SubmitMode>('open');
+  /**
+   * The module list this drawer was opened from (`pathname + search`, D1) —
+   * null when opened from a record page / the desk. Captured once per open so
+   * the "View in list" action and "Done" return there even after we navigate.
+   */
+  const originRef = useRef<string | null>(null);
 
   const config = QUICK_CREATE_FIELDS[selectedModule];
   const producerField = quickCreateProducerField(selectedModule);
@@ -297,6 +308,7 @@ export function QuickCreateDrawer({
   const wasOpenRef = useRef(false);
   useEffect(() => {
     if (open && !wasOpenRef.current) {
+      originRef.current = captureCreateOrigin(window.location.pathname, window.location.search);
       setSelectedModule(defaultModule);
       resetForm(defaultModule);
       // Options + org distinct values are re-fetched once per open (the
@@ -523,6 +535,29 @@ export function QuickCreateDrawer({
     resetForm(moduleKey);
   };
 
+  /**
+   * Navigate to the list a new record is "seen on" (D1). Already there →
+   * refresh so the newest-first list shows the row; otherwise push.
+   */
+  const goToList = useCallback(
+    (href: string) => {
+      if (typeof window !== 'undefined' && `${window.location.pathname}${window.location.search}` === href) {
+        router.refresh();
+      } else {
+        router.push(href);
+      }
+    },
+    [router],
+  );
+
+  /** Close after a "Save & add another" batch: back to the originating list. */
+  const finishBatch = () => {
+    const view = resolveCreateReturnList({ origin: originRef.current, createdModuleKey: selectedModule });
+    resetForm(selectedModule);
+    onOpenChange(false);
+    goToList(view.href);
+  };
+
   const requestClose = () => {
     if (submitting) return;
     if (created) {
@@ -532,6 +567,11 @@ export function QuickCreateDrawer({
     }
     if (dirty) {
       setConfirmDiscard(true);
+      return;
+    }
+    if (sessionAdded > 0) {
+      // "Done" after a batch returns to the originating list (D1).
+      finishBatch();
       return;
     }
     resetForm(selectedModule);
@@ -544,6 +584,10 @@ export function QuickCreateDrawer({
       setPendingModuleSwitch(null);
       setSelectedModule(next);
       resetForm(next);
+      return;
+    }
+    if (sessionAdded > 0) {
+      finishBatch();
       return;
     }
     resetForm(selectedModule);
@@ -681,7 +725,30 @@ export function QuickCreateDrawer({
         force,
       });
 
-      toast.success(toastCopy.added(config.noun));
+      // D1 / TE-4: "<Noun> added" + "View in list" → the originating list
+      // (Contacts by default; Members with the enrollment note). In "open"
+      // mode the drawer is closing anyway; mid-batch it stays open and the
+      // list simply loads behind it.
+      const view = resolveCreateReturnList({ origin: originRef.current, createdModuleKey: selectedModule });
+      const addedCopy = toastCopy.addedWithAction(config.noun, {
+        note: view.membersNote ? MEMBERS_FILLS_FROM_ENROLLMENT : undefined,
+      });
+      toast.success(addedCopy.title, {
+        description: addedCopy.description,
+        // A toast with a follow-up action lingers long enough to be clicked
+        // after the record page finishes rendering.
+        duration: 8000,
+        action: {
+          label: addedCopy.actionLabel,
+          onClick: () => {
+            if (mode === 'open') {
+              resetForm(selectedModule);
+              onOpenChange(false);
+            }
+            goToList(view.href);
+          },
+        },
+      });
       setDuplicate(null);
       setSoftDuplicate(null);
 

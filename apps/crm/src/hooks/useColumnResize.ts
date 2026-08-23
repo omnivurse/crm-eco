@@ -1,14 +1,22 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef, useSyncExternalStore } from 'react';
+import { useClientAuth } from './useClientAuth';
 
 const MIN_COLUMN_WIDTH = 80;
 
 interface UseColumnResizeOptions {
   columns: string[];
   getDefaultWidth: (col: string) => number;
-  /** localStorage key suffix -- widths persist under `crm_col_widths_{storageKey}` */
+  /** localStorage key suffix -- widths persist under `crm_col_widths_u:{viewer}:{storageKey}` */
   storageKey: string;
+  /**
+   * Viewer (profile) id that scopes the persisted widths so a second user on
+   * the same browser starts from defaults (LS-8). `undefined` → resolved from
+   * the cached `useClientAuth` profile; `null` → viewer unknown (nothing is
+   * read or written — fail closed).
+   */
+  scopeId?: string | null;
 }
 
 interface UseColumnResizeReturn {
@@ -24,41 +32,114 @@ interface UseColumnResizeReturn {
   resetAllColumnWidths: () => void;
 }
 
-function loadPersistedWidths(key: string): Record<string, number> | null {
+/** Viewer-scoped localStorage key (exported for tests / the reset event). */
+export function columnWidthsStorageKey(storageKey: string, scopeId: string): string {
+  return `crm_col_widths_u:${scopeId}:${storageKey}`;
+}
+
+/** Pre-scoping key (no viewer) — purge target only, never read. */
+export function legacyColumnWidthsStorageKey(storageKey: string): string {
+  return `crm_col_widths_${storageKey}`;
+}
+
+// ---------------------------------------------------------------------------
+// Persisted widths as an external store (same shape as lib/crm/filter-rail):
+// the raw string is the snapshot (primitive → stable), parsed in a memo. The
+// server snapshot is null, so SSR markup uses defaults and hydration
+// re-renders with the remembered widths before paint.
+// ---------------------------------------------------------------------------
+
+const listeners = new Set<() => void>();
+
+function subscribeWidths(listener: () => void): () => void {
+  listeners.add(listener);
+  if (typeof window !== 'undefined') window.addEventListener('storage', listener);
+  return () => {
+    listeners.delete(listener);
+    if (typeof window !== 'undefined') window.removeEventListener('storage', listener);
+  };
+}
+
+function readPersistedRaw(key: string, scopeId: string | null): string | null {
+  if (!scopeId || typeof window === 'undefined') return null;
   try {
-    const raw = localStorage.getItem(`crm_col_widths_${key}`);
-    if (!raw) return null;
-    return JSON.parse(raw);
+    return window.localStorage.getItem(columnWidthsStorageKey(key, scopeId));
   } catch {
     return null;
   }
 }
 
-function persistWidths(key: string, widths: Record<string, number>) {
+function parsePersistedWidths(raw: string | null): Record<string, number> | null {
+  if (!raw) return null;
   try {
-    localStorage.setItem(`crm_col_widths_${key}`, JSON.stringify(widths));
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+    const out: Record<string, number> = {};
+    for (const [col, w] of Object.entries(parsed as Record<string, unknown>)) {
+      if (typeof w === 'number' && Number.isFinite(w)) out[col] = w;
+    }
+    return out;
+  } catch {
+    return null;
+  }
+}
+
+function persistWidths(key: string, scopeId: string | null, widths: Record<string, number>) {
+  if (!scopeId || typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(columnWidthsStorageKey(key, scopeId), JSON.stringify(widths));
   } catch {
     // localStorage quota exceeded or unavailable -- silently ignore
+  }
+  listeners.forEach((l) => l());
+}
+
+/** One-time hygiene: the un-attributable pre-scoping entry is removed, never read. */
+function purgeLegacyWidths(key: string) {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.removeItem(legacyColumnWidthsStorageKey(key));
+  } catch {
+    /* ignore */
   }
 }
 
 /**
  * Manages column widths with drag-to-resize support and localStorage persistence.
  * Attach the returned `onResizeStart` to a resize handle's `onMouseDown`.
+ *
+ * Width precedence per column: this-session adjustment > remembered (viewer-
+ * scoped) width > `getDefaultWidth`. Derived on render, so a column added to
+ * `columns` or a viewer resolved after first paint needs no sync effect.
  */
 export function useColumnResize({
   columns,
   getDefaultWidth,
   storageKey,
+  scopeId: scopeIdProp,
 }: UseColumnResizeOptions): UseColumnResizeReturn {
-  const [columnWidths, setColumnWidths] = useState<Record<string, number>>(() => {
-    const persisted = loadPersistedWidths(storageKey);
-    const defaults: Record<string, number> = {};
+  // Viewer lookup is the cached single-fetch hook (no extra request once the
+  // shell has resolved the profile); an explicit `scopeId` prop wins.
+  const { profile } = useClientAuth();
+  const scopeId = scopeIdProp === undefined ? (profile?.id ?? null) : scopeIdProp;
+
+  const persistedRaw = useSyncExternalStore(
+    subscribeWidths,
+    () => readPersistedRaw(storageKey, scopeId),
+    () => null,
+  );
+  const persisted = useMemo(() => parsePersistedWidths(persistedRaw), [persistedRaw]);
+
+  // Drags / resets made in this session (win over the remembered widths).
+  const [overrides, setOverrides] = useState<Record<string, number>>({});
+
+  const columnWidths = useMemo(() => {
+    const out: Record<string, number> = {};
     for (const col of columns) {
-      defaults[col] = persisted?.[col] ?? getDefaultWidth(col);
+      out[col] = overrides[col] ?? persisted?.[col] ?? getDefaultWidth(col);
     }
-    return defaults;
-  });
+    return out;
+  }, [columns, overrides, persisted, getDefaultWidth]);
 
   const [isResizing, setIsResizing] = useState(false);
 
@@ -69,22 +150,15 @@ export function useColumnResize({
     startWidth: number;
   } | null>(null);
   const widthsRef = useRef(columnWidths);
-  widthsRef.current = columnWidths;
-
-  // Sync new columns into state when the columns array changes
   useEffect(() => {
-    setColumnWidths((prev) => {
-      const next = { ...prev };
-      let changed = false;
-      for (const col of columns) {
-        if (next[col] === undefined) {
-          next[col] = getDefaultWidth(col);
-          changed = true;
-        }
-      }
-      return changed ? next : prev;
-    });
-  }, [columns, getDefaultWidth]);
+    widthsRef.current = columnWidths;
+  }, [columnWidths]);
+
+  // External-system write only: drop the legacy unscoped entry once the
+  // viewer is known (it is never read).
+  useEffect(() => {
+    if (scopeId) purgeLegacyWidths(storageKey);
+  }, [scopeId, storageKey]);
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!dragRef.current) return;
@@ -92,7 +166,7 @@ export function useColumnResize({
     const delta = e.clientX - startX;
     const newWidth = Math.max(MIN_COLUMN_WIDTH, startWidth + delta);
 
-    setColumnWidths((prev) => ({ ...prev, [col]: newWidth }));
+    setOverrides((prev) => ({ ...prev, [col]: newWidth }));
   }, []);
 
   const handleMouseUp = useCallback(() => {
@@ -102,12 +176,11 @@ export function useColumnResize({
     document.body.style.cursor = '';
     document.body.style.userSelect = '';
 
-    // Persist final widths
-    persistWidths(storageKey, widthsRef.current);
+    // Persist final widths (mouseup itself is registered `{ once: true }`).
+    persistWidths(storageKey, scopeId, widthsRef.current);
 
     document.removeEventListener('mousemove', handleMouseMove);
-    document.removeEventListener('mouseup', handleMouseUp);
-  }, [storageKey, handleMouseMove]);
+  }, [storageKey, scopeId, handleMouseMove]);
 
   const onResizeStart = useCallback(
     (col: string, startX: number) => {
@@ -119,20 +192,18 @@ export function useColumnResize({
       document.body.style.userSelect = 'none';
 
       document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
+      document.addEventListener('mouseup', handleMouseUp, { once: true });
     },
     [getDefaultWidth, handleMouseMove, handleMouseUp],
   );
 
   const resetColumnWidth = useCallback(
     (col: string) => {
-      setColumnWidths((prev) => {
-        const next = { ...prev, [col]: getDefaultWidth(col) };
-        persistWidths(storageKey, next);
-        return next;
-      });
+      const next = { ...widthsRef.current, [col]: getDefaultWidth(col) };
+      setOverrides((prev) => ({ ...prev, [col]: getDefaultWidth(col) }));
+      persistWidths(storageKey, scopeId, next);
     },
-    [getDefaultWidth, storageKey],
+    [getDefaultWidth, storageKey, scopeId],
   );
 
   const resetAllColumnWidths = useCallback(() => {
@@ -140,9 +211,9 @@ export function useColumnResize({
     for (const col of columns) {
       defaults[col] = getDefaultWidth(col);
     }
-    setColumnWidths(defaults);
-    persistWidths(storageKey, defaults);
-  }, [columns, getDefaultWidth, storageKey]);
+    setOverrides(defaults);
+    persistWidths(storageKey, scopeId, defaults);
+  }, [columns, getDefaultWidth, storageKey, scopeId]);
 
   // Cleanup listeners on unmount
   useEffect(() => {

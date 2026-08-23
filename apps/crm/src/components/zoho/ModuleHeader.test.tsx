@@ -16,6 +16,19 @@ vi.mock('next/navigation', () => ({
 // The quick-create drawer is loaded lazily by the header; the export rule
 // never opens it, so a null component keeps the test to the header itself.
 vi.mock('next/dynamic', () => ({ default: () => () => null }));
+// DE-M1: the create button is gated on the client profile's crm_role.
+const authState: { crmRole: string | null } = { crmRole: 'crm_agent' };
+vi.mock('@/hooks/useClientAuth', () => ({
+  useClientAuth: () => ({
+    user: null,
+    profile: authState.crmRole
+      ? { id: 'p1', organization_id: 'org', full_name: 'Walk', crm_role: authState.crmRole, user_id: 'u1' }
+      : null,
+    loading: authState.crmRole === null,
+    error: null,
+    refetch: async () => {},
+  }),
+}));
 
 import { ModuleHeader } from './ModuleHeader';
 
@@ -81,5 +94,38 @@ describe('ModuleHeader — Export at zero rows (D9)', () => {
   it('defaults selectedCount to 0 (legacy callers) so zero rows still disables Export', () => {
     render(<ModuleHeader module={MODULE} totalCount={0} onExport={vi.fn()} />);
     expect(exportButton().disabled).toBe(true);
+  });
+});
+
+describe('ModuleHeader — create affordance by role (DE-M1 / D1)', () => {
+  afterEach(() => {
+    authState.crmRole = 'crm_agent';
+  });
+
+  it('shows "Add Member" to crm_agent on Contacts', () => {
+    render(<ModuleHeader module={MODULE} totalCount={35} />);
+    const btn = screen.getByTestId('crm-module-create');
+    expect(btn.textContent).toContain('Add Member');
+  });
+
+  it('hides every create affordance from crm_viewer', () => {
+    authState.crmRole = 'crm_viewer';
+    render(<ModuleHeader module={MODULE} totalCount={35} />);
+    expect(screen.queryByTestId('crm-module-create')).toBeNull();
+    expect(screen.queryByText('Add Member')).toBeNull();
+  });
+
+  it('fails closed while the profile is still loading', () => {
+    authState.crmRole = null;
+    render(<ModuleHeader module={MODULE} totalCount={35} />);
+    expect(screen.queryByTestId('crm-module-create')).toBeNull();
+  });
+
+  it('labels the Members list primary "Add Member" and says it saves in Contacts (D1)', () => {
+    render(<ModuleHeader module={{ ...MODULE, id: 'mod-members', key: 'members', name: 'Member', name_plural: 'Members' } as CrmModule} totalCount={3} />);
+    const btn = screen.getByTestId('crm-module-create');
+    expect(btn.textContent).toContain('Add Member');
+    expect(btn.getAttribute('title')).toMatch(/saves in Contacts/);
+    expect(btn.getAttribute('title')).toMatch(/Members fills from enrollment/);
   });
 });

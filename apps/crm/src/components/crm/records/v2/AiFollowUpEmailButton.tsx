@@ -10,6 +10,7 @@ import { memo, useCallback, useState } from 'react';
 import { Loader2, Sparkles, Mail } from 'lucide-react';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { toast } from 'sonner';
+import { toastCopy } from '@/lib/crm/toast-copy';
 
 export interface AiFollowUpEmailDraft {
   subject: string;
@@ -35,7 +36,7 @@ export const AiFollowUpEmailButton = memo(function AiFollowUpEmailButton({
   const handleClick = useCallback(async () => {
     if (loading) return;
     if (!hasRecipient) {
-      toast.warning('No email on file', {
+      toast.warning(toastCopy.failed('draft a follow-up', 'no email on file'), {
         description: 'Add an email address before drafting a follow-up.',
       });
       return;
@@ -59,11 +60,11 @@ export const AiFollowUpEmailButton = memo(function AiFollowUpEmailButton({
           /* ignore */
         }
         if (code === 'AI_NOT_CONFIGURED') {
-          toast.warning('AI assistant not configured', {
+          toast.warning(toastCopy.failed('draft the email', 'the AI assistant is not configured'), {
             description: 'Set OPENAI_API_KEY on the server to enable drafts.',
           });
         } else {
-          toast.error(message);
+          toast.error(toastCopy.failed('draft the email', message, 'Try again'));
         }
         return;
       }
@@ -73,8 +74,7 @@ export const AiFollowUpEmailButton = memo(function AiFollowUpEmailButton({
         body: (body.body ?? '').trim(),
       });
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      toast.error('AI request failed', { description: message });
+      toast.error(toastCopy.failed('draft the email', err, 'Try again'));
     } finally {
       setLoading(false);
     }

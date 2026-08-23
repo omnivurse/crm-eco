@@ -44,11 +44,26 @@ interface MarketTypeBadgeProps {
   size?: 'sm' | 'md';
   showIcon?: boolean;
   short?: boolean;
+  /**
+   * Render nothing for an unclassified lane (RP-4 / D6b). The amber
+   * "Needs Classification" badge is admin signal; rep-facing surfaces (the
+   * record header meta row) pass `hideUnknown` and keep the rail/sheet rows.
+   */
+  hideUnknown?: boolean;
   className?: string;
 }
 
-export function MarketTypeBadge({ marketType, size = 'sm', showIcon = false, short = false, className }: MarketTypeBadgeProps) {
-  const config = MARKET_TYPE_CONFIG[marketType || 'unknown'] || MARKET_TYPE_CONFIG.unknown;
+export function MarketTypeBadge({
+  marketType,
+  size = 'sm',
+  showIcon = false,
+  short = false,
+  hideUnknown = false,
+  className,
+}: MarketTypeBadgeProps) {
+  const key = marketType && MARKET_TYPE_CONFIG[marketType] ? marketType : 'unknown';
+  if (hideUnknown && key === 'unknown') return null;
+  const config = MARKET_TYPE_CONFIG[key];
   const Icon = config.icon;
 
   return (

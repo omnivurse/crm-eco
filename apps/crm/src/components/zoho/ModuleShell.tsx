@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useCallback, useMemo, useEffect, useRef, memo } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef, useSyncExternalStore, useTransition, memo, type ReactNode } from 'react';
 import { isAllowedCrmStatus } from '@/lib/crm/status-allowlist';
+import { ADVISOR_LABEL } from '@/lib/crm/nav-lexicon';
 import { queuedSend } from '@/lib/offline/queued-send';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Input, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Button, Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue, Combobox } from '@crm-eco/ui';
@@ -21,7 +22,9 @@ import { FilterWorkspaceRow } from '@/components/crm/filters/FilterWorkspaceRow'
 import {
   FILTER_RAIL_DEFAULT_OPEN,
   moduleFilterRailTitle,
+  purgeLegacyFilterRailKey,
   readFilterRailOpen,
+  subscribeFilterRailOpen,
   writeFilterRailOpen,
 } from '@/lib/crm/filter-rail';
 import { TerritoryFilter } from '@/components/crm/filters/TerritoryFilter';
@@ -31,17 +34,19 @@ import { DensityToggle } from './DensityToggle';
 import { MassActionsBar } from './MassActionsBar';
 import { ModuleShellProvider } from './ModuleShellContext';
 import { RecentlyViewedRail } from '@/components/crm/records/v2/RecentlyViewedRail';
-import { QuickFilterChips } from '@/components/crm/records/v2/QuickFilterChips';
+import { QuickFilterChips, type QuickFilterSort } from '@/components/crm/records/v2/QuickFilterChips';
 import type { SavedViewFilter, SavedViewState } from '@/components/crm/views/SavedViewsBar';
 import { ViewModeSwitcher } from '@/components/crm/views/ViewModeSwitcher';
 import { MobileToolbarDrawer } from './MobileToolbarDrawer';
 import { ModuleLiveSearchDropdown, type ModuleLiveSearchResult } from './ModuleLiveSearchDropdown';
 import { nextModuleSpotlightStateAfterSelect } from '@/lib/crm/module-spotlight-select';
 import { useIsMobile } from '@/hooks/useIsMobile';
+import { useClientAuth } from '@/hooks/useClientAuth';
 import { useCrmDensity } from '@/lib/crm/density';
 import { useListPreferences } from '@/hooks/useListPreferences';
 import {
   applyListUrlPatch,
+  isListPrefPageSize,
   readListUrlState,
   resolveInitialListState,
 } from '@/lib/crm/list-preferences';
@@ -52,7 +57,7 @@ import { pickDefaultListColumns } from '@/lib/crm/default-list-columns';
 import { toastDeletedWithUndo } from '@/lib/crm/undo-delete';
 import { getFieldOptions } from '@/lib/crm/utils';
 import { STATUS_LANES, statusLane, type StatusLane } from '@/lib/crm/status-lanes';
-import { fetchStatusValues, type StatusValueRow } from '@/lib/crm/status-values-client';
+import { fetchStatusValues, invalidateStatusValues, type StatusValueRow } from '@/lib/crm/status-values-client';
 import {
   CRM_CLEAR_LIST_STATE_EVENT,
   clearListStateParams,
@@ -80,6 +85,18 @@ function isValidFilter(f: unknown): f is ViewFilter {
   return typeof obj.field === 'string' && typeof obj.operator === 'string';
 }
 
+/**
+ * Handed to a function `paneFooter` (the pager) so its page / per-page
+ * links navigate inside the shell's list transition — the same pending bar
+ * and dimmed rows Apply / sort use — instead of a cold Link navigation.
+ */
+export interface ListPaneFooterContext {
+  /** `router.push(href, { scroll: false })` inside the list transition. */
+  navigate: (href: string) => void;
+  /** A list navigation is in flight (stale rows shown, pane `aria-busy`). */
+  isPending: boolean;
+}
+
 interface ModuleShellProps {
   module: CrmModule;
   records: CrmRecord[];
@@ -89,11 +106,17 @@ interface ModuleShellProps {
   totalCount: number;
   children: React.ReactNode;
   /** Sticky pager inside the records pane (not below the 2× viewport workspace). */
-  paneFooter?: React.ReactNode;
+  paneFooter?: ReactNode | ((ctx: ListPaneFooterContext) => ReactNode);
   className?: string;
   userRole?: string | null;
   /** Available territories for territory filter dropdown */
   territories?: CrmTerritory[];
+  /**
+   * Viewer's profile id — scopes the remembered rail state / column widths
+   * per user (LS-8). Server-known (page.tsx) so the first paint can read the
+   * stored value; falls back to the cached client profile when omitted.
+   */
+  viewerId?: string | null;
 }
 
 export const ModuleShell = memo(function ModuleShell({
@@ -108,9 +131,26 @@ export const ModuleShell = memo(function ModuleShell({
   className,
   userRole,
   territories = [],
+  viewerId: viewerIdProp,
 }: ModuleShellProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { profile: clientProfile } = useClientAuth();
+  const viewerId = viewerIdProp ?? clientProfile?.id ?? null;
+
+  // Every list navigation (filters / sort / scope / search / view mode /
+  // pager) runs inside one transition: the stale rows stay mounted and
+  // `isListPending` drives the pane's progress bar + aria-busy (LS-3 step
+  // 2a — the Wave-1 walk saw no Suspense remount, only a silent stale table).
+  const [isListPending, startListTransition] = useTransition();
+  const navigateList = useCallback(
+    (href: string) => {
+      startListTransition(() => {
+        router.push(href, { scroll: false });
+      });
+    },
+    [router],
+  );
 
   // Local state
   const [viewMode, setViewMode] = useState<ViewMode>(
@@ -147,6 +187,14 @@ export const ModuleShell = memo(function ModuleShell({
     const viewColumns = views.find(v => v.id === activeViewId)?.columns;
     return viewColumns && viewColumns.length > 0 ? viewColumns : pickDefaultListColumns(fields);
   });
+  // How many filters the active saved view applies — `?view=` only narrows
+  // the lane-chip counts when the view actually filters (LS-5 label; same
+  // rule as `useListEmptyState`).
+  const activeViewFilterCount = useMemo(() => {
+    if (!activeViewId) return undefined;
+    const view = views.find((v) => v.id === activeViewId);
+    return view ? (view.filters?.length ?? 0) : undefined;
+  }, [views, activeViewId]);
   const [sortField, setSortField] = useState<string | null>(searchParams.get('sortField'));
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>(
     (searchParams.get('sortDirection') as 'asc' | 'desc') || 'asc'
@@ -164,7 +212,17 @@ export const ModuleShell = memo(function ModuleShell({
   const prefsHydrationStageRef = useRef<'none' | 'local' | 'server'>('none');
   // Which personal saved view is applied (drives the Views trigger label).
   const [activeSavedViewId, setActiveSavedViewId] = useState<string | null>(null);
-  const [filterRailOpen, setFilterRailOpen] = useState(FILTER_RAIL_DEFAULT_OPEN);
+  // Rail open/collapsed: read the viewer-scoped stored value through an
+  // external store so hydration re-renders with it before paint (no
+  // open-then-snap flash); the server snapshot is the default.
+  const storedFilterRailOpen = useSyncExternalStore(
+    subscribeFilterRailOpen,
+    () => readFilterRailOpen(module.key, viewerId),
+    () => FILTER_RAIL_DEFAULT_OPEN,
+  );
+  // Viewer unknown → nothing is persisted; the toggle still works locally.
+  const [filterRailOverride, setFilterRailOverride] = useState<boolean | null>(null);
+  const filterRailOpen = viewerId ? storedFilterRailOpen : (filterRailOverride ?? FILTER_RAIL_DEFAULT_OPEN);
   const filterRailTitle = moduleFilterRailTitle(module);
 
   // Dialog states
@@ -274,8 +332,8 @@ export const ModuleShell = memo(function ModuleShell({
       params.delete('search');
     }
     params.delete('page');
-    router.push(`/crm/modules/${module.key}?${params.toString()}`, { scroll: false });
-  }, [searchQuery, router, module.key]);
+    navigateList(`/crm/modules/${module.key}?${params.toString()}`);
+  }, [searchQuery, navigateList, module.key]);
 
   // Debounced URL flush — this is what drives the *heavy* server-side list
   // refetch (full RSC page render + wide ILIKE search). While the spotlight
@@ -295,7 +353,7 @@ export const ModuleShell = memo(function ModuleShell({
   }, [flushSearchToUrl, liveDropdownVisible, trimmedSearchQuery]);
 
   // Live smart-search dropdown — debounced fetch + AbortController, same
-  // pattern as GlobalSearchOverlay so the toolbar feels identical to the
+  // pattern as the ⌘K CommandPalette so the toolbar feels identical to the
   // top-header spotlight.
   useEffect(() => {
     const trimmed = searchQuery.trim();
@@ -354,8 +412,8 @@ export const ModuleShell = memo(function ModuleShell({
       params.set('scope', newScope);
     }
     params.delete('page');
-    router.push(`/crm/modules/${module.key}?${params.toString()}`, { scroll: false });
-  }, [router, module.key, listPrefsSave]);
+    navigateList(`/crm/modules/${module.key}?${params.toString()}`);
+  }, [navigateList, module.key, listPrefsSave]);
 
   const isAdminOrOwner = userRole === 'owner' || userRole === 'admin' || userRole === 'staff';
 
@@ -382,17 +440,31 @@ export const ModuleShell = memo(function ModuleShell({
     [flushSearchToUrl],
   );
 
-  // Persist filters to URL
-  const pushFiltersToUrl = useCallback((newFilters: ViewFilter[]) => {
+  // Persist filters to URL. `sort` (optional) rides along for chips that
+  // carry one (TE-3b): an object sets `sortField`/`sortDirection`, `null`
+  // clears them, `undefined` leaves the current sort alone. Chip sorts are
+  // deliberately NOT written to prefs — the chip is the intent, like a view.
+  const pushFiltersToUrl = useCallback((newFilters: ViewFilter[], sort?: QuickFilterSort | null) => {
     const params = new URLSearchParams(searchParamsRef.current.toString());
     if (newFilters.length > 0) {
       params.set('filters', JSON.stringify(newFilters));
     } else {
       params.delete('filters');
     }
+    if (sort) {
+      params.set('sortField', sort.field);
+      params.set('sortDirection', sort.direction);
+      setSortField(sort.field);
+      setSortDirection(sort.direction);
+    } else if (sort === null) {
+      params.delete('sortField');
+      params.delete('sortDirection');
+      setSortField(null);
+      setSortDirection('asc');
+    }
     params.delete('page');
-    router.push(`/crm/modules/${module.key}?${params.toString()}`);
-  }, [router, module.key]);
+    navigateList(`/crm/modules/${module.key}?${params.toString()}`);
+  }, [navigateList, module.key]);
 
   const handleRemoveFilter = useCallback((index: number) => {
     setFilters(prev => {
@@ -403,43 +475,39 @@ export const ModuleShell = memo(function ModuleShell({
   }, [pushFiltersToUrl]);
 
   // Toggle a quick-filter preset: merges/removes its filters and (if set)
-  // updates the URL scope so the state survives a page reload.
+  // updates the URL scope so the state survives a page reload. A preset
+  // that carries a sort (the Pending lane — D2) applies it on activation
+  // and clears it on deactivation only if that sort is still the active one.
   const handleQuickPreset = useCallback(
     (
       preset: {
         filters: ViewFilter[];
         scope?: RecordScope;
+        sort?: QuickFilterSort;
       },
       active: boolean,
     ) => {
-      setFilters((prev) => {
-        let next: ViewFilter[];
-        if (active) {
-          // Remove this preset's filters (matched by field+operator).
-          next = prev.filter(
-            (f) =>
-              !preset.filters.some(
-                (p) => p.field === f.field && p.operator === f.operator,
-              ),
-          );
-        } else {
-          // Replace any matching filters, then append the missing ones.
-          const withoutOverlap = prev.filter(
-            (f) =>
-              !preset.filters.some(
-                (p) => p.field === f.field && p.operator === f.operator,
-              ),
-          );
-          next = [...withoutOverlap, ...preset.filters];
+      const overlaps = (f: ViewFilter) =>
+        preset.filters.some((p) => p.field === f.field && p.operator === f.operator);
+      // Remove this preset's filters (matched by field+operator); on
+      // activation replace any matching filters, then append the missing ones.
+      const withoutOverlap = filters.filter((f) => !overlaps(f));
+      const next = active ? withoutOverlap : [...withoutOverlap, ...preset.filters];
+      let sortPatch: QuickFilterSort | null | undefined;
+      if (preset.sort) {
+        if (!active) {
+          sortPatch = preset.sort;
+        } else if (sortField === preset.sort.field && sortDirection === preset.sort.direction) {
+          sortPatch = null;
         }
-        pushFiltersToUrl(next);
-        return next;
-      });
+      }
+      setFilters(next);
+      pushFiltersToUrl(next, sortPatch);
       if (preset.scope) {
         handleScopeChange(active ? 'all' : preset.scope);
       }
     },
-    [pushFiltersToUrl, handleScopeChange],
+    [filters, sortField, sortDirection, pushFiltersToUrl, handleScopeChange],
   );
 
   const handleClearFilters = useCallback(() => {
@@ -465,24 +533,33 @@ export const ModuleShell = memo(function ModuleShell({
         listPrefsSave({ scope: 'all' });
       }
       if (target === 'filters' || target === 'view' || target === 'all') setActiveSavedViewId(null);
+      if (target === 'retry') {
+        // Load-failed empty state → re-run the same server query (LS-2).
+        startListTransition(() => {
+          router.refresh();
+        });
+        return;
+      }
       const params = clearListStateParams(searchParamsRef.current, target);
-      router.push(`/crm/modules/${module.key}?${params.toString()}`, { scroll: false });
+      navigateList(`/crm/modules/${module.key}?${params.toString()}`);
     };
     window.addEventListener(CRM_CLEAR_LIST_STATE_EVENT, onClear);
     return () => window.removeEventListener(CRM_CLEAR_LIST_STATE_EVENT, onClear);
-  }, [module.key, router, listPrefsSave]);
+  }, [module.key, router, navigateList, listPrefsSave]);
 
+  // One-time hygiene: the pre-scoping (user-less) rail key is never read.
   useEffect(() => {
-    setFilterRailOpen(readFilterRailOpen(module.key));
-  }, [module.key]);
+    if (viewerId) purgeLegacyFilterRailKey(module.key);
+  }, [module.key, viewerId]);
 
   const toggleFilterRail = useCallback(() => {
-    setFilterRailOpen((prev) => {
-      const next = !prev;
-      writeFilterRailOpen(module.key, next);
-      return next;
-    });
-  }, [module.key]);
+    const next = !filterRailOpen;
+    if (viewerId) {
+      writeFilterRailOpen(module.key, next, viewerId);
+    } else {
+      setFilterRailOverride(next);
+    }
+  }, [filterRailOpen, module.key, viewerId]);
 
   const applyListFilters = useCallback(
     (newFilters: ViewFilter[]) => {
@@ -503,8 +580,8 @@ export const ModuleShell = memo(function ModuleShell({
     params.set('sortField', field);
     params.set('sortDirection', direction);
     params.delete('page');
-    router.push(`/crm/modules/${module.key}?${params.toString()}`);
-  }, [router, module.key, listPrefsSave]);
+    navigateList(`/crm/modules/${module.key}?${params.toString()}`);
+  }, [navigateList, module.key, listPrefsSave]);
 
   /**
    * Select every record matching the current list-page state — the same
@@ -674,10 +751,8 @@ export const ModuleShell = memo(function ModuleShell({
   }, [fetchTeamMembers]);
 
   const handleConfirmAssignOwner = useCallback(async () => {
-    if (!selectedOwnerId) {
-      toast.error(toastCopy.chooseFirst('an owner'));
-      return;
-    }
+    // FB-6: the button is disabled until an owner is picked; no toast.
+    if (!selectedOwnerId) return;
 
     setIsProcessing(true);
     const count = selectedIds.size;
@@ -725,10 +800,8 @@ export const ModuleShell = memo(function ModuleShell({
   }, [loadLiveStatusValues]);
 
   const handleConfirmStatusChange = useCallback(async () => {
-    if (!selectedStatus) {
-      toast.error(toastCopy.chooseFirst('a status'));
-      return;
-    }
+    // FB-6: the button is disabled until a status is picked; no toast.
+    if (!selectedStatus) return;
 
     setIsProcessing(true);
     const count = selectedIds.size;
@@ -750,6 +823,10 @@ export const ModuleShell = memo(function ModuleShell({
     if (sendResult.ok) {
       const result = await sendResult.response.json();
       reportBulkResult(result, 'Status updated', 'record', `Now "${selectedStatus}"`);
+      // LS-5: the lane chips / Filters picker / this dialog count by status —
+      // drop the shared cache so they refetch on the next paint.
+      invalidateStatusValues(module.key);
+      setLiveStatusValues(null);
       setShowStatusDialog(false);
       setSelectedIds(new Set());
       router.refresh();
@@ -769,10 +846,8 @@ export const ModuleShell = memo(function ModuleShell({
   }, []);
 
   const handleConfirmStageChange = useCallback(async () => {
-    if (!selectedStage) {
-      toast.error(toastCopy.chooseFirst('a stage'));
-      return;
-    }
+    // FB-6: the button is disabled until a stage is picked; no toast.
+    if (!selectedStage) return;
 
     setIsProcessing(true);
     const count = selectedIds.size;
@@ -840,10 +915,8 @@ export const ModuleShell = memo(function ModuleShell({
   }, [newTagName]);
 
   const handleConfirmAddTag = useCallback(async () => {
-    if (selectedTagIds.length === 0) {
-      toast.error(toastCopy.chooseFirst('at least one tag'));
-      return;
-    }
+    // FB-6: the button is disabled until a tag is picked; no toast.
+    if (selectedTagIds.length === 0) return;
 
     setIsProcessing(true);
     try {
@@ -918,12 +991,20 @@ export const ModuleShell = memo(function ModuleShell({
         toastDeletedWithUndo({
           batchId: result.batch_id,
           count: deletedCount,
-          onUndo: () => router.refresh(),
+          onUndo: () => {
+            // LS-5: restored rows count again.
+            invalidateStatusValues(module.key);
+            setLiveStatusValues(null);
+            router.refresh();
+          },
         });
       } else {
         // Partial failure/skip → keep the detailed counts toast.
         reportBulkResult(result, 'Moved to Trash');
       }
+      // LS-5: trashed rows leave the status counts.
+      invalidateStatusValues(module.key);
+      setLiveStatusValues(null);
       setShowDeleteDialog(false);
       setSelectedIds(new Set());
       router.refresh();
@@ -1108,8 +1189,8 @@ export const ModuleShell = memo(function ModuleShell({
     if (mode !== 'tree') {
       params.delete('treeGroupBy');
     }
-    router.push(`/crm/modules/${module.key}?${params.toString()}`);
-  }, [router, module.key, listPrefsSave]);
+    navigateList(`/crm/modules/${module.key}?${params.toString()}`);
+  }, [navigateList, module.key, listPrefsSave]);
 
   // Columns change from ColumnsButton (toggle / reorder / reset) — the one
   // place column prefs are written.
@@ -1163,8 +1244,8 @@ export const ModuleShell = memo(function ModuleShell({
     if (state.search) params.set('search', state.search);
     else params.delete('search');
     params.delete('page');
-    router.push(`/crm/modules/${module.key}?${params.toString()}`);
-  }, [router, module.key]);
+    navigateList(`/crm/modules/${module.key}?${params.toString()}`);
+  }, [navigateList, module.key]);
 
   // Hydrate remembered prefs: once from the localStorage mirror (instant),
   // once more when the server copy lands (may be newer — other device).
@@ -1202,6 +1283,20 @@ export const ModuleShell = memo(function ModuleShell({
     const next = applyListUrlPatch(searchParamsRef.current, resolved.urlPatch);
     if (next) router.replace(`/crm/modules/${module.key}?${next.toString()}`, { scroll: false });
   }, [listPrefs.hydrated, listPrefs.serverLoaded, listPrefs.prefs, views, activeViewId, fields, router, module.key]);
+
+  // Remember rows-per-page (D11). The per-page control is the server pager
+  // (links that set `?page_size=`), so watch the URL: a change during this
+  // mount is the user's choice. The hydration patch above re-adds the same
+  // remembered value, which `save` drops as a no-op (listPrefsEqual).
+  const urlPageSizeRaw = searchParams.get('page_size');
+  const prevUrlPageSizeRef = useRef(urlPageSizeRaw);
+  useEffect(() => {
+    if (prevUrlPageSizeRef.current === urlPageSizeRaw) return;
+    prevUrlPageSizeRef.current = urlPageSizeRaw;
+    if (!urlPageSizeRaw) return;
+    const size = Number.parseInt(urlPageSizeRaw, 10);
+    if (isListPrefPageSize(size)) listPrefsSave({ pageSize: size });
+  }, [urlPageSizeRaw, listPrefsSave]);
 
   // Context for child components — expose the *effective* view mode so
   // children render the list card view on phones even when the user's
@@ -1274,7 +1369,7 @@ export const ModuleShell = memo(function ModuleShell({
                 setSearchQuery(value);
               }}
               onSubmit={handleSearch}
-              placeholder={`Search ${module.name_plural?.toLowerCase() || 'records'}...`}
+              placeholder={`Search ${module.name_plural?.toLowerCase() || 'records'}…`}
               results={liveResults}
               loading={liveLoading}
               selectedIndex={liveSelectedIdx}
@@ -1364,9 +1459,10 @@ export const ModuleShell = memo(function ModuleShell({
             fields={fields}
             currentFilters={filters}
             currentScope={scope}
+            activeViewFilterCount={activeViewFilterCount}
             onApplyPreset={(preset, active) =>
               handleQuickPreset(
-                { filters: preset.filters, scope: preset.scope },
+                { filters: preset.filters, scope: preset.scope, sort: preset.sort },
                 active,
               )
             }
@@ -1447,6 +1543,7 @@ export const ModuleShell = memo(function ModuleShell({
           fields={fields}
           moduleKey={module.key}
           statusValues={liveStatusValues}
+          visibleColumns={visibleColumns}
           sortField={sortField}
           sortDirection={sortDirection}
           totalCount={totalCount}
@@ -1459,7 +1556,12 @@ export const ModuleShell = memo(function ModuleShell({
       {/* Table + docked filter rail (lg+). Mobile / tablet keep the dialog. */}
       <ModuleShellProvider value={shellContext}>
         <FilterWorkspaceRow
-          footer={paneFooter}
+          pending={isListPending}
+          footer={
+            typeof paneFooter === 'function'
+              ? paneFooter({ navigate: navigateList, isPending: isListPending })
+              : paneFooter
+          }
           rail={
             <FilterRailFrame
               open={filterRailOpen}
@@ -1481,10 +1583,13 @@ export const ModuleShell = memo(function ModuleShell({
           }
         >
           <div
+            aria-busy={isListPending || undefined}
             className={cn(
               'relative h-full min-h-0 min-w-0 overflow-hidden',
               density === 'compact' && '[&_table_td]:py-1.5 [&_table_th]:py-2',
-              density === 'comfortable' && '[&_table_td]:py-4 [&_table_th]:py-3'
+              density === 'comfortable' && '[&_table_td]:py-4 [&_table_th]:py-3',
+              // Stale rows dim while the next page / filter result is in flight.
+              isListPending && '[&_tbody]:opacity-60 [&_tbody]:transition-opacity [&_tbody]:duration-150',
             )}
           >
             {children}
@@ -1525,7 +1630,7 @@ export const ModuleShell = memo(function ModuleShell({
               {isProcessing ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Deleting...
+                  {toastCopy.loadingCopy('Deleting')}
                 </>
               ) : (
                 'Delete'
@@ -1546,7 +1651,7 @@ export const ModuleShell = memo(function ModuleShell({
           </DialogHeader>
           <div className="py-4">
             <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-              <SelectTrigger aria-label="New status">
+              <SelectTrigger aria-label="New status" aria-describedby={selectedStatus ? undefined : 'bulk-status-required'}>
                 <SelectValue placeholder={liveStatusLoading ? 'Loading statuses…' : 'Select new status'} />
               </SelectTrigger>
               <SelectContent className="max-h-72">
@@ -1576,6 +1681,11 @@ export const ModuleShell = memo(function ModuleShell({
                 ))}
               </SelectContent>
             </Select>
+            {!selectedStatus && (
+              <p id="bulk-status-required" className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                Status is required
+              </p>
+            )}
             <p className="mt-2 text-[11px] text-slate-500 dark:text-slate-400">
               Grouped the way the list filters group them; the exact spelling you pick is what gets saved.
             </p>
@@ -1588,7 +1698,7 @@ export const ModuleShell = memo(function ModuleShell({
               {isProcessing ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Updating...
+                  {toastCopy.loadingCopy('Updating')}
                 </>
               ) : (
                 'Update Status'
@@ -1609,7 +1719,7 @@ export const ModuleShell = memo(function ModuleShell({
           </DialogHeader>
           <div className="py-4">
             <Select value={selectedStage} onValueChange={setSelectedStage}>
-              <SelectTrigger>
+              <SelectTrigger aria-label="New stage" aria-describedby={selectedStage ? undefined : 'bulk-stage-required'}>
                 <SelectValue placeholder="Select new stage" />
               </SelectTrigger>
               <SelectContent>
@@ -1620,6 +1730,11 @@ export const ModuleShell = memo(function ModuleShell({
                 ))}
               </SelectContent>
             </Select>
+            {!selectedStage && (
+              <p id="bulk-stage-required" className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                Stage is required
+              </p>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowStageDialog(false)} disabled={isProcessing}>
@@ -1629,7 +1744,7 @@ export const ModuleShell = memo(function ModuleShell({
               {isProcessing ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Updating...
+                  {toastCopy.loadingCopy('Updating')}
                 </>
               ) : (
                 'Update Stage'
@@ -1663,13 +1778,18 @@ export const ModuleShell = memo(function ModuleShell({
                   options={ownerOptions}
                   value={selectedOwnerId}
                   onValueChange={setSelectedOwnerId}
-                  placeholder="Choose an Advisor / Agent"
-                  searchPlaceholder="Search by name..."
+                  placeholder={`Choose an ${ADVISOR_LABEL}`}
+                  searchPlaceholder="Search by name…"
                   emptyText="No team members found."
                   clearable
                 />
               );
             })()}
+            {!selectedOwnerId && (
+              <p id="bulk-owner-required" className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                Owner is required
+              </p>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowAssignOwnerDialog(false)} disabled={isProcessing}>
@@ -1679,7 +1799,7 @@ export const ModuleShell = memo(function ModuleShell({
               {isProcessing ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Assigning...
+                  {toastCopy.loadingCopy('Assigning')}
                 </>
               ) : (
                 'Assign'
@@ -1817,6 +1937,11 @@ export const ModuleShell = memo(function ModuleShell({
                   <p className="text-sm text-slate-500">No tags yet. Create one below.</p>
                 )}
               </div>
+              {selectedTagIds.length === 0 && availableTags.length > 0 && (
+                <p id="bulk-tag-required" className="text-xs text-slate-500 dark:text-slate-400">
+                  At least one tag is required
+                </p>
+              )}
             </div>
 
             {/* Create New Tag */}
@@ -1824,7 +1949,7 @@ export const ModuleShell = memo(function ModuleShell({
               <label className="text-sm font-medium">Create New Tag</label>
               <div className="flex gap-2">
                 <Input
-                  placeholder="Enter tag name..."
+                  placeholder="Enter tag name…"
                   value={newTagName}
                   onChange={(e) => setNewTagName(e.target.value)}
                   onKeyDown={(e) => {
@@ -1848,7 +1973,7 @@ export const ModuleShell = memo(function ModuleShell({
               {isProcessing ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Adding Tags...
+                  {toastCopy.loadingCopy('Adding tags')}
                 </>
               ) : (
                 `Add ${selectedTagIds.length} Tag${selectedTagIds.length !== 1 ? 's' : ''}`

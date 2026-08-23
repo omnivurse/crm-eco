@@ -6,8 +6,8 @@
  *             `crm_modules` (display_order), then Tasks, Calendar, Reports,
  *             Inbox. No top module tabs.
  * `full`    → the classic Zoho-style tab bar + contextual sidebar, except the
- *             "Sales Pipeline" / "Advisors" links are driven by `crm_modules`
- *             so disabled or field-less modules never appear.
+ *             "People" section / "Advisors" / "Pipeline" links are driven by
+ *             `crm_modules` so disabled or field-less modules never appear.
  *
  * Nothing in here touches the DB or `next/*` — the server layout resolves the
  * profile via the `crm.nav.simple` feature flag and hands the result down.
@@ -104,22 +104,27 @@ export function buildSimpleNav(modules: readonly NavModule[]): NavItem[] {
 }
 
 // ---------------------------------------------------------------------------
-// Full profile — module-driven "Sales Pipeline" + Advisors
+// Full profile — module-driven "People" section + Advisors + Pipeline
 // ---------------------------------------------------------------------------
 
-/** Keys inside the static "Sales Pipeline" section that are module list links. */
+/** Keys inside the static "People" section (`sec-pipeline`) that are module list links. */
 const PIPELINE_MODULE_KEYS = new Set(['leads', 'contacts', 'accounts', 'members']);
 
 /**
  * Take the static CRM nav and:
- *  - replace the hard-coded module links in "Sales Pipeline" with the org's
- *    enabled modules (display_order; `advisors` is kept in People Management),
- *  - keep the `advisors` link only when the `advisors` module is enabled.
+ *  - replace the hard-coded module links in the "People" section with the
+ *    org's enabled modules (display_order; `advisors` is kept in People
+ *    Management),
+ *  - keep the `advisors` link only when the `advisors` module is enabled,
+ *  - keep the `pipeline` link (the deals kanban) only when the `deals` module
+ *    is enabled (NV-5 / D10 — same guard as advisors; /crm/pipeline itself
+ *    redirects via disabledModuleRedirect).
  * Every other item passes through untouched.
  */
 export function buildFullCrmNav(base: readonly NavItem[], modules: readonly NavModule[]): NavItem[] {
   const navigable = navigableModules(modules);
   const advisorsEnabled = navigable.some((m) => m.key === 'advisors');
+  const dealsEnabled = navigable.some((m) => m.key === 'deals');
   const pipelineItems = navigable
     .filter((m) => m.key !== 'advisors')
     .map(moduleNavItem);
@@ -136,10 +141,77 @@ export function buildFullCrmNav(base: readonly NavItem[], modules: readonly NavM
       continue;
     }
     if (item.key === 'advisors' && !advisorsEnabled) continue;
+    if (item.key === 'pipeline' && !dealsEnabled) continue;
     if (injected && PIPELINE_MODULE_KEYS.has(item.key)) continue;
     out.push(item);
   }
   return out;
+}
+
+// ---------------------------------------------------------------------------
+// Role gating (NV-M1 / D10)
+// ---------------------------------------------------------------------------
+
+/** The ONE predicate app/crm/settings/page.tsx uses for its admin-only cards. */
+export function isCrmAdminRole(crmRole: string | null | undefined): boolean {
+  return crmRole === 'crm_admin';
+}
+
+/**
+ * The ONE predicate app/crm/import/page.tsx uses before it renders (any other
+ * role is bounced to `/crm?error=no_import_permission`) — `managerOrAdmin`
+ * nav links ("Import Data" / "Import / Export") use the same gate so an
+ * agent is never shown a link the page refuses (NV-2 cross-tab re-walk).
+ */
+export function isCrmManagerOrAdminRole(crmRole: string | null | undefined): boolean {
+  return crmRole === 'crm_admin' || crmRole === 'crm_manager';
+}
+
+/**
+ * Hide, don't break: drop `adminOnly` links for non-admins and
+ * `managerOrAdmin` links for agents / viewers (unknown role = neither, fail
+ * closed) and any section header left with no links under it. Admins get the
+ * list back untouched (same array identity).
+ */
+export function visibleNavItemsForRole(items: readonly NavItem[], crmRole: string | null | undefined): NavItem[] {
+  if (isCrmAdminRole(crmRole)) return items as NavItem[];
+  const managerOrAdmin = isCrmManagerOrAdminRole(crmRole);
+  const out: NavItem[] = [];
+  for (const item of items) {
+    if (item.separator) {
+      // Collapse a section header whose links were all role-gated.
+      const prev = out[out.length - 1];
+      if (prev?.separator) out.pop();
+      out.push(item);
+      continue;
+    }
+    if (item.adminOnly) continue;
+    if (item.managerOrAdmin && !managerOrAdmin) continue;
+    out.push(item);
+  }
+  const last = out[out.length - 1];
+  if (last?.separator) out.pop();
+  return out;
+}
+
+// ---------------------------------------------------------------------------
+// Record pages (NV-7)
+// ---------------------------------------------------------------------------
+
+/**
+ * `/crm/r/<id>` carries no module in its path, so nothing in the sidebar
+ * matches. When the open record's module is known (record-command-context),
+ * highlight that module's list link — but only if the nav actually has one
+ * (disabled modules have no link → no highlight).
+ */
+export function recordPageActiveNavKey(
+  items: readonly NavItem[],
+  pathname: string,
+  moduleKey: string | null | undefined,
+): string | null {
+  if (!moduleKey || !pathname.startsWith('/crm/r/')) return null;
+  const key = `module-${moduleKey}`;
+  return items.some((i) => !i.separator && i.key === key) ? key : null;
 }
 
 // ---------------------------------------------------------------------------

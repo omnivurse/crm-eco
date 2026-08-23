@@ -243,6 +243,11 @@ export function SectionNav({
           '[scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
           compact ? 'items-stretch gap-1 py-1' : 'items-center gap-2 py-2.5',
         )}
+        // RP-6: target of the record header's "Skip to record details" link.
+        // tabIndex -1 keeps it out of the sequential order but lets the skip
+        // link land focus here (the roving tab pills stay the Tab stops).
+        id="record-section-nav"
+        tabIndex={-1}
         role="tablist"
         aria-label={grouped ? 'Record section groups' : 'Record sections'}
         onKeyDown={handleRowKeyDown}
@@ -300,9 +305,11 @@ export function SectionNav({
       </div>
 
       {/* Row 2 — per-section pills for the active group only. Hidden when the
-          group has a single section (its pill would duplicate the group pill). */}
+          group has a single section (its pill would duplicate the group pill).
+          RP-6: xl+ only — below that the group row alone must leave the
+          one-glance snapshot above the fold (group pills still jump). */}
       {grouped && activeBand && activeBand.sections.length > 1 && (
-        <div className="border-t border-slate-100 dark:border-white/5">
+        <div className="max-xl:hidden border-t border-slate-100 dark:border-white/5">
           {activeBand.sections.length > 4 && !subnavOpen ? (
             <button
               type="button"

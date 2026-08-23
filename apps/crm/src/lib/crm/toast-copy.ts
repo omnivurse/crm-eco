@@ -62,19 +62,26 @@ export function deleted(noun: string): string {
  * Error copy that names the action, the reason (if known) and a next step.
  *
  *   failed('save the note')                     → "Couldn't save the note."
- *   failed('save the note', 'network timeout')  → "Couldn't save the note — network timeout."
+ *   failed('save the note', 'name already taken')
+ *                                               → "Couldn't save the note — name already taken."
  *   failed('save the note', undefined, 'Try again')
  *                                               → "Couldn't save the note. Try again."
- *   failed('save the note', 'network timeout', 'Try again')
- *                                               → "Couldn't save the note — network timeout. Try again."
+ *   failed('save the note', new TypeError('Failed to fetch'), 'Try again')
+ *                                               → "Couldn't save the note — no connection. Try again."
  *
- * `reason` accepts an Error (message is used) so callers can pass `err`
- * straight through; empty/undefined reasons are dropped, never printed as
- * "undefined".
+ * `reason` accepts an Error, a Supabase/Postgrest error object (`{ message,
+ * code?, status? }`) or a string so callers can pass `err` straight through;
+ * empty/undefined reasons are dropped, never printed as "undefined".
+ *
+ * Reasons are humanised (FB-9): RLS / permission / 403 / 42501 read "you
+ * don't have access to this record", network failures "no connection",
+ * timeouts "the request timed out", HTTP 5xx / HTML error pages "server
+ * error"; PGRST/SQLSTATE codes and stack prefixes are dropped, useful server
+ * validation text is kept, and the result is capped at ≈80 chars with '…'.
  */
 export function failed(action: string, reason?: unknown, next?: string): string {
   const verb = stripFailurePrefix(unpunct(action));
-  const reasonText = usefulReason(reasonToText(reason), verb);
+  const reasonText = usefulReason(reasonToInput(reason), verb);
   const head = reasonText
     ? `Couldn't ${verb} — ${unpunct(reasonText)}.`
     : `Couldn't ${verb}.`;
@@ -100,16 +107,195 @@ function repeatKey(s: string): string {
     .trim();
 }
 
+/** Longest reason we will print after the em dash before trimming with '…'. */
+export const FAILED_REASON_MAX_CHARS = 80;
+
+/**
+ * The human wording for each error family `failed()` recognises. Exported so
+ * tests (and any caller that wants to special-case a family) share one string.
+ */
+export const FAILED_REASON = {
+  noAccess: "you don't have access to this record",
+  offline: 'no connection',
+  timedOut: 'the request timed out',
+  serverError: 'server error',
+  sessionExpired: 'your session expired — sign in again',
+  notFound: "that record wasn't found",
+  duplicate: 'that value is already in use',
+} as const;
+
+/** What `reason` boils down to once Error / Postgrest / string shapes are unwrapped. */
+interface ReasonInput {
+  text: string | null;
+  /** SQLSTATE / PGRST / app error code when the object carried one. */
+  code: string | null;
+  /** HTTP status when the object carried one (AuthApiError, fetch wrappers). */
+  status: number | null;
+}
+
+const EMPTY_REASON: ReasonInput = { text: null, code: null, status: null };
+
+function nonEmpty(s: unknown): string | null {
+  if (typeof s !== 'string') return null;
+  const t = s.trim();
+  return t.length > 0 ? t : null;
+}
+
+/**
+ * Accepts a string, an Error (message; `code`/`status` read when present, as
+ * on Supabase's AuthApiError / FunctionsHttpError) or a plain error object
+ * such as PostgrestError `{ message, code, details, hint }` or an API body
+ * `{ error: string }`. Anything else is treated as "no reason".
+ */
+function reasonToInput(reason: unknown): ReasonInput {
+  if (reason == null) return EMPTY_REASON;
+  if (typeof reason === 'string') return { text: nonEmpty(reason), code: null, status: null };
+  if (typeof reason !== 'object') return EMPTY_REASON;
+  const obj = reason as Record<string, unknown>;
+  const text =
+    nonEmpty(obj.message) ??
+    nonEmpty(obj.error_description) ??
+    nonEmpty(obj.error) ??
+    nonEmpty(obj.details) ??
+    null;
+  const code =
+    typeof obj.code === 'string'
+      ? nonEmpty(obj.code)
+      : typeof obj.code === 'number'
+        ? String(obj.code)
+        : null;
+  const statusRaw = obj.status ?? obj.statusCode;
+  const status =
+    typeof statusRaw === 'number' && Number.isFinite(statusRaw) ? statusRaw : null;
+  return { text, code, status };
+}
+
+/** `{"error":"Name is required"}` → "Name is required"; non-JSON passes through. */
+function unwrapJsonBody(text: string): string {
+  if (!/^\s*[{[]/.test(text)) return text;
+  try {
+    const parsed = JSON.parse(text) as unknown;
+    const inner = reasonToInput(parsed).text;
+    return inner ?? text;
+  } catch {
+    return text;
+  }
+}
+
+/**
+ * Map an error onto one of the FAILED_REASON families, or null when it is
+ * free text worth showing (server validation such as "Email is required").
+ * Checks run in precedence order: offline → timed out → no access → session →
+ * not found → duplicate → server error. Patterns are deliberately narrow so
+ * validation text that merely mentions a word ("Timeout must be…") survives.
+ */
+function classifyReason(text: string, code: string | null, status: number | null): string | null {
+  const t = text;
+  // Network: the browser never got an answer.
+  if (
+    /\b(failed to fetch|networkerror|network error|network request failed|load failed|reach the server|could not connect|connection refused|ECONNREFUSED|ECONNRESET|ENOTFOUND|EAI_AGAIN|net::ERR_)/i.test(t) ||
+    /\b(you are|you're|you appear to be) offline\b/i.test(t)
+  ) {
+    return FAILED_REASON.offline;
+  }
+  // Timeouts: whole-message "timeout" forms, "timed out", gateway/statement timeouts.
+  if (
+    status === 504 ||
+    status === 408 ||
+    code === '57014' ||
+    /\b(timed out|statement timeout|gateway timeout|request timeout|upstream timeout|ETIMEDOUT)\b/i.test(t) ||
+    /^(?:(?:network|connection|request|fetch|gateway|upstream)\s+)?time\s?out$/i.test(t) ||
+    /\b(?:HTTP|status(?: code)?|error)\s*:?\s*(?:504|408)\b/i.test(t)
+  ) {
+    return FAILED_REASON.timedOut;
+  }
+  // Permissions: RLS, SQLSTATE 42501, HTTP 403, server-side "not allowed" phrasings.
+  if (
+    status === 403 ||
+    code === '42501' ||
+    code === 'PGRST301' ||
+    /\b(row[- ]level security|permission denied|insufficient[_ ]privilege|insufficient permissions?|access denied|forbidden|42501|not (?:allowed|authori[sz]ed|permitted) to|do(?:es)?n'?t have (?:permission|access)|no (?:permission|access) to)\b/i.test(t) ||
+    /\b(?:HTTP|status(?: code)?|error)\s*:?\s*403\b/i.test(t)
+  ) {
+    return FAILED_REASON.noAccess;
+  }
+  // Session: the server no longer knows who we are.
+  if (
+    status === 401 ||
+    /\b(jwt expired|invalid jwt|not authenticated|session expired|auth session missing|refresh token not found)\b/i.test(t) ||
+    /^unauthori[sz]ed$/i.test(t) ||
+    /\b(?:HTTP|status(?: code)?|error)\s*:?\s*401\b/i.test(t)
+  ) {
+    return FAILED_REASON.sessionExpired;
+  }
+  // PostgREST `.single()` miss — the raw message is meaningless to a person.
+  if (code === 'PGRST116' || /\bPGRST116\b|JSON object requested, multiple \(or no\) rows/i.test(t)) {
+    return FAILED_REASON.notFound;
+  }
+  // Unique-constraint violation: "duplicate key value violates unique constraint "x"".
+  if (code === '23505' || /duplicate key value violates unique constraint/i.test(t)) {
+    return FAILED_REASON.duplicate;
+  }
+  // Server errors: HTTP 5xx (status, "HTTP 500", bare "500 …") or an HTML error page.
+  if (
+    (status != null && status >= 500 && status <= 599) ||
+    /^\s*<(?:!doctype|html)/i.test(t) ||
+    /\b(internal server error|bad gateway|service unavailable)\b/i.test(t) ||
+    /\b(?:HTTP|status(?: code)?|error)\s*:?\s*5\d\d\b/i.test(t) ||
+    /^5\d\d\b/.test(t)
+  ) {
+    return FAILED_REASON.serverError;
+  }
+  return null;
+}
+
+/** Drop "Error: ", "PostgrestError: ", "[PGRST301] ", "23505: ", "(code 42501)" noise around free text. */
+function stripCodeNoise(text: string): string {
+  let t = text;
+  // Error-class prefixes from stringified errors / stack first lines.
+  t = t.replace(/^(?:[A-Za-z]*Error|Exception)\s*:\s+/, '');
+  // Leading code tokens: "PGRST116: …", "[23505] …", "HTTP 400: …", "400 - …".
+  // A bare code needs a separator after it so "100 rows skipped" survives;
+  // a bracketed one does not.
+  t = t.replace(
+    /^(?:(?:\[(?:PGRST\d{3}|\d{2}[0-9A-Z]{3}|HTTP\s*\d{3}|\d{3})\]\s*(?::|;|[-–—])?|(?:PGRST\d{3}|\d{2}[0-9A-Z]{3}|HTTP\s*\d{3}|\d{3})\s*(?::|;|[-–—]))\s*)+/i,
+    '',
+  );
+  // Trailing "(code PGRST116)" / "[23505]" / "(HTTP 500)".
+  t = t.replace(/\s*[[(]\s*(?:code[:\s]*)?(?:PGRST\d{3}|\d{2}[0-9A-Z]{3}|HTTP\s*\d{3})\s*[\])]\s*$/i, '');
+  // A reason that is only a code carries nothing for the reader.
+  if (/^\[?(?:PGRST\d{3}|\d{2}[0-9A-Z]{3}|HTTP\s*\d{3}|\d{3})\]?$/i.test(t.trim())) return '';
+  return t.trim();
+}
+
+/** Keep the first line, collapse whitespace, and trim to the cap on a word boundary with '…'. */
+function tidyAndCap(text: string): string {
+  const firstLine = text.split(/\r?\n/).map((l) => l.trim()).find((l) => l.length > 0) ?? '';
+  const collapsed = firstLine.replace(/\s+/g, ' ').trim();
+  if (collapsed.length <= FAILED_REASON_MAX_CHARS) return collapsed;
+  const cut = collapsed.slice(0, FAILED_REASON_MAX_CHARS);
+  const lastSpace = cut.lastIndexOf(' ');
+  const head = lastSpace > FAILED_REASON_MAX_CHARS / 2 ? cut.slice(0, lastSpace) : cut;
+  return `${head.replace(/[\s,;:–—-]+$/, '')}…`;
+}
+
 /**
  * Callers frequently pass a server error like "Failed to create module" as
  * the reason for the action "create the module", which would render
  * "Couldn't create the module — Failed to create module." Strip the failure
  * prefix from the reason and drop it entirely when what is left only repeats
- * the action (adds no information).
+ * the action (adds no information). Recognised error families are replaced by
+ * their human wording (see FAILED_REASON); everything else is de-noised and
+ * capped.
  */
-function usefulReason(reasonText: string | null, verb: string): string | null {
-  if (!reasonText) return null;
-  const stripped = stripFailurePrefix(unpunct(reasonText));
+function usefulReason(input: ReasonInput, verb: string): string | null {
+  const raw = input.text ? unwrapJsonBody(input.text) : null;
+  // Classify on the full raw text first so "Failed to save note: new row
+  // violates row-level security…" lands on the family, not the lead-in.
+  const family = classifyReason(raw ?? '', input.code, input.status);
+  if (family) return family;
+  if (!raw) return null;
+  const stripped = stripCodeNoise(stripFailurePrefix(unpunct(raw)));
   if (!stripped) return null;
   const verbKey = repeatKey(verb);
   const repeatsAction = (text: string): boolean => {
@@ -120,21 +306,9 @@ function usefulReason(reasonText: string | null, verb: string): string | null {
   // "create module: name already taken" → keep only the detail after the
   // separator when the lead-in just repeats the action.
   const sep = stripped.match(/^(.*?)\s*(?::|;|\s[-–—]\s)\s*(.+)$/);
-  if (sep && repeatsAction(sep[1]) && sep[2].trim()) return sep[2].trim();
-  return stripped;
-}
-
-function reasonToText(reason: unknown): string | null {
-  if (reason == null) return null;
-  if (typeof reason === 'string') {
-    const t = reason.trim();
-    return t.length > 0 ? t : null;
-  }
-  if (reason instanceof Error) {
-    const t = reason.message.trim();
-    return t.length > 0 ? t : null;
-  }
-  return null;
+  const detail = sep && repeatsAction(sep[1]) && sep[2].trim() ? sep[2].trim() : stripped;
+  const tidy = tidyAndCap(stripCodeNoise(detail));
+  return tidy.length > 0 ? tidy : null;
 }
 
 export interface SessionExpiredToast {
@@ -374,6 +548,40 @@ export function restored(noun: string): string {
   return `${cap(unpunct(noun))} restored`;
 }
 
+export interface AddedWithActionToast {
+  /** "Member added" */
+  title: string;
+  /** Optional honest note under the title (e.g. the Members/enrollment caveat). */
+  description?: string;
+  /** Label for the sonner `action` button — "View in list" by default. */
+  actionLabel: string;
+}
+
+/** The one wording for "saved in Contacts, but you are looking at Members" (D1). */
+export const MEMBERS_FILLS_FROM_ENROLLMENT =
+  'Saved in Contacts — Members fills from enrollment, so it is not listed there yet.';
+
+/**
+ * Create success with a follow-up action (D1 / TE-4): "Member added" + a
+ * sonner `action` labelled "View in list" that returns to the originating
+ * list. Title stays exactly `added(noun)` so every "<Noun> added" toast still
+ * reads the same; the action is additive.
+ *
+ *   const c = addedWithAction('Member');
+ *   toast.success(c.title, { description: c.description,
+ *     action: { label: c.actionLabel, onClick: () => router.push(href) } });
+ */
+export function addedWithAction(
+  noun: string,
+  opts: { actionLabel?: string; note?: string } = {},
+): AddedWithActionToast {
+  const label = opts.actionLabel ? cap(unpunct(opts.actionLabel)) : 'View in list';
+  const note = opts.note?.trim();
+  return note
+    ? { title: added(noun), description: note, actionLabel: label }
+    : { title: added(noun), actionLabel: label };
+}
+
 export const toastCopy = {
   saved,
   added,
@@ -393,4 +601,5 @@ export const toastCopy = {
   cappedSelection,
   exportedAll,
   movedToTrash,
+  addedWithAction,
 };

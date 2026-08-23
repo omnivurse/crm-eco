@@ -62,8 +62,14 @@ import {
   type FilterSidebarVariant,
   applyFilterButtonLabel,
   shouldCloseFilterHost,
+  railKeyTargetInOwnKeyScope,
 } from '@/lib/crm/filter-rail';
 import { getFieldOptions } from '@/lib/crm/utils';
+import {
+  DISPLAY_ONLY_FIELD_BADGE,
+  DISPLAY_ONLY_FIELD_HINT,
+  isDisplayOnlyListField,
+} from '@/lib/crm/list-field-policy';
 import {
   STATUS_LANES,
   groupStatusValuesByLane,
@@ -179,55 +185,55 @@ const SYSTEM_FILTERS: SystemFilterDef[] = [
   { preset: 'cadences', defaultHidden: true, label: 'Cadences', icon: Activity, enabled: true },
   // Value-based
   { preset: 'record_action', label: 'Record Action', icon: Activity, enabled: true,
-    needsValue: true, valueType: 'select', valuePlaceholder: 'Select action...',
+    needsValue: true, valueType: 'select', valuePlaceholder: 'Select action…',
     valueOptions: [
       { value: 'create', label: 'Create' }, { value: 'update', label: 'Update' },
       { value: 'delete', label: 'Delete' }, { value: 'stage_change', label: 'Stage Change' },
     ] },
   { preset: 'related_records_action', label: 'Related Records Action', icon: Link2, enabled: true,
-    needsValue: true, valueType: 'select', valuePlaceholder: 'Select action...',
+    needsValue: true, valueType: 'select', valuePlaceholder: 'Select action…',
     valueOptions: [
       { value: 'create', label: 'Create' }, { value: 'update', label: 'Update' },
       { value: 'delete', label: 'Delete' }, { value: 'stage_change', label: 'Stage Change' },
     ] },
   { preset: 'scoring_rules', defaultHidden: true, label: 'Scoring Rules', icon: Target, enabled: true,
-    needsValue: true, valueType: 'number', valuePlaceholder: 'Min score...' },
+    needsValue: true, valueType: 'number', valuePlaceholder: 'Min score…' },
   { preset: 'latest_email_status', label: 'Latest Email Status', icon: Mail, enabled: true,
-    needsValue: true, valueType: 'select', valuePlaceholder: 'Select status...',
+    needsValue: true, valueType: 'select', valuePlaceholder: 'Select status…',
     valueOptions: [
       { value: 'sent', label: 'Sent' }, { value: 'delivered', label: 'Delivered' },
       { value: 'bounced', label: 'Bounced' }, { value: 'failed', label: 'Failed' },
     ] },
   { preset: 'attended_by', defaultHidden: true, label: 'Attended By', icon: Users, enabled: true,
-    needsValue: true, valueType: 'text', valuePlaceholder: 'Name or ID...' },
+    needsValue: true, valueType: 'text', valuePlaceholder: 'Name or ID…' },
   { preset: 'browser', defaultHidden: true, label: 'Browser', icon: MousePointer, enabled: true,
     needsValue: true, valueType: 'text', valuePlaceholder: 'e.g. Chrome' },
   { preset: 'operating_system', defaultHidden: true, label: 'Operating System', icon: MousePointer, enabled: true,
     needsValue: true, valueType: 'text', valuePlaceholder: 'e.g. Windows' },
   { preset: 'portal_name', defaultHidden: true, label: 'Portal Name', icon: MousePointer, enabled: true,
-    needsValue: true, valueType: 'text', valuePlaceholder: 'Portal name...' },
+    needsValue: true, valueType: 'text', valuePlaceholder: 'Portal name…' },
   { preset: 'search_engine', defaultHidden: true, label: 'Search Engine', icon: MousePointer, enabled: true,
     needsValue: true, valueType: 'text', valuePlaceholder: 'e.g. Google' },
   { preset: 'time_spent_minutes', defaultHidden: true, label: 'Time Spent (Minutes)', icon: Activity, enabled: true,
-    needsValue: true, valueType: 'number', valuePlaceholder: 'Min minutes...' },
+    needsValue: true, valueType: 'number', valuePlaceholder: 'Min minutes…' },
   { preset: 'time_visited', defaultHidden: true, label: 'Time Visited', icon: Activity, enabled: true,
-    needsValue: true, valueType: 'number', valuePlaceholder: 'Min visits...' },
+    needsValue: true, valueType: 'number', valuePlaceholder: 'Min visits…' },
   { preset: 'avg_time_spent_minutes', defaultHidden: true, label: 'Average Time Spent (Minutes)', icon: Activity, enabled: true,
-    needsValue: true, valueType: 'number', valuePlaceholder: 'Min avg minutes...' },
+    needsValue: true, valueType: 'number', valuePlaceholder: 'Min avg minutes…' },
   { preset: 'days_visited', defaultHidden: true, label: 'Days Visited', icon: CalendarDays, enabled: true,
-    needsValue: true, valueType: 'number', valuePlaceholder: 'Min days...' },
+    needsValue: true, valueType: 'number', valuePlaceholder: 'Min days…' },
   { preset: 'first_page_visited', defaultHidden: true, label: 'First Page Visited', icon: MousePointer, enabled: true,
-    needsValue: true, valueType: 'text', valuePlaceholder: 'URL contains...' },
+    needsValue: true, valueType: 'text', valuePlaceholder: 'URL contains…' },
   { preset: 'first_visit', defaultHidden: true, label: 'First Visit', icon: Calendar, enabled: true,
-    needsValue: true, valueType: 'date', valuePlaceholder: 'On or after...' },
+    needsValue: true, valueType: 'date', valuePlaceholder: 'On or after…' },
   { preset: 'most_recent_visit', defaultHidden: true, label: 'Most Recent Visit', icon: Calendar, enabled: true,
-    needsValue: true, valueType: 'date', valuePlaceholder: 'On or after...' },
+    needsValue: true, valueType: 'date', valuePlaceholder: 'On or after…' },
   { preset: 'number_of_chats', defaultHidden: true, label: 'Number Of Chats', icon: Mail, enabled: true,
-    needsValue: true, valueType: 'number', valuePlaceholder: 'Min chats...' },
+    needsValue: true, valueType: 'number', valuePlaceholder: 'Min chats…' },
   { preset: 'referrer', defaultHidden: true, label: 'Referrer', icon: Link2, enabled: true,
-    needsValue: true, valueType: 'text', valuePlaceholder: 'URL contains...' },
+    needsValue: true, valueType: 'text', valuePlaceholder: 'URL contains…' },
   { preset: 'visitor_score', defaultHidden: true, label: 'Visitor Score', icon: Target, enabled: true,
-    needsValue: true, valueType: 'number', valuePlaceholder: 'Min score...' },
+    needsValue: true, valueType: 'number', valuePlaceholder: 'Min score…' },
 ];
 
 // ============================================================================
@@ -631,7 +637,7 @@ function FieldFilterRow({
               onValueChange={(v) => onUpdate({ ...filter, value: v })}
             >
               <SelectTrigger className="h-7 text-xs bg-white dark:bg-slate-900/50">
-                <SelectValue placeholder="Select..." />
+                <SelectValue placeholder="Select…" />
               </SelectTrigger>
               <SelectContent className="bg-white dark:bg-slate-900 max-h-60">
                 {getFieldOptions(field.options, field.key).map((opt) => (
@@ -645,7 +651,7 @@ function FieldFilterRow({
               onValueChange={(v) => onUpdate({ ...filter, value: v === 'true' })}
             >
               <SelectTrigger className="h-7 text-xs bg-white dark:bg-slate-900/50">
-                <SelectValue placeholder="Select..." />
+                <SelectValue placeholder="Select…" />
               </SelectTrigger>
               <SelectContent className="bg-white dark:bg-slate-900">
                 <SelectItem value="true" className="text-xs">Yes</SelectItem>
@@ -666,7 +672,7 @@ function FieldFilterRow({
               onBlur={(e) => {
                 onUpdate({ ...filter, value: parseCurrencyInput(e.target.value) });
               }}
-              placeholder="Value..."
+              placeholder="Value…"
               className="h-7 text-xs bg-white dark:bg-slate-900/50"
             />
           ) : fieldType === 'number' ? (
@@ -678,7 +684,7 @@ function FieldFilterRow({
                 ...filter,
                 value: e.target.valueAsNumber,
               })}
-              placeholder="Value..."
+              placeholder="Value…"
               className="h-7 text-xs bg-white dark:bg-slate-900/50"
             />
           ) : (
@@ -689,7 +695,7 @@ function FieldFilterRow({
                 ...filter,
                 value: e.target.value,
               })}
-              placeholder="Value..."
+              placeholder="Value…"
               className="h-7 text-xs bg-white dark:bg-slate-900/50"
             />
           )}
@@ -982,10 +988,51 @@ export function FilterSidebar({
     if (shouldCloseFilterHost(variant)) onClose?.();
   }, [filters, onClose, variant]);
 
+  // ── Docked rail keyboard (LS-8): Enter in a value input applies the draft,
+  // Esc restores it to the applied set. Buttons / comboboxes / open popovers
+  // keep their own Enter & Esc (Radix portals bubble through React, so an
+  // Escape a layer already handled arrives `defaultPrevented`).
+  const rootRef = useRef<HTMLDivElement>(null);
+  const handleRailKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (variant !== 'docked' || e.defaultPrevented) return;
+      const t = e.target as HTMLElement;
+      if (e.key === 'Enter') {
+        // Only value inputs apply; the field-search box narrows the field list.
+        if (t.tagName !== 'INPUT' || t.getAttribute('role') === 'combobox' || t.hasAttribute('data-filter-field-search')) return;
+        if (t.closest('[role="combobox"], [role="listbox"], [role="dialog"], [aria-expanded="true"]')) return;
+        e.preventDefault();
+        handleApply();
+        return;
+      }
+      if (e.key === 'Escape') {
+        // NOT data-state="open" — the rail's own accordion carries it and
+        // would swallow every Escape (railKeyTargetInOwnKeyScope, tested).
+        if (railKeyTargetInOwnKeyScope(t)) return;
+        if (!isDirty) return;
+        e.preventDefault();
+        e.stopPropagation();
+        handleCancel();
+      }
+    },
+    [variant, handleApply, handleCancel, isDirty],
+  );
+
+  // Collapsing unmounts this sidebar; move focus to the rail's "Show …"
+  // toggle (FilterRailFrame) so keyboard users are not dropped on <body>.
+  const handleCollapse = useCallback(() => {
+    const workspace = rootRef.current?.closest<HTMLElement>('[data-filter-workspace]') ?? document;
+    onCollapse?.();
+    window.requestAnimationFrame(() => {
+      const toggle = workspace.querySelector<HTMLElement>('[data-testid="crm-filter-toggle"]');
+      toggle?.focus();
+    });
+  }, [onCollapse]);
+
   const draftCount = draft.length;
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
+    <div ref={rootRef} className="flex h-full min-h-0 flex-col" onKeyDown={handleRailKeyDown}>
       {/* Header */}
       <div className="flex shrink-0 items-start justify-between gap-2 px-4 py-3 border-b border-slate-200 dark:border-slate-700">
         <div className="min-w-0">
@@ -1013,7 +1060,7 @@ export function FilterSidebar({
               variant="ghost"
               size="icon"
               className="h-7 w-7 text-slate-500 hover:text-slate-900 dark:hover:text-white"
-              onClick={onCollapse}
+              onClick={handleCollapse}
               aria-label={`Collapse ${title}`}
               title={`Collapse ${title}`}
             >
@@ -1041,8 +1088,9 @@ export function FilterSidebar({
                 <Input
                   value={fieldSearch}
                   onChange={(e) => setFieldSearch(e.target.value)}
-                  placeholder="Search fields..."
+                  placeholder="Search fields…"
                   aria-label="Search fields"
+                  data-filter-field-search
                   className="h-8 pl-8 text-xs bg-white dark:bg-slate-900/50"
                 />
               </div>
@@ -1053,32 +1101,44 @@ export function FilterSidebar({
                   const activeFiltersForField = fieldFiltersByKey.get(field.key) || [];
                   const hasFilter = activeFiltersForField.length > 0;
                   const isExpanded = expandedField === field.key;
+                  // LS-4 / D11: twin-overlay / resolved columns stay visible
+                  // but cannot start a filter (the stored value is not what the
+                  // list shows). An existing filter on one (URL / saved view)
+                  // can still be opened and removed.
+                  const displayOnly = !hasFilter && isDisplayOnlyListField(field.key, moduleKey);
 
                   return (
                     <div key={field.key}>
                       <button
                         type="button"
                         onClick={() => {
+                          if (displayOnly) return;
                           if (hasFilter) {
                             setExpandedField(isExpanded ? null : field.key);
                           } else {
                             addFieldFilter(field.key);
                           }
                         }}
+                        disabled={displayOnly}
+                        aria-disabled={displayOnly || undefined}
+                        title={displayOnly ? DISPLAY_ONLY_FIELD_HINT : undefined}
+                        data-display-only={displayOnly || undefined}
                         aria-expanded={hasFilter ? isExpanded : undefined}
                         className={cn(
                           'flex items-center gap-2 w-full px-3 py-2 rounded-lg text-xs transition-colors text-left',
                           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
                           hasFilter
                             ? 'bg-primary/10 text-primary font-medium'
-                            : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800',
+                            : displayOnly
+                              ? 'text-slate-400 dark:text-slate-500 cursor-not-allowed'
+                              : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800',
                         )}
                       >
                         <span className="flex-1 truncate">{field.label}</span>
                         <span className="text-[10px] text-slate-400 dark:text-slate-500 shrink-0">
-                          {field.type}
+                          {displayOnly ? DISPLAY_ONLY_FIELD_BADGE : field.type}
                         </span>
-                        {hasFilter ? (
+                        {displayOnly ? null : hasFilter ? (
                           <ChevronDown className={cn('w-3 h-3 transition-transform shrink-0', isExpanded && 'rotate-180')} aria-hidden />
                         ) : (
                           <Plus className="w-3 h-3 text-slate-400 shrink-0" aria-hidden />
@@ -1140,7 +1200,7 @@ export function FilterSidebar({
                     value={activeOwnerId}
                     onValueChange={handleOwnerFilterChange}
                     placeholder={advisorsStatus === 'loading' ? 'Loading advisors…' : 'Choose an Advisor'}
-                    searchPlaceholder="Search by name..."
+                    searchPlaceholder="Search by name…"
                     emptyText={
                       advisorsStatus === 'error'
                         ? 'Could not load advisors.'
@@ -1208,7 +1268,7 @@ export function FilterSidebar({
                               onValueChange={(v) => toggleSystemFilter(preset, v)}
                             >
                               <SelectTrigger className="h-7 text-xs bg-white dark:bg-slate-900/50" aria-label={`${label} value`}>
-                                <SelectValue placeholder={valuePlaceholder || 'Select...'} />
+                                <SelectValue placeholder={valuePlaceholder || 'Select…'} />
                               </SelectTrigger>
                               <SelectContent className="bg-white dark:bg-slate-900 max-h-60">
                                 {valueOptions.map((opt) => (
@@ -1226,7 +1286,7 @@ export function FilterSidebar({
                                 const v = valueType === 'number' ? (e.target.valueAsNumber || null) : e.target.value;
                                 toggleSystemFilter(preset, v);
                               }}
-                              placeholder={valuePlaceholder || 'Value...'}
+                              placeholder={valuePlaceholder || 'Value…'}
                               aria-label={`${label} value`}
                               className="h-7 text-xs bg-white dark:bg-slate-900/50"
                             />

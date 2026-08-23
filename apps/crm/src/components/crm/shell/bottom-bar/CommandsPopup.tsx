@@ -18,6 +18,9 @@ import { cn } from '@crm-eco/ui/lib/utils';
 import type { CrmModule } from '@/lib/crm/types';
 import { resolveCreateIntent } from '@/lib/crm/create-intent';
 import { openCrmQuickCreate } from '@/lib/crm/create-intent-bus';
+import { useClientAuth } from '@/hooks/useClientAuth';
+import { canCreateRecords } from '@/lib/crm/can-create-records';
+import { isCrmManagerOrAdminRole } from '@/lib/crm/nav-profile';
 
 interface QuickAction {
   id: string;
@@ -98,8 +101,19 @@ interface CommandsPopupProps {
   onClose: () => void;
 }
 
+/** Create shortcuts (`…/new`) need a creating role; Import needs manager/admin (same gates as the palette / nav). */
+export function commandsPopupActionAllowed(href: string, crmRole: string | null | undefined): boolean {
+  if (/^\/crm\/modules\/[^/]+\/new$/.test(href) || href === '/crm/tasks/new') return canCreateRecords(crmRole);
+  if (href.startsWith('/crm/import')) return isCrmManagerOrAdminRole(crmRole);
+  return true;
+}
+
 export function CommandsPopup({ modules, onClose }: CommandsPopupProps) {
   const router = useRouter();
+  // DE-M1: the same role predicate as every other create affordance — a
+  // crm_viewer never sees New Lead / New Contact / … here either.
+  const { profile } = useClientAuth();
+  const crmRole = profile?.crm_role;
 
   const dealsEnabled = modules.some((m) => m.key === 'deals' && m.is_enabled);
   const handleAction = (href: string) => {
@@ -132,6 +146,7 @@ export function CommandsPopup({ modules, onClose }: CommandsPopupProps) {
       <div className="p-3 grid grid-cols-3 gap-2">
         {defaultActions
           .filter((action) => action.id !== 'new-deal' || dealsEnabled)
+          .filter((action) => commandsPopupActionAllowed(action.href, crmRole))
           .map((action) => (
           <button
             key={action.id}

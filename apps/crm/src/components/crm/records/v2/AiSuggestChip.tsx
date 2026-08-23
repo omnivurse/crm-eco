@@ -20,6 +20,7 @@ import { memo, useCallback, useState } from 'react';
 import { Loader2, Sparkles } from 'lucide-react';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { toast } from 'sonner';
+import { toastCopy } from '@/lib/crm/toast-copy';
 
 export interface AiSuggestChipProps {
   recordId: string;
@@ -80,24 +81,23 @@ export const AiSuggestChip = memo(function AiSuggestChip({
             /* ignore */
           }
           if (code === 'AI_NOT_CONFIGURED') {
-            toast.warning('AI assistant not configured', {
+            toast.warning(toastCopy.failed('suggest a value', 'the AI assistant is not configured'), {
               description: 'Set OPENAI_API_KEY on the server to enable suggestions.',
             });
           } else {
-            toast.error(message);
+            toast.error(toastCopy.failed('suggest a value', message, 'Try again'));
           }
           return;
         }
         const body = (await res.json()) as { suggestion?: string };
         const suggestion = (body.suggestion ?? '').trim();
         if (!suggestion) {
-          toast.info('No suggestion available — try adding more context.');
+          toast.info(toastCopy.failed('find a suggestion', undefined, 'Try adding more context'));
           return;
         }
         onSuggest(suggestion);
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        toast.error('AI request failed', { description: message });
+        toast.error(toastCopy.failed('suggest a value', err, 'Try again'));
       } finally {
         setLoading(false);
       }

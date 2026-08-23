@@ -285,6 +285,51 @@ inline cell is clickable; tablet 3; desktop 0. DE-invalid-date is rejected inlin
 ("Enter a real date as MM/DD/YYYY", no POST) and DE-lead-pending saves with `POST 200` in 4
 clicks + Enter — both soft tasks pass now.
 
+## Wave-2 interim walk (2026-08-23, commit ed7767e7 + uncommitted Wave-2 tree)
+
+Three full recorded runs (`--prune-walk-rows` preflight before each; all three projects,
+`role=operator`, `nav=full`, `v2=true`). Run 1 surfaced three harness races (fixed below);
+runs 2 (`e2e/artifacts/crm-walk/2026-08-23T06-00-37-166Z`) and 3
+(`…/2026-08-23T06-05-38-798Z`, `latest.txt`) — 33 Playwright tests passed, 9 skipped,
+95 task rows, 309 trap rows (all PASS), **0 differences** in clicks / keypresses / typed chars
+/ pass between the two runs. Every hard task is green on all three projects. Wave-1 soft fails
+now passing: `LS-rail-apply` (pendingStateSeen), `LS-page-abc` ("Showing 1 to 25 of 35
+contacts"), `NV-search-copy` (one canonical `SEARCH_PLACEHOLDER` on every surface, palette
+aria = `SEARCH_ARIA_LABEL`), `NV-palette` ("task" → "Go to Tasks"), `NV-redirects`
+(`/crm/pipeline` → `/crm/modules/members`, 0 Pipeline links), `T5-list` (`tel:` anchor,
+0 scroll steps), `T6-aria-live`, `RP-header-density` (0 global search in header, find-in-record
+reachable + focused by `/`, Add Tags pill opacity-0 at rest, 0 admin badges), `RP-notes-pane-reload`
+(`?pane=notes`), `T4-see-on-list` (1 click via the "View in list" toast action).
+
+Soft tasks still recording `pass=false` (all product, none harness):
+
+| Task | Projects | Why it fails today |
+|---|---|---|
+| `NV-cross-tab` | desktop, tablet | 1/14 operator cross-tab links swaps: Operations › "Import Data" (`/crm/import`) redirects `crm_agent` to `/crm?error=no_import_permission` (`import/page.tsx` allows only `crm_admin`/`crm_manager`), so the sticky rule cannot hold; the other 13 are sticky (D10 works). Each note now records `redirected=<landed path>` |
+| `T2-above-fold` | tablet, mobile | below the fold at 1024: snapshot, Enrolled by, Recent notes; at 390 also member # (RP-6 above-the-fold compaction not shipped; header chrome only) |
+| `LS-mobile-filter` | mobile | 5 taps (budget 4): "Filters & View" sheet still fronts `crm-filter-trigger` (LS-10, Wave 3) |
+
+Viewer persona (separate recorded runs, `WALK_ROLE=viewer`): `DE-viewer-no-create`
+(`…/2026-08-23T05-01-57-112Z`: `crm-create-primary` 0, `crm-create-primary-mobile` 0) and
+`DE-viewer-post-403` (`…/2026-08-23T05-04-03-646Z`, new spec `e2e/specs/walk-viewer-api.spec.ts`:
+POST `/api/crm/records` → 403 with valid org/module ids).
+
+Harness changes in this wave: `NV-cross-tab` settles on URL + evidence the hop committed
+(clicked link `aria-current` OR tab == path resolver) + 400 ms grace instead of polling
+`topModuleForPath(link)` (wrong under D10 sticky; it burned 15 s per link); the collapsed-sidebar
+search selector is `[aria-label="${SEARCH_PLACEHOLDER}"]`; `walk-helpers.ts`
+`armPendingStateLatch(page)` / `readPendingStateLatch(page, ms)` (in-page MutationObserver armed
+BEFORE Apply) because the LS-3 pending state is shorter than an outside poll on a warm server;
+`DE-lead-pending` reads its outcome from the request tracker armed before the press;
+`e2e/tsconfig.json` resolves `@/*` → `src/*` (ModuleContext → nav-profile imports the alias);
+`next-env.d.ts` is rewritten by `next dev` on every walk — restore with
+`git show HEAD:apps/crm/next-env.d.ts > apps/crm/next-env.d.ts` before committing.
+
+Server log noise seen on every run (not walk failures): `⨯ TypeError: DOMPurify.default.sanitize
+is not a function` at `lib/crm/note-sanitize.ts` when `/crm/r/<id>?pane=notes` is server-rendered
+(NotesPanel SSR'd once Notes is the initial pane — page still returns 200); `[signals] table
+missing — migration not applied` on POST `/api/crm/signals` (documented in live-reality).
+
 ## Proving the traps (negative-run switches)
 
 Three env switches exist ONLY to make the walk fail on a named trap — they never
@@ -358,10 +403,11 @@ Untracked files must be clean. A cleanup item retiring the carried debt (then fl
   the walk's own rows — `first_name = 'Walk'` records, `Walk T3…` notes — then re-verifies);
   two consecutive pruned runs produce identical per-task tallies. `T5-list` also scrolls the
   list (`revealByScrolling`, not counted; `notes.scrollSteps`) so it survives a longer lane.
-- `NV-cross-tab` reads the sidebar only after the URL settled AND the tab equals what
-  `nav-tabs.ts` predicts for the path (ModuleContext resolves the tab in an effect after the
-  client transition); read earlier it records the previous tab's sidebar as "not swapped"
-  and the verdict flips between runs.
+- `NV-cross-tab` reads the sidebar only after the URL settled AND the hop has visibly
+  committed (the clicked link is `aria-current`, or the tab equals the path resolver) plus a
+  400 ms grace; under D10 the tab is expected to STAY `link.tab`, so never poll for
+  `topModuleForPath(link)` (that burns the full settle timeout per link). A redirect by the
+  app is recorded as `redirected=<landed path>` in the note.
 - `walk.type` on a native `<select>` is type-ahead (`pressSequentially` under the typing
   flag): pass the start of an option label; Chromium keeps a ~1 s prefix buffer, so two
   type-aheads on the same select in a row need a pause. `fill` would throw.

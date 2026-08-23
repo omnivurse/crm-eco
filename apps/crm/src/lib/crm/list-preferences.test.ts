@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  LIST_DEFAULT_PAGE_SIZE,
   applyListUrlPatch,
   listPrefsEqual,
   listPrefsStorageKey,
@@ -118,12 +119,12 @@ describe('mergeListPrefs / pickNewer / equal', () => {
 
 describe('readListUrlState', () => {
   it('reads and validates the pref-managed keys', () => {
-    expect(url()).toEqual({ viewId: null, sortField: null, sortDirection: null, scope: null, viewMode: null });
+    expect(url()).toEqual({ viewId: null, sortField: null, sortDirection: null, scope: null, viewMode: null, pageSize: null });
     expect(url({ view: 'v1', sortField: 'email', sortDirection: 'desc', scope: 'mine', viewMode: 'kanban' })).toEqual({
-      viewId: 'v1', sortField: 'email', sortDirection: 'desc', scope: 'mine', viewMode: 'kanban',
+      viewId: 'v1', sortField: 'email', sortDirection: 'desc', scope: 'mine', viewMode: 'kanban', pageSize: null,
     });
     expect(url({ sortDirection: 'up', scope: 'team', viewMode: 'nope' })).toEqual({
-      viewId: null, sortField: null, sortDirection: null, scope: null, viewMode: null,
+      viewId: null, sortField: null, sortDirection: null, scope: null, viewMode: null, pageSize: null,
     });
   });
 });
@@ -134,7 +135,7 @@ describe('resolveInitialListState', () => {
   it('falls back to view, then module defaults, when nothing is remembered', () => {
     const r = resolveInitialListState({ url: url(), prefs: null, activeView: view, fields });
     expect(r.columns).toEqual(['first_name', 'last_name']);
-    expect(r.source).toEqual({ columns: 'view', sort: 'view', scope: 'default', viewMode: 'default' });
+    expect(r.source).toEqual({ columns: 'view', sort: 'view', scope: 'default', viewMode: 'default', pageSize: 'default' });
     expect(r.sort).toEqual({ field: 'created_at', direction: 'desc' });
     expect(r.urlPatch).toEqual({});
 
@@ -158,7 +159,7 @@ describe('resolveInitialListState', () => {
     expect(r.sort).toEqual({ field: 'email', direction: 'asc' });
     expect(r.scope).toBe('mine');
     expect(r.viewMode).toBe('list');
-    expect(r.source).toEqual({ columns: 'prefs', sort: 'prefs', scope: 'prefs', viewMode: 'prefs' });
+    expect(r.source).toEqual({ columns: 'prefs', sort: 'prefs', scope: 'prefs', viewMode: 'prefs', pageSize: 'default' });
     expect(r.urlPatch).toEqual({ sortField: 'email', sortDirection: 'asc', scope: 'mine', viewMode: 'list' });
   });
 
@@ -236,5 +237,51 @@ describe('applyListUrlPatch', () => {
     expect(next?.get('page')).toBe('3');
     expect(applyListUrlPatch(p, { scope: 'mine' })).toBeNull();
     expect(applyListUrlPatch(p, {})).toBeNull();
+  });
+});
+
+describe('pageSize (LS-7 / D11: remembered rows-per-page)', () => {
+  it('sanitizes to the allowed sizes only', () => {
+    expect(sanitizeListPrefs({ pageSize: 50 })).toEqual({ v: 1, pageSize: 50 });
+    expect(sanitizeListPrefs({ pageSize: 100 })?.pageSize).toBe(100);
+    expect(sanitizeListPrefs({ pageSize: 25 })?.pageSize).toBe(25);
+    expect(sanitizeListPrefs({ pageSize: 30 })).toBeNull();
+    expect(sanitizeListPrefs({ pageSize: '50' })).toBeNull();
+  });
+
+  it('merges, compares and reads the URL page_size', () => {
+    const merged = mergeListPrefs({ v: 1, scope: 'mine' }, { pageSize: 100 }, 5);
+    expect(merged).toEqual({ v: 1, scope: 'mine', pageSize: 100, updated_at: 5 });
+    expect(listPrefsEqual({ pageSize: 50 }, { pageSize: 50 })).toBe(true);
+    expect(listPrefsEqual({ pageSize: 50 }, { pageSize: 100 })).toBe(false);
+    expect(url({ page_size: '50' }).pageSize).toBe(50);
+    expect(url({ page_size: '33' }).pageSize).toBeNull();
+    expect(url().pageSize).toBeNull();
+  });
+
+  it('URL > prefs > default 25, and only a non-default remembered size is patched into the URL', () => {
+    const fromUrl = resolveInitialListState({ url: url({ page_size: '100' }), prefs: { pageSize: 50 }, activeView: null, fields });
+    expect(fromUrl.pageSize).toBe(100);
+    expect(fromUrl.source.pageSize).toBe('url');
+    expect(fromUrl.urlPatch.page_size).toBeUndefined();
+
+    const fromPrefs = resolveInitialListState({ url: url(), prefs: { pageSize: 50 }, activeView: null, fields });
+    expect(fromPrefs.pageSize).toBe(50);
+    expect(fromPrefs.source.pageSize).toBe('prefs');
+    expect(fromPrefs.urlPatch).toEqual({ page_size: '50' });
+
+    const remembered25 = resolveInitialListState({ url: url(), prefs: { pageSize: 25 }, activeView: null, fields });
+    expect(remembered25.source.pageSize).toBe('prefs');
+    expect(remembered25.urlPatch.page_size).toBeUndefined();
+
+    const none = resolveInitialListState({ url: url(), prefs: null, activeView: null, fields });
+    expect(none.pageSize).toBe(LIST_DEFAULT_PAGE_SIZE);
+    expect(none.source.pageSize).toBe('default');
+  });
+
+  it('applyListUrlPatch never overwrites an explicit page_size', () => {
+    const params = new URLSearchParams({ page_size: '100' });
+    expect(applyListUrlPatch(params, { page_size: '50' })).toBeNull();
+    expect(applyListUrlPatch(new URLSearchParams(), { page_size: '50' })?.get('page_size')).toBe('50');
   });
 });

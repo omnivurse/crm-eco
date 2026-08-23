@@ -5,9 +5,13 @@ import {
   isNavHrefActive,
   resolveActiveNavKey,
   disabledModuleRedirect,
+  visibleNavItemsForRole,
+  isCrmAdminRole,
+  isCrmManagerOrAdminRole,
+  recordPageActiveNavKey,
   type NavModule,
 } from './nav-profile';
-import type { NavItem } from '@/contexts/ModuleContext';
+import { CRM_NAV_ITEMS, getNavItemsForModule, type NavItem } from '@/contexts/ModuleContext';
 
 // Mirrors PIFH's live crm_modules rows (2026-08-17).
 const PIFH_MODULES: NavModule[] = [
@@ -62,10 +66,10 @@ describe('buildSimpleNav', () => {
   });
 });
 
-describe('buildFullCrmNav', () => {
-  const BASE: NavItem[] = [
+// Static CRM baseline (mirrors CRM_NAV_ITEMS' shape) shared by the full-nav suites.
+const BASE: NavItem[] = [
     { key: 'dashboard', label: 'Dashboard', icon: 'layout-dashboard', href: '/crm' },
-    { key: 'sec-pipeline', separator: true, sectionTitle: 'Sales Pipeline' },
+    { key: 'sec-pipeline', separator: true, sectionTitle: 'People' },
     { key: 'leads', label: 'Leads', icon: 'user-plus', href: '/crm/modules/leads' },
     { key: 'contacts', label: 'Contacts', icon: 'users', href: '/crm/modules/contacts' },
     { key: 'accounts', label: 'Accounts', icon: 'building', href: '/crm/modules/accounts' },
@@ -74,17 +78,32 @@ describe('buildFullCrmNav', () => {
     { key: 'sec-people', separator: true, sectionTitle: 'People Management' },
     { key: 'advisors', label: 'Advisors', icon: 'user-cog', href: '/crm/modules/advisors' },
     { key: 'member-roster', label: 'Member Roster', icon: 'heart-pulse', href: '/crm/members' },
-  ];
+];
 
-  it('drives the Sales Pipeline section from crm_modules and keeps Advisors when enabled', () => {
+describe('buildFullCrmNav', () => {
+  it('drives the People section from crm_modules and keeps Advisors when enabled', () => {
     const nav = buildFullCrmNav(BASE, PIFH_MODULES);
+    // PIFH has deals disabled → no Pipeline link (NV-5 / D10).
     expect(labels(nav)).toEqual([
       'Dashboard',
-      'Contacts', 'Leads', 'Members', 'Accounts', 'Pipeline',
+      'Contacts', 'Leads', 'Members', 'Accounts',
       'Advisors', 'Member Roster',
     ]);
     expect(hrefs(nav)).not.toContain('/crm/modules/deals');
     expect(hrefs(nav)).not.toContain('/crm/modules/prospects');
+    expect(nav.find((i) => i.key === 'sec-pipeline')?.sectionTitle).toBe('People');
+  });
+
+  it('hides Pipeline when deals is disabled and shows it when deals is enabled', () => {
+    expect(labels(buildFullCrmNav(BASE, PIFH_MODULES))).not.toContain('Pipeline');
+    expect(hrefs(buildFullCrmNav(BASE, PIFH_MODULES))).not.toContain('/crm/pipeline');
+    const withDeals = PIFH_MODULES.map((m) => (m.key === 'deals' ? { ...m, is_enabled: true } : m));
+    const nav = buildFullCrmNav(BASE, withDeals);
+    expect(hrefs(nav)).toContain('/crm/pipeline');
+    expect(hrefs(nav)).toContain('/crm/modules/deals');
+    // Pipeline follows the injected module links, before People Management.
+    expect(labels(nav).indexOf('Pipeline')).toBeGreaterThan(labels(nav).indexOf('Members'));
+    expect(labels(nav).indexOf('Pipeline')).toBeLessThan(labels(nav).indexOf('Advisors'));
   });
 
   it('hides Advisors when the advisors module is disabled', () => {
@@ -96,8 +115,102 @@ describe('buildFullCrmNav', () => {
 
   it('keeps the static links when the org has no modules', () => {
     const nav = buildFullCrmNav(BASE, []);
-    // no module links, no advisors, but Pipeline + roster remain
-    expect(labels(nav)).toEqual(['Dashboard', 'Pipeline', 'Member Roster']);
+    // no module links, no advisors, no deals → no Pipeline; roster remains
+    expect(labels(nav)).toEqual(['Dashboard', 'Member Roster']);
+  });
+});
+
+describe('visibleNavItemsForRole (NV-M1)', () => {
+  const SETTINGS: NavItem[] = [
+    { key: 'general', label: 'General', icon: 'settings', href: '/crm/settings' },
+    { key: 'sec-org', separator: true, sectionTitle: 'Organization' },
+    { key: 'users', label: 'Users & Teams', icon: 'users', href: '/crm/settings/users', adminOnly: true },
+    { key: 'roles', label: 'Roles', icon: 'shield', href: '/crm/settings/users?tab=roles', adminOnly: true },
+    { key: 'sec-comm', separator: true, sectionTitle: 'Communication' },
+    { key: 'templates', label: 'Templates', icon: 'file-text', href: '/crm/settings/templates' },
+    { key: 'email-domains', label: 'Email Domains', icon: 'globe', href: '/crm/settings/email-domains', adminOnly: true },
+    { key: 'sec-advanced', separator: true, sectionTitle: 'Advanced' },
+    { key: 'configuration', label: 'Configuration', icon: 'sliders', href: '/crm/settings/configuration', adminOnly: true },
+  ];
+
+  it('uses the settings-cards predicate: only crm_admin is admin', () => {
+    expect(isCrmAdminRole('crm_admin')).toBe(true);
+    for (const r of ['crm_manager', 'crm_agent', 'crm_viewer', null, undefined, '']) {
+      expect(isCrmAdminRole(r)).toBe(false);
+    }
+  });
+
+  it('returns the list untouched for admins', () => {
+    expect(visibleNavItemsForRole(SETTINGS, 'crm_admin')).toBe(SETTINGS);
+  });
+
+  it('hides admin-only links AND emptied section headers for agents (fail closed on unknown role)', () => {
+    for (const role of ['crm_agent', 'crm_viewer', null, undefined]) {
+      const items = visibleNavItemsForRole(SETTINGS, role);
+      expect(items.map((i) => i.key)).toEqual(['general', 'sec-comm', 'templates']);
+    }
+  });
+
+  it('keeps every non-admin link and never invents one', () => {
+    const agent = visibleNavItemsForRole(SETTINGS, 'crm_agent');
+    const kept = SETTINGS.filter((i) => !i.separator && !i.adminOnly).map((i) => i.key);
+    expect(agent.filter((i) => !i.separator).map((i) => i.key)).toEqual(kept);
+    expect(agent.every((i) => i.separator || !i.adminOnly)).toBe(true);
+  });
+
+  // NV-2: /crm/import bounces anyone but crm_admin | crm_manager, so its nav
+  // links carry `managerOrAdmin` and follow the page's predicate exactly.
+  const OPS: NavItem[] = [
+    { key: 'overview', label: 'Overview', icon: 'home', href: '/crm/operations' },
+    { key: 'sec-data', separator: true, sectionTitle: 'Data Management' },
+    { key: 'import', label: 'Import / Export', icon: 'upload', href: '/crm/import', managerOrAdmin: true },
+  ];
+
+  it('isCrmManagerOrAdminRole mirrors app/crm/import/page.tsx', () => {
+    expect(isCrmManagerOrAdminRole('crm_admin')).toBe(true);
+    expect(isCrmManagerOrAdminRole('crm_manager')).toBe(true);
+    for (const r of ['crm_agent', 'crm_viewer', null, undefined, '']) {
+      expect(isCrmManagerOrAdminRole(r)).toBe(false);
+    }
+  });
+
+  it('shows managerOrAdmin links to managers and admins, hides them (and the emptied section) from agents/viewers/unknown', () => {
+    expect(visibleNavItemsForRole(OPS, 'crm_admin').map((i) => i.key)).toEqual(['overview', 'sec-data', 'import']);
+    expect(visibleNavItemsForRole(OPS, 'crm_manager').map((i) => i.key)).toEqual(['overview', 'sec-data', 'import']);
+    for (const role of ['crm_agent', 'crm_viewer', null, undefined]) {
+      expect(visibleNavItemsForRole(OPS, role).map((i) => i.key)).toEqual(['overview']);
+    }
+  });
+
+  it('the real nav data gates every /crm/import link (CRM + Operations) for agents', () => {
+    const agentHrefs = [
+      ...visibleNavItemsForRole(buildFullCrmNav(CRM_NAV_ITEMS, PIFH_MODULES), 'crm_agent'),
+      ...visibleNavItemsForRole(getNavItemsForModule('operations'), 'crm_agent'),
+    ]
+      .filter((i) => !i.separator)
+      .map((i) => i.href);
+    expect(agentHrefs.some((h) => h.startsWith('/crm/import'))).toBe(false);
+    const managerHrefs = [
+      ...visibleNavItemsForRole(buildFullCrmNav(CRM_NAV_ITEMS, PIFH_MODULES), 'crm_manager'),
+      ...visibleNavItemsForRole(getNavItemsForModule('operations'), 'crm_manager'),
+    ]
+      .filter((i) => !i.separator)
+      .map((i) => i.href);
+    expect(managerHrefs.filter((h) => h.startsWith('/crm/import')).length).toBeGreaterThanOrEqual(2);
+  });
+});
+
+describe('recordPageActiveNavKey (NV-7)', () => {
+  const ITEMS = buildFullCrmNav(BASE, PIFH_MODULES);
+  it('highlights the module list link on /crm/r/<id> when the record module is known', () => {
+    expect(recordPageActiveNavKey(ITEMS, '/crm/r/abc', 'members')).toBe('module-members');
+    expect(recordPageActiveNavKey(ITEMS, '/crm/r/abc', 'contacts')).toBe('module-contacts');
+  });
+  it('falls back to no highlight off record pages, for unknown modules, or modules without a link', () => {
+    expect(recordPageActiveNavKey(ITEMS, '/crm/modules/members', 'members')).toBeNull();
+    expect(recordPageActiveNavKey(ITEMS, '/crm/r/abc', null)).toBeNull();
+    expect(recordPageActiveNavKey(ITEMS, '/crm/r/abc', undefined)).toBeNull();
+    expect(recordPageActiveNavKey(ITEMS, '/crm/r/abc', 'deals')).toBeNull();
   });
 });
 

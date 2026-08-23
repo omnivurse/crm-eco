@@ -6,9 +6,10 @@
  * task, so the seed stays as the other specs expect it (local DB only).
  */
 import { expect, test } from '../walk-fixture';
-import { walkRole } from '../env';
+import { LOCAL_SUPABASE_SERVICE_ROLE_KEY, LOCAL_SUPABASE_URL, walkRole } from '../env';
 import { assertTrapsInTest } from '../traps';
-import { isBelowLg, nudgeIntoClickableView, runSuffix, toastTitles, trackRequests } from '../walk-helpers';
+import { isBelowLg, isMobileProject, modKey, nudgeIntoClickableView, runSuffix, toastTitles, trackRequests } from '../walk-helpers';
+import { movedToTrash, restored } from '../../src/lib/crm/toast-copy';
 
 /** Inline-editable text cells on the contacts overview, most harmless first. */
 const T6_FIELD_CANDIDATES = ['preferred_name', 'middle_name', 'referring_member', 'mailing_city'] as const;
@@ -102,15 +103,42 @@ test.describe('record page walk', () => {
       async () => {
         await page.goto(anchor!.url, { waitUntil: 'domcontentloaded' });
         await expect(page.getByRole('group', { name: 'Add note' })).toBeVisible();
+        // RP-3 / D6a contract: the record header owns ONE search affordance — the
+        // find-in-record input (collapsed at rest, reachable by the `/` hotkey).
+        // The V1-era global "Search records..." box must be gone; ⌘K is global.
         const globalSearch = page.locator('input[placeholder="Search records..."]:visible');
-        const findInRecord = page.locator('input[data-inline-record-search]:visible');
-        const searchInputs = (await globalSearch.count()) + (await findInRecord.count());
-        walk.note('searchInputs', searchInputs);
+        const findInRecord = page.locator('input[data-inline-record-search]');
+        const findVisibleAtRest = await findInRecord.locator('visible=true').count();
         walk.note('searchInputs.globalInHeader', await globalSearch.count());
-        walk.note('searchInputs.findInRecord', await findInRecord.count());
+        walk.note('searchInputs.findInRecordVisibleAtRest', findVisibleAtRest);
+        let findReachableBySlash = findVisibleAtRest > 0;
+        if (!findReachableBySlash && !isBelowLg(page)) {
+          // A restored scroll position compacts the header (breadcrumb row +
+          // find box hidden); `/` must un-compact and focus the box. Keypresses
+          // are tallied but not budgeted.
+          await walk.press('/', 'find-in-record hotkey');
+          findReachableBySlash = await expect(findInRecord.first())
+            .toBeVisible({ timeout: 2_000 })
+            .then(
+              () => true,
+              () => false,
+            );
+          walk.note('searchInputs.findFocusedBySlash', findReachableBySlash && (await findInRecord.first().evaluate((el) => el === document.activeElement)));
+          await walk.press('Escape', 'leave find-in-record');
+        }
+        walk.note('searchInputs.findReachableBySlash', findReachableBySlash);
+        // Below lg the find box is md+ only — the contract there is simply "no second box".
+        const searchInputs = (await globalSearch.count()) + (findReachableBySlash ? 1 : 0);
+        walk.note('searchInputs', searchInputs);
 
+        // RP-5 / D6c: the dashed pill exists for Tab/touch but is opacity-0 at
+        // rest on a tagless record (Playwright's :visible ignores opacity).
         const addTags = page.locator('button:visible', { hasText: /^Add Tags$/ });
-        walk.note('addTagsPillAtRest', await addTags.count());
+        const addTagsShownAtRest = await addTags.evaluateAll((els) =>
+          els.filter((el) => Number.parseFloat(getComputedStyle(el).opacity) > 0).length,
+        );
+        walk.note('addTagsPillCount', await addTags.count());
+        walk.note('addTagsPillAtRest', addTagsShownAtRest);
 
         const adminBadges = page.getByText(/needs (review|classification)/i);
         walk.note('adminBadges', await adminBadges.count());
@@ -125,8 +153,12 @@ test.describe('record page walk', () => {
         }
 
         const problems: string[] = [];
-        if (searchInputs !== 1) problems.push(`${searchInputs} search inputs in the header (want 1)`);
-        if ((await addTags.count()) > 0) problems.push('dashed "Add Tags" pill visible at rest');
+        if (belowLg) {
+          if ((await globalSearch.count()) > 0) problems.push('V1 global search box still in the record header');
+        } else if (searchInputs !== 1) {
+          problems.push(`${searchInputs} search affordances in the header (want 1: find-in-record, visible or via "/")`);
+        }
+        if (addTagsShownAtRest > 0) problems.push('dashed "Add Tags" pill visible at rest');
         if (walkRole() === 'operator' && (await adminBadges.count()) > 0) problems.push('admin-only Needs Review/Classification badge shown to crm_agent');
         if (belowLg && emailActions > 1) problems.push(`${emailActions} Email actions below lg (want 1)`);
         expect(problems, problems.join('; ')).toEqual([]);
@@ -167,3 +199,293 @@ test.describe('record page walk', () => {
     );
   });
 });
+
+// ---------------------------------------------------------------------------
+// RP-6 evidence — the ⋯ Insights door below xl and the header skip link.
+// ---------------------------------------------------------------------------
+test.describe('record chrome (RP-6)', () => {
+  test('Insights opens from ⋯ below xl; skip link reaches the section nav', async ({ page, request, bareRequest, walk }, testInfo) => {
+    const project = testInfo.project.name;
+    const { anchor } = await assertTrapsInTest({ page, request, bareRequest, project });
+    expect(anchor).not.toBeNull();
+    await page.goto(anchor!.url, { waitUntil: 'domcontentloaded' });
+    await expect(page.getByRole('group', { name: 'Add note' })).toBeVisible();
+
+    await walk.task(
+      'RP-6-insights-door',
+      'Below xl (right rail hidden): ⋯ → Insights opens the Insights sheet (2 clicks)',
+      2,
+      async () => {
+        const width = page.viewportSize()?.width ?? 0;
+        if (width >= 1280) {
+          walk.note('skipped', 'xl+ shows the right rail itself');
+          return;
+        }
+        await walk.click(page.getByTestId('crm-record-more'), '⋯ menu');
+        const item = page.getByTestId('crm-record-more-insights');
+        await expect(item, 'the ⋯ menu must carry an Insights door below xl').toBeVisible();
+        await walk.click(item, 'Insights');
+        const sheet = page.getByRole('dialog').filter({ hasText: 'Insights' }).first();
+        await expect(sheet).toBeVisible();
+        walk.note('sheetSeen', true);
+        await walk.press('Escape', 'close the sheet');
+      },
+      { soft: true },
+    );
+
+    await walk.task(
+      'RP-6-skip-link',
+      'The skip link is the header\'s first Tab stop; Enter lands focus on the section nav (0 clicks)',
+      0,
+      async () => {
+        await page.goto(anchor!.url, { waitUntil: 'domcontentloaded' });
+        await expect(page.getByRole('group', { name: 'Add note' })).toBeVisible();
+        // Contract: the skip link is the FIRST focusable inside the record
+        // header, so the first Tab that enters the header lands on it (the
+        // global chrome before it is NV-scope, not RP-6's).
+        const firstInHeader = await page.evaluate(() => {
+          const header = document.querySelector('[data-record-find-root]');
+          const focusable = header?.querySelector<HTMLElement>(
+            'a[href], button:not([disabled]), input, [tabindex]:not([tabindex="-1"])',
+          );
+          return focusable?.dataset?.testid ?? focusable?.tagName ?? null;
+        });
+        walk.note('firstFocusableInHeader', firstInHeader);
+        expect(firstInHeader, 'the skip link must be the first focusable in the record content').toBe('crm-record-skip-link');
+        await page.evaluate(() => {
+          document.querySelector<HTMLElement>('[data-testid="crm-record-skip-link"]')?.focus();
+        });
+        await expect(page.getByTestId('crm-record-skip-link')).toBeVisible();
+        await walk.press('Enter', 'activate skip link');
+        await expect
+          .poll(() => page.evaluate(() => document.activeElement?.id ?? null), { timeout: 5_000 })
+          .toBe('record-section-nav');
+      },
+      { soft: true },
+    );
+  });
+
+  test('RP-8 record open CLS < 0.05', async ({ page, request, bareRequest, walk }, testInfo) => {
+    const project = testInfo.project.name;
+    // Buffered layout-shift observer on every future document in this page.
+    await page.addInitScript(() => {
+      (window as unknown as { __walkCls: number }).__walkCls = 0;
+      try {
+        new PerformanceObserver((list) => {
+          for (const entry of list.getEntries()) {
+            const shift = entry as unknown as { value: number; hadRecentInput: boolean };
+            if (!shift.hadRecentInput) {
+              (window as unknown as { __walkCls: number }).__walkCls += shift.value;
+            }
+          }
+        }).observe({ type: 'layout-shift', buffered: true });
+      } catch {
+        /* layout-shift unsupported → cls stays 0 and the note says so */
+      }
+    });
+    const { anchor } = await assertTrapsInTest({ page, request, bareRequest, project });
+    expect(anchor).not.toBeNull();
+
+    await walk.task(
+      'RP-8-cls',
+      'Cumulative layout shift while the record page opens and settles (< 0.05)',
+      0,
+      async () => {
+        await page.goto(anchor!.url, { waitUntil: 'domcontentloaded' });
+        await expect(page.getByRole('group', { name: 'Add note' })).toBeVisible({ timeout: 60_000 });
+        await expect(page.getByTestId('crm-record-snapshot').first()).toBeVisible();
+        await page.waitForTimeout(2_000);
+        const cls = await page.evaluate(() => (window as unknown as { __walkCls?: number }).__walkCls ?? 0);
+        walk.note('cls', Math.round(cls * 1000) / 1000);
+        expect(cls, `record-open CLS ${cls}`).toBeLessThan(0.05);
+      },
+      { soft: true },
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// FB-5 — deleting from the record page moves to Trash with a working Undo.
+// A throwaway walk record is created via the API so the seed stays intact.
+// ---------------------------------------------------------------------------
+test.describe('record delete (FB-5)', () => {
+  test("delete → 'Moved to Trash · Undo' → Undo restores", async ({ page, request, bareRequest, walk }, testInfo) => {
+    const project = testInfo.project.name;
+    // records/[id] DELETE requires crm_admin | crm_manager — the agent persona
+    // is refused with 403, so this walks the admin persona.
+    test.skip(walkRole() !== 'admin', 'run with WALK_ROLE=admin (delete is manager/admin-only)');
+    test.skip(isMobileProject(project), 'the ⋯ menu walk is lg+ evidence; desktop/tablet cover FB-5');
+    await assertTrapsInTest({ page, request, bareRequest, project });
+    const suffix = runSuffix();
+
+    const modsRes = await request.get('/api/crm/modules');
+    expect(modsRes.status()).toBe(200);
+    const mods = (await modsRes.json()) as Array<{ id: string; org_id: string; key: string }>;
+    const contacts = mods.find((m) => m.key === 'contacts')!;
+    const createRes = await request.post('/api/crm/records', {
+      data: {
+        org_id: contacts.org_id,
+        module_id: contacts.id,
+        data: { first_name: 'Walk', last_name: `Trash${suffix}`, walk_fixture: 'true' },
+      },
+    });
+    expect(createRes.status(), 'fixture create for the delete walk').toBeLessThan(300);
+    const created = (await createRes.json()) as { id?: string; record?: { id?: string } };
+    const recordId = created.id ?? created.record?.id;
+    expect(recordId).toBeTruthy();
+
+    await page.goto(`/crm/r/${recordId}`, { waitUntil: 'domcontentloaded' });
+    await expect(page.getByRole('group', { name: 'Add note' })).toBeVisible();
+
+    await walk.task(
+      'FB-5-delete-undo',
+      "⋯ → Delete Record → honest confirm → 'Moved to Trash' toast → Undo restores (4 clicks)",
+      4,
+      async () => {
+        await walk.click(page.getByTestId('crm-record-more'), '⋯ menu');
+        await walk.click(page.getByRole('menuitem', { name: 'Delete Record' }), 'Delete Record');
+        const dialog = page.getByRole('alertdialog').filter({ hasText: 'It moves to Trash' }).first();
+        await expect(dialog, "confirm copy must say it moves to Trash (not 'cannot be undone')").toBeVisible();
+        walk.note('confirmCopy', (await dialog.textContent())?.replace(/\s+/g, ' ').slice(0, 160) ?? '');
+        await walk.click(dialog.getByRole('button', { name: 'Delete', exact: true }), 'confirm Delete');
+        const toast = toastTitles(page).filter({ hasText: movedToTrash() }).first();
+        await expect(toast).toBeVisible({ timeout: 20_000 });
+        const undo = page.locator('[data-sonner-toast] button').filter({ hasText: /^Undo$/ }).first();
+        await expect(undo, 'the Trash toast must offer Undo').toBeVisible();
+        await walk.click(undo, 'Undo');
+        await expect(toastTitles(page).filter({ hasText: restored('Record') }).first()).toBeVisible({ timeout: 20_000 });
+        await expect(page).toHaveURL(new RegExp(`/crm/r/${recordId}`), { timeout: 20_000 });
+        await expect(page.getByRole('group', { name: 'Add note' })).toBeVisible({ timeout: 30_000 });
+      },
+      { soft: true },
+    );
+
+    // Leave nothing behind: back to Trash; the preflight prune clears walk rows.
+    await request.delete(`/api/crm/records/${recordId}`);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// RP-M2 — the healthy path renders NO layout notice (never fails open with a
+// silent one-section form). The layout fetch itself is a server-side Supabase
+// call, so the browser cannot throttle it — the error/missing banner contract
+// is pinned by RecordLayoutNotice.test.tsx instead.
+// ---------------------------------------------------------------------------
+test.describe('record layout notice (RP-M2)', () => {
+  test('healthy record: no layout notice, sectioned form present', async ({ page, request, bareRequest, walk }, testInfo) => {
+    const project = testInfo.project.name;
+    const { anchor } = await assertTrapsInTest({ page, request, bareRequest, project });
+    expect(anchor).not.toBeNull();
+    await page.goto(anchor!.url, { waitUntil: 'domcontentloaded' });
+    await expect(page.getByRole('group', { name: 'Add note' })).toBeVisible();
+
+    await walk.task(
+      'RP-M2-layout-notice',
+      'No crm-record-layout-notice on the healthy path; snapshot + section nav render',
+      0,
+      async () => {
+        walk.note('notices', await page.locator('[data-testid^="crm-record-layout-notice"]').count());
+        expect(await page.locator('[data-testid^="crm-record-layout-notice"]').count()).toBe(0);
+        await expect(page.getByTestId('crm-record-snapshot').first()).toBeVisible();
+        walk.note(
+          'throttleEvidence',
+          'layout fetch is server-side (getDefaultLayout) — browser throttling cannot reach it; banner contract covered by RecordLayoutNotice.test.tsx',
+        );
+      },
+      { soft: true },
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// RP-4 — the admin persona still sees the Needs Review badge the agent header
+// hides. Local-only PostgREST write flips the anchor to needs_review for the
+// check and restores the original value afterwards.
+// ---------------------------------------------------------------------------
+test.describe('normalization badge (RP-4, WALK_ROLE=admin)', () => {
+  test('admin sees Needs Review in the header meta row', async ({ page, request, bareRequest, walk }, testInfo) => {
+    const project = testInfo.project.name;
+    test.skip(walkRole() !== 'admin', 'run with WALK_ROLE=admin');
+    const { anchor } = await assertTrapsInTest({ page, request, bareRequest, project });
+    expect(anchor).not.toBeNull();
+
+    const restHeaders = {
+      apikey: LOCAL_SUPABASE_SERVICE_ROLE_KEY,
+      Authorization: `Bearer ${LOCAL_SUPABASE_SERVICE_ROLE_KEY}`,
+      'Content-Type': 'application/json',
+      Prefer: 'return=representation',
+    };
+    const rest = `${LOCAL_SUPABASE_URL}/rest/v1/crm_records?id=eq.${anchor!.id}&select=normalization_status`;
+    const before = await request.get(rest, { headers: restHeaders });
+    const original = ((await before.json()) as Array<{ normalization_status: string | null }>)[0]?.normalization_status ?? null;
+
+    try {
+      await request.patch(rest, { headers: restHeaders, data: { normalization_status: 'needs_review' } });
+      await page.goto(anchor!.url, { waitUntil: 'domcontentloaded' });
+      await expect(page.getByRole('group', { name: 'Add note' })).toBeVisible();
+
+      await walk.task(
+        'RP-4-admin-badge',
+        'crm_admin: the Needs Review badge is visible in the header at rest (0 clicks)',
+        0,
+        async () => {
+          walk.note('originalStatus', original);
+          await expect(page.getByText('Needs Review', { exact: true }).first()).toBeVisible();
+          walk.note('needsReviewVisible', true);
+        },
+        { soft: true },
+      );
+    } finally {
+      await request.patch(rest, { headers: restHeaders, data: { normalization_status: original } });
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// FB-M1 — toasts follow the CRM theme: in dark mode the sonner toaster carries
+// data-sonner-theme="dark" (screenshot recorded for the regrade).
+// ---------------------------------------------------------------------------
+test.describe('dark-mode toast (FB-M1)', () => {
+  test('a toast raised in dark mode renders on the dark toaster', async ({ page, request, bareRequest, walk }, testInfo) => {
+    const project = testInfo.project.name;
+    // ui-theme in localStorage wins over the profile (theme-provider.tsx).
+    await page.addInitScript(() => {
+      try {
+        window.localStorage.setItem('ui-theme', 'dark');
+      } catch {
+        /* ignore */
+      }
+    });
+    const { anchor } = await assertTrapsInTest({ page, request, bareRequest, project });
+    expect(anchor).not.toBeNull();
+    await page.goto(anchor!.url, { waitUntil: 'domcontentloaded' });
+    await expect(page.getByRole('group', { name: 'Add note' })).toBeVisible();
+    await expect
+      .poll(() => page.evaluate(() => document.documentElement.classList.contains('dark')), {
+        message: 'ui-theme=dark must flip the root class',
+      })
+      .toBe(true);
+
+    await walk.task(
+      'FB-M1-dark-toast',
+      "Add a note in dark mode → the toast paints on sonner's dark theme",
+      1,
+      async () => {
+        const headerButton = page.getByTestId('crm-record-add-note');
+        const mobileNote = page.locator("nav[aria-label='Quick actions'] button", { hasText: /^Note$/ });
+        if (await headerButton.isVisible()) await walk.click(headerButton, 'Add Note');
+        else await walk.click(mobileNote, 'Note (action bar)');
+        const editor = page.getByTestId('crm-notes-composer').locator('[contenteditable]').first();
+        await walk.type(editor, `Walk FB-M1 ${runSuffix()}`, 'type the note');
+        await walk.press(`${modKey()}+Enter`, '⌘Enter saves');
+        await expect(toastTitles(page).first()).toBeVisible({ timeout: 20_000 });
+        const toasterTheme = await page.locator('[data-sonner-toaster]').first().getAttribute('data-sonner-theme');
+        walk.note('toasterTheme', toasterTheme);
+        await walk.shot('dark-mode toast');
+        expect(toasterTheme, 'toaster must follow the dark theme').toBe('dark');
+      },
+      { soft: true },
+    );
+  });
+});
+

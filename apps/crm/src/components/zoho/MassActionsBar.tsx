@@ -8,6 +8,7 @@ import {
   DropdownMenuTrigger,
 } from '@crm-eco/ui/components/dropdown-menu';
 import { cn } from '@crm-eco/ui/lib/utils';
+import { ADVISOR_LABEL } from '@/lib/crm/nav-lexicon';
 import {
   X,
   UserPlus,
@@ -114,7 +115,7 @@ export function MassActionsBar({
           className="h-9 px-3 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 flex-shrink-0"
         >
           <UserPlus className="w-4 h-4 mr-1.5" />
-          <span className="hidden sm:inline">Assign Advisor / Agent</span>
+          <span className="hidden sm:inline">Assign {ADVISOR_LABEL}</span>
         </Button>
 
         <Button

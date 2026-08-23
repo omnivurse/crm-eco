@@ -30,7 +30,6 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Button } from '@crm-eco/ui/components/button';
 import { Badge } from '@crm-eco/ui/components/badge';
 import {
   Select,
@@ -46,8 +45,6 @@ import {
   DollarSign,
   Mail,
   Phone,
-  Inbox,
-  Plus,
   Calendar,
   MoreHorizontal,
   Eye,
@@ -70,6 +67,7 @@ import { toast } from 'sonner';
 import { toastCopy } from '@/lib/crm/toast-copy';
 import type { CrmRecord, CrmField, CrmDealStage } from '@/lib/crm/types';
 import { StageHistoryDrawer } from './StageHistoryDrawer';
+import { ListEmptyStatePanel, useListEmptyState } from './ListView';
 
 interface KanbanViewProps {
   records: CrmRecord[];
@@ -84,6 +82,12 @@ interface KanbanViewProps {
    * from record values.
    */
   stages?: CrmDealStage[];
+  /** Filtered total from the server (see `useListEmptyState` in ListView). */
+  totalCount?: number | null;
+  /** Filter count of the active saved view (see `useListEmptyState` in ListView). */
+  activeViewFilterCount?: number | null;
+  /** The server could not load the rows (FB-8: retry, never "Create Record"). */
+  loadError?: boolean;
 }
 
 interface KanbanColumn {
@@ -610,8 +614,14 @@ export const KanbanView = memo(function KanbanView({
   onRowClick,
   onBulkDelete,
   stages,
+  totalCount,
+  activeViewFilterCount,
+  loadError,
 }: KanbanViewProps) {
   const router = useRouter();
+  // FB-8: one filter-aware empty state with ListView / RecordTable — a missed
+  // search says "No matches… · Clear", never "Create Record".
+  const emptyState = useListEmptyState(initialRecords.length, moduleKey, totalCount, activeViewFilterCount, loadError);
 
   // Determine groupable fields with a default
   const groupableFields = useMemo(() => {
@@ -904,7 +914,7 @@ export const KanbanView = memo(function KanbanView({
         }
 
         if (!response.ok) throw new Error('Failed to update');
-        toast.success(`Moved to "${newVal || 'No Value'}"`);
+        toast.success(toastCopy.updated('Record'), { description: `Now "${newVal || 'No Value'}"` });
       } catch {
         toast.error(toastCopy.failed('move the record', undefined, 'It was put back — try again'));
         setRecords(initialRecords);
@@ -971,20 +981,10 @@ export const KanbanView = memo(function KanbanView({
     };
   }, [groupByField, stages, records]);
 
-  if (initialRecords.length === 0) {
+  if (emptyState) {
     return (
-      <div className="glass-card rounded-2xl border border-slate-200 dark:border-white/10 p-12 text-center">
-        <div className="p-4 rounded-full bg-slate-100 dark:bg-slate-800/50 inline-block mb-4">
-          <Inbox className="w-10 h-10 text-slate-400 dark:text-slate-600" />
-        </div>
-        <p className="text-lg font-medium text-slate-900 dark:text-white mb-1">No records to display</p>
-        <p className="text-sm text-slate-500 mb-4">Create records to see them on the board.</p>
-        <Button asChild>
-          <Link href={`/crm/modules/${moduleKey}/new`}>
-            <Plus className="w-4 h-4 mr-2" />
-            Create Record
-          </Link>
-        </Button>
+      <div className="glass-card rounded-2xl border border-slate-200 dark:border-white/10">
+        <ListEmptyStatePanel state={emptyState} moduleKey={moduleKey} />
       </div>
     );
   }

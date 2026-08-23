@@ -14,10 +14,11 @@ import {
 } from '@/lib/crm/queries';
 import { resolveRecordOrMergeDestination } from '@/lib/crm/resolve-record';
 import { applyAge65AutoCancelForRecord, applyScheduledEndDateCancelForRecordView } from '@/lib/crm/membership-lifecycle';
-import { RecordDetailShell } from '@/components/crm/records/RecordDetailShell';
+// FB-4 / D8: the V2 shell is THE record page — no V1 fallback, no per-user
+// layout flag. (V1 file + toggle deletion is tracked separately.)
 import { RecordDetailShellV2 } from '@/components/crm/records/RecordDetailShellV2';
-import { isLayoutV2Enabled } from '@/lib/crm/feature-flags';
 import { getRecordInsights, emptyRecordInsights } from '@/lib/crm/record-insights';
+import { RecordLayoutNotice } from './RecordLayoutNotice';
 import { RecordTimeline } from '@/components/crm/records/RecordTimeline';
 import { AttachmentsSectionClient } from '@/components/crm/records/AttachmentsSectionClient';
 import { RelatedRecordsPanelClient } from '@/components/crm/records/RelatedRecordsPanelClient';
@@ -147,15 +148,11 @@ async function RecordDetailContent({ params }: PageProps) {
   const { record, module } = activeResult;
 
   // Step 2: Fetch overview-critical data in parallel with safe error handling.
-  // The layout-v2 feature flag is resolved in the same batch so there's no
-  // extra round-trip; it falls back to `false` on any error so the classic
-  // shell always renders when in doubt.
   const [
     fieldsResult,
     layoutResult,
     notesResult,
     stagesResult,
-    layoutV2Result,
     insightsResult,
     twinResult,
   ] = await Promise.allSettled([
@@ -163,16 +160,24 @@ async function RecordDetailContent({ params }: PageProps) {
     getDefaultLayout(module.id),
     getNotesForRecordAggregated(record, module.key),
     module.key === 'deals' ? getDealStages(profile.organization_id) : Promise.resolve([]),
-    isLayoutV2Enabled(profile),
     getRecordInsights(recordId),
     getTwinDataForRecord(record, module.key),
   ]);
 
   const fields = fieldsResult.status === 'fulfilled' ? fieldsResult.value : [];
   const layout = layoutResult.status === 'fulfilled' ? layoutResult.value : null;
+  // RP-M2: never fail open silently. A rejected layout fetch (transient) and a
+  // missing default layout row (configuration) both degrade to the one-section
+  // form, but each gets its own visible notice in the overview — and a log line.
+  const layoutNoticeKind: 'error' | 'missing' | null =
+    layoutResult.status === 'rejected' ? 'error' : layout === null ? 'missing' : null;
+  if (layoutResult.status === 'rejected') {
+    console.error('[RecordDetail] Failed to load the default layout:', layoutResult.reason);
+  } else if (layout === null) {
+    console.warn(`[RecordDetail] No default layout row for module "${module.key}" (${module.id})`);
+  }
   const notes = notesResult.status === 'fulfilled' ? notesResult.value : [];
   const stages = stagesResult.status === 'fulfilled' ? stagesResult.value : [];
-  const useLayoutV2 = layoutV2Result.status === 'fulfilled' ? layoutV2Result.value : false;
   const insights =
     insightsResult.status === 'fulfilled' ? insightsResult.value : emptyRecordInsights();
   // Fuller profile for the same person in another module, used to fill blanks
@@ -228,12 +233,10 @@ async function RecordDetailContent({ params }: PageProps) {
         }
       : insights;
 
-  const Shell = useLayoutV2 ? RecordDetailShellV2 : RecordDetailShell;
-
   return (
     <>
       <MergedFromToast recordTitle={record.title} />
-      <Shell
+      <RecordDetailShellV2
       record={record}
       module={module}
       fields={fields}
@@ -246,16 +249,21 @@ async function RecordDetailContent({ params }: PageProps) {
     >
       {{
         overview: (
-          <RecordOverviewPanel
-            recordId={recordId}
-            record={record}
-            fields={fields}
-            layout={layout}
-            defaultValues={defaultValues}
-            moduleKey={module.key}
-            layoutV2Shell={useLayoutV2}
-            noteCount={notes.length + legacyNoteCount}
-          />
+          <>
+            {layoutNoticeKind && (
+              <RecordLayoutNotice kind={layoutNoticeKind} moduleName={module.name_plural || module.name} />
+            )}
+            <RecordOverviewPanel
+              recordId={recordId}
+              record={record}
+              fields={fields}
+              layout={layout}
+              defaultValues={defaultValues}
+              moduleKey={module.key}
+              layoutV2Shell
+              noteCount={notes.length + legacyNoteCount}
+            />
+          </>
         ),
 
         related: (
@@ -309,7 +317,7 @@ async function RecordDetailContent({ params }: PageProps) {
           />
         ),
       }}
-      </Shell>
+      </RecordDetailShellV2>
     </>
   );
 }
@@ -322,51 +330,70 @@ export default function RecordDetailPage(props: PageProps) {
   );
 }
 
+/**
+ * RP-8: mirrors the V2 shell's paint order — breadcrumb row, hero (avatar ·
+ * title · meta · action cluster), top-tab strip, section jump bar, then the
+ * Coverage Snapshot card and two section cards. No right-rail block: the V2
+ * rail is collapsed by default, so a rail skeleton only caused a layout jump.
+ */
 function RecordDetailSkeleton() {
+  const bone = 'bg-slate-200 dark:bg-slate-800 rounded';
+  const soft = 'bg-slate-100 dark:bg-slate-800/40 rounded';
   return (
-    <div className="flex h-[calc(100dvh-7.25rem)]">
-      <div className="flex-1 overflow-hidden">
-        {/* Header skeleton */}
-        <div className="bg-white dark:bg-slate-950/80 border-b border-slate-200 dark:border-white/5 p-6">
-          <div className="w-full space-y-4 animate-pulse">
+    <div
+      className="flex h-[calc(100dvh-7.25rem)] flex-col overflow-hidden"
+      role="status"
+      aria-label="Loading record"
+      aria-busy="true"
+      data-testid="crm-record-skeleton"
+    >
+      {/* Sticky header block: breadcrumb + hero + tab strip */}
+      <div className="border-b border-slate-200 bg-white px-4 py-2.5 dark:border-white/5 dark:bg-slate-950 xl:px-6">
+        <div className="animate-pulse">
+          <div className="mb-2 flex items-center justify-between gap-4">
             <div className="flex items-center gap-2">
-              <div className="h-4 w-24 bg-slate-200 dark:bg-slate-800 rounded" />
-              <div className="h-4 w-4 bg-slate-200 dark:bg-slate-800 rounded" />
-              <div className="h-4 w-32 bg-slate-200 dark:bg-slate-800 rounded" />
+              <div className={`h-4 w-20 ${bone}`} />
+              <div className={`h-4 w-3 ${bone}`} />
+              <div className={`h-4 w-36 ${bone}`} />
             </div>
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 bg-slate-200 dark:bg-slate-800 rounded-xl" />
-              <div className="space-y-2">
-                <div className="h-8 w-48 bg-slate-200 dark:bg-slate-800 rounded" />
-                <div className="flex gap-4">
-                  <div className="h-4 w-32 bg-slate-200 dark:bg-slate-800 rounded" />
-                  <div className="h-4 w-24 bg-slate-200 dark:bg-slate-800 rounded" />
-                </div>
+            <div className={`hidden h-8 w-56 md:block ${soft}`} />
+          </div>
+          <div className="flex items-start gap-4">
+            <div className={`h-14 w-14 shrink-0 rounded-xl ${bone}`} />
+            <div className="min-w-0 flex-1 space-y-2">
+              <div className={`h-7 w-56 max-w-full ${bone}`} />
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                <div className={`h-4 w-40 ${soft}`} />
+                <div className={`h-4 w-28 ${soft}`} />
+                <div className={`h-5 w-20 rounded-full ${soft}`} />
               </div>
             </div>
-            <div className="flex gap-2 pt-4">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="h-10 w-24 bg-slate-100 dark:bg-slate-800/50 rounded" />
-              ))}
+            <div className="flex shrink-0 items-center gap-2">
+              <div className={`hidden h-8 w-16 lg:block ${soft}`} />
+              <div className={`h-8 w-28 ${bone}`} />
+              <div className={`h-8 w-8 ${soft}`} />
             </div>
           </div>
-        </div>
-
-        {/* Content skeleton */}
-        <div className="w-full px-4 py-4 space-y-4">
-          <div className="h-96 bg-slate-100 dark:bg-slate-800/30 rounded-2xl border border-slate-200 dark:border-white/5 animate-pulse" />
-          <div className="h-48 bg-slate-100 dark:bg-slate-800/30 rounded-2xl border border-slate-200 dark:border-white/5 animate-pulse" />
+          <div className="mt-3 flex gap-0 border-b border-slate-200 dark:border-white/5">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="px-4 py-3">
+                <div className={`h-4 w-16 ${soft}`} />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* Rail skeleton */}
-      <div className="w-64 border-l border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-900/50 p-4 animate-pulse">
-        <div className="h-6 w-24 bg-slate-200 dark:bg-slate-800 rounded mb-4" />
-        <div className="space-y-3">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-10 bg-slate-100 dark:bg-slate-800/50 rounded-lg" />
+      {/* Section jump bar + snapshot + section cards */}
+      <div className="w-full flex-1 space-y-4 overflow-hidden px-4 py-3 xl:px-6">
+        <div className="flex items-center gap-2 animate-pulse">
+          {['w-20', 'w-24', 'w-16', 'w-20', 'w-24', 'w-16'].map((w, i) => (
+            <div key={i} className={`h-7 ${w} ${soft}`} />
           ))}
         </div>
+        <div className="h-36 animate-pulse rounded-2xl border border-slate-200 bg-slate-100 dark:border-white/5 dark:bg-slate-800/30" />
+        <div className="h-72 animate-pulse rounded-2xl border border-slate-200 bg-slate-100 dark:border-white/5 dark:bg-slate-800/30" />
+        <div className="h-48 animate-pulse rounded-2xl border border-slate-200 bg-slate-100 dark:border-white/5 dark:bg-slate-800/30" />
       </div>
     </div>
   );

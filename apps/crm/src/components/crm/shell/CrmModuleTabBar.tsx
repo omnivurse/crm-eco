@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 import {
   Users,
   MessageSquare,
@@ -15,7 +14,6 @@ import {
 import { cn } from '@crm-eco/ui/lib/utils';
 import {
   TOP_MODULES,
-  resolveTopModuleFromPathname,
   useModule,
   type TopModule,
 } from '@/contexts/ModuleContext';
@@ -58,9 +56,9 @@ interface CrmModuleTabBarProps {
  * CRM / Communications / Revenue without hunting in menus.
  */
 export function CrmModuleTabBar({ navProfile = 'full' }: CrmModuleTabBarProps) {
-  const pathname = usePathname();
-  const { setActiveModule } = useModule();
-  const activeModule = resolveTopModuleFromPathname(pathname);
+  // NV-2: the provider's tab (sticky on cross-tab sidebar hops; URL-resolved
+  // on a fresh load) — one source for the strip, the rail and the sidebar.
+  const { activeModule, setActiveModule } = useModule();
 
   if (navProfile === 'simple') return null;
 

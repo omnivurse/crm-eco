@@ -8,6 +8,7 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { currentListReturnTo, statusToneForValue, withReturnTo } from '@/lib/crm/status-lanes';
 import { Checkbox } from '@crm-eco/ui/components/checkbox';
 import { Button } from '@crm-eco/ui/components/button';
+import { CallLink } from '@/components/crm/records/CallLink';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,6 +31,7 @@ import {
   Calendar,
   SearchX,
   FileText,
+  AlertTriangle,
 } from 'lucide-react';
 import type { CrmRecord, CrmField } from '@/lib/crm/types';
 import {
@@ -58,6 +60,7 @@ export function useListEmptyState(
   moduleKey: string,
   totalCount?: number | null,
   activeViewFilterCount?: number | null,
+  loadError?: boolean,
 ): ListEmptyState | null {
   const searchParams = useSearchParams();
   return useMemo(() => {
@@ -71,8 +74,9 @@ export function useListEmptyState(
       totalCount,
       query,
       recordNoun: recordNounFromModuleKey(moduleKey),
+      loadError,
     });
-  }, [recordCount, totalCount, activeViewFilterCount, searchParams, moduleKey]);
+  }, [recordCount, totalCount, activeViewFilterCount, searchParams, moduleKey, loadError]);
 }
 
 /**
@@ -92,20 +96,22 @@ export function ListEmptyStatePanel({
   className?: string;
   compact?: boolean;
 }) {
+  const failed = state.reason === 'load-failed';
   const isNarrowed = state.reason !== 'no-records';
-  const Icon = isNarrowed ? SearchX : Inbox;
+  const Icon = failed ? AlertTriangle : isNarrowed ? SearchX : Inbox;
   return (
     <div
       role="status"
       aria-live="polite"
+      data-reason={state.reason}
       className={cn(
         'flex flex-col items-center justify-center text-center',
         compact ? 'p-8' : 'p-12',
         className,
       )}
     >
-      <div className="p-4 rounded-full bg-slate-100 dark:bg-slate-800/50 mb-4">
-        <Icon className="w-10 h-10 text-slate-400 dark:text-slate-600" aria-hidden />
+      <div className={cn('p-4 rounded-full mb-4', failed ? 'bg-amber-50 dark:bg-amber-500/10' : 'bg-slate-100 dark:bg-slate-800/50')}>
+        <Icon className={cn('w-10 h-10', failed ? 'text-amber-500 dark:text-amber-400' : 'text-slate-400 dark:text-slate-600')} aria-hidden />
       </div>
       <p className="text-lg font-medium text-slate-900 dark:text-white mb-1 break-words max-w-md">
         {state.title}
@@ -205,6 +211,8 @@ interface ListViewProps {
   totalCount?: number | null;
   /** Filter count of the active saved view (see `useListEmptyState`). */
   activeViewFilterCount?: number | null;
+  /** The server failed to load rows — render the retry state, never the Create CTA. */
+  loadError?: boolean;
   fillParent?: boolean;
 }
 
@@ -319,16 +327,18 @@ const ListRow = memo(function ListRow({
       </div>
 
       {/* Quick Actions */}
-      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity flex-shrink-0" onClick={(e) => e.stopPropagation()}>
         {phone && (
           <Button
+            asChild
             variant="ghost"
             size="icon"
-            onClick={() => { window.location.href = `tel:${phone}`; }}
             className="h-7 w-7 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:text-emerald-400 dark:hover:bg-emerald-500/10"
-            title="Call"
           >
-            <Phone className="w-3.5 h-3.5" />
+            {/* TE-8: a real tel: anchor (CallLink stops row-click propagation). */}
+            <CallLink phone={phone} title="Call" aria-label={`Call ${phone}`} data-testid="crm-row-call">
+              <Phone className="w-3.5 h-3.5" />
+            </CallLink>
           </Button>
         )}
         {email && (
@@ -378,13 +388,14 @@ export const ListView = memo(function ListView({
   onBulkDelete,
   totalCount,
   activeViewFilterCount,
+  loadError,
   fillParent = false,
 }: ListViewProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const containerRef = useRef<HTMLDivElement>(null);
-  const emptyState = useListEmptyState(records.length, moduleKey, totalCount, activeViewFilterCount);
+  const emptyState = useListEmptyState(records.length, moduleKey, totalCount, activeViewFilterCount, loadError);
   // Back keeps list state: row links carry `?returnTo=<this list URL>` (validated
   // by RecordDetailShellV2's sanitizeReturnTo).
   const listReturnTo = useMemo(

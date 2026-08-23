@@ -12,6 +12,7 @@ import {
 import type { ViewFilter, CrmField } from '@/lib/crm/types';
 import { collapseStatusInFilter, type StatusValueCount } from '@/lib/crm/status-lanes';
 import { useStatusValues } from '@/lib/crm/status-values-client';
+import { isDisplayOnlyListField } from '@/lib/crm/list-field-policy';
 
 interface FilterChipsBarProps {
   filters: ViewFilter[];
@@ -32,6 +33,47 @@ interface FilterChipsBarProps {
   moduleKey?: string;
   /** Live status values, if the caller already has them (skips the fetch). */
   statusValues?: ReadonlyArray<string | StatusValueCount> | null;
+  /**
+   * The list's visible columns, in order. When given, the Sort menu offers
+   * those first (what the user can see is what they expect to sort by), then
+   * the remaining sortable fields. Display-only columns (LS-4, lib/crm/
+   * list-field-policy) are never offered — the server would order the stored
+   * value, not the cell the user sees.
+   */
+  visibleColumns?: readonly string[];
+}
+
+/** Field types whose stored value sorts meaningfully server-side. */
+const SORTABLE_FIELD_TYPES: ReadonlySet<string> = new Set([
+  'text', 'number', 'date', 'datetime', 'email', 'select', 'currency',
+]);
+
+/**
+ * The fields the chips-bar Sort menu offers, in menu order: sortable types
+ * only, never a display-only column, visible columns first (in column order)
+ * then the rest in field order. Pure — unit-tested in FilterChipsBar.test.ts.
+ */
+export function sortMenuFields(
+  fields: ReadonlyArray<Pick<CrmField, 'key' | 'type'>>,
+  moduleKey?: string | null,
+  visibleColumns?: readonly string[],
+): Array<Pick<CrmField, 'key' | 'type'>> {
+  const sortable = fields.filter(
+    (f) => SORTABLE_FIELD_TYPES.has(f.type) && !isDisplayOnlyListField(f.key, moduleKey),
+  );
+  if (!visibleColumns || visibleColumns.length === 0) return [...sortable];
+  const byKey = new Map(sortable.map((f) => [f.key, f]));
+  const seen = new Set<string>();
+  const ordered: Array<Pick<CrmField, 'key' | 'type'>> = [];
+  for (const col of visibleColumns) {
+    const f = byKey.get(col);
+    if (f && !seen.has(col)) {
+      ordered.push(f);
+      seen.add(col);
+    }
+  }
+  for (const f of sortable) if (!seen.has(f.key)) ordered.push(f);
+  return ordered;
 }
 
 /** Fields whose `in` filters are status lanes (contact_status aliases status). */
@@ -160,6 +202,7 @@ export function FilterChipsBar({
   className,
   moduleKey,
   statusValues,
+  visibleColumns,
 }: FilterChipsBarProps) {
   const fieldMap = new Map(fields.map(f => [f.key, f]));
   // Only fetch when a status `in` chip is on screen (and no values were passed).
@@ -184,9 +227,7 @@ export function FilterChipsBar({
     return String(value);
   };
 
-  const sortableFields = fields.filter(f => 
-    ['text', 'number', 'date', 'datetime', 'email', 'select', 'currency'].includes(f.type)
-  );
+  const sortableFields = sortMenuFields(fields, moduleKey, visibleColumns) as CrmField[];
 
   if (filters.length === 0 && !sortField) {
     return null;

@@ -23,6 +23,7 @@
  */
 
 import { memo, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { cn } from '@crm-eco/ui/lib/utils';
 import {
   Flame,
@@ -47,6 +48,12 @@ import {
   type StatusValueCount,
 } from '@/lib/crm/status-lanes';
 import { useStatusValues } from '@/lib/crm/status-values-client';
+import { readListQueryState, recordNounFromModuleKey, type ListQueryState } from '@/lib/crm/list-empty-state';
+
+export interface QuickFilterSort {
+  field: string;
+  direction: 'asc' | 'desc';
+}
 
 export interface QuickFilterPreset {
   id: string;
@@ -55,6 +62,12 @@ export interface QuickFilterPreset {
   filters: ViewFilter[];
   /** Optional scope override. */
   scope?: 'all' | 'mine' | 'downline';
+  /**
+   * Optional sort applied with the chip (D2 / TE-3b). Same URL contract the
+   * desk's `pendingContactsHref` writes (`sortField` + `sortDirection`) so
+   * the chip lands on the same list the desk links to.
+   */
+  sort?: QuickFilterSort;
   /** Icon from lucide-react. */
   icon?: React.ComponentType<{ className?: string }>;
   /** Tooltip shown on hover. */
@@ -107,9 +120,17 @@ function lanePreset(
   lane: StatusLane,
   icon: QuickFilterPreset['icon'],
   hint: string,
+  sort?: QuickFilterSort,
 ): QuickFilterPreset {
-  return { id: `lane-${lane}`, label: statusLaneLabel(lane), icon, filters: [], lane, hint };
+  return { id: `lane-${lane}`, label: statusLaneLabel(lane), icon, filters: [], lane, hint, ...(sort ? { sort } : {}) };
 }
+
+/**
+ * The Pending lane is a waiting list: oldest first, so the person who has
+ * waited longest is the first row — mirrors the desk's `pendingContactsHref`
+ * (command-desk-format.ts) which sorts `created_at asc`.
+ */
+export const PENDING_LANE_SORT: QuickFilterSort = { field: 'created_at', direction: 'asc' };
 
 /**
  * Per-module preset rows. Lane chips get their filters filled in from the
@@ -121,7 +142,7 @@ export function presetsForModule(moduleKey: string | null | undefined): QuickFil
     case 'members':
       return [
         lanePreset('active', CheckCircle2, 'Every spelling of an active status'),
-        lanePreset('pending', Hourglass, 'Approved / pending — waiting on a start date'),
+        lanePreset('pending', Hourglass, 'Approved / pending — waiting on a start date · oldest first', PENDING_LANE_SORT),
         lanePreset('cancelled', XCircle, 'Cancelled, terminated, deceased and cancellations in flight'),
         {
           id: 'enrolled-this-month',
@@ -164,7 +185,44 @@ export interface QuickFilterChipsProps {
   moduleKey?: string;
   /** Module fields — used to pick the status filter field (`contact_status` vs `status`). */
   fields?: CrmField[];
+  /**
+   * Filter count of the active saved view. When known, an explicit `?view=`
+   * only counts as narrowing when the view actually filters (same rule as
+   * `useListEmptyState`); when unknown the URL presence of `?view=` decides.
+   */
+  activeViewFilterCount?: number | null;
   className?: string;
+}
+
+/** Filters on these keys ARE the lane — they never make a lane count "narrowed". */
+const STATUS_FILTER_FIELDS: ReadonlySet<string> = new Set(['status', 'contact_status', 'lead_status']);
+
+/**
+ * LS-5 / D11 (option A): the lane counts are module-wide, so when anything
+ * ELSE narrows the list (search, scope, territory, a filtering saved view, a
+ * non-status filter) the chip number is no longer "the number in the list".
+ * True when that is the case — the chip then mutes its count and says
+ * "of all {noun}". A lane chip's own `status in (…)` filter is not narrowing
+ * (clicking Pending still shows 32 = the 32 rows it opens).
+ */
+export function laneCountsAreNarrowed(input: {
+  query: Pick<ListQueryState, 'search' | 'scope' | 'territory' | 'viewId'>;
+  currentFilters: ViewFilter[];
+  activeViewFilterCount?: number | null;
+}): boolean {
+  const { query, currentFilters, activeViewFilterCount } = input;
+  if (query.search.length > 0) return true;
+  if (query.scope !== 'all') return true;
+  if (query.territory !== null) return true;
+  if (query.viewId !== null) {
+    if (typeof activeViewFilterCount !== 'number' || activeViewFilterCount > 0) return true;
+  }
+  return currentFilters.some((f) => !STATUS_FILTER_FIELDS.has(f.field));
+}
+
+/** "32 of all contacts" — the muted-count explanation (title + screen readers). */
+export function laneCountOfAllLabel(count: number, moduleKey: string | undefined): string {
+  return `${count.toLocaleString()} of all ${recordNounFromModuleKey(moduleKey)}`;
 }
 
 function sameStringSet(a: unknown, b: unknown): boolean {
@@ -239,6 +297,7 @@ export const QuickFilterChips = memo(function QuickFilterChips({
   presets,
   moduleKey,
   fields,
+  activeViewFilterCount,
   className,
 }: QuickFilterChipsProps) {
   const basePresets = useMemo(
@@ -248,6 +307,17 @@ export const QuickFilterChips = memo(function QuickFilterChips({
   const hasLaneChips = basePresets.some((p) => Boolean(p.lane));
   const valuesState = useStatusValues(moduleKey, hasLaneChips);
   const statusField = useMemo(() => statusFieldFor(moduleKey, fields), [moduleKey, fields]);
+  const searchParams = useSearchParams();
+  const narrowed = useMemo(
+    () =>
+      hasLaneChips &&
+      laneCountsAreNarrowed({
+        query: readListQueryState(searchParams),
+        currentFilters,
+        activeViewFilterCount,
+      }),
+    [hasLaneChips, searchParams, currentFilters, activeViewFilterCount],
+  );
 
   const states = useMemo(
     () =>
@@ -289,12 +359,15 @@ export const QuickFilterChips = memo(function QuickFilterChips({
         const errored = disabled && valuesState.status === 'error';
         // Loaded, but the lane has no raw values (count 0) — inert chip.
         const empty = disabled && valuesState.status === 'ready';
+        // LS-5 option A: a module-wide count on a narrowed list says so.
+        const ofAll = narrowed && count !== null && !disabled ? laneCountOfAllLabel(count, moduleKey) : null;
         return (
           <button
             key={preset.id}
             type="button"
             data-testid="crm-lane-chip"
             data-lane={preset.id}
+            data-count-scope={ofAll ? 'module' : undefined}
             title={
               errored
                 ? 'Status counts unavailable — retry'
@@ -302,7 +375,9 @@ export const QuickFilterChips = memo(function QuickFilterChips({
                   ? `${preset.label} — loading counts…`
                   : empty
                     ? `${preset.label} — no records with this status`
-                    : preset.hint
+                    : ofAll
+                      ? `${preset.hint ? `${preset.hint} · ` : ''}${ofAll}, not only this list`
+                      : preset.hint
             }
             aria-pressed={active}
             aria-busy={loading || undefined}
@@ -340,9 +415,12 @@ export const QuickFilterChips = memo(function QuickFilterChips({
                   active
                     ? 'bg-teal-100/80 dark:bg-teal-500/20'
                     : 'bg-slate-100 dark:bg-white/10',
+                  ofAll && 'opacity-60 font-medium',
                 )}
+                data-testid="crm-lane-chip-count"
               >
                 {count.toLocaleString()}
+                {ofAll ? <span className="sr-only"> of all {recordNounFromModuleKey(moduleKey)}</span> : null}
               </span>
             ) : null}
           </button>

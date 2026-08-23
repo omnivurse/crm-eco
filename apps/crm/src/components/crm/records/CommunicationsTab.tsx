@@ -1,6 +1,7 @@
 'use client';
 
 import { toast } from 'sonner';
+import { toastCopy } from '@/lib/crm/toast-copy';
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-client';
@@ -194,10 +195,10 @@ export function CommunicationsTab({ recordId, orgId, email, phone }: Communicati
         setTemplateId('');
         setComposeOpen(false);
       } else {
-        toast.error(result.error || 'Failed to send message');
+        toast.error(toastCopy.failed('send the message', result.error, 'Try again'));
       }
-    } catch {
-      toast.error('Failed to send message');
+    } catch (err) {
+      toast.error(toastCopy.failed('send the message', err, 'Try again'));
     } finally {
       setSending(false);
     }
@@ -304,7 +305,7 @@ export function CommunicationsTab({ recordId, orgId, email, phone }: Communicati
                     <Label>Template (optional)</Label>
                     <Select value={templateId} onValueChange={handleTemplateChange}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select template..." />
+                        <SelectValue placeholder="Select template…" />
                       </SelectTrigger>
                       <SelectContent>
                         {templates
@@ -324,7 +325,7 @@ export function CommunicationsTab({ recordId, orgId, email, phone }: Communicati
                     <Input
                       value={subject}
                       onChange={e => setSubject(e.target.value)}
-                      placeholder="Enter email subject..."
+                      placeholder="Enter email subject…"
                     />
                   </div>
                 )}
@@ -333,7 +334,7 @@ export function CommunicationsTab({ recordId, orgId, email, phone }: Communicati
                   <Textarea
                     value={body}
                     onChange={e => setBody(e.target.value)}
-                    placeholder="Enter your message..."
+                    placeholder="Enter your message…"
                     rows={6}
                   />
                   {channel === 'sms' && body.length > 0 && (
@@ -348,7 +349,7 @@ export function CommunicationsTab({ recordId, orgId, email, phone }: Communicati
                   Cancel
                 </Button>
                 <Button onClick={handleSend} disabled={sending || !body.trim()}>
-                  {sending ? 'Sending...' : 'Send Message'}
+                  {sending ? toastCopy.loadingCopy('Sending') : 'Send Message'}
                 </Button>
               </DialogFooter>
             </DialogContent>

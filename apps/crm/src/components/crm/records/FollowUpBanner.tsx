@@ -101,7 +101,7 @@ export const FollowUpBanner = memo(function FollowUpBanner({
           body: JSON.stringify({ due_at: newDue }),
         });
         if (!res.ok) throw new Error('Failed');
-        toast.success('Snoozed for 1 week');
+        toast.success(toastCopy.updated('Follow-up'), { description: 'Snoozed for 1 week' });
         void fetchTasks();
       } catch {
         toast.error(toastCopy.failed('snooze the follow-up', undefined, 'Try again'));

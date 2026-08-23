@@ -12,6 +12,7 @@ import { useState, useCallback } from 'react';
 import { addDays, addMonths, addWeeks, format } from 'date-fns';
 import { Bell, Calendar, Loader2, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
+import { toastCopy } from '@/lib/crm/toast-copy';
 import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
 import { Textarea } from '@crm-eco/ui/components/textarea';
@@ -84,10 +85,9 @@ export function FollowUpReminderDialog({
   }, []);
 
   const handleSave = async () => {
-    if (!dueDate) {
-      toast.error('Please select a follow-up date');
-      return;
-    }
+    // FB-6: Set Reminder is disabled until a date is picked and the field
+    // shows "Follow-up date is required" inline — no toast for validation.
+    if (!dueDate) return;
     setSaving(true);
     try {
       const res = await fetch('/api/tasks', {
@@ -110,7 +110,7 @@ export function FollowUpReminderDialog({
         throw new Error(err.error || 'Failed to create reminder');
       }
 
-      toast.success('Follow-up reminder set!', {
+      toast.success(toastCopy.added('Follow-up reminder'), {
         description: `You'll be reminded on ${format(new Date(dueDate), 'MMM d, yyyy')}`,
       });
       onOpenChange(false);
@@ -122,7 +122,7 @@ export function FollowUpReminderDialog({
       setRepeatDays('0');
       setActivePreset(null);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to create reminder');
+      toast.error(toastCopy.failed('set the reminder', err, 'Try again'));
     } finally {
       setSaving(false);
     }
@@ -182,8 +182,16 @@ export function FollowUpReminderDialog({
                 setDueDate(e.target.value);
                 setActivePreset(null);
               }}
+              aria-invalid={dueDate ? undefined : true}
+              aria-describedby="crm-follow-up-date-help"
               className="bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white"
             />
+            {/* FB-6: inline validation instead of a toast — "<Field> is required". */}
+            {!dueDate && (
+              <p id="crm-follow-up-date-help" role="alert" className="mt-1 text-xs text-rose-600 dark:text-rose-400">
+                Follow-up date is required
+              </p>
+            )}
           </div>
 
           {/* Note */}
@@ -259,7 +267,7 @@ export function FollowUpReminderDialog({
             {saving ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Saving...
+                {toastCopy.loadingCopy('Saving')}
               </>
             ) : (
               <>

@@ -7,7 +7,10 @@
  *   1. Live terminal command match (if the query is a known shortcut)
  *   2. Record search results (cross-module, /api/crm/search)
  *   3. Recent records (/api/crm/recently-viewed)
- *   4. Navigation (dashboard, modules, settings)
+ *   4. Navigation — EVERY sidebar page (lib/crm/palette-pages.ts: module- and
+ *      role-gated like the sidebar, de-duplicated by href), typed-only (≥ 1
+ *      char); idle shows the D10 persona set (Members, Member Roster, Tasks,
+ *      Calendar, Inbox, Reports, Workqueue, Import)
  *   5. Quick Actions (create per-module, import)
  *   6. Terminal command hints (unfiltered state only)
  *
@@ -56,6 +59,13 @@ import {
   Clock,
   Loader2,
   Crosshair,
+  Compass,
+  CheckSquare,
+  Calendar,
+  Inbox,
+  PieChart,
+  ShieldCheck,
+  HeartPulse,
 } from 'lucide-react';
 import {
   getRecordCommandContext,
@@ -68,7 +78,10 @@ import {
   useEphemeralSearchWhenClosed,
 } from '@/hooks/useEphemeralSearchWhenClosed';
 import { useClientAuth } from '@/hooks/useClientAuth';
-import { SEARCH_PLACEHOLDER, SEARCH_PLACEHOLDER_ON_RECORD } from '@/lib/crm/search-copy';
+import { SEARCH_ARIA_LABEL, SEARCH_PLACEHOLDER, SEARCH_PLACEHOLDER_ON_RECORD } from '@/lib/crm/search-copy';
+import { canCreateRecords } from '@/lib/crm/can-create-records';
+import { terminalCommandAllowed } from '@/lib/crm/palette-terminal-gate';
+import { resolveQueuedPaletteEnter, shouldQueuePaletteEnter } from '@/lib/crm/palette-pending-enter';
 import {
   groupPaletteResults,
   paletteResultLimit,
@@ -78,11 +91,16 @@ import {
 import { canDraftAiEmail as roleCanDraftAiEmail } from '@/lib/crm/ai/email-draft-roles';
 import { resolveCreateIntent } from '@/lib/crm/create-intent';
 import { openCrmQuickCreate } from '@/lib/crm/create-intent-bus';
+import { buildPalettePages, personaIdlePages } from '@/lib/crm/palette-pages';
+import type { NavProfile } from '@/lib/crm/nav-profile';
 
 interface CommandPaletteProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** The org's ENABLED modules (CrmShell passes session.modules). */
   modules: CrmModule[];
+  /** Tenant nav profile — page rows mirror the sidebar (`crm.nav.simple`). */
+  navProfile?: NavProfile;
 }
 
 interface CommandItem {
@@ -126,12 +144,22 @@ interface RecentlyViewedApiItem {
   lastViewedAt: string;
 }
 
+/** Sidebar `NavItem.icon` names → palette glyphs (the rest fall back to a compass). */
 const iconMap: Record<string, React.ReactNode> = {
-  user: <Users className="w-4 h-4" />,
+  users: <Users className="w-4 h-4" />,
   'user-plus': <UserPlus className="w-4 h-4" />,
   'dollar-sign': <DollarSign className="w-4 h-4" />,
   building: <Building className="w-4 h-4" />,
-  file: <FileText className="w-4 h-4" />,
+  'file-text': <FileText className="w-4 h-4" />,
+  'layout-dashboard': <LayoutDashboard className="w-4 h-4" />,
+  settings: <Settings className="w-4 h-4" />,
+  upload: <Upload className="w-4 h-4" />,
+  'check-square': <CheckSquare className="w-4 h-4" />,
+  calendar: <Calendar className="w-4 h-4" />,
+  inbox: <Inbox className="w-4 h-4" />,
+  'pie-chart': <PieChart className="w-4 h-4" />,
+  'shield-check': <ShieldCheck className="w-4 h-4" />,
+  'heart-pulse': <HeartPulse className="w-4 h-4" />,
 };
 
 interface TerminalCommand {
@@ -140,6 +168,8 @@ interface TerminalCommand {
   description: string;
   /** Only meaningful when the org has a deals pipeline module enabled. */
   requiresDeals?: boolean;
+  /** DE-M1: creates a record — hidden unless the viewer's role may create. */
+  requiresCreate?: boolean;
   execute: (match: RegExpMatchArray, navigate: (path: string) => void) => void;
 }
 
@@ -197,6 +227,7 @@ const terminalCommands: TerminalCommand[] = [
     pattern: /^new\s+(lead|contact|deal|account|task)$/i,
     syntax: 'new <type>',
     description: 'Create new record',
+    requiresCreate: true,
     execute: (match, navigate) => {
       navigate(`/crm/modules/${match[1].toLowerCase()}s/new`);
     },
@@ -222,11 +253,14 @@ const terminalCommands: TerminalCommand[] = [
 function terminalHintCommands({
   navigate,
   setQuery,
+  canCreate,
 }: {
   navigate: (path: string) => void;
   setQuery: (q: string) => void;
+  /** DE-M1: the "new <type>" hint is dropped for roles that cannot create. */
+  canCreate: boolean;
 }): CommandItem[] {
-  return [
+  const hints: CommandItem[] = [
     {
       id: 'terminal-view',
       label: 'leads view <name>',
@@ -275,9 +309,10 @@ function terminalHintCommands({
       keywords: ['create', 'add', 'new'],
     },
   ];
+  return hints.filter((h) => h.id !== 'terminal-new' || canCreate);
 }
 
-export function CommandPalette({ open, onOpenChange, modules }: CommandPaletteProps) {
+export function CommandPalette({ open, onOpenChange, modules, navProfile = 'full' }: CommandPaletteProps) {
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   // Which module chip is armed on a grouped row (0 = primary). ←/→ move it;
@@ -290,6 +325,9 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
   const [recents, setRecents] = useState<RecordSearchResult[]>([]);
   const [recordContextVersion, setRecordContextVersion] = useState(0);
   const searchAbortRef = useRef<AbortController | null>(null);
+  // TE-5: Enter pressed while the debounced search is still in flight is kept
+  // (for that exact query) and fires once results land, if unambiguous.
+  const pendingEnterRef = useRef<string | null>(null);
   const router = useRouter();
   const pathname = usePathname();
   const { preferences } = useUiPreferences();
@@ -297,6 +335,11 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
   // Same gate as /api/crm/ai/email-draft (shared constant) so the palette
   // never offers an action the API would 403.
   const canDraftAiEmail = roleCanDraftAiEmail(clientProfile?.crm_role);
+  // DE-M1: one predicate for every create affordance (top bar, ModuleHeader,
+  // drawer mount). With the drawer unmounted for crm_viewer a palette "Add
+  // Member" would be a silent no-op — so the rows and the `new <type>`
+  // terminal command are not offered at all.
+  const canCreate = canCreateRecords(clientProfile?.crm_role);
   // Deal-centric hints/commands only when a deals pipeline exists for this org
   // (modules passed in are the org's enabled modules).
   const dealsEnabled = useMemo(
@@ -319,6 +362,7 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
   const onRecordPage = pathname?.startsWith('/crm/r/') ?? false;
 
   const resetSearch = useCallback(() => {
+    pendingEnterRef.current = null;
     setQuery('');
     setSearchResults([]);
     setSelectedIndex(0);
@@ -438,12 +482,12 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
     const trimmed = query.trim();
     if (!trimmed) return null;
     for (const cmd of terminalCommands) {
-      if (cmd.requiresDeals && !dealsEnabled) continue;
+      if (!terminalCommandAllowed(cmd, { dealsEnabled, canCreate })) continue;
       const match = trimmed.match(cmd.pattern);
       if (match) return { command: cmd, match };
     }
     return null;
-  }, [query, dealsEnabled]);
+  }, [query, dealsEnabled, canCreate]);
 
   const recordCommands: CommandItem[] = useMemo(() => {
     // One row per person: Contact + Lead + Member twins fold into a single
@@ -516,33 +560,33 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
     }));
   }, [onRecordPage, recordCommandContext, query, handleOpenChange]);
 
+  // NV-3 / D10: every sidebar page, gated exactly like the sidebar (enabled
+  // modules, admin-only Settings links) and de-duplicated by href.
+  const palettePages = useMemo(
+    () => buildPalettePages({ modules, crmRole: clientProfile?.crm_role ?? null, navProfile }),
+    [modules, clientProfile?.crm_role, navProfile],
+  );
+
+  // Typed (≥ 1 char): all pages, filtered below with the other base commands.
+  // Idle: the persona set only — the full list would flood the idle palette.
+  const pageCommands: CommandItem[] = useMemo(() => {
+    const typed = query.trim().length >= 1;
+    const pages = typed ? palettePages : personaIdlePages(palettePages);
+    return pages.map((page) => ({
+      id: `page-${page.key}`,
+      label: `Go to ${page.label}`,
+      description: page.section ? `${page.tabLabel} · ${page.section}` : page.tabLabel,
+      icon: iconMap[page.icon] ?? <Compass className="w-4 h-4" />,
+      action: () => navigate(page.href),
+      category: 'Navigation',
+      keywords: page.keywords,
+    }));
+  }, [palettePages, query, navigate]);
+
   const baseCommands: CommandItem[] = useMemo(() => {
     const commands: CommandItem[] = [
-      {
-        id: 'nav-dashboard',
-        label: 'Go to CRM Dashboard',
-        icon: <LayoutDashboard className="w-4 h-4" />,
-        action: () => navigate('/crm'),
-        category: 'Navigation',
-        keywords: ['home', 'main', 'dashboard'],
-      },
-      ...orderedModules.map((module) => ({
-        id: `nav-${module.key}`,
-        label: `Go to ${module.name_plural || module.name + 's'}`,
-        icon: iconMap[module.icon] || <FileText className="w-4 h-4" />,
-        action: () => navigate(`/crm/modules/${module.key}`),
-        category: 'Navigation',
-        keywords: [module.key, module.name.toLowerCase()],
-      })),
-      {
-        id: 'nav-settings',
-        label: 'Go to CRM Settings',
-        icon: <Settings className="w-4 h-4" />,
-        action: () => navigate('/crm/settings'),
-        category: 'Navigation',
-        keywords: ['config', 'preferences', 'modules', 'fields'],
-      },
-      ...orderedModules.flatMap((module) => {
+      ...pageCommands,
+      ...(canCreate ? orderedModules : []).flatMap((module) => {
         const intent = resolveCreateIntent({
           moduleKey: module.key,
           dealsEnabled,
@@ -570,21 +614,14 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
           },
         ];
       }),
-      {
-        id: 'action-import',
-        label: 'Import Data',
-        description: 'Import records from CSV or other sources',
-        icon: <Upload className="w-4 h-4" />,
-        action: () => navigate('/crm/import'),
-        category: 'Quick Actions',
-        keywords: ['csv', 'upload', 'bulk'],
-      },
+      // "Import Data" is a page row now (persona set idle, typed otherwise) —
+      // no second Quick Actions copy of the same destination.
       ...(dealsEnabled
-        ? terminalHintCommands({ navigate, setQuery })
+        ? terminalHintCommands({ navigate, setQuery, canCreate })
         : []),
     ];
     return commands;
-  }, [orderedModules, navigate, dealsEnabled, handleOpenChange]);
+  }, [pageCommands, orderedModules, navigate, dealsEnabled, handleOpenChange, canCreate]);
 
   // Filter "base" commands by the free-text query.
   const filteredBase = useMemo(() => {
@@ -677,18 +714,41 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
           }
           if (current) {
             current.action();
+            break;
+          }
+          // TE-5: nothing on screen yet but the search is running — queue the
+          // Enter for this query; the results effect below decides.
+          if (shouldQueuePaletteEnter({ searchLoading, query, visibleRowCount: flatCommands.length })) {
+            pendingEnterRef.current = query.trim();
           }
           break;
         }
         case 'Escape':
           e.preventDefault();
+          pendingEnterRef.current = null;
           handleOpenChange(false);
           break;
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [open, selectedIndex, chipIndex, flatCommands, handleOpenChange, terminalMatch, navigate]);
+  }, [open, selectedIndex, chipIndex, flatCommands, handleOpenChange, terminalMatch, navigate, searchLoading, query]);
+
+  // TE-5: a queued Enter fires when its results land — only for the sole row
+  // with a single chip (twins / shared-phone households are picked by hand).
+  useEffect(() => {
+    if (pendingEnterRef.current === null) return;
+    const verdict = resolveQueuedPaletteEnter({
+      queuedQuery: pendingEnterRef.current,
+      query,
+      searchLoading,
+      recordRows: recordCommands.map((c) => ({ chipCount: c.chips?.length ?? 0 })),
+      visibleRowCount: flatCommands.length,
+    });
+    if (verdict === 'wait') return;
+    pendingEnterRef.current = null;
+    if (verdict === 'open') recordCommands[0].action();
+  }, [query, searchLoading, recordCommands, flatCommands.length]);
 
   // Reset selection as the list changes.
   useEffect(() => {
@@ -725,11 +785,7 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
                 ? SEARCH_PLACEHOLDER_ON_RECORD
                 : SEARCH_PLACEHOLDER
             }
-            aria-label={
-              onRecordPage && recordCommandContext
-                ? SEARCH_PLACEHOLDER_ON_RECORD
-                : SEARCH_PLACEHOLDER
-            }
+            aria-label={SEARCH_ARIA_LABEL}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="flex-1 border-0 focus-visible:ring-0 h-12 placeholder:text-muted-foreground"

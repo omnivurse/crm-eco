@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { ADVISOR_LABEL } from '@/lib/crm/nav-lexicon';
 import { Button } from '@crm-eco/ui/components/button';
 import {
   BookOpen,
@@ -47,7 +48,7 @@ const CATEGORIES = [
       { title: 'Creating Contacts', href: '/crm/learn/contacts/creating', time: '3 min' },
       { title: 'Search by Name, Spouse, or Child', href: '/crm/learn/contacts', time: '4 min' },
       { title: 'Filtering & Saved Views', href: '/crm/learn/contacts', time: '4 min' },
-      { title: 'Bulk Assign Advisor / Agent', href: '/crm/learn/contacts', time: '3 min' },
+      { title: `Bulk Assign ${ADVISOR_LABEL}`, href: '/crm/learn/contacts', time: '3 min' },
       { title: 'Importing Contacts', href: '/crm/learn/contacts/importing', time: '4 min' },
       { title: 'Merging Duplicates', href: '/crm/learn/contacts/merging', time: '3 min' },
     ],

@@ -37,18 +37,25 @@
  *   (`.in('id', …)`, ≤ 36 ids). Worst case ≈ 9 small indexed queries and
  *   ≤ ~160 record rows per dashboard render; nothing scans the table.
  *
+ * ONE ROW PER PERSON (DESK-1): a hand-entered contact and its members twin
+ * (same name + same phone/email, two crm_records ids) both land in the
+ * pending lane, so the ranked queue is collapsed with
+ * `dedupePeopleQueueTwins` — the highest-ranked row of a person wins, the
+ * twin is dropped. Pure, exported for tests.
+ *
  * Every source is isolated in try/catch: a failure sets `degraded = true` and
  * the rest of the queue still renders.
  */
 
 import { createCrmClient, getCachedModules } from '@/lib/crm/queries';
+import { phoneMatchKey } from '@/lib/crm/phone-normalize';
 import { isConvertedLeadRow } from '@/lib/crm/record-search';
 import {
   laneValues,
   parseStatusValuesRpcResult,
   statusValuesRpcArgs,
 } from '@/lib/crm/status-lanes';
-import type { PeopleQueue, PeopleQueueCounts } from './people-queue-types';
+import type { PeopleQueue, PeopleQueueCounts, PeopleQueueItem } from './people-queue-types';
 import {
   assemblePeopleQueue,
   buildPeopleQueueItem,
@@ -117,6 +124,42 @@ function addDays(d: Date, days: number): Date {
 }
 
 export const PEOPLE_QUEUE_TTL_MS = 20_000;
+
+/** "pat pending" — case/whitespace-insensitive person name. */
+function personNameKey(name: string | null | undefined): string {
+  return (name ?? '').toLowerCase().replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * Collapse the same PERSON surfacing as two records (a contact and its
+ * members twin, or a straight duplicate): same normalised name AND the same
+ * phone (last 10 digits, `phoneMatchKey`) or the same email. Items arrive
+ * ranked, so the first occurrence — the highest-ranked lane — is kept and
+ * later twins are dropped. Records with no name, or with neither phone nor
+ * email, are never collapsed (family members sharing a phone have different
+ * names, so they stay). Distinct record ids are also deduped defensively.
+ */
+export function dedupePeopleQueueTwins(items: readonly PeopleQueueItem[]): PeopleQueueItem[] {
+  const seenIds = new Set<string>();
+  const seenKeys = new Set<string>();
+  const out: PeopleQueueItem[] = [];
+  for (const item of items) {
+    if (seenIds.has(item.recordId)) continue;
+    seenIds.add(item.recordId);
+    const name = personNameKey(item.name);
+    const keys: string[] = [];
+    if (name) {
+      const phone = phoneMatchKey(item.phone);
+      if (phone.length >= 7) keys.push(`p:${name}|${phone}`);
+      const email = (item.email ?? '').trim().toLowerCase();
+      if (email) keys.push(`e:${name}|${email}`);
+    }
+    if (keys.some((k) => seenKeys.has(k))) continue;
+    for (const k of keys) seenKeys.add(k);
+    out.push(item);
+  }
+  return out;
+}
 
 type PeopleQueueCacheEntry = { value: PeopleQueueResult; exp: number };
 
@@ -525,7 +568,11 @@ async function buildPeopleQueueFresh(
     }
   }
 
-  const items = assemblePeopleQueue({ records, hits, now, limit });
+  // Assemble with headroom, collapse twins (DESK-1), then cut to the limit so
+  // a dropped twin does not leave the queue one row short.
+  const items = dedupePeopleQueueTwins(
+    assemblePeopleQueue({ records, hits, now, limit: limit * 2 }),
+  ).slice(0, limit);
 
   return { items, counts, recentlyViewed, degraded };
 }

@@ -14,6 +14,11 @@ import {
   PALETTE_NUMERIC_LIMIT,
   type PaletteSearchResult,
 } from './palette-results';
+import {
+  PALETTE_LIVE_SEARCH_MIN,
+  resolveQueuedPaletteEnter,
+  shouldQueuePaletteEnter,
+} from './palette-pending-enter';
 
 const mk = (o: Partial<PaletteSearchResult> & { id: string }): PaletteSearchResult => ({
   title: 'Jane Doe',
@@ -234,5 +239,40 @@ describe('field extraction helpers', () => {
     expect(singularModuleLabel('Policies')).toBe('Policy');
     expect(singularModuleLabel('Address')).toBe('Address');
     expect(singularModuleLabel('Member')).toBe('Member');
+  });
+});
+
+describe('Enter while the record search is in flight (TE-5)', () => {
+  it('queues Enter only when loading, the query is searchable and no row is on screen', () => {
+    expect(shouldQueuePaletteEnter({ searchLoading: true, query: '5550107788', visibleRowCount: 0 })).toBe(true);
+    expect(shouldQueuePaletteEnter({ searchLoading: true, query: ' 55 ', visibleRowCount: 0 })).toBe(true);
+    expect(shouldQueuePaletteEnter({ searchLoading: false, query: '5550107788', visibleRowCount: 0 })).toBe(false);
+    expect(shouldQueuePaletteEnter({ searchLoading: true, query: '5', visibleRowCount: 0 })).toBe(false);
+    expect(shouldQueuePaletteEnter({ searchLoading: true, query: '5550107788', visibleRowCount: 1 })).toBe(false);
+    expect(PALETTE_LIVE_SEARCH_MIN).toBe(2);
+  });
+
+  it('waits while the same query is loading, opens the sole single-chip row when results land', () => {
+    const base = { queuedQuery: '5550107788', query: '5550107788' };
+    expect(resolveQueuedPaletteEnter({ ...base, searchLoading: true, recordRows: [], visibleRowCount: 0 })).toBe('wait');
+    expect(resolveQueuedPaletteEnter({ ...base, searchLoading: false, recordRows: [{ chipCount: 1 }], visibleRowCount: 1 })).toBe('open');
+    expect(resolveQueuedPaletteEnter({ ...base, searchLoading: false, recordRows: [{ chipCount: 0 }], visibleRowCount: 1 })).toBe('open');
+  });
+
+  it('drops the queued Enter when nothing matches, when several rows or twins come back, or when a command row joins', () => {
+    const base = { queuedQuery: '5550107788', query: '5550107788', searchLoading: false };
+    expect(resolveQueuedPaletteEnter({ ...base, recordRows: [], visibleRowCount: 0 })).toBe('drop');
+    // Shared-phone household → two rows → the rep picks.
+    expect(resolveQueuedPaletteEnter({ ...base, recordRows: [{ chipCount: 1 }, { chipCount: 1 }], visibleRowCount: 2 })).toBe('drop');
+    // Contact + Member twin folded into one row with two chips → ambiguous.
+    expect(resolveQueuedPaletteEnter({ ...base, recordRows: [{ chipCount: 2 }], visibleRowCount: 1 })).toBe('drop');
+    // One record plus a matching command row → not the sole row.
+    expect(resolveQueuedPaletteEnter({ ...base, recordRows: [{ chipCount: 1 }], visibleRowCount: 2 })).toBe('drop');
+  });
+
+  it('drops the queue when the query moved on or nothing was queued (Escape)', () => {
+    expect(resolveQueuedPaletteEnter({ queuedQuery: '5550107788', query: '55501077889', searchLoading: false, recordRows: [{ chipCount: 1 }], visibleRowCount: 1 })).toBe('drop');
+    expect(resolveQueuedPaletteEnter({ queuedQuery: '5550107788', query: '5550107788 ', searchLoading: false, recordRows: [{ chipCount: 1 }], visibleRowCount: 1 })).toBe('open');
+    expect(resolveQueuedPaletteEnter({ queuedQuery: null, query: '5550107788', searchLoading: false, recordRows: [{ chipCount: 1 }], visibleRowCount: 1 })).toBe('drop');
   });
 });

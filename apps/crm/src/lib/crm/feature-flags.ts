@@ -2,17 +2,16 @@
  * CRM feature flag resolver.
  *
  * Precedence (first match wins):
- *   1. Per-user override in `profiles.ui_preferences` — instant escape hatch.
- *   2. Org-scoped row in `crm_feature_flags` (if any).
- *   3. Global default row in `crm_feature_flags` (organization_id IS NULL).
- *   4. Hard-coded fallback passed via `fallback` arg.
+ *   1. Org-scoped row in `crm_feature_flags` (if any).
+ *   2. Global default row in `crm_feature_flags` (organization_id IS NULL).
+ *   3. Hard-coded fallback passed via `fallback` arg.
  *
  * All checks are defensive: any DB failure falls back to `fallback` so a
  * broken flags table can never take the app down.
  */
 
 import { createCrmClient } from './queries';
-import type { CrmProfile, CrmUiPreferences } from './types';
+import type { CrmProfile } from './types';
 
 export type CrmFeatureFlagKey =
   | 'crm.layout.v2'
@@ -21,36 +20,22 @@ export type CrmFeatureFlagKey =
 
 interface ResolvedFlag {
   enabled: boolean;
-  source: 'user' | 'org' | 'global' | 'fallback';
+  source: 'org' | 'global' | 'fallback';
 }
 
 /**
- * Cheap, synchronous check that only inspects the profile's `ui_preferences`.
- * Use this in the render path after you've already resolved the org/global
- * flag server-side — it lets users flip layouts instantly.
- */
-export function isUserOptedIntoLayoutV2(profile: Pick<CrmProfile, 'ui_preferences'> | null | undefined): boolean {
-  const prefs = profile?.ui_preferences as CrmUiPreferences | null | undefined;
-  return prefs?.crm_layout_v2 === true;
-}
-
-/**
- * Full resolver. Reads org + global rows from `crm_feature_flags` once, then
- * applies the user override. Safe to call from RSCs.
+ * Full resolver. Reads org + global rows from `crm_feature_flags` once.
+ * Safe to call from RSCs.
+ *
+ * Road to Ten FB-4 (decision D8): the per-user `crm_layout_v2` override was
+ * retired with the V1 record shell — V2 is the only record layout, so the
+ * resolver no longer consults `profiles.ui_preferences`.
  */
 export async function resolveCrmFeatureFlag(
   key: CrmFeatureFlagKey,
   profile: Pick<CrmProfile, 'organization_id' | 'ui_preferences'> | null | undefined,
   fallback = false,
 ): Promise<ResolvedFlag> {
-  // 1. Per-user override — only honored for known user-togglable flags.
-  if (key === 'crm.layout.v2') {
-    const prefs = profile?.ui_preferences as CrmUiPreferences | null | undefined;
-    if (typeof prefs?.crm_layout_v2 === 'boolean') {
-      return { enabled: prefs.crm_layout_v2, source: 'user' };
-    }
-  }
-
   try {
     const supabase = await createCrmClient();
     const orgId = profile?.organization_id ?? null;

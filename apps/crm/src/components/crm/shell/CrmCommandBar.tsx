@@ -3,6 +3,7 @@
 import { Search, Sparkles } from 'lucide-react';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { openCrmCommandPalette } from '@/lib/crm/command-palette-bus';
+import { SEARCH_PLACEHOLDER } from '@/lib/crm/search-copy';
 
 interface CrmCommandBarProps {
   className?: string;
@@ -18,7 +19,7 @@ interface CrmCommandBarProps {
 export function CrmCommandBar({
   className,
   size = 'default',
-  placeholder = 'Search records, jump to a module, or start a workflow…',
+  placeholder = SEARCH_PLACEHOLDER,
 }: CrmCommandBarProps) {
   const isHero = size === 'hero';
 
@@ -34,7 +35,6 @@ export function CrmCommandBar({
         isHero ? 'px-4 py-3.5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]' : 'px-3 py-2',
         className,
       )}
-      aria-label="Open command palette"
     >
       <div
         className={cn(

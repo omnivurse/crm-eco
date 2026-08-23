@@ -5,6 +5,7 @@ import {
   readListQueryState,
   recordNounFromModuleKey,
   resolveListEmptyState,
+  stepListPageParams,
   summarizeListQuery,
 } from './list-empty-state';
 
@@ -106,6 +107,60 @@ describe('resolveListEmptyState', () => {
   });
 });
 
+describe('resolveListEmptyState — load failure (LS-2)', () => {
+  it("says Couldn't load {noun} with a Try again action and never the Create CTA", () => {
+    const s = resolveListEmptyState({
+      recordCount: 0, totalCount: 0, query: q(), recordNoun: 'contacts', loadError: true,
+    });
+    expect(s?.reason).toBe('load-failed');
+    expect(s?.title).toBe("Couldn't load contacts");
+    expect(s?.actions).toEqual([{ id: 'retry', label: 'Try again' }]);
+    expect(s?.showCreateImport).toBe(false);
+  });
+
+  it('wins over the narrowed / page-out-of-range explanations (zero rows is unknown, not empty)', () => {
+    const narrowed = resolveListEmptyState({
+      recordCount: 0, query: q({ search: 'zzz', page: '3' }), loadError: true,
+    });
+    expect(narrowed?.reason).toBe('load-failed');
+    expect(narrowed?.actions.map((a) => a.id)).toEqual(['retry']);
+    // Rows present → never an empty state, even if a later fetch flagged an error.
+    expect(resolveListEmptyState({ recordCount: 2, query: q(), loadError: true })).toBeNull();
+  });
+
+  it('uses the ellipsis glyph, never three dots', () => {
+    const s = resolveListEmptyState({ recordCount: 0, query: q(), loadError: true });
+    expect(`${s?.title} ${s?.description}`).not.toContain('...');
+  });
+});
+
+describe('stepListPageParams (PageUp / PageDown)', () => {
+  it('steps within the filtered total using the URL page size', () => {
+    const p = new URLSearchParams({ page: '2', page_size: '25', filters: '[]' });
+    expect(stepListPageParams(p, 1, 60)?.get('page')).toBe('3');
+    expect(stepListPageParams(p, -1, 60)?.get('page')).toBe('1');
+    // Keeps the rest of the list state.
+    expect(stepListPageParams(p, 1, 60)?.get('filters')).toBe('[]');
+    // Does not mutate the input.
+    expect(p.get('page')).toBe('2');
+  });
+
+  it('returns null at the edges and on a bad page param', () => {
+    expect(stepListPageParams(new URLSearchParams({ page: '1' }), -1, 100)).toBeNull();
+    expect(stepListPageParams(new URLSearchParams({ page: '4' }), 1, 100)).toBeNull(); // 4 pages of 25
+    expect(stepListPageParams(new URLSearchParams({ page: 'abc' }), -1, 100)).toBeNull(); // abc → page 1
+    expect(stepListPageParams(new URLSearchParams({ page: 'abc' }), 1, 100)?.get('page')).toBe('2');
+    expect(stepListPageParams(new URLSearchParams(), 1, 0)).toBeNull();
+    expect(stepListPageParams(new URLSearchParams(), 1, null)).toBeNull();
+  });
+
+  it('defaults the page size to 25 and honours an explicit page_size', () => {
+    expect(stepListPageParams(new URLSearchParams({ page: '2' }), 1, 50)).toBeNull();
+    expect(stepListPageParams(new URLSearchParams({ page: '1', page_size: '100' }), 1, 100)).toBeNull();
+    expect(stepListPageParams(new URLSearchParams({ page: '1', page_size: '50' }), 1, 51)?.get('page')).toBe('2');
+  });
+});
+
 describe('clearListStateParams', () => {
   const base = () => new URLSearchParams({
     filters: '[]', search: 's', scope: 'mine', territory: 't', view: 'v', page: '4', sortField: 'x',
@@ -132,6 +187,10 @@ describe('clearListStateParams', () => {
     const p = base();
     clearListStateParams(p, 'all');
     expect(p.get('search')).toBe('s');
+  });
+
+  it('"retry" keeps the URL untouched, including the page', () => {
+    expect(clearListStateParams(base(), 'retry').toString()).toBe(base().toString());
   });
 });
 

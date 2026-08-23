@@ -64,6 +64,7 @@ import {
 } from '@/components/zoho/ColumnsButton';
 import { prefetchRecordForDrawer } from '@/lib/prefetch';
 import { ListEmptyStatePanel, useListEmptyState } from '@/components/crm/views/ListView';
+import { stepListPageParams } from '@/lib/crm/list-empty-state';
 import type { CrmRecord, CrmField, CrmView } from '@/lib/crm/types';
 import {
   MoreHorizontal,
@@ -83,6 +84,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { toastCopy } from '@/lib/crm/toast-copy';
+import { CallLink } from '@/components/crm/records/CallLink';
 import { MarketTypeBadge, NormalizationBadge, OwnershipDisplay } from '@/components/shared/crm-lane-badges';
 import { NeedsAttentionChip } from './NeedsAttentionChip';
 import { mergeCrmRecordRowIntoFormDefaults } from '@/lib/crm/record-form-defaults';
@@ -119,6 +121,10 @@ interface RecordTableProps {
   totalCount?: number | null;
   /** Filter count of the active saved view (see `useListEmptyState` in ListView). */
   activeViewFilterCount?: number | null;
+  /** The server failed to load rows — render the retry state, never the Create CTA. */
+  loadError?: boolean;
+  /** Viewer's profile id — scopes remembered column widths per user (LS-8). */
+  viewerId?: string | null;
   /**
    * When the table sits in FilterWorkspaceRow, fill that pane instead of
    * measuring a second (often shorter) viewport cap.
@@ -196,7 +202,7 @@ function InlineEditor({
           }}
         >
           <SelectTrigger className="h-8 text-sm w-full min-w-[120px]">
-            <SelectValue placeholder="Select..." />
+            <SelectValue placeholder="Select…" />
           </SelectTrigger>
           <SelectContent>
             {selectOptions.filter(Boolean).map((opt: string) => (
@@ -490,17 +496,16 @@ const RecordCard = memo(function RecordCard({
       <div className="flex items-center gap-2 mt-4 pt-3 border-t border-slate-100 dark:border-white/5">
         {phone && (
           <Button
+            asChild
             variant="outline"
             size="sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              window.location.href = `tel:${phone}`;
-            }}
             className="flex-1 h-9 text-emerald-600 border-emerald-200 hover:bg-emerald-50 dark:text-emerald-400 dark:border-emerald-500/30 dark:hover:bg-emerald-500/10"
-            data-testid="crm-card-call"
           >
-            <Phone className="w-4 h-4 mr-1" />
-            Call
+            {/* TE-8: a real tel: anchor (CallLink stops row-click propagation). */}
+            <CallLink phone={phone} data-testid="crm-card-call" aria-label={`Call ${phone}`}>
+              <Phone className="w-4 h-4 mr-1" />
+              Call
+            </CallLink>
           </Button>
         )}
         {email && (
@@ -556,6 +561,8 @@ export const RecordTable = memo(function RecordTable({
   onRecordUpdate,
   totalCount,
   activeViewFilterCount,
+  loadError,
+  viewerId,
   fillParent = false,
 }: RecordTableProps) {
   const [internalSelectedIds, setInternalSelectedIds] = useState<Set<string>>(new Set());
@@ -585,7 +592,7 @@ export const RecordTable = memo(function RecordTable({
   );
   // Filter-aware empty state — reads the URL list state so a search/filter
   // miss never says "create your first record".
-  const emptyState = useListEmptyState(records.length, moduleKey, totalCount, activeViewFilterCount);
+  const emptyState = useListEmptyState(records.length, moduleKey, totalCount, activeViewFilterCount, loadError);
 
   // Prefetch record data on row hover for instant drawer opens
   const handleRowMouseEnter = useCallback((recordId: string) => {
@@ -811,6 +818,9 @@ export const RecordTable = memo(function RecordTable({
     columns: visibleColumns,
     getDefaultWidth: getColumnWidth,
     storageKey: moduleKey,
+    // Server-known viewer when the list page provides it; otherwise the hook
+    // resolves the cached client profile (never an unscoped key).
+    scopeId: viewerId ?? undefined,
   });
 
   // "Reset column widths" lives in the toolbar's ColumnsButton (a sibling
@@ -865,7 +875,7 @@ export const RecordTable = memo(function RecordTable({
   };
 
   const handleSort = (field: string) => {
-    if (!onSort || isDisplayOnlySortField(field)) return;
+    if (!onSort || isDisplayOnlySortField(field, moduleKey)) return;
 
     const newDirection =
       currentSort?.field === field && currentSort?.direction === 'asc' ? 'desc' : 'asc';
@@ -892,10 +902,9 @@ export const RecordTable = memo(function RecordTable({
   }, []);
 
   const handleCreateTask = useCallback(async () => {
-    if (!taskRecordId || !taskTitle.trim()) {
-      toast.error('Task title is required');
-      return;
-    }
+    // FB-6: the Create button is disabled while the title is empty and the
+    // field shows "Title is required" inline — no toast for validation.
+    if (!taskRecordId || !taskTitle.trim()) return;
 
     setIsCreatingTask(true);
     try {
@@ -1051,11 +1060,20 @@ export const RecordTable = memo(function RecordTable({
         >
           {value}
         </a>
-      ) : (
-        <span
-          className="text-slate-700 dark:text-slate-300 truncate"
-          data-testid={col === 'phone' ? 'crm-row-phone' : undefined}
+      ) : col === 'phone' ? (
+        // Click-to-call straight from the list (same tel: anchor the card
+        // layout and FieldRenderer use) — no hover needed; stopPropagation
+        // keeps the row click from also opening the record.
+        <a
+          href={`tel:${value}`}
+          className="text-slate-700 dark:text-slate-300 hover:text-teal-600 dark:hover:text-teal-400 transition-colors truncate block"
+          onClick={(e) => e.stopPropagation()}
+          data-testid="crm-row-phone"
         >
+          {value}
+        </a>
+      ) : (
+        <span className="text-slate-700 dark:text-slate-300 truncate">
           {value}
         </span>
       );
@@ -1181,7 +1199,7 @@ export const RecordTable = memo(function RecordTable({
     if (col === 'record_id') {
       return (
         <span className="text-sm text-slate-500 font-mono">
-          {record.id.slice(0, 8)}...
+          {record.id.slice(0, 8)}…
         </span>
       );
     }
@@ -1259,7 +1277,7 @@ export const RecordTable = memo(function RecordTable({
   // survives virtualized rows unmounting on scroll; `activeRowIndex` (declared
   // with the other hooks above) drives the focus ring + the active descendant.
   // Arrows / j·k move, Enter (or o) opens, Space (or x) toggles selection,
-  // Home/End jump, PageUp/Down page, Esc clears.
+  // Home/End jump, PageUp/Down change the results page, Esc clears.
   const handleGridKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     // Defer to inline-edit inputs and any focused interactive control (buttons,
     // links, checkboxes) — nav keys only act when the grid container itself is
@@ -1301,14 +1319,16 @@ export const RecordTable = memo(function RecordTable({
         e.preventDefault();
         go(records.length - 1);
         break;
+      // PageUp / PageDown walk the *pager* (previous / next page of results),
+      // not the rows — arrows / Home / End are the cell navigation. No-op on
+      // the first / last page (same URL contract as the pager links).
       case 'PageDown':
+      case 'PageUp': {
         e.preventDefault();
-        go(cur + 12);
+        const next = stepListPageParams(searchParams, e.key === 'PageDown' ? 1 : -1, totalCount);
+        if (next) router.push(`${pathname}?${next.toString()}`, { scroll: false });
         break;
-      case 'PageUp':
-        e.preventDefault();
-        go(cur - 12);
-        break;
+      }
       case 'Enter':
       case 'o':
         if (inRange) {
@@ -1435,9 +1455,9 @@ export const RecordTable = memo(function RecordTable({
             {visibleColumns.map((col, colIndex) => (
               <TableHead
                 key={col}
-                title={isDisplayOnlySortField(col) ? DISPLAY_ONLY_SORT_HINT : undefined}
+                title={isDisplayOnlySortField(col, moduleKey) ? DISPLAY_ONLY_SORT_HINT : undefined}
                 aria-sort={
-                  !onSort || isDisplayOnlySortField(col)
+                  !onSort || isDisplayOnlySortField(col, moduleKey)
                     ? undefined
                     : currentSort?.field === col
                       ? currentSort.direction === 'asc'
@@ -1445,9 +1465,9 @@ export const RecordTable = memo(function RecordTable({
                         : 'descending'
                       : 'none'
                 }
-                tabIndex={onSort && !isDisplayOnlySortField(col) ? 0 : undefined}
+                tabIndex={onSort && !isDisplayOnlySortField(col, moduleKey) ? 0 : undefined}
                 onKeyDown={
-                  onSort && !isDisplayOnlySortField(col)
+                  onSort && !isDisplayOnlySortField(col, moduleKey)
                     ? (e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
                           e.preventDefault();
@@ -1458,7 +1478,7 @@ export const RecordTable = memo(function RecordTable({
                 }
                 className={cn(
                   'relative flex-shrink-0 flex items-center bg-slate-50 dark:bg-slate-900/80 backdrop-blur-sm text-slate-600 dark:text-slate-400 font-medium text-xs uppercase tracking-wider',
-                  onSort && !isDisplayOnlySortField(col) && 'cursor-pointer hover:text-slate-900 dark:hover:text-white transition-colors select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring',
+                  onSort && !isDisplayOnlySortField(col, moduleKey) && 'cursor-pointer hover:text-slate-900 dark:hover:text-white transition-colors select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring',
                   colIndex === 0 && 'sticky z-20 after:absolute after:right-0 after:top-0 after:bottom-0 after:w-[3px] after:bg-gradient-to-r after:from-black/[0.06] after:to-transparent dark:after:from-white/[0.08]'
                 )}
                 style={{
@@ -1474,7 +1494,7 @@ export const RecordTable = memo(function RecordTable({
               >
                 <div className="flex items-center gap-1.5 truncate">
                   {getColumnLabel(col)}
-                  {onSort && !isDisplayOnlySortField(col) && getSortIcon(col)}
+                  {onSort && !isDisplayOnlySortField(col, moduleKey) && getSortIcon(col)}
                 </div>
                 <ResizeHandle
                   columnKey={col}
@@ -1599,17 +1619,20 @@ export const RecordTable = memo(function RecordTable({
                       {/* Call - only if phone exists */}
                       {record.phone && (
                         <Button
+                          asChild
                           variant="ghost"
                           size="icon"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            window.location.href = `tel:${record.phone}`;
-                          }}
                           className="h-7 w-7 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:text-emerald-400 dark:hover:bg-emerald-500/10"
-                          title="Call"
-                          data-testid="crm-row-call"
                         >
-                          <Phone className="w-3.5 h-3.5" />
+                          {/* TE-8: a real tel: anchor (CallLink stops row-click propagation). */}
+                          <CallLink
+                            phone={record.phone}
+                            title="Call"
+                            aria-label={`Call ${record.phone}`}
+                            data-testid="crm-row-call"
+                          >
+                            <Phone className="w-3.5 h-3.5" />
+                          </CallLink>
                         </Button>
                       )}
 
@@ -1705,7 +1728,7 @@ export const RecordTable = memo(function RecordTable({
                 Title <span className="text-red-500">*</span>
               </label>
               <Input
-                placeholder="Enter task title..."
+                placeholder="Enter task title…"
                 value={taskTitle}
                 onChange={(e) => setTaskTitle(e.target.value)}
                 onKeyDown={(e) => {
@@ -1714,14 +1737,22 @@ export const RecordTable = memo(function RecordTable({
                     handleCreateTask();
                   }
                 }}
+                aria-invalid={taskTitle.trim() ? undefined : true}
+                aria-describedby="crm-list-task-title-help"
               />
+              {/* FB-6: inline validation instead of a toast — same wording as DynamicRecordForm. */}
+              {!taskTitle.trim() && (
+                <p id="crm-list-task-title-help" role="alert" className="text-xs text-rose-600 dark:text-rose-400">
+                  Title is required
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Description
               </label>
               <Textarea
-                placeholder="Add details about this task..."
+                placeholder="Add details about this task…"
                 value={taskDescription}
                 onChange={(e) => setTaskDescription(e.target.value)}
                 rows={3}
@@ -1764,7 +1795,7 @@ export const RecordTable = memo(function RecordTable({
               {isCreatingTask ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Creating...
+                  {toastCopy.loadingCopy('Creating')}
                 </>
               ) : (
                 'Create Task'

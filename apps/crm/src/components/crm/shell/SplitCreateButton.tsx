@@ -30,6 +30,7 @@ import {
 
 import type { CrmModule } from '@/lib/crm/types';
 import type { QuickCreateModuleKey } from '@/lib/crm/quick-create-config';
+import { canCreateRecords } from '@/lib/crm/can-create-records';
 
 interface CreateOption {
     label: string;
@@ -152,6 +153,12 @@ interface SplitCreateButtonProps {
     onQuickCreate?: (module: QuickCreateModuleKey) => void;
     /** Enabled org modules — record entries for disabled modules are hidden. */
     modules?: Pick<CrmModule, 'key' | 'is_enabled'>[];
+    /**
+     * DE-M1: when the viewer's crm_role is known and may not create records
+     * (crm_viewer), the whole control renders nothing. Omit to keep the legacy
+     * ungated behaviour for hosts that already gate upstream.
+     */
+    crmRole?: string | null;
 }
 
 export function SplitCreateButton({
@@ -161,9 +168,12 @@ export function SplitCreateButton({
     size = 'sm',
     onQuickCreate,
     modules,
+    crmRole,
 }: SplitCreateButtonProps) {
     const [isOpen, setIsOpen] = useState(false);
     const primaryLabel = defaultLabel ?? (onQuickCreate ? 'Add Member' : 'Create');
+    // DE-M1: explicit role that may not create → no affordance at all.
+    if (crmRole !== undefined && !canCreateRecords(crmRole)) return null;
 
     const isModuleEnabled = (key: string) =>
         !modules || modules.some((m) => m.key === key && m.is_enabled !== false);

@@ -102,14 +102,16 @@ export type ClearListStateTarget =
   | 'territory'
   | 'view'
   | 'page'
-  | 'all';
+  | 'all'
+  /** Re-run the server load after a failed fetch (router.refresh, URL unchanged). */
+  | 'retry';
 
 export interface ListEmptyAction {
   id: ClearListStateTarget;
   label: string;
 }
 
-export type ListEmptyReason = 'no-records' | 'no-match' | 'page-out-of-range';
+export type ListEmptyReason = 'no-records' | 'no-match' | 'page-out-of-range' | 'load-failed';
 
 export interface ListEmptyState {
   reason: ListEmptyReason;
@@ -138,10 +140,26 @@ export function resolveListEmptyState(input: {
   totalCount?: number | null;
   query: ListQueryState;
   recordNoun?: string;
+  /**
+   * The server could not load the rows at all (query threw). Zero rows then
+   * means "unknown", not "empty" — never show the Create CTA or a clear-filter
+   * hint; offer a retry instead.
+   */
+  loadError?: boolean;
 }): ListEmptyState | null {
   const { recordCount, totalCount, query } = input;
   if (recordCount > 0) return null;
   const noun = input.recordNoun || 'records';
+
+  if (input.loadError) {
+    return {
+      reason: 'load-failed',
+      title: `Couldn't load ${noun}`,
+      description: 'Something went wrong while loading this list. Your filters are unchanged — try again in a moment.',
+      actions: [{ id: 'retry', label: 'Try again' }],
+      showCreateImport: false,
+    };
+  }
 
   if ((totalCount ?? 0) > 0 || (query.page > 1 && !isListNarrowed(query))) {
     return {
@@ -220,7 +238,32 @@ export function clearListStateParams(
     case 'view': drop('view'); break;
     case 'page': break;
     case 'all': drop('filters', 'search', 'scope', 'territory', 'view'); break;
+    // A retry re-runs the same query: keep the URL (including the page) as is.
+    case 'retry': return next;
   }
   next.delete('page');
+  return next;
+}
+
+/**
+ * Pure URL rewrite for keyboard paging (PageUp / PageDown on the grid).
+ * Returns the params for page `current + delta`, or `null` when that page
+ * does not exist (already on the first / last page) so callers do nothing.
+ * `total` is the filtered total the server reported; page size comes from
+ * `?page_size=` (default 25, the list's server default).
+ */
+export function stepListPageParams(
+  params: ParamsLike & { toString(): string },
+  delta: number,
+  total: number | null | undefined,
+): URLSearchParams | null {
+  const current = readListQueryState(params).page;
+  const sizeRaw = Number.parseInt(params.get('page_size') ?? '', 10);
+  const pageSize = Number.isFinite(sizeRaw) && sizeRaw > 0 ? sizeRaw : 25;
+  const lastPage = Math.max(1, Math.ceil((total ?? 0) / pageSize));
+  const target = current + delta;
+  if (target < 1 || target > lastPage || target === current) return null;
+  const next = new URLSearchParams(params.toString());
+  next.set('page', String(target));
   return next;
 }

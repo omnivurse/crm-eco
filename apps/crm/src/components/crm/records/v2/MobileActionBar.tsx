@@ -14,8 +14,15 @@
 import { memo } from 'react';
 import { Phone, Mail, StickyNote, Sparkles } from 'lucide-react';
 import { cn } from '@crm-eco/ui/lib/utils';
+import { CallLink } from '@/components/crm/records/CallLink';
 
 export interface MobileActionBarProps {
+  /**
+   * TE-8: when set, Call renders as a real `tel:` anchor (CallLink) so the
+   * OS dialer opens without a JS redirect; `onCall` is then only the
+   * no-phone fallback (e.g. open the "log a call" task modal).
+   */
+  phone?: string | null;
   onCall?: () => void;
   onEmail?: () => void;
   onNote?: () => void;
@@ -28,6 +35,7 @@ export interface MobileActionBarProps {
 }
 
 export const MobileActionBar = memo(function MobileActionBar({
+  phone = null,
   onCall,
   onEmail,
   onNote,
@@ -54,6 +62,7 @@ export const MobileActionBar = memo(function MobileActionBar({
           icon={<Phone className="w-5 h-5" />}
           label="Call"
           onClick={onCall}
+          href={phone ? { phone } : undefined}
           disabled={!hasPhone}
         />
         <ActionButton
@@ -83,29 +92,54 @@ function ActionButton({
   icon,
   label,
   onClick,
+  href,
   disabled,
   accent,
 }: {
   icon: React.ReactNode;
   label: string;
   onClick?: () => void;
+  /** Render as a `tel:` anchor (CallLink) instead of a button. */
+  href?: { phone: string };
   disabled?: boolean;
   accent?: string;
 }) {
+  const className = cn(
+    // RP-6: keep the bar shallow — every px here is taken from the one-glance
+    // record content above it on a 390px-tall-budget phone screen.
+    'flex flex-col items-center justify-center gap-0.5 py-1.5 text-[10px] font-medium',
+    disabled
+      ? 'text-slate-300 dark:text-slate-600 cursor-not-allowed'
+      : cn(
+          'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/5 active:bg-slate-100 dark:active:bg-white/10 transition-colors',
+          accent,
+        ),
+  );
+  if (href && !disabled) {
+    return (
+      <CallLink
+        phone={href.phone}
+        className={className}
+        aria-label={`${label} ${href.phone}`}
+        data-testid="crm-mobile-bar-call"
+        fallback={
+          <button type="button" onClick={onClick} disabled={!onClick} className={className}>
+            {icon}
+            <span>{label}</span>
+          </button>
+        }
+      >
+        {icon}
+        <span>{label}</span>
+      </CallLink>
+    );
+  }
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled || !onClick}
-      className={cn(
-        'flex flex-col items-center justify-center gap-1 py-2.5 text-[11px] font-medium',
-        disabled
-          ? 'text-slate-300 dark:text-slate-600 cursor-not-allowed'
-          : cn(
-              'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/5 active:bg-slate-100 dark:active:bg-white/10 transition-colors',
-              accent,
-            ),
-      )}
+      className={className}
     >
       {icon}
       <span>{label}</span>

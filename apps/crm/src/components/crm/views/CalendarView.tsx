@@ -41,6 +41,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { toastCopy } from '@/lib/crm/toast-copy';
 import { Button } from '@crm-eco/ui/components/button';
 import {
   Select,
@@ -346,12 +347,12 @@ export const CalendarView = memo(function CalendarView({
           body: JSON.stringify({ data: { [dateField]: dayKey } }),
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        toast.success('Rescheduled');
-      } catch {
+        toast.success(toastCopy.updated('Date'));
+      } catch (err) {
         setRecords((curr) =>
           curr.map((r) => (r.id === recordId ? prev : r)),
         );
-        toast.error('Failed to reschedule');
+        toast.error(toastCopy.failed('reschedule the record', err, 'It was put back — try again'));
       }
     },
     [dateField, records],
@@ -389,12 +390,12 @@ export const CalendarView = memo(function CalendarView({
           body: JSON.stringify({ due_at: nextIso }),
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        toast.success('Rescheduled task');
-      } catch {
+        toast.success(toastCopy.updated('Task'), { description: 'Rescheduled' });
+      } catch (err) {
         setTasks((curr) =>
           curr.map((t) => (t.id === taskId ? prev : t)),
         );
-        toast.error('Failed to reschedule task');
+        toast.error(toastCopy.failed('reschedule the task', err, 'It was put back — try again'));
       }
     },
     [tasks],

@@ -39,7 +39,7 @@ export function AttachmentsSectionClient({
     async (file: File, description?: string) => {
       if (!canUpload) return;
       if (file.size > MAX_RECORD_ATTACHMENT_BYTES) {
-        toast.error('File too large', { description: `Maximum size is ${MAX_RECORD_ATTACHMENT_BYTES / (1024 * 1024)} MB` });
+        toast.error(toastCopy.failed('upload the file', `maximum size is ${MAX_RECORD_ATTACHMENT_BYTES / (1024 * 1024)} MB`));
         return;
       }
 

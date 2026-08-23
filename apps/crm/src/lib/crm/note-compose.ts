@@ -36,3 +36,30 @@ export function parseRecordComposeParams(search: {
 export function recordNoteComposeHref(recordId: string): string {
   return `/crm/r/${encodeURIComponent(recordId)}?pane=notes&compose=1`;
 }
+
+/**
+ * RP-7 — the record URL for a pane switch, so reload / share / Back keep the
+ * pane. `?pane=` mirrors the active pane (`details` = no param); `compose` is
+ * always dropped (a reload must not re-open the composer); every other param
+ * — `returnTo` above all — is preserved, so Back still returns to the list
+ * with its filters. Pure: callers decide whether to `history.replaceState`.
+ *
+ *   recordPaneHref('/crm/r/1', new URLSearchParams('returnTo=%2Fcrm%2Fmodules%2Fcontacts%3Fstatus%3DPending'), 'notes')
+ *     → '/crm/r/1?returnTo=%2Fcrm%2Fmodules%2Fcontacts%3Fstatus%3DPending&pane=notes'
+ *   recordPaneHref('/crm/r/1', new URLSearchParams('pane=notes&compose=1'), 'details')
+ *     → '/crm/r/1'
+ */
+export function recordPaneHref(
+  pathname: string,
+  searchParams: { toString(): string } | string | null | undefined,
+  pane: string | null | undefined,
+): string {
+  const params = new URLSearchParams(
+    searchParams == null ? '' : typeof searchParams === 'string' ? searchParams : searchParams.toString(),
+  );
+  params.delete('compose');
+  if (pane && pane !== 'details') params.set('pane', pane);
+  else params.delete('pane');
+  const qs = params.toString();
+  return qs ? `${pathname}?${qs}` : pathname;
+}

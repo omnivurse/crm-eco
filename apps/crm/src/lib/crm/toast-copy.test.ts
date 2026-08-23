@@ -1,5 +1,16 @@
 import { describe, it, expect } from 'vitest';
-import { saved, added, updated, deleted, failed, sessionExpired, toastCopy } from './toast-copy';
+import {
+  saved,
+  added,
+  updated,
+  deleted,
+  failed,
+  sessionExpired,
+  toastCopy,
+  FAILED_REASON,
+  FAILED_REASON_MAX_CHARS,
+  MEMBERS_FILLS_FROM_ENROLLMENT,
+} from './toast-copy';
 
 describe('toast-copy success templates', () => {
   it('produce one canonical phrasing per outcome', () => {
@@ -27,8 +38,8 @@ describe('failed()', () => {
   });
 
   it('adds reason and next step when present', () => {
-    expect(failed('save the note', 'network timeout', 'Try again')).toBe(
-      "Couldn't save the note — network timeout. Try again.",
+    expect(failed('save the note', 'name already taken', 'Try again')).toBe(
+      "Couldn't save the note — name already taken. Try again.",
     );
     expect(failed('save the note', undefined, 'try again')).toBe(
       "Couldn't save the note. Try again.",
@@ -51,14 +62,27 @@ describe('failed()', () => {
   });
 
   it('strips a "Failed to" / "Couldn\'t" prefix from the reason', () => {
+    expect(failed('save the note', 'Failed to validate: email is required')).toBe(
+      "Couldn't save the note — validate: email is required.",
+    );
+    expect(failed('save the note', "Couldn't parse the date.")).toBe(
+      "Couldn't save the note — parse the date.",
+    );
+    expect(failed('save the note', new Error('failed to parse the date'), 'Try again')).toBe(
+      "Couldn't save the note — parse the date. Try again.",
+    );
+  });
+
+  it('reads "reach the server" as no connection instead of the old grammar slip', () => {
+    // Was: "Couldn't save the note — reach the server." (FB-9 grammar case)
     expect(failed('save the note', 'Failed to reach the server')).toBe(
-      "Couldn't save the note — reach the server.",
+      "Couldn't save the note — no connection.",
     );
     expect(failed('save the note', "Couldn't reach the server.")).toBe(
-      "Couldn't save the note — reach the server.",
+      "Couldn't save the note — no connection.",
     );
     expect(failed('save the note', new Error('failed to reach the server'), 'Try again')).toBe(
-      "Couldn't save the note — reach the server. Try again.",
+      "Couldn't save the note — no connection. Try again.",
     );
   });
 
@@ -80,10 +104,190 @@ describe('failed()', () => {
       "Couldn't save the note — row not found.",
     );
     expect(failed('save the note', 'HTTP 500: server error')).toBe(
-      "Couldn't save the note — HTTP 500: server error.",
+      "Couldn't save the note — server error.",
     );
     expect(failed('create the module', 'name already taken')).toBe(
       "Couldn't create the module — name already taken.",
+    );
+  });
+});
+
+describe('failed() humanises reasons (FB-9)', () => {
+  it('maps RLS / permission / 403 / 42501 to "you don\'t have access to this record"', () => {
+    expect(
+      failed(
+        'save the note',
+        new Error('new row violates row-level security policy for table "crm_notes"'),
+      ),
+    ).toBe("Couldn't save the note — you don't have access to this record.");
+    expect(failed('save the note', 'permission denied for table crm_notes')).toBe(
+      "Couldn't save the note — you don't have access to this record.",
+    );
+    expect(failed('update the record', 'HTTP 403: Forbidden')).toBe(
+      "Couldn't update the record — you don't have access to this record.",
+    );
+    expect(failed('update the record', 'You are not allowed to edit this record')).toBe(
+      "Couldn't update the record — you don't have access to this record.",
+    );
+    // Postgrest error object (not an Error instance): code alone is enough.
+    expect(
+      failed('update the record', { message: 'permission denied', code: '42501', details: null }),
+    ).toBe("Couldn't update the record — you don't have access to this record.");
+    expect(failed('update the record', { message: 'nope', status: 403 })).toBe(
+      "Couldn't update the record — you don't have access to this record.",
+    );
+    // The family wording is exported so callers/tests share one string.
+    expect(failed('save the note', 'row-level security')).toBe(
+      `Couldn't save the note — ${FAILED_REASON.noAccess}.`,
+    );
+  });
+
+  it('maps fetch/network failures to "no connection"', () => {
+    expect(failed('load the record', new TypeError('Failed to fetch'))).toBe(
+      "Couldn't load the record — no connection.",
+    );
+    expect(failed('load the record', 'NetworkError when attempting to fetch resource.')).toBe(
+      "Couldn't load the record — no connection.",
+    );
+    expect(failed('load the record', new TypeError('Load failed'))).toBe(
+      "Couldn't load the record — no connection.",
+    );
+    expect(failed('load the record', 'connect ECONNREFUSED 127.0.0.1:54321')).toBe(
+      "Couldn't load the record — no connection.",
+    );
+    // "Upload failed" is not Safari's "Load failed".
+    expect(failed('save the file', 'Upload failed: file too large')).toBe(
+      "Couldn't save the file — Upload failed: file too large.",
+    );
+  });
+
+  it('maps timeouts to "the request timed out"', () => {
+    expect(failed('load the list', 'network timeout')).toBe(
+      "Couldn't load the list — the request timed out.",
+    );
+    expect(failed('load the list', 'The request timed out after 30s')).toBe(
+      "Couldn't load the list — the request timed out.",
+    );
+    expect(failed('load the list', { message: 'canceling statement due to statement timeout', code: '57014' })).toBe(
+      "Couldn't load the list — the request timed out.",
+    );
+    expect(failed('load the list', 'HTTP 504: Gateway Timeout')).toBe(
+      "Couldn't load the list — the request timed out.",
+    );
+    // Validation text that merely mentions the word survives.
+    expect(failed('save the settings', 'Timeout must be between 1 and 60 minutes')).toBe(
+      "Couldn't save the settings — Timeout must be between 1 and 60 minutes.",
+    );
+  });
+
+  it('maps HTTP 5xx and HTML error pages to "server error"', () => {
+    expect(failed('save the note', 'HTTP 500: server error')).toBe(
+      "Couldn't save the note — server error.",
+    );
+    expect(failed('save the note', 'Request failed with status code 502')).toBe(
+      "Couldn't save the note — server error.",
+    );
+    expect(failed('save the note', '503 Service Unavailable')).toBe(
+      "Couldn't save the note — server error.",
+    );
+    expect(failed('save the note', { message: 'boom', status: 500 })).toBe(
+      "Couldn't save the note — server error.",
+    );
+    expect(failed('save the note', '<!DOCTYPE html><html><head><title>502 Bad Gateway</title>')).toBe(
+      "Couldn't save the note — server error.",
+    );
+    // A 4xx status with a useful body keeps the body.
+    expect(failed('save the note', { message: 'Body must be under 10,000 characters', status: 400 })).toBe(
+      "Couldn't save the note — Body must be under 10,000 characters.",
+    );
+  });
+
+  it('reads an expired session, a .single() miss and a unique-constraint hit', () => {
+    expect(failed('save the note', new Error('JWT expired'))).toBe(
+      `Couldn't save the note — ${FAILED_REASON.sessionExpired}.`,
+    );
+    expect(failed('save the note', { message: 'x', status: 401 })).toBe(
+      `Couldn't save the note — ${FAILED_REASON.sessionExpired}.`,
+    );
+    expect(
+      failed('load the record', {
+        message: 'JSON object requested, multiple (or no) rows returned',
+        code: 'PGRST116',
+      }),
+    ).toBe(`Couldn't load the record — ${FAILED_REASON.notFound}.`);
+    expect(
+      failed('create the contact', {
+        message: 'duplicate key value violates unique constraint "crm_records_email_key"',
+        code: '23505',
+      }),
+    ).toBe(`Couldn't create the contact — ${FAILED_REASON.duplicate}.`);
+  });
+
+  it('drops PGRST / SQLSTATE / HTTP code noise and stack prefixes but keeps useful text', () => {
+    expect(failed('save the note', 'PGRST204: Could not find the \'foo\' column of \'crm_notes\'')).toBe(
+      "Couldn't save the note — Could not find the 'foo' column of 'crm_notes'.",
+    );
+    expect(failed('save the note', '[23502] null value in column "body" violates not-null constraint')).toBe(
+      "Couldn't save the note — null value in column \"body\" violates not-null constraint.",
+    );
+    expect(failed('save the note', 'Error: Email is required')).toBe(
+      "Couldn't save the note — Email is required.",
+    );
+    expect(failed('save the note', 'Email is required (code 22P02)')).toBe(
+      "Couldn't save the note — Email is required.",
+    );
+    expect(failed('save the note', 'HTTP 400: Email is required')).toBe(
+      "Couldn't save the note — Email is required.",
+    );
+    // A reason that is only a code says nothing.
+    expect(failed('save the note', 'PGRST301')).toBe("Couldn't save the note.");
+    expect(failed('save the note', { message: '', code: '22P02' })).toBe("Couldn't save the note.");
+    // Multi-line messages keep the first line only.
+    expect(failed('save the note', 'Email is required\n    at save (file.ts:1:1)')).toBe(
+      "Couldn't save the note — Email is required.",
+    );
+    // Plain text survives untouched.
+    expect(failed('save the note', 'Email is required')).toBe(
+      "Couldn't save the note — Email is required.",
+    );
+    // "100 records…" is not an HTTP code prefix.
+    expect(failed('import the file', '100 rows skipped: missing phone')).toBe(
+      "Couldn't import the file — 100 rows skipped: missing phone.",
+    );
+  });
+
+  it('unwraps JSON error bodies and Postgrest-style objects', () => {
+    expect(failed('save the note', '{"error":"Body is required"}')).toBe(
+      "Couldn't save the note — Body is required.",
+    );
+    expect(failed('save the note', new Error('{"message":"Body is required","code":"P0001"}'))).toBe(
+      "Couldn't save the note — Body is required.",
+    );
+    expect(failed('save the note', { error: 'Body is required' })).toBe(
+      "Couldn't save the note — Body is required.",
+    );
+    expect(failed('save the note', { message: 'Body is required', code: 'P0001', details: null, hint: null })).toBe(
+      "Couldn't save the note — Body is required.",
+    );
+    expect(failed('save the note', { weird: true })).toBe("Couldn't save the note.");
+    expect(failed('save the note', 42)).toBe("Couldn't save the note.");
+  });
+
+  it('caps a long reason at about 80 characters on a word boundary with an ellipsis glyph', () => {
+    const long =
+      'The value you entered for the secondary emergency contact phone number field does not match the expected format for this region and cannot be stored';
+    const out = failed('save the record', long);
+    const reason = out.slice("Couldn't save the record — ".length, -1);
+    expect(reason.endsWith('…')).toBe(true);
+    expect(reason).not.toContain('...');
+    expect(reason.length).toBeLessThanOrEqual(FAILED_REASON_MAX_CHARS + 1);
+    expect(reason.length).toBeGreaterThan(FAILED_REASON_MAX_CHARS / 2);
+    // Cut on a word boundary, not mid-word.
+    expect(long.startsWith(reason.slice(0, -1))).toBe(true);
+    expect(long[reason.length - 1]).toBe(' ');
+    // Short reasons are never touched.
+    expect(failed('save the record', 'Email is required')).toBe(
+      "Couldn't save the record — Email is required.",
     );
   });
 });
@@ -253,5 +457,27 @@ describe('viewSaved()', () => {
   it('says so when the view has no filters, and tolerates an empty name', () => {
     expect(toastCopy.viewSaved('All', 0).description).toBe('No filters — shows every record');
     expect(toastCopy.viewSaved('', 0).title).toBe('View saved');
+  });
+});
+
+describe('addedWithAction() — D1 "Member added · View in list"', () => {
+  it('keeps the title identical to added(noun) and offers "View in list"', () => {
+    const c = toastCopy.addedWithAction('Member');
+    expect(c.title).toBe(toastCopy.added('Member'));
+    expect(c.title).toBe('Member added');
+    expect(c.actionLabel).toBe('View in list');
+    expect(c.description).toBeUndefined();
+  });
+
+  it('carries the honest Members note as the description when asked', () => {
+    const c = toastCopy.addedWithAction('Member', { note: MEMBERS_FILLS_FROM_ENROLLMENT });
+    expect(c.description).toBe(MEMBERS_FILLS_FROM_ENROLLMENT);
+    expect(c.description).toMatch(/Members fills from enrollment/);
+    expect(c.description).not.toContain('...');
+  });
+
+  it('accepts a custom action label and drops an empty note', () => {
+    expect(toastCopy.addedWithAction('Lead', { actionLabel: 'open list.' }).actionLabel).toBe('Open list');
+    expect(toastCopy.addedWithAction('Lead', { note: '   ' }).description).toBeUndefined();
   });
 });

@@ -17,6 +17,7 @@
 import type { ViewMode } from './types';
 import { VIEW_MODES } from './types';
 import { pickDefaultListColumns, type DefaultColumnCandidate } from './default-list-columns';
+import { CRM_RECORD_PAGE_SIZES, type CrmRecordPageSize } from './record-list-constants';
 
 export const LIST_PREFS_VERSION = 1 as const;
 
@@ -35,9 +36,14 @@ export interface ModuleListPrefs {
   sort?: ListPrefSort | null;
   scope?: ListPrefScope;
   viewMode?: ViewMode;
+  /** Rows per page (25 / 50 / 100 — `CRM_RECORD_PAGE_SIZES`); D11: remembered per user/module. */
+  pageSize?: CrmRecordPageSize;
   /** ms epoch of the last write — lets the newer of server/local win. */
   updated_at?: number;
 }
+
+/** The server default when the URL carries no `?page_size=` (page.tsx `parseCrmRecordPageSize`). */
+export const LIST_DEFAULT_PAGE_SIZE: CrmRecordPageSize = 25;
 
 /** `ui_preferences.list_prefs` — keyed by module key. */
 export type ListPrefsMap = Record<string, ModuleListPrefs>;
@@ -53,6 +59,8 @@ export const isListPrefDirection = (v: unknown): v is ListPrefSortDirection =>
   typeof v === 'string' && DIRECTIONS.has(v);
 export const isListPrefViewMode = (v: unknown): v is ViewMode =>
   typeof v === 'string' && VIEW_MODE_SET.has(v);
+export const isListPrefPageSize = (v: unknown): v is CrmRecordPageSize =>
+  typeof v === 'number' && (CRM_RECORD_PAGE_SIZES as readonly number[]).includes(v);
 
 /**
  * localStorage key for the per-module mirror, scoped by profile id so user B
@@ -99,6 +107,7 @@ export function sanitizeListPrefs(raw: unknown): ModuleListPrefs | null {
 
   if (isListPrefScope(obj.scope)) out.scope = obj.scope;
   if (isListPrefViewMode(obj.viewMode)) out.viewMode = obj.viewMode;
+  if (isListPrefPageSize(obj.pageSize)) out.pageSize = obj.pageSize;
   if (typeof obj.updated_at === 'number' && Number.isFinite(obj.updated_at)) out.updated_at = obj.updated_at;
 
   if (Object.keys(out).filter((k) => k !== 'updated_at').length === 0) return null;
@@ -158,6 +167,7 @@ export function mergeListPrefs(
   if (patch.sort !== undefined) next.sort = patch.sort;
   if (patch.scope !== undefined) next.scope = patch.scope;
   if (patch.viewMode !== undefined) next.viewMode = patch.viewMode;
+  if (patch.pageSize !== undefined) next.pageSize = patch.pageSize;
   next.v = LIST_PREFS_VERSION;
   next.updated_at = now;
   return next;
@@ -183,7 +193,8 @@ export function listPrefsEqual(a: ModuleListPrefs | null | undefined, b: ModuleL
     sameArray(a.columns, b.columns) &&
     sameSort(a.sort, b.sort) &&
     (a.scope ?? undefined) === (b.scope ?? undefined) &&
-    (a.viewMode ?? undefined) === (b.viewMode ?? undefined)
+    (a.viewMode ?? undefined) === (b.viewMode ?? undefined) &&
+    (a.pageSize ?? undefined) === (b.pageSize ?? undefined)
   );
 }
 
@@ -198,6 +209,8 @@ export interface ListUrlState {
   sortDirection: ListPrefSortDirection | null;
   scope: ListPrefScope | null;
   viewMode: ViewMode | null;
+  /** `?page_size=` when it is one of the allowed sizes. */
+  pageSize: CrmRecordPageSize | null;
 }
 
 /** Minimal read-only shape shared by URLSearchParams and Next's ReadonlyURLSearchParams. */
@@ -211,12 +224,15 @@ export function readListUrlState(params: ParamsLike | null | undefined): ListUrl
   const dir = get('sortDirection');
   const scope = get('scope');
   const vm = get('viewMode');
+  const sizeRaw = get('page_size');
+  const size = sizeRaw ? Number.parseInt(sizeRaw, 10) : NaN;
   return {
     viewId: get('view') || null,
     sortField: get('sortField') || null,
     sortDirection: isListPrefDirection(dir) ? dir : null,
     scope: isListPrefScope(scope) ? scope : null,
     viewMode: isListPrefViewMode(vm) ? vm : null,
+    pageSize: isListPrefPageSize(size) ? size : null,
   };
 }
 
@@ -231,19 +247,21 @@ export interface ResolvedListState {
   sort: ListPrefSort | null;
   scope: ListPrefScope;
   viewMode: ViewMode;
+  pageSize: CrmRecordPageSize;
   /**
    * URL params that must be added so the server (which only reads the URL)
    * renders the remembered shape. Empty when the URL already says it all or
    * the remembered value equals the default. Never contains keys already in
    * the URL — explicit URL always wins.
    */
-  urlPatch: Partial<Record<'sortField' | 'sortDirection' | 'scope' | 'viewMode', string>>;
+  urlPatch: Partial<Record<'sortField' | 'sortDirection' | 'scope' | 'viewMode' | 'page_size', string>>;
   /** Where each piece came from — handy for tests and debugging. */
   source: {
     columns: 'url-view' | 'prefs' | 'view' | 'default';
     sort: 'url' | 'url-view' | 'prefs' | 'view' | 'none';
     scope: 'url' | 'prefs' | 'default';
     viewMode: 'url' | 'prefs' | 'default';
+    pageSize: 'url' | 'prefs' | 'default';
   };
 }
 
@@ -322,13 +340,24 @@ export function resolveInitialListState(input: {
     if (viewMode !== 'table') urlPatch.viewMode = viewMode;
   }
 
+  // Page size (D11: remembered per user/module; URL > prefs > 25)
+  let pageSize: CrmRecordPageSize = LIST_DEFAULT_PAGE_SIZE;
+  let pageSizeSource: ResolvedListState['source']['pageSize'] = 'default';
+  if (url.pageSize) {
+    pageSize = url.pageSize; pageSizeSource = 'url';
+  } else if (prefs?.pageSize) {
+    pageSize = prefs.pageSize; pageSizeSource = 'prefs';
+    if (pageSize !== LIST_DEFAULT_PAGE_SIZE) urlPatch.page_size = String(pageSize);
+  }
+
   return {
     columns,
     sort,
     scope,
     viewMode,
+    pageSize,
     urlPatch,
-    source: { columns: columnsSource, sort: sortSource, scope: scopeSource, viewMode: viewModeSource },
+    source: { columns: columnsSource, sort: sortSource, scope: scopeSource, viewMode: viewModeSource, pageSize: pageSizeSource },
   };
 }
 

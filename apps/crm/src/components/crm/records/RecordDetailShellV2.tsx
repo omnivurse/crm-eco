@@ -3,9 +3,9 @@
 /**
  * RecordDetailShellV2 — Zoho-style 3-column CRM record detail layout.
  *
- * Shipped behind the `crm.layout.v2` feature flag. Users can opt in from
- * /crm/profile. Classic `RecordDetailShell` remains untouched so rollback is
- * a single flag toggle.
+ * The one record shell (the classic `RecordDetailShell` and the V1-only
+ * `RecordToolbarGlobalSearch` were removed in the Road-to-Ten cleanup; the
+ * `crm.layout.v2` flag now only chooses V2 defaults).
  *
  * Layout:
  *   ┌ Header: breadcrumb + InlineRecordSearch ──────────────────────────┐
@@ -53,6 +53,7 @@ import {
   ClipboardList,
   Users,
   LifeBuoy,
+  Sparkles,
 } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
@@ -86,8 +87,6 @@ import { formatNoteTimestamp, formatNoteRelative } from '@/lib/crm/note-timestam
 import { cn } from '@crm-eco/ui/lib/utils';
 import { supabase } from '@/lib/supabase-client';
 import { sanitizeNoteHtml, getNoteAuthorDisplay } from '@/lib/crm/note-sanitize';
-import { NoteRichArea } from '@/components/crm/notes/NoteRichArea';
-import { RecordToolbarGlobalSearch } from './RecordToolbarGlobalSearch';
 import { StageSelector } from '@/components/crm/blueprints';
 import { ComposerBar } from '@/components/zoho/ComposerBar';
 import { ConvertToContactDialog } from '@/components/crm/records/ConvertToContactDialog';
@@ -103,6 +102,7 @@ import { statusPickerGroupsForModule } from '@/lib/crm/status-allowlist';
 import { statusLane, statusToneForValue, sanitizeReturnTo, withReturnTo } from '@/lib/crm/status-lanes';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { toastCopy } from '@/lib/crm/toast-copy';
+import { toastDeletedWithUndo } from '@/lib/crm/undo-delete';
 import { stripLegacyAuthorAttribution } from '@/lib/crm/note-sanitize';
 import { MergeRecordDialog } from '@/components/crm/records/MergeRecordDialog';
 import {
@@ -159,8 +159,10 @@ import { FollowUpReminderDialog } from './FollowUpReminderDialog';
 import { FollowUpBanner } from './FollowUpBanner';
 import { useSyncBroadcast } from '@/hooks/useSyncBroadcast';
 import { RecordFieldSaveProvider, useRecordFieldSaveOptional } from '@/hooks/useRecordFieldSave';
-import { NoteComposeProvider } from '@/components/crm/notes/NoteComposeContext';
-import { parseRecordComposeParams } from '@/lib/crm/note-compose';
+import { NoteComposeProvider, noteTemplateBodyToHtml } from '@/components/crm/notes/NoteComposeContext';
+import { parseRecordComposeParams, recordPaneHref } from '@/lib/crm/note-compose';
+import { CallLink } from '@/components/crm/records/CallLink';
+import { teammateUpdated } from '@/lib/crm/live-record-copy';
 import { RecordFieldLocksProvider } from '@/hooks/useRecordFieldLocks';
 import { RecordAiContextProvider } from './v2/RecordAiContext';
 import { useUiPreferences } from '@/hooks/useUiPreferences';
@@ -337,8 +339,19 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
   const searchParams = useSearchParams();
   const pathname = usePathname();
 
-  const [topTab, setTopTab] = useState<TopTab>('overview');
-  const [overviewPane, setOverviewPane] = useState<OverviewPane>('details');
+  // RP-7: the URL is the source of truth for the pane on first paint — a
+  // reload of `?pane=notes` renders Notes straight away (no Details flash).
+  // `searchParams` is stable per render, so the lazy initialisers only read
+  // it once; the mount-only deep-link effect below still owns `compose`.
+  const [topTab, setTopTab] = useState<TopTab>(() =>
+    parseRecordComposeParams({ get: (n) => searchParams?.get(n) ?? null }).pane === 'timeline'
+      ? 'timeline'
+      : 'overview',
+  );
+  const [overviewPane, setOverviewPane] = useState<OverviewPane>(() => {
+    const pane = parseRecordComposeParams({ get: (n) => searchParams?.get(n) ?? null }).pane;
+    return pane && pane !== 'timeline' ? pane : 'details';
+  });
   const [activitiesMode, setActivitiesMode] = useState<'open' | 'closed'>('open');
 
   // Refresh this tab when a sibling tab on the same device drains a
@@ -378,7 +391,11 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
   // `?pane=notes&compose=1` (dashboard command desk). Applied once on mount
   // so a later in-page pane switch is never overridden by the stale URL.
   const [notesComposeNonce, setNotesComposeNonce] = useState(0);
-  const requestNoteCompose = useCallback(() => {
+  // TE-6: an optional body (note templates) rides along with the nonce; the
+  // Notes pane seeds its draft from it only when the draft is blank.
+  const [notesComposePrefill, setNotesComposePrefill] = useState<string | null>(null);
+  const requestNoteCompose = useCallback((body?: string | null) => {
+    setNotesComposePrefill(body ?? null);
     setNotesComposeNonce((n) => n + 1);
   }, []);
   const paneParam = searchParams?.get('pane') ?? null;
@@ -400,15 +417,33 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // RP-7: mirror the active pane back into the URL (`?pane=notes`) so
+  // reload / share / Back keep the pane. `history.replaceState`, NOT
+  // `router.replace`: a query change through the router is a soft navigation
+  // that re-fetches this dynamic page's RSC payload on every pane click (the
+  // `?ai` scrub below tolerates that once; a tab strip cannot). Next ≥14.1
+  // patches replaceState so `useSearchParams` still sees the new value, and
+  // no history entry is added — Back still returns to the list. `returnTo`
+  // and every other param survive; `compose` is dropped (recordPaneHref).
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const pane = topTab === 'timeline' ? 'timeline' : topTab === 'overview' ? overviewPane : null;
+    const { pathname: here, search, hash } = window.location;
+    const next = recordPaneHref(here, search, pane);
+    if (next === `${here}${search}`) return;
+    window.history.replaceState(window.history.state, '', `${next}${hash}`);
+  }, [topTab, overviewPane]);
+
   // Modal state (identical to V1 so existing flows keep working)
   const [showTaskModal, setShowTaskModal] = useState(false);
-  const [showNoteModal, setShowNoteModal] = useState(false);
+  // No note modal: the in-pane composer (NotesPanel via NoteComposeContext)
+  // is THE note-save surface — header button, `n`, deep link and templates
+  // all land there (TE-1 / TE-6).
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [taskTitle, setTaskTitle] = useState('');
   const [taskDescription, setTaskDescription] = useState('');
   const [taskDueDate, setTaskDueDate] = useState('');
-  const [noteContent, setNoteContent] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showConvertDialog, setShowConvertDialog] = useState(false);
   const [showMergeDialog, setShowMergeDialog] = useState(false);
@@ -428,6 +463,8 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
   const recordMainScrollRef = useRef<HTMLElement | null>(null);
   const fieldSavePendingRef = useRef(0);
   const recordStickyHeaderRef = useRef<HTMLDivElement | null>(null);
+  /** TE-8: the header's tel: anchor — the `c` hotkey clicks it. */
+  const headerCallLinkRef = useRef<HTMLAnchorElement | null>(null);
   /** Last measured sticky-header height — used to re-anchor scroll when compact toggles. */
   const prevStickyHeaderHeightRef = useRef<number | null>(null);
   /**
@@ -459,7 +496,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
     };
 
     if (!record.email) {
-      toast.warning('No email on file', {
+      toast.warning(toastCopy.failed('draft a follow-up', 'no email on file'), {
         description: 'Add an email address before drafting a follow-up.',
       });
       router.replace(stripAiParam());
@@ -486,11 +523,11 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
             /* ignore */
           }
           if (code === 'AI_NOT_CONFIGURED') {
-            toast.warning('AI assistant not configured', {
+            toast.warning(toastCopy.failed('draft the email', 'the AI assistant is not configured'), {
               description: 'Set OPENAI_API_KEY on the server to enable drafts.',
             });
           } else {
-            toast.error(message);
+            toast.error(toastCopy.failed('draft the email', message, 'Try again'));
           }
           return;
         }
@@ -501,8 +538,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
         });
         setShowSendEmailDialog(true);
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        toast.error('AI request failed', { description: message });
+        toast.error(toastCopy.failed('draft the email', err, 'Try again'));
       } finally {
         setAiEmailLoading(false);
         router.replace(stripAiParam());
@@ -735,6 +771,8 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
     setRecordCommandContext({
       recordId: record.id,
       recordTitle: getRecordDisplayName(record),
+      // NV-7: lets the sidebar highlight `module-<key>` on /crm/r/<id>.
+      moduleKey: module.key,
       searchFields: (q) =>
         buildRecordFieldSearchHits(searchableRows, noteBodiesForSearch.join('\n'), q, 12),
       jumpTo: handleNavigateToMatch,
@@ -742,6 +780,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
     return () => setRecordCommandContext(null);
   }, [
     record,
+    module.key,
     searchableRows,
     noteBodiesForSearch,
     handleNavigateToMatch,
@@ -861,10 +900,9 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
   }, [onUploadFile]);
 
   const submitTask = useCallback(async () => {
-    if (!taskTitle.trim()) {
-      toast.error('Please enter a task title');
-      return;
-    }
+    // FB-6: the Create button is disabled while the title is empty and the
+    // field shows "Task title is required" inline — no toast for validation.
+    if (!taskTitle.trim()) return;
     setIsSubmitting(true);
     const result = await queuedSend({
       method: 'POST',
@@ -906,47 +944,9 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
     }
   }, [record.id, router, taskTitle, taskDescription, taskDueDate, refreshInsights, persistMainScroll]);
 
-  const submitNote = useCallback(async () => {
-    if (!noteContent.trim()) {
-      toast.error('Please enter note content');
-      return;
-    }
-    setIsSubmitting(true);
-    const result = await queuedSend({
-      method: 'POST',
-      url: '/api/crm/notes',
-      body: { record_id: record.id, body: noteContent },
-      queue: {
-        label: `New note (${noteContent.trim().slice(0, 48)}${noteContent.length > 48 ? '…' : ''})`,
-        recordId: record.id,
-      },
-    });
-    setIsSubmitting(false);
-
-    if (result.ok) {
-      toast.success(toastCopy.added('Note'));
-    } else if (result.queued) {
-      const q = toastCopy.queued('note');
-      toast.info(q.title, { description: q.description });
-    } else {
-      toast.error(toastCopy.failed('add the note', result.error, 'Try again'));
-      return;
-    }
-    setShowNoteModal(false);
-    setNoteContent('');
-    if (children.notes) setOverviewPane('notes');
-    if (result.ok) {
-      persistMainScroll();
-      router.refresh();
-      void refreshInsights();
-    }
-  }, [record.id, router, noteContent, children.notes, refreshInsights, persistMainScroll]);
-
   const submitFile = useCallback(async () => {
-    if (!selectedFile) {
-      toast.error('Please select a file');
-      return;
-    }
+    // FB-6: Upload is disabled until a file is picked — no toast for validation.
+    if (!selectedFile) return;
     setIsSubmitting(true);
     try {
       const formData = new FormData();
@@ -971,23 +971,25 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
 
   const handleSendEmail = useCallback(() => {
     if (!record.email) {
-      toast.error('This record has no email address');
+      toast.error(toastCopy.failed('send an email', 'this record has no email address'));
       return;
     }
     setShowSendEmailDialog(true);
   }, [record.email]);
 
   /**
-   * Called by NoteTemplatePicker after a user picks a template. Pre-fills
-   * the existing note modal's textarea with the rendered body so the user
-   * can edit before saving — the save path is unchanged.
+   * Called by the header chevron + NoteTemplatePicker after a user picks a
+   * template (TE-6). Opens the in-pane composer seeded with the rendered body
+   * (plain text becomes paragraphs). A non-empty draft is never overwritten —
+   * NotesPanel only seeds a blank composer. One save surface, sanitised there.
    */
   const handleApplyNoteTemplate = useCallback(
     (body: string) => {
-      setNoteContent(body);
-      setShowNoteModal(true);
+      setTopTab('overview');
+      setOverviewPane('notes');
+      requestNoteCompose(noteTemplateBodyToHtml(body));
     },
-    [],
+    [requestNoteCompose],
   );
 
   // Owner label used when rendering templates (falls back gracefully).
@@ -1004,6 +1006,12 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
     return null;
   }, [record]);
 
+  /** RP-6: tags stored at data.tags (same contract as RecordTagsRow.readTags). */
+  const recordHasTags = useMemo(() => {
+    const raw = (record.data as Record<string, unknown> | null | undefined)?.tags;
+    return Array.isArray(raw) && raw.some((v) => typeof v === 'string' && v.trim());
+  }, [record.data]);
+
   // Keyboard shortcuts (Zoho-parity). Inert when an input is focused —
   // see `useRecordHotkeys` for the full ignore rules.
   useRecordHotkeys(
@@ -1015,20 +1023,45 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
       upload: handleUploadFile,
       search: () => {
         // Focus the inline "find in this record" header input (not global CRM search).
-        const el = document.querySelector<HTMLInputElement>(
-          'input[data-inline-record-search]',
-        );
-        el?.focus();
+        const findInput = () =>
+          document.querySelector<HTMLInputElement>('input[data-inline-record-search]');
+        const el = findInput();
+        if (el) {
+          el.focus();
+          return;
+        }
+        // RP-3: the compact (scrolled) header hides the breadcrumb row and the
+        // find box with it. `/` is the one keyboard door to it, so scroll to
+        // top and let the scroll handler expand the header (transition
+        // 'expanding' → the ResizeObserver re-anchor parks at ≤ EXIT, so it
+        // cannot re-compact), then focus the box once it mounts. Setting
+        // headerCompact directly would re-anchor with transition 'none' and
+        // bounce straight back into compact.
+        if (lockHeaderCompact) return;
+        const root = recordMainScrollRef.current;
+        if (!root) return;
+        root.scrollTo({ top: 0 });
+        let tries = 0;
+        const tick = () => {
+          const input = findInput();
+          if (input) {
+            input.focus();
+            return;
+          }
+          if (++tries < 30) requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
       },
       help: () => setShowShortcutsDialog(true),
       call: () => {
-        // If there's a phone number, let the OS handle dialling; otherwise
-        // open the task modal in "call" mode so the user can still log one.
-        if (record.phone) {
-          window.location.href = `tel:${record.phone}`;
-        } else {
-          setShowTaskModal(true);
-        }
+        // TE-8: `c` clicks the header's real tel: anchor (CallLink) so the OS
+        // dialer opens exactly as a tap would — no JS redirect. No dialable
+        // phone → open the task modal so the rep can still log a call.
+        const anchor =
+          headerCallLinkRef.current ??
+          document.querySelector<HTMLAnchorElement>('a[data-call-link][href^="tel:"]');
+        if (anchor) anchor.click();
+        else setShowTaskModal(true);
       },
     },
     !showSendEmailDialog &&
@@ -1037,7 +1070,6 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
       !showShortcutsDialog &&
       !showConvertDialog &&
       !showEnrollDialog &&
-      !showNoteModal &&
       !showTaskModal &&
       !showUploadModal &&
       !showNotesDrawer,
@@ -1066,20 +1098,13 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
 
       // Record-level edits: revalidate the RSC so updated fields render.
       if (event.table === 'crm_records' && event.type === 'UPDATE') {
-        const actor = (event.new?.updated_by as string | undefined) ?? null;
         if (fieldSavePendingRef.current > 0) {
-          toast.info('A teammate updated this record.', {
-            description: 'Your unsaved edits were kept. Reload when you are ready.',
-            duration: 4000,
-          });
+          const t = teammateUpdated('crm_records', { keptEdits: true });
+          toast.info(t.title, { description: t.description, duration: t.duration });
           return;
         }
-        toast.info('This record was just updated by a teammate.', {
-          description: actor
-            ? 'Their changes are loading now.'
-            : 'Refreshing to pick up their changes.',
-          duration: 3000,
-        });
+        const t = teammateUpdated('crm_records');
+        toast.info(t.title, { description: t.description, duration: t.duration });
         persistMainScroll();
         router.refresh();
         void refreshInsights();
@@ -1087,15 +1112,8 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
       }
 
       // Dependent-table inserts/updates: just nudge insights + toast.
-      const label: Record<string, string> = {
-        crm_notes: 'Someone else added a note',
-        crm_tasks: 'Someone else updated activities',
-        crm_attachments: 'Someone else uploaded a file',
-        crm_stage_history: 'Stage was updated',
-        crm_audit_logs: 'Someone else updated this record',
-      };
-      const text = label[event.table] ?? 'Someone else updated this record';
-      toast.info(text, { duration: 2500 });
+      const t = teammateUpdated(event.table);
+      toast.info(t.title, { duration: t.duration });
       void refreshInsights();
     },
     // `router` and `refreshInsights` are stable across renders. Including
@@ -1344,10 +1362,11 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
   })();
 
   /**
-   * Screen-one context strip: plan/dependent history + the last few notes.
+   * Screen-one context strip: the last few notes + plan/dependent history.
    * Rendered INSIDE the field stack (DynamicRecordForm `beforeSections`, via
    * RecordOverviewSlotsProvider) so the details pane reads: section jump bar →
-   * Coverage Snapshot → histories → recent notes → section cards. Each history
+   * Coverage Snapshot → recent notes → histories → section cards (RP-6: the
+   * notes strip is glance content, the histories are collapsible context). Each history
    * block is a native <details> so it is keyboard-toggleable and collapses to a
    * one-line summary. Memoised so unrelated shell state (scroll compaction,
    * menus) does not re-render the whole field stack through the slot context.
@@ -1356,6 +1375,16 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
   const detailsBeforeSections: React.ReactNode = useMemo(
     () => (
     <>
+      <RecentNotesStrip
+        notes={sortedNotes}
+        total={noteTotal}
+        onAddNote={handleAddNote}
+        onViewAll={() => {
+          if (hasNotesPane) setOverviewPane('notes');
+          else setShowNotesDrawer(true);
+        }}
+      />
+
       {(showChangeHistory || linkedMemberId) && (
         <div className="space-y-2">
           {showChangeHistory && (
@@ -1403,16 +1432,6 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
           )}
         </div>
       )}
-
-      <RecentNotesStrip
-        notes={sortedNotes}
-        total={noteTotal}
-        onAddNote={handleAddNote}
-        onViewAll={() => {
-          if (hasNotesPane) setOverviewPane('notes');
-          else setShowNotesDrawer(true);
-        }}
-      />
     </>
     ),
     [
@@ -1517,8 +1536,8 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
         scheduleRecordRefresh();
       }}
       onConflict={({ field }) => {
-        toast.error('This record was updated by someone else', {
-          description: `Your change to "${field}" wasn't saved. Reload to see the latest.`,
+        toast.error(toastCopy.failed(`save ${field}`, 'this record was updated by someone else'), {
+          description: 'Reload to see the latest.',
           action: {
             label: 'Reload',
             onClick: () => router.refresh(),
@@ -1526,7 +1545,11 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
         });
       }}
     >
-    <NoteComposeProvider composeNonce={notesComposeNonce} requestCompose={requestNoteCompose}>
+    <NoteComposeProvider
+      composeNonce={notesComposeNonce}
+      composePrefill={notesComposePrefill}
+      requestCompose={requestNoteCompose}
+    >
     <FieldSavePendingBridge pendingRef={fieldSavePendingRef} />
     <RecordFieldLocksProvider
       fieldLocks={fieldLocks}
@@ -1560,10 +1583,25 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
             headerCompact && 'shadow-md shadow-slate-200/50 dark:shadow-black/20',
           )}
         >
-          <div className={cn('w-full px-4 xl:px-6', headerCompact ? 'py-2' : 'py-2.5')}>
+          <div className={cn('w-full px-4 xl:px-6', headerCompact ? 'py-2' : 'py-2 lg:py-2.5')}>
             {/* Breadcrumb + search */}
             {!headerCompact && (
-            <div className="flex items-center justify-between gap-4 mb-2">
+            <div className="flex items-center justify-between gap-4 mb-1.5 lg:mb-2">
+              {/* RP-6: keyboard users skip the header cluster straight to the
+                  section jump bar (SectionNav tablist id). Visible on focus. */}
+              <a
+                href="#record-section-nav"
+                onClick={(e) => {
+                  const target = document.getElementById('record-section-nav');
+                  if (!target) return;
+                  e.preventDefault();
+                  target.focus({ preventScroll: false });
+                }}
+                className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-2 focus:z-40 focus:rounded-md focus:bg-teal-600 focus:px-3 focus:py-1.5 focus:text-sm focus:font-medium focus:text-white focus:shadow-lg focus:outline-none"
+                data-testid="crm-record-skip-link"
+              >
+                Skip to record details
+              </a>
               <nav aria-label="Breadcrumb" className="flex items-center gap-2 min-w-0">
                 {cameFromDashboard ? (
                   <>
@@ -1602,8 +1640,10 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                   {getRecordDisplayName(record)}
                 </span>
               </nav>
+              {/* RP-3 / D6a: ONE search affordance in the record header — the
+                  find-in-record input (also the `/` hotkey). Cross-record
+                  search is ⌘K in the top bar, not a second box here. */}
               <div className="hidden md:flex items-center gap-3">
-                <RecordToolbarGlobalSearch currentRecordId={record.id} />
                 <InlineRecordSearch
                   record={record}
                   fields={_fields}
@@ -1617,11 +1657,13 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
 
             {/* Title row — IdentityActionsHeader owns overflow-safe flex. */}
             <IdentityActionsHeader
-              breakpoint="xl"
+              // RP-6: actions share the title row from lg up (a separate
+              // actions row pushed the snapshot below the 768px tablet fold).
+              breakpoint="lg"
               align={headerCompact ? 'center' : 'start'}
               className={cn(headerCompact && 'gap-2')}
               actionsClassName={cn(
-                'min-w-0 xl:max-w-[min(100%,36rem)]',
+                'min-w-0 lg:max-w-[min(100%,36rem)]',
                 headerCompact && 'gap-1',
               )}
               leading={
@@ -1629,14 +1671,25 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                   name={getRecordDisplayName(record)}
                   moduleKey={module.key}
                   size={headerCompact ? 'sm' : 'lg'}
+                  // RP-6: the at-rest hero compacts below lg so the one-glance
+                  // set (snapshot / enrolled by / recent notes) stays above the
+                  // fold at 390 and 1024 — tw-merge lets these override the
+                  // size token, restoring the full tile from lg up.
+                  className={
+                    headerCompact
+                      ? undefined
+                      : 'hidden md:flex w-10 h-10 text-sm lg:w-12 lg:h-12 lg:text-base xl:w-16 xl:h-16 xl:text-xl'
+                  }
                 />
               }
               identity={
-                <>
+                /* RP-5: `group/identity` lets the tagless "Add Tags" pill stay
+                   invisible until the identity block is hovered / focused. */
+                <div className="group/identity min-w-0">
                   <h1
                     className={cn(
                       'font-bold text-slate-900 dark:text-white flex flex-wrap items-center gap-x-2 gap-y-0 min-w-0',
-                      headerCompact ? 'text-base' : 'text-2xl',
+                      headerCompact ? 'text-base' : 'text-lg lg:text-xl xl:text-2xl',
                     )}
                   >
                     <InlineFieldEditor
@@ -1650,7 +1703,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                         v.trim().length === 0 ? 'Title cannot be empty' : null
                       }
                       className="min-w-0 max-w-full"
-                      inputClassName={headerCompact ? 'text-base font-bold' : 'text-2xl font-bold'}
+                      inputClassName={headerCompact ? 'text-base font-bold' : 'text-lg lg:text-xl xl:text-2xl font-bold'}
                     />
                     {!headerCompact && (
                     <UnsavedChangesPill
@@ -1664,12 +1717,12 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                     recordId={record.id}
                     recordData={record.data as Record<string, unknown> | undefined}
                     readOnly={isAlreadyConverted && isLeads}
-                    className="mt-1.5"
+                    className={cn('mt-1.5', !recordHasTags && 'hidden lg:flex')}
                   />
                   )}
                   {/* Meta row: email, phone, status, badges — always visible when sticky */}
-                  <div className={cn('flex items-center gap-x-3 gap-y-1.5 flex-wrap', headerCompact ? 'mt-0.5' : 'mt-2')}>
-                    <span className="group inline-flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400 min-w-0 max-w-full">
+                  <div className={cn('flex items-center gap-x-3 gap-y-1 flex-wrap', headerCompact ? 'mt-0.5' : 'mt-1 lg:mt-2')}>
+                    <span className="group max-md:hidden inline-flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400 min-w-0 max-w-full">
                       <Mail className="w-3.5 h-3.5 shrink-0" />
                       <InlineFieldEditor
                         field="email"
@@ -1713,13 +1766,16 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                         className="whitespace-nowrap"
                         display={(v) =>
                           v ? (
-                            <a
-                              href={`tel:${v}`}
-                              onClick={(e) => e.stopPropagation()}
+                            // TE-8: THE click-to-call anchor; `c` clicks it.
+                            <CallLink
+                              ref={headerCallLinkRef}
+                              phone={String(v)}
+                              data-testid="crm-record-call"
                               className="hover:text-teal-600 dark:hover:text-teal-400 transition-colors whitespace-nowrap"
+                              fallback={<span className="whitespace-nowrap">{v}</span>}
                             >
                               {v}
-                            </a>
+                            </CallLink>
                           ) : null
                         }
                       />
@@ -1769,8 +1825,16 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                         </DropdownMenuContent>
                       </DropdownMenu>
                     )}
-                    {!isLeads && !headerCompact && <MarketTypeBadge marketType={(record as any).market_type} showIcon size="sm" />}
-                    {!isLeads && !headerCompact && <NormalizationBadge status={(record as any).normalization_status} size="sm" />}
+                    {/* RP-4 / D6b: the header meta row is rep-facing — an
+                        unclassified lane and the normalization state are admin
+                        signal. The rail / insights sheet Market rows still show
+                        them; the review banner below is already owner-gated. */}
+                    {!isLeads && !headerCompact && (
+                      <span className="max-md:hidden inline-flex">
+                        <MarketTypeBadge marketType={(record as any).market_type} showIcon size="sm" hideUnknown />
+                      </span>
+                    )}
+                    {!isLeads && !headerCompact && viewerCanNormalize && <NormalizationBadge status={(record as any).normalization_status} size="sm" />}
                     {!headerCompact && (() => {
                       const data = record.data as Record<string, unknown> | undefined;
                       const capacities: string[] = [];
@@ -1788,7 +1852,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                       </Link>
                     )}
                   </div>
-                </>
+                </div>
               }
               actions={
                 <>
@@ -1813,35 +1877,11 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                   />
                 )}
 
-                {/* Outline so Add Note is the one filled primary in the header. */}
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  disabled={!record.email}
-                  title={
-                    record.email ? 'Compose email to this record' : 'Add an email on this record to enable send'
-                  }
-                  onClick={() => void handleSendEmail()}
-                  className="inline-flex shrink-0 font-medium lg:hidden"
-                >
-                  <Mail className="w-4 h-4 shrink-0 sm:mr-1.5" />
-                  <span className="text-xs font-medium sm:text-sm">
-                    <span className="sm:hidden">Email</span>
-                    <span className="hidden sm:inline">Send Email</span>
-                  </span>
-                </Button>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  type="button"
-                  className="border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white shrink-0 lg:hidden"
-                  onClick={handleEditRecord}
-                >
-                  <Edit className="w-4 h-4 min-[380px]:mr-1.5" />
-                  <span className="hidden min-[380px]:inline">Edit</span>
-                </Button>
+                {/* RP-6: no header Email button. Below lg the MobileActionBar
+                    owns Email (a second button here read as a duplicate); at
+                    lg+ "Send email" lives under ⋯ and in the rail quick
+                    actions (`m` hotkey still works). Add Note stays the one
+                    filled primary. */}
 
                 {/* Add Note is THE note action (also the `n` hotkey). It stays
                     visible in the compact sticky header — notes are the
@@ -1856,9 +1896,10 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                     className="rounded-r-none shadow-sm"
                     data-testid="crm-record-add-note"
                   >
-                    <StickyNote className="w-4 h-4 sm:mr-1.5" aria-hidden />
-                    <span className="hidden sm:inline">Add Note</span>
-                    <span className="inline sm:hidden text-xs font-medium">Note</span>
+                    <StickyNote className="w-4 h-4 mr-1.5" aria-hidden />
+                    {/* RP-6: the primary keeps its full label at every width —
+                        at 390 the header reads title · status · Add Note · ⋯. */}
+                    <span className="text-xs font-medium sm:text-sm">Add Note</span>
                   </Button>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -1940,10 +1981,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                     align="end"
                     className="bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10"
                   >
-                    <DropdownMenuItem
-                      className="hidden lg:flex"
-                      onClick={handleEditRecord}
-                    >
+                    <DropdownMenuItem onClick={handleEditRecord}>
                       <Edit className="w-4 h-4 mr-2" />
                       Edit
                     </DropdownMenuItem>
@@ -1954,6 +1992,27 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                     >
                       <Mail className="w-4 h-4 mr-2 text-rose-600" />
                       Send email
+                    </DropdownMenuItem>
+                    {/* RP-6: the right rail is xl-only; between lg and xl the
+                        MobileActionBar is gone too, so Insights needs a door. */}
+                    <DropdownMenuItem
+                      className="xl:hidden"
+                      onClick={() => setInsightsSheetOpen(true)}
+                      data-testid="crm-record-more-insights"
+                    >
+                      <Sparkles className="w-4 h-4 mr-2 text-teal-600" aria-hidden />
+                      Insights
+                    </DropdownMenuItem>
+                    {/* RP-6: below lg the Overview/Timeline strip is hidden at
+                        rest — this is the door in; the strip returns while on
+                        Timeline so the way back stays one tap. */}
+                    <DropdownMenuItem
+                      className="xl:hidden"
+                      onClick={() => setTopTab('timeline')}
+                      data-testid="crm-record-more-timeline"
+                    >
+                      <ClockIcon className="w-4 h-4 mr-2" aria-hidden />
+                      Timeline
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={openCustomizeDialog}>
                       Customize related lists
@@ -2035,15 +2094,30 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                     <DropdownMenuItem
                       className="text-red-600 dark:text-red-400 focus:text-red-700 dark:focus:text-red-300 focus:bg-red-50 dark:focus:bg-red-500/10"
                       onClick={async () => {
-                        if (!(await confirmDialog({ title: `Delete this ${module.name.toLowerCase()}?`, description: 'This action cannot be undone.', confirmLabel: 'Delete', destructive: true })))
+                        // FB-5: honest delete — the record is soft-deleted to
+                        // Trash (route returns the batchId), so the dialog and
+                        // the toast say so and Undo restores it in place.
+                        if (
+                          !(await confirmDialog({
+                            title: `Delete this ${module.name.toLowerCase()}?`,
+                            description: 'It moves to Trash — you can restore it from there.',
+                            confirmLabel: 'Delete',
+                            destructive: true,
+                          }))
+                        )
                           return;
                         try {
                           const res = await fetch(`/api/crm/records/${record.id}`, { method: 'DELETE' });
-                          if (!res.ok) {
-                            const data = await res.json();
-                            throw new Error(data.error || 'Delete failed');
-                          }
-                          toast.success(toastCopy.deleted(module.name));
+                          const data = (await res.json().catch(() => ({}))) as {
+                            error?: string;
+                            batchId?: string | null;
+                          };
+                          if (!res.ok) throw new Error(data.error || 'Delete failed');
+                          const recordHref = keepReturnTo(`/crm/r/${record.id}`);
+                          toastDeletedWithUndo({
+                            batchId: data.batchId ?? null,
+                            onUndo: () => router.push(recordHref),
+                          });
                           router.push(backUrl);
                         } catch (err) {
                           toast.error(toastCopy.failed('delete the record', err, 'Try again'));
@@ -2058,8 +2132,11 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
               }
             />
 
-            {/* Top tabs: Overview / Timeline / Data Privacy */}
-            <div className={cn('-mb-px', headerCompact ? 'mt-2' : 'mt-3')}>
+            {/* Top tabs: Overview / Timeline / Data Privacy. RP-6: below lg
+                the strip only appears once the user LEFT Overview (the way in
+                is the lg:hidden Timeline item under the header menu) — at rest
+                it spent a full header row restating where the user already is. */}
+            <div className={cn('-mb-px', headerCompact ? 'mt-2' : 'mt-2 lg:mt-3', topTab === 'overview' && 'hidden xl:block')}>
               <Tabs value={topTab} onValueChange={(v) => setTopTab(v as TopTab)}>
                 <TabsList className="bg-transparent border-b border-slate-200 dark:border-white/5 w-full justify-start gap-0 h-auto p-0">
                   <TabsTrigger
@@ -2067,7 +2144,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                     onClick={() => setOverviewPane('details')}
                     className={cn(
                       'px-4 text-sm font-medium text-slate-500 dark:text-slate-400 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-teal-500 rounded-none bg-transparent data-[state=active]:bg-transparent hover:text-slate-900 dark:hover:text-white transition-colors',
-                      headerCompact ? 'py-2' : 'py-3',
+                      headerCompact ? 'py-2' : 'py-2 xl:py-3',
                     )}
                   >
                     Overview
@@ -2076,7 +2153,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                     value="timeline"
                     className={cn(
                       'px-4 text-sm font-medium text-slate-500 dark:text-slate-400 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-teal-500 rounded-none bg-transparent data-[state=active]:bg-transparent hover:text-slate-900 dark:hover:text-white transition-colors',
-                      headerCompact ? 'py-2' : 'py-3',
+                      headerCompact ? 'py-2' : 'py-2 xl:py-3',
                     )}
                   >
                     <ClockIcon className="w-4 h-4 mr-1.5" />
@@ -2087,7 +2164,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                     value="privacy"
                     className={cn(
                       'px-4 text-sm font-medium text-slate-500 dark:text-slate-400 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-teal-500 rounded-none bg-transparent data-[state=active]:bg-transparent hover:text-slate-900 dark:hover:text-white transition-colors',
-                      headerCompact ? 'py-2' : 'py-3',
+                      headerCompact ? 'py-2' : 'py-2 xl:py-3',
                     )}
                   >
                     <Shield className="w-4 h-4 mr-1.5" />
@@ -2510,7 +2587,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                 <p className="text-sm text-slate-500 dark:text-slate-400">
                   {noteTotal > 0
                     ? 'Imported notes history is on the Notes tab.'
-                    : 'No notes yet.'}
+                    : NOTES_EMPTY_COPY}
                 </p>
               </div>
             )}
@@ -2531,9 +2608,22 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
               <Input
                 value={taskTitle}
                 onChange={(e) => setTaskTitle(e.target.value)}
-                placeholder="Enter task title..."
+                placeholder="Enter task title…"
                 className="bg-white dark:bg-slate-800 border-slate-200 dark:border-white/10"
+                aria-invalid={taskTitle.trim() ? undefined : true}
+                aria-describedby="crm-record-task-title-help"
+                data-testid="crm-record-task-title"
               />
+              {/* FB-6: inline validation instead of a toast — "<Field> is required". */}
+              {!taskTitle.trim() && (
+                <p
+                  id="crm-record-task-title-help"
+                  role="alert"
+                  className="mt-1 text-xs text-rose-600 dark:text-rose-400"
+                >
+                  Task title is required
+                </p>
+              )}
             </div>
             <div>
               <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 block">
@@ -2542,7 +2632,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
               <Textarea
                 value={taskDescription}
                 onChange={(e) => setTaskDescription(e.target.value)}
-                placeholder="Enter task description..."
+                placeholder="Enter task description…"
                 rows={3}
                 className="bg-white dark:bg-slate-800 border-slate-200 dark:border-white/10"
               />
@@ -2566,53 +2656,18 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
               >
                 Cancel
               </Button>
-              <Button onClick={submitTask} disabled={isSubmitting}>
+              <Button
+                onClick={submitTask}
+                disabled={isSubmitting || !taskTitle.trim()}
+                data-testid="crm-record-task-submit"
+              >
                 {isSubmitting ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Creating...
+                    {toastCopy.loadingCopy('Creating')}
                   </>
                 ) : (
                   'Create Task'
-                )}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={showNoteModal} onOpenChange={setShowNoteModal}>
-        <DialogContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10 max-w-2xl w-[90vw]">
-          <DialogHeader>
-            <DialogTitle className="text-slate-900 dark:text-white">Add Note</DialogTitle>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              You can paste formatted text, tables, and images directly. The date and time are
-              stamped automatically when the note is saved.
-            </p>
-          </DialogHeader>
-          <div className="space-y-4 mt-2">
-            <NoteRichArea
-              value={noteContent}
-              onChange={setNoteContent}
-              placeholder="Write a note… Paste formatted enrollment details, tables, etc."
-              className="min-h-[320px]"
-            />
-            <div className="flex justify-end gap-2 pt-2">
-              <Button
-                variant="outline"
-                onClick={() => setShowNoteModal(false)}
-                className="border-slate-200 dark:border-white/10"
-              >
-                Cancel
-              </Button>
-              <Button onClick={submitNote} disabled={isSubmitting}>
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Adding...
-                  </>
-                ) : (
-                  'Add Note'
                 )}
               </Button>
             </div>
@@ -2663,7 +2718,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                 {isSubmitting ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Uploading...
+                    {toastCopy.loadingCopy('Uploading')}
                   </>
                 ) : (
                   'Upload File'
@@ -2786,15 +2841,12 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
           opens the right-rail panel in a bottom Sheet since the rail
           itself is hidden below xl. */}
       <MobileActionBar
+        phone={record.phone}
         hasPhone={Boolean(record.phone)}
         hasEmail={Boolean(record.email)}
-        onCall={() => {
-          if (record.phone) {
-            window.location.href = `tel:${record.phone}`;
-          } else {
-            setShowTaskModal(true);
-          }
-        }}
+        // TE-8: with a dialable phone the bar renders a real tel: anchor;
+        // this only runs for the no-phone fallback (log a call as a task).
+        onCall={() => setShowTaskModal(true)}
         onEmail={handleSendEmail}
         onNote={handleAddNote}
         onMore={() => setInsightsSheetOpen(true)}
@@ -3006,6 +3058,10 @@ function CompactContextBlock({
 
 const RECENT_NOTES_LIMIT = 3;
 
+/** FB-8: one "no notes" wording for the recent-notes strip, the notes sheet and NotesPanel. */
+export const NOTES_EMPTY_COPY =
+  'No notes yet — the last conversation, next step, and anything the member told you go here.';
+
 /**
  * "Recent notes (3) + Add note" strip for the details pane. Read-only preview
  * of the newest notes (same aggregated `notes` the Notes pane renders);
@@ -3068,7 +3124,7 @@ function RecentNotesStrip({
         </div>
       </div>
       {recent.length > 0 ? (
-        <ul className="divide-y divide-amber-200/50 dark:divide-amber-500/10 border-t border-amber-200/50 dark:border-amber-500/10">
+        <ul className="divide-y divide-amber-200/50 dark:divide-amber-500/10 border-t border-amber-200/50 dark:border-amber-500/10 max-lg:[&>li:nth-child(n+2)]:hidden">
           {recent.map((note) => {
             const plain = stripLegacyAuthorAttribution(
               note.body.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim(),
@@ -3094,7 +3150,7 @@ function RecentNotesStrip({
         </p>
       ) : (
         <p className="border-t border-amber-200/50 dark:border-amber-500/10 px-3 py-2 text-xs text-slate-500 dark:text-slate-400">
-          No notes yet — the last conversation, next step, and anything the member told you go here.
+          {NOTES_EMPTY_COPY}
         </p>
       )}
     </section>

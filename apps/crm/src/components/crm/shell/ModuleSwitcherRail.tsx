@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 import {
   Users,
   MessageSquare,
@@ -16,7 +15,6 @@ import { cn } from '@crm-eco/ui/lib/utils';
 import {
   TOP_MODULES,
   TOP_MODULE_TITLES,
-  resolveTopModuleFromPathname,
   useModule,
   type TopModule,
 } from '@/contexts/ModuleContext';
@@ -43,9 +41,9 @@ interface ModuleSwitcherRailProps {
  * Zoho-style module switcher embedded in the contextual left rail.
  */
 export function ModuleSwitcherRail({ expanded, className }: ModuleSwitcherRailProps) {
-  const pathname = usePathname();
-  const { setActiveModule } = useModule();
-  const activeModule = resolveTopModuleFromPathname(pathname);
+  // NV-2: the provider owns the tab (sticky across cross-tab sidebar hops) —
+  // the rail, the tab strip and the sidebar menu all read the same value.
+  const { activeModule, setActiveModule } = useModule();
 
   const modules = [
     ...TOP_MODULES,
@@ -77,6 +75,7 @@ export function ModuleSwitcherRail({ expanded, className }: ModuleSwitcherRailPr
               data-crm-module={module.key}
               title={TOP_MODULE_TITLES[module.key as TopModule] ?? module.label}
               onClick={() => setActiveModule(module.key as TopModule)}
+              aria-current={isActive ? 'page' : undefined}
               style={isActive ? { backgroundColor: 'var(--mod-bg)', color: 'var(--mod-fg)' } : undefined}
               className={cn(
                 'flex items-center rounded-md transition-colors',

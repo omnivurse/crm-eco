@@ -37,6 +37,7 @@ import {
 } from '@crm-eco/ui/components/select';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { toast } from 'sonner';
+import { toastCopy } from '@/lib/crm/toast-copy';
 import type { CrmLinkedRecord } from '@/lib/crm/types';
 import { resolveModulePalette } from '@/components/crm/records/v2/tokens';
 
@@ -363,15 +364,15 @@ function LinkRecordDialog({
             failed > 0 ? `${failed} failed` : null,
           ].filter(Boolean);
           toast.success(
-            `Linked ${linked} record${linked === 1 ? '' : 's'}` +
+            toastCopy.counted('record', linked, 'Linked') +
               (extras.length ? ` · ${extras.join(' · ')}` : ''),
           );
           resetForm();
         } else if (duplicates > 0 && failed === 0) {
-          toast.info('Those records are already linked');
+          toast.info(toastCopy.failed('link those records', 'they are already linked'));
           resetForm();
         } else {
-          toast.error('Could not link the selected records');
+          toast.error(toastCopy.failed('link the selected records', undefined, 'Try again'));
         }
       } else {
         // Fallback: single-relationship batch via the one-at-a-time handler.
@@ -379,13 +380,11 @@ function LinkRecordDialog({
         for (let i = 0; i < selectedRecords.length; i += 1) {
           await onLink(selectedRecords[i].id, linkType, isPrimary && i === 0);
         }
-        toast.success(
-          `Linked ${selectedRecords.length} record${selectedRecords.length === 1 ? '' : 's'}`,
-        );
+        toast.success(toastCopy.counted('record', selectedRecords.length, 'Linked'));
         resetForm();
       }
-    } catch {
-      toast.error('Could not link the selected records');
+    } catch (err) {
+      toast.error(toastCopy.failed('link the selected records', err, 'Try again'));
     } finally {
       setIsLinking(false);
     }
@@ -546,7 +545,7 @@ function LinkRecordDialog({
               {isLinking ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Linking...
+                  {toastCopy.loadingCopy('Linking')}
                 </>
               ) : (
                 <>

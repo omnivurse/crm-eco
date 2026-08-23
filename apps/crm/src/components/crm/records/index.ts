@@ -5,7 +5,6 @@ export { CommunicationsTab } from './CommunicationsTab';
 export { StageBar } from './StageBar';
 export { TransitionModal } from './TransitionModal';
 export { ApprovalPanel } from './ApprovalPanel';
-export { RecordDetailShell } from './RecordDetailShell';
 export { RecordDetailShellV2 } from './RecordDetailShellV2';
 export { RecordTimeline } from './RecordTimeline';
 export { AttachmentsPanel } from './AttachmentsPanel';

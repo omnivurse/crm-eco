@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase-client';
@@ -90,25 +90,31 @@ import {
     Trash2,
     User,
     Briefcase,
+    Ticket,
     type LucideIcon,
 } from 'lucide-react';
 import { Lightbulb, Search, LogOut } from 'lucide-react';
 import {
   CRM_NAV_ITEMS,
   getNavItemsForModule,
-  resolveTopModuleFromPathname,
   TOP_MODULE_TITLES,
+  useModule,
   type NavItem,
 } from '@/contexts/ModuleContext';
 import {
   buildFullCrmNav,
   buildSimpleNav,
+  recordPageActiveNavKey,
   resolveActiveNavKey,
+  visibleNavItemsForRole,
   type NavModule,
   type NavProfile,
 } from '@/lib/crm/nav-profile';
+import { getRecordCommandContext, subscribeRecordCommandContext } from '@/lib/crm/record-command-context';
+import { useClientAuth } from '@/hooks/useClientAuth';
 import { ModuleSwitcherRail } from './ModuleSwitcherRail';
 import { openCrmCommandPalette } from '@/lib/crm/command-palette-bus';
+import { SEARCH_PLACEHOLDER } from '@/lib/crm/search-copy';
 import { useGizmoSafe } from '@/components/crm/gizmo';
 
 /** Compact search box that opens the global search overlay via Cmd+K event */
@@ -122,7 +128,7 @@ function SidebarSearchTrigger({ collapsed }: { collapsed?: boolean }) {
             <button
                 type="button"
                 onClick={handleClick}
-                aria-label="Search (⌘K)"
+                aria-label={SEARCH_PLACEHOLDER}
                 className="flex items-center justify-center w-full h-8 rounded-md text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-slate-100 dark:hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/60 transition-colors"
                 title="Search (⌘K)"
             >
@@ -133,14 +139,16 @@ function SidebarSearchTrigger({ collapsed }: { collapsed?: boolean }) {
 
     return (
         <button
+            type="button"
             onClick={handleClick}
-            className="flex items-center gap-1.5 w-full h-7 px-2.5 rounded-md border border-slate-200 dark:border-white/10 bg-slate-50/80 dark:bg-white/5 text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-white/10 hover:border-slate-300 dark:hover:border-white/20 hover:text-slate-600 dark:hover:text-slate-300 transition-colors text-[12px]"
+            title="Search (⌘K)"
+            className="flex items-center gap-1.5 w-full h-7 px-2 rounded-md border border-slate-200 dark:border-white/10 bg-slate-50/80 dark:bg-white/5 text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-white/10 hover:border-slate-300 dark:hover:border-white/20 hover:text-slate-600 dark:hover:text-slate-300 transition-colors text-[11px]"
         >
             <Search className="w-3.5 h-3.5 flex-shrink-0" />
-            <span className="flex-1 text-left truncate">Search or workflow…</span>
-            <kbd className="hidden sm:inline-flex text-[10px] font-medium text-slate-400 dark:text-slate-500 bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded px-1 py-0.5">
-                ⌘K
-            </kbd>
+            {/* NV-1: the shared promise, un-truncated (measured: 176 px at 11 px in
+                the 188 px the w-60 rail leaves); the ⌘K hint lives on the top-bar
+                pill — there is no room for both. */}
+            <span className="flex-1 text-left whitespace-nowrap">{SEARCH_PLACEHOLDER}</span>
         </button>
     );
 }
@@ -150,6 +158,9 @@ const iconMap: Record<string, LucideIcon> = {
     'layout-dashboard': LayoutDashboard,
     'user-plus': UserPlus,
     'users': Users,
+    // Tickets / Provider Search nav items (NV-7)
+    'ticket': Ticket,
+    'search': Search,
     'building': Building,
     'building-2': Building2,
     'dollar-sign': DollarSign,
@@ -290,7 +301,16 @@ export function ZohoContextualSidebar({
         router.refresh();
     };
 
-    const activeTopModule = resolveTopModuleFromPathname(pathname);
+    // NV-2 / D10 sticky tab: the provider resolves the tab (URL on a fresh
+    // load; kept across a cross-tab sidebar hop) so the menu never swaps under
+    // a link the user just clicked in it.
+    const { activeModule: activeTopModule } = useModule();
+
+    // NV-M1 / D10: admin-only Settings links are hidden for non-admins with the
+    // same predicate app/crm/settings/page.tsx uses for its cards. The role
+    // comes from the cached client profile; until it is known we fail closed.
+    const { profile: clientProfile } = useClientAuth();
+    const crmRole = clientProfile?.crm_role ?? null;
 
     // simple → one flat menu everywhere (Settings keeps its own sub-menu, with a
     // way back). full → the classic per-tab menus, with the CRM tab's module
@@ -298,22 +318,32 @@ export function ZohoContextualSidebar({
     const navItems = useMemo<NavItem[]>(() => {
         if (isSimple) {
             if (activeTopModule === 'settings') {
-                return [BACK_TO_CRM_ITEM, ...getNavItemsForModule('settings')];
+                return [BACK_TO_CRM_ITEM, ...visibleNavItemsForRole(getNavItemsForModule('settings'), crmRole)];
             }
             return buildSimpleNav(navModules);
         }
         if (activeTopModule === 'crm') {
             return buildFullCrmNav(CRM_NAV_ITEMS, navModules);
         }
-        return getNavItemsForModule(activeTopModule);
-    }, [isSimple, activeTopModule, navModules]);
+        return visibleNavItemsForRole(getNavItemsForModule(activeTopModule), crmRole);
+    }, [isSimple, activeTopModule, navModules, crmRole]);
+
+    // NV-7: on /crm/r/<id> the path names no module; the open record's shell
+    // publishes its module key through the record-command-context store.
+    const recordModuleKey = useSyncExternalStore(
+        subscribeRecordCommandContext,
+        () => getRecordCommandContext()?.moduleKey ?? null,
+        () => null,
+    );
 
     // Exactly one highlighted item: matched on pathname AND query, so
-    // `?tab=` entries light up (and their parent does not).
+    // `?tab=` entries light up (and their parent does not). Record pages fall
+    // back to the record's module list link.
     const searchString = searchParams?.toString() ?? '';
     const activeKey = useMemo(
-        () => resolveActiveNavKey(navItems, pathname, searchString),
-        [navItems, pathname, searchString],
+        () => resolveActiveNavKey(navItems, pathname, searchString)
+            ?? recordPageActiveNavKey(navItems, pathname, recordModuleKey),
+        [navItems, pathname, searchString, recordModuleKey],
     );
     const isActive = (item: NavItem) => item.key === activeKey;
 
@@ -347,7 +377,9 @@ export function ZohoContextualSidebar({
                 data-crm-module={activeTopModule}
                 className={cn(
                     'group/sidebar relative hidden lg:flex flex-col border-r border-slate-200/80 dark:border-white/5 bg-white/90 dark:bg-slate-900/50 backdrop-blur-sm transition-all duration-200',
-                    isOpen ? 'w-52' : 'w-14'
+                    // w-60 (was w-52): the narrowest width in which the shared search
+                    // promise renders un-truncated in the expanded rail (NV-1).
+                    isOpen ? 'w-60' : 'w-14'
                 )}
             >
                 {/* Module switcher — icon rail when collapsed; top tab bar handles expanded desktop.

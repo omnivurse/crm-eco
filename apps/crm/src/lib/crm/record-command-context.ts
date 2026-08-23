@@ -8,6 +8,13 @@ import type { RecordFieldNavigateTarget, RecordFieldSearchHit } from './record-f
 export interface RecordCommandContext {
   recordId: string;
   recordTitle: string;
+  /**
+   * `crm_modules.key` of the open record (NV-7). The sidebar highlights
+   * `module-<moduleKey>` on `/crm/r/<id>` pages, where the path alone cannot
+   * say which list the record belongs to. Optional so the shell can publish a
+   * context before RP-B wires the key through; missing → no highlight.
+   */
+  moduleKey?: string;
   searchFields: (query: string) => RecordFieldSearchHit[];
   jumpTo: (target: RecordFieldNavigateTarget) => void;
 }
