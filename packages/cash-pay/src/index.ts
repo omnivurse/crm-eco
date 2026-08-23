@@ -65,3 +65,13 @@ export type {
 
 export { summarizeResultSlice } from './result-slice';
 export type { SliceTick, ResultSliceSummary } from './result-slice';
+
+export {
+  clipIdentity,
+  compileRateBook,
+  sanitizeBookName,
+  MAX_CLIPS_PER_BOOK,
+  MAX_BOOKS_PER_MEMBER,
+  DEFAULT_BOOK_NAME,
+} from './rate-book';
+export type { RateClipSnapshot, RateBookCompile } from './rate-book';

@@ -29,14 +29,28 @@ export default async function ServicesPage() {
             Read published hospital cash for one metro and CPT before you book.
           </p>
         </div>
-        <a
-          href="/pricing"
-          className="mt-3 inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl bg-[var(--mp-teal)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--mp-teal-soft)] sm:mt-0"
-        >
-          Read the tape
-        </a>
+        <div className="mt-3 flex shrink-0 flex-wrap gap-2 sm:mt-0">
+          <a
+            href="/pricing/book"
+            className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[rgba(11,109,133,0.2)] px-4 py-2 text-sm font-medium text-[var(--mp-teal)] hover:bg-white"
+          >
+            Your tape
+          </a>
+          <a
+            href="/pricing"
+            className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[var(--mp-teal)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--mp-teal-soft)]"
+          >
+            Read the tape
+          </a>
+        </div>
       </div>
-      <ServicesSearch memberZip={(member as any).zip || ''} />
+      <ServicesSearch
+        memberZip={
+          (member as { postal_code?: string | null; zip?: string | null }).postal_code ||
+          (member as { zip?: string | null }).zip ||
+          ''
+        }
+      />
     </div>
   );
 }

@@ -3,7 +3,9 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { PushPin, PushPinSlash, X } from '@phosphor-icons/react';
+import { BookmarkSimple, PushPin, PushPinSlash, X } from '@phosphor-icons/react';
+import { clipIdentity } from '@crm-eco/cash-pay';
+import { toast } from 'sonner';
 import styles from './instrument.module.css';
 
 interface Procedure {
@@ -148,6 +150,8 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
   const [notice, setNotice] = useState('');
   const [zipHint, setZipHint] = useState('');
   const [pins, setPins] = useState<HclRate[]>([]);
+  const [clippedKeys, setClippedKeys] = useState<Set<string>>(new Set());
+  const [clipBusy, setClipBusy] = useState(false);
   const [drawer, setDrawer] = useState<{ facility: string; hospitalId: number | null } | null>(
     null,
   );
@@ -342,6 +346,76 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
     });
   };
 
+  const asClipPayload = useCallback(
+    (row: HclRate) => ({
+      id: row.id,
+      hospitalId: row.hospitalId,
+      facilityName: row.facilityName,
+      city: row.city,
+      state: row.state,
+      procedureCode: row.procedureCode,
+      codeDescription: row.codeDescription,
+      category: row.category,
+      rate: row.rate,
+      paymentMethod: row.paymentMethod,
+      cmsRelativity: row.cmsRelativity,
+      queryStateName: stateName,
+      queryMsaName: msaName,
+      querySpecialty: specialty,
+      sliceHigh: slice.high,
+      sliceMedian: slice.median,
+      fileSize: slice.fileSize,
+    }),
+    [stateName, msaName, specialty, slice.high, slice.median, slice.fileSize],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch('/api/member/rate-clips');
+        if (!res.ok) return;
+        const data = (await res.json()) as { clips?: Array<{ id: string | number; facilityName: string; procedureCode: string }> };
+        if (cancelled) return;
+        setClippedKeys(new Set((data.clips ?? []).map((row) => clipIdentity(row))));
+      } catch {
+        /* tape still works if the book is not configured yet */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const clipRows = async (rows: HclRate[]) => {
+    if (rows.length === 0 || clipBusy) return;
+    setClipBusy(true);
+    try {
+      const res = await fetch('/api/member/rate-clips', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clips: rows.map(asClipPayload) }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(data.message || 'Could not clip to your tape.');
+        return;
+      }
+      setClippedKeys((prev) => {
+        const next = new Set(prev);
+        rows.forEach((row) => next.add(clipIdentity(row)));
+        return next;
+      });
+      toast.success(
+        rows.length === 1 ? 'Clipped to your tape.' : `Clipped ${rows.length} ticks to your tape.`,
+      );
+    } catch {
+      toast.error('Could not clip to your tape.');
+    } finally {
+      setClipBusy(false);
+    }
+  };
+
   const openDrawer = async (row: HclRate, trigger: HTMLElement) => {
     restoreFocus.current = trigger;
     setDrawer({ facility: row.facilityName, hospitalId: row.hospitalId });
@@ -390,7 +464,7 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
             <p className={styles.note}>
               Published cash, not a quote. Sharing still follows your plan and IUA.{' '}
               <Link href="/needs/new">Submit a need</Link> with the itemized bill when you have
-              one.
+              one. <Link href="/pricing/book">Your tape</Link> keeps clipped ticks.
             </p>
             <p className={styles.note} style={{ marginTop: '-0.35rem' }}>
               Metro: {msaName || 'none selected'}
@@ -606,13 +680,14 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
                       <th>CMS</th>
                       <th style={{ textAlign: 'right' }}>Cash</th>
                       <th> </th>
+                      <th> </th>
                     </tr>
                   </thead>
                   <tbody>
                     {groups.map((group) => (
                       <Fragment key={group.facility}>
                         <tr className={styles.groupRow}>
-                          <td colSpan={7}>
+                          <td colSpan={8}>
                             <button
                               type="button"
                               className={`${styles.rowBtn} ${styles.facility}`}
@@ -628,6 +703,7 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
                         {group.ticks.map((r) => {
                           const key = tickKey(r);
                           const pinned = pins.some((p) => tickKey(p) === key);
+                          const clipped = clippedKeys.has(clipIdentity(r));
                           return (
                             <tr key={key}>
                               <td />
@@ -654,6 +730,19 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
                                   )}
                                 </button>
                               </td>
+                              <td>
+                                <button
+                                  type="button"
+                                  className={styles.clipBtn}
+                                  data-on={clipped}
+                                  disabled={clipBusy || clipped}
+                                  aria-pressed={clipped}
+                                  aria-label={clipped ? 'Clipped to your tape' : 'Clip to book'}
+                                  onClick={() => void clipRows([r])}
+                                >
+                                  <BookmarkSimple weight={clipped ? 'fill' : 'light'} />
+                                </button>
+                              </td>
                             </tr>
                           );
                         })}
@@ -678,6 +767,7 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
                     {group.ticks.map((r) => {
                       const key = tickKey(r);
                       const pinned = pins.some((p) => tickKey(p) === key);
+                      const clipped = clippedKeys.has(clipIdentity(r));
                       return (
                         <div key={key} className={styles.cardTick}>
                           <div>
@@ -690,20 +780,33 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
                           </div>
                           <div className={styles.cardRate}>
                             <div className={styles.rate}>{formatCash(r.rate)}</div>
-                            <button
-                              type="button"
-                              className={styles.pinBtn}
-                              data-on={pinned}
-                              aria-pressed={pinned}
-                              aria-label={pinned ? 'Unpin from compare' : 'Pin to compare'}
-                              onClick={() => togglePin(r)}
-                            >
-                              {pinned ? (
-                                <PushPinSlash weight="light" />
-                              ) : (
-                                <PushPin weight="light" />
-                              )}
-                            </button>
+                            <div className={styles.tickActions}>
+                              <button
+                                type="button"
+                                className={styles.pinBtn}
+                                data-on={pinned}
+                                aria-pressed={pinned}
+                                aria-label={pinned ? 'Unpin from compare' : 'Pin to compare'}
+                                onClick={() => togglePin(r)}
+                              >
+                                {pinned ? (
+                                  <PushPinSlash weight="light" />
+                                ) : (
+                                  <PushPin weight="light" />
+                                )}
+                              </button>
+                              <button
+                                type="button"
+                                className={styles.clipBtn}
+                                data-on={clipped}
+                                disabled={clipBusy || clipped}
+                                aria-pressed={clipped}
+                                aria-label={clipped ? 'Clipped to your tape' : 'Clip to book'}
+                                onClick={() => void clipRows([r])}
+                              >
+                                <BookmarkSimple weight={clipped ? 'fill' : 'light'} />
+                              </button>
+                            </div>
                           </div>
                         </div>
                       );
@@ -763,9 +866,19 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
 
       {pins.length > 0 ? (
         <aside className={styles.tray} aria-label="Compare tray">
-          <p className={styles.note} style={{ margin: 0 }}>
-            Compare {pins.length} of 4
-          </p>
+          <div className={styles.trayBar}>
+            <p className={styles.note} style={{ margin: 0 }}>
+              Compare {pins.length} of 4
+            </p>
+            <button
+              type="button"
+              className={styles.trayClip}
+              disabled={clipBusy}
+              onClick={() => void clipRows(pins)}
+            >
+              Clip these to Your tape
+            </button>
+          </div>
           <div className={styles.trayGrid}>
             {pins.map((p) => (
               <div key={tickKey(p)} className={styles.trayCard}>
@@ -822,7 +935,23 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
                 <div className={styles.mono}>{r.procedureCode}</div>
                 <div>{r.codeDescription || r.category}</div>
               </div>
-              <div className={styles.rate}>{formatCash(r.rate)}</div>
+              <div className={styles.cardRate}>
+                <div className={styles.rate}>{formatCash(r.rate)}</div>
+                <button
+                  type="button"
+                  className={styles.clipBtn}
+                  data-on={clippedKeys.has(clipIdentity(r))}
+                  disabled={clipBusy || clippedKeys.has(clipIdentity(r))}
+                  aria-label={
+                    clippedKeys.has(clipIdentity(r)) ? 'Clipped to your tape' : 'Clip to book'
+                  }
+                  onClick={() => void clipRows([r])}
+                >
+                  <BookmarkSimple
+                    weight={clippedKeys.has(clipIdentity(r)) ? 'fill' : 'light'}
+                  />
+                </button>
+              </div>
             </div>
           ))}
         </div>

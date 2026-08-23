@@ -1,4 +1,5 @@
 import { Suspense } from 'react';
+import Link from 'next/link';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { getMemberForUser } from '@crm-eco/lib';
 import { redirect } from 'next/navigation';
@@ -32,11 +33,23 @@ export default async function PricingPage() {
         kicker="Pricing"
         backHref="/services"
         backLabel="Back to Services"
+        actions={
+          <Link
+            href="/pricing/book"
+            className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[rgba(11,109,133,0.2)] px-4 py-2 text-sm font-medium text-[var(--mp-teal)] hover:bg-white"
+          >
+            Your tape
+          </Link>
+        }
       />
 
       <Suspense fallback={<p className="text-sm text-slate-500">Loading the instrument…</p>}>
         <PricingSearch
-          memberZip={(member as { zip?: string | null }).zip || ''}
+          memberZip={
+            (member as { postal_code?: string | null; zip?: string | null }).postal_code ||
+            (member as { zip?: string | null }).zip ||
+            ''
+          }
           memberState={(member as { state?: string | null }).state || ''}
           procedures={procedures || []}
         />

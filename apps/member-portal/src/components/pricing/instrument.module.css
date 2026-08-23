@@ -23,7 +23,7 @@
 }
 
 .shellHasTray {
-  padding-bottom: 8.5rem;
+  padding-bottom: 10.5rem;
 }
 
 .stage {
@@ -289,6 +289,89 @@
 .pinBtn[data-on='true'] {
   background: var(--signal-subtle);
   border-color: color-mix(in srgb, var(--signal) 40%, var(--hairline));
+}
+
+.clipBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  min-width: 40px;
+  padding: 0 0.55rem;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.clipBtn[data-on='true'] {
+  background: color-mix(in srgb, var(--mp-teal, #0b6d85) 12%, #fff);
+  border-color: color-mix(in srgb, var(--mp-teal, #0b6d85) 35%, var(--hairline));
+  color: var(--mp-teal, #0b6d85);
+}
+
+.clipBtn:disabled {
+  cursor: default;
+}
+
+.tickActions {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.trayBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.trayClip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 0.9rem;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: var(--mp-teal, #0b6d85);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.trayClip:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.bookBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+}
+
+.ghostBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 0.8rem;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-control);
+  background: var(--tick);
+  color: var(--ink);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.ghostBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .pager {

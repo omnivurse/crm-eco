@@ -36,6 +36,7 @@ describe('escapeCsvCell', () => {
     expect(escapeCsvCell('=HYPERLINK("http://evil.example","x")')).toBe(
       '"\'=HYPERLINK(""http://evil.example"",""x"")"',
     );
+    expect(toCsvRow(['General', '=CMD', 120])).toBe("General,'=CMD,120");
   });
 
   it('keeps the formula guard inside the quotes', () => {
