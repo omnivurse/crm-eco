@@ -1,0 +1,5479 @@
+{
+  "$schema": "crm-eco/product-options-proposal/v1",
+  "generated_at": "2026-08-23T01:44:23.622Z",
+  "source": {
+    "host": "sffisarikcreyyjzdjvb.supabase.co",
+    "org_id": "00000000-0000-0000-0000-000000000001",
+    "live_records": 16284,
+    "script": "scripts/audit-crm-product-vocabulary.mjs"
+  },
+  "status": "PROPOSED — owner must approve the exact list before any prod crm_fields.options write (decisions-2026-08-22.md D3)",
+  "tiers": {
+    "A": "cluster has >= 10 records — proposed picklist option",
+    "B": "long tail — keeps displaying via the current-value option; promote only if the owner asks"
+  },
+  "recommended_min_count": 10,
+  "modules": {
+    "contacts": {
+      "field_key": "product",
+      "field_id": "d5496922-9252-45f8-8587-6058720be2c5",
+      "distinct_raw": 83,
+      "records": 12775
+    },
+    "leads": {
+      "field_key": "product_type",
+      "field_id": "8c2c34b2-ea50-4845-8633-68c4d8e805a9",
+      "distinct_raw": 16,
+      "records": 799
+    },
+    "members": {
+      "field_key": "plan_name",
+      "field_id": "64ba9a0a-78e5-46d9-8873-13a673a13715",
+      "distinct_raw": 0,
+      "records": 0
+    }
+  },
+  "options": [
+    {
+      "value": "Health Sharing",
+      "label": "Health Sharing",
+      "tier": "A",
+      "display_order": 0,
+      "count_total": 2654,
+      "count_by_module": {
+        "contacts": 1951,
+        "leads": 703
+      },
+      "spellings": [
+        {
+          "raw": "Health Sharing",
+          "count": 2654,
+          "by_module": {
+            "contacts": 1951,
+            "leads": 703
+          }
+        }
+      ]
+    },
+    {
+      "value": "Secure HSA",
+      "label": "Secure HSA",
+      "tier": "A",
+      "display_order": 1,
+      "count_total": 2604,
+      "count_by_module": {
+        "contacts": 2601,
+        "leads": 3
+      },
+      "spellings": [
+        {
+          "raw": "Secure HSA (45800)",
+          "count": 1897,
+          "by_module": {
+            "contacts": 1897
+          }
+        },
+        {
+          "raw": "Secure HSA 2024 (42467)",
+          "count": 694,
+          "by_module": {
+            "contacts": 694
+          }
+        },
+        {
+          "raw": "Secure HSA",
+          "count": 5,
+          "by_module": {
+            "contacts": 2,
+            "leads": 3
+          }
+        },
+        {
+          "raw": "SECURE HSA 2024 (42467)",
+          "count": 5,
+          "by_module": {
+            "contacts": 5
+          }
+        },
+        {
+          "raw": "Secure HSA (3278)",
+          "count": 2,
+          "by_module": {
+            "contacts": 2
+          }
+        },
+        {
+          "raw": "SECURE HSA (42467)",
+          "count": 1,
+          "by_module": {
+            "contacts": 1
+          }
+        }
+      ]
+    },
+    {
+      "value": "Care Plus",
+      "label": "Care Plus",
+      "tier": "A",
+      "display_order": 2,
+      "count_total": 1100,
+      "count_by_module": {
+        "contacts": 1100
+      },
+      "spellings": [
+        {
+          "raw": "Care Plus 2024 (42464)",
+          "count": 416,
+          "by_module": {
+            "contacts": 416
+          }
+        },
+        {
+          "raw": "CARE PLUS (42464)",
+          "count": 364,
+          "by_module": {
+            "contacts": 364
+          }
+        },
+        {
+          "raw": "CARE + (31103)",
+          "count": 317,
+          "by_module": {
+            "contacts": 317
+          }
+        },
+        {
+          "raw": "Care Plus (31103)",
+          "count": 2,
+          "by_module": {
+            "contacts": 2
+          }
+        },
+        {
+          "raw": "Care Plus 2024 (10337)",
+          "count": 1,
+          "by_module": {
+            "contacts": 1
+          }
+        }
+      ]
+    },
+    {
+      "value": "Health Insurance",
+      "label": "Health Insurance",
+      "tier": "A",
+      "display_order": 3,
+      "count_total": 907,
+      "count_by_module": {
+        "contacts": 848,
+        "leads": 59
+      },
+      "spellings": [
+        {
+          "raw": "Health Insurance",
+          "count": 907,
+          "by_module": {
+            "contacts": 848,
+            "leads": 59
+          }
+        }
+      ]
+    },
+    {
+      "value": "MPowering Secure Care",
+      "label": "MPowering Secure Care",
+      "tier": "A",
+      "display_order": 4,
+      "count_total": 655,
+      "count_by_module": {
+        "contacts": 655
+      },
+      "spellings": [
+        {
+          "raw": "MPowering Secure Care - 35768",
+          "count": 650,
+          "by_module": {
+            "contacts": 650
+          }
+        },
+        {
+          "raw": "MPowering Secure Care   (35768)",
+          "count": 5,
+          "by_module": {
+            "contacts": 5
+          }
+        }
+      ]
+    },
+    {
+      "value": "Secure",
+      "label": "Secure",
+      "tier": "A",
+      "display_order": 5,
+      "count_total": 625,
+      "count_by_module": {
+        "contacts": 625
+      },
+      "spellings": [
+        {
+          "raw": "SECURE (31119)",
+          "count": 625,
+          "by_module": {
+            "contacts": 625
+          }
+        }
+      ]
+    },
+    {
+      "value": "Premium HSA",
+      "label": "Premium HSA",
+      "tier": "A",
+      "display_order": 6,
+      "count_total": 532,
+      "count_by_module": {
+        "contacts": 531,
+        "leads": 1
+      },
+      "spellings": [
+        {
+          "raw": "Premium HSA (44036)",
+          "count": 530,
+          "by_module": {
+            "contacts": 530
+          }
+        },
+        {
+          "raw": "Premium HSA",
+          "count": 2,
+          "by_module": {
+            "contacts": 1,
+            "leads": 1
+          }
+        }
+      ]
+    },
+    {
+      "value": "To Be Determined",
+      "label": "To Be Determined",
+      "tier": "A",
+      "display_order": 7,
+      "count_total": 497,
+      "count_by_module": {
+        "contacts": 497
+      },
+      "spellings": [
+        {
+          "raw": "To Be Determined",
+          "count": 497,
+          "by_module": {
+            "contacts": 497
+          }
+        }
+      ]
+    },
+    {
+      "value": "MPowering Care Plus",
+      "label": "MPowering Care Plus",
+      "tier": "A",
+      "display_order": 8,
+      "count_total": 476,
+      "count_by_module": {
+        "contacts": 473,
+        "leads": 3
+      },
+      "spellings": [
+        {
+          "raw": "MPowering Care Plus - 35693",
+          "count": 468,
+          "by_module": {
+            "contacts": 468
+          }
+        },
+        {
+          "raw": "MPowering Care Plus (35693)",
+          "count": 5,
+          "by_module": {
+            "contacts": 5
+          }
+        },
+        {
+          "raw": "MPowering CARE +",
+          "count": 3,
+          "by_module": {
+            "leads": 3
+          }
+        }
+      ]
+    },
+    {
+      "value": "MPB Group Plan (Individual)",
+      "label": "MPB Group Plan (Individual)",
+      "tier": "A",
+      "display_order": 9,
+      "count_total": 418,
+      "count_by_module": {
+        "contacts": 418
+      },
+      "spellings": [
+        {
+          "raw": "MPB Group Plan (Individual)",
+          "count": 418,
+          "by_module": {
+            "contacts": 418
+          }
+        }
+      ]
+    },
+    {
+      "value": "Premium Care",
+      "label": "Premium Care",
+      "tier": "A",
+      "display_order": 10,
+      "count_total": 404,
+      "count_by_module": {
+        "contacts": 402,
+        "leads": 2
+      },
+      "spellings": [
+        {
+          "raw": "Premium Care (43957)",
+          "count": 398,
+          "by_module": {
+            "contacts": 398
+          }
+        },
+        {
+          "raw": "Premium Care",
+          "count": 5,
+          "by_module": {
+            "contacts": 3,
+            "leads": 2
+          }
+        },
+        {
+          "raw": "Premium care",
+          "count": 1,
+          "by_module": {
+            "contacts": 1
+          }
+        }
+      ]
+    },
+    {
+      "value": "Partially Self Directed",
+      "label": "Partially Self Directed",
+      "tier": "A",
+      "display_order": 11,
+      "count_total": 398,
+      "count_by_module": {
+        "contacts": 398
+      },
+      "spellings": [
+        {
+          "raw": "Partially Self Directed  (27198)",
+          "count": 398,
+          "by_module": {
+            "contacts": 398
+          }
+        }
+      ]
+    },
+    {
+      "value": "MPB CareZ - Worksite - Bridge",
+      "label": "MPB CareZ - Worksite - Bridge",
+      "tier": "A",
+      "display_order": 12,
+      "count_total": 303,
+      "count_by_module": {
+        "contacts": 303
+      },
+      "spellings": [
+        {
+          "raw": "MPB CareZ - Worksite - Bridge (30445)",
+          "count": 303,
+          "by_module": {
+            "contacts": 303
+          }
+        }
+      ]
+    },
+    {
+      "value": "Secure Care - Zion Essential with HSA MEC",
+      "label": "Secure Care - Zion Essential with HSA MEC",
+      "tier": "A",
+      "display_order": 13,
+      "count_total": 268,
+      "count_by_module": {
+        "contacts": 268
+      },
+      "spellings": [
+        {
+          "raw": "Secure Care - Zion Essential with HSA MEC (40416)",
+          "count": 268,
+          "by_module": {
+            "contacts": 268
+          }
+        }
+      ]
+    },
+    {
+      "value": "Provider Directed - Redirect",
+      "label": "Provider Directed - Redirect",
+      "tier": "A",
+      "display_order": 14,
+      "count_total": 205,
+      "count_by_module": {
+        "contacts": 205
+      },
+      "spellings": [
+        {
+          "raw": "Provider Directed - Redirect (27201)",
+          "count": 205,
+          "by_module": {
+            "contacts": 205
+          }
+        }
+      ]
+    },
+    {
+      "value": "MPowering Direct Care",
+      "label": "MPowering Direct Care",
+      "tier": "A",
+      "display_order": 15,
+      "count_total": 147,
+      "count_by_module": {
+        "contacts": 147
+      },
+      "spellings": [
+        {
+          "raw": "MPowering Direct Care - 35770",
+          "count": 144,
+          "by_module": {
+            "contacts": 144
+          }
+        },
+        {
+          "raw": "MPowering Direct Care (35770)",
+          "count": 3,
+          "by_module": {
+            "contacts": 3
+          }
+        }
+      ]
+    },
+    {
+      "value": "Healthcare Essentials",
+      "label": "Healthcare Essentials",
+      "tier": "A",
+      "display_order": 16,
+      "count_total": 143,
+      "count_by_module": {
+        "contacts": 143
+      },
+      "spellings": [
+        {
+          "raw": "Healthcare Essentials (37520)",
+          "count": 143,
+          "by_module": {
+            "contacts": 143
+          }
+        }
+      ]
+    },
+    {
+      "value": "Direct",
+      "label": "Direct",
+      "tier": "A",
+      "display_order": 17,
+      "count_total": 140,
+      "count_by_module": {
+        "contacts": 140
+      },
+      "spellings": [
+        {
+          "raw": "DIRECT  (42465)",
+          "count": 58,
+          "by_module": {
+            "contacts": 58
+          }
+        },
+        {
+          "raw": "Direct 2024 (42465)",
+          "count": 51,
+          "by_module": {
+            "contacts": 51
+          }
+        },
+        {
+          "raw": "DIRECT (31120)",
+          "count": 31,
+          "by_module": {
+            "contacts": 31
+          }
+        }
+      ]
+    },
+    {
+      "value": "MEC+ Essentials",
+      "label": "MEC+ Essentials",
+      "tier": "A",
+      "display_order": 18,
+      "count_total": 128,
+      "count_by_module": {
+        "contacts": 128
+      },
+      "spellings": [
+        {
+          "raw": "MEC+ ESSENTIALS (45388)",
+          "count": 119,
+          "by_module": {
+            "contacts": 119
+          }
+        },
+        {
+          "raw": "MEC+ Essentials (45388)",
+          "count": 8,
+          "by_module": {
+            "contacts": 8
+          }
+        },
+        {
+          "raw": "MEC + Essentials (45388)",
+          "count": 1,
+          "by_module": {
+            "contacts": 1
+          }
+        }
+      ]
+    },
+    {
+      "value": "Self Directed Plan",
+      "label": "Self Directed Plan",
+      "tier": "A",
+      "display_order": 19,
+      "count_total": 119,
+      "count_by_module": {
+        "contacts": 119
+      },
+      "spellings": [
+        {
+          "raw": "Self Directed Plan (27197)",
+          "count": 119,
+          "by_module": {
+            "contacts": 119
+          }
+        }
+      ]
+    },
+    {
+      "value": "Co-Pay Plan",
+      "label": "Co-Pay Plan",
+      "tier": "A",
+      "display_order": 20,
+      "count_total": 91,
+      "count_by_module": {
+        "contacts": 91
+      },
+      "spellings": [
+        {
+          "raw": "Co-Pay Plan (27199)",
+          "count": 91,
+          "by_module": {
+            "contacts": 91
+          }
+        }
+      ]
+    },
+    {
+      "value": "Group Health Insurance",
+      "label": "Group Health Insurance",
+      "tier": "A",
+      "display_order": 21,
+      "count_total": 70,
+      "count_by_module": {
+        "contacts": 70
+      },
+      "spellings": [
+        {
+          "raw": "Group Health Insurance",
+          "count": 70,
+          "by_module": {
+            "contacts": 70
+          }
+        }
+      ]
+    },
+    {
+      "value": "MPB Direct",
+      "label": "MPB Direct",
+      "tier": "A",
+      "display_order": 22,
+      "count_total": 66,
+      "count_by_module": {
+        "contacts": 66
+      },
+      "spellings": [
+        {
+          "raw": "MPB Direct (27200)",
+          "count": 65,
+          "by_module": {
+            "contacts": 65
+          }
+        },
+        {
+          "raw": "MPB Direct   (27200)",
+          "count": 1,
+          "by_module": {
+            "contacts": 1
+          }
+        }
+      ]
+    },
+    {
+      "value": "Redirect Health Plan (GROUP)",
+      "label": "Redirect Health Plan (GROUP)",
+      "tier": "A",
+      "display_order": 23,
+      "count_total": 64,
+      "count_by_module": {
+        "contacts": 64
+      },
+      "spellings": [
+        {
+          "raw": "Redirect Health Plan (GROUP)",
+          "count": 64,
+          "by_module": {
+            "contacts": 64
+          }
+        }
+      ]
+    },
+    {
+      "value": "Essentials",
+      "label": "Essentials",
+      "tier": "A",
+      "display_order": 24,
+      "count_total": 49,
+      "count_by_module": {
+        "contacts": 48,
+        "leads": 1
+      },
+      "spellings": [
+        {
+          "raw": "ESSENTIALS (42463)",
+          "count": 31,
+          "by_module": {
+            "contacts": 31
+          }
+        },
+        {
+          "raw": "Essentials 2024 (42463)",
+          "count": 17,
+          "by_module": {
+            "contacts": 17
+          }
+        },
+        {
+          "raw": "Essentials",
+          "count": 1,
+          "by_module": {
+            "leads": 1
+          }
+        }
+      ]
+    },
+    {
+      "value": "Insurance",
+      "label": "Insurance",
+      "tier": "A",
+      "display_order": 25,
+      "count_total": 43,
+      "count_by_module": {
+        "contacts": 43
+      },
+      "spellings": [
+        {
+          "raw": "Insurance",
+          "count": 43,
+          "by_module": {
+            "contacts": 43
+          }
+        }
+      ]
+    },
+    {
+      "value": "OPD Complete",
+      "label": "OPD Complete",
+      "tier": "A",
+      "display_order": 26,
+      "count_total": 38,
+      "count_by_module": {
+        "contacts": 38
+      },
+      "spellings": [
+        {
+          "raw": "OPD Complete (32399)",
+          "count": 38,
+          "by_module": {
+            "contacts": 38
+          }
+        }
+      ]
+    },
+    {
+      "value": "MPB CareZ - Worksite",
+      "label": "MPB CareZ - Worksite",
+      "tier": "A",
+      "display_order": 27,
+      "count_total": 37,
+      "count_by_module": {
+        "contacts": 37
+      },
+      "spellings": [
+        {
+          "raw": "MPB CareZ - Worksite (29870)",
+          "count": 37,
+          "by_module": {
+            "contacts": 37
+          }
+        }
+      ]
+    },
+    {
+      "value": "MPB CareZ -Connected Worksite",
+      "label": "MPB CareZ -Connected Worksite",
+      "tier": "A",
+      "display_order": 28,
+      "count_total": 35,
+      "count_by_module": {
+        "contacts": 35
+      },
+      "spellings": [
+        {
+          "raw": "MPB CareZ -Connected Worksite (30658)",
+          "count": 35,
+          "by_module": {
+            "contacts": 35
+          }
+        }
+      ]
+    },
+    {
+      "value": "MPB Care",
+      "label": "MPB Care",
+      "tier": "A",
+      "display_order": 29,
+      "count_total": 33,
+      "count_by_module": {
+        "contacts": 33
+      },
+      "spellings": [
+        {
+          "raw": "MPB Care (28009)",
+          "count": 33,
+          "by_module": {
+            "contacts": 33
+          }
+        }
+      ]
+    },
+    {
+      "value": "MPB Care Plus",
+      "label": "MPB Care Plus",
+      "tier": "A",
+      "display_order": 30,
+      "count_total": 30,
+      "count_by_module": {
+        "contacts": 30
+      },
+      "spellings": [
+        {
+          "raw": "MPB Care Plus (28201)",
+          "count": 30,
+          "by_module": {
+            "contacts": 30
+          }
+        }
+      ]
+    },
+    {
+      "value": "Minimum Essential Coverage (MEC) Included",
+      "label": "Minimum Essential Coverage (MEC) Included",
+      "tier": "A",
+      "display_order": 31,
+      "count_total": 26,
+      "count_by_module": {
+        "contacts": 26
+      },
+      "spellings": [
+        {
+          "raw": "MINIMUM ESSENTIAL COVERAGE (MEC) INCLUDED (43960)",
+          "count": 26,
+          "by_module": {
+            "contacts": 26
+          }
+        }
+      ]
+    },
+    {
+      "value": "Partially Self Directed (GROUP)",
+      "label": "Partially Self Directed (GROUP)",
+      "tier": "A",
+      "display_order": 32,
+      "count_total": 25,
+      "count_by_module": {
+        "contacts": 25
+      },
+      "spellings": [
+        {
+          "raw": "Partially Self Directed (GROUP)",
+          "count": 25,
+          "by_module": {
+            "contacts": 25
+          }
+        }
+      ]
+    },
+    {
+      "value": "Sedera Select+ (Modified) T1 -Self Directed-",
+      "label": "Sedera Select+ (Modified) T1 -Self Directed-",
+      "tier": "A",
+      "display_order": 33,
+      "count_total": 25,
+      "count_by_module": {
+        "contacts": 25
+      },
+      "spellings": [
+        {
+          "raw": "Sedera Select+ (Modified) T1 -Self Directed-",
+          "count": 25,
+          "by_module": {
+            "contacts": 25
+          }
+        }
+      ]
+    },
+    {
+      "value": "Co-Pay Plan (GROUP)",
+      "label": "Co-Pay Plan (GROUP)",
+      "tier": "A",
+      "display_order": 34,
+      "count_total": 24,
+      "count_by_module": {
+        "contacts": 24
+      },
+      "spellings": [
+        {
+          "raw": "Co-Pay  Plan (GROUP)",
+          "count": 24,
+          "by_module": {
+            "contacts": 24
+          }
+        }
+      ]
+    },
+    {
+      "value": "MPB Care Plus CV",
+      "label": "MPB Care Plus CV",
+      "tier": "A",
+      "display_order": 35,
+      "count_total": 23,
+      "count_by_module": {
+        "contacts": 23
+      },
+      "spellings": [
+        {
+          "raw": "MPB Care Plus CV (30443)",
+          "count": 23,
+          "by_module": {
+            "contacts": 23
+          }
+        }
+      ]
+    },
+    {
+      "value": "Sedera Select+ (Modified) T2 - Partially Self Directed",
+      "label": "Sedera Select+ (Modified) T2 - Partially Self Directed",
+      "tier": "A",
+      "display_order": 36,
+      "count_total": 18,
+      "count_by_module": {
+        "contacts": 18
+      },
+      "spellings": [
+        {
+          "raw": "Sedera Select+ (Modified) T2 - Partially Self Directed",
+          "count": 18,
+          "by_module": {
+            "contacts": 18
+          }
+        }
+      ]
+    },
+    {
+      "value": "Secure Care -Co-Pay",
+      "label": "Secure Care -Co-Pay",
+      "tier": "A",
+      "display_order": 37,
+      "count_total": 15,
+      "count_by_module": {
+        "contacts": 15
+      },
+      "spellings": [
+        {
+          "raw": "Secure Care -Co-Pay (40934)",
+          "count": 15,
+          "by_module": {
+            "contacts": 15
+          }
+        }
+      ]
+    },
+    {
+      "value": "MPB Secure - REDIRECT",
+      "label": "MPB Secure - REDIRECT",
+      "tier": "A",
+      "display_order": 38,
+      "count_total": 14,
+      "count_by_module": {
+        "contacts": 14
+      },
+      "spellings": [
+        {
+          "raw": "MPB Secure - REDIRECT (28519)",
+          "count": 14,
+          "by_module": {
+            "contacts": 14
+          }
+        }
+      ]
+    },
+    {
+      "value": "MPowering HSA MEC - For Secure Care",
+      "label": "MPowering HSA MEC - For Secure Care",
+      "tier": "A",
+      "display_order": 39,
+      "count_total": 12,
+      "count_by_module": {
+        "contacts": 12
+      },
+      "spellings": [
+        {
+          "raw": "MPowering HSA MEC - For Secure Care (38418)",
+          "count": 12,
+          "by_module": {
+            "contacts": 12
+          }
+        }
+      ]
+    },
+    {
+      "value": "Secure Copay",
+      "label": "Secure Copay",
+      "tier": "A",
+      "display_order": 40,
+      "count_total": 12,
+      "count_by_module": {
+        "contacts": 12
+      },
+      "spellings": [
+        {
+          "raw": "Secure Copay 2024 (42469)",
+          "count": 12,
+          "by_module": {
+            "contacts": 12
+          }
+        }
+      ]
+    },
+    {
+      "value": "MPowering Direct",
+      "label": "MPowering Direct",
+      "tier": "A",
+      "display_order": 41,
+      "count_total": 10,
+      "count_by_module": {
+        "leads": 10
+      },
+      "spellings": [
+        {
+          "raw": "MPowering Direct",
+          "count": 10,
+          "by_module": {
+            "leads": 10
+          }
+        }
+      ]
+    },
+    {
+      "value": "Other (dental, vision etc.)",
+      "label": "Other (dental, vision etc.)",
+      "tier": "A",
+      "display_order": 42,
+      "count_total": 10,
+      "count_by_module": {
+        "contacts": 10
+      },
+      "spellings": [
+        {
+          "raw": "Other (dental, vision etc.)",
+          "count": 10,
+          "by_module": {
+            "contacts": 10
+          }
+        }
+      ]
+    },
+    {
+      "value": "MPB CareZ - Individual",
+      "label": "MPB CareZ - Individual",
+      "tier": "B",
+      "display_order": 43,
+      "count_total": 9,
+      "count_by_module": {
+        "contacts": 9
+      },
+      "spellings": [
+        {
+          "raw": "MPB CareZ - Individual (29795)",
+          "count": 9,
+          "by_module": {
+            "contacts": 9
+          }
+        }
+      ]
+    },
+    {
+      "value": "DPC Plan (GROUP)",
+      "label": "DPC Plan (GROUP)",
+      "tier": "B",
+      "display_order": 44,
+      "count_total": 6,
+      "count_by_module": {
+        "contacts": 6
+      },
+      "spellings": [
+        {
+          "raw": "DPC  Plan (GROUP)",
+          "count": 6,
+          "by_module": {
+            "contacts": 6
+          }
+        }
+      ]
+    },
+    {
+      "value": "MPB Group Plan (RETAINED)",
+      "label": "MPB Group Plan (RETAINED)",
+      "tier": "B",
+      "display_order": 45,
+      "count_total": 6,
+      "count_by_module": {
+        "contacts": 6
+      },
+      "spellings": [
+        {
+          "raw": "MPB Group Plan (RETAINED)",
+          "count": 6,
+          "by_module": {
+            "contacts": 6
+          }
+        }
+      ]
+    },
+    {
+      "value": "Our Primary Doc.",
+      "label": "Our Primary Doc.",
+      "tier": "B",
+      "display_order": 46,
+      "count_total": 6,
+      "count_by_module": {
+        "contacts": 6
+      },
+      "spellings": [
+        {
+          "raw": "Our Primary Doc.",
+          "count": 6,
+          "by_module": {
+            "contacts": 6
+          }
+        }
+      ]
+    },
+    {
+      "value": "Sedera Group Plan",
+      "label": "Sedera Group Plan",
+      "tier": "B",
+      "display_order": 47,
+      "count_total": 5,
+      "count_by_module": {
+        "contacts": 5
+      },
+      "spellings": [
+        {
+          "raw": "Sedera Group Plan",
+          "count": 5,
+          "by_module": {
+            "contacts": 5
+          }
+        }
+      ]
+    },
+    {
+      "value": "MPowering Care",
+      "label": "MPowering Care",
+      "tier": "B",
+      "display_order": 48,
+      "count_total": 4,
+      "count_by_module": {
+        "contacts": 4
+      },
+      "spellings": [
+        {
+          "raw": "MPowering Care - 28009",
+          "count": 4,
+          "by_module": {
+            "contacts": 4
+          }
+        }
+      ]
+    },
+    {
+      "value": "MPowering SECURE",
+      "label": "MPowering SECURE",
+      "tier": "B",
+      "display_order": 49,
+      "count_total": 4,
+      "count_by_module": {
+        "leads": 4
+      },
+      "spellings": [
+        {
+          "raw": "MPowering SECURE",
+          "count": 4,
+          "by_module": {
+            "leads": 4
+          }
+        }
+      ]
+    },
+    {
+      "value": "OPD",
+      "label": "OPD",
+      "tier": "B",
+      "display_order": 50,
+      "count_total": 4,
+      "count_by_module": {
+        "leads": 4
+      },
+      "spellings": [
+        {
+          "raw": "OPD",
+          "count": 4,
+          "by_module": {
+            "leads": 4
+          }
+        }
+      ]
+    },
+    {
+      "value": "Redirect Health Plan",
+      "label": "Redirect Health Plan",
+      "tier": "B",
+      "display_order": 51,
+      "count_total": 4,
+      "count_by_module": {
+        "leads": 4
+      },
+      "spellings": [
+        {
+          "raw": "Redirect Health Plan",
+          "count": 4,
+          "by_module": {
+            "leads": 4
+          }
+        }
+      ]
+    },
+    {
+      "value": "Sedera Select+ (Modified T3) - Redirect Health",
+      "label": "Sedera Select+ (Modified T3) - Redirect Health",
+      "tier": "B",
+      "display_order": 52,
+      "count_total": 4,
+      "count_by_module": {
+        "contacts": 4
+      },
+      "spellings": [
+        {
+          "raw": "Sedera Select+ (Modified T3) - Redirect Health",
+          "count": 4,
+          "by_module": {
+            "contacts": 4
+          }
+        }
+      ]
+    },
+    {
+      "value": "Sedera Select+ (Modified) T3 - Direct DPC Care",
+      "label": "Sedera Select+ (Modified) T3 - Direct DPC Care",
+      "tier": "B",
+      "display_order": 53,
+      "count_total": 4,
+      "count_by_module": {
+        "contacts": 4
+      },
+      "spellings": [
+        {
+          "raw": "Sedera Select+ (Modified) T3 - Direct DPC Care",
+          "count": 4,
+          "by_module": {
+            "contacts": 4
+          }
+        }
+      ]
+    },
+    {
+      "value": "VPC - BowTie Health (ASSOC)",
+      "label": "VPC - BowTie Health (ASSOC)",
+      "tier": "B",
+      "display_order": 54,
+      "count_total": 4,
+      "count_by_module": {
+        "contacts": 4
+      },
+      "spellings": [
+        {
+          "raw": "VPC - BowTie Health (ASSOC)",
+          "count": 4,
+          "by_module": {
+            "contacts": 4
+          }
+        }
+      ]
+    },
+    {
+      "value": "MPowering Co-Pay MEC - Advanced MEC for Secure",
+      "label": "MPowering Co-Pay MEC - Advanced MEC for Secure",
+      "tier": "B",
+      "display_order": 55,
+      "count_total": 3,
+      "count_by_module": {
+        "contacts": 3
+      },
+      "spellings": [
+        {
+          "raw": "MPowering Co-Pay MEC - Advanced MEC for Secure (38458)",
+          "count": 3,
+          "by_module": {
+            "contacts": 3
+          }
+        }
+      ]
+    },
+    {
+      "value": "SECURE COPAY Groups",
+      "label": "SECURE COPAY Groups",
+      "tier": "B",
+      "display_order": 56,
+      "count_total": 3,
+      "count_by_module": {
+        "contacts": 3
+      },
+      "spellings": [
+        {
+          "raw": "SECURE COPAY 2024 Groups (42553)",
+          "count": 3,
+          "by_module": {
+            "contacts": 3
+          }
+        }
+      ]
+    },
+    {
+      "value": "DPC Plan",
+      "label": "DPC Plan",
+      "tier": "B",
+      "display_order": 57,
+      "count_total": 2,
+      "count_by_module": {
+        "contacts": 2
+      },
+      "spellings": [
+        {
+          "raw": "DPC Plan",
+          "count": 2,
+          "by_module": {
+            "contacts": 2
+          }
+        }
+      ]
+    },
+    {
+      "value": "Health Sharing and Health Insurance Combo",
+      "label": "Health Sharing and Health Insurance Combo",
+      "tier": "B",
+      "display_order": 58,
+      "count_total": 2,
+      "count_by_module": {
+        "contacts": 1,
+        "leads": 1
+      },
+      "spellings": [
+        {
+          "raw": "Health Sharing and Health Insurance Combo",
+          "count": 2,
+          "by_module": {
+            "contacts": 1,
+            "leads": 1
+          }
+        }
+      ]
+    },
+    {
+      "value": "Life X 1500 PPO",
+      "label": "Life X 1500 PPO",
+      "tier": "B",
+      "display_order": 59,
+      "count_total": 2,
+      "count_by_module": {
+        "contacts": 1,
+        "leads": 1
+      },
+      "spellings": [
+        {
+          "raw": "Life X 1500 PPO",
+          "count": 2,
+          "by_module": {
+            "contacts": 1,
+            "leads": 1
+          }
+        }
+      ]
+    },
+    {
+      "value": "Medicaid or C4HCO",
+      "label": "Medicaid or C4HCO",
+      "tier": "B",
+      "display_order": 60,
+      "count_total": 2,
+      "count_by_module": {
+        "contacts": 1,
+        "leads": 1
+      },
+      "spellings": [
+        {
+          "raw": "Medicaid or C4HCO",
+          "count": 2,
+          "by_module": {
+            "contacts": 1,
+            "leads": 1
+          }
+        }
+      ]
+    },
+    {
+      "value": "CARE PLUS Groups",
+      "label": "CARE PLUS Groups",
+      "tier": "B",
+      "display_order": 61,
+      "count_total": 1,
+      "count_by_module": {
+        "contacts": 1
+      },
+      "spellings": [
+        {
+          "raw": "CARE PLUS 2024 Groups (42551)",
+          "count": 1,
+          "by_module": {
+            "contacts": 1
+          }
+        }
+      ]
+    },
+    {
+      "value": "DIRECT Groups",
+      "label": "DIRECT Groups",
+      "tier": "B",
+      "display_order": 62,
+      "count_total": 1,
+      "count_by_module": {
+        "contacts": 1
+      },
+      "spellings": [
+        {
+          "raw": "DIRECT 2024 Groups (42552)",
+          "count": 1,
+          "by_module": {
+            "contacts": 1
+          }
+        }
+      ]
+    },
+    {
+      "value": "MPB CareZ - ConnectedWorksite-DPC",
+      "label": "MPB CareZ - ConnectedWorksite-DPC",
+      "tier": "B",
+      "display_order": 63,
+      "count_total": 1,
+      "count_by_module": {
+        "contacts": 1
+      },
+      "spellings": [
+        {
+          "raw": "MPB CareZ - ConnectedWorksite-DPC (30659)",
+          "count": 1,
+          "by_module": {
+            "contacts": 1
+          }
+        }
+      ]
+    },
+    {
+      "value": "Premium HSA or Premium Care",
+      "label": "Premium HSA or Premium Care",
+      "tier": "B",
+      "display_order": 64,
+      "count_total": 1,
+      "count_by_module": {
+        "leads": 1
+      },
+      "spellings": [
+        {
+          "raw": "Premium HSA or Premium Care",
+          "count": 1,
+          "by_module": {
+            "leads": 1
+          }
+        }
+      ]
+    },
+    {
+      "value": "Proposed Secure HSA",
+      "label": "Proposed Secure HSA",
+      "tier": "B",
+      "display_order": 65,
+      "count_total": 1,
+      "count_by_module": {
+        "leads": 1
+      },
+      "spellings": [
+        {
+          "raw": "Proposed Secure HSA",
+          "count": 1,
+          "by_module": {
+            "leads": 1
+          }
+        }
+      ]
+    },
+    {
+      "value": "Regional Care MEC",
+      "label": "Regional Care MEC",
+      "tier": "B",
+      "display_order": 66,
+      "count_total": 1,
+      "count_by_module": {
+        "contacts": 1
+      },
+      "spellings": [
+        {
+          "raw": "Regional Care MEC (43960)",
+          "count": 1,
+          "by_module": {
+            "contacts": 1
+          }
+        }
+      ]
+    },
+    {
+      "value": "Sedera Select+ (Modified) T2 - Co-Pay Network Plan",
+      "label": "Sedera Select+ (Modified) T2 - Co-Pay Network Plan",
+      "tier": "B",
+      "display_order": 67,
+      "count_total": 1,
+      "count_by_module": {
+        "contacts": 1
+      },
+      "spellings": [
+        {
+          "raw": "Sedera Select+ (Modified) T2 - Co-Pay Network Plan",
+          "count": 1,
+          "by_module": {
+            "contacts": 1
+          }
+        }
+      ]
+    }
+  ],
+  "other_option": {
+    "value": "Other",
+    "label": "Other…",
+    "note": "explicit free-text escape per D3; UI-level, not stored as a picklist value"
+  },
+  "producers": {
+    "store": "crm_records module advisors (D5); producer_record_id written alongside producer_name",
+    "distinctRaw": 655,
+    "recordsWithProducer": 13939,
+    "clusters": 554,
+    "rawExactMatchAdvisorRecords": 1,
+    "rawExactMatchPublicAdvisors": 631,
+    "recordsCoveredByAdvisorRecords": 3012,
+    "recordsCoveredByPublicAdvisors": 13154,
+    "clustersMatchAdvisorRecords": 1,
+    "clustersMatchPublicAdvisors": 540,
+    "clusterRecordsCoveredByAdvisorRecords": 3056,
+    "clusterRecordsCoveredByPublicAdvisors": 13189,
+    "singletons": 318,
+    "advisorRecords": 18,
+    "publicAdvisorsLive": 672,
+    "publicAdvisorsTotal": 672,
+    "crmAdvisors": 0,
+    "cluster_list": [
+      {
+        "label": "Wendy Scipione",
+        "count": 3056,
+        "in_advisors_module": true,
+        "in_public_advisors": true,
+        "spellings": [
+          [
+            "Wendy Scipione",
+            3012
+          ],
+          [
+            "Wendy Scipione - The Hope Institute of America, LLC",
+            16
+          ],
+          [
+            "Wendy Scipione - ASHI",
+            8
+          ],
+          [
+            "Wendy Scipione - WWSRA",
+            6
+          ],
+          [
+            "Wendy Scipione- Ironwood Marketing Concepts",
+            3
+          ],
+          [
+            "Wendy Scipione- Middleway Wellness- Mary Ellen Francescani",
+            3
+          ],
+          [
+            "Wendy Scipione- Perrysburg Counseling Services, LLC",
+            3
+          ],
+          [
+            "Wendy Scipione - Abacus LLC",
+            1
+          ],
+          [
+            "Wendy Scipione - Dakota Ridge Auto",
+            1
+          ],
+          [
+            "Wendy Scipione - Daniels Food",
+            1
+          ],
+          [
+            "Wendy Scipione - Finesse Marketing Inc",
+            1
+          ],
+          [
+            "Wendy Scipione- Ironwood Marketing",
+            1
+          ]
+        ]
+      },
+      {
+        "label": "Jane Kassel",
+        "count": 794,
+        "in_advisors_module": false,
+        "in_public_advisors": true,
+        "spellings": [
+          [
+            "Jane Kassel",
+            789
+          ],
+          [
+            "Jane Kassel - One Stop Property Services",
+            4
+          ],
+          [
+            "Jane Kassel - Hayman Multicare, PLC",
+            1
+          ]
+        ]
+      },
+      {
+        "label": "Louis Spatafore",
+        "count": 455,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Misty Berryman",
+        "count": 439,
+        "in_advisors_module": false,
+        "in_public_advisors": true,
+        "spellings": [
+          [
+            "Misty Berryman",
+            405
+          ],
+          [
+            "Misty Berryman - Glacier Institute",
+            6
+          ],
+          [
+            "Misty Berryman -The Center for Vision Development, PA",
+            5
+          ],
+          [
+            "Misty Berryman- Mountain View Trucking LLC",
+            5
+          ],
+          [
+            "Misty Berryman - birthbabybody LLC",
+            4
+          ],
+          [
+            "Misty Berryman - Neptune Supply LLC",
+            4
+          ],
+          [
+            "Misty Berryman- Columbia Falls Auto Clinic",
+            4
+          ],
+          [
+            "Misty Berryman - Gen Y Planning LLC",
+            3
+          ],
+          [
+            "Misty Berryman - Phoenix Industries, Ltd.",
+            3
+          ]
+        ]
+      },
+      {
+        "label": "Wiley Long",
+        "count": 434,
+        "in_advisors_module": false,
+        "in_public_advisors": true,
+        "spellings": [
+          [
+            "Wiley Long",
+            419
+          ],
+          [
+            "Wiley Long - Care Plus for America",
+            11
+          ],
+          [
+            "Wiley Long - Direct Care For America",
+            4
+          ]
+        ]
+      },
+      {
+        "label": "Michael Montes",
+        "count": 404,
+        "in_advisors_module": false,
+        "in_public_advisors": true,
+        "spellings": [
+          [
+            "Michael Montes",
+            399
+          ],
+          [
+            "Michael Montes - CITY MOONLIGHT W&L",
+            5
+          ]
+        ]
+      },
+      {
+        "label": "Jeff Kanter",
+        "count": 358,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Jonathan Masters",
+        "count": 338,
+        "in_advisors_module": false,
+        "in_public_advisors": true,
+        "spellings": [
+          [
+            "Jonathan Masters",
+            333
+          ],
+          [
+            "Jonathan Masters - Stephanie S Stratil DDS and Cynthia Wright DDS",
+            5
+          ]
+        ]
+      },
+      {
+        "label": "Karen Torsoe",
+        "count": 333,
+        "in_advisors_module": false,
+        "in_public_advisors": true,
+        "spellings": [
+          [
+            "Karen Torsoe",
+            316
+          ],
+          [
+            "Karen Torsoe - ipCapital Group",
+            5
+          ],
+          [
+            "Karen Torsoe - Viner Dental",
+            3
+          ],
+          [
+            "Karen Torsoe- Innovative Orthodontic Solutions, LLC",
+            3
+          ],
+          [
+            "Karen Torsoe - Glory Project",
+            2
+          ],
+          [
+            "Karen Torsoe - Partner 135 Advance, Inc.",
+            2
+          ],
+          [
+            "Karen Torsoe - Christopher Key",
+            1
+          ],
+          [
+            "Karen Torsoe - HSLDA",
+            1
+          ]
+        ]
+      },
+      {
+        "label": "Christine Corsini",
+        "count": 313,
+        "in_advisors_module": false,
+        "in_public_advisors": true,
+        "spellings": [
+          [
+            "Christine Corsini",
+            287
+          ],
+          [
+            "Christine Corsini- Degnan Design Builders Inc",
+            5
+          ],
+          [
+            "Christine Corsini - Glass Doctor Auto of Colorado Springs",
+            4
+          ],
+          [
+            "Christine Corsini - Sayre Orthodontics",
+            4
+          ],
+          [
+            "Christine Corsini - vitalz anesthesia unlimited",
+            3
+          ],
+          [
+            "Christine Corsini - Work Reimagined Communications",
+            3
+          ],
+          [
+            "Christine Corsini- Welch's Restaurants",
+            3
+          ],
+          [
+            "Digitalev LLC - Christine Corsini",
+            3
+          ],
+          [
+            "Christine Corsini - School Based Reimbursement Partners",
+            1
+          ]
+        ]
+      },
+      {
+        "label": "Analisa Cleland",
+        "count": 290,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Leonardo Moraes",
+        "count": 284,
+        "in_advisors_module": false,
+        "in_public_advisors": false,
+        "spellings": [
+          [
+            "Leonardo Moraes MPB Leads",
+            146
+          ],
+          [
+            "Leonardo Moraes",
+            133
+          ],
+          [
+            "Leonardo Moraes - Lojistic, LLC",
+            2
+          ],
+          [
+            "Leonardo Moraes - Cali Electric Motors, Inc.",
+            1
+          ],
+          [
+            "Leonardo Moraes - Wolf's Westside",
+            1
+          ],
+          [
+            "Leonardo Moraes- RS Industries Inc",
+            1
+          ]
+        ]
+      },
+      {
+        "label": "Leslie Jablonski",
+        "count": 233,
+        "in_advisors_module": false,
+        "in_public_advisors": true,
+        "spellings": [
+          [
+            "Leslie Jablonski",
+            227
+          ],
+          [
+            "Leslie Jablonski- Performance Fab",
+            3
+          ],
+          [
+            "Leslie Jablonski- Phoenix Sensors LLC",
+            3
+          ]
+        ]
+      },
+      {
+        "label": "Whitney Kline",
+        "count": 208,
+        "in_advisors_module": false,
+        "in_public_advisors": true,
+        "spellings": [
+          [
+            "Whitney Kline",
+            199
+          ],
+          [
+            "Whitney Kline- Focus Healthcare",
+            3
+          ],
+          [
+            "Whitney Kline- Majestic Caverns",
+            3
+          ],
+          [
+            "Whitney Kline - Olson Chiropractic Clinic, Inc",
+            2
+          ],
+          [
+            "Whitney Kline - Bethel Harvest Church",
+            1
+          ]
+        ]
+      },
+      {
+        "label": "Stephen McBrayer",
+        "count": 205,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Patti Baron",
+        "count": 204,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Leslie Alford",
+        "count": 201,
+        "in_advisors_module": false,
+        "in_public_advisors": true,
+        "spellings": [
+          [
+            "Leslie Alford",
+            188
+          ],
+          [
+            "Leslie Alford - Child Impact International",
+            5
+          ],
+          [
+            "Leslie Alford - Marvin Gardens Real Estate & Property Management",
+            3
+          ],
+          [
+            "Leslie Alford- Performance Fab",
+            2
+          ],
+          [
+            "Leslie Alford- PIX North America",
+            2
+          ],
+          [
+            "Leslie Alford- Phoenix Sensors LLC",
+            1
+          ]
+        ]
+      },
+      {
+        "label": "John Kach",
+        "count": 198,
+        "in_advisors_module": false,
+        "in_public_advisors": false
+      },
+      {
+        "label": "Robin Kemp",
+        "count": 176,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "RREMC",
+        "count": 172,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Andrea Hinman",
+        "count": 166,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Cindy Gordon",
+        "count": 161,
+        "in_advisors_module": false,
+        "in_public_advisors": true,
+        "spellings": [
+          [
+            "Cindy Gordon",
+            116
+          ],
+          [
+            "Cindy Gordon - Hindu University of America Inc",
+            15
+          ],
+          [
+            "Cindy Gordon - Time For Sale, LLC",
+            8
+          ],
+          [
+            "Cindy Gordon- Structured Solutions, Incorporated",
+            8
+          ],
+          [
+            "Cindy Gordon- KS Building and Consulting Inc",
+            7
+          ],
+          [
+            "Cindy Gordon - Momentum Title Agency",
+            4
+          ],
+          [
+            "Cindy Gordon- Dazzle Pools, LLC",
+            2
+          ],
+          [
+            "Cindy Gordon- Appliance Works",
+            1
+          ]
+        ]
+      },
+      {
+        "label": "Kari Gray",
+        "count": 147,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Jill Clark",
+        "count": 136,
+        "in_advisors_module": false,
+        "in_public_advisors": true,
+        "spellings": [
+          [
+            "Jill Clark",
+            89
+          ],
+          [
+            "Jill Clark- EightOEight Inc",
+            47
+          ]
+        ]
+      },
+      {
+        "label": "Ronald Patterson",
+        "count": 118,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Charles Frohman",
+        "count": 113,
+        "in_advisors_module": false,
+        "in_public_advisors": true,
+        "spellings": [
+          [
+            "Charles Frohman",
+            110
+          ],
+          [
+            "Charles Frohman - Montpelier Family Chiropractic",
+            3
+          ]
+        ]
+      },
+      {
+        "label": "Joan Phelps",
+        "count": 113,
+        "in_advisors_module": false,
+        "in_public_advisors": true,
+        "spellings": [
+          [
+            "Joan Phelps",
+            112
+          ],
+          [
+            "Joan Phelps/Wellness Works Group",
+            1
+          ]
+        ]
+      },
+      {
+        "label": "Wellness Works Group",
+        "count": 105,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Tupac Manzanarez",
+        "count": 103,
+        "in_advisors_module": false,
+        "in_public_advisors": false,
+        "spellings": [
+          [
+            "Tupac Manzanarez",
+            65
+          ],
+          [
+            "Tupac Manzanarez - MPB Leads",
+            38
+          ]
+        ]
+      },
+      {
+        "label": "Kirk Bennett",
+        "count": 99,
+        "in_advisors_module": false,
+        "in_public_advisors": true,
+        "spellings": [
+          [
+            "Kirk Bennett",
+            51
+          ],
+          [
+            "Kirk Bennett- MPB Sales-Leads",
+            37
+          ],
+          [
+            "Kirk Bennett - Kerscher Construction",
+            3
+          ],
+          [
+            "Kirk Bennett- Busy Moms Healthcare",
+            3
+          ],
+          [
+            "Kirk Bennett- Excess Energy",
+            3
+          ],
+          [
+            "Kirk Bennett- Austin,Reilly & Doud Insurance Services Inc",
+            2
+          ]
+        ]
+      },
+      {
+        "label": "C. Rod Maxson",
+        "count": 98,
+        "in_advisors_module": false,
+        "in_public_advisors": false
+      },
+      {
+        "label": "Darius Kohanim",
+        "count": 92,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Jan Capodi",
+        "count": 88,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Diane Border",
+        "count": 86,
+        "in_advisors_module": false,
+        "in_public_advisors": true,
+        "spellings": [
+          [
+            "Diane Border",
+            67
+          ],
+          [
+            "Diane Border - Advanced Construction",
+            8
+          ],
+          [
+            "Diane Border - Lojistic, LLC",
+            7
+          ],
+          [
+            "Diane Border - Kimbrough Law",
+            2
+          ],
+          [
+            "Diane Border - SBS Accounting & Advisors",
+            2
+          ]
+        ]
+      },
+      {
+        "label": "Jeff Edwards",
+        "count": 85,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Mel Fonseca",
+        "count": 84,
+        "in_advisors_module": false,
+        "in_public_advisors": true,
+        "spellings": [
+          [
+            "Mel Fonseca",
+            71
+          ],
+          [
+            "Mel Fonseca - Renua Energy Inc.",
+            6
+          ],
+          [
+            "Mel Fonseca - Skabelund, PLLC",
+            4
+          ],
+          [
+            "Mel Fonseca- SwimLabs ABQ",
+            2
+          ],
+          [
+            "Mel Fonseca- SwimLabs CA",
+            1
+          ]
+        ]
+      },
+      {
+        "label": "Paul Cholak",
+        "count": 84,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Guy Travis",
+        "count": 83,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Kirsten Vastine",
+        "count": 80,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Kevin Michaels",
+        "count": 76,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Sales",
+        "count": 71,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Sally Thomsen",
+        "count": 68,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Jeffrey Bursteen",
+        "count": 61,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Helen Diane Border",
+        "count": 57,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Kori Allen",
+        "count": 57,
+        "in_advisors_module": false,
+        "in_public_advisors": true,
+        "spellings": [
+          [
+            "Kori Allen- Fiesta Flooring LLC",
+            24
+          ],
+          [
+            "Kori Allen",
+            21
+          ],
+          [
+            "Kori Allen- Fiesta Flooring LLC**",
+            12
+          ]
+        ]
+      },
+      {
+        "label": "Melissa Blatt",
+        "count": 56,
+        "in_advisors_module": false,
+        "in_public_advisors": true,
+        "spellings": [
+          [
+            "Melissa Blatt",
+            53
+          ],
+          [
+            "Melissa Blatt- Double D Industries, Inc",
+            2
+          ],
+          [
+            "Melissa Blatt/Indipop- Shoppable",
+            1
+          ]
+        ]
+      },
+      {
+        "label": "Pivotal Health",
+        "count": 54,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Justin Garrett",
+        "count": 53,
+        "in_advisors_module": false,
+        "in_public_advisors": true,
+        "spellings": [
+          [
+            "Justin Garrett",
+            50
+          ],
+          [
+            "Justin Garrett - Chilly's Bens Heating and Air",
+            3
+          ]
+        ]
+      },
+      {
+        "label": "MPowering AFFILIATES",
+        "count": 51,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "MPowering Benefits",
+        "count": 51,
+        "in_advisors_module": false,
+        "in_public_advisors": true,
+        "spellings": [
+          [
+            "MPowering Benefits",
+            50
+          ],
+          [
+            "MPowering Benefits - Rounds and Brooks CPA, PC",
+            1
+          ]
+        ]
+      },
+      {
+        "label": "Rachel Stewart",
+        "count": 51,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Amy Nielsen",
+        "count": 48,
+        "in_advisors_module": false,
+        "in_public_advisors": true,
+        "spellings": [
+          [
+            "Amy Nielsen",
+            46
+          ],
+          [
+            "Amy Nielsen - KOCH INC",
+            2
+          ]
+        ]
+      },
+      {
+        "label": "Adam Jordano",
+        "count": 43,
+        "in_advisors_module": false,
+        "in_public_advisors": false,
+        "spellings": [
+          [
+            "Adam Jordano MPB Leads",
+            41
+          ],
+          [
+            "Adam Jordano- SDS Guns Llc",
+            2
+          ]
+        ]
+      },
+      {
+        "label": "Ryan Hoff",
+        "count": 42,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "John Vnuk",
+        "count": 39,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Reba Larney",
+        "count": 39,
+        "in_advisors_module": false,
+        "in_public_advisors": true,
+        "spellings": [
+          [
+            "Reba Larney",
+            24
+          ],
+          [
+            "Reba Larney - Softek Solutions Inc",
+            10
+          ],
+          [
+            "Reba Larney- Moniomi LLC",
+            4
+          ],
+          [
+            "Reba Larney- Slow Fox Dance Hall & Wine Bar",
+            1
+          ]
+        ]
+      },
+      {
+        "label": "Michael Leonetti",
+        "count": 36,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Traci McCoid",
+        "count": 36,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Idelle Steinberg",
+        "count": 34,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Dennis Watkins",
+        "count": 32,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Jolie Curneen",
+        "count": 32,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Leah Garcia",
+        "count": 31,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Mark Smith",
+        "count": 31,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Brad Burch",
+        "count": 28,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Robert Steele",
+        "count": 27,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Katelyn Lambert",
+        "count": 26,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Stuart Lubline",
+        "count": 26,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Christine Corsini-Caribou Creek Log Homes, INC",
+        "count": 25,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Jacqueline Russo",
+        "count": 25,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Richard Willard",
+        "count": 24,
+        "in_advisors_module": false,
+        "in_public_advisors": true,
+        "spellings": [
+          [
+            "Richard Willard",
+            23
+          ],
+          [
+            "Richard Willard- Merrifield Paint Company Inc.",
+            1
+          ]
+        ]
+      },
+      {
+        "label": "Cari Adams-Waneka",
+        "count": 23,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Stephen Cox",
+        "count": 22,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Becky Otteman",
+        "count": 20,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Nancy Coveleskie",
+        "count": 20,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Deb Pender",
+        "count": 19,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Lori Lipton",
+        "count": 19,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Chris Dayton",
+        "count": 18,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Lukas Baker",
+        "count": 18,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Steve Remmel",
+        "count": 18,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Deanna Wells",
+        "count": 17,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Linda Craig",
+        "count": 17,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Enrollment Website",
+        "count": 16,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "David Goss",
+        "count": 15,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Kathleen Donnelly",
+        "count": 15,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Lindsay Dougherty",
+        "count": 15,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Lou Spatafore",
+        "count": 15,
+        "in_advisors_module": false,
+        "in_public_advisors": true,
+        "spellings": [
+          [
+            "Lou Spatafore - Hickory Grove Country Market",
+            6
+          ],
+          [
+            "Lou Spatafore - DUTCHMAN MOTORSPORTS INC",
+            4
+          ],
+          [
+            "Lou Spatafore - Crossed Chisels LLC",
+            3
+          ],
+          [
+            "Lou Spatafore - Functional Medicine of Georgia LLC",
+            2
+          ]
+        ]
+      },
+      {
+        "label": "Marc Clair",
+        "count": 15,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "MPowering AGENCY",
+        "count": 15,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Steve Cabrera",
+        "count": 15,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Beverly Garretson",
+        "count": 14,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Maggie Roeder",
+        "count": 14,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "David Nathanson",
+        "count": 13,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Fadi Malouf",
+        "count": 13,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "House Account",
+        "count": 13,
+        "in_advisors_module": false,
+        "in_public_advisors": false
+      },
+      {
+        "label": "John Sadler Hayes",
+        "count": 13,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Medical Freedom",
+        "count": 13,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Timothy Dayney",
+        "count": 13,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Yima Berkoff",
+        "count": 13,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Joe Roeder",
+        "count": 12,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Kevin Rebal",
+        "count": 12,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Theresa Meigs",
+        "count": 12,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Gary Lowe",
+        "count": 11,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "John Kaparic",
+        "count": 11,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Liz Bradshaw",
+        "count": 11,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Mark Perkins",
+        "count": 11,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "James Ashford",
+        "count": 10,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Sun Young Lee",
+        "count": 10,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Tim Fife",
+        "count": 10,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Angel Lopez",
+        "count": 9,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Cheryl Cobbin",
+        "count": 9,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Jean Johnson",
+        "count": 9,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Chris Ferris",
+        "count": 8,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Dr. Sherri Tenpenny",
+        "count": 8,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "DUTCHMAN MOTORSPORTS INC",
+        "count": 8,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "James Blackburn",
+        "count": 8,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Miriam Thomas",
+        "count": 8,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "MPB Employee Group",
+        "count": 8,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Rafael Iglesias",
+        "count": 8,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Shawn Stine",
+        "count": 8,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Tom Madden",
+        "count": 8,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Wayne Morris",
+        "count": 8,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Bill Gunkel",
+        "count": 7,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Jennifer Pollock",
+        "count": 7,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Jeremih Fetta",
+        "count": 7,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Joshua Dougherty",
+        "count": 7,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Mike Montes",
+        "count": 7,
+        "in_advisors_module": false,
+        "in_public_advisors": true,
+        "spellings": [
+          [
+            "Mike Montes",
+            6
+          ],
+          [
+            "Mike Montes - Aligned Chiropractic",
+            1
+          ]
+        ]
+      },
+      {
+        "label": "Sammi Bessert",
+        "count": 7,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Stephen Mehr",
+        "count": 7,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Taryn Collins",
+        "count": 7,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Thomas Lash",
+        "count": 7,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Tijana Coso",
+        "count": 7,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Bern Philpp",
+        "count": 6,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Cali Electric Motors, Inc.",
+        "count": 6,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Chilly's Bens Heating and Air",
+        "count": 6,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Connie Bosserman",
+        "count": 6,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Connie Schneider",
+        "count": 6,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Daniel Zaborowski",
+        "count": 6,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Gloria Treister",
+        "count": 6,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "James Trivisonno",
+        "count": 6,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Jim Chambers",
+        "count": 6,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Michele Rebal",
+        "count": 6,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "MPowering AGENTS",
+        "count": 6,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Roy Cranman",
+        "count": 6,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Travis Cannata",
+        "count": 6,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Andre Garrett",
+        "count": 5,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Cari Adams",
+        "count": 5,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Carlos Bastardo",
+        "count": 5,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Christina Evans",
+        "count": 5,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Daniel Roose",
+        "count": 5,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Don Nicol",
+        "count": 5,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Doug Benns",
+        "count": 5,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Eric Patti",
+        "count": 5,
+        "in_advisors_module": false,
+        "in_public_advisors": true,
+        "spellings": [
+          [
+            "Forever Employer, Inc - Eric Patti",
+            4
+          ],
+          [
+            "Eric Patti",
+            1
+          ]
+        ]
+      },
+      {
+        "label": "Erik and Pamela Horton",
+        "count": 5,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Healthcare Freedom",
+        "count": 5,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Jonathan Zac Masters-L.A Scapes, LLC",
+        "count": 5,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Josh Dougherty",
+        "count": 5,
+        "in_advisors_module": false,
+        "in_public_advisors": true,
+        "spellings": [
+          [
+            "Josh Dougherty - Design for Leisure USA LLC",
+            4
+          ],
+          [
+            "Josh Dougherty - Lone Star Storage Trailers",
+            1
+          ]
+        ]
+      },
+      {
+        "label": "Lillian McDermott",
+        "count": 5,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Misty Berryman-Merge Windows and Doors",
+        "count": 5,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Nancy Coveleski",
+        "count": 5,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Patrick Burke",
+        "count": 5,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Sarah Max",
+        "count": 5,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Trevor Patching",
+        "count": 5,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Walter Zaborowski",
+        "count": 5,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Anthony Maranca",
+        "count": 4,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Camille Leon",
+        "count": 4,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Christopher Jaffe",
+        "count": 4,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Christopher Key",
+        "count": 4,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "David Warshaw",
+        "count": 4,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Debra Merrill",
+        "count": 4,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Family Stations, Inc",
+        "count": 4,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Heart of Florida Insurance Group",
+        "count": 4,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Jamie Measey",
+        "count": 4,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Joan Badzik",
+        "count": 4,
+        "in_advisors_module": false,
+        "in_public_advisors": true,
+        "spellings": [
+          [
+            "Joan Badzik",
+            2
+          ],
+          [
+            "Joan Badzik- Hamilton Insurance Partners",
+            2
+          ]
+        ]
+      },
+      {
+        "label": "Justin Brogdon",
+        "count": 4,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Lojistic, LLC",
+        "count": 4,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Michael Santa Maria",
+        "count": 4,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Misty Berryman-Clearwater Financial LLC",
+        "count": 4,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Molly Carlin",
+        "count": 4,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Montpelier Family Chiropractic",
+        "count": 4,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Stephen Remmel",
+        "count": 4,
+        "in_advisors_module": false,
+        "in_public_advisors": true,
+        "spellings": [
+          [
+            "Stephen Remmel",
+            3
+          ],
+          [
+            "Stephen Remmel- Nourish Music and Health Collective",
+            1
+          ]
+        ]
+      },
+      {
+        "label": "Steve Ramona",
+        "count": 4,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Thomas Berghammer",
+        "count": 4,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Zito, LLC",
+        "count": 4,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "AJR Management",
+        "count": 3,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Balanced Healthcare Referring Association",
+        "count": 3,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Brian Kerr",
+        "count": 3,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Brown Dog Cafe",
+        "count": 3,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Care Plus for America",
+        "count": 3,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Cindy Gordon-Antebellum Security LLC",
+        "count": 3,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Craig Allen",
+        "count": 3,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Current Concepts Corporation",
+        "count": 3,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Daniel Wiegman",
+        "count": 3,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Desert River Family Medicine, LCC",
+        "count": 3,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Direct Care For America",
+        "count": 3,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Don Croyle",
+        "count": 3,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Dr. Ming Je Huang",
+        "count": 3,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Enrollment Platform",
+        "count": 3,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Fred Robinette Construction",
+        "count": 3,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Generations Primary Care",
+        "count": 3,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Geza Gaal",
+        "count": 3,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Healthcare Essentials 2",
+        "count": 3,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Justin Scheckner",
+        "count": 3,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Kelly Frederickson",
+        "count": 3,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Lisa Ward",
+        "count": 3,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Mark Goodkin",
+        "count": 3,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Mathew Pisano",
+        "count": 3,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Matthew Lovelady",
+        "count": 3,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Michael Dawson",
+        "count": 3,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Pertunri Design",
+        "count": 3,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Phoenix Industries, Ltd.",
+        "count": 3,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "rs industries inc",
+        "count": 3,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Sean O'Brien",
+        "count": 3,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Shawn Torres",
+        "count": 3,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Wendy Scipione-Finray Solar LLC",
+        "count": 3,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Allen Harmon",
+        "count": 2,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Blackburn",
+        "count": 2,
+        "in_advisors_module": false,
+        "in_public_advisors": true,
+        "spellings": [
+          [
+            "Blackburn/Desert Rose",
+            1
+          ],
+          [
+            "Blackburn/Turnkey",
+            1
+          ]
+        ]
+      },
+      {
+        "label": "Capital Appraisals, Inc",
+        "count": 2,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Dale Clemons",
+        "count": 2,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Danilo Gomez",
+        "count": 2,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "David Guenette",
+        "count": 2,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "David Scott",
+        "count": 2,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Denise Dupont",
+        "count": 2,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Dennis Morris",
+        "count": 2,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Donna Shirley",
+        "count": 2,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Dr. John T. Littell",
+        "count": 2,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "FHC",
+        "count": 2,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Gloria Bycher",
+        "count": 2,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Hari Cheedella",
+        "count": 2,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Hindu University of America Inc",
+        "count": 2,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Jak Plihal",
+        "count": 2,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "James Chapman",
+        "count": 2,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Jeffrey Godshall",
+        "count": 2,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Jennifer Coghlan",
+        "count": 2,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Jeremiah Fetta",
+        "count": 2,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Jorge Tola",
+        "count": 2,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Joshua S Smith",
+        "count": 2,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Kenneth Justin Garrett",
+        "count": 2,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Kimbrough Law",
+        "count": 2,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Larry Booksh",
+        "count": 2,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Leavy Craig",
+        "count": 2,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Leonardo Moraes-Cali Electric Motors, Inc.",
+        "count": 2,
+        "in_advisors_module": false,
+        "in_public_advisors": false
+      },
+      {
+        "label": "Lori Cheung",
+        "count": 2,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Manzo Jordano Moraes Benefits",
+        "count": 2,
+        "in_advisors_module": false,
+        "in_public_advisors": false
+      },
+      {
+        "label": "Melanie Pinkney PINK",
+        "count": 2,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Merge Windows and Doors",
+        "count": 2,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Misty Berryman Merge Windows and Doors",
+        "count": 2,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "MTOAA",
+        "count": 2,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Neil Patterson MD Employees (Neil Patterson MD)",
+        "count": 2,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Nicolas Baker",
+        "count": 2,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Paul Montgrain",
+        "count": 2,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Peter Kempf",
+        "count": 2,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Puretherapro",
+        "count": 2,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Rosana Cueto",
+        "count": 2,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "SBS Accounting & Advisors",
+        "count": 2,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Thomas Denove",
+        "count": 2,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Total Family Healthcare",
+        "count": 2,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Tracy Faigin",
+        "count": 2,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Tyler Dalton",
+        "count": 2,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Veronica Escosar",
+        "count": 2,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Vicki Rainey",
+        "count": 2,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Westline Woodcraft",
+        "count": 2,
+        "in_advisors_module": false,
+        "in_public_advisors": false
+      },
+      {
+        "label": "William Przybysz",
+        "count": 2,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "William Sheridan",
+        "count": 2,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Acclaim Home Care Services",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Allegiance Plumbing Services, LLC",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Alliance Personalized Healthcare",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Alyssa Burgos",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Amada Senior Care",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Amaral Chiropractic",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Andrew Malishenko",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Angee Montgomery",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Angela Brocious",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Anthony Castillo",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Anthony Lopez",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Anthony Welti",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Arc of Life Family Spinal Care",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Arcadia Medical Associates",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Ascent Eyecare",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "ASG Information Technologies",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Asphalt Kings, LLC",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Authentic Health Solutions",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Beacon Chiropractic SWFL",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Benjamin Kelly",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": false
+      },
+      {
+        "label": "Bethel Harvest Church",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Bill Spaeth",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Blue Realty",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "BlueRealty",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Bob Amato",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Bob McCollins",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Boca Back Center",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Bohn Chiropractic",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Brad Weeks",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Brett H. Pojunis",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Bryan McDonald",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Burnest Benson",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Cable Ties Unlimited",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Cape Coral Family Chiropractic",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Caribou Creek Log Homes",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Carver Electric Heating & Cooling Inc",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Cathy Steinmetz",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Celina Dalton",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Cenzo Car Care",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Chiropractic Care and Rehab Center",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Chiropractic Health of SW Florida",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Chiropractic Physicians and Wellness Spa",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Chris Cucchiara",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Chris King",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Chris Pilgrim",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Christopher Owens",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Cindy Gordon-Alliance Group Real Estate Corporation",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Circle of Friends LLC",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Cohen Chiropractic",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Colleen Ingraham",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Collier Chiropractic",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Command Your Brand",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Concierge Realty",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Corral Construction Inc.",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Counseling and Education Center",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Crowell Trucking",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Crown Administrators",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Custom Mold & tint inc",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Custom Service Heating & Cooling, Inc.",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Dale Huffman",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Daner Wealth Management, LLC",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Danny Lowman",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Daphne Graaf",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Dave Wagner",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "David Anthony, DC",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "David Dlatt",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "David Lazbin",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "David Martin",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "David T Loveless",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "DeBora Kroger",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Debra M Hopp, DC",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Degnan Design Builders Inc",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Denise Campbell",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Dennis Schumann",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Dominique Valko",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Donna Groskopf",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Dwayne Gordon",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Earhart Ventures LLC",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Elder Advisors Law, LLC",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Elipsis Construction",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Elizabeth Mullison",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Elizabeth Rosado-McGrath",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Ellen McCreary",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Employee Benefit Advisors",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Enrollment Website API",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Eric Lindsay",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Erik Cox",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Esther Adams",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Ethan Troutman",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Ewing Enterprises",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Example Company",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Experience Family Chiropractic",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Family Chiropractor Center",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Family First Chiropractic",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Family Spinal Care",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Feder Chiropractic",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Fiesta Flooring LLC",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "FinTeam Business Consulting",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Forever Employer, LLC",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Frank Rossetti",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Freedom",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Freedom Family Health",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Function First Therapy, LLC",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Functional Medicine of Georgia",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Garrett Griffin",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Gary Jones",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Genest Concrete Works, Inc",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Gilbeau Senior Advisors",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Giselle Milowitz",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Glacier Institute",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Glass Doctor Auto of Colorado Springs",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Goodwill Publishers",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Gregory Pomagier",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Gregory Wade Brown",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Gulf Shore Chiropractic",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Hall's Auto Body LLC",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Halsey Chiropractic and Acupuncture",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Hamilton Insurance Partners",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Harborside Spine and Sports Center",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Harrod & Associates Constructors",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Head to Toe Posture & Rehab Center, LLC",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Henry Van Hegans",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Hoods Unlimited Inc.",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Horner Express",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "HSLDA",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Hugh Jones",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Ignite Accounting LLC",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "ISHIR Inc",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Italian Smiles",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Jack Danielson",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Jacob Haas",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "James Childs",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Janessa Montoya",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Janine Mistretta",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "JD Mass",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": false
+      },
+      {
+        "label": "jeffrey",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Jennifer Teie",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Jerome Layton",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Jerry Bateman",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Jerry Webber",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Jessica Couch",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Joan Wozniak",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Joanna Prisiajniouk",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "John Draper",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "John Jarman",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "John McCraney",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "John Troutman",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "John Woods",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Johnita McBride",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Johnnie Thorton",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Jose Aguayo",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Journey Coffee Co",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Joy Kincaid",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "JVR Ingrasci Windows",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Kaden James",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Keith Bakos",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Keith Jordano",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": false
+      },
+      {
+        "label": "Kenneth Rose",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Key Therapy Counseling",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Key Therapy LLC",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Kim DiGiacomo",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "King Steel",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "kyle Sheehan",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "LA Scapes",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Ladda Hawkins",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Larry Meredith",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Latoya Traylor",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Laurie Draper",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Leandro Fernandez",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Lee Walker",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Lemmata Chiropractic LLC",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Lesa Artzberger",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Leslie Adams",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Linda Epperly",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Lone Star Storage Trailers, Inc.",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Luis Hernandez",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Lynn Poplstein",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Maezer, LLC",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Mama's Chiropractic Clinic",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Managed medical llc",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": false
+      },
+      {
+        "label": "Marc Montgomery",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Margaret Bedingfield",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Maria Navas",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Mark Enis",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Mark Matthews",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Markson Chiropractic",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Marty McCoy",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Master Acc.",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Matthew Meagher",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Melissa Baksic",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Melissa Blatt-Indipop",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Michael Cazayoux",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Michael Ethridge",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Michael Sheehan",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "MidAmerica Supplement",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Mighty Hand Construction",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Mike Berube",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Mikio VanDrunen",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Miscellaneous AGENTS",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Mohammad-Reza Khosh-Sirat",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "MRA10210",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "NAKA, LLC",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": false
+      },
+      {
+        "label": "Natlya Zusstone",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Neely Counseling",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Neil Rosenblatt",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Neptune Supply LLC",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Nibha Mediratta, MD PL",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Noah St. John",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "On Target Fitness LLC",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "One Financial Coaching",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Orion Pax Ventures LLC",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Pacific Air Incorporation",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Pamela Nygaard",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Patrick Knowles",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Patti Stovall",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Paula Batson",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Phillip Williams",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Points2Wellness",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Priority Medical Rehab",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Pure Therapro Rx",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Randy Schrum",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Reba Larney-Aspiring Smiles LLC",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Record Health Chiropractic",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Red Cross United Drug, Inc.",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Reid Swanson",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Renee Buice",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Renua Energy inc.",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Rich Keal",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Richard Lockie",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Richard Milinkovich",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Richard Spaller",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Richard Williard-Merrifield Paint Company",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Robert (Drew) Ervin",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Robert (Sam) Martin",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Rockin B Construction",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Rodolfo Cossio",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Ron Akins",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Ruby Yu Deng",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Rudy Figueroa",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "S&E Electric",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "SA Construct",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Sam Piccione",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Sandra Hartman",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Scott Family Pharmacy",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "SDS Guns LLC",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "SERVPRO of Cheyenne",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Shades Industrial Forklift LLC",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Skabelund PLLC",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "SKP Ventures Inc",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Slow Fox Dance Hall & Wine Bar, LLC",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Softek Solutions Inc",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Someone",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Southern Engineers",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Stacey Shepard",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Stephen Remmel-Nourish Music & Health Collective",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Steve Petron",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Steven Kaiser",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Steven Zaidman",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Sticky Construction, Inc.",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Stumff Chiropractic",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Superior Control Systems Inc.",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Swat Logistics",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Tab Commerce Services, Inc.",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Ted Ratliff",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "The Aviation Office",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Theresa Goik",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "thinksharpe",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Tim Ward",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Timothy Atkinson",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "TLC Dental Spa",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Tony DiBendetto",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Total Vitality Health Clinic",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "True Pursuit",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Twin Oaks Family Dental",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Ty Matlock",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Tyler Caveness",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Upper Cervical Health Center",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Veronica Ferreira Braga",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Victoria Gunvalson",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Victoria Senome",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "W Charles Cole",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Wasp Auto",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Welchs Restaurant Inc",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Wellness INC",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Wendell Champion",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Wesley Godwin",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Wiley Long Enterprises, Inc.",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "William Hepscher",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Yilian Evia",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Your Medical Home",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      },
+      {
+        "label": "Zach Kanter",
+        "count": 1,
+        "in_advisors_module": false,
+        "in_public_advisors": true
+      }
+    ]
+  },
+  "health_insurance_plan_name": {
+    "decision": "free text + distinct-value suggestions (D4)",
+    "distinct": 11,
+    "records": 18,
+    "singletons": 5
+  }
+}

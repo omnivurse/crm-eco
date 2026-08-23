@@ -1852,6 +1852,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                     onClick={handleAddNote}
                     title="Add a note (n)"
                     className="rounded-r-none shadow-sm"
+                    data-testid="crm-record-add-note"
                   >
                     <StickyNote className="w-4 h-4 sm:mr-1.5" aria-hidden />
                     <span className="hidden sm:inline">Add Note</span>
@@ -1928,6 +1929,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                       aria-label="More actions"
                       title="More actions"
                       className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                      data-testid="crm-record-more"
                     >
                       <MoreHorizontal className="w-5 h-5" aria-hidden />
                     </Button>

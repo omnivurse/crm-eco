@@ -478,6 +478,7 @@ const RecordCard = memo(function RecordCard({
               href={`tel:${phone}`}
               className="hover:text-teal-600 dark:hover:text-teal-400"
               onClick={(e) => e.stopPropagation()}
+              data-testid="crm-card-phone"
             >
               {phone}
             </a>
@@ -496,6 +497,7 @@ const RecordCard = memo(function RecordCard({
               window.location.href = `tel:${phone}`;
             }}
             className="flex-1 h-9 text-emerald-600 border-emerald-200 hover:bg-emerald-50 dark:text-emerald-400 dark:border-emerald-500/30 dark:hover:bg-emerald-500/10"
+            data-testid="crm-card-call"
           >
             <Phone className="w-4 h-4 mr-1" />
             Call
@@ -1050,7 +1052,12 @@ export const RecordTable = memo(function RecordTable({
           {value}
         </a>
       ) : (
-        <span className="text-slate-700 dark:text-slate-300 truncate">{value}</span>
+        <span
+          className="text-slate-700 dark:text-slate-300 truncate"
+          data-testid={col === 'phone' ? 'crm-row-phone' : undefined}
+        >
+          {value}
+        </span>
       );
 
       if (enableInlineEdit && onRecordUpdate) {
@@ -1600,6 +1607,7 @@ export const RecordTable = memo(function RecordTable({
                           }}
                           className="h-7 w-7 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:text-emerald-400 dark:hover:bg-emerald-500/10"
                           title="Call"
+                          data-testid="crm-row-call"
                         >
                           <Phone className="w-3.5 h-3.5" />
                         </Button>

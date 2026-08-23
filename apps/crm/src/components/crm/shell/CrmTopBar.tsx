@@ -192,6 +192,7 @@ export const CrmTopBar = memo(function CrmTopBar({
         <button
           onClick={() => openCommandPalette(onOpenCommandPalette)}
           className="hidden sm:flex items-center gap-2 h-8 px-2.5 rounded-md border border-border bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors text-[13px] min-w-[160px] lg:min-w-[220px]"
+          data-testid="crm-topbar-search"
         >
           <Search className="w-4 h-4 flex-shrink-0" />
           <span className="truncate">Search people or work…</span>
@@ -207,6 +208,7 @@ export const CrmTopBar = memo(function CrmTopBar({
               className="sm:hidden h-8 w-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
               onClick={() => openCommandPalette(onOpenCommandPalette)}
               aria-label="Search (⌘K)"
+              data-testid="crm-topbar-search-mobile"
             >
               <Search className="w-4 h-4" />
             </Button>
@@ -221,6 +223,7 @@ export const CrmTopBar = memo(function CrmTopBar({
           onClick={() => openQuickCreate('contacts')}
           aria-label="Add Member"
           title="Add Member"
+          data-testid="crm-create-primary-mobile"
         >
           <Plus className="w-4 h-4" />
         </Button>

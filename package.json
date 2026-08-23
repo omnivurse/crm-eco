@@ -43,7 +43,9 @@
     "precheck:crm": "npm run typecheck:crm && npm run lint:crm",
     "smoke-test": "node scripts/smoke-test.mjs",
     "db:test-connection": "node scripts/test-db-connection.mjs",
-    "prepare": "husky || true"
+    "prepare": "husky || true",
+    "test:e2e": "npm run walk:crm --workspace=@crm-eco/crm",
+    "test:e2e:unit": "npm run walk:crm:unit --workspace=@crm-eco/crm"
   },
   "lint-staged": {
     "apps/**/*.{ts,tsx}": [
@@ -76,6 +78,7 @@
     "zustand": "^4.5.7"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@types/node": "^20.19.30",
     "@vitejs/plugin-react": "^4.7.0",
     "autoprefixer": "^10.4.22",

@@ -1345,6 +1345,7 @@ export function FilterSidebar({
             size="sm"
             className="h-8 shrink-0 text-xs"
             onClick={handleCancel}
+            data-testid="crm-filter-cancel"
           >
             Cancel
           </Button>
@@ -1352,6 +1353,7 @@ export function FilterSidebar({
             size="sm"
             className="h-8 min-w-0 flex-1 text-xs"
             onClick={handleApply}
+            data-testid="crm-filter-apply"
           >
             {applyFilterButtonLabel(variant, Math.max(0, draftCount - incompleteCount))}
           </Button>

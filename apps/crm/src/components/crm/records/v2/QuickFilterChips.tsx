@@ -293,6 +293,8 @@ export const QuickFilterChips = memo(function QuickFilterChips({
           <button
             key={preset.id}
             type="button"
+            data-testid="crm-lane-chip"
+            data-lane={preset.id}
             title={
               errored
                 ? 'Status counts unavailable — retry'

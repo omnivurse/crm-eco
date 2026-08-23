@@ -182,6 +182,7 @@ export function SplitCreateButton({
                     onClick={() => onQuickCreate('contacts')}
                     aria-label="Add Member (quick create)"
                     title="Add Member — quick create (more options in the menu)"
+                    data-testid="crm-create-primary"
                 >
                     <Plus className="w-4 h-4 mr-1.5" />
                     {primaryLabel}
@@ -195,7 +196,7 @@ export function SplitCreateButton({
                     )}
                     asChild
                 >
-                    <Link prefetch={false} href={defaultHref}>
+                    <Link prefetch={false} href={defaultHref} data-testid="crm-create-primary">
                         <Plus className="w-4 h-4 mr-1.5" />
                         {primaryLabel}
                     </Link>

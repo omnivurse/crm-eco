@@ -1056,6 +1056,7 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
         return (
           <div
             key={field.key}
+            data-field-key={field.key}
             className={cn(
               'flex min-w-0 items-baseline gap-3 border-b border-border/40 py-1.5 overflow-hidden',
               fieldSpansFullRow(field) && FULL_ROW_SPAN_CLASS,
@@ -1082,6 +1083,7 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
       return (
         <div
           key={field.key}
+          data-field-key={field.key}
           className={cn(
             'relative min-w-0 max-w-full rounded-md',
             fieldSpansFullRow(field) && FULL_ROW_SPAN_CLASS,
@@ -1435,7 +1437,10 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
     );
 
     return (
-      <div className={cn('rounded-xl border bg-gradient-to-br to-transparent shadow-sm ring-1', accent.wrap)}>
+      <div
+        data-testid="crm-record-snapshot"
+        className={cn('rounded-xl border bg-gradient-to-br to-transparent shadow-sm ring-1', accent.wrap)}
+      >
         <div className="flex flex-col gap-x-6 gap-y-3 p-3 lg:flex-row lg:flex-wrap lg:items-stretch">
           {/* Identity rail — coverage type + carrier / sharing entity */}
           <div className="flex items-start gap-3 lg:w-64 lg:shrink-0">

@@ -394,6 +394,8 @@ export function ZohoContextualSidebar({
                                 prefetch={false}
                                 key={item.key}
                                 href={item.href}
+                                data-testid="crm-sidenav-item"
+                                data-nav-key={item.key}
                                 style={active ? { backgroundColor: 'var(--mod-bg)', color: 'var(--mod-fg)', borderColor: 'var(--mod-border)' } : undefined}
                                 aria-current={active ? 'page' : undefined}
                                 className={cn(
@@ -539,6 +541,8 @@ export function ZohoContextualSidebar({
                                 prefetch={false}
                                 key={item.key}
                                 href={item.href}
+                                data-testid="crm-sidenav-item"
+                                data-nav-key={item.key}
                                 onClick={handleLinkClick}
                                 aria-current={active ? 'page' : undefined}
                                 style={active ? { backgroundColor: 'var(--mod-bg)', color: 'var(--mod-fg)', borderColor: 'var(--mod-border)' } : undefined}

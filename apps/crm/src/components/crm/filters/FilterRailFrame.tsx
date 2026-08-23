@@ -28,10 +28,13 @@ export function FilterRailFrame({
       <aside
         className="hidden h-full w-10 lg:flex"
         aria-label={title}
+        data-testid="crm-filter-rail"
+        data-state="collapsed"
       >
         <button
           type="button"
           onClick={onToggle}
+          data-testid="crm-filter-toggle"
           aria-expanded={false}
           aria-label={`Show ${title}`}
           title={`Show ${title}`}
@@ -60,6 +63,8 @@ export function FilterRailFrame({
     <aside
       className="hidden h-full w-72 min-h-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-white/10 dark:bg-slate-950 lg:flex"
       aria-label={title}
+      data-testid="crm-filter-rail"
+      data-state="open"
     >
       {children}
     </aside>

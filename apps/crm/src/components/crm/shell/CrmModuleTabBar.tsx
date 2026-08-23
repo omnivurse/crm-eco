@@ -80,6 +80,7 @@ export function CrmModuleTabBar({ navProfile = 'full' }: CrmModuleTabBarProps) {
               key={module.key}
               href={module.href}
               data-crm-module={module.key}
+              data-testid="crm-module-tab"
               onClick={() => setActiveModule(module.key)}
               style={
                 isActive

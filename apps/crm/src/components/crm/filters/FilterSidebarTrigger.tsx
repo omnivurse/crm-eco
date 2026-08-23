@@ -52,6 +52,7 @@ export function FilterSidebarTrigger({
           variant="outline"
           size="sm"
           aria-label={activeCount > 0 ? `Filters (${activeCount} active)` : 'Filters'}
+          data-testid="crm-filter-trigger"
           className={cn(
             'h-8 text-xs gap-1.5',
             activeCount > 0 && 'border-primary/40 bg-primary/10 text-primary',

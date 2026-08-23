@@ -812,7 +812,11 @@ export function QuickCreateDrawer({
     }
 
     return (
-      <div key={field.key} className={cn('space-y-1', field.span === 2 && 'sm:col-span-2')}>
+      <div
+        key={field.key}
+        data-field-key={field.key}
+        className={cn('space-y-1', field.span === 2 && 'sm:col-span-2')}
+      >
         {label}
         {control}
       </div>
@@ -882,6 +886,7 @@ export function QuickCreateDrawer({
 
         <form
           className="flex-1 min-h-0 flex flex-col"
+          data-testid="crm-qc-form"
           noValidate
           onSubmit={(e) => {
             e.preventDefault();
@@ -1118,6 +1123,7 @@ export function QuickCreateDrawer({
                       onClick={() => void submit(false, 'another')}
                       className="h-9 border-slate-200 dark:border-white/10"
                       title="Save this one and start the next (Shift+Enter)"
+                      data-testid="crm-qc-save-add-another"
                     >
                       {busy && submitModeRef.current === 'another' ? (
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -1127,7 +1133,12 @@ export function QuickCreateDrawer({
                       Save &amp; add another
                     </Button>
                   )}
-                  <Button type="submit" disabled={busy || !!created} className="h-9 flex-1 min-w-[10rem]">
+                  <Button
+                    type="submit"
+                    disabled={busy || !!created}
+                    className="h-9 flex-1 min-w-[10rem]"
+                    data-testid="crm-qc-submit"
+                  >
                     {checkingDuplicates ? (
                       <>
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />

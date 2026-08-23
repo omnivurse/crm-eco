@@ -364,7 +364,7 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
         moduleSearch={search ?? ''}
         listPager={total > 0 ? (
         <div className="w-full glass-card rounded-lg p-2 border border-slate-200 dark:border-white/10 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-slate-500 dark:text-slate-400">
+          <p className="text-sm text-slate-500 dark:text-slate-400" data-testid="crm-pager-showing">
             Showing <span className="text-slate-900 dark:text-white font-medium">{((page - 1) * pageSize) + 1}</span> to{' '}
             <span className="text-slate-900 dark:text-white font-medium">{Math.min(page * pageSize, total)}</span> of{' '}
             <span className="text-slate-900 dark:text-white font-medium">{total.toLocaleString()}</span> results
@@ -400,7 +400,7 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
                   disabled={page <= 1}
                   asChild
                 >
-                  <Link href={buildListQuery({ page: page - 1 })} prefetch={false}>
+                  <Link href={buildListQuery({ page: page - 1 })} prefetch={false} data-testid="crm-pager-prev">
                     <ChevronLeft className="w-4 h-4 mr-1" />
                     Previous
                   </Link>
@@ -443,7 +443,7 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
                   disabled={page >= totalPages}
                   asChild
                 >
-                  <Link href={buildListQuery({ page: page + 1 })} prefetch={false}>
+                  <Link href={buildListQuery({ page: page + 1 })} prefetch={false} data-testid="crm-pager-next">
                     Next
                     <ChevronRight className="w-4 h-4 ml-1" />
                   </Link>

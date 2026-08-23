@@ -12,7 +12,12 @@
     "typecheck": "tsc --noEmit",
     "precheck": "npm run typecheck && npm run lint",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "walk:crm": "playwright test -c e2e/playwright.config.ts",
+    "walk:crm:ui": "playwright test -c e2e/playwright.config.ts --ui",
+    "walk:crm:ci": "playwright test -c e2e/playwright.config.ts --reporter=list,json",
+    "walk:crm:unit": "vitest run -c e2e/vitest.config.ts",
+    "walk:crm:check": "sh e2e/check-no-raw-actions.sh && tsc --noEmit -p e2e/tsconfig.json"
   },
   "dependencies": {
     "@crm-eco/enrollment": "*",

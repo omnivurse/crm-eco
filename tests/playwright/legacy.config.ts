@@ -1,7 +1,10 @@
+// Legacy Vite-era (port 5173) ticket flow. Not part of the CRM walk — run with:
+//   npx playwright test -c tests/playwright/legacy.config.ts
+
 import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
-  testDir: './tests/playwright',
+  testDir: '.',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,

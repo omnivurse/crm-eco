@@ -1,0 +1,77 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "crm-walk/walk.json",
+  "title": "CRM click-walk run record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["commit", "startedAt", "finishedAt", "env", "traps", "tasks"],
+  "properties": {
+    "commit": { "type": "string", "minLength": 7 },
+    "startedAt": { "type": "string" },
+    "finishedAt": { "type": "string" },
+    "env": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["baseURL", "supabaseUrl", "navProfile", "layoutV2", "viewport", "project", "role"],
+      "properties": {
+        "baseURL": { "type": "string" },
+        "supabaseUrl": { "type": "string" },
+        "navProfile": { "type": "string", "enum": ["full", "simple", "unknown"] },
+        "layoutV2": { "type": "boolean" },
+        "viewport": { "type": "string" },
+        "project": { "type": "string" },
+        "role": { "type": "string", "enum": ["operator", "admin", "viewer"] }
+      }
+    },
+    "traps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "pass", "detail"],
+        "properties": {
+          "name": { "type": "string" },
+          "pass": { "type": "boolean" },
+          "detail": { "type": "string" },
+          "phase": { "type": "string" },
+          "project": { "type": "string" }
+        }
+      }
+    },
+    "tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "label", "clicks", "keypresses", "ms", "budget", "pass", "steps"],
+        "properties": {
+          "id": { "type": "string" },
+          "label": { "type": "string" },
+          "clicks": { "type": "integer", "minimum": 0 },
+          "keypresses": { "type": "integer", "minimum": 0 },
+          "typedChars": { "type": "integer", "minimum": 0 },
+          "ms": { "type": "integer", "minimum": 0 },
+          "budget": { "type": "integer", "minimum": 0 },
+          "pass": { "type": "boolean" },
+          "project": { "type": "string" },
+          "viewport": { "type": "string" },
+          "test": { "type": "string" },
+          "steps": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["label", "shot"],
+              "properties": {
+                "label": { "type": "string" },
+                "shot": { "type": "string" },
+                "kind": { "type": "string" },
+                "ms": { "type": "integer", "minimum": 0 }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -352,6 +352,7 @@ export function NotesPanel({ recordId, notes, orgId, hasLegacyNotes = false }: N
         </Button>
       ) : (
         <div
+          data-testid="crm-notes-composer"
           className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/40 p-3 space-y-3"
           onKeyDown={(e) => {
             if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
@@ -389,6 +390,7 @@ export function NotesPanel({ recordId, notes, orgId, hasLegacyNotes = false }: N
               Cancel
             </Button>
             <Button
+              data-testid="crm-notes-save"
               onClick={handleSubmit}
               disabled={isSubmitting || !newNote.replace(/<[^>]*>/g, '').trim()}
               className="bg-teal-600 hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-400 text-white"

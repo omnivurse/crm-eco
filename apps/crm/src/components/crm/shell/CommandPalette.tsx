@@ -733,6 +733,7 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="flex-1 border-0 focus-visible:ring-0 h-12 placeholder:text-muted-foreground"
+            data-testid="crm-palette-input"
             autoFocus
           />
           {searchLoading ? (
@@ -811,6 +812,7 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
                   return (
                     <button
                       key={cmd.id}
+                      data-testid="crm-palette-result"
                       onClick={() => cmd.action()}
                       className={cn(
                         'w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-muted/50 transition-colors',
