@@ -25,6 +25,7 @@ import {
   Code2,
   Building2,
   ListChecks,
+  HeartPulse,
 } from 'lucide-react';
 import { getCurrentProfile } from '@/lib/crm/queries';
 import { isCrmManagerOrAdminRole } from '@/lib/crm/nav-profile';
@@ -70,6 +71,14 @@ const settingsCards: SettingCard[] = [
     description: 'Choose what people can pick from menus like Membership / Plan — add, rename, hide, and reorder',
     href: '/crm/settings/field-options',
     icon: <ListChecks className="w-6 h-6" />,
+    managerOrAdmin: true,
+    highlight: true,
+  },
+  {
+    title: 'Data Health',
+    description: 'One score for how clean the book is — every check explains itself and links to the fix',
+    href: '/crm/data-health',
+    icon: <HeartPulse className="w-6 h-6" />,
     managerOrAdmin: true,
     highlight: true,
   },
