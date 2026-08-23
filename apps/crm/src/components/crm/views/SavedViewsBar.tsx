@@ -27,6 +27,7 @@ import {
   DialogFooter,
 } from '@crm-eco/ui/components/dialog';
 import { toast } from 'sonner';
+import { toastCopy } from '@/lib/crm/toast-copy';
 import { toastItemDeletedWithUndo } from '@/lib/crm/undo-delete';
 
 /**
@@ -237,8 +238,8 @@ export function useSavedViews(pageKey: string, options: { enabled?: boolean } = 
         setViews((prev) => prev.filter((v) => v.id !== id));
         toastItemDeletedWithUndo({ entity: 'saved_view', id, label: name ? `View "${name}"` : 'View', onUndo: refresh });
         return true;
-      } catch {
-        toast.error('Failed to delete view');
+      } catch (err) {
+        toast.error(toastCopy.failed('delete the view', err, 'Try again'));
         return false;
       }
     },
@@ -334,7 +335,8 @@ function SaveViewForm({
       });
       if (!res.ok) throw new Error('Failed to save');
       const body = (await res.json().catch(() => ({}))) as { data?: SavedView };
-      toast.success(`View "${newViewName.trim()}" saved`);
+      const savedCopy = toastCopy.viewSaved(newViewName, currentFilters.length);
+      toast.success(savedCopy.title, { description: savedCopy.description });
       onClose();
       onSaved?.(
         body.data ?? {
@@ -346,8 +348,8 @@ function SaveViewForm({
           created_at: new Date().toISOString(),
         },
       );
-    } catch {
-      toast.error('Failed to save view');
+    } catch (err) {
+      toast.error(toastCopy.failed('save the view', err, 'Try again'));
       setSaving(false);
     }
   };

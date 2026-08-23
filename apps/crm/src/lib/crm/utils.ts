@@ -77,3 +77,26 @@ export function getFieldOptions(options: unknown, fieldKey?: string | null): str
   // For any other type (null, undefined, object, etc.), return empty array
   return [];
 }
+
+export interface SelectOptionWithCurrent {
+  value: string;
+  label: string;
+}
+
+/**
+ * Select options that always include the value currently stored on the
+ * record. Mirrors `usStateOptionsWith` (lib/crm/us-states): a legacy spelling
+ * that is not in `crm_fields.options` (e.g. "Sedera Access+ (legacy)") is
+ * prepended as its own option so a closed Select can DISPLAY it instead of
+ * blanking — it is never rewritten, the user has to pick something else for
+ * it to change. Blank / whitespace current values add nothing.
+ */
+export function optionsWithCurrent(
+  options: readonly string[],
+  current: string | null | undefined,
+): SelectOptionWithCurrent[] {
+  const base = options.map((o) => ({ value: o, label: o }));
+  const t = String(current ?? '').trim();
+  if (!t || options.includes(t)) return base;
+  return [{ value: t, label: t }, ...base];
+}

@@ -161,3 +161,65 @@ export function browserCounterInitScript(keys: { storage: string; typing: string
     true,
   );
 }
+
+// ---------------------------------------------------------------------------
+// Task outcome (EV-5 soft mode)
+// ---------------------------------------------------------------------------
+
+export interface TaskOutcomeInput {
+  /** The error `fn` threw, or null when it returned. */
+  failure: unknown;
+  clicks: number;
+  budget: number;
+  /**
+   * Soft tasks record `pass=false` and let the spec continue instead of
+   * failing the test — for budgets/assertions about work a later wave ships.
+   */
+  soft: boolean;
+}
+
+export interface TaskOutcome {
+  pass: boolean;
+  /** Why the task did not pass (null when it passed). */
+  reason: string | null;
+  /** Error the wrapper must rethrow (null in soft mode or when nothing failed). */
+  rethrow: unknown;
+  /** True when the wrapper must still assert the click budget (hard mode only). */
+  assertBudget: boolean;
+}
+
+/** Playwright colours its assertion messages; walk.json wants plain text. */
+function stripAnsi(s: string): string {
+  return s.replace(/\u001b\[[0-9;]*m/g, '');
+}
+
+/** First meaningful lines of an error (assertion + Locator/Expected lines), ANSI-free, ≤ 240 chars. */
+export function describeFailure(failure: unknown): string {
+  const raw = failure instanceof Error ? failure.message || failure.name : String(failure);
+  const lines = stripAnsi(raw)
+    .split('\n')
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0 && !/^(Call log|Timeout|Error: element|- )/i.test(l));
+  const text = lines.slice(0, 3).join(' · ');
+  return text.length > 240 ? `${text.slice(0, 237)}…` : text || 'failed';
+}
+
+/**
+ * `pass` is honest in both modes: an assertion failure OR a blown click budget
+ * is a fail. Hard mode (default) rethrows the failure / asserts the budget so
+ * the Playwright test fails; soft mode swallows both and only records them.
+ */
+export function resolveTaskOutcome(input: TaskOutcomeInput): TaskOutcome {
+  const overBudget = input.clicks > input.budget;
+  const failed = input.failure !== null && input.failure !== undefined;
+  const pass = !failed && !overBudget;
+  let reason: string | null = null;
+  if (failed) reason = describeFailure(input.failure);
+  else if (overBudget) reason = `over click budget (${input.clicks} > ${input.budget})`;
+  return {
+    pass,
+    reason,
+    rethrow: failed && !input.soft ? input.failure : null,
+    assertBudget: !input.soft,
+  };
+}

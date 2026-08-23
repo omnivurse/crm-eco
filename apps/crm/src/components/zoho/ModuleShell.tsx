@@ -47,6 +47,7 @@ import {
 } from '@/lib/crm/list-preferences';
 import type { CrmModule, CrmField, CrmView, CrmRecord, CrmTerritory, ViewFilter, ViewMode } from '@/lib/crm/types';
 import { CRM_SPOTLIGHT_SEARCH_LIMIT } from '@/lib/crm/search-limits';
+import { forwardListUrlQueryParams } from '@/lib/crm/list-query-resolve';
 import { pickDefaultListColumns } from '@/lib/crm/default-list-columns';
 import { toastDeletedWithUndo } from '@/lib/crm/undo-delete';
 import { getFieldOptions } from '@/lib/crm/utils';
@@ -183,6 +184,14 @@ export const ModuleShell = memo(function ModuleShell({
 
   // Derived state
   const selectedCount = selectedIds.size;
+  // Lower-cased module noun for counted toasts ("Exported 3 members").
+  const recordNoun = useMemo(
+    () => ({
+      one: (module.name || 'record').toLowerCase(),
+      other: (module.name_plural || 'records').toLowerCase(),
+    }),
+    [module.name, module.name_plural],
+  );
 
   // Mobile: collapse the right-side toolbar cluster into a bottom sheet
   // and auto-swap the `table` view for `list` since tables are effectively
@@ -498,9 +507,12 @@ export const ModuleShell = memo(function ModuleShell({
   }, [router, module.key, listPrefsSave]);
 
   /**
-   * Select every record matching the current list-page filter state, across
-   * pagination boundaries. Uses the dedicated IDs-only endpoint so we don't
-   * pull full rows; capped at 5k by the server.
+   * Select every record matching the current list-page state — the same
+   * view / filters / search / scope / territory the server rendered this list
+   * from — across pagination boundaries. Forwards the list URL's row-set
+   * params exactly as page.tsx `buildListQuery` writes them to the dedicated
+   * IDs-only endpoint, which resolves them with the page's own query builder;
+   * capped at 5k by the server.
    */
   const handleSelectAll = useCallback(async () => {
     // Fast path — if everything the user could see is already loaded (single
@@ -512,23 +524,14 @@ export const ModuleShell = memo(function ModuleShell({
 
     const params = new URLSearchParams();
     params.set('module_key', module.key);
-    const search = searchParamsRef.current.get('search');
-    if (search) params.set('search', search);
-    const advisorId = searchParamsRef.current.get('advisor_id');
-    if (advisorId) params.set('advisor_id', advisorId);
-    const includeDownline = searchParamsRef.current.get('include_downline');
-    if (includeDownline) params.set('include_downline', includeDownline);
-    const contactType = searchParamsRef.current.get('contact_type');
-    if (contactType) params.set('contact_type', contactType);
-    const groupId = searchParamsRef.current.get('group_id');
-    if (groupId) params.set('group_id', groupId);
+    forwardListUrlQueryParams(searchParamsRef.current, params);
 
     try {
       const res = await fetch(`/api/crm/records/ids?${params.toString()}`, {
         credentials: 'same-origin',
       });
       if (!res.ok) {
-        toast.error('Failed to select all records');
+        toast.error(toastCopy.failed('select all records', undefined, 'Try again'));
         return;
       }
       const body = (await res.json()) as {
@@ -538,17 +541,13 @@ export const ModuleShell = memo(function ModuleShell({
       };
       setSelectedIds(new Set(body.ids));
       if (body.capped) {
-        toast.warning(
-          `Selected first ${body.ids.length.toLocaleString()} of ${body.total.toLocaleString()} matches`,
-          { description: 'Narrow your filters to act on all rows.' },
-        );
+        const capped = toastCopy.cappedSelection(body.ids.length, body.total);
+        toast.warning(capped.title, { description: capped.description });
       } else {
-        toast.success(`Selected ${body.ids.length.toLocaleString()} records`);
+        toast.success(toastCopy.counted('record', body.ids.length, 'Selected'));
       }
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : 'Failed to select all records',
-      );
+      toast.error(toastCopy.failed('select all records', err, 'Try again'));
     }
   }, [records, totalCount, module.key]);
 
@@ -643,7 +642,8 @@ export const ModuleShell = memo(function ModuleShell({
    * `/api/crm/records/bulk`. If every requested row came back in
    * `updated_ids`, this looks like a normal success toast. If some were
    * skipped (RLS / wrong org / deleted) or failed, we surface the counts
-   * and escalate to `warning` / `error` accordingly.
+   * and escalate to `warning` / `error` accordingly. Copy + tiers come from
+   * `toastCopy.partial` ("Status updated · 12 records").
    */
   const reportBulkResult = useCallback(
     (
@@ -655,24 +655,13 @@ export const ModuleShell = memo(function ModuleShell({
       },
       successTitle: string,
       unit = 'record',
+      detail?: string,
     ) => {
       const changed = (result.updated_ids ?? result.deleted_ids ?? []).length;
       const skipped = (result.skipped_ids ?? []).length;
       const failed = (result.failed ?? []).length;
-      const unitPlural = changed === 1 ? unit : `${unit}s`;
-      const parts: string[] = [`${changed} ${unitPlural}`];
-      if (skipped > 0) parts.push(`${skipped} skipped`);
-      if (failed > 0) parts.push(`${failed} failed`);
-      const desc = parts.join(' · ');
-      if (failed > 0) {
-        toast.error(successTitle, { description: desc });
-      } else if (skipped > 0) {
-        toast.warning(successTitle, {
-          description: `${desc} — skipped rows may be in another org or deleted.`,
-        });
-      } else {
-        toast.success(successTitle, { description: desc });
-      }
+      const copy = toastCopy.partial(successTitle, { changed, skipped, failed }, { unit, detail });
+      toast[copy.tone](copy.title, { description: copy.description });
     },
     [],
   );
@@ -686,7 +675,7 @@ export const ModuleShell = memo(function ModuleShell({
 
   const handleConfirmAssignOwner = useCallback(async () => {
     if (!selectedOwnerId) {
-      toast.error('Please select an owner');
+      toast.error(toastCopy.chooseFirst('an owner'));
       return;
     }
 
@@ -720,13 +709,12 @@ export const ModuleShell = memo(function ModuleShell({
       setSelectedIds(new Set());
       router.refresh();
     } else if (sendResult.queued) {
-      toast.info(
-        `Queued for ${count} record${count === 1 ? '' : 's'} — will sync when reconnected`,
-      );
+      const q = toastCopy.queued('record', count);
+      toast.info(q.title, { description: q.description });
       setShowAssignOwnerDialog(false);
       setSelectedIds(new Set());
     } else {
-      toast.error(sendResult.error || 'Failed to assign owner');
+      toast.error(toastCopy.failed('assign the owner', sendResult.error, 'Try again'));
     }
   }, [selectedOwnerId, selectedIds, router, reportBulkResult, module.key, module.id]);
 
@@ -738,7 +726,7 @@ export const ModuleShell = memo(function ModuleShell({
 
   const handleConfirmStatusChange = useCallback(async () => {
     if (!selectedStatus) {
-      toast.error('Please select a status');
+      toast.error(toastCopy.chooseFirst('a status'));
       return;
     }
 
@@ -761,18 +749,17 @@ export const ModuleShell = memo(function ModuleShell({
 
     if (sendResult.ok) {
       const result = await sendResult.response.json();
-      reportBulkResult(result, `Status → "${selectedStatus}"`);
+      reportBulkResult(result, 'Status updated', 'record', `Now "${selectedStatus}"`);
       setShowStatusDialog(false);
       setSelectedIds(new Set());
       router.refresh();
     } else if (sendResult.queued) {
-      toast.info(
-        `Queued for ${count} record${count === 1 ? '' : 's'} — will sync when reconnected`,
-      );
+      const q = toastCopy.queued('record', count);
+      toast.info(q.title, { description: q.description });
       setShowStatusDialog(false);
       setSelectedIds(new Set());
     } else {
-      toast.error(sendResult.error || 'Failed to update status');
+      toast.error(toastCopy.failed('update the status', sendResult.error, 'Try again'));
     }
   }, [selectedStatus, selectedIds, router, reportBulkResult, module.key, module.id]);
 
@@ -783,7 +770,7 @@ export const ModuleShell = memo(function ModuleShell({
 
   const handleConfirmStageChange = useCallback(async () => {
     if (!selectedStage) {
-      toast.error('Please select a stage');
+      toast.error(toastCopy.chooseFirst('a stage'));
       return;
     }
 
@@ -806,18 +793,17 @@ export const ModuleShell = memo(function ModuleShell({
 
     if (sendResult.ok) {
       const result = await sendResult.response.json();
-      reportBulkResult(result, `Stage → "${selectedStage}"`, 'deal');
+      reportBulkResult(result, 'Stage updated', 'deal', `Now "${selectedStage}"`);
       setShowStageDialog(false);
       setSelectedIds(new Set());
       router.refresh();
     } else if (sendResult.queued) {
-      toast.info(
-        `Queued for ${count} deal${count === 1 ? '' : 's'} — will sync when reconnected`,
-      );
+      const q = toastCopy.queued('deal', count);
+      toast.info(q.title, { description: q.description });
       setShowStageDialog(false);
       setSelectedIds(new Set());
     } else {
-      toast.error(sendResult.error || 'Failed to update stage');
+      toast.error(toastCopy.failed('update the stage', sendResult.error, 'Try again'));
     }
   }, [selectedStage, selectedIds, router, reportBulkResult, module.key, module.id]);
 
@@ -847,15 +833,15 @@ export const ModuleShell = memo(function ModuleShell({
       setAvailableTags((prev) => [...prev, newTag]);
       setSelectedTagIds((prev) => [...prev, newTag.id]);
       setNewTagName('');
-      toast.success(`Tag "${newTag.name}" created`);
+      toast.success(toastCopy.added(`Tag "${newTag.name}"`));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to create tag');
+      toast.error(toastCopy.failed('create the tag', error, 'Try again'));
     }
   }, [newTagName]);
 
   const handleConfirmAddTag = useCallback(async () => {
     if (selectedTagIds.length === 0) {
-      toast.error('Please select at least one tag');
+      toast.error(toastCopy.chooseFirst('at least one tag'));
       return;
     }
 
@@ -875,14 +861,14 @@ export const ModuleShell = memo(function ModuleShell({
         throw new Error(error.error || 'Failed to add tags');
       }
 
-      toast.success(`Tags added successfully`, {
-        description: `Added ${selectedTagIds.length} tag(s) to ${selectedIds.size} records`,
+      toast.success(toastCopy.bulkTitle('Tags added', selectedIds.size), {
+        description: toastCopy.counted('tag', selectedTagIds.length, 'Applied'),
       });
       setShowAddTagDialog(false);
       setSelectedIds(new Set());
       router.refresh();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to add tags');
+      toast.error(toastCopy.failed('add the tags', error, 'Try again'));
     } finally {
       setIsProcessing(false);
     }
@@ -936,19 +922,18 @@ export const ModuleShell = memo(function ModuleShell({
         });
       } else {
         // Partial failure/skip → keep the detailed counts toast.
-        reportBulkResult(result, 'Records moved to Trash');
+        reportBulkResult(result, 'Moved to Trash');
       }
       setShowDeleteDialog(false);
       setSelectedIds(new Set());
       router.refresh();
     } else if (sendResult.queued) {
-      toast.info(
-        `Queued delete for ${count} record${count === 1 ? '' : 's'} — will sync when reconnected`,
-      );
+      const q = toastCopy.queued('record', count);
+      toast.info(q.title, { description: q.description });
       setShowDeleteDialog(false);
       setSelectedIds(new Set());
     } else {
-      toast.error(sendResult.error || 'Failed to delete records');
+      toast.error(toastCopy.failed('delete the records', sendResult.error, 'Try again'));
     }
   }, [selectedIds, router, reportBulkResult, module.key, module.id]);
 
@@ -956,7 +941,13 @@ export const ModuleShell = memo(function ModuleShell({
     if (selectedCount > 0) {
       const recordsToExport = records.filter((r) => selectedIds.has(r.id));
       if (recordsToExport.length === 0) {
-        toast.error('No records to export');
+        toast.error(
+          toastCopy.failed(
+            'export the selection',
+            'none of the selected records are on this page',
+            'Clear the selection to export everything matching',
+          ),
+        );
         return;
       }
 
@@ -1000,14 +991,13 @@ export const ModuleShell = memo(function ModuleShell({
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
-      toast.success(`Exported ${recordsToExport.length} selected ${module.name_plural || 'records'}`);
+      toast.success(toastCopy.counted(recordNoun, recordsToExport.length, 'Exported'));
       return;
     }
 
-    if (totalCount === 0) {
-      toast.error('No records to export');
-      return;
-    }
+    // The header disables Export at zero rows (D9: no toast); this guard only
+    // covers a stale click racing a refetch.
+    if (totalCount === 0) return;
 
     const params = new URLSearchParams();
     params.set('module_key', module.key);
@@ -1039,7 +1029,7 @@ export const ModuleShell = memo(function ModuleShell({
     params.set('columns', visibleColumns.join(','));
 
     const toastId = 'crm-export-csv';
-    toast.loading('Building CSV…', { id: toastId });
+    toast.loading(toastCopy.loadingCopy('Building CSV'), { id: toastId });
     try {
       const res = await fetch(`/api/crm/records/export-csv?${params.toString()}`);
       if (!res.ok) {
@@ -1063,10 +1053,8 @@ export const ModuleShell = memo(function ModuleShell({
       document.body.removeChild(link);
       URL.revokeObjectURL(dlUrl);
 
-      toast.success(`Exported all matching ${module.name_plural || 'records'}`, {
-        id: toastId,
-        description: 'Same filters and sort as this list (up to 100k rows).',
-      });
+      const done = toastCopy.exportedAll(recordNoun);
+      toast.success(done.title, { id: toastId, description: done.description });
     } catch (e) {
       toast.error(toastCopy.failed('export these records', e, 'Try again'), { id: toastId });
     }
@@ -1077,6 +1065,7 @@ export const ModuleShell = memo(function ModuleShell({
     visibleColumns,
     fields,
     module,
+    recordNoun,
     totalCount,
     filters,
     activeViewId,
@@ -1100,9 +1089,8 @@ export const ModuleShell = memo(function ModuleShell({
   }, [module.key]);
 
   const handleSaveView = useCallback((name: string, viewFilters: ViewFilter[]) => {
-    toast.success(`View "${name}" saved`, {
-      description: `${viewFilters.length} filters applied`,
-    });
+    const copy = toastCopy.viewSaved(name, viewFilters.length);
+    toast.success(copy.title, { description: copy.description });
   }, []);
 
   // View mode change handler - also persists to URL
@@ -1240,6 +1228,7 @@ export const ModuleShell = memo(function ModuleShell({
       <ModuleHeader
         module={module}
         totalCount={totalCount}
+        selectedCount={selectedCount}
         onExport={handleExport}
       />
 

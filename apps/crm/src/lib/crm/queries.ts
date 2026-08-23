@@ -476,33 +476,66 @@ export interface RecordQueryResult {
   totalPages: number;
 }
 
-export async function getRecords(options: RecordQueryOptions): Promise<RecordQueryResult> {
+/**
+ * The WHICH-rows half of `RecordQueryOptions`: everything that decides whether
+ * a record is in the list (org, trash, hide-converted, territory, scope,
+ * system/related/field filters, text search) — nothing about paging, sorting
+ * or the select list.
+ */
+export type RecordListPredicateOptions = Pick<
+  RecordQueryOptions,
+  | 'moduleId'
+  | 'orgId'
+  | 'filters'
+  | 'search'
+  | 'searchDataJsonKeys'
+  | 'scope'
+  | 'territoryId'
+  | 'moduleKey'
+  | 'hideConvertedLeads'
+>;
+
+/**
+ * Apply the module-list predicate to a `crm_records` query that already has
+ * `.select(…).eq('module_id', moduleId)` on it. ONE builder for every
+ * consumer of "the rows this list shows": `getRecords` (page rows + exact
+ * count, CSV export) and the ids-only "Select all N" endpoint
+ * (`/api/crm/records/ids`). Keeping a single predicate is what makes the
+ * pager total, the chip counts, the export and a cross-page selection agree.
+ *
+ * The predicates are applied in a fixed order (org → trash → hide-converted →
+ * territory → scope → system presets → related → field filters → search) so a
+ * recorded filter chain is comparable across callers (see
+ * `api/crm/records/ids/route.test.ts`). Paging/sorting stay with the caller.
+ *
+ * Returns `{ query }` rather than the bare builder on purpose: a PostgREST
+ * builder is a thenable, so resolving an async function WITH it would run the
+ * query (and TypeScript would unwrap it to the response type).
+ */
+export async function applyRecordListQuery<Q>(
+  base: Q,
+  opts: RecordListPredicateOptions,
+): Promise<{ query: Q }> {
   const supabase = await createCrmClient();
   const {
     moduleId,
     orgId,
-    page = 1,
-    pageSize = 25,
     filters = [],
-    sort = [],
     search,
     searchDataJsonKeys,
     scope = 'all',
     territoryId,
-    includeCount = true,
     moduleKey,
     hideConvertedLeads,
-  } = options;
+  } = opts;
 
   const shouldHideConvertedLeads =
     hideConvertedLeads ?? moduleKey === 'leads';
 
-  let query = includeCount
-    ? supabase
-        .from('crm_records')
-        .select('*', { count: 'exact' })
-        .eq('module_id', moduleId)
-    : supabase.from('crm_records').select('*').eq('module_id', moduleId);
+  // The PostgREST builder's generic signature changes with every select
+  // shape; the predicate only needs the structural filter methods, so work
+  // on an untyped handle and hand the caller's type back unchanged.
+  let query: any = base;
 
   if (orgId) {
     query = query.eq('org_id', orgId);
@@ -801,6 +834,51 @@ export async function getRecords(options: RecordQueryOptions): Promise<RecordQue
     }
     query = applyCrmRecordTextSearch(query, search, { dataJsonKeys });
   }
+
+  return { query: query as Q };
+}
+
+export async function getRecords(options: RecordQueryOptions): Promise<RecordQueryResult> {
+  const supabase = await createCrmClient();
+  const {
+    moduleId,
+    orgId,
+    page = 1,
+    pageSize = 25,
+    filters = [],
+    sort = [],
+    search,
+    searchDataJsonKeys,
+    scope = 'all',
+    territoryId,
+    includeCount = true,
+    moduleKey,
+    hideConvertedLeads,
+  } = options;
+
+  const shouldHideConvertedLeads =
+    hideConvertedLeads ?? moduleKey === 'leads';
+
+  const baseQuery = includeCount
+    ? supabase
+        .from('crm_records')
+        .select('*', { count: 'exact' })
+        .eq('module_id', moduleId)
+    : supabase.from('crm_records').select('*').eq('module_id', moduleId);
+
+  // Shared WHICH-rows predicate (same builder as the ids-only "Select all N"
+  // endpoint) — see applyRecordListQuery above.
+  let { query } = await applyRecordListQuery(baseQuery, {
+    moduleId,
+    orgId,
+    filters,
+    search,
+    searchDataJsonKeys,
+    scope,
+    territoryId,
+    moduleKey,
+    hideConvertedLeads,
+  });
 
   // Apply sorting — real columns on crm_records vs JSONB `data` paths
   if (sort.length > 0) {

@@ -103,7 +103,7 @@ export function isCrmJsonbDateFieldKey(key: string): boolean {
 }
 
 /** True when month/day form a real calendar date (rejects 01/00, 0000-00-00, etc.). */
-function isValidCalendarDateParts(year: number, month: number, day: number): boolean {
+export function isValidCalendarDateParts(year: number, month: number, day: number): boolean {
   if (month < 1 || month > 12 || day < 1 || day > 31) return false;
   const probe = new Date(year, month - 1, day);
   return (

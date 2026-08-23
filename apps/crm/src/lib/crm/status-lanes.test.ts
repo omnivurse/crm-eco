@@ -16,6 +16,8 @@ import {
   parseStatusValuesRpcResult,
   statusLane,
   statusValuesRpcArgs,
+  assertJsonbRpcArgs,
+  REPORT_AGGREGATION_JSONB_PARAMS,
   type StatusLane,
 } from './status-lanes';
 
@@ -253,9 +255,42 @@ describe('status-values RPC helpers', () => {
     const args = statusValuesRpcArgs('org-1', 'mod-1');
     expect(args.p_org_id).toBe('org-1');
     expect(args.p_module_id).toBe('mod-1');
-    expect(JSON.parse(args.p_filters)).toEqual([{ field: 'deleted_at', operator: 'is_null' }]);
-    expect(JSON.parse(args.p_grouping)).toEqual([{ field: 'status' }]);
-    expect(JSON.parse(args.p_aggregations)).toEqual([{ field: 'id', function: 'count' }]);
+    expect(args.p_table).toBe('crm_records');
+    expect(args.p_org_column).toBe('org_id');
+    expect(args.p_filters).toEqual([{ field: 'deleted_at', operator: 'is_null' }]);
+    expect(args.p_grouping).toEqual([{ field: 'status' }]);
+    expect(args.p_aggregations).toEqual([{ field: 'id', function: 'count' }]);
+    expect(args.p_sorting).toEqual([{ column: 'count_id', direction: 'desc' }]);
+  });
+
+  // Regression: prod 2026-08-22 — the jsonb params were JSON.stringify()'d, so
+  // PostgREST received jsonb *scalars* and execute_report_aggregation failed
+  // with 22023 "cannot extract elements from a scalar" (every lane chip 500'd).
+  it('passes the jsonb params as real arrays, never strings (prod 22023 regression)', () => {
+    const args = statusValuesRpcArgs('org-1', 'mod-1');
+    for (const key of REPORT_AGGREGATION_JSONB_PARAMS) {
+      expect(Array.isArray(args[key]), `${key} must be an array`).toBe(true);
+      expect(typeof args[key]).not.toBe('string');
+    }
+    expect(() => assertJsonbRpcArgs(args)).not.toThrow();
+    // What supabase-js puts on the wire: one JSON.stringify of the whole args
+    // object. The jsonb params must still be arrays after that round trip.
+    const wire = JSON.parse(JSON.stringify(args)) as Record<string, unknown>;
+    for (const key of REPORT_AGGREGATION_JSONB_PARAMS) {
+      expect(Array.isArray(wire[key]), `${key} must be an array on the wire`).toBe(true);
+    }
+  });
+
+  it('assertJsonbRpcArgs rejects stringified / object jsonb params and accepts arrays or absent', () => {
+    const good = statusValuesRpcArgs('org-1', 'mod-1');
+    expect(() => assertJsonbRpcArgs({ ...good, p_filters: JSON.stringify(good.p_filters) })).toThrow(
+      /p_filters must be a JSON array/,
+    );
+    expect(() => assertJsonbRpcArgs({ ...good, p_sorting: '[]' })).toThrow(/p_sorting/);
+    expect(() => assertJsonbRpcArgs({ ...good, p_grouping: { field: 'status' } })).toThrow(/p_grouping/);
+    expect(() => assertJsonbRpcArgs({ ...good, p_aggregations: [] })).not.toThrow();
+    expect(() => assertJsonbRpcArgs({ p_org_id: 'org-1', p_table: 'crm_records' })).not.toThrow();
+    expect(() => assertJsonbRpcArgs({ ...good, p_sorting: null })).not.toThrow();
   });
 
   it('parses the RPC payload and drops null/blank statuses', () => {

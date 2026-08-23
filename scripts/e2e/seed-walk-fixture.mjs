@@ -20,13 +20,24 @@
  *     crm_layouts row per module (prod sections incl. the core 'hero' variant)
  *   - records (statuses are checked against crm_status_vocabulary BEFORE any
  *     insert — the DB guard trigger rejects anything else):
- *       contacts: 'Wendy Walker' (phone 5550107788 in the phone COLUMN,
+ *       contacts: 'Wendy Walker' (phone 5550107788 in the phone COLUMN —
+ *       unique WITHIN CONTACTS; her members twin WALK-0001 below carries the
+ *       same phone on purpose, like prod contact/member twins do —
  *       member_number WALK-0001, Active, product + sharing_effective_date
  *       2026-09-01, producer_name 'Wen Producer'), four Pending-lane contacts
  *       with created_at spread over days — 'Pat Pending' (5550107701) is the
  *       oldest — and 30 filler contacts so the list pages at 25/page (≥32)
  *       leads: 'Lee Lead'  ·  advisors: 'Wen Producer'  ·  members: 3 rows
  *       one legacy crm_notes row on Wendy
+ *   - Road to Ten DE-1 (LOCAL ONLY): the tier-A Health Sharing Membership
+ *     options from scripts/e2e/product-options.proposed.json are written into
+ *     LOCAL crm_fields.options for contacts.product and leads.product_type —
+ *     the prod write is a gated migration the orchestrator owns, so these two
+ *     option lists are excluded from the prod-alignment step below.
+ *   - Road to Ten DE-3 (D5 as adjusted): public.advisors rows for PIFH —
+ *     'Wen Producer', 'Pat Producer', 'Pia Producer' (deterministic ids) —
+ *     seeded when the table has no PIFH producers yet; fixture records carry
+ *     producer_record_id = public.advisors.id of Wen Producer.
  *     Every fixture record carries data.walk_fixture = true and a deterministic
  *     uuid, so re-runs UPDATE in place — never duplicate.
  *
@@ -45,6 +56,9 @@
  *   LOCAL_DB_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres \
  *     node scripts/e2e/seed-walk-fixture.mjs
  *   node scripts/e2e/seed-walk-fixture.mjs --verify-only   # checks, no writes
+ *   node scripts/e2e/seed-walk-fixture.mjs --prune-walk-rows # + delete the rows a
+ *       previous walk created (first_name 'Walk' records, 'Walk T3…' notes on the
+ *       anchor) so every recorded walk starts from the same lane counts
  *
  * Exit codes: 0 seeded + verified · 1 verification failed · 2 refused/config.
  */
@@ -68,6 +82,7 @@ const LOCAL_DEMO_ANON_KEY =
 const ANON_KEY = process.env.LOCAL_ANON_KEY || LOCAL_DEMO_ANON_KEY;
 const DB_URL = process.env.LOCAL_DB_URL || 'postgresql://postgres:postgres@127.0.0.1:54322/postgres';
 const VERIFY_ONLY = process.argv.includes('--verify-only');
+const PRUNE_WALK_ROWS = process.argv.includes('--prune-walk-rows');
 
 function hostOf(url) {
   try {
@@ -148,6 +163,16 @@ const FILLER_FIRST = ['Ana', 'Ben', 'Cara', 'Dev', 'Elin', 'Finn', 'Gia', 'Hugo'
 const FILLER_LAST = ['Alder', 'Birch', 'Cedar', 'Dune', 'Elm', 'Fern', 'Grove', 'Heath', 'Isle', 'Juniper', 'Kelp', 'Larch', 'Moss', 'Nook', 'Oak', 'Pine', 'Quill', 'Reed', 'Sage', 'Thorn', 'Umber', 'Vale', 'Willow', 'Xenia', 'Yew', 'Zinnia', 'Ash', 'Bay', 'Cove', 'Dell'];
 const FILLER_STATUS = ['Active', 'Active', 'Inactive', 'Cancelled', 'Active', 'In Process'];
 const FILLER_COUNT = 30;
+/** public.advisors producers (DE-3). Wen is the anchor's "Enrolled by". */
+export const PRODUCERS = [
+  { key: 'wen', first_name: 'Wen', last_name: 'Producer', agency_name: 'Walk Agency', advisor_code: 'WALK-WEN' },
+  { key: 'pat', first_name: 'Pat', last_name: 'Producer', agency_name: 'Walk Agency', advisor_code: 'WALK-PAT' },
+  { key: 'pia', first_name: 'Pia', last_name: 'Producer', agency_name: 'Second Agency', advisor_code: 'WALK-PIA' },
+];
+const producerId = (key) => uuid5(`advisor:public:${key}`);
+/** (module_key:field_key) pairs whose options are a LOCAL override (DE-1) — never aligned back to prod's empty list. */
+const LOCAL_OPTION_OVERRIDES = new Set(['contacts:product', 'leads:product_type']);
+const PRODUCT_OPTIONS_PATH = path.join(HERE, 'product-options.proposed.json');
 
 // ---------------------------------------------------------------------------
 // 1) auth users + profiles
@@ -296,7 +321,10 @@ async function seedFields(modByKey) {
       // to prod so the walk sees prod labels/types/sections — config mirror, not
       // invention. Only columns that differ are written.
       const patch = {};
-      for (const k of MIRRORED) if (JSON.stringify(cur[k] ?? null) !== JSON.stringify(want[k] ?? null)) patch[k] = want[k];
+      for (const k of MIRRORED) {
+        if (k === 'options' && LOCAL_OPTION_OVERRIDES.has(`${f.module_key}:${f.key}`)) continue;
+        if (JSON.stringify(cur[k] ?? null) !== JSON.stringify(want[k] ?? null)) patch[k] = want[k];
+      }
       if (Object.keys(patch).length) {
         must(await sb.from('crm_fields').update(patch).eq('id', cur.id), `field align ${f.module_key}.${f.key}`);
         aligned.push(`${f.module_key}.${f.key} ${Object.keys(patch).join('/')}`);
@@ -311,6 +339,60 @@ async function seedFields(modByKey) {
   console.log(`fields          ${inserts.length} missing inserted, ${have.size} already present (${aligned.length} aligned to prod)`);
   for (const d of aligned.slice(0, 20)) console.log(`   aligned  ${d}`);
   if (aligned.length > 20) console.log(`   … ${aligned.length - 20} more`);
+}
+
+/**
+ * DE-1 (local only): tier-A Health Sharing Membership options → LOCAL
+ * crm_fields.options for contacts.product + leads.product_type. Idempotent:
+ * writes only when the stored list differs. Matches by module key + field key.
+ */
+async function seedProductOptions(modByKey) {
+  const proposal = JSON.parse(readFileSync(PRODUCT_OPTIONS_PATH, 'utf8'));
+  const tierA = (proposal.options ?? []).filter((o) => o.tier === 'A').map((o) => o.value);
+  if (tierA.length === 0) throw new Error('product-options.proposed.json has no tier-A options');
+  const targets = [
+    ['contacts', 'product'],
+    ['leads', 'product_type'],
+  ];
+  let written = 0;
+  for (const [moduleKey, key] of targets) {
+    const moduleId = modByKey.get(moduleKey);
+    if (!moduleId) continue;
+    const cur = must(await sb.from('crm_fields').select('id,options,type').eq('module_id', moduleId).eq('key', key).maybeSingle(), `field ${moduleKey}.${key}`);
+    if (!cur) {
+      console.log(`   skip  ${moduleKey}.${key} has no crm_fields row locally`);
+      continue;
+    }
+    if (JSON.stringify(cur.options ?? []) === JSON.stringify(tierA)) continue;
+    must(await sb.from('crm_fields').update({ options: tierA }).eq('id', cur.id), `product options ${moduleKey}.${key}`);
+    written += 1;
+  }
+  console.log(`product opts    ${tierA.length} tier-A options on contacts.product + leads.product_type (${written} written, LOCAL only)`);
+}
+
+/**
+ * DE-3: public.advisors producers for PIFH (the "Enrolled by" picker source).
+ * Deterministic ids so re-runs update in place. Written through psql with
+ * `session_replication_role = replica` ON PURPOSE: public.advisors carries an
+ * AFTER INSERT trigger (sync_advisor_to_crm_records) that would clone every
+ * producer into the CRM 'advisors' module — and prod does NOT have those twins
+ * (672 public.advisors vs 18 crm_records advisors), so the fixture mirrors prod
+ * by skipping the sync; it also avoids the email collision with the fixture's
+ * own 'Wen Producer' crm_records row. Local stack only (guarded above).
+ */
+async function seedProducers() {
+  const esc = (v) => String(v).replace(/'/g, "''");
+  const values = PRODUCERS.map(
+    (p) =>
+      `('${producerId(p.key)}','${ORG_ID}','${esc(p.first_name)}','${esc(p.last_name)}','${esc(p.agency_name)}','${esc(p.advisor_code)}','active','${esc(`${p.first_name}.${p.last_name}@example.invalid`.toLowerCase())}')`,
+  );
+  psql(
+    `begin; set local session_replication_role = replica; ` +
+      `insert into public.advisors (id, organization_id, first_name, last_name, agency_name, advisor_code, status, email) values ${values.join(',')} ` +
+      `on conflict (id) do update set first_name=excluded.first_name, last_name=excluded.last_name, agency_name=excluded.agency_name, advisor_code=excluded.advisor_code, status=excluded.status, email=excluded.email, deleted_at=null, updated_at=now(); commit;`,
+  );
+  const n = psql(`select count(*) from public.advisors where organization_id='${ORG_ID}' and deleted_at is null`);
+  console.log(`producers       ${PRODUCERS.length} public.advisors upserted, triggers skipped (PIFH live producers now ${n})`);
 }
 
 async function seedViews(modByKey) {
@@ -378,7 +460,9 @@ function buildRecords(modByKey, ownerId) {
     data: { walk_fixture: true, ...data },
   });
   const recs = [];
-  const advisorId = uuid5('record:advisor:wen-producer');
+  // DE-3 (D5 as adjusted): producer_record_id points at public.advisors, not
+  // the CRM 'advisors' crm_records row below (kept for the nav/list walk).
+  const advisorId = producerId('wen');
 
   // advisors module — 'Wen Producer' (D5: CRM advisors module is the producer source)
   recs.push(
@@ -595,6 +679,12 @@ async function verify() {
   check(lead === '1', `lead 'Lee Lead' = ${lead}`);
   const adv = psql(`select count(*) from crm_records r join crm_modules m on m.id=r.module_id where m.key='advisors' and r.org_id='${ORG_ID}' and r.title='Wen Producer'`);
   check(adv === '1', `advisor record 'Wen Producer' = ${adv}`);
+  const producers = psql(`select count(*) from public.advisors where organization_id='${ORG_ID}' and is_active and deleted_at is null and full_name in ('Wen Producer','Pat Producer','Pia Producer')`);
+  check(producers === '3', `public.advisors producers Wen/Pat/Pia for PIFH = ${producers} (DE-3 picker source)`);
+  const wendyProducer = psql(`select (data->>'producer_record_id') = '${producerId('wen')}' from crm_records where id='${uuid5('record:contact:wendy-walker')}'`);
+  check(wendyProducer === 't', `anchor producer_record_id = public.advisors id of Wen Producer`);
+  const productOpts = psql(`select string_agg(m.key||':'||jsonb_array_length(f.options), ' ' order by m.key) from crm_fields f join crm_modules m on m.id=f.module_id where m.org_id='${ORG_ID}' and ((m.key='contacts' and f.key='product') or (m.key='leads' and f.key='product_type'))`);
+  check(/contacts:\d{2}/.test(productOpts) && /leads:\d{2}/.test(productOpts), `Health Sharing Membership tier-A options present locally: ${productOpts} (DE-1)`);
   const navSimple = must(await sb.from('crm_feature_flags').select('enabled').eq('organization_id', ORG_ID).eq('flag_key', 'crm.nav.simple').maybeSingle(), 'nav flag');
   check(navSimple?.enabled === false, `crm.nav.simple @PIFH enabled=${navSimple?.enabled} (owner decision: full shell)`);
   const v2 = must(await sb.from('crm_feature_flags').select('enabled').is('organization_id', null).eq('flag_key', 'crm.layout.v2').maybeSingle(), 'v2 flag');
@@ -624,8 +714,27 @@ async function verify() {
 }
 
 // ---------------------------------------------------------------------------
+/**
+ * Rows the walk itself creates — T4 / drawer records (first_name 'Walk', per-run
+ * suffixed last names) and the T3 notes on the anchor ('Walk T3 <suffix>'). They
+ * accumulate across runs (each adds Pending contacts + leads), drift the lane
+ * counts the specs compare and push the fixture's Pat Pending out of the
+ * virtualised mobile list. Hard delete: every FK to crm_records is CASCADE or
+ * SET NULL (checked on the local stack), and this script refuses non-local hosts.
+ */
+function pruneWalkRows() {
+  const records = psql(
+    `with gone as (delete from public.crm_records where org_id = '${ORG_ID}' and data->>'first_name' = 'Walk' returning id) select count(*) from gone`,
+  );
+  const notes = psql(
+    `with gone as (delete from public.crm_notes where org_id = '${ORG_ID}' and record_id = '${uuid5('record:contact:wendy-walker')}' and body like 'Walk T3%' returning id) select count(*) from gone`,
+  );
+  console.log(`pruned walk rows  ${records} record(s) with first_name 'Walk', ${notes} 'Walk T3…' note(s) on the anchor`);
+}
+
 async function main() {
-  console.log(`walk fixture → ${SUPABASE_URL} (db ${hostOf(DB_URL)}) ${VERIFY_ONLY ? '[verify-only]' : ''}`);
+  console.log(`walk fixture → ${SUPABASE_URL} (db ${hostOf(DB_URL)}) ${VERIFY_ONLY ? '[verify-only]' : ''}${PRUNE_WALK_ROWS ? ' [prune-walk-rows]' : ''}`);
+  if (PRUNE_WALK_ROWS) pruneWalkRows();
   if (!VERIFY_ONLY) {
     const org = must(await sb.from('organizations').select('id,slug').eq('id', ORG_ID).maybeSingle(), 'org');
     if (!org) throw new Error(`org ${ORG_ID} missing — supabase/seed.sql has not run on this local stack`);
@@ -633,6 +742,8 @@ async function main() {
     await seedFlags();
     const modByKey = await seedModules();
     await seedFields(modByKey);
+    await seedProductOptions(modByKey);
+    await seedProducers();
     await seedViews(modByKey);
     await seedLayouts(modByKey);
     await seedRecords(modByKey, profileIds.operator);

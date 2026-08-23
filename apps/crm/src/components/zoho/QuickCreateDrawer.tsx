@@ -20,6 +20,17 @@
  *   hit only BLOCKS (amber card + "Create anyway") when the candidate's name
  *   equals the typed first+last; otherwise it is a soft grey "shares a
  *   phone/email with …" hint and Create proceeds without force.
+ * - Validation is field-anchored (`validateQuickCreate`): required fields,
+ *   date completeness + calendar validity (checked on blur and at submit —
+ *   an invalid or partial date is never POSTed) and the Pending start-date
+ *   rule, each rendered under its field with aria-invalid/aria-describedby;
+ *   focus moves to the first invalid field. The server's
+ *   PENDING_REQUIRES_START_DATE backstop is mapped to the same sentence.
+ * - Health Sharing Membership is a closed list from crm_fields.options with
+ *   an explicit "Other…" row (D3); Health Insurance Plan suggests the org's
+ *   distinct stored values (D4, /api/crm/records/field-values); Enrolled by
+ *   picks from public.advisors and writes producer_name + producer_record_id
+ *   (D5) — "Not in list — add as typed" keeps free text.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -42,7 +53,7 @@ import {
   SelectValue,
 } from '@crm-eco/ui/components/select';
 import { cn } from '@crm-eco/ui/lib/utils';
-import { EnrolledByPicker } from '@/components/crm/create/EnrolledByPicker';
+import { EnrolledByPicker, type ProducerPick } from '@/components/crm/create/EnrolledByPicker';
 import { SuggestPicker } from '@/components/crm/create/SuggestPicker';
 import {
   Users,
@@ -61,23 +72,31 @@ import {
 import { toast } from 'sonner';
 import { CrmRecordCreateError, postCrmRecord } from '@/lib/crm/create-record-client';
 import { dateValueToInputDisplay, maskDateTyping } from '@/lib/crm/date-field-bounds';
+import type { FieldValuesResponse } from '@/lib/crm/field-values';
 import { formatPhoneDisplay } from '@/lib/crm/phone-normalize';
 import { toastCopy } from '@/lib/crm/toast-copy';
 import { usStateOptionsWith } from '@/lib/crm/us-states';
+import { optionsWithCurrent } from '@/lib/crm/utils';
 import {
+  PRODUCER_RECORD_ID_KEY,
   QUICK_CREATE_FIELDS,
+  QUICK_CREATE_INVALID_DATE,
   QUICK_CREATE_MODULE_KEYS,
+  QUICK_CREATE_PENDING_NEEDS_DATE,
   buildQuickCreatePayload,
   fullCreateFormHref,
   initialQuickCreateValues,
   isQuickCreateDirty,
   isQuickCreateModuleKey,
-  missingRequiredQuickCreateFields,
+  isValidQuickCreateDate,
   nextQuickCreateBatchValues,
   normalizePhoneDigits,
-  quickCreatePendingNeedsEffectiveDate,
+  quickCreatePendingDateKey,
+  quickCreatePendingHint,
+  quickCreateProducerField,
   quickCreateSuggestKeys,
   splitQuickCreateDuplicates,
+  validateQuickCreate,
   writeQuickCreateDraft,
   type QuickCreateField,
   type QuickCreateModuleKey,
@@ -129,6 +148,12 @@ const MODULE_ICONS: Record<QuickCreateModuleKey, React.ReactNode> = {
 
 const inputClass =
   'h-9 text-sm bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10 focus-visible:ring-2 focus-visible:ring-teal-500/60';
+/** Red ring for a field that carries an error (aria-invalid). */
+const invalidClass = 'border-red-400 dark:border-red-500/60 focus-visible:ring-red-500/50';
+/** Sentinel value of the "Other…" row in an `allowOther` select — never written to a record. */
+const OTHER_OPTION_VALUE = '__qc_other__';
+/** Server backstop code for the Pending rule (record-create-service.ts). */
+const PENDING_REQUIRES_START_DATE = 'PENDING_REQUIRES_START_DATE';
 
 /** crm_fields.options arrive as string[] | {value,label}[] | "[]" (legacy). */
 function optionValues(raw: unknown): string[] {
@@ -177,8 +202,15 @@ export function QuickCreateDrawer({
   );
   /** Records saved via "Save & add another" while this drawer has been open. */
   const [sessionAdded, setSessionAdded] = useState(0);
-  /** Plan / Producer values typed earlier this session → datalist suggestions. */
+  /** Plan values typed earlier this session → suggestions. */
   const [sessionSuggestions, setSessionSuggestions] = useState<Record<string, string[]>>({});
+  /**
+   * Org-wide distinct stored values per module → key (GET
+   * /api/crm/records/field-values, one request per `suggest` field per open).
+   */
+  const [fieldValueSuggestions, setFieldValueSuggestions] = useState<Record<string, Record<string, string[]>>>({});
+  /** `allowOther` selects currently showing their free-text input, by field key. */
+  const [otherMode, setOtherMode] = useState<Record<string, boolean>>({});
 
   // --- org modules (for module_id/org_id + hiding disabled tabs) -----------
   const [fetchedModules, setFetchedModules] = useState<ModuleLite[] | null>(null);
@@ -196,7 +228,8 @@ export function QuickCreateDrawer({
   const [duplicate, setDuplicate] = useState<DuplicateState | null>(null);
   const [softDuplicate, setSoftDuplicate] = useState<SoftDuplicateState | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [validationError, setValidationError] = useState<string | null>(null);
+  /** Field-anchored validation messages by crm_fields key (rendered under the field). */
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [confirmDiscard, setConfirmDiscard] = useState(false);
   const [created, setCreated] = useState<{ id: string; noun: string } | null>(null);
   /**
@@ -213,6 +246,8 @@ export function QuickCreateDrawer({
   const submitModeRef = useRef<SubmitMode>('open');
 
   const config = QUICK_CREATE_FIELDS[selectedModule];
+  const producerField = quickCreateProducerField(selectedModule);
+  const pendingDateKey = quickCreatePendingDateKey(selectedModule);
   const dirty = isQuickCreateDirty(selectedModule, values, baseline);
   const currentModuleRow = modules?.find((m) => m.key === selectedModule) ?? null;
   const orgId = currentModuleRow?.org_id ?? modules?.[0]?.org_id ?? null;
@@ -221,7 +256,7 @@ export function QuickCreateDrawer({
     setDuplicate(null);
     setSoftDuplicate(null);
     setSubmitError(null);
-    setValidationError(null);
+    setFieldErrors({});
     setConfirmDiscard(false);
     setCreated(null);
     cleanSignatureRef.current = null;
@@ -234,6 +269,7 @@ export function QuickCreateDrawer({
       setValues(initial);
       setBaseline(initial);
       setSessionAdded(0);
+      setOtherMode({});
       clearFeedback();
     },
     [clearFeedback],
@@ -245,6 +281,7 @@ export function QuickCreateDrawer({
       const next = nextQuickCreateBatchValues(moduleKey, previous);
       setValues(next);
       setBaseline(next);
+      setOtherMode({});
       clearFeedback();
     },
     [clearFeedback],
@@ -262,6 +299,10 @@ export function QuickCreateDrawer({
     if (open && !wasOpenRef.current) {
       setSelectedModule(defaultModule);
       resetForm(defaultModule);
+      // Options + org distinct values are re-fetched once per open (the
+      // endpoint is private-cached for 60 s, so re-opens are cheap). Same
+      // object when nothing was loaded yet, so the fetch effect runs once.
+      setFieldOptionsLoaded((p) => (Object.keys(p).length > 0 ? {} : p));
     }
     wasOpenRef.current = open;
   }, [open, defaultModule, resetForm]);
@@ -287,20 +328,24 @@ export function QuickCreateDrawer({
     }
   }, [open, modulesProp, fetchedModules, modulesLoading, modulesError, loadModules]);
 
-  // Load crm_fields options for the selected module's select fields (once).
+  // Load crm_fields options for the selected module's select fields, and the
+  // org's distinct stored values for its `suggest` fields — once per open.
   useEffect(() => {
     if (!open || !currentModuleRow || fieldOptionsLoaded[selectedModule]) return;
-    // Selects need their options; Plan/Producer (`suggest`) get a datalist
-    // from the same crm_fields.options payload — one request per open.
+    // Selects need their options; Plan (`suggest`) also reads crm_fields.options
+    // when the org defined any — one fields request per open.
     const wanted = config.fields
       .filter((f) => f.type === 'select' || f.type === 'suggest')
       .map((f) => f.key);
-    if (wanted.length === 0) {
+    const suggestKeys = quickCreateSuggestKeys(selectedModule);
+    if (wanted.length === 0 && suggestKeys.length === 0) {
       setFieldOptionsLoaded((p) => ({ ...p, [selectedModule]: true }));
       return;
     }
     let cancelled = false;
-    (async () => {
+    const moduleKey = selectedModule;
+    const loadOptions = async () => {
+      if (wanted.length === 0) return;
       try {
         const res = await fetch(`/api/crm/modules/${currentModuleRow.id}/fields`);
         if (!res.ok) throw new Error(String(res.status));
@@ -310,12 +355,29 @@ export function QuickCreateDrawer({
         for (const f of json.fields ?? []) {
           if (wanted.includes(f.key)) map[f.key] = optionValues(f.options);
         }
-        setFieldOptions((p) => ({ ...p, [selectedModule]: map }));
+        setFieldOptions((p) => ({ ...p, [moduleKey]: map }));
       } catch {
         // Fall back to config defaults — never block the form on options.
-      } finally {
-        if (!cancelled) setFieldOptionsLoaded((p) => ({ ...p, [selectedModule]: true }));
       }
+    };
+    // One request per suggest field (today: Health Insurance Plan) — the org's
+    // most-used stored spellings, under the caller's own RLS (DE-2).
+    const loadDistinctValues = async (key: string) => {
+      try {
+        const qs = new URLSearchParams({ module_key: moduleKey, key, limit: '25' });
+        const res = await fetch(`/api/crm/records/field-values?${qs}`, { credentials: 'same-origin' });
+        if (!res.ok) throw new Error(String(res.status));
+        const json = (await res.json()) as Partial<FieldValuesResponse>;
+        if (cancelled) return;
+        const list = (json.values ?? []).map((v) => v.value).filter((v) => typeof v === 'string' && v.trim());
+        setFieldValueSuggestions((p) => ({ ...p, [moduleKey]: { ...(p[moduleKey] ?? {}), [key]: list } }));
+      } catch {
+        // Suggestions are a convenience — free text still works without them.
+      }
+    };
+    (async () => {
+      await Promise.allSettled([loadOptions(), ...suggestKeys.map((k) => loadDistinctValues(k))]);
+      if (!cancelled) setFieldOptionsLoaded((p) => ({ ...p, [moduleKey]: true }));
     })();
     return () => {
       cancelled = true;
@@ -346,21 +408,44 @@ export function QuickCreateDrawer({
   };
 
   /**
-   * Datalist suggestions for a `suggest` field: crm_fields.options for the
-   * key (when the org defined any) + distinct values used earlier in this
-   * drawer session. There is no distinct-values endpoint for arbitrary JSONB
-   * keys, so this stays cheap and never restricts free text.
+   * Suggestions for a `suggest` field, most useful first: values used earlier
+   * in this drawer session, then the org's distinct stored values for the key
+   * (GET /api/crm/records/field-values — most-used first, spellings as
+   * stored), then crm_fields.options when the org defined any. De-duplicated
+   * case-insensitively; never restricts free text.
    */
   const suggestionsFor = (field: QuickCreateField): string[] => {
     const out: string[] = [];
     const seen = new Set<string>();
-    for (const v of [...(sessionSuggestions[field.key] ?? []), ...optionsFor(field)]) {
+    const sources = [
+      sessionSuggestions[field.key] ?? [],
+      fieldValueSuggestions[selectedModule]?.[field.key] ?? [],
+      optionsFor(field),
+    ];
+    for (const v of sources.flat()) {
       const key = v.trim().toLowerCase();
       if (!key || seen.has(key)) continue;
       seen.add(key);
       out.push(v);
     }
     return out;
+  };
+
+  /** Move focus to a field's control by its stable id (works for inputs, native selects and Radix triggers). */
+  const focusField = (key: string) => {
+    const id = `qc-${selectedModule}-${key}`;
+    window.requestAnimationFrame(() => {
+      const el = document.getElementById(id);
+      if (el instanceof HTMLElement) el.focus();
+    });
+  };
+
+  /** Show field-anchored errors and focus the first one (field order). */
+  const showFieldErrors = (errors: { key: string; message: string }[]) => {
+    const map: Record<string, string> = {};
+    for (const e of errors) if (!map[e.key]) map[e.key] = e.message;
+    setFieldErrors(map);
+    if (errors.length > 0) focusField(errors[0].key);
   };
 
   const visibleFields = config.fields.filter((f) => {
@@ -373,8 +458,19 @@ export function QuickCreateDrawer({
   // ---------------------------------------------------------------------------
 
   const setField = (key: string, value: string) => {
-    setValues((prev) => ({ ...prev, [key]: value }));
-    setValidationError(null);
+    setValues((prev) => {
+      const next = { ...prev, [key]: value };
+      // Typing a producer name by hand detaches it from any picked advisor id;
+      // `handleProducerPick` re-attaches it right after a list commit.
+      if (producerField && key === producerField.key) next[PRODUCER_RECORD_ID_KEY] = '';
+      return next;
+    });
+    setFieldErrors((prev) => {
+      if (!(key in prev)) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
     setSubmitError(null);
     if (key === 'email' || key === 'phone' || key === 'first_name' || key === 'last_name') {
       // Blocking-vs-soft depends on name + contact info, so any of them
@@ -383,6 +479,19 @@ export function QuickCreateDrawer({
       setSoftDuplicate(null);
       cleanSignatureRef.current = null;
     }
+  };
+
+  /** A producer row was committed from the list: name + public.advisors id (null for "add as typed"). */
+  const handleProducerPick = (pick: ProducerPick) => {
+    if (!producerField) return;
+    setValues((prev) => ({ ...prev, [producerField.key]: pick.name, [PRODUCER_RECORD_ID_KEY]: pick.id ?? '' }));
+  };
+
+  /** Date blur: mask to MM/DD/YYYY and flag an incomplete / impossible date right away. */
+  const handleDateBlur = (key: string, raw: string) => {
+    const masked = maskDateTyping(raw);
+    setField(key, masked);
+    if (!isValidQuickCreateDate(masked)) setFieldErrors((prev) => ({ ...prev, [key]: QUICK_CREATE_INVALID_DATE }));
   };
 
   /**
@@ -520,17 +629,13 @@ export function QuickCreateDrawer({
     if (submitting) return;
     submitModeRef.current = mode;
     setSubmitError(null);
-    setValidationError(null);
+    setFieldErrors({});
 
-    const missing = missingRequiredQuickCreateFields(selectedModule, values);
-    if (missing.length > 0) {
-      setValidationError(`Please fill in: ${missing.join(', ')}`);
-      return;
-    }
-    if (quickCreatePendingNeedsEffectiveDate(selectedModule, values)) {
-      setValidationError(
-        `“${values[config.statusKey ?? ''] ?? 'Pending'}” status needs an Effective date (the daily activation uses it).`,
-      );
+    // Required fields, date validity and the Pending rule — field-anchored,
+    // first invalid field focused, and nothing is POSTed until all pass.
+    const problems = validateQuickCreate(selectedModule, values);
+    if (problems.length > 0) {
+      showFieldErrors(problems);
       return;
     }
 
@@ -608,7 +713,11 @@ export function QuickCreateDrawer({
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to create record';
       const isDup = err instanceof CrmRecordCreateError && err.code === 'DUPLICATE_RECORD';
-      if (isDup && force) {
+      if (err instanceof CrmRecordCreateError && err.code === PENDING_REQUIRES_START_DATE) {
+        // Server backstop for the Pending rule — same sentence, anchored to
+        // Coverage start, never the raw developer string.
+        showFieldErrors([{ key: pendingDateKey ?? 'health_insurance_start_date', message: QUICK_CREATE_PENDING_NEEDS_DATE }]);
+      } else if (isDup && force) {
         // Forced create still rejected by the DB unique index (identical
         // name + email). Offering "Create anyway" again would just loop.
         setSubmitError(
@@ -669,6 +778,17 @@ export function QuickCreateDrawer({
     const id = `qc-${selectedModule}-${field.key}`;
     const value = values[field.key] ?? '';
     const isFirst = index === 0;
+    const error = fieldErrors[field.key];
+    // Render-time Pending hint under Coverage start (turns into the error at submit).
+    const hint = !error && field.key === pendingDateKey ? quickCreatePendingHint(selectedModule, values) : null;
+    const errorId = `${id}-error`;
+    const hintId = `${id}-hint`;
+    const describedBy = error ? errorId : hint ? hintId : undefined;
+    const a11y = {
+      'aria-invalid': error ? true : undefined,
+      'aria-describedby': describedBy,
+    } as const;
+    const controlClass = cn(inputClass, error && invalidClass);
     const label = (
       <Label
         htmlFor={id}
@@ -701,8 +821,9 @@ export function QuickCreateDrawer({
           value={value}
           onChange={(e) => setField(field.key, e.target.value)}
           aria-label={field.label}
+          {...a11y}
           className={cn(
-            inputClass,
+            controlClass,
             'flex w-full rounded-md border px-3 py-1 shadow-sm focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50',
             value ? 'text-slate-900 dark:text-white' : 'text-slate-400 dark:text-slate-500',
           )}
@@ -715,31 +836,34 @@ export function QuickCreateDrawer({
           ))}
         </select>
       );
+    } else if (field.type === 'producer') {
+      control = (
+        <EnrolledByPicker
+          id={id}
+          value={value}
+          onChange={(next) => setField(field.key, next)}
+          onSelect={handleProducerPick}
+          placeholder={field.placeholder}
+          aria-label={field.label}
+          aria-invalid={!!error}
+          aria-describedby={describedBy}
+          className={controlClass}
+        />
+      );
     } else if (field.type === 'suggest') {
-      if (field.key === 'producer_name' || field.key === 'producer') {
-        control = (
-          <EnrolledByPicker
-            id={id}
-            value={value}
-            onChange={(next) => setField(field.key, next)}
-            placeholder={field.placeholder}
-            aria-label={field.label}
-            className={inputClass}
-          />
-        );
-      } else {
-        control = (
-          <SuggestPicker
-            id={id}
-            value={value}
-            options={suggestionsFor(field)}
-            onChange={(next) => setField(field.key, next)}
-            placeholder={field.placeholder}
-            aria-label={field.label}
-            className={inputClass}
-          />
-        );
-      }
+      control = (
+        <SuggestPicker
+          id={id}
+          value={value}
+          options={suggestionsFor(field)}
+          onChange={(next) => setField(field.key, next)}
+          placeholder={field.placeholder}
+          aria-label={field.label}
+          aria-invalid={!!error}
+          aria-describedby={describedBy}
+          className={controlClass}
+        />
+      );
     } else if (field.type === 'select') {
       const opts = optionsFor(field);
       if (opts.length === 0) {
@@ -749,13 +873,73 @@ export function QuickCreateDrawer({
             value={value}
             onChange={(e) => setField(field.key, e.target.value)}
             placeholder={field.placeholder}
-            className={inputClass}
+            {...a11y}
+            className={controlClass}
           />
+        );
+      } else if (field.allowOther) {
+        // Closed list + explicit "Other…" (D3). Native <select> so the paste
+        // workflow keeps type-ahead and Tab order; the current value is always
+        // selectable even when it is not in the org's list (legacy spelling
+        // carried over by "Save & add another") — never rewritten.
+        const isOther = otherMode[field.key] === true;
+        const listed = isOther ? opts.map((o) => ({ value: o, label: o })) : optionsWithCurrent(opts, value);
+        const selectValue = isOther ? OTHER_OPTION_VALUE : value;
+        const otherId = `${id}-other`;
+        control = (
+          <div className="space-y-1.5">
+            <select
+              id={id}
+              value={selectValue}
+              onChange={(e) => {
+                const next = e.target.value;
+                if (next === OTHER_OPTION_VALUE) {
+                  setOtherMode((p) => ({ ...p, [field.key]: true }));
+                  // Keep a value that is not in the list (nothing typed is lost);
+                  // a listed pick starts the free-text box blank.
+                  setField(field.key, opts.includes(value) ? '' : value);
+                  window.requestAnimationFrame(() => document.getElementById(otherId)?.focus());
+                  return;
+                }
+                setOtherMode((p) => ({ ...p, [field.key]: false }));
+                setField(field.key, next);
+              }}
+              aria-label={field.label}
+              {...a11y}
+              className={cn(
+                controlClass,
+                'flex w-full rounded-md border px-3 py-1 shadow-sm focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50',
+                selectValue ? 'text-slate-900 dark:text-white' : 'text-slate-400 dark:text-slate-500',
+              )}
+            >
+              <option value="">Select…</option>
+              {listed.map((o) => (
+                <option key={o.value} value={o.value} className="text-slate-900 dark:text-white">
+                  {o.label}
+                </option>
+              ))}
+              <option value={OTHER_OPTION_VALUE} className="text-slate-900 dark:text-white">
+                Other…
+              </option>
+            </select>
+            {isOther && (
+              <Input
+                id={otherId}
+                value={value}
+                onChange={(e) => setField(field.key, e.target.value)}
+                placeholder={`Type the ${field.label.toLowerCase()}`}
+                aria-label={`${field.label} (other)`}
+                autoComplete="off"
+                data-testid={`${id}-other`}
+                className={controlClass}
+              />
+            )}
+          </div>
         );
       } else {
         control = (
           <Select value={value} onValueChange={(v) => setField(field.key, v)}>
-            <SelectTrigger id={id} className={inputClass} aria-label={field.label}>
+            <SelectTrigger id={id} className={controlClass} aria-label={field.label} {...a11y}>
               <SelectValue placeholder="Select…" />
             </SelectTrigger>
             <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10">
@@ -769,7 +953,8 @@ export function QuickCreateDrawer({
         );
       }
     } else if (field.type === 'date') {
-      // Same contract as DynamicRecordForm: show as typed, mask on blur only.
+      // Same contract as DynamicRecordForm: show as typed, mask on blur only —
+      // and flag an incomplete / impossible date on blur (never POSTed).
       control = (
         <Input
           id={id}
@@ -780,8 +965,9 @@ export function QuickCreateDrawer({
           placeholder={field.placeholder ?? 'MM/DD/YYYY'}
           value={dateValueToInputDisplay(value)}
           onChange={(e) => setField(field.key, e.target.value)}
-          onBlur={(e) => setField(field.key, maskDateTyping(e.target.value))}
-          className={inputClass}
+          onBlur={(e) => handleDateBlur(field.key, e.target.value)}
+          {...a11y}
+          className={controlClass}
         />
       );
     } else {
@@ -806,7 +992,8 @@ export function QuickCreateDrawer({
           placeholder={field.placeholder}
           required={field.required}
           aria-required={field.required || undefined}
-          className={inputClass}
+          {...a11y}
+          className={controlClass}
         />
       );
     }
@@ -819,6 +1006,15 @@ export function QuickCreateDrawer({
       >
         {label}
         {control}
+        {error ? (
+          <p id={errorId} role="alert" className="text-xs text-red-600 dark:text-red-400">
+            {error}
+          </p>
+        ) : hint ? (
+          <p id={hintId} className="text-[11px] text-amber-700 dark:text-amber-300">
+            {hint}
+          </p>
+        ) : null}
       </div>
     );
   };
@@ -928,12 +1124,6 @@ export function QuickCreateDrawer({
             >
               {visibleFields.map((f, i) => renderField(f, i))}
             </fieldset>
-
-            {validationError && (
-              <p role="alert" className="text-xs text-red-600 dark:text-red-400">
-                {validationError}
-              </p>
-            )}
 
             {duplicate && !created && (
               <div

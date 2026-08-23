@@ -73,6 +73,8 @@ export function ModuleHeader({
   const icon = MODULE_ICONS[module.key] || <Users className="w-5 h-5" />;
   const [quickCreateOpen, setQuickCreateOpen] = useState(false);
   const createIntent = resolveCreateIntent({ moduleKey: module.key });
+  // Export is pointless with zero rows and nothing selected (D9 / FB-1).
+  const exportDisabled = totalCount === 0 && selectedCount === 0;
   const usesQuickCreate = createIntent.kind === 'quick';
   const quickModuleKey = createIntent.kind === 'quick' ? createIntent.moduleKey : null;
   const newLabel =
@@ -190,6 +192,10 @@ export function ModuleHeader({
               size="sm"
               className="h-9 border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/5"
               onClick={onExport}
+              // D9: nothing to export → disabled button, no toast.
+              disabled={exportDisabled}
+              aria-disabled={exportDisabled || undefined}
+              title={exportDisabled ? 'Nothing to export yet' : 'Export this list as CSV'}
               data-testid="crm-list-export"
             >
               <Download className="w-4 h-4 mr-1.5" />

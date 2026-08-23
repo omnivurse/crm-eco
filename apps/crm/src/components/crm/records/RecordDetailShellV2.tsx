@@ -887,7 +887,8 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
     if (result.ok) {
       toast.success(toastCopy.added('Task'));
     } else if (result.queued) {
-      toast.info('Task saved offline — will sync when reconnected');
+      const q = toastCopy.queued('task');
+      toast.info(q.title, { description: q.description });
     } else {
       toast.error(toastCopy.failed('create the task', result.error, 'Try again'));
       return;
@@ -925,7 +926,8 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
     if (result.ok) {
       toast.success(toastCopy.added('Note'));
     } else if (result.queued) {
-      toast.info('Note saved offline — will sync when reconnected');
+      const q = toastCopy.queued('note');
+      toast.info(q.title, { description: q.description });
     } else {
       toast.error(toastCopy.failed('add the note', result.error, 'Try again'));
       return;

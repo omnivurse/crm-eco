@@ -11,10 +11,16 @@
  *
  * Nothing here touches the network or the DOM (except `writeQuickCreateDraft`,
  * which is a thin sessionStorage writer). Client-safe.
+ *
+ * Validation lives here too (`validateQuickCreate`): required fields, date
+ * completeness + calendar validity, and the Pending start-date rule — so the
+ * drawer never POSTs an invalid or partial date and every message is anchored
+ * to a field (Road to Ten DE-5 / DE-6).
  */
 
 import { isPendingContactStatus } from '@/lib/crm/pending-activation';
 import { maskDateTyping } from '@/lib/crm/date-field-bounds';
+import { isValidCalendarDateParts } from '@/lib/crm/merge-crm-data-json-to-row';
 
 export type QuickCreateModuleKey = 'contacts' | 'leads' | 'accounts';
 
@@ -25,13 +31,47 @@ export const QUICK_CREATE_MODULE_KEYS: readonly QuickCreateModuleKey[] = [
 ] as const;
 
 /**
- * - `state`   → native <select> of US states + DC (lib/crm/us-states); an
- *               existing value that is not a known code stays selectable.
- * - `suggest` → text input with a <datalist> of suggestions (crm_fields
- *               options for the key + values used earlier this session).
- *               Free text is always allowed; the list only speeds typing.
+ * - `state`    → native <select> of US states + DC (lib/crm/us-states); an
+ *                existing value that is not a known code stays selectable.
+ * - `select`   → closed list from the live `crm_fields.options` for the key
+ *                (`fallbackOptions` until they load). With `allowOther` the
+ *                list ends in an explicit "Other…" row that reveals a text
+ *                input (owner decision D3 — Health Sharing Membership); a
+ *                value that is not in the list (legacy spelling carried over
+ *                by "Save & add another") stays selectable, never rewritten.
+ * - `suggest`  → text input with a suggestion list: the org's distinct stored
+ *                values for the key (GET /api/crm/records/field-values, DE-2),
+ *                values used earlier this session and any crm_fields options.
+ *                Free text is always allowed; the list only speeds typing
+ *                (decision D4 — Health Insurance Plan).
+ * - `producer` → "Enrolled by" picker over the org's producers
+ *                (public.advisors via GET /api/crm/advisors). Picking a row
+ *                writes the display name into this key AND the advisor id
+ *                into `producer_record_id` (decision D5); "Not in list — add
+ *                as typed" keeps free text with no id.
  */
-export type QuickCreateFieldType = 'text' | 'email' | 'tel' | 'date' | 'select' | 'state' | 'suggest';
+export type QuickCreateFieldType =
+  | 'text'
+  | 'email'
+  | 'tel'
+  | 'date'
+  | 'select'
+  | 'state'
+  | 'suggest'
+  | 'producer';
+
+/**
+ * JSONB key that carries the picked producer's `public.advisors.id` next to
+ * the display-name key (`producer_name` on contacts, `producer` on leads).
+ * The name stays THE written key — reports, the age-65 cron and
+ * ownership-name precedence keep reading it; the id is additive.
+ */
+export const PRODUCER_RECORD_ID_KEY = 'producer_record_id';
+
+/** The one sentence for "Pending without a start date" — render-time hint, submit error and the server-code mapping all use it. */
+export const QUICK_CREATE_PENDING_NEEDS_DATE = 'Pending needs a Coverage start date';
+/** Copy for a date that is incomplete or not a real calendar date. */
+export const QUICK_CREATE_INVALID_DATE = 'Enter a real date as MM/DD/YYYY';
 
 export interface QuickCreateField {
   /** `crm_fields.key` — the JSONB key written on the record. */
@@ -54,6 +94,8 @@ export interface QuickCreateField {
   fallbackOptions?: string[];
   /** Render this select only when crm_fields actually has options for it. */
   optionalIfNoOptions?: boolean;
+  /** Selects only: append an explicit "Other…" row that reveals a free-text input. */
+  allowOther?: boolean;
   /** Full-width in the two-column grid. */
   span?: 1 | 2;
 }
@@ -94,7 +136,7 @@ export const QUICK_CREATE_FIELDS: Record<QuickCreateModuleKey, QuickCreateModule
     statusKey: 'contact_status',
     effectiveDateKey: 'sharing_effective_date',
     effectiveDateKeys: ['health_insurance_start_date', 'sharing_effective_date'],
-    batchStickyKeys: ['producer_name', 'sharing_entity', 'contact_status', 'mailing_state'],
+    batchStickyKeys: ['producer_name', PRODUCER_RECORD_ID_KEY, 'sharing_entity', 'contact_status', 'mailing_state'],
     fields: [
       { key: 'first_name', label: 'First name', type: 'text', required: true },
       { key: 'last_name', label: 'Last name', type: 'text', required: true },
@@ -105,9 +147,9 @@ export const QUICK_CREATE_FIELDS: Record<QuickCreateModuleKey, QuickCreateModule
       { key: 'mailing_state', label: 'State', type: 'state', placeholder: 'e.g. TX' },
       { key: 'health_insurance_plan_name', label: 'Health Insurance Plan', type: 'suggest' },
       { key: 'health_insurance_start_date', label: 'Coverage start', type: 'date', placeholder: 'MM/DD/YYYY' },
-      { key: 'product', label: 'Health Sharing Membership', type: 'suggest' },
+      { key: 'product', label: 'Health Sharing Membership', type: 'select', allowOther: true },
       { key: 'sharing_effective_date', label: 'Sharing effective date', type: 'date', placeholder: 'MM/DD/YYYY' },
-      { key: 'producer_name', label: 'Enrolled by', hint: 'Who enrolled', type: 'suggest' },
+      { key: 'producer_name', label: 'Enrolled by', hint: 'Who enrolled', type: 'producer' },
       { key: 'referring_member', label: 'Referring member', type: 'text' },
       { key: 'member_number', label: 'Member #', type: 'text' },
       {
@@ -133,7 +175,7 @@ export const QUICK_CREATE_FIELDS: Record<QuickCreateModuleKey, QuickCreateModule
     statusKey: 'lead_status',
     effectiveDateKey: 'sharing_effective_date',
     effectiveDateKeys: ['health_insurance_start_date', 'sharing_effective_date'],
-    batchStickyKeys: ['producer', 'sharing_entity', 'lead_status', 'state'],
+    batchStickyKeys: ['producer', PRODUCER_RECORD_ID_KEY, 'sharing_entity', 'lead_status', 'state'],
     fields: [
       { key: 'first_name', label: 'First name', type: 'text', required: true },
       { key: 'last_name', label: 'Last name', type: 'text', required: true },
@@ -144,9 +186,9 @@ export const QUICK_CREATE_FIELDS: Record<QuickCreateModuleKey, QuickCreateModule
       { key: 'state', label: 'State', type: 'state', placeholder: 'e.g. TX' },
       { key: 'health_insurance_plan_name', label: 'Health Insurance Plan', type: 'suggest' },
       { key: 'health_insurance_start_date', label: 'Coverage start', type: 'date', placeholder: 'MM/DD/YYYY' },
-      { key: 'product_type', label: 'Health Sharing Membership', type: 'suggest' },
+      { key: 'product_type', label: 'Health Sharing Membership', type: 'select', allowOther: true },
       { key: 'sharing_effective_date', label: 'Sharing effective date', type: 'date', placeholder: 'MM/DD/YYYY' },
-      { key: 'producer', label: 'Enrolled by', hint: 'Who enrolled', type: 'suggest' },
+      { key: 'producer', label: 'Enrolled by', hint: 'Who enrolled', type: 'producer' },
       { key: 'referring_member', label: 'Referring member', type: 'text' },
       {
         key: 'lead_status',
@@ -219,9 +261,14 @@ export function nextQuickCreateBatchValues(
   return out;
 }
 
-/** Keys whose values are worth remembering as datalist suggestions this session. */
+/** Keys whose values are worth remembering as suggestions this session (`suggest` fields). */
 export function quickCreateSuggestKeys(moduleKey: QuickCreateModuleKey): string[] {
   return QUICK_CREATE_FIELDS[moduleKey].fields.filter((f) => f.type === 'suggest').map((f) => f.key);
+}
+
+/** The module's "Enrolled by" field (display-name key), if it has one. */
+export function quickCreateProducerField(moduleKey: QuickCreateModuleKey): QuickCreateField | undefined {
+  return QUICK_CREATE_FIELDS[moduleKey].fields.find((f) => f.type === 'producer');
 }
 
 // ---------------------------------------------------------------------------
@@ -289,11 +336,16 @@ export function missingRequiredQuickCreateFields(
  * (`assertCrmPendingHasStartDate`). Surface that BEFORE the round-trip so the
  * user is told which field to fill instead of getting a generic failure.
  * Insurance coverage start OR sharing effective date both count.
+ *
+ * Parity with the server rule (pending-start-date-invariant.ts): on LEADS
+ * "Pending" is a pipeline stage, not pending coverage — no start date is
+ * implied, so a Pending lead saves without one.
  */
 export function quickCreatePendingNeedsEffectiveDate(
   moduleKey: QuickCreateModuleKey,
   values: Record<string, string>,
 ): boolean {
+  if (moduleKey === 'leads') return false;
   const cfg = QUICK_CREATE_FIELDS[moduleKey];
   if (!cfg.statusKey) return false;
   const dateKeys = cfg.effectiveDateKeys ?? (cfg.effectiveDateKey ? [cfg.effectiveDateKey] : []);
@@ -314,6 +366,98 @@ export function quickCreateFilledEffectiveDateKey(
     if ((values[key] ?? '').trim()) return key;
   }
   return undefined;
+}
+
+/** The field the Pending hint / error is anchored to (first effective-date key: Coverage start). */
+export function quickCreatePendingDateKey(moduleKey: QuickCreateModuleKey): string | undefined {
+  const cfg = QUICK_CREATE_FIELDS[moduleKey];
+  return (cfg.effectiveDateKeys ?? (cfg.effectiveDateKey ? [cfg.effectiveDateKey] : []))[0];
+}
+
+/**
+ * Render-time hint for the Pending rule: the sentence to show under Coverage
+ * start while status is Pending-class and neither date is filled, or null.
+ * Same string the submit error and the server-code mapping use.
+ */
+export function quickCreatePendingHint(
+  moduleKey: QuickCreateModuleKey,
+  values: Record<string, string>,
+): string | null {
+  return quickCreatePendingNeedsEffectiveDate(moduleKey, values) ? QUICK_CREATE_PENDING_NEEDS_DATE : null;
+}
+
+/**
+ * True when a typed date is complete and a real calendar date once masked
+ * to MM/DD/YYYY (the same mask the payload applies). Blank counts as valid —
+ * emptiness is the required-field rule's job.
+ *
+ *   '9/1/26'     → true  (masks to 09/01/2026)
+ *   '2026-09-01' → true  (stored ISO, masks to 09/01/2026)
+ *   '09/01'      → false (incomplete)
+ *   '13/45/2026' → false (no 13th month)
+ *   '02/30/2026' → false (not a real day)
+ */
+export function isValidQuickCreateDate(raw: string | null | undefined): boolean {
+  const t = String(raw ?? '').trim();
+  if (!t) return true;
+  const masked = maskDateTyping(t);
+  const m = masked.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!m) return false;
+  const year = Number(m[3]);
+  if (year < 1900 || year > 2100) return false;
+  return isValidCalendarDateParts(year, Number(m[1]), Number(m[2]));
+}
+
+/** Date fields whose typed value is incomplete or impossible, in field order. */
+export function invalidQuickCreateDates(
+  moduleKey: QuickCreateModuleKey,
+  values: Record<string, string>,
+): { key: string; label: string }[] {
+  return QUICK_CREATE_FIELDS[moduleKey].fields
+    .filter((f) => f.type === 'date' && !isValidQuickCreateDate(values[f.key]))
+    .map((f) => ({ key: f.key, label: f.label }));
+}
+
+export interface QuickCreateFieldError {
+  /** `crm_fields.key` the message is anchored to. */
+  key: string;
+  label: string;
+  message: string;
+}
+
+/** "First name is required" — one voice for blank required fields. */
+export function quickCreateRequiredMessage(label: string): string {
+  return `${label} is required`;
+}
+
+/**
+ * Everything that must be fixed BEFORE the POST, anchored to a field and in
+ * field order (the first entry is the one to focus): blank required fields,
+ * incomplete / impossible dates, and the Pending start-date rule (anchored to
+ * Coverage start). Empty array ⇒ safe to submit. Never returns two messages
+ * for one key (the first rule wins).
+ */
+export function validateQuickCreate(
+  moduleKey: QuickCreateModuleKey,
+  values: Record<string, string>,
+): QuickCreateFieldError[] {
+  const byKey = new Map<string, QuickCreateFieldError>();
+  const add = (key: string, label: string, message: string) => {
+    if (!byKey.has(key)) byKey.set(key, { key, label, message });
+  };
+  const cfg = QUICK_CREATE_FIELDS[moduleKey];
+  for (const f of cfg.fields) {
+    if (f.required && !(values[f.key] ?? '').trim()) add(f.key, f.label, quickCreateRequiredMessage(f.label));
+  }
+  for (const d of invalidQuickCreateDates(moduleKey, values)) add(d.key, d.label, QUICK_CREATE_INVALID_DATE);
+  const pendingKey = quickCreatePendingDateKey(moduleKey);
+  if (pendingKey && quickCreatePendingNeedsEffectiveDate(moduleKey, values)) {
+    const label = cfg.fields.find((f) => f.key === pendingKey)?.label ?? pendingKey;
+    add(pendingKey, label, QUICK_CREATE_PENDING_NEEDS_DATE);
+  }
+  // field order
+  const order = new Map(cfg.fields.map((f, i) => [f.key, i]));
+  return [...byKey.values()].sort((a, b) => (order.get(a.key) ?? 999) - (order.get(b.key) ?? 999));
 }
 
 /** Digits only — "(555) 123-4567" → "5551234567". Drops a leading US "1". */
@@ -363,6 +507,11 @@ export function buildQuickCreatePayload(
     if (!raw) continue;
     out[f.key] = f.type === 'date' ? maskDateTyping(raw) : raw;
   }
+  // The picked producer's id rides along with the name (D5) — only when a
+  // name is actually written, so a stale id never outlives a cleared name.
+  const producer = quickCreateProducerField(moduleKey);
+  const producerId = (values[PRODUCER_RECORD_ID_KEY] ?? '').trim();
+  if (producer && producerId && out[producer.key]) out[PRODUCER_RECORD_ID_KEY] = producerId;
   return out;
 }
 

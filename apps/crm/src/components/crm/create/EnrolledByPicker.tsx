@@ -1,99 +1,174 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { Input } from '@crm-eco/ui/components/input';
-import { cn } from '@crm-eco/ui/lib/utils';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { SuggestPicker, type SuggestStatus } from './SuggestPicker';
 
+/** One row of GET /api/crm/advisors (public.advisors, org-scoped). */
 interface AdvisorRow {
+  id?: string | null;
+  name?: string | null;
+  full_name?: string | null;
   advisor_name?: string | null;
   first_name?: string | null;
   last_name?: string | null;
 }
 
+/** What the picker commits: the display name plus the `public.advisors.id` (null = typed free text). */
+export interface ProducerPick {
+  name: string;
+  id: string | null;
+}
+
+/** A row in the list: a producer from the store, or the explicit free-text escape. */
+export interface ProducerOption extends ProducerPick {
+  /** True for the "Not in list — add as typed" row (no id is written). */
+  addAsTyped?: boolean;
+}
+
 function advisorLabel(row: AdvisorRow): string {
-  const name = (row.advisor_name ?? '').trim();
+  const name = (row.name ?? row.full_name ?? row.advisor_name ?? '').trim();
   if (name) return name;
   return [row.first_name, row.last_name].filter(Boolean).join(' ').trim();
 }
 
+/** Debounce between the last keystroke and the producers fetch. */
+export const ENROLLED_BY_SEARCH_DEBOUNCE_MS = 200;
+export const ENROLLED_BY_ERROR_MESSAGE = "Couldn't load producers";
+/** Label of the explicit free-text escape row (owner decision D5). */
+export const ENROLLED_BY_ADD_AS_TYPED_LABEL = 'Not in list — add as typed';
+
+export function producerOptionLabel(item: ProducerOption): string {
+  return item.addAsTyped ? `${ENROLLED_BY_ADD_AS_TYPED_LABEL}: “${item.name}”` : item.name;
+}
+
+/**
+ * Options shown for a settled search: the store's rows, plus — when something
+ * is typed that no row matches exactly (case-insensitive) — the
+ * "Not in list — add as typed" escape as the last row.
+ */
+export function producerOptionsFor(query: string, rows: readonly ProducerPick[]): ProducerOption[] {
+  const out: ProducerOption[] = rows.map((r) => ({ name: r.name, id: r.id }));
+  const q = query.trim();
+  if (q && !rows.some((r) => r.name.toLowerCase() === q.toLowerCase())) {
+    out.push({ name: q, id: null, addAsTyped: true });
+  }
+  return out;
+}
+
+/**
+ * Producer / "Enrolled by" picker. Same keyboard + ARIA contract as
+ * SuggestPicker (shared via useComboboxList). Fetches lazily: nothing is
+ * requested until the field is focused, then each edit re-queries after a
+ * 200 ms debounce (in-flight requests are aborted).
+ *
+ * Data source: GET /api/crm/advisors → public.advisors, org-scoped by
+ * organization_id (profile + RLS). Committing a row calls `onChange(name)`
+ * and `onSelect({ name, id })`; typing calls only `onChange`, so the host
+ * can clear a previously picked id. The last row "Not in list — add as
+ * typed" commits `{ name: <typed>, id: null }`.
+ */
 export function EnrolledByPicker({
   id,
   value,
   onChange,
+  onSelect,
   className,
-  placeholder = 'Search producers…',
+  placeholder,
   'aria-label': ariaLabel,
+  'aria-invalid': ariaInvalid,
+  'aria-describedby': ariaDescribedBy,
 }: {
   id?: string;
   value: string;
   onChange: (name: string) => void;
+  /** Fired when a row is committed (Enter / Tab / click) — the id is null for "add as typed". */
+  onSelect?: (pick: ProducerPick) => void;
   className?: string;
   placeholder?: string;
   'aria-label'?: string;
+  'aria-invalid'?: boolean;
+  'aria-describedby'?: string;
 }) {
-  const [open, setOpen] = useState(false);
-  const [names, setNames] = useState<string[]>([]);
+  const [touched, setTouched] = useState(false);
+  /** Last settled fetch: which query it answered and what came back. */
+  const [result, setResult] = useState<{ query: string; rows: ProducerPick[]; error: boolean } | null>(null);
+
+  const query = value.trim();
+  // Derived, not stored: anything typed since the last settled fetch is "loading"
+  // (the debounced effect below will answer it), so no setState runs synchronously
+  // inside the effect.
+  const status: SuggestStatus =
+    !touched ? 'idle' : result === null || result.query !== query ? 'loading' : result.error ? 'error' : 'idle';
+
+  const options = useMemo<ProducerOption[]>(
+    () => (result && !result.error && result.query === query ? producerOptionsFor(query, result.rows) : []),
+    [result, query],
+  );
 
   useEffect(() => {
+    if (!touched) return;
     const ctrl = new AbortController();
-    const q = value.trim();
-    const params = new URLSearchParams({ is_active: 'true', limit: '40' });
-    if (q.length >= 1) params.set('search', q);
-    fetch(`/api/crm/advisors?${params}`, { signal: ctrl.signal, credentials: 'same-origin' })
-      .then((res) => (res.ok ? res.json() : { data: [] }))
-      .then((body: { data?: AdvisorRow[] }) => {
-        const next = (body.data ?? [])
-          .map(advisorLabel)
-          .filter((n) => n.length > 0);
-        setNames([...new Set(next)]);
-      })
-      .catch((err: unknown) => {
-        if ((err as { name?: string })?.name !== 'AbortError') setNames([]);
-      });
-    return () => ctrl.abort();
-  }, [value]);
+    const timer = window.setTimeout(() => {
+      const params = new URLSearchParams({ is_active: 'true', limit: '40' });
+      if (query.length >= 1) params.set('search', query);
+      fetch(`/api/crm/advisors?${params}`, { signal: ctrl.signal, credentials: 'same-origin' })
+        .then((res) => {
+          if (!res.ok) throw new Error(`advisors ${res.status}`);
+          return res.json() as Promise<{ data?: AdvisorRow[] }>;
+        })
+        .then((body) => {
+          const seen = new Set<string>();
+          const rows: ProducerPick[] = [];
+          for (const row of body.data ?? []) {
+            const name = advisorLabel(row);
+            if (!name) continue;
+            const rowId = typeof row.id === 'string' && row.id ? row.id : null;
+            const dedupeKey = rowId ?? name.toLowerCase();
+            if (seen.has(dedupeKey)) continue;
+            seen.add(dedupeKey);
+            rows.push({ name, id: rowId });
+          }
+          setResult({ query, rows, error: false });
+        })
+        .catch((err: unknown) => {
+          if ((err as { name?: string })?.name === 'AbortError') return;
+          setResult({ query, rows: [], error: true });
+        });
+    }, ENROLLED_BY_SEARCH_DEBOUNCE_MS);
+    return () => {
+      window.clearTimeout(timer);
+      ctrl.abort();
+    };
+  }, [query, touched]);
 
-  const visible = useMemo(() => names.slice(0, 12), [names]);
+  const commit = useCallback(
+    (item: ProducerOption) => {
+      onChange(item.name);
+      onSelect?.({ name: item.name, id: item.id });
+    },
+    [onChange, onSelect],
+  );
 
   return (
-    <div className="relative">
-      <Input
-        id={id}
-        value={value}
-        autoComplete="off"
-        aria-label={ariaLabel}
-        placeholder={placeholder}
-        className={className}
-        onFocus={() => setOpen(true)}
-        onBlur={() => {
-          window.setTimeout(() => setOpen(false), 150);
-        }}
-        onChange={(e) => onChange(e.target.value)}
-      />
-      {open && visible.length > 0 && (
-        <ul
-          className={cn(
-            'absolute z-30 mt-1 max-h-48 w-full overflow-auto rounded-md border border-slate-200 bg-white py-1 text-sm shadow-md',
-            'dark:border-white/10 dark:bg-slate-900',
-          )}
-        >
-          {visible.map((name) => (
-            <li key={name}>
-              <button
-                type="button"
-                className="w-full px-3 py-1.5 text-left text-slate-800 hover:bg-slate-100 dark:text-slate-100 dark:hover:bg-white/10"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => {
-                  onChange(name);
-                  setOpen(false);
-                }}
-              >
-                {name}
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
+    <SuggestPicker<ProducerOption>
+      id={id}
+      value={value}
+      onChange={onChange}
+      options={options}
+      getLabel={producerOptionLabel}
+      getKey={(item) => (item.addAsTyped ? '__add_as_typed__' : (item.id ?? `name:${item.name}`))}
+      onSelect={commit}
+      filter="none"
+      status={status}
+      loadingMessage="Searching…"
+      emptyMessage="No match"
+      errorMessage={ENROLLED_BY_ERROR_MESSAGE}
+      className={className}
+      placeholder={placeholder}
+      aria-label={ariaLabel}
+      aria-invalid={ariaInvalid}
+      aria-describedby={ariaDescribedBy}
+      onFocus={() => setTouched(true)}
+    />
   );
 }

@@ -14,11 +14,24 @@
  *   npm run audit:crm-visibility
  *
  * Exit code 1 if any record would render completely blank.
+ *
+ * --ux-reality  (Road to Ten RO-1) — delegates to scripts/audit-crm-ux-reality.mjs
+ *   (the single implementation of the PIFH live-reality PASS/FAIL table; extra
+ *   flags such as --write / --offline / --refresh are passed through).
  */
 import { createClient } from '@supabase/supabase-js';
 import { readFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { spawnSync } from 'node:child_process';
+
+// --ux-reality (RO-1): one implementation lives in scripts/audit-crm-ux-reality.mjs.
+if (process.argv.includes('--ux-reality')) {
+  const target = path.join(path.dirname(fileURLToPath(import.meta.url)), 'audit-crm-ux-reality.mjs');
+  const passthrough = process.argv.slice(2).filter((a) => a !== '--ux-reality');
+  const r = spawnSync(process.execPath, [target, ...passthrough], { stdio: 'inherit' });
+  process.exit(r.status ?? 1);
+}
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 

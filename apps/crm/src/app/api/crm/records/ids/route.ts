@@ -1,14 +1,24 @@
 /**
  * GET /api/crm/records/ids
  *
- * Returns ONLY the ids of records in a given module that match the current
- * list-page filter/search/scope/advisor state. Used by the "Select all N"
- * affordance in the mass-actions bar so we can apply bulk actions across
- * pagination boundaries without pulling full rows.
+ * Returns ONLY the ids of records in a module that match the current
+ * module-list page state. Used by the "Select all N" affordance in the
+ * mass-actions bar so bulk actions can span pagination boundaries without
+ * pulling full rows.
  *
- * Query params mirror the list endpoint (`/api/crm/records`):
- *   module_key, search, scope (all|mine|downline), advisor_id,
- *   include_downline, contact_type, group_id
+ * Query params are the module-list URL, exactly as `buildListQuery` in
+ * `app/crm/modules/[moduleKey]/page.tsx` writes them (see
+ * `LIST_QUERY_URL_KEYS` in lib/crm/list-query-resolve.ts):
+ *   module_key (required), view, filters (JSON ViewFilter[]), search,
+ *   scope (all|mine|downline), territory, sortField, sortDirection
+ * The saved view → filters resolution and the row predicate are the SAME code
+ * the list page runs (`loadListQueryState` + `applyRecordListQuery`), so the
+ * returned `total` equals the list's pager total for that URL. `sortField` /
+ * `sortDirection` are accepted for parity but do not change the row set.
+ *
+ * Legacy narrowers from the older contacts API are still honoured when
+ * present (advisor_id, include_downline, contact_type, group_id); the list
+ * page itself never writes them.
  *
  * Response: { ids: string[], total: number, capped: boolean }
  *
@@ -20,9 +30,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, getAuthProfile } from '@/lib/supabase-server';
 import {
-  applyCrmRecordTextSearch,
-  fetchModuleDataJsonKeysForSearch,
-} from '@/lib/crm/record-search';
+  applyRecordListQuery,
+  getCurrentProfile,
+  getDefaultView,
+  getFieldsForModule,
+  getViewsForModule,
+} from '@/lib/crm/queries';
+import { loadListQueryState, readListUrlQueryState } from '@/lib/crm/list-query-resolve';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,11 +60,14 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Resolve the module within this org only (keys like `contacts` exist
+    // per tenant) — never by key alone.
     const { data: moduleRow, error: moduleError } = await supabase
       .from('crm_modules')
       .select('id, org_id')
+      .eq('org_id', profile.organization_id)
       .eq('key', moduleKey)
-      .single();
+      .maybeSingle();
 
     if (
       moduleError ||
@@ -60,19 +77,46 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Module not found' }, { status: 404 });
     }
 
-    const search = searchParams.get('search');
+    // Same view → filters/scope/territory resolution as the list page
+    // (habit-preferred view included — the page reads it off ui_preferences).
+    const crmProfile = await getCurrentProfile();
+    const url = readListUrlQueryState(searchParams);
+    const [listState, fields] = await Promise.all([
+      loadListQueryState({
+        moduleKey,
+        loadViews: () => getViewsForModule(moduleRow.id),
+        loadDefaultView: () => getDefaultView(moduleRow.id),
+        uiPreferences: crmProfile?.ui_preferences,
+        url,
+      }),
+      // The page searches every field key of the module (uncapped, in
+      // display order) — mirror it so the search predicate is identical.
+      getFieldsForModule(moduleRow.id).catch(() => []),
+    ]);
+
+    const base = supabase
+      .from('crm_records')
+      .select('id', { count: 'exact' })
+      .eq('module_id', moduleRow.id);
+
+    // ONE predicate builder with the list page: org scope, trash, hide
+    // converted leads, territory, scope, system/related/field filters, search.
+    let { query } = await applyRecordListQuery(base, {
+      moduleId: moduleRow.id,
+      orgId: profile.organization_id,
+      moduleKey,
+      filters: listState.filters,
+      search: listState.search,
+      searchDataJsonKeys: fields.map((f) => f.key),
+      scope: listState.scope,
+      territoryId: listState.territoryId,
+    });
+
+    // ── Legacy narrowers (older contacts API callers) ──
     const advisorId = searchParams.get('advisor_id');
     const includeDownline = searchParams.get('include_downline') === 'true';
     const contactType = searchParams.get('contact_type');
     const groupId = searchParams.get('group_id');
-
-    let query = supabase
-      .from('crm_records')
-      .select('id', { count: 'exact' })
-      .eq('module_id', moduleRow.id)
-      .eq('org_id', profile.organization_id)
-      // "Select all" must not include trashed rows (would bulk-mutate them).
-      .is('deleted_at' as never, null);
 
     if (groupId) {
       const { data: members } = await supabase
@@ -107,11 +151,6 @@ export async function GET(request: NextRequest) {
 
     if (contactType) {
       query = query.eq('contact_type', contactType);
-    }
-
-    if (search?.trim()) {
-      const dataJsonKeys = await fetchModuleDataJsonKeysForSearch(supabase, moduleRow.id);
-      query = applyCrmRecordTextSearch(query, search, { dataJsonKeys });
     }
 
     // Append `id` tiebreaker so the 5,000-row hard-cap returns a reproducible

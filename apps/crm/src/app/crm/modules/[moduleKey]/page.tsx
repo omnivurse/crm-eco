@@ -21,7 +21,7 @@ import type { AdvisorTreeData, AgentTreeData } from '@/lib/crm/queries';
 import { ModuleListClient } from './ModuleListClient';
 import type { CrmModule, CrmField, CrmView, CrmRecord, ViewSort, ViewFilter, TreeGroupBy, CrmDealStage } from '@/lib/crm/types';
 import { CRM_RECORD_PAGE_SIZES, parseCrmRecordPageSize } from '@/lib/crm/record-list-constants';
-import { parseHabitsProfile } from '@/lib/crm/habits/types';
+import { habitPreferredViewId, resolveListQueryState } from '@/lib/crm/list-query-resolve';
 
 /* ---------- Contacts tab components (lazy-loaded) ---------- */
 const ContactGroups = dynamic(() => import('@/components/contacts/ContactGroups'));
@@ -180,42 +180,19 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
   const views = viewsResult.status === 'fulfilled' ? viewsResult.value : [];
   const defaultView = defaultViewResult.status === 'fulfilled' ? defaultViewResult.value : null;
 
-  // Resolve current view (sync — no extra await)
-  // Habit preferred view wins when URL has no explicit ?view= and user
-  // has no stronger default already applied via viewId.
-  let currentView: CrmView | null = null;
-  if (viewId) {
-    currentView = views.find(v => v.id === viewId) || null;
-  }
-  if (!currentView) {
-    const habitViewId = parseHabitsProfile(profile.ui_preferences?.habits)
-      ?.preferred_views?.[moduleKey];
-    if (habitViewId) {
-      currentView = views.find((v) => v.id === habitViewId) || null;
-    }
-  }
-  if (!currentView) {
-    currentView = defaultView;
-  }
-
-  // Build sort: URL params override view defaults
-  let sort: ViewSort[] = currentView?.sort || [];
-  if (sortField) {
-    sort = [{ field: sortField, direction: sortDirection || 'asc' }];
-  }
-
-  // Build filters: URL params override view defaults
-  let filters: ViewFilter[] = currentView?.filters || [];
-  if (filtersParam) {
-    try {
-      const parsed = JSON.parse(filtersParam);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        filters = parsed;
-      }
-    } catch {
-      // Invalid JSON, fall back to view filters
-    }
-  }
+  // Resolve current view + sort + filters (sync — no extra await). URL
+  // ?view= wins, then the habit-preferred view, then the module default; URL
+  // sort/filters override the view's. Shared with the ids-only "Select all N"
+  // endpoint (lib/crm/list-query-resolve.ts) so both read the URL identically.
+  const listState = resolveListQueryState({
+    views,
+    defaultView,
+    habitViewId: habitPreferredViewId(profile.ui_preferences, moduleKey),
+    url: { view: viewId, search, scope, sortField, sortDirection, filters: filtersParam, territory: territoryId },
+  });
+  const currentView: CrmView | null = listState.currentView;
+  const sort: ViewSort[] = listState.sort;
+  const filters: ViewFilter[] = listState.filters;
 
   // Step 3: fetch records (needs resolved sort/filters from views)
   let recordsModuleId = crmModule.id;
@@ -228,12 +205,12 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
       moduleKey,
       page,
       pageSize,
-      search,
+      search: listState.search,
       searchDataJsonKeys: fields.map((f) => f.key),
       filters,
       sort,
-      scope: scope || 'all',
-      territoryId: territoryId || undefined,
+      scope: listState.scope,
+      territoryId: listState.territoryId,
     });
     records = result.records;
     total = result.total;
@@ -252,11 +229,11 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
           orgId: membersModule.org_id,
           page,
           pageSize,
-          search,
+          search: listState.search,
           filters,
           sort,
-          scope: scope || 'all',
-          territoryId: territoryId || undefined,
+          scope: listState.scope,
+          territoryId: listState.territoryId,
         });
 
         if (fallback.total > 0) {

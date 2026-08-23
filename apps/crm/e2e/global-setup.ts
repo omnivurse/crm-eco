@@ -2,6 +2,8 @@
  * EV-1/EV-3 global setup: run the pre-login traps, log the walk role in at
  * /crm-login behind the PIN cookie, save storageState, run the post-login
  * traps, and open the run's artifact folder (WALK_RUN_DIR) for walk.json.
+ * Every failure — pre-login traps included — leaves trap-<name>.png plus
+ * env.json in the run folder, so global-teardown always writes walk.json.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -144,42 +146,8 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
     NEGATIVE.forceViewportWidth ? `E2E_FORCE_VIEWPORT_WIDTH=${NEGATIVE.forceViewportWidth}` : null,
   ].filter(Boolean);
   if (negatives.length > 0) console.log(`[walk] NEGATIVE-RUN switches active: ${negatives.join(' ')} — this run is expected to FAIL on a trap`);
-  console.log('[walk] pre-login traps');
-  keep(await trapProdGuard({ supabaseUrl, serviceRoleKey: serviceKey }), 'pre-login');
-  const bare = await pwRequest.newContext({ baseURL });
-  try {
-    keep(await trapPinGate(bare, baseURL), 'pre-login');
-  } finally {
-    await bare.dispose();
-  }
-
-  // ── Login ────────────────────────────────────────────────────────────
-  const browser = await chromium.launch();
-  const context = await browser.newContext({ baseURL, viewport: desktopViewport() });
-  // Negative run (E2E_SKIP_PIN_COOKIE=1): arm nothing — pin-gate above already failed; this keeps the two honest together.
-  if (!NEGATIVE.skipPinCookie) await context.addCookies([pinCookie(baseURL)]);
-  const page = await context.newPage();
-  const supabaseHosts = new Set<string>();
-  page.on('request', (req) => {
-    try {
-      const u = new URL(req.url());
-      if (u.port === '54321' || /supabase/i.test(u.hostname) || u.pathname.startsWith('/auth/v1') || u.pathname.startsWith('/rest/v1')) {
-        supabaseHosts.add(u.host);
-      }
-    } catch {
-      /* ignore */
-    }
-  });
-
   let navProfile: 'full' | 'simple' | 'unknown' = 'unknown';
   let layoutV2 = false;
-  const failShot = async (name: string) => {
-    try {
-      await page.screenshot({ path: path.join(dir, `trap-${name}.png`), fullPage: true });
-    } catch {
-      /* ignore */
-    }
-  };
 
   const writeEnv = () => {
     const projects = config.projects.map((p) => p.name).filter((n) => n.length > 0);
@@ -204,6 +172,74 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
         2,
       ),
     );
+  };
+
+  /**
+   * A pre-login trap (prod-guard / pin-gate) fails before any browser context
+   * exists. EV-3 still wants "the named trap AND a screenshot" in the run
+   * folder, so open a throwaway context, load /crm exactly as the failed probe
+   * saw it (no PIN cookie — the disguise page is the evidence) and save
+   * trap-<name>.png; env.json follows so global-teardown can still write
+   * walk.json with the failed trap row.
+   */
+  const preLoginShot = async (name: string) => {
+    let throwaway: Awaited<ReturnType<typeof chromium.launch>> | null = null;
+    try {
+      throwaway = await chromium.launch();
+      const ctx = await throwaway.newContext({ baseURL, viewport: desktopViewport() });
+      const p = await ctx.newPage();
+      await p.goto('/crm', { waitUntil: 'domcontentloaded', timeout: 60_000 }).catch(() => {
+        /* screenshot whatever rendered (about:blank if the server is down) */
+      });
+      await p.screenshot({ path: path.join(dir, `trap-${name}.png`), fullPage: true });
+    } catch (shotErr) {
+      console.warn(`[walk] could not capture trap-${name}.png: ${(shotErr as Error).message}`);
+    } finally {
+      await throwaway?.close().catch(() => {
+        /* ignore */
+      });
+    }
+  };
+
+  console.log('[walk] pre-login traps');
+  try {
+    keep(await trapProdGuard({ supabaseUrl, serviceRoleKey: serviceKey }), 'pre-login');
+    const bare = await pwRequest.newContext({ baseURL });
+    try {
+      keep(await trapPinGate(bare, baseURL), 'pre-login');
+    } finally {
+      await bare.dispose();
+    }
+  } catch (err) {
+    await preLoginShot(err instanceof TrapFailure ? err.trap.name : 'setup-failure');
+    writeEnv();
+    throw err;
+  }
+
+  // ── Login ────────────────────────────────────────────────────────────
+  const browser = await chromium.launch();
+  const context = await browser.newContext({ baseURL, viewport: desktopViewport() });
+  // Negative run (E2E_SKIP_PIN_COOKIE=1): arm nothing — pin-gate above already failed; this keeps the two honest together.
+  if (!NEGATIVE.skipPinCookie) await context.addCookies([pinCookie(baseURL)]);
+  const page = await context.newPage();
+  const supabaseHosts = new Set<string>();
+  page.on('request', (req) => {
+    try {
+      const u = new URL(req.url());
+      if (u.port === '54321' || /supabase/i.test(u.hostname) || u.pathname.startsWith('/auth/v1') || u.pathname.startsWith('/rest/v1')) {
+        supabaseHosts.add(u.host);
+      }
+    } catch {
+      /* ignore */
+    }
+  });
+
+  const failShot = async (name: string) => {
+    try {
+      await page.screenshot({ path: path.join(dir, `trap-${name}.png`), fullPage: true });
+    } catch {
+      /* ignore */
+    }
   };
 
   try {

@@ -29,6 +29,7 @@ import {
   type NoteOriginFilter,
 } from '@/lib/crm/note-filter';
 import { dedupeNotesForDisplay } from '@/lib/crm/note-dedupe';
+import { openNoteComposer } from '@/lib/crm/note-composer';
 import { toast } from 'sonner';
 import { toastItemDeletedWithUndo } from '@/lib/crm/undo-delete';
 import { toastCopy } from '@/lib/crm/toast-copy';
@@ -198,25 +199,41 @@ export function NotesPanel({ recordId, notes, orgId, hasLegacyNotes = false }: N
   const [editingNote, setEditingNote] = useState<CrmNoteWithAuthor | null>(null);
   const [editNoteBody, setEditNoteBody] = useState('');
   const [isEditSubmitting, setIsEditSubmitting] = useState(false);
-  /** Bumps keyed remount so the rich editor resets each time Add Note opens */
+  /** Bumps keyed remount so the rich editor resets on each FRESH Add Note open */
   const [composeEpoch, setComposeEpoch] = useState(0);
+  /** Bumps to re-focus the mounted editor when compose fires mid-draft */
+  const [composeFocusSignal, setComposeFocusSignal] = useState(0);
   const [sortDir, setSortDir] = useState<'newest' | 'oldest'>('newest');
   const [newNoteDate, setNewNoteDate] = useState<string>(() => localDateInputValue());
   const [editNoteDate, setEditNoteDate] = useState<string>('');
   const [optimisticNotes, setOptimisticNotes] = useState<CrmNoteWithAuthor[]>([]);
 
+  // One rule for every entry point (pane button, header button, `n`, deep
+  // link): never wipe a draft — a repeat compose while already composing only
+  // re-focuses the editor; a fresh open resets + remounts (autoFocus).
   const openComposer = () => {
-    setNewNote('');
-    setNewNoteDate(localDateInputValue());
-    setComposeEpoch((e) => e + 1);
-    setIsAdding(true);
+    const next = openNoteComposer(
+      {
+        isAdding,
+        draft: newNote,
+        noteDate: newNoteDate,
+        epoch: composeEpoch,
+        focusSignal: composeFocusSignal,
+      },
+      localDateInputValue(),
+    );
+    setNewNote(next.draft);
+    setNewNoteDate(next.noteDate);
+    setComposeEpoch(next.epoch);
+    setComposeFocusSignal(next.focusSignal);
+    setIsAdding(next.isAdding);
   };
 
   useEffect(() => {
     if (!compose || compose.composeNonce === 0) return;
     openComposer();
-    // Only react to new compose requests, not to the helper identity.
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- nonce is the signal
+    // Only react to new compose requests (nonce), not to the helper identity;
+    // openComposer is re-created per render so it always sees current state.
   }, [compose?.composeNonce]);
 
   const handleEditSubmit = async () => {
@@ -362,7 +379,13 @@ export function NotesPanel({ recordId, notes, orgId, hasLegacyNotes = false }: N
           }}
         >
           <p className="text-sm font-semibold text-slate-900 dark:text-white">Add Note</p>
-          <NoteRichArea key={`compose-${composeEpoch}`} value={newNote} onChange={setNewNote} />
+          <NoteRichArea
+            key={`compose-${composeEpoch}`}
+            value={newNote}
+            onChange={setNewNote}
+            autoFocus
+            focusSignal={composeFocusSignal}
+          />
           <p className="text-xs text-slate-400 dark:text-slate-500">
             Cmd+Enter to save. Paste from email or Docs keeps formatting when safe.
           </p>

@@ -13,10 +13,14 @@ branch `feat/usability-road-to-ten` (wave 0).
 |---|---|---|---|
 | `crm-palette-input` | components/crm/shell/CommandPalette.tsx:736 | `<Input>` | Command palette query box |
 | `crm-palette-result` | components/crm/shell/CommandPalette.tsx:815 | `<button>` (one per row) | Palette result / command row — `getByTestId(...).first()` or filter by text |
-| `crm-qc-form` | components/zoho/QuickCreateDrawer.tsx:889 | `<form>` | Quick-create drawer form root |
-| `data-field-key="<key>"` | components/zoho/QuickCreateDrawer.tsx:817 | wrapper `<div>` per field | Quick-create field cell; select the control with `[data-field-key="phone"] input` / `select` / `button[role=combobox]` |
-| `crm-qc-save-add-another` | components/zoho/QuickCreateDrawer.tsx:1126 | `<Button type=button>` | "Save & add another" (hidden once `created`) |
-| `crm-qc-submit` | components/zoho/QuickCreateDrawer.tsx:1140 | `<Button type=submit>` | Primary save (save & open record) |
+| `crm-qc-form` | components/zoho/QuickCreateDrawer.tsx:1085 | `<form>` | Quick-create drawer form root |
+| `data-field-key="<key>"` | components/zoho/QuickCreateDrawer.tsx:1004 | wrapper `<div>` per field | Quick-create field cell; select the control with `[data-field-key="phone"] input` / `select` / `button[role=combobox]` |
+| `crm-qc-save-add-another` | components/zoho/QuickCreateDrawer.tsx:1316 | `<Button type=button>` | "Save & add another" (hidden once `created`) |
+| `crm-qc-submit` | components/zoho/QuickCreateDrawer.tsx:1330 | `<Button type=submit>` | Primary save (save & open record) |
+| `id="qc-<module>-<key>"` | components/zoho/QuickCreateDrawer.tsx:778 | field control (`input` / native `select` / picker input) | Quick-create control id (Wave 1: `product`/`product_type` are native `<select>`s — drive by type-ahead; `producer_name`/`producer` are the Enrolled-by combobox) |
+| `id="qc-<module>-<key>-other"` (+ `data-testid` same) | components/zoho/QuickCreateDrawer.tsx:933 | `<Input>` | "Other…" free-text input revealed under an `allowOther` select (DE-1) |
+| `id="qc-<module>-<key>-error"` | components/zoho/QuickCreateDrawer.tsx:1010 | `<p role=alert>` | Field-anchored validation message (DE-5); the control carries `aria-invalid` + `aria-describedby` |
+| `id="qc-<module>-<key>-hint"` | components/zoho/QuickCreateDrawer.tsx:1014 | `<p>` | Render-time hint under Coverage start (`Pending needs a Coverage start date`) |
 | `crm-notes-composer` | app/crm/r/[recordId]/NotesPanel.tsx:355 | `<div>` | Add-Note composer root (rendered only while adding) |
 | `crm-notes-save` | app/crm/r/[recordId]/NotesPanel.tsx:393 | `<Button>` | Composer Save (disabled while empty/saving) |
 | `data-field-key="<key>"` | components/crm/records/DynamicRecordForm.tsx:1059, 1086 | field cell `<div>` (dense row + stacked) | Record edit/overview field cell; input inside also has `id=<key>` and `aria-label` |

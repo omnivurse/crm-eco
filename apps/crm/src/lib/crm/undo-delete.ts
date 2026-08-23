@@ -1,6 +1,7 @@
 'use client';
 
 import { toast } from 'sonner';
+import { toastCopy } from '@/lib/crm/toast-copy';
 
 /**
  * Client helpers for the CRM undo-delete flow (Phase 1: records).
@@ -38,7 +39,7 @@ export interface DeletedToastOptions {
  * batch. Falls back to a plain success toast if there is no batch id.
  */
 export function toastDeletedWithUndo({ batchId, count = 1, onUndo }: DeletedToastOptions) {
-  const message = count > 1 ? `${count} records moved to Trash` : 'Moved to Trash';
+  const message = toastCopy.movedToTrash(count);
 
   if (!batchId) {
     toast.success(message);
@@ -52,10 +53,18 @@ export function toastDeletedWithUndo({ batchId, count = 1, onUndo }: DeletedToas
       onClick: async () => {
         const ok = await restoreTrashBatch(batchId);
         if (ok) {
-          toast.success(count > 1 ? `${count} records restored` : 'Record restored');
+          toast.success(
+            count > 1 ? toastCopy.counted('record', count, 'Restored') : toastCopy.restored('Record'),
+          );
           onUndo?.();
         } else {
-          toast.error('Could not restore — open Trash to recover it.');
+          toast.error(
+            toastCopy.failed(
+              count > 1 ? 'restore the records' : 'restore the record',
+              undefined,
+              count > 1 ? 'Open Trash to recover them' : 'Open Trash to recover it',
+            ),
+          );
         }
       },
     },
@@ -101,17 +110,19 @@ export interface ItemDeletedToastOptions {
 /** "<Label> deleted · Undo" toast that restores one child entity on Undo. */
 export function toastItemDeletedWithUndo({ entity, id, label, onUndo }: ItemDeletedToastOptions) {
   const noun = label ?? 'Item';
-  toast.success(`${noun} deleted`, {
+  toast.success(toastCopy.deleted(noun), {
     duration: 8000,
     action: {
       label: 'Undo',
       onClick: async () => {
         const ok = await restoreTrashItem(entity, id);
         if (ok) {
-          toast.success(`${noun} restored`);
+          toast.success(toastCopy.restored(noun));
           onUndo?.();
         } else {
-          toast.error(`Could not restore the ${noun.toLowerCase()}.`);
+          toast.error(
+            toastCopy.failed(`restore the ${noun.toLowerCase()}`, undefined, 'Open Trash to recover it'),
+          );
         }
       },
     },

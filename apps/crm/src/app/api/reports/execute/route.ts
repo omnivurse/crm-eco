@@ -134,11 +134,15 @@ export async function POST(request: NextRequest) {
         p_table: table,
         p_org_column: orgColumn,
         p_module_id: resolvedModuleId,
-        p_filters: JSON.stringify(normalizedFilters),
+        // jsonb params: pass real arrays, never JSON.stringify() (a stringified
+        // array reaches Postgres as a jsonb scalar → 22023 "cannot extract
+        // elements from a scalar"). The text-typed execute_report_query below
+        // is different and DOES take JSON strings.
+        p_filters: normalizedFilters,
         p_filter_logic: filterLogic?.logic || 'and',
-        p_grouping: JSON.stringify(grouping),
-        p_aggregations: JSON.stringify(aggregations),
-        p_sorting: JSON.stringify(sorting),
+        p_grouping: Array.isArray(grouping) ? grouping : [],
+        p_aggregations: Array.isArray(aggregations) ? aggregations : [],
+        p_sorting: Array.isArray(sorting) ? sorting : [],
         p_limit: pageSize,
         p_offset: (page - 1) * pageSize,
         p_product_type: productType || null,

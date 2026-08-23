@@ -15,11 +15,18 @@ Everything lives in `apps/crm/e2e/`:
 | `global-teardown.ts` | merges the run ledger into `walk.json` and validates it against `report/walk-schema.json` |
 | `traps.ts` | every false-result trap + `assertTrapsInTest()` for per-project re-assertion |
 | `walk-fixture.ts` | the `walk` fixture (`task` / `click` / `press` / `type` / `shot`) + the in-page trusted-event cross-check |
-| `walk-counter.ts`, `walk-counter.test.ts` | pure counter logic + vitest unit test |
+| `walk-counter.ts`, `walk-counter.test.ts` | pure counter logic + task outcome (soft mode) + vitest unit test |
 | `walk-report.ts` | `walk.json` builder + minimal schema validator |
+| `walk-helpers.ts` | EV-5 spec helpers (toast titles, request tracker, `tel:` stub, pager parser) — no counted actions live here |
+| `nav-tabs.ts`, `nav-tabs.test.ts` | mirror of `resolveTopModuleFromPathname` for the nav walk + vitest that pins it to the app |
 | `env.ts` | local keys, fixture contract, paths |
 | `check-no-raw-actions.sh` | grep gate: no raw `page.click/press/fill` in `specs/**` |
-| `specs/*.spec.ts` | the walks (today: `smoke.spec.ts`) |
+| `specs/smoke.spec.ts` | EV-1 smoke (one task) |
+| `specs/walk-persona.spec.ts` | EV-5 T1–T5 (find by phone, coverage at a glance, Add Note, Add Member + see on list, oldest Pending → Call) |
+| `specs/walk-record.spec.ts` | EV-5 T6 inline patch (D7), header density at rest (D6), reload keeps the Notes pane |
+| `specs/walk-lists.spec.ts` | EV-5 rail / lane chip / rail Apply / pager / Back restores / `?page=abc` / select-all / mobile sheet |
+| `specs/walk-nav.spec.ts` | EV-5 tab + sidebar inventory, search-copy parity, cross-tab links (D10), palette, deals/pipeline redirects |
+| `specs/walk-drawer.spec.ts` | EV-5 quick-create drawer: keyboard paste, duplicate card, invalid date, Pending lead, viewer persona |
 
 ## Run it
 
@@ -32,7 +39,8 @@ cd apps/crm && npm run walk:crm:ui                 # Playwright UI mode
 cd apps/crm && WALK_ROLE=admin npm run walk:crm    # admin persona (viewer: WALK_ROLE=viewer)
 cd apps/crm && npx playwright test -c e2e/playwright.config.ts --project=desktop-1440
 cd apps/crm && npm run walk:crm:unit               # counter unit test (vitest)
-cd apps/crm && npm run walk:crm:check              # raw-action grep gate + tsc of e2e/
+cd apps/crm && npm run walk:crm:check              # raw-action grep gate + tsc of e2e/ + lint:changed
+cd apps/crm && npm run lint:changed                # no-NEW-lint-findings ratchet (see "Lint gate")
 ```
 
 Ports: the app is `http://localhost:3000` (`WALK_BASE_URL` overrides). Locally the
@@ -71,10 +79,11 @@ Org `00000000-0000-0000-0000-000000000001`, slug **`pifh-local`**, full shell
 All three: `profiles.role='staff'`, `organization_id` = the org, `is_active=true`.
 
 Records (module `contacts` unless stated):
-- **Anchor**: Wendy Walker · phone `5550107788` (unique) · `wendy.walker@example.invalid` · member_number `WALK-0001` · an allowed **Active-lane** status · a plan/product value · `sharing_effective_date 2026-09-01` · `producer_name 'Wen Producer'`.
+- **Anchor**: Wendy Walker · phone `5550107788` (unique **within contacts** — the `members` twin WALK-0001 carries the same phone on purpose, like prod contact/member twins; `findAnchorRecord` resolves the anchor to the contacts row) · `wendy.walker@example.invalid` · member_number `WALK-0001` · an allowed **Active-lane** status · a plan/product value · `sharing_effective_date 2026-09-01` · `producer_name 'Wen Producer'`.
 - **Pending lane**: ≥ 3 contacts with an allowed Pending-lane status, `created_at` spread over days; oldest is **Pat Pending** (`5550107701`).
 - **Total contacts ≥ 32** so the list pages at 25/page.
 - One lead **Lee Lead**; one advisor record **Wen Producer** in the CRM `advisors` module.
+- **Producers (Wave 1, DE-3)**: `public.advisors` rows **Wen Producer / Pat Producer / Pia Producer** for PIFH (the Enrolled-by picker source; `GET /api/crm/advisors`); the anchor carries `producer_record_id` = Wen's `public.advisors.id`. **Product options (DE-1)**: `contacts.product` and `leads.product_type` carry the 43 tier-A options from `scripts/e2e/product-options.proposed.json` LOCALLY (prod has 0 options until the gated migration) — `walk.type` on that `<select>` is type-ahead (`Health Sharing`).
 - Statuses come from `public.crm_status_vocabulary` (DB-enforced).
 
 Auth surfaces: PIN cookie `lgq_ok` = a future unix-epoch **milliseconds** value
@@ -132,6 +141,15 @@ test('T1 find by phone', async ({ page, walk }) => {
   (`shots/<project>/<test>/<task>/NN-<label>.png`, plus `end`/`error`), appends the
   record to the run ledger, then asserts `expect(clicks).toBeLessThanOrEqual(budget)`.
   Tasks do not nest; actions outside a task throw.
+- `task(id, label, budget, fn, { soft: true })` (EV-5) — the task records `pass: false`
+  plus a `reason` (the first assertion message, or `over click budget (n > budget)`) and
+  the spec **continues** instead of failing. Soft tasks carry budgets/assertions about
+  work a later wave ships (D1 "see on list", D6/D7 record header, D10 sticky tab, LS-*),
+  so walk.json stays honest without aborting the walk. Harness integrity is never soft:
+  a wrapper↔browser tally mismatch or a `walk.*` call outside a task still throws.
+  `resolveTaskOutcome()` in `walk-counter.ts` is the pure rule (unit-tested).
+- `note(key, value)` records a fact on the current task (`tasks[].notes` in walk.json —
+  counts, hrefs, observed copy, the field T6 patched, …). String/number/boolean/null only.
 
 ## Reading `walk.json`
 
@@ -148,11 +166,18 @@ Every run writes `apps/crm/e2e/artifacts/crm-walk/<ISO timestamp>/walk.json`
            "project": "desktop-1440,tablet-1024,mobile-390", "role": "operator" },
   "traps": [ { "name": "prod-guard", "pass": true, "detail": "…", "phase": "pre-login" }, … ],
   "tasks": [ { "id": "T1", "label": "…", "clicks": 2, "keypresses": 2, "typedChars": 10,
-               "ms": 1840, "budget": 2, "pass": true, "project": "desktop-1440",
+               "ms": 1840, "budget": 2, "pass": true, "soft": false, "project": "desktop-1440",
                "viewport": "1440x900", "test": "…",
-               "steps": [ { "label": "open palette", "shot": "shots/…/01-open-palette.png", "kind": "press", "ms": 120 } ] } ]
+               "steps": [ { "label": "open palette", "shot": "shots/…/01-open-palette.png", "kind": "press", "ms": 120 } ],
+               "notes": { "landedId": "…" } },
+             { "id": "T5-desk", "…": "…", "pass": false, "soft": true,
+               "reason": "the desk must list the oldest Pending person with a Call link", "notes": { "href": null } } ]
 }
 ```
+
+`soft` marks a task whose failure does not fail the Playwright run (see "Counting
+rules"); `reason` is present only when `pass` is false; `notes` holds the facts the
+task recorded with `walk.note()`. A grader reads `pass` — hard or soft — the same way.
 
 `env.viewport`/`env.project` describe the run (first project / all projects); each
 task row carries its own `project` + `viewport`. `traps` rows from `assertTrapsInTest`
@@ -178,6 +203,88 @@ Fixture: `crm_agent` primary, plus admin and viewer runs (`WALK_ROLE`). CI:
 `workflow_dispatch` first, required check after two green runs. Runs on the local
 stack only — never prod, never Vercel previews.
 
+## The walk — task ids, budgets, mode (EV-5)
+
+Budgets count **clicks** (keypresses are recorded, not budgeted — a chord is one).
+"Hard" tasks fail the Playwright run when the product misses the budget today; "soft"
+tasks record `pass=false` + `reason` and the walk continues (they describe Wave-2 work).
+Specs run on all three projects unless noted.
+
+| Task id | Spec | What is measured | Budget | Mode |
+|---|---|---|---|---|
+| `T1` | walk-persona | ⌘K (mobile: search icon) → type `5550107788` → **Records** bucket → Enter (mobile: tap the hit) → `/crm/r/<anchor id>` | 2 clicks (desktop: 0 clicks, 2 keypresses + 10 typed chars) | hard |
+| `T2` | walk-persona | On the record: Coverage Snapshot (`crm-record-snapshot`), status badge, `a[href="tel:…"]`, "Enrolled by", member # `WALK-0001`, "Recent notes" region, V2 `Add note` group — visible, 0 clicks | 0 | hard |
+| `T2-above-fold` | walk-persona | The same six elements fully inside the viewport without scrolling | 0 | soft |
+| `T3` | walk-persona | `crm-record-add-note` (mobile: action-bar Note) → `document.activeElement.isContentEditable` → type → ⌘Enter → `POST /api/crm/notes` 2xx → toast text **equals** `toastCopy.added('Note')` | 1 | hard |
+| `T3-hotkey` | walk-persona | Same with the `n` hotkey (no composer open, focus on body) | 0 | hard |
+| `T4` | walk-persona | `crm-create-primary` (mobile: `crm-create-primary-mobile`) → first field focused → 10 values by `walk.type` + Tab in `quick-create-config` order (State `<select>` is tabbed through; `product` is a native `<select>` of tier-A options + "Other…" since DE-1, driven by type-ahead — the value is an option label, `Health Sharing`; ends on Sharing effective date — a text field) → Enter → `POST /api/crm/records` 2xx → toast text equals `toastCopy.added('Member')` → pathname `/crm/r/<new id>` → drawer closed | 1 | hard |
+| `T4-see-on-list` | walk-persona | From the new record ≤1 click to the originating list showing the new row (D1: toast action "View in list", else the breadcrumb back link) — `notes.via` records which | 1 | soft |
+| `T5-desk` | walk-persona | `/crm` desk → `getByRole('link', { name: 'Call Pat Pending' })` (href `tel:5550107701`; the desk renders the queue twice — md+ table and mobile list — so the role query skips the `display:none` copy); `tel:` default action stubbed so headless Chromium keeps the page | 1 | soft |
+| `T5-list` | walk-persona | `/crm/modules/contacts` → Pending chip → Pat's row (desktop cells "Pat" \| "Pending", mobile card "Pat Pending") → `a[href="tel:5550107701"]`; records whether the desktop table only offers the `crm-row-call` button (it does today → fails) | 2 | soft |
+| `T6` | walk-record | First visible inline-editable text cell among `preferred_name, middle_name, referring_member, mailing_city` on the anchor: click → type → Tab → `PATCH /api/crm/records/<id>` 2xx → emerald `svg.lucide-check` in the cell, no "saved" toast (D7); `notes.field`. Before the click `nudgeIntoClickableView` scrolls the record's own scroll container until the cell is not under sticky chrome (`notes.T6.scrollNudges`; 0 on desktop/tablet, >0 on mobile-390 — evidence, not a counted action) | 1 | hard |
+| `T6-aria-live` | walk-record | An `[aria-live]` region announces "Saved" (D7) | 0 | soft |
+| `T6-restore` | walk-record | Writes the seeded value back (keeps the fixture honest) | 1 | soft |
+| `RP-header-density` | walk-record | Header at rest (D6): exactly one search input (global `Search records...` + `data-inline-record-search` counted), no dashed "Add Tags" pill, no Needs Review/Classification badge for `crm_agent`, ≤1 Email action below `lg` | 0 | soft |
+| `RP-notes-pane-reload` | walk-record | Notes pane chip (or Recent notes → View all) → reload → Notes tab still `aria-selected` | 1 | soft |
+| `LS-rail-default` | walk-lists (lg+) | `crm-filter-rail[data-state=open]` on a fresh list | 0 | soft |
+| `LS-lane-chip` | walk-lists (lg+) | Pending lane chip → `aria-pressed` + `filters=` in the URL; chip count == pager N | 1 | soft |
+| `LS-rail-apply` | walk-lists (lg+) | Rail: **Contact Status** → "Select all Pending statuses" → Apply; a visible pending state (`aria-busy`/progressbar/skeleton) within 2 s; pager N == chip N | 3 | soft |
+| `LS-pager-next` | walk-lists (lg+) | `crm-pager-next` → "Showing 26 to min(50,N) of N", `?page=2` | 1 | hard |
+| `LS-back-restores` | walk-lists (lg+) | Page 2 → first row (the default contacts view has no `title` column, so rows carry no link — the row click navigates, `?returnTo=` appended) → breadcrumb Back → same URL, rail `data-state`, `thead th` columns | 2 | soft |
+| `LS-page-abc` | walk-lists (lg+) | `?page=abc` → "Showing 1 to …" (no NaN) | 0 | soft |
+| `LS-export-zero` | walk-lists (lg+) | `?search=zz-no-such-record-<suffix>` → empty state, no pager, header "0 records", `crm-list-export` disabled + `aria-disabled` + title "Nothing to export yet"; a forced click (Playwright `force`, counted) raises no toast and no `/api/crm/records/export-csv` request (D9) | 1 | hard |
+| `LS-select-all` | walk-lists (lg+) | Lane chip (prefers a lane > page size) → "Select all rows" → "Select all N" → toast `Selected N records` with N == filtered pager N (single-page lane: the visible `N selected` — MassActionsBar renders the count once per breakpoint) | 3 | soft |
+| `LS-mobile-filter` | walk-lists (mobile) | `crm-filter-trigger` if visible, else "Filters & View" → the trigger inside MobileToolbarDrawer (`notes.viaFiltersAndView`) → Contact Status → Pending lane → Apply; pager N == chip N | 4 | soft (5 taps today) |
+| `NV-inventory` | walk-nav | `goto` each tab: tab count, sidebar links per tab (`notes.links.<tab>`), exactly one `aria-current` tab + one sidebar link | 0 | soft |
+| `NV-search-copy` | walk-nav | Top-bar pill / sidebar trigger / palette placeholder + aria recorded; all equal `SEARCH_PLACEHOLDER`, palette aria == `SEARCH_ARIA_LABEL` | 0 (1 keypress) | soft (fails today) |
+| `NV-cross-tab` | walk-nav (lg+) | Every sidebar link whose href resolves to another tab (`nav-tabs.ts`; ~16): click it, record `tab=… swapped=…`; assert 0 sidebar swaps (D10 sticky tab) | = number of cross-tab links | soft (fails today) |
+| `NV-palette` | walk-nav | ⌘K: phone / member # / name each list Wendy Walker; "task" lists a page | 0 | soft |
+| `NV-redirects` | walk-nav | `/crm/modules/deals` → enabled sibling; `/crm/pipeline` redirected and no Pipeline sidebar link for a deals-disabled org (D10) | 0 | soft |
+| `DE-open` | walk-drawer | Add Member → `#qc-contacts-first_name` focused | 1 | hard |
+| `DE-paste` | walk-drawer | 10 values in config order, zero mouse actions, every value present (`product` by type-ahead on the native `<select>`, see T4) | 0 | hard |
+| `DE-dup-card` | walk-drawer | Name + phone of the anchor → amber `role=alert` card with "Create anyway"; every other value kept (incl. the `product` pick); Enter does not POST | 0 | hard |
+| `DE-discard` | walk-drawer | Escape → "Discard what you typed?" → Discard | 1 | hard |
+| `DE-invalid-date` | walk-drawer | DOB `13/45/2026` → Enter → inline `role=alert` naming the date, **no** `POST /api/crm/records` (a save that slips through lands on the new record and is reported) | 1 | soft (may fail today) |
+| `DE-lead-pending` | walk-drawer | Add Member → Lead → Status → Pending (4 clicks) → names typed → Enter (native submit, same path as Add Lead) with no date → POST 2xx + toast `toastCopy.added('Lead')` | 4 | soft |
+| `DE-viewer-no-create` | walk-drawer (`WALK_ROLE=viewer`) | No `crm-create-primary(-mobile)` | 0 | soft |
+
+Every drawer submit also asserts the raw server code `PENDING_REQUIRES_START_DATE`
+never appears on screen. The drawer and T4 create records with a per-run suffix
+(`Walk<suffix>`, `555…` phones) in the LOCAL DB only; re-seeding
+(`scripts/e2e/seed-walk-fixture.mjs`) is idempotent for the fixture rows and leaves
+those extra rows alone unless you pass `--prune-walk-rows` (the preflight for a
+recorded walk — see "Known sharp edges"). Toast text is always compared with the imported
+`apps/crm/src/lib/crm/toast-copy.ts` helper (relative import from `e2e/specs`), never a
+literal.
+
+## First recorded walk (2026-08-23, Wave 1 code, commit dc108f36 + uncommitted Wave-1 tree)
+
+Two consecutive full runs (`--prune-walk-rows` preflight before each; all three projects,
+`role=operator`, `nav=full`, `v2=true`) — 33 Playwright tests passed, 6 skipped (viewer /
+mobile-only / lg-only), 93 task records, 309 trap rows (all PASS), **0 differences** in
+clicks / keypresses / typed chars / pass between the two runs. Every hard task is green.
+Soft tasks that record `pass=false` today (product work, not harness bugs — Wave 2 items):
+
+| Task | Projects | Why it fails today |
+|---|---|---|
+| `LS-rail-apply` | desktop, tablet | no visible pending/loading state within 2 s of Apply (LS-*) |
+| `LS-page-abc` | desktop, tablet | `?page=abc` renders "Showing NaN to NaN of N results" (pager honesty) |
+| `LS-mobile-filter` | mobile | 5 taps: "Filters & View" → Filters → Contact Status → lane → Apply (budget 4) |
+| `NV-search-copy` | all | top bar "Search people or work…", sidebar "Search or workflow…", mobile icon "Search (⌘K)" vs the palette's `SEARCH_PLACEHOLDER`; palette aria-label is the placeholder, not `SEARCH_ARIA_LABEL` |
+| `NV-cross-tab` | desktop, tablet | 16/16 cross-tab sidebar links swap the sidebar (D10 sticky tab not shipped) |
+| `NV-palette` | all | phone / member # / name all find Wendy; typing "task" lists no page |
+| `NV-redirects` | all | `/crm/modules/deals` → `/crm/modules/members` OK; `/crm/pipeline` still renders "Deal Pipeline" and a Pipeline sidebar link for a deals-disabled org |
+| `T2-above-fold` | tablet, mobile | below the fold at 1024: snapshot, Enrolled by, Recent notes; at 390 also member # |
+| `T5-list` | desktop, tablet | the table renders Call as `crm-row-call` button, no `tel:` anchor (mobile cards have one → pass) |
+| `T6-aria-live` | all | inline save has no `[aria-live]` "Saved" announcement (D7 half: the silent check + no toast are in place) |
+| `RP-header-density` | all | 0 header search inputs at rest (want exactly 1 — D6 asks for one, not none) |
+| `RP-notes-pane-reload` | all | Notes pane chip → reload → Overview is active again (pane not in the URL) |
+
+Recorded facts worth keeping: mobile-390 T6 needs 4 scroll nudges (2 on restore) before an
+inline cell is clickable; tablet 3; desktop 0. DE-invalid-date is rejected inline
+("Enter a real date as MM/DD/YYYY", no POST) and DE-lead-pending saves with `POST 200` in 4
+clicks + Enter — both soft tasks pass now.
+
 ## Proving the traps (negative-run switches)
 
 Three env switches exist ONLY to make the walk fail on a named trap — they never
@@ -198,15 +305,81 @@ E2E_FORCE_VIEWPORT_WIDTH=1000 npm run walk:crm # → breakpoint
 ```
 
 All three fail inside global-setup (exit 1, `TrapFailure: TRAP:<name> — …`) and no
-test runs. `pin-gate` is probed over the API before any browser context exists, so that
-run folder holds only `traps.jsonl` — **no `walk.json` and no `trap-pin-gate.png`**
-(observed run `2026-08-23T01-57-00-268Z`); `not-empty` / `breakpoint` fail after login,
-so their run folder gets `trap-<name>.png` plus a `walk.json` with the failed trap row
-and `tasks: []`.
+test runs. Every one leaves `trap-<name>.png` + `env.json` + `walk.json` (failed trap
+row, `tasks: []`) in the run folder: `pin-gate` / `prod-guard` are probed over the API
+before any browser context exists, so on failure global-setup opens a throwaway
+chromium context, loads `/crm` exactly as the probe saw it (no cookie → the PIN
+disguise page is the evidence) and screenshots it before rethrowing (observed run
+`2026-08-23T02-18-45-453Z`: `trap-pin-gate.png`, `walk.json` with `pin-gate pass=false`);
+`not-empty` / `breakpoint` fail after login and screenshot the logged-in page.
 Any other setup failure (not a trap) leaves `setup-failure.png` in the run folder.
+
+## Lint gate (`lint:changed`)
+
+`npm run lint` (`eslint . --max-warnings 0`) is red on `main` because of pre-existing
+debt in files the walk does not own (~45 findings; the three Wave 0 touched for test-ids
+carry 5 of them: `RecordDetailShellV2.tsx` react-hooks/refs + a stale eslint-disable,
+`ZohoContextualSidebar.tsx` no-restricted-syntax ×2, `NotesPanel.tsx` a stale
+eslint-disable — identical on HEAD). The walk CI therefore gates on
+`apps/crm/e2e/lint-changed.mjs`: for every changed `apps/crm` source file vs the base
+(`merge-base(HEAD, origin/main|main)`, or `LINT_BASE=<ref>`) it lints the base revision
+AND the working copy with the same flat config and fails only when a (file, rule) pair
+gained findings. Pre-existing findings are printed as `carried` so the debt stays
+visible; `--strict` restores the plain eslint bar (any finding fails); `--json` for CI.
+Untracked files must be clean. A cleanup item retiring the carried debt (then flipping
+`walk:crm:check` to `--strict`) is scheduled for Wave 3 (see "Known sharp edges").
 
 ## Known sharp edges
 
+- Product defects the Wave-0 smoke run surfaced (NOT harness bugs, NOT fixed in Wave 0 —
+  carried into Wave 1; details + repro in `live-reality-2026-08-22.md` "Product defects"):
+  `status-values` 500 / PeopleQueue pending-lane failure from JSON.stringify'd jsonb args
+  to `execute_report_aggregation`; `/api/crm/signals` misclassifying RLS 42501 as
+  table-missing + `crm_user_signals` lacking authenticated grants; `log_audit_event`
+  EXECUTE revoked from `authenticated`.
+- Lint debt: `lint:changed` carries 5 pre-existing findings in walked files (above);
+  retire them in Wave 3 and switch `walk:crm:check` to `--strict`.
+- **Client-side navigation from `/crm` (dashboard) to a record never leaves the loading
+  skeleton on the dev server** (observed 2026-08-23 while authoring EV-5, reproduced 4×):
+  palette Enter on the Wendy hit, or the desk's "Open Wendy Walker" link, request
+  `/crm/r/<id>` (`?returnTo=%2Fcrm` for the desk link) as a router transition → the server
+  render takes 19–65 s or never finishes, `next-server` sits at >100 % CPU and unrelated
+  requests (`/lock`, `/api/notifications`) stall 15–27 s. A full-page load of the same
+  record renders in 1–6 s, a raw `fetch('/crm/r/<id>', { headers: { RSC: '1' } })` from
+  `/crm` answers in 0.3 s, and the list → record router transition renders in ~6 s. T1
+  waits up to 60 s for the V2 chrome and records `notes.renderMs`; until this is fixed T1
+  fails honestly (hard) and T2 reads the record after a full load.
+- `crm-pager-showing` can render twice on a list (strict-mode violation) since the
+  Wave-1 ModuleShell edits — the lists spec reads `.first()` and records the count.
+- **Fixture drift between runs**: T4 and the drawer create `Walk …` contacts/leads (they
+  land in the Pending lane) and T3 adds notes on the anchor, so lane counts grow by ~6 per
+  full run and the oldest Pending (Pat) slides down a virtualised mobile list. Preflight a
+  recorded walk with `node scripts/e2e/seed-walk-fixture.mjs --prune-walk-rows` (hard-deletes
+  the walk's own rows — `first_name = 'Walk'` records, `Walk T3…` notes — then re-verifies);
+  two consecutive pruned runs produce identical per-task tallies. `T5-list` also scrolls the
+  list (`revealByScrolling`, not counted; `notes.scrollSteps`) so it survives a longer lane.
+- `NV-cross-tab` reads the sidebar only after the URL settled AND the tab equals what
+  `nav-tabs.ts` predicts for the path (ModuleContext resolves the tab in an effect after the
+  client transition); read earlier it records the previous tab's sidebar as "not swapped"
+  and the verdict flips between runs.
+- `walk.type` on a native `<select>` is type-ahead (`pressSequentially` under the typing
+  flag): pass the start of an option label; Chromium keeps a ~1 s prefix buffer, so two
+  type-aheads on the same select in a row need a pause. `fill` would throw.
+- mobile-390 record page: the sticky record header + pane tabs + bottom action bar leave
+  ~250 css px of the 664 px viewport for content, so Playwright's own scroll-into-view
+  lands inline cells under chrome (`subtree intercepts pointer events`). The V2 page
+  scrolls inside `<main class="overflow-y-auto">`, not the window — `nudgeIntoClickableView`
+  scrolls that container until `elementFromPoint` hits the target (T6 records the count).
+- Duplicated DOM per breakpoint: the desk queue (md+ table + mobile list → two
+  `Call <name>` links, one `display:none`), `MassActionsBar` (`N selected` twice) and the
+  mobile "Filters & View" sheet (the `crm-filter-trigger` exists once but is hidden until
+  the sheet opens). Specs query by role or `visible=true` rather than `.first()`.
+
+- `walk-helpers.ts#stubTelLinks` prevents the default action of `a[href^="tel:"]`
+  clicks (T5) — headless Chromium would otherwise hand the click to the OS protocol
+  handler; the click is still counted and the href is what is asserted.
+- `e2e/tsconfig.json` sets `"jsx": "preserve"` so `nav-tabs.test.ts` can import the
+  app's `ModuleContext.tsx` and pin the nav mirror to the real resolver.
 - First `next dev` render compiles on demand: the global-setup login waits up to
   120 s and `webServer.timeout` is 180 s; one walk per dev server.
 - Retries are hard-pinned to 0 — a retried task would be counted twice.

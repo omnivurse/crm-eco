@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
   WalkCounter,
   classifyTrustedEvent,
+  describeFailure,
   reconcileTallies,
+  resolveTaskOutcome,
 } from './walk-counter';
 
 describe('WalkCounter (EV-4 acceptance)', () => {
@@ -59,5 +61,45 @@ describe('reconcileTallies', () => {
     expect(() => reconcileTallies('t1', { clicks: 2, keypresses: 2 }, { clicks: 3, keypresses: 2 })).toThrow(
       /walk tally mismatch in task "t1"/,
     );
+  });
+});
+
+describe('resolveTaskOutcome (soft mode, EV-5)', () => {
+  it('hard mode: a failure is rethrown and the budget is asserted', () => {
+    const err = new Error('boom');
+    const out = resolveTaskOutcome({ failure: err, clicks: 1, budget: 2, soft: false });
+    expect(out).toMatchObject({ pass: false, reason: 'boom', rethrow: err, assertBudget: true });
+  });
+
+  it('hard mode: over budget is pass=false even when nothing threw', () => {
+    const out = resolveTaskOutcome({ failure: null, clicks: 3, budget: 2, soft: false });
+    expect(out.pass).toBe(false);
+    expect(out.reason).toMatch(/over click budget \(3 > 2\)/);
+    expect(out.rethrow).toBeNull();
+    expect(out.assertBudget).toBe(true);
+  });
+
+  it('soft mode: records pass=false with the reason and never rethrows', () => {
+    const out = resolveTaskOutcome({ failure: new Error('expected future work'), clicks: 0, budget: 0, soft: true });
+    expect(out).toEqual({ pass: false, reason: 'expected future work', rethrow: null, assertBudget: false });
+    const over = resolveTaskOutcome({ failure: null, clicks: 5, budget: 1, soft: true });
+    expect(over.pass).toBe(false);
+    expect(over.rethrow).toBeNull();
+    expect(over.assertBudget).toBe(false);
+  });
+
+  it('strips ANSI colour and keeps the assertion + locator lines in the reason', () => {
+    const err = new Error('\u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible() failed\n\nLocator: getByRole(\'group\')\nExpected: visible\nTimeout: 15000ms\nCall log:\n  - waiting');
+    expect(describeFailure(err)).toBe("expect(locator).toBeVisible() failed · Locator: getByRole('group') · Expected: visible");
+    expect(resolveTaskOutcome({ failure: err, clicks: 0, budget: 0, soft: true }).reason).not.toMatch(/\u001b/);
+  });
+
+  it('passes only when nothing failed and the clicks fit the budget', () => {
+    expect(resolveTaskOutcome({ failure: null, clicks: 2, budget: 2, soft: true })).toEqual({
+      pass: true,
+      reason: null,
+      rethrow: null,
+      assertBudget: false,
+    });
   });
 });

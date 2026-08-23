@@ -3,6 +3,7 @@ import {
   CLINICAL_GENDER_OPTIONS,
   getFieldOptions,
   isClinicalGenderFieldKey,
+  optionsWithCurrent,
 } from './utils';
 
 describe('getFieldOptions', () => {
@@ -37,5 +38,28 @@ describe('isClinicalGenderFieldKey', () => {
     expect(isClinicalGenderFieldKey('primary_member_gender')).toBe(true);
     expect(isClinicalGenderFieldKey('spouse_gender')).toBe(true);
     expect(isClinicalGenderFieldKey('lead_status')).toBe(false);
+  });
+});
+
+describe('optionsWithCurrent', () => {
+  it('prepends a stored value that is not in the list so a closed Select can display it', () => {
+    expect(optionsWithCurrent(['Secure', 'Care Plus'], 'Sedera Access+ (legacy)')).toEqual([
+      { value: 'Sedera Access+ (legacy)', label: 'Sedera Access+ (legacy)' },
+      { value: 'Secure', label: 'Secure' },
+      { value: 'Care Plus', label: 'Care Plus' },
+    ]);
+  });
+
+  it('adds nothing for a listed, blank or missing current value', () => {
+    const base = [
+      { value: 'Secure', label: 'Secure' },
+      { value: 'Care Plus', label: 'Care Plus' },
+    ];
+    expect(optionsWithCurrent(['Secure', 'Care Plus'], 'Secure')).toEqual(base);
+    expect(optionsWithCurrent(['Secure', 'Care Plus'], '')).toEqual(base);
+    expect(optionsWithCurrent(['Secure', 'Care Plus'], '   ')).toEqual(base);
+    expect(optionsWithCurrent(['Secure', 'Care Plus'], null)).toEqual(base);
+    expect(optionsWithCurrent(['Secure', 'Care Plus'], undefined)).toEqual(base);
+    expect(optionsWithCurrent([], 'Only')).toEqual([{ value: 'Only', label: 'Only' }]);
   });
 });

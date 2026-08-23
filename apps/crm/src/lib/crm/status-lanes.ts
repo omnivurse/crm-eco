@@ -256,6 +256,14 @@ export function laneFilterFieldForModule(moduleKey: string | null | undefined): 
  * `[{ status, count_id }]` for one module (deleted rows excluded). Shared by
  * the status-values API route and the dashboard people queue so both count
  * the same way. Pure — the caller runs `supabase.rpc('execute_report_aggregation', args)`.
+ *
+ * `p_filters` / `p_grouping` / `p_aggregations` / `p_sorting` are `jsonb`
+ * parameters: they MUST be passed as real arrays, never `JSON.stringify()`
+ * strings. supabase-js serialises the args object once; a pre-stringified
+ * value arrives as a jsonb *scalar string* and the function's
+ * `jsonb_array_elements(...)` then fails with `22023 cannot extract elements
+ * from a scalar` (reproduced on prod 2026-08-22 — it 500'd every lane-chip
+ * count and the dashboard pending lane). See `assertJsonbRpcArgs`.
  */
 export function statusValuesRpcArgs(orgId: string, moduleId: string) {
   return {
@@ -263,15 +271,44 @@ export function statusValuesRpcArgs(orgId: string, moduleId: string) {
     p_table: 'crm_records',
     p_org_column: 'org_id',
     p_module_id: moduleId,
-    p_filters: JSON.stringify([{ field: 'deleted_at', operator: 'is_null' }]),
+    p_filters: [{ field: 'deleted_at', operator: 'is_null' }],
     p_filter_logic: 'and',
-    p_grouping: JSON.stringify([{ field: 'status' }]),
-    p_aggregations: JSON.stringify([{ field: 'id', function: 'count' }]),
-    p_sorting: JSON.stringify([{ column: 'count_id', direction: 'desc' }]),
+    p_grouping: [{ field: 'status' }],
+    p_aggregations: [{ field: 'id', function: 'count' }],
+    p_sorting: [{ column: 'count_id', direction: 'desc' }],
     p_limit: 500,
     p_offset: 0,
     p_include_downline: false,
   };
+}
+
+/** The `execute_report_aggregation` params typed `jsonb` in Postgres. */
+export const REPORT_AGGREGATION_JSONB_PARAMS = [
+  'p_filters',
+  'p_grouping',
+  'p_aggregations',
+  'p_sorting',
+] as const;
+
+/**
+ * Guard for callers of `execute_report_aggregation`: every jsonb param that is
+ * present must be an array (the function iterates each with
+ * `jsonb_array_elements`). A string — the classic `JSON.stringify()` slip —
+ * or a bare object would reach Postgres as a jsonb scalar/object and fail
+ * with 22023. Throws so the mistake is caught by unit tests, not in prod.
+ */
+export function assertJsonbRpcArgs(args: Record<string, unknown>): void {
+  for (const key of REPORT_AGGREGATION_JSONB_PARAMS) {
+    if (!(key in args)) continue;
+    const v = args[key];
+    if (v === undefined || v === null) continue;
+    if (!Array.isArray(v)) {
+      throw new TypeError(
+        `execute_report_aggregation.${key} must be a JSON array (got ${typeof v}); ` +
+          'do not JSON.stringify() jsonb params',
+      );
+    }
+  }
 }
 
 /** Parse the RPC payload into `{ value, count }` rows (null/blank statuses dropped). */

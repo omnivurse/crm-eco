@@ -40,6 +40,7 @@
     "typecheck:crm": "npm run typecheck --workspace=@crm-eco/crm",
     "typecheck:admin": "npm run typecheck --workspace=@crm-eco/admin",
     "lint:crm": "npm run lint --workspace=@crm-eco/crm",
+    "lint:crm:changed": "npm run lint:changed --workspace=@crm-eco/crm",
     "precheck:crm": "npm run typecheck:crm && npm run lint:crm",
     "smoke-test": "node scripts/smoke-test.mjs",
     "db:test-connection": "node scripts/test-db-connection.mjs",

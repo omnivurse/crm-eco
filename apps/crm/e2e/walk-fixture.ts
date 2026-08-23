@@ -4,9 +4,13 @@
  *   walk.task(id, label, budget, fn)  — scope + budget + wall clock
  *   walk.click(locator, label)        — 1 click
  *   walk.press(key, label)            — 1 keypress (a chord like Meta+Enter = 1)
- *   walk.type(locator, text, label)   — typed chars, NOT keypresses
+ *   walk.type(locator, text, label)   — typed chars, NOT keypresses (a native
+ *                                      <select> is driven by type-ahead)
  * A capture-phase listener injected into every document counts ONLY
  * event.isTrusted pointerdown/keydown; at task end both tallies must agree.
+ *   walk.task(id, label, budget, fn, { soft: true }) — EV-5: record pass=false
+ *                                      (with `reason`) instead of failing the test
+ *   walk.note(key, value)             — facts for walk.json tasks[].notes
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -19,6 +23,7 @@ import {
   WalkCounter,
   browserCounterInitScript,
   reconcileTallies,
+  resolveTaskOutcome,
   type BrowserTally,
 } from './walk-counter';
 
@@ -29,6 +34,9 @@ export interface WalkStep {
   ms: number;
 }
 
+/** Free-form facts a task records into walk.json (counts, hrefs, observed copy…). */
+export type WalkNoteValue = string | number | boolean | null;
+
 export interface WalkTaskRecord {
   id: string;
   label: string;
@@ -38,10 +46,26 @@ export interface WalkTaskRecord {
   ms: number;
   budget: number;
   pass: boolean;
+  /** Soft tasks record pass=false instead of failing the test (future-wave assertions). */
+  soft: boolean;
+  /** Why pass=false (assertion message / over budget); absent when it passed. */
+  reason?: string;
   project: string;
   viewport: string;
   test: string;
   steps: WalkStep[];
+  notes?: Record<string, WalkNoteValue>;
+}
+
+export interface WalkTaskOptions {
+  /**
+   * `soft: true` — the task records `pass=false` (with `reason`) when its
+   * assertions fail or its click budget is exceeded, and the spec continues.
+   * Use it for budgets/assertions that describe work a later wave ships, so
+   * walk.json stays honest without aborting the walk. Harness errors (tally
+   * mismatch, `walk.*` outside a task) still throw.
+   */
+  soft?: boolean;
 }
 
 export interface Walk {
@@ -50,7 +74,9 @@ export interface Walk {
   type(locator: Locator, text: string, label: string): Promise<void>;
   /** Named screenshot without counting anything. */
   shot(label: string): Promise<void>;
-  task<T>(id: string, label: string, budget: number, fn: () => Promise<T>): Promise<T>;
+  /** Record a fact on the current task (lands in walk.json `tasks[].notes`). */
+  note(key: string, value: WalkNoteValue): void;
+  task<T>(id: string, label: string, budget: number, fn: () => Promise<T>, options?: WalkTaskOptions): Promise<T>;
   /** Tasks recorded so far in this test. */
   readonly records: readonly WalkTaskRecord[];
 }
@@ -111,7 +137,17 @@ async function setTypingFlag(page: Page, on: boolean): Promise<void> {
 export function createWalk(page: Page, meta: { project: string; testTitle: string; shotRoot: string; runRoot: string }): Walk {
   const counter = new WalkCounter();
   const records: WalkTaskRecord[] = [];
-  let active: { id: string; label: string; budget: number; startedAt: number; steps: WalkStep[]; baseline: BrowserTally; shotIndex: number } | null = null;
+  let active: {
+    id: string;
+    label: string;
+    budget: number;
+    soft: boolean;
+    startedAt: number;
+    steps: WalkStep[];
+    baseline: BrowserTally;
+    shotIndex: number;
+    notes: Record<string, WalkNoteValue>;
+  } | null = null;
 
   const requireTask = (what: string) => {
     if (!active) throw new Error(`walk.${what}() called outside walk.task() — every counted action must belong to a task`);
@@ -153,9 +189,23 @@ export function createWalk(page: Page, meta: { project: string; testTitle: strin
     },
     async type(locator, text, label) {
       requireTask('type');
+      const tag = await locator.evaluate((el) => el.tagName.toLowerCase());
       await setTypingFlag(page, true);
       try {
-        await locator.fill(text);
+        if (tag === 'select') {
+          // A native <select> (quick-create's closed lists, D3) has no caret:
+          // the keyboard "paste" is type-ahead — the keystrokes pick the first
+          // option whose label starts with the text. Still typed chars, never
+          // keypresses (the typing flag hides the keydowns from the tally).
+          await locator.focus();
+          await locator.pressSequentially(text);
+          const picked = await locator.evaluate((el) => (el as HTMLSelectElement).selectedOptions[0]?.label ?? '');
+          if (!picked.toLowerCase().startsWith(text.toLowerCase())) {
+            throw new Error(`walk.type: type-ahead "${text}" on a <select> picked "${picked || '(nothing)'}" — type the start of an option label`);
+          }
+        } else {
+          await locator.fill(text);
+        }
       } finally {
         await setTypingFlag(page, false);
       }
@@ -165,12 +215,17 @@ export function createWalk(page: Page, meta: { project: string; testTitle: strin
     async shot(label) {
       await takeShot(label, 'shot');
     },
-    async task<T>(id: string, label: string, budget: number, fn: () => Promise<T>): Promise<T> {
+    note(key, value) {
+      const t = requireTask('note');
+      t.notes[key] = value;
+    },
+    async task<T>(id: string, label: string, budget: number, fn: () => Promise<T>, options?: WalkTaskOptions): Promise<T> {
       if (active) throw new Error(`walk.task("${id}") started while task "${active.id}" is still running — tasks do not nest`);
+      const soft = options?.soft === true;
       counter.reset();
       await resetBrowserTally(page);
       const baseline = await readBrowserTally(page);
-      active = { id, label, budget, startedAt: performance.now(), steps: [], baseline, shotIndex: 0 };
+      active = { id, label, budget, soft, startedAt: performance.now(), steps: [], baseline, shotIndex: 0, notes: {} };
       let result: T;
       let failure: unknown = null;
       try {
@@ -188,6 +243,7 @@ export function createWalk(page: Page, meta: { project: string; testTitle: strin
         keypresses: Math.max(0, after.keypresses - baseline.keypresses),
       };
       const ms = Math.round(performance.now() - active.startedAt);
+      const outcome = resolveTaskOutcome({ failure, clicks: tally.clicks, budget, soft });
       const record: WalkTaskRecord = {
         id,
         label,
@@ -196,20 +252,26 @@ export function createWalk(page: Page, meta: { project: string; testTitle: strin
         typedChars: tally.typedChars,
         ms,
         budget,
-        pass: failure === null && tally.clicks <= budget,
+        pass: outcome.pass,
+        soft,
+        ...(outcome.reason ? { reason: outcome.reason } : {}),
         project: meta.project,
         viewport: viewportString(),
         test: meta.testTitle,
         steps: active.steps,
+        ...(Object.keys(active.notes).length > 0 ? { notes: active.notes } : {}),
       };
       records.push(record);
       fs.mkdirSync(meta.runRoot, { recursive: true });
       fs.appendFileSync(path.join(meta.runRoot, 'tasks.jsonl'), `${JSON.stringify(record)}\n`);
       active = null;
       await resetBrowserTally(page);
-      if (failure !== null) throw failure;
+      if (outcome.rethrow !== null) throw outcome.rethrow;
+      // Harness integrity is never soft: an un-wrapped action is a bug in the spec.
       reconcileTallies(id, tally, browser);
-      expect(tally.clicks, `task "${id}" click budget (${tally.clicks} > ${budget})`).toBeLessThanOrEqual(budget);
+      if (outcome.assertBudget) {
+        expect(tally.clicks, `task "${id}" click budget (${tally.clicks} > ${budget})`).toBeLessThanOrEqual(budget);
+      }
       return result;
     },
   };

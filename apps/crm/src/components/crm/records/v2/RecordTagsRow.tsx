@@ -85,7 +85,8 @@ export function RecordTagsRow({
         // pending sync. Parent gets the new tags so the rest of the
         // page stays consistent.
         onChange?.(next);
-        toast.info('Tags saved offline — will sync when reconnected');
+        const q = toastCopy.queued('tags');
+        toast.info(q.title, { description: q.description });
         return;
       }
       // Terminal server error — rollback.

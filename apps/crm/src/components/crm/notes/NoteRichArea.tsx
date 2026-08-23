@@ -11,6 +11,7 @@ import { Bold, Italic, Underline, Palette } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { SANITIZE_NOTE_HTML_CONFIG } from '@/lib/crm/note-sanitize';
+import { focusNoteEditor } from '@/lib/crm/note-composer';
 
 interface NoteToolbarProps {
   editorRef: React.RefObject<HTMLDivElement | null>;
@@ -108,9 +109,23 @@ export interface NoteRichAreaProps {
   onChange: (html: string) => void;
   placeholder?: string;
   className?: string;
+  /** Focus the editor once on mount (pair with a keyed remount per compose). */
+  autoFocus?: boolean;
+  /**
+   * Bump to re-focus an already-mounted editor without remounting it
+   * (keeps the draft, caret and undo stack). 0/undefined = no request.
+   */
+  focusSignal?: number;
 }
 
-export function NoteRichArea({ value, onChange, placeholder, className }: NoteRichAreaProps) {
+export function NoteRichArea({
+  value,
+  onChange,
+  placeholder,
+  className,
+  autoFocus = false,
+  focusSignal = 0,
+}: NoteRichAreaProps) {
   const editorRef = useRef<HTMLDivElement>(null);
 
   const flushFromEditor = useCallback(() => {
@@ -127,6 +142,13 @@ export function NoteRichArea({ value, onChange, placeholder, className }: NoteRi
     const next = value ?? '';
     if (el.innerHTML !== next) el.innerHTML = next;
   }, [value]);
+
+  /* Focus only on an explicit request: mount with autoFocus, or a focusSignal
+     bump. Runs after the seed effect above so the caret lands after a draft. */
+  useEffect(() => {
+    if (!autoFocus && !focusSignal) return;
+    focusNoteEditor(editorRef.current);
+  }, [autoFocus, focusSignal]);
 
   const handleInput = useCallback(() => {
     flushFromEditor();

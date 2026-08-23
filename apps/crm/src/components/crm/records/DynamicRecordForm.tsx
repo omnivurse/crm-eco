@@ -35,6 +35,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@crm-eco/ui/components/card';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { EnrolledByPicker } from '@/components/crm/create/EnrolledByPicker';
+import { PRODUCER_RECORD_ID_KEY } from '@/lib/crm/quick-create-config';
 import type {
   CrmField,
   CrmLayout,
@@ -42,7 +43,7 @@ import type {
   LayoutSection,
   LayoutSectionAccent,
 } from '@/lib/crm/types';
-import { getFieldOptions } from '@/lib/crm/utils';
+import { getFieldOptions, optionsWithCurrent } from '@/lib/crm/utils';
 import { toDatetimeLocalValue } from '@/lib/crm/datetime-local';
 import { normalizeDateColumnValue } from '@/lib/crm/merge-crm-data-json-to-row';
 import { classifyCarrierValue } from '@/lib/crm/coverage-carriers';
@@ -508,9 +509,15 @@ const FormFieldRenderer = memo(function FormFieldRenderer({
               <SelectValue placeholder={`Select ${field.label.toLowerCase()}`} />
             </SelectTrigger>
             <SelectContent>
-              {getFieldOptions(field.options, field.key).map((option) => (
-                <SelectItem key={option} value={option}>
-                  {option}
+              {/* The stored value stays selectable even when it is not in
+                  crm_fields.options (legacy spelling) — displayed, never
+                  rewritten; same rule as the quick-create drawer / state picker. */}
+              {optionsWithCurrent(
+                getFieldOptions(field.options, field.key),
+                typeof value === 'string' ? value : null,
+              ).map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -560,12 +567,20 @@ const FormFieldRenderer = memo(function FormFieldRenderer({
 
     default:
       if (field.key === 'producer_name' || field.key === 'producer') {
+        // Same picker as the quick-create drawer (public.advisors): the name
+        // stays the written key; a list pick also writes producer_record_id,
+        // typing by hand clears it (D5).
         input = (
           <EnrolledByPicker
             id={field.key}
             value={value == null ? '' : String(value)}
-            onChange={(val) => setValue(field.key, val)}
+            onChange={(val) => {
+              setValue(field.key, val);
+              setValue(PRODUCER_RECORD_ID_KEY, null);
+            }}
+            onSelect={(pick) => setValue(PRODUCER_RECORD_ID_KEY, pick.id)}
             aria-label={field.label}
+            aria-invalid={!!error}
           />
         );
       } else {
@@ -846,6 +861,13 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
       }
 
       schemaShape[field.key] = fieldSchema;
+    }
+
+    // Companion key of the "Enrolled by" picker (public.advisors id next to the
+    // name). Not a crm_fields row, so it has to be declared here or zod would
+    // strip it from the submitted values.
+    if (visibleFields.some((f) => f.key === 'producer_name' || f.key === 'producer')) {
+      schemaShape[PRODUCER_RECORD_ID_KEY] = z.string().nullable().optional();
     }
 
     return z.object(schemaShape);
