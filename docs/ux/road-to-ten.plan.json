@@ -1,0 +1,1600 @@
+{
+  "headline": "Verified at HEAD 8255e324 (apps/crm identical to 9bd30fb1): every dimension's mechanism exists in code, but no dimension can be marked 10 today because nothing has been observed \u2014 there is no runnable CRM Playwright harness (no @playwright/test anywhere, root config targets a Vite app on :5173, zero data-testid, local stack has no login-capable user/records and apps/crm/.env.local points at prod). The plan is five waves (~3-4 focused weeks): Wave 0 stands up the harness, fixture, traps, click counter and reads live DB reality; Wave 1 clears the three recorded hard fails (plan/product/producer pickers, ModuleShell export toasts, the click-count walk) plus the Lists P0 (select-all ignores filters \u2014 bulk actions can mutate unfiltered rows); Wave 2 closes per-dimension gaps; Wave 3 adds guards (toast lint+ratchet actually wired into hooks, a11y, mobile, CI re-run); Final is the regrade walk with recorded counts. Honest ceilings: Data entry cannot reach 10 without owner decisions (product list + 'Other' escape, producer source of truth, plan catalog) and a product/producer vocabulary census (the 83/655 spelling figures are unverifiable from the repo); Record page and Navigation reach 10 only if the owner accepts the de-densification/label decisions (RP-3/4/5, NV-2/5/6) \u2014 if declined the honest ceiling is ~9.5; Lists' LS-3 effort (M vs L) depends on whether Next 16 search-param pushes remount the page Suspense, which only the Wave 1 walk can show. A strict regrade of the current code would also likely LOWER Lists (P0) and Data entry (silent date null / developer copy on the default Pending path) below the 8.5/8 recorded.",
+  "scoreboard": [
+    {
+      "dimension": "Task efficiency",
+      "now": 9,
+      "blockers_confirmed": [
+        "No logged-in click count \u2014 all counts inferred (playwright.config.ts:4,11 targets :5173; tests/playwright/tickets.spec.ts is the only spec; @playwright/test not installed)",
+        "Add Note opens the in-pane composer but never focuses the contentEditable (+1 click) and openComposer() wipes a half-typed draft on every compose nonce (NotesPanel.tsx:208-220, NoteRichArea.tsx no mount focus)",
+        "Longest-waiting Pending from the list needs \u22654 moves: visible phone column is plain text (RecordTable.tsx:1034-1052) while email is mailto; lane chip is filter-only; default sort is view/pref truth, unverified live",
+        "Add Member writes a contacts record; /crm/modules/members rows are separate twin-enriched rows (queries.ts:837-851) \u2014 'see on list' is undefined",
+        "Palette Enter during the 180 ms debounce is a silent no-op (CommandPalette.tsx:402-429, 660-681)",
+        "Note-template path opens a second 'Add Note' Dialog (RecordDetailShellV2.tsx:983-989, 2580)"
+      ],
+      "what_ten_means": "Recorded walk.json (EV-5) on the commit under review: T1 find-by-phone = \u2318K + digits + Enter (2 keypresses) or 2 clicks; T2 coverage at a glance = 0 clicks with RecordDetailShellV2 asserted; T3 Add Note = 1 click + type + \u2318Enter with caret already in the editor and no draft loss; T4 Add Member = 1 click + paste/Tab + Enter ending on a text field, then the record visible on the owner-agreed list in \u22641 click; T5 oldest Pending \u2192 Call = 1 click (desk) / 2 (list); repeat run identical; keyboard-only and 390px variants pass.",
+      "items": [
+        "TE-1",
+        "TE-3a",
+        "TE-3b",
+        "TE-4",
+        "TE-5",
+        "TE-6",
+        "TE-8",
+        "EV-5",
+        "EV-5F"
+      ]
+    },
+    {
+      "dimension": "Record page / Contact 360",
+      "now": 9,
+      "blockers_confirmed": [
+        "Header density is real: two search inputs in the breadcrumb row (RecordDetailShellV2.tsx:1603-1613; RecordToolbarGlobalSearch.tsx:3-7 documents itself as V1-only), always-on dashed 'Add Tags' (RecordTagsRow.tsx:188-197), admin-only Needs Review/Needs Classification badges shown to every role (:1770-1771 vs viewerCanNormalize :1049), Email+Note duplicated below lg (header lg:hidden buttons + MobileActionBar), 13-item \u22ef menu, Insights unreachable at 1024-1279px",
+        "Add Note does not focus the editor (same root cause as TE-1)",
+        "Pane/tab state local-only; ?pane= read once, never written (:386-401)",
+        "Skeleton draws a w-64 rail the page no longer shows (page.tsx:361-370)",
+        "26 raw toast.* in the shell + raw strings in FollowUpBanner/DataPrivacyPanel/MembershipChangeHistory/RecordTasksPanel/SendEmailDialog/RecordLinksEditorDialog/RecordTagsRow/useRecordFieldSave.tsx:171",
+        "Coverage Snapshot gated on a DB 'hero' section + default layout row; page fails open to V1 shell / no snapshot on any fetch error (DynamicRecordForm.tsx:652,1390; page.tsx:172,175,231) \u2014 unverified live for PIFH leads/contacts/members",
+        "Inline field patch gives no toast at all \u2014 only a 3px check (useRecordFieldSave.tsx:167-178; InlineFieldEditor.tsx:162,300); no skip link; ~16 Tab stops before content"
+      ],
+      "what_ten_means": "At 1280 and 1024 and 390 widths, a crm_agent viewer sees name, status, tel: phone, Coverage Snapshot (plan, effective date, Enrolled by, member #), Recent notes without scrolling; one search input in the header; no amber admin badges; no duplicate Email/Note below lg; Add Note lands the caret (1 click); reload keeps the Notes pane; skeleton matches layout (CLS < 0.05); every toast on the page is toastCopy voice; inline save announces 'Saved' to AT; live DB check shows hero section present on all three default layouts; error/not-found/cross-tenant record ids render explicit states.",
+      "items": [
+        "TE-1",
+        "TE-6",
+        "RP-3",
+        "RP-4",
+        "RP-5",
+        "RP-6",
+        "RP-7",
+        "RP-8",
+        "RP-9",
+        "RP-M1",
+        "RP-M2",
+        "RO-1",
+        "EV-5",
+        "EV-5F"
+      ]
+    },
+    {
+      "dimension": "Feedback, consistency & language",
+      "now": 8,
+      "blockers_confirmed": [
+        "ModuleShell export success toasts are hand-written (ModuleShell.tsx:1003, 1066; loading :1042; 'No records to export' as toast.error :959/:1008 because ModuleHeader.tsx:188-196 never disables Export); :1071 is the file's only toastCopy use; toastCopy has no counted/queued/partial/viewSaved shapes (toast-copy.ts:177)",
+        "895 toast.* sites / 158 files, 818 raw; persona-path set 177 sites / 129 raw; 7 distinct queued/offline wordings; no humanizer in toastCopy.failed (usefulReason :110-125 strips 'Failed to' and produces 'reach the server.')",
+        "No guard: apps/crm eslint has no toast rule, and root eslint.config.js:8 ignores apps/**, lint-staged runs root eslint, pre-push runs typecheck only, no CI lint \u2014 any rule added to apps/crm would enforce nothing",
+        "Record-page delete says 'cannot be undone' + no Undo while the API soft-deletes and returns batchId (V2:2034,2042; route.ts:215-242); list path uses toastDeletedWithUndo",
+        "Validation by toast ('Please enter note content' V2:908-911; four wordings for required) instead of inline aria-invalid state",
+        "Search placeholders differ across top bar/sidebar/palette/aria (CrmTopBar.tsx:197,209; ZohoContextualSidebar.tsx:140; search-copy.ts:16,25 unused SEARCH_ARIA_LABEL)",
+        "Kanban/Split empty states bypass ListEmptyStatePanel (KanbanView.tsx:974-990; SplitView.tsx:405-419); four notes empty wordings",
+        "Toaster never follows theme \u2014 dark-mode users get light toasts (packages/ui/src/components/sonner.tsx:8-14, no theme prop)",
+        "V1 RecordDetailShell (15 raw toasts) still reachable via profile LayoutV2Toggle; dead client.tsx / CrmHeader (barrel-exported) / GlobalSearchOverlay / duplicate ClientProviders"
+      ],
+      "what_ten_means": "Every toast on the walked paths (list, record, drawer, views, filters, shell) is emitted through toastCopy/undo-delete/queued helpers and the walk asserts each string equals the helper output; export/select-all/bulk/view-saved/queued/partial use templates; delete is Trash+Undo on both paths; validation is inline with aria-invalid; one search promise (visible + aria) on every surface; empty states come from ListEmptyStatePanel; toasts follow dark mode; humanised error reasons; and a commit-time guard (lint on apps/crm actually wired into lint-staged/pre-push + a ratchet test) provably rejects a new raw toast.",
+      "items": [
+        "FB-1",
+        "FB-2",
+        "FB-4",
+        "FB-5",
+        "FB-6",
+        "FB-9",
+        "FB-M1",
+        "FB-8",
+        "NV-1",
+        "RP-9",
+        "DE-5",
+        "FB-10",
+        "EV-5",
+        "EV-5F"
+      ]
+    },
+    {
+      "dimension": "Findability & navigation (full shell)",
+      "now": 8.5,
+      "blockers_confirmed": [
+        "Not re-walked: no nav e2e; nav-reachability.test.ts is a static href audit",
+        "Search wording: 3 visible strings + a 4th aria wording; canonical 38-char string would truncate in the 160/220px top-bar button and w-52 sidebar trigger",
+        "16 cross-tab links swap the sidebar (ModuleContext.tsx:67-124 path-only resolver; incl. Comms\u2192Call Logs :227); ModuleSwitcherRail links carry no aria-current",
+        "Palette covers modules/settings/create/import only (CommandPalette.tsx:519-587); 'View all results' \u2192 /crm/search uses textSearch only (search/page.tsx:48-57) \u2014 no partial-digit/format-variant/member-# parity",
+        "Static 'Pipeline' link + /crm/pipeline render default sales stages for a deals-disabled org (ModuleContext.tsx:165; pipeline/page.tsx:129,163-172)",
+        "'Sales Pipeline' heads the people section (ModuleContext.tsx:158); residual 'Advisor / Agent' at 4 sites; stale ADVISORS_HREF='/crm/advisors' with no route",
+        "No sidebar active item on /crm/r/<id>; 'ticket'/'search' icons missing from iconMap",
+        "Mobile: 7-tab strip + drawer grid + bottom bar + top bar at all widths; Settings gear hidden on mobile so drawer grid must stay",
+        "Settings tab + 28 links shown to every role; permission states unobserved (only an owner-role seed exists)"
+      ],
+      "what_ten_means": "Walk (desktop 1440, tablet 1024, mobile 390) records: every persona destination \u22642 moves from Dashboard, Revenue tab and a record page; identical placeholder+aria on top bar, sidebar trigger and palette without truncation; 0 of 16 cross-tab links swap the sidebar; exactly one aria-current tab and one sidebar link everywhere incl. record pages and the rail/grid; palette finds pages by typing and the seeded member by phone/member #; /crm/search returns the same rows as the palette; no Pipeline dead end; tab/link counts written to walk.json; crm_agent sees no admin-only dead ends.",
+      "items": [
+        "NV-1",
+        "NV-2",
+        "NV-3",
+        "NV-4",
+        "NV-5",
+        "NV-6",
+        "NV-7",
+        "NV-8",
+        "NV-M1",
+        "EV-5",
+        "EV-5F"
+      ]
+    },
+    {
+      "dimension": "Lists & filtering",
+      "now": 8.5,
+      "blockers_confirmed": [
+        "No live rail/pager walk (no harness)",
+        "P0: 'Select all N' across pages forwards only search/advisor/contact_type/group (ModuleShell.tsx:505-550) and /api/crm/records/ids ignores filters/scope/territory/view (ids/route.ts:63-67,112-124) \u2014 bulk status/owner/delete can mutate unfiltered rows while MassActionsBar promises the filtered total (:58,86-93)",
+        "Load failure swallowed into 'No records yet / Get started' (page.tsx:224-242 \u2192 list-empty-state.ts:175-181); ?page=0/abc unclamped (:73)",
+        "No pending state on Apply/page/sort (no useTransition/isPending; RecordTable isLoading never passed); page-level Suspense (page.tsx:461-466) may remount the rail on every search-param push \u2014 unobserved",
+        "Lane-chip counts org-wide per module (status-values route GROUP BY whole module; 60s cache never invalidated after bulk status change, ModuleShell.tsx:733-767)",
+        "Display-only twin fields guarded for sort (list-sort-policy.ts) but still filterable (FilterSidebar.tsx:863-867) and listed in FilterChipsBar Sort menu (:187-189); developer-voice hint :22-23",
+        "Rail: no Enter/Esc, storage keys unscoped by profile (filter-rail.ts:21-23; useColumnResize.ts:29,39), open-state hydration flash (ModuleShell.tsx:166,466-468)",
+        "Pager: no Page X of Y, no nav landmark/aria-current, page size not remembered, leads converted filter after range() drifts row counts; three nouns for one total (results/records/{noun})",
+        "Mobile <md: filters two sheets deep (FilterSidebarTrigger inside MobileToolbarDrawer); phantom rail grid gap; tablet 768-1023 is a third untested path"
+      ],
+      "what_ten_means": "Walk at 1440/1024/390 records: rail open by default and remembered per user with no flash; lane chip = 1 click and its count equals pager N (or is labelled 'of all {noun}') and stays right after a bulk status change; rail Status \u2192 Pending \u2192 Apply = 3 moves with visible pending state and the rail still mounted; 'Showing 26 to 50 of N' + 'Page 2 of Y' in a nav landmark; ?page=abc \u2192 page 1; load failure \u2192 'Couldn't load {noun} \u00b7 Try again'; 'Select all N' count == set == pager N under any filter/scope/view; Plan/Effective date disabled-with-reason for filter/sort on Members; Enter applies/Esc cancels in the rail; Back restores URL+rail+columns; phone filters single-sheet in \u22644 taps.",
+      "items": [
+        "LS-1",
+        "LS-2",
+        "LS-3",
+        "LS-4",
+        "LS-5",
+        "LS-7",
+        "LS-7b",
+        "LS-8",
+        "LS-9",
+        "LS-10",
+        "EV-5",
+        "EV-5F"
+      ]
+    },
+    {
+      "dimension": "Data entry",
+      "now": 8,
+      "blockers_confirmed": [
+        "health_insurance_plan_name / product / producer_name are type 'suggest' (quick-create-config.ts:106/108/110, 145/147/149); SuggestPicker/EnrolledByPicker are mouse-only (no onKeyDown/role), Enter while a list is open submits the form (QuickCreateDrawer.tsx:886-889, submit button :1130), 150 ms blur timer drops focus",
+        "No distinct-values endpoint for JSONB keys (only status-values; execute_report_aggregation rejects non-identifier group fields, baseline.sql:6775-6799); plan suggestions = session-typed values only",
+        "Same key, two contracts: drawer writes free text into `product`; DynamicRecordForm Radix Select blanks unknown values (:499-521) \u2014 InlineSelectField already shows them (:70-80)",
+        "Producer: three advisor stores; picker reads crm_advisors (DB-commented DEPRECATED, baseline.sql:24495) and writes a bare name; downstream name joins (age-65 cron :336-340); EnrolledByPicker has no loading/empty/error state and fetches on mount",
+        "Dates: maskDateTyping never checks validity; on the default Pending status the server 400s with developer copy ('\u2026original_start_date, current_year_start_date, or start_date / effective_date in data') shown verbatim in the 'Couldn't save' card; on non-Pending statuses the invalid date is silently nulled under 'Member added'; client Pending message says 'Effective date' (no such label)",
+        "Lead Pending client-blocked without a date while the server skips leads (config :293-304 vs pending-start-date-invariant.ts:21-27)",
+        "Validation is one <p role=alert> under the grid; no aria-invalid/aria-describedby/focus-to-first-invalid",
+        "No RTL or e2e test for the drawer or pickers; 'Add Member' on /crm/modules/members creates a contact (create-intent.ts:27-29) with 'New Member record' demoted to a dropdown item",
+        "crm_viewer sees '+ Create'/'Add Member' then gets 403 'Forbidden' with a Retry that can never succeed (records/route.ts:159-160; CrmTopBar.tsx:217-228 no role check)",
+        "Live crm_fields.options for product / members plan_name fields / crm_advisors row count NOT read \u2014 gates DE-1/DE-3/DE-9"
+      ],
+      "what_ten_means": "Owner-decided pickers: Health Sharing Membership = closed Select from crm_fields.options with explicit 'Other\u2026' (legacy value still displayed/selectable everywhere), Health Insurance Plan = free text with real org distinct-value suggestions, Enrolled by = one named store writing producer_name + producer_record_id; all three keyboard-complete comboboxes (ArrowDown/Enter/Esc/Tab, no accidental submit); invalid/partial dates rejected inline under the field with focus moved there, no POST; server errors mapped to one-voice copy; leads Pending parity; viewer never offered create; RTL + walk evidence: 10 values pasted with zero mouse, \u22641 keystroke to save, toast 'Member added', record shows the values as entered, visible on the agreed list in \u22641 click; repeat run identical.",
+      "items": [
+        "DE-1",
+        "DE-2",
+        "DE-3",
+        "DE-4",
+        "DE-5",
+        "DE-6",
+        "DE-9",
+        "DE-M1",
+        "TE-4",
+        "RO-1",
+        "EV-5",
+        "EV-5F"
+      ]
+    },
+    {
+      "dimension": "Evidence harness (cross-cutting)",
+      "now": 1,
+      "blockers_confirmed": [
+        "No runnable logged-in walk: @playwright/test absent from root and apps/crm package.json and node_modules; root playwright.config.ts targets :5173 Vite app with /login; CRM is :3000 with /crm-login (CrmLoginClient.tsx:256,281,327)",
+        "Zero data-testid in apps/crm/src; key affordances differ by breakpoint",
+        "PIN gate unconditional at the edge (middleware.ts:180; pin-lock.ts:11 'lgq_ok' future-epoch cookie); /api excluded from matcher (middleware.ts:424-426) so traps must probe page routes",
+        "Local stack: seed.sql has no auth user/profile/crm_records/feature-flag rows and intentionally PRE-migration labels (seed.sql:43-46); scripts/create-test-user.js defaults to PROD and seeds no crm_role; legacy scripts/seed-local.mjs has no localhost guard; apps/crm/.env.local points at prod; ~39 migrations newer than 202608090001 must be psql -f applied (stall cause unknown)",
+        "Record page branches on crm.layout.v2 (page.tsx:231) and status vocabulary is DB-enforced (ModuleShell.tsx:591-592) \u2014 fixture must assert both",
+        "No grade artifacts in repo; prior shot.mjs harness gone and its sessionStorage bypass no longer works"
+      ],
+      "what_ten_means": "One artifact folder per run (artifacts/crm-walk/<ts>/walk.json + screenshots + video + trace) for the exact commit, produced by `npm run walk:crm` against 127.0.0.1:54321 only, with preflight traps (prod guard, pin gate, not-empty, right org, nav profile, layout v2, status vocab, breakpoint, no MFA/session-lock redirect) all PASS, per-task trusted-event click/keypress counts vs budgets, repeatability (two runs identical), and a CI job (crm-walk) that reproduces it on demand.",
+      "items": [
+        "EV-1",
+        "EV-2",
+        "EV-3",
+        "EV-4",
+        "EV-6",
+        "EV-5",
+        "EV-7",
+        "EV-5F"
+      ]
+    }
+  ],
+  "waves": [
+    {
+      "name": "Wave 0 \u2014 Decide, instrument, seed, observe",
+      "goal": "Put the owner decision sheet in front of the owner (every question below), stand up the only thing that can mint a 10 (a logged-in, counted, trapped walk on the local stack), and replace seed-derived assumptions with live DB reality. No product fixes yet except attribute-only testids.",
+      "items": [
+        {
+          "id": "RO-1",
+          "title": "Read-only live reality audit for the PIFH org (absorbs RP-10; LS-4/DE-1/DE-3/NV preconditions)",
+          "dimensions": [
+            "Record page",
+            "Lists",
+            "Data entry",
+            "Navigation",
+            "Task efficiency"
+          ],
+          "files": [
+            "scripts/audit-crm-visibility.mjs (extend with a --ux-reality section, same service-role supabase-js client from repo .env: lines 11-35)",
+            "docs/ux/live-reality-<date>.md (output pasted)"
+          ],
+          "approach": "Reuse the existing audit script's client/paging. For org 00000000-0000-0000-0000-000000000001 read and print PASS/FAIL: (1) crm_layouts per leads/contacts/members \u2014 exactly one is_default row, one section variant='hero', contacts management/insurance/identifiers collapsed=false (DynamicRecordForm.tsx:652,1390 fail open otherwise); (2) crm_views row fdf7ae2b ('All Members') sort + columns (default-sort truth for TE-3); (3) crm_fields for members: do plan_name/effective_date/product exist as fields (LS-4 precondition); contacts.product / leads.product_type options populated? health_insurance_plan_name type (DE-1/DE-2); (4) counts: crm_advisors rows (is_active), crm_records module 'advisors' rows, public.advisors rows (DE-3); (5) crm_feature_flags rows crm.layout.v2 (global+org) and crm.nav.simple (org) with enabled; (6) crm_modules is_enabled + live field_count per key (advisors navigable? deals/prospects disabled?). Never log the key; no writes.",
+          "effort": "S",
+          "acceptance_evidence": "Script output table in docs/ux/live-reality-<date>.md with each precondition answered; used verbatim as input to DE-1/DE-3/LS-4/TE-3 scoping and pasted into the final walk report.",
+          "risk": "Prod psql password is rotated; the script uses the service-role key from apps/crm/.env.local (prod) \u2014 read-only SELECTs only, run locally, output redacted of ids where not needed.",
+          "depends_on": []
+        },
+        {
+          "id": "DE-9",
+          "title": "Product / producer vocabulary census + owner decision sheet (status-vocabulary playbook reused)",
+          "dimensions": [
+            "Data entry"
+          ],
+          "files": [
+            "scripts/audit-crm-product-vocabulary.mjs (copy of scripts/audit-crm-vocabulary.mjs, PostgREST, service key, page 1000)",
+            "package.json (audit:crm-product-vocabulary script)",
+            "supabase/migrations/<ts>_product_vocabulary_picklists.sql (only after sign-off; 20260822150000 pattern, previous options kept in metadata)"
+          ],
+          "approach": "Census data->>product / product_type / health_insurance_plan_name / producer_name with counts per module; produce the decision sheet in the bc7c6c05 style (canonical spelling per cluster, proposed crm_fields.options list). Do NOT rewrite record values; legacy values keep displaying via DE-1's current-value option. Optional DB guard (crm_status_vocabulary-style table, 20260822170000:42-50 pattern) only if the owner asks.",
+          "effort": "M",
+          "acceptance_evidence": "`npm run audit:crm-product-vocabulary` prints distinct counts per key; decision sheet delivered; on sign-off, crm_fields.options for contacts.product + leads.product_type hold the approved list and drawer/full form/inline cell all show it.",
+          "risk": "Read-only until sign-off; the 83/655 figures quoted in the grade cannot be re-verified from the repo; operator-run (needs service key), not CI.",
+          "depends_on": []
+        },
+        {
+          "id": "EV-1",
+          "title": "CRM Playwright runner: package, config, projects (desktop-1440 / tablet-1024 / mobile-390), auth storageState, npm scripts; retire the stale root config",
+          "dimensions": [
+            "Evidence harness",
+            "Task efficiency",
+            "Record page",
+            "Feedback",
+            "Navigation",
+            "Lists",
+            "Data entry"
+          ],
+          "files": [
+            "package.json (devDependencies: @playwright/test; scripts test:e2e)",
+            "apps/crm/package.json (scripts walk:crm, walk:crm:ui, walk:crm:ci)",
+            "apps/crm/e2e/playwright.config.ts (new)",
+            "apps/crm/e2e/global-setup.ts (new)",
+            "playwright.config.ts \u2192 tests/playwright/legacy.config.ts (rename) + tests/playwright/tickets.spec.ts (move under legacy/ or delete)"
+          ],
+          "approach": "Install @playwright/test at root (chromium via `npx playwright install chromium`). New config: testDir apps/crm/e2e, baseURL http://localhost:3000, webServer `npm run dev --workspace=@crm-eco/crm` (apps/crm/package.json:6 `next dev --port 3000`) with env forced to the LOCAL stack (NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321, local anon/service keys; leave NEXT_PUBLIC_ENABLE_SESSION_LOCK and CRM_ENFORCE_MFA unset), projects desktop-1440, tablet-1024, mobile-390 (iPhone 14); video/trace/screenshot on; reuseExistingServer locally, false in CI. global-setup: set cookie lgq_ok=<now+12h> (pin-lock.ts:11,106-110), log in at /crm-login via #email/#password/button[type=submit] (CrmLoginClient.tsx:256,281,327), wait for /crm, write apps/crm/e2e/.auth/operator.json; also GET a fixture record page and assert the V2 chrome (role=group aria-label='Add note', RecordDetailShellV2.tsx:1848) so the walk provably runs on RecordDetailShellV2 (page.tsx:231 branch).",
+          "effort": "S",
+          "acceptance_evidence": "`npm run walk:crm` boots, writes operator.json, and a smoke spec asserts page.url() matches /crm, document.title != 'Lead Generation Quote System', and the Add-note group is present on the fixture record.",
+          "risk": "Next dev first-render compile races (discard first render; one walk per dev server); middleware HMAC cache warns without SUPABASE_SERVICE_ROLE_KEY (middleware.ts:44-56) \u2014 set the local key; chromium build must match the installed package.",
+          "depends_on": []
+        },
+        {
+          "id": "EV-2",
+          "title": "Local-only, idempotent walk fixture seed (user + profile + PIFH-shaped fields/views + records) superseding scripts/seed-local.mjs",
+          "dimensions": [
+            "Evidence harness",
+            "Task efficiency",
+            "Lists",
+            "Data entry",
+            "Navigation"
+          ],
+          "files": [
+            "scripts/e2e/seed-walk-fixture.mjs (new; reuse packages/lib/src/enrollment/__tests__/db/testClient.ts env pattern)",
+            "scripts/e2e/walk-fixture.sql (new; modeled on scripts/w1-demo-seed.sql:97-110 crm_records inserts)",
+            "scripts/seed-local.mjs (retire or fold in \u2014 no second unsafe seeder)",
+            "scripts/e2e/apply-local-migrations.sh (psql -f for every migration newer than 202608090001; ~39 files today)"
+          ],
+          "approach": "Service-role script that REFUSES any URL not on 127.0.0.1/localhost:54321. Creates auth user walk-operator@example.invalid (+ a second crm_admin and a crm_viewer user for permission states), profile {organization_id 0000\u20260001, role 'staff', crm_role 'crm_agent', is_active} \u2014 trigger profiles_sync_to_org_members (baseline.sql:59117) creates organization_members. Inserts crm_feature_flags {PIFH, 'crm.nav.simple', enabled:false} to mirror the owner decision explicitly (feature-flags.ts:62-76); asserts crm.layout.v2 global row exists (202607140006). Seeds crm_fields for contacts/members matching quick-create-config.ts:99-131 keys (phone, first_name, last_name, email, date_of_birth, mailing_city/state, member_number, contact_status, health_insurance_plan_name, product (with options), producer_name, sharing_effective_date, sharing_entity) + one crm_views row per module (seed.ts:193 shape) + default crm_layouts with a 'hero' core section (202607200002 pattern); records: 'Walk Phone' contact phone 555-010-7788 in the `phone` COLUMN (search tsvector/crm_smart_search read r.phone) with an ALLOWED active status; a member with 'Approved Pending' (pending lane, status-lanes.ts:26-27,42-44) created 45 days ago; \u226530 extra contacts tagged data.walk_fixture=true so page 2 exists at size 25; one legacy note; deterministic UUIDs + ON CONFLICT. Leave supabase/seed.sql untouched (its PRE-migration labels are intentional, seed.sql:43-46).",
+          "effort": "M",
+          "acceptance_evidence": "Service-role checks: 3 profiles with crm_role; count(crm_records) \u2265 32; crm.nav.simple=false row; fixture statuses survived the DB vocabulary trigger; script exits non-zero when pointed at https://sffisarikcreyyjzdjvb.supabase.co; scripts/seed-local.mjs removed or guarded.",
+          "risk": "Seed drift vs prod crm_fields/crm_views/layouts changes what the walk sees \u2014 RO-1 output is the template; the migration stall after 202608090001 must be reproduced each run (root cause unknown); DB-enforced status vocabulary (ModuleShell.tsx:591-592, 20260822200000) rejects non-allowed statuses.",
+          "depends_on": [
+            "RO-1"
+          ]
+        },
+        {
+          "id": "EV-3",
+          "title": "False-result trap preflight (fail loudly before counting anything)",
+          "dimensions": [
+            "Evidence harness"
+          ],
+          "files": [
+            "apps/crm/e2e/traps.ts (new)",
+            "apps/crm/e2e/global-setup.ts"
+          ],
+          "approach": "Traps executed in global-setup and re-asserted per test: (1) PROD GUARD \u2014 NEXT_PUBLIC_SUPABASE_URL host is 127.0.0.1/localhost AND organizations row 0000\u20260001 slug == 'pifh-local' (seed.sql:29); (2) PIN \u2014 GET /crm (a PAGE route; /api is outside the matcher middleware.ts:424-426) without cookie must 302 to /lock; with cookie no input[aria-label^='PIN digit'] and title != 'Lead Generation Quote System'; (3) NOT EMPTY \u2014 fixture count \u2265 expected and page.request GET /api/crm/search?q=5550107788 (with storageState) returns the fixture id; (4) RIGHT ORG \u2014 every /api/crm/modules row org_id == PIFH id; no bounce to /crm-login?error=no_organization|no_crm_access (load-crm-session.ts:41,49); (5) NAV PROFILE \u2014 nav[aria-label='Modules'] present and resolved profile recorded; (6) BREAKPOINT \u2014 desktop asserts viewport \u22651024 and FilterRailFrame rail/toggle visible (FilterRailFrame.tsx:36,61); mobile asserts the lg:hidden MobileActionBar; (7) SESSION/MFA \u2014 no redirect to /crm-login/mfa, no SessionLock overlay; (8) LAYOUT-V2 \u2014 record page shows V2 chrome; (9) STATUS-VOCAB \u2014 fixture statuses read back unchanged. Each throws 'TRAP:<name>'.",
+          "effort": "S",
+          "acceptance_evidence": "Three deliberate negative runs fail with the named trap and a screenshot: no lgq_ok cookie \u2192 TRAP:pin-gate; empty DB \u2192 TRAP:empty-db; desktop project at 1000px \u2192 TRAP:breakpoint.",
+          "risk": "Trap 1 needs the local service-role key in the harness env \u2014 keep it out of logs/artifacts.",
+          "depends_on": [
+            "EV-1",
+            "EV-2"
+          ]
+        },
+        {
+          "id": "EV-4",
+          "title": "Click/keypress counter fixture + walk.json sidecar + per-step screenshots",
+          "dimensions": [
+            "Evidence harness",
+            "Task efficiency"
+          ],
+          "files": [
+            "apps/crm/e2e/walk-fixture.ts (new `walk` fixture)",
+            "apps/crm/e2e/report/walk-schema.json (new)",
+            "apps/crm/e2e/.eslintrc or a grep check forbidding raw page.click/press in specs"
+          ],
+          "approach": "Fixture exposes click(locator,label), press(key,label), type(locator,text,label) wrapping actions, counting per task (clicks, keypresses; typed chars excluded), wall-clock ms, named screenshot per step; additionally an injected capture-phase listener counts ONLY event.isTrusted click/keydown so Radix synthetic events never inflate counts, and the two tallies must agree. On test end write artifacts/crm-walk/<iso>/walk.json {commit, env:{baseURL,navProfile,layoutV2,viewport}, traps:[\u2026], tasks:[{id,label,clicks,keypresses,ms,budget,pass,steps:[{label,shot}]}]}. Budgets asserted with expect(clicks).toBeLessThanOrEqual(budget).",
+          "effort": "S",
+          "acceptance_evidence": "walk.json present for every run; unit test of the fixture: 3 wrapped clicks + 2 presses \u2192 {clicks:3,keypresses:2}; CI grep finds no raw page.click in apps/crm/e2e/specs.",
+          "risk": "Un-wrapped actions under-count \u2014 the isTrusted cross-check and the grep ban are the guard.",
+          "depends_on": [
+            "EV-1"
+          ]
+        },
+        {
+          "id": "EV-6",
+          "title": "Stable data-testid / data-field-key hooks at the ~10 walk touchpoints that only have text today (no behaviour/copy change)",
+          "dimensions": [
+            "Evidence harness"
+          ],
+          "files": [
+            "apps/crm/src/components/crm/shell/CommandPalette.tsx (input, result rows)",
+            "apps/crm/src/components/zoho/QuickCreateDrawer.tsx (form, submit :1108-1130, save-and-add-another)",
+            "apps/crm/src/app/crm/r/[recordId]/NotesPanel.tsx (composer :364, save)",
+            "apps/crm/src/components/crm/records/DynamicRecordForm.tsx (data-field-key on inputs)",
+            "apps/crm/src/components/crm/filters/FilterSidebar.tsx (Apply :1356), FilterRailFrame.tsx, FilterSidebarTrigger.tsx",
+            "apps/crm/src/app/crm/modules/[moduleKey]/page.tsx (pager Previous/Next :403/446, Showing :368)",
+            "apps/crm/src/components/crm/records/v2/QuickFilterChips.tsx (lane chips :293-305 \u2014 NOT ModuleShell's bulk New-status select)",
+            "apps/crm/src/components/crm/shell/CrmTopBar.tsx, CrmModuleTabBar.tsx, ZohoContextualSidebar.tsx (tab/link items)"
+          ],
+          "approach": "Naming `crm-<area>-<action>`; keep every existing aria-label/role untouched (Add note group, More actions, Quick filters aria-pressed, Filters trigger, records grid, Modules/Primary navs, Search (\u2318K) icon, Record type group, field inputs aria-label=field.label already stable). Pure attribute additions; eslint --max-warnings 0 stays green.",
+          "effort": "S",
+          "acceptance_evidence": "grep -rc data-testid apps/crm/src > 0 at the listed files; typecheck + lint green; EV-5 specs use only testids/aria (verified by grep in CI).",
+          "risk": "None functional; review must ensure no copy/aria rides along.",
+          "depends_on": []
+        }
+      ],
+      "exit_criteria": "Owner has the decision sheet; `npm run walk:crm` boots against 127.0.0.1:54321 with storageState, all 9 traps PASS on the fixture and the 3 negative runs fail loudly; walk.json is written with commit+env; RO-1 table and DE-9 census are on record so DE-1/DE-3/LS-4/TE-3 can be scoped from DB truth.",
+      "effort": "~4-5 focused days (harness + seed + migration-apply path dominate)"
+    },
+    {
+      "name": "Wave 1 \u2014 Clear the three recorded hard fails + the Lists P0",
+      "goal": "(1) Plan/product/producer are real, keyboard-complete pickers with a named source of truth; (2) every ModuleShell toast is templated; (3) the click-count walk exists and has produced a first recorded run; plus the select-all data-corruption P0 and the data-entry silent/dev-copy date defects, because a strict grader checks 'no data corruption' before counting clicks.",
+      "items": [
+        {
+          "id": "FB-1",
+          "title": "Template every ModuleShell toast; extend toastCopy with counted/queued/partial/loading/viewSaved; disable Export at zero rows (HARD FAIL 2)",
+          "dimensions": [
+            "Feedback",
+            "Lists"
+          ],
+          "files": [
+            "apps/crm/src/lib/crm/toast-copy.ts (+ toast-copy.test.ts)",
+            "apps/crm/src/components/zoho/ModuleShell.tsx (:531-549, 689-951, 959-1066, 1103)",
+            "apps/crm/src/components/zoho/ModuleHeader.tsx (:188-196 Export gets disabled={totalCount===0 && selectedCount===0})",
+            "apps/crm/src/lib/crm/undo-delete.ts (:40-58,104-114 strings via toastCopy)",
+            "apps/crm/src/components/crm/views/SavedViewsBar.tsx (:241,337,350)"
+          ],
+          "approach": "Add pure templates: counted(noun,n,verb) \u2192 'Exported 12 members' / 'Selected 1,200 records'; queued(noun,n) \u2192 one 'Queued \u2014 will sync when reconnected' wording (replaces the 7 distinct offline strings incl. RecordDetailShellV2.tsx:890/928 and RecordTagsRow.tsx:88); partial(title,{changed,skipped,failed}) returning {title,description,tone} consumed by reportBulkResult (ModuleShell.tsx:647-677) keeping its escalation tiers; loadingCopy('Building CSV'); viewSaved(name,filterCount). Replace the 29 raw ModuleShell sites and the select-all trio (:531/546/549). Bulk titles per owner decision (default 'Status updated \u00b7 12 records'). No behaviour change beyond the disabled Export.",
+          "effort": "S",
+          "acceptance_evidence": "grep -c toastCopy ModuleShell.tsx \u2265 25; toast-copy.test.ts gains counted/queued/partial/viewSaved cases (pass); walk screenshot of 'Exported 3 members' and 'Exported all matching members \u00b7 Same filters and sort\u2026'; Export button disabled on an empty list (no red toast).",
+          "risk": "Copy-only; partial() must keep error/warning/success tiers (unit test).",
+          "depends_on": []
+        },
+        {
+          "id": "TE-1",
+          "title": "Focus the note editor when the composer opens and never wipe a draft (absorbs RP-2)",
+          "dimensions": [
+            "Task efficiency",
+            "Record page"
+          ],
+          "files": [
+            "apps/crm/src/components/crm/notes/NoteRichArea.tsx (add autoFocus?: boolean \u2192 mount effect editorRef.current?.focus({preventScroll:true}))",
+            "apps/crm/src/app/crm/r/[recordId]/NotesPanel.tsx (:208-220 openComposer; :364 pass autoFocus)"
+          ],
+          "approach": "NotesPanel already remounts the editor per compose (key=`compose-${composeEpoch}`), so a mount-time focus is enough \u2014 no nonce plumbing. In openComposer: if already composing with a non-empty draft, keep the draft and just focus; reset only when not composing. Keep \u2318Enter (:356-361) and the V2 scroll reset (:776-786). useRecordHotkeys already ignores keys while an input is focused, so 'n' does not re-trigger.",
+          "effort": "S",
+          "acceptance_evidence": "RTL: bump composeNonce twice with a draft \u2192 draft intact and document.activeElement is the contentEditable. Walk T3: 1 click on 'Add Note' (or 'n'), type, \u2318Enter \u2192 toast toastCopy.added('Note'); recorded clicks = 1.",
+          "risk": "Focus stealing if compose fires while an inline edit is active \u2014 gate on nonce change only; mobile keyboard pops on open (acceptable).",
+          "depends_on": []
+        },
+        {
+          "id": "DE-4",
+          "title": "Keyboard-complete combobox shared by SuggestPicker and EnrolledByPicker, with loading/empty/error states and a debounced search",
+          "dimensions": [
+            "Data entry",
+            "Task efficiency"
+          ],
+          "files": [
+            "apps/crm/src/components/crm/create/useComboboxList.ts (new shared hook)",
+            "apps/crm/src/components/crm/create/SuggestPicker.tsx",
+            "apps/crm/src/components/crm/create/EnrolledByPicker.tsx (:37-54 fetch \u2192 200 ms debounce, no fetch on mount before focus; visible 'Searching\u2026' / 'No match' / 'Couldn't load producers' states)",
+            "apps/crm/src/components/crm/create/SuggestPicker.test.tsx (new)"
+          ],
+          "approach": "role=combobox input with aria-expanded/aria-controls/aria-activedescendant; role=listbox/option items tabIndex=-1; ArrowUp/Down move highlight; Enter selects when open (preventDefault so the form at QuickCreateDrawer.tsx:886-889 does not submit) and falls through to submit when closed; Esc closes; Tab commits highlight and closes synchronously (drop the 150 ms blur timer). Keep props so the drawer and DynamicRecordForm.tsx:562-570 need no change.",
+          "effort": "S",
+          "acceptance_evidence": "RTL: ArrowDown+Enter selects without submitting; Enter with list closed submits; Tab never lands on an option; empty/error states render. Walk: 10-value paste with zero mouse actions.",
+          "risk": "Behaviour change only while a list is open.",
+          "depends_on": []
+        },
+        {
+          "id": "DE-2",
+          "title": "Org-scoped distinct-values endpoint for JSONB keys (SECURITY INVOKER RPC) feeding Health Insurance Plan suggestions",
+          "dimensions": [
+            "Data entry"
+          ],
+          "files": [
+            "supabase/migrations/<ts>_crm_field_distinct_values_rpc.sql (crm_field_distinct_values(p_module_id uuid, p_key text, p_limit int) SECURITY INVOKER, STABLE, key regex-validated, REVOKE from anon)",
+            "apps/crm/src/app/api/crm/records/field-values/route.ts (new; modelled on records/status-values/route.ts: getAuthProfile, module-by-org lookup, Cache-Control private max-age=60)",
+            "apps/crm/src/components/zoho/QuickCreateDrawer.tsx (:348-364 suggestionsFor merges endpoint values + session values; one request per drawer open alongside the fields fetch)",
+            "apps/crm/src/lib/crm/quick-create-config.ts (doc :26-32)"
+          ],
+          "approach": "INVOKER (not DEFINER) so the GROUP BY data->>p_key runs under the caller's RLS \u2014 no advisor-role re-count caveat. Rehearse on the local stack (psql), then `supabase db push` per playbook. Keep plan free text unless the owner picks the insurance_plans catalog.",
+          "effort": "M",
+          "acceptance_evidence": "GET /api/crm/records/field-values?module_key=contacts&key=health_insurance_plan_name returns top values+counts; two-tenant + anon isolation test (0 leakage; cite crm_fields/crm_records RLS for the option sources incl. /api/crm/modules/[id]/fields which has no org predicate in code); walk screenshot: real plan names on first focus.",
+          "risk": "New migration on prod (playbook); performance at 14k rows acceptable with LIMIT + 60s cache.",
+          "depends_on": []
+        },
+        {
+          "id": "DE-1",
+          "title": "Health Sharing Membership (product / product_type): closed Select from crm_fields.options with explicit 'Other\u2026' and current-value display everywhere",
+          "dimensions": [
+            "Data entry"
+          ],
+          "files": [
+            "apps/crm/src/lib/crm/quick-create-config.ts (:106/108 \u2192 type 'select' + allowOther; test :66-68)",
+            "apps/crm/src/components/zoho/QuickCreateDrawer.tsx (select branch :743-770 + 'Other\u2026' item revealing a text input)",
+            "apps/crm/src/components/crm/records/DynamicRecordForm.tsx (:499-521 include current value)",
+            "apps/crm/src/lib/crm/utils.ts (optionsWithCurrent(options,value), mirroring usStateOptionsWith; reuse in InlineSelectField native <select>)"
+          ],
+          "approach": "Reuse the existing 'select' type rather than a new 'picklist' type; InlineSelectField already displays unknown stored values (:70-80) \u2014 only DynamicRecordForm's Radix Select blanks them. Admins curate the list via existing /api/crm/field-options. Blocked until RO-1 confirms live crm_fields.options and DE-9's sheet is signed.",
+          "effort": "M",
+          "acceptance_evidence": "RTL: product renders a listbox with org options + current legacy value; 'Other\u2026' reveals a text input; walk: pick via ArrowDown+Enter, save, record page shows the value (not a blank).",
+          "risk": "If prod options are empty the select silently degrades to a free Input (QuickCreateDrawer.tsx:744-754) \u2014 verify first; owner must approve 'Other'.",
+          "depends_on": [
+            "RO-1",
+            "DE-9",
+            "DE-4"
+          ]
+        },
+        {
+          "id": "DE-3",
+          "title": "Enrolled by / Producer: one owner-named store, picker returns {name,id}, drawer writes producer_name + producer_record_id",
+          "dimensions": [
+            "Data entry"
+          ],
+          "files": [
+            "apps/crm/src/components/crm/create/EnrolledByPicker.tsx",
+            "apps/crm/src/lib/crm/quick-create-config.ts (own type 'producer')",
+            "apps/crm/src/components/zoho/QuickCreateDrawer.tsx",
+            "apps/crm/src/components/crm/records/DynamicRecordForm.tsx (:562-570 same component)",
+            "apps/crm/src/app/api/crm/advisors/route.ts (or /api/crm/records?module_key=advisors&search= if option (a))"
+          ],
+          "approach": "Owner picks the store (recommended: CRM 'advisors' crm_records module \u2014 navigable, org-scoped, already in nav; crm_advisors is DB-DEPRECATED). Keep producer_name as the written display key (ownership-name.ts precedence, age-65 cron name join) and add producer_record_id (Zoho import already carried producer_name_id, contacts-mapping.ts:97-98). Free text only via an explicit 'Not in list \u2014 add as typed' row (owner). Two-tenant check on the search endpoint.",
+          "effort": "M",
+          "acceptance_evidence": "Walk: typing 'Wen' lists the fixture producer from the chosen store; saved record has producer_name + producer_record_id; list/report 'Enrolled by' unchanged; RTL pick/write test.",
+          "risk": "Changing the store changes which names appear; decide before touching.",
+          "depends_on": [
+            "RO-1",
+            "DE-4"
+          ]
+        },
+        {
+          "id": "DE-5",
+          "title": "Client-side date validity, field-anchored errors, focus-to-first-invalid, and one-voice server error mapping (absorbs TE-7 and the drawer half of FB-6)",
+          "dimensions": [
+            "Data entry",
+            "Feedback",
+            "Task efficiency"
+          ],
+          "files": [
+            "apps/crm/src/lib/crm/quick-create-config.ts (+test: invalidQuickCreateDates(moduleKey, values); render-time Pending hint from quickCreatePendingNeedsEffectiveDate :293-304)",
+            "apps/crm/src/lib/crm/merge-crm-data-json-to-row.ts (export isValidCalendarDateParts :106)",
+            "apps/crm/src/components/zoho/QuickCreateDrawer.tsx (per-field error map replacing the single <p role=alert> :927-931; aria-invalid + aria-describedby; ref focus; map server code PENDING_REQUIRES_START_DATE \u2192 'Pending needs a Coverage start date' instead of the raw pending-start-date-invariant.ts:31-34 string at :1027; fix 'Effective date' \u2192 actual labels 'Coverage start' / 'Sharing effective date' :531-533)",
+            "apps/crm/src/lib/crm/toast-copy.ts (required(field) helper if shared)"
+          ],
+          "approach": "Validate completeness+calendar validity at submit and on blur; never POST an invalid date (closes both the silent-null path on non-Pending statuses and the developer-copy 400 on the default Pending path). Keep the server invariant as backstop.",
+          "effort": "M",
+          "acceptance_evidence": "vitest: '13/45/2026' and '09/01' rejected, '9/1/26' accepted; RTL: error under Coverage start, focus moves there, no POST; walk: Pending without date shows the inline hint before Enter and the server string never appears.",
+          "risk": "Copy must match toastCopy voice; no change to the server rule.",
+          "depends_on": []
+        },
+        {
+          "id": "DE-6",
+          "title": "Lead Pending parity with the server invariant",
+          "dimensions": [
+            "Data entry"
+          ],
+          "files": [
+            "apps/crm/src/lib/crm/quick-create-config.ts (:293-304 return false for moduleKey==='leads')",
+            "apps/crm/src/lib/crm/quick-create-config.test.ts (:234 flip)"
+          ],
+          "approach": "Mirror pending-start-date-invariant.ts:21-27; comment points at the server rule.",
+          "effort": "S",
+          "acceptance_evidence": "vitest green; walk: a lead at stage Pending saves without a date.",
+          "risk": "None.",
+          "depends_on": []
+        },
+        {
+          "id": "LS-1",
+          "title": "P0: 'Select all N' honours the same filters/scope/territory/view/hide-converted predicate as the list",
+          "dimensions": [
+            "Lists",
+            "Feedback"
+          ],
+          "files": [
+            "apps/crm/src/lib/crm/queries.ts (extract applyRecordListQuery(query, opts) from getRecords :497-803)",
+            "apps/crm/src/lib/crm/list-query-resolve.ts (new; move page.tsx saved-view \u2192 filters/sort resolution here so ids route and page share it)",
+            "apps/crm/src/app/api/crm/records/ids/route.ts (:63-67,112-124 accept filters/scope/territory/view; fix docstring :9-11)",
+            "apps/crm/src/components/zoho/ModuleShell.tsx (:505-550 forward params exactly as buildListQuery page.tsx:330-346 writes them)"
+          ],
+          "approach": "One shared predicate builder; select('id',{count:'exact'}); keep 5k cap + capped toast (templated via FB-1). Two-tenant test unchanged (org scoping inside the builder).",
+          "effort": "M",
+          "acceptance_evidence": "vitest: ids route and getRecords receive identical predicates for a filters/scope/view fixture; walk: apply lane 'Pending' \u2192 'Select all N' toast count == pager N == FilterChipsBar N; bulk status on that selection changes only filtered rows (verify via API count).",
+          "risk": "Shared builder refactor touches the list query \u2014 cover with the predicate-equality test before shipping.",
+          "depends_on": [
+            "FB-1"
+          ]
+        },
+        {
+          "id": "EV-5",
+          "title": "The persona walk specs (A+ tasks, rail/pager, nav re-walk, data-entry drawer, toast voice) + first recorded run (HARD FAIL 3 mechanism; absorbs TE-2, RP-1, FB-11, NV-9, LS-6, DE-7)",
+          "dimensions": [
+            "Evidence harness",
+            "Task efficiency",
+            "Record page",
+            "Feedback",
+            "Navigation",
+            "Lists",
+            "Data entry"
+          ],
+          "files": [
+            "apps/crm/e2e/specs/walk-persona.spec.ts (new)",
+            "apps/crm/e2e/specs/walk-lists.spec.ts (new)",
+            "apps/crm/e2e/specs/walk-nav.spec.ts (new)",
+            "apps/crm/e2e/specs/walk-record.spec.ts (new)",
+            "apps/crm/e2e/specs/walk-drawer.spec.ts (new) + apps/crm/src/components/zoho/QuickCreateDrawer.test.tsx (RTL, jsdom env if missing)",
+            "docs/ux/click-walk.md (task list, budgets, how to read walk.json)"
+          ],
+          "approach": "T1: \u2318K (mobile: the sm:hidden 'Search (\u2318K)' icon CrmTopBar.tsx:207-209) \u2192 type 5550107788 \u2192 wait for the 'Records' bucket \u2192 Enter \u2192 /crm/r/<id>; 2 keypresses+digits / 2 clicks. T2: on the record, 0 clicks: Coverage Snapshot eyebrow, status badge, tel: phone, 'Enrolled by', member #, Recent notes; assert V2 chrome. T3: click Add Note (role=group 'Add note') \u2192 activeElement isContentEditable \u2192 type \u2192 \u2318Enter \u2192 toast == toastCopy.added('Note') and POST /api/crm/notes 2xx; 1 click; repeat with 'n' (hooks/useRecordHotkeys.ts:53). T4: Add Member (SplitCreateButton desktop / aria-label 'Add Member' mobile) \u2192 #qc-contacts-first_name focused \u2192 10 values by insertText+Tab in config order ending on a TEXT field (Status/Sharing entity are Radix Selects where Enter opens the menu) with a valid coverage start \u2192 Enter \u2192 toast 'Member added', drawer closes only after pathname === /crm/r/<id> (QCD:327-331); assert the module the record landed in, then the owner-agreed list per TE-4; duplicate-phone amber card keeps values; forced 500 \u2192 'Couldn't save' card + Retry. T5: desk row 'Pending since' \u2192 a[aria-label^='Call '] tel: (1 click); fallback desk 'Pending' chip \u2192 /crm/modules/contacts?\u2026sortField=created_at&sortDirection=asc \u2192 row Call (2). T6 patch one field inline \u2192 assert the InlineFieldEditor 'saved' check / aria-live (NOT a toast \u2014 none exists). Lists: rail open by default (aria-expanded), lane chip 1 click with count==pager N, rail Status\u2192Pending\u2192Apply 3 moves with URL filters + 'Showing' change, page 2 'Showing 26 to', page size 50, ?page=abc/0/999 states, row \u2192 Back restores URL/rail/columns, select-all count==N; OBSERVE and record whether Apply/page pushes flash ModuleSkeleton and remount the rail (sizes LS-3). Nav: tab/link counts per tab, placeholder+aria texts per surface recorded as data (red today \u2014 CrmTopBar:197 vs ZohoContextualSidebar:140 vs search-copy.ts:16), click all 16 cross-tab links (incl. Comms\u2192Call Logs) and record swaps, exactly one aria-current tab+link, palette phone/member#/name, 'View all results' parity, /crm/modules/deals + /crm/pipeline redirects, crm_agent vs crm_viewer permission states (Settings links, create affordance). Record page: 1280/1024/390 screenshots of the header at rest, skeleton frame, reload on Notes pane, not-found and cross-tenant record id. Toast voice: every toast text asserted against imported toastCopy. All actions via the EV-4 wrapper; counts trusted-only.",
+          "effort": "L",
+          "acceptance_evidence": "First recorded run: walk.json with every task present (pass/fail honest \u2014 many will FAIL before Wave 2), screenshots+video per project, traps PASS, commit hash 8255e324+; the LS-3 observation (flash vs stale) written into the report; a second run on the same fixture gives identical counts.",
+          "risk": "Selector drift (EV-6 first); dev-server compile latency (warm up before timing); DynamicRecordForm blur-save race (wait on the PATCH response, not the toast); shared-phone households return grouped rows (seed a unique phone).",
+          "depends_on": [
+            "EV-1",
+            "EV-2",
+            "EV-3",
+            "EV-4",
+            "EV-6",
+            "TE-1"
+          ]
+        }
+      ],
+      "exit_criteria": "Hard fail 1: plan/product/producer are keyboard-complete pickers with DB-backed sources (DE-1/DE-3 may remain blocked on owner decisions \u2014 then DE-2/DE-4/DE-5/DE-6 ship and the row stays <10 with the reason stated); hard fail 2: grep shows \u226525 toastCopy uses in ModuleShell and zero raw export/select-all/bulk/view strings; hard fail 3: walk.json from the first recorded run exists for the commit; LS-1 predicate-equality test green and select-all count==N observed live.",
+      "effort": "~5-6 focused days (EV-5 spec L dominates; DE-1/DE-3 gated on owner)"
+    },
+    {
+      "name": "Wave 2 \u2014 Per-dimension gaps",
+      "goal": "Close every confirmed gap the walk can observe, per dimension, reusing existing helpers; owner-gated items ship only with the decision.",
+      "items": [
+        {
+          "id": "TE-3a",
+          "title": "Visible phone column is click-to-call (tel: anchor like the email cell)",
+          "dimensions": [
+            "Task efficiency",
+            "Lists"
+          ],
+          "files": [
+            "apps/crm/src/components/crm/records/RecordTable.tsx (:1034-1052 system phone column \u2192 <a href=tel:> with stopPropagation mirroring :1044-1050 email; keep the hover/focus Call icon :1591)"
+          ],
+          "approach": "FieldRenderer.tsx:232-245 already renders phone-type data fields as tel anchors \u2014 the system column is the outlier. Reuse the desk QuickActions anchor pattern (desk-primitives.tsx:159-162).",
+          "effort": "S",
+          "acceptance_evidence": "Walk: list row phone is a[href^='tel:']; Pending chip \u2192 click phone = 2 clicks from the list; no hover needed.",
+          "risk": "Row click propagation \u2014 stopPropagation as the email branch does.",
+          "depends_on": []
+        },
+        {
+          "id": "TE-3b",
+          "title": "Pending lane chip also sorts created_at asc (owner-gated; mirrors the desk pendingContactsHref)",
+          "dimensions": [
+            "Task efficiency",
+            "Lists"
+          ],
+          "files": [
+            "apps/crm/src/components/crm/records/v2/QuickFilterChips.tsx (QuickFilterPreset optional sort; lane-pending preset :106-125)",
+            "apps/crm/src/components/zoho/ModuleShell.tsx (handleQuickPreset/pushFiltersToUrl :376-386, 398-434 set sortField/sortDirection)",
+            "apps/crm/src/app/crm/modules/[moduleKey]/page.tsx (:201-205 URL sort contract already honoured)"
+          ],
+          "approach": "Additive preset field; same URL contract command-desk-format.ts:171-177 uses. Leave people-queue-rank.ts untouched (approved desk order). Optional 'Waiting since' column is a crm_views config migration (reversible) only if the owner asks.",
+          "effort": "S",
+          "acceptance_evidence": "Walk: /crm/modules/contacts \u2192 'Pending' chip \u2192 URL has sortField=created_at&sortDirection=asc, first row is the oldest pending; QuickFilterChips.test.ts covers the preset sort.",
+          "risk": "Chips were decided filter-only \u2014 owner sign-off required.",
+          "depends_on": []
+        },
+        {
+          "id": "TE-4",
+          "title": "Decide and wire where a newly added member is 'seen on the list' (absorbs DE-8)",
+          "dimensions": [
+            "Task efficiency",
+            "Data entry",
+            "Navigation"
+          ],
+          "files": [
+            "apps/crm/src/components/zoho/QuickCreateDrawer.tsx (:579-607 post-save)",
+            "apps/crm/src/lib/crm/status-lanes.ts (withReturnTo/sanitizeReturnTo :393-416 \u2014 the real helpers; `currentListReturnTo` does not exist)",
+            "apps/crm/src/lib/crm/create-intent.ts (+test), apps/crm/src/components/zoho/ModuleHeader.tsx (:75-80 label; 'New Member record' dropdown item stays)",
+            "apps/crm/src/lib/crm/toast-copy.ts (action variant)"
+          ],
+          "approach": "Owner picks: (a) contacts is the hand-entry list (state it; 'Members' nav points where the owner says), (b) create/link the members twin through the canonical create path only (create_enrollment_tx / twin conduit, two-tenant check), or (c) recommended: after save, toast 'Member added \u00b7 View in list' using the sonner action pattern + withReturnTo to the originating list (Contacts default; Members when opened from /crm/modules/members with an honest note that Members fills from enrollment), and 'Done' after a batch returns to the originating list. Implement one option only.",
+          "effort": "M",
+          "acceptance_evidence": "Walk T4: after Enter the record is reachable on the agreed list URL within \u22641 click and shows its plan/effective date columns; also when the drawer is opened from /crm/modules/members.",
+          "risk": "(b) changes data semantics; (a) changes a decided label; any new write needs RLS check.",
+          "depends_on": [
+            "EV-5"
+          ]
+        },
+        {
+          "id": "TE-5",
+          "title": "Queue Enter in the palette while the phone search is in flight",
+          "dimensions": [
+            "Task efficiency"
+          ],
+          "files": [
+            "apps/crm/src/components/crm/shell/CommandPalette.tsx (:660-681 Enter branch; :402-429 results effect)",
+            "apps/crm/src/lib/crm/palette-results.test.ts (extend)"
+          ],
+          "approach": "pendingEnterRef set when searchLoading && query\u22652 && flatCommands empty; when results land run recordCommands[0].action() only if it is the sole row / single chip; Esc clears.",
+          "effort": "S",
+          "acceptance_evidence": "Walk: phone + immediate Enter lands on the record; keypress count stays 2+digits; unit test.",
+          "risk": "Shared-phone households \u2014 guard on single result.",
+          "depends_on": []
+        },
+        {
+          "id": "TE-6",
+          "title": "Route note templates through the in-pane composer; delete the legacy 'Add Note' Dialog in V2",
+          "dimensions": [
+            "Task efficiency",
+            "Record page",
+            "Feedback"
+          ],
+          "files": [
+            "apps/crm/src/components/crm/notes/NoteComposeContext.tsx (prefill body alongside composeNonce)",
+            "apps/crm/src/components/crm/records/RecordDetailShellV2.tsx (:983-989 \u2192 requestCompose(body); remove Dialog :2580 and its 'Please enter note content' toast :908-911)",
+            "apps/crm/src/app/crm/r/[recordId]/NotesPanel.tsx (seed draft from prefill without overwriting a non-empty draft)"
+          ],
+          "approach": "Honours note-compose.ts:4-6 invariant; sanitizeNoteHtml already on save (NotesPanel.tsx:266).",
+          "effort": "S",
+          "acceptance_evidence": "grep setShowNoteModal in V2 = 0; walk: chevron \u2192 template \u2192 composer pre-filled and focused; one save surface.",
+          "risk": "Coordinate with TE-1 draft guard.",
+          "depends_on": [
+            "TE-1"
+          ]
+        },
+        {
+          "id": "TE-8",
+          "title": "Real tel: anchors for every Call affordance (list rows, ListView, hotkey c, MobileActionBar)",
+          "dimensions": [
+            "Task efficiency",
+            "Record page"
+          ],
+          "files": [
+            "apps/crm/src/components/crm/records/RecordTable.tsx (:494-497, 1597-1600)",
+            "apps/crm/src/components/crm/views/ListView.tsx (:320-330; add group-focus-within)",
+            "apps/crm/src/components/crm/records/RecordDetailShellV2.tsx (:1022-1030 hotkey c \u2192 click header tel anchor :1714; :2787-2793)",
+            "apps/crm/src/components/crm/records/v2/MobileActionBar.tsx (href-capable ActionButton :55-58)",
+            "apps/crm/src/components/dashboard/command-desk/desk-primitives.tsx (extract CallLink from :159-162)"
+          ],
+          "approach": "One CallLink primitive reused; SplitView already uses anchors (:227,286).",
+          "effort": "S",
+          "acceptance_evidence": "Harness asserts a[href^='tel:'] on list rows, ListView rows, record header, mobile bar; grep for window.location.href = `tel: returns 0.",
+          "risk": "Row click propagation \u2014 stopPropagation.",
+          "depends_on": []
+        },
+        {
+          "id": "RP-3",
+          "title": "One search box in the record header: drop RecordToolbarGlobalSearch from the V2 breadcrumb row (owner-gated)",
+          "dimensions": [
+            "Record page",
+            "Navigation"
+          ],
+          "files": [
+            "apps/crm/src/components/crm/records/RecordDetailShellV2.tsx (:1604 one-line removal; keep InlineRecordSearch :1605-1611 and '/' hotkey)"
+          ],
+          "approach": "RecordToolbarGlobalSearch.tsx:3-7 documents itself as V1-only; CrmTopBar owns \u2318K (:205-212). If kept instead, its placeholder must use search-copy.ts.",
+          "effort": "S",
+          "acceptance_evidence": "Walk screenshot at 1280: exactly one input in the record header; grep RecordToolbarGlobalSearch in V2 = 0.",
+          "risk": "Users who searched other records from the header use \u2318K (one keystroke).",
+          "depends_on": []
+        },
+        {
+          "id": "RP-4",
+          "title": "Quiet the meta row for reps: gate NormalizationBadge on viewerCanNormalize; MarketTypeBadge hideUnknown (owner-gated)",
+          "dimensions": [
+            "Record page"
+          ],
+          "files": [
+            "apps/crm/src/components/crm/records/RecordDetailShellV2.tsx (:1770-1771; keep rail :2309-2310 and sheet :2888 Market rows)",
+            "apps/crm/src/components/shared/crm-lane-badges.tsx (:50-51 add hideUnknown prop \u2192 null for 'unknown'; unit test)"
+          ],
+          "approach": "viewerCanNormalize already computed (:1049-1050) and used for the banner (:2178). Additive prop on the shared badge. Note the profile comes from a client cache (useClientAuth.ts:51) \u2014 admins may see the badge a beat after paint.",
+          "effort": "S",
+          "acceptance_evidence": "Walk as crm_agent: no amber badges in the header meta row (1280 screenshot); admin run still shows Needs Review; unit test for hideUnknown.",
+          "risk": "None for admins (crm_admin/crm_manager).",
+          "depends_on": []
+        },
+        {
+          "id": "RP-5",
+          "title": "'Add Tags' on demand (opacity-0 until hover/focus; tabbable) for tagless records (owner-gated)",
+          "dimensions": [
+            "Record page"
+          ],
+          "files": [
+            "apps/crm/src/components/crm/records/v2/RecordTagsRow.tsx (:188-197)",
+            "apps/crm/src/components/crm/records/RecordDetailShellV2.tsx (wrap identity fragment :1632-1667 in a `group` container \u2014 the h1 :1633 has no group class today)"
+          ],
+          "approach": "opacity-0 focus-visible:opacity-100 group-hover:opacity-100; existing tags still render as chips; stays reachable by Tab and touch (focus).",
+          "effort": "S",
+          "acceptance_evidence": "Walk screenshot: no dashed pill at rest on a tagless record; Tab reaches it.",
+          "risk": "Discoverability drops for a feature the org never adopted \u2014 that is the point; touch users reach it via focus.",
+          "depends_on": []
+        },
+        {
+          "id": "RP-6",
+          "title": "No duplicate actions below lg; Insights reachable at 1024-1279; skip link; labelled primary at 390",
+          "dimensions": [
+            "Record page",
+            "Navigation"
+          ],
+          "files": [
+            "apps/crm/src/components/crm/records/RecordDetailShellV2.tsx (Email button :1813-1830 \u2192 hidden (stays in \u22ef :1946-1953 and MobileActionBar); add \u22ef item 'Insights' \u2192 setInsightsSheetOpen(true) for <xl (:2796 pattern); sr-only 'Skip to record details' before the breadcrumb targeting the SectionNav tablist (SectionNav.tsx:246); keep 'Add Note' label visible at sm or drop the header duplicate when the bottom bar shows 'Note')",
+            "apps/crm/src/components/crm/records/v2/MobileActionBar.tsx (unchanged or label parity)"
+          ],
+          "approach": "Prefer the \u22ef Insights item over widening the rail to lg (IdentityActionsHeader breakpoint='xl' already stacks actions there and the column is narrow).",
+          "effort": "S",
+          "acceptance_evidence": "Walk at 390: header = title + status + Add Note + \u22ef, bottom bar = Call/Email/Note/Insights, no duplicate Email; at 1024: Insights openable from \u22ef; Tab reaches the section nav in \u22646 stops via the skip link; ResizeObserver sticky offset still correct.",
+          "risk": "None functional.",
+          "depends_on": []
+        },
+        {
+          "id": "RP-7",
+          "title": "Mirror pane/tab into the URL (?pane=) so refresh/back/share keep the Notes pane",
+          "dimensions": [
+            "Record page"
+          ],
+          "files": [
+            "apps/crm/src/lib/crm/note-compose.ts (recordPaneHref(pathname, searchParams, pane) keeps returnTo, strips compose)",
+            "apps/crm/src/components/crm/records/RecordDetailShellV2.tsx (effect on [topTab, overviewPane]; reuse keepReturnTo :830)"
+          ],
+          "approach": "The shell already router.replace()s to strip ?ai (:465,:508) \u2014 observe whether that triggers an RSC refetch; if so use history.replaceState. Mount-only reader (:386-401) already parses pane.",
+          "effort": "M",
+          "acceptance_evidence": "Walk: open Notes pane, reload \u2192 Notes active and URL has pane=notes; Back \u2192 list with filters intact.",
+          "risk": "RSC round-trip on replace \u2014 pick mechanism after observing.",
+          "depends_on": []
+        },
+        {
+          "id": "RP-8",
+          "title": "Skeleton parity: remove the rail skeleton; mirror hero + section nav + snapshot blocks",
+          "dimensions": [
+            "Record page"
+          ],
+          "files": [
+            "apps/crm/src/app/crm/r/[recordId]/page.tsx (RecordDetailSkeleton :325-373; delete rail :361-370; 2 tab blocks; add section-nav + snapshot blocks)"
+          ],
+          "approach": "Cosmetic parity; reserve FollowUpBanner min-height only if the walk measures CLS > 0.05 (it returns null while loading, FollowUpBanner.tsx:115).",
+          "effort": "S",
+          "acceptance_evidence": "Walk CLS < 0.05 on record open; before/after skeleton screenshots.",
+          "risk": "None.",
+          "depends_on": []
+        },
+        {
+          "id": "RP-9",
+          "title": "One voice on the record page and the rest of the walked paths (absorbs FB-3): route remaining raw toasts through toastCopy, normalise progress labels and glyphs",
+          "dimensions": [
+            "Record page",
+            "Feedback"
+          ],
+          "files": [
+            "apps/crm/src/components/crm/records/RecordDetailShellV2.tsx (:462,489,505,865,890,910,928,945,972 + teammate infos :1069/1075/1518 via one teammateUpdated() helper)",
+            "apps/crm/src/hooks/useRecordFieldSave.tsx (:171 \u2192 toastCopy.failed(`save ${label}`, reason) without the `next` arg \u2014 the Retry action button already exists)",
+            "apps/crm/src/components/crm/records/FollowUpBanner.tsx:104, FollowUpReminderDialog.tsx:113 (drop '!'), RelatedRecordsPanel.tsx, MergeRecordDialog.tsx, CommunicationsTab.tsx, ApprovalPanel.tsx, MergedFromToast.tsx:33, AttachmentsSectionClient.tsx:42",
+            "apps/crm/src/components/crm/records/v2/{DataPrivacyPanel,MembershipChangeHistory,RecordTasksPanel,SendEmailDialog,RecordLinksEditorDialog,RecordTagsRow,AiSuggestChip,AiFollowUpEmailButton}.tsx",
+            "apps/crm/src/components/crm/views/{CalendarView,KanbanView}.tsx; app/crm/r/[recordId]/edit/page.tsx; app/crm/modules/[moduleKey]/{bulk-update,mass-delete}/page.tsx; components/crm/shell/LayoutV2Toggle.tsx",
+            "apps/crm/src/lib/crm/toast-copy.ts (+ savedOffline/sent/exported/snoozed/required; PROGRESS_LABEL map 'Saving\u2026'/'Adding\u2026'/'Creating\u2026'; tests)"
+          ],
+          "approach": "Mechanical per the adoption table in toast-copy.ts:18-29 (migrate as you touch \u2014 these files are all being touched). Scope the acceptance grep to success/validation literals; error literals go through failed(). Queued toasts use FB-1's queued().",
+          "effort": "M",
+          "acceptance_evidence": "grep over the persona-path set (ModuleShell, components/crm/records, app/crm/r, views, filters, shell, create, app/crm/modules) shows 0 raw success/validation toast literals outside lib/crm/toast-copy.ts and undo-delete.ts; toast-copy tests green; walk asserts each toast string == helper output; no 'Saving...' (three dots) left on walked files.",
+          "risk": "Wording review for contextual multi-line infos \u2014 keep descriptions, change titles only.",
+          "depends_on": [
+            "FB-1",
+            "FB-9"
+          ]
+        },
+        {
+          "id": "RP-M1",
+          "title": "Inline field patch announces itself: aria-live 'Saved' + walk asserts the check state (owner decides whether a visual toast is wanted)",
+          "dimensions": [
+            "Record page",
+            "Feedback"
+          ],
+          "files": [
+            "apps/crm/src/components/crm/records/v2/InlineFieldEditor.tsx (:162,300 add a visually-hidden role=status 'Saved' alongside the emerald Check)",
+            "apps/crm/src/hooks/useRecordFieldSave.tsx (no success toast unless owner says so)"
+          ],
+          "approach": "Keep the silent check as the voice (recommendation) and make it perceivable to AT; the walk asserts 'saved' state, never a toast.",
+          "effort": "S",
+          "acceptance_evidence": "Walk T6: change a field, blur \u2192 check icon + role=status text 'Saved' observed; failure \u2192 toastCopy.failed with working Retry.",
+          "risk": "None.",
+          "depends_on": []
+        },
+        {
+          "id": "RP-M2",
+          "title": "Stop failing open: surface layout/flag fetch errors instead of silently rendering V1 or a snapshot-less page",
+          "dimensions": [
+            "Record page",
+            "Feedback"
+          ],
+          "files": [
+            "apps/crm/src/app/crm/r/[recordId]/page.tsx (:172 layout null on reject; :175,231 V1 fallback on flag reject)",
+            "apps/crm/src/components/crm/records/DynamicRecordForm.tsx (:652 single-'main' fallback when layout missing)"
+          ],
+          "approach": "Distinguish 'no default layout row' (configuration) from 'fetch rejected' (transient): on rejection render an inline banner 'Couldn't load this record's layout \u00b7 Retry' (toastCopy voice) and keep V2 unless the flag row explicitly disables it; log both. On missing layout row show the configuration empty state naming the module.",
+          "effort": "S",
+          "acceptance_evidence": "Walk with a throttled/aborted layout request: banner + Retry observed, no silent V1; RO-1 shows hero present so the normal path is unaffected.",
+          "risk": "Must not mask a real owner decision to disable V2 (flag row enabled=false stays V1).",
+          "depends_on": [
+            "RO-1"
+          ]
+        },
+        {
+          "id": "FB-5",
+          "title": "Honest record-page delete: Trash + Undo, same words as the list",
+          "dimensions": [
+            "Feedback",
+            "Record page"
+          ],
+          "files": [
+            "apps/crm/src/components/crm/records/RecordDetailShellV2.tsx (:2030-2046 read batchId from DELETE response; description 'It moves to Trash \u2014 you can restore it from there.'; toastDeletedWithUndo with onUndo \u2192 router.push)",
+            "apps/crm/src/lib/crm/undo-delete.ts (strings via toastCopy from FB-1)"
+          ],
+          "approach": "route.ts:242 already returns {trashed:true,batchId}; crm_soft_delete_record RETURNS uuid (202607140003:94).",
+          "effort": "S",
+          "acceptance_evidence": "Walk: delete the fixture contact from its record \u2192 'Moved to Trash \u00b7 Undo'; Undo restores; confirm dialog no longer says 'cannot be undone'.",
+          "risk": "Low.",
+          "depends_on": [
+            "FB-1"
+          ]
+        },
+        {
+          "id": "FB-6",
+          "title": "Inline validation instead of toasts on the record page and bulk dialogs",
+          "dimensions": [
+            "Feedback",
+            "Record page",
+            "Lists"
+          ],
+          "files": [
+            "apps/crm/src/components/crm/records/RecordDetailShellV2.tsx (task title :865/:888 disable+helper; note content handled by TE-6 removal)",
+            "apps/crm/src/components/crm/records/RecordTable.tsx (:894)",
+            "apps/crm/src/components/crm/records/FollowUpReminderDialog.tsx (:88)",
+            "apps/crm/src/components/zoho/ModuleShell.tsx (:689/741/786/858 disable Apply until a value is picked)"
+          ],
+          "approach": "Disable submit while required is empty + <p role=alert> helper like QuickCreateDrawer.tsx:909/928; one wording '<Field> is required' (DynamicRecordForm.tsx:704).",
+          "effort": "S",
+          "acceptance_evidence": "grep toast.error('Please across the persona-path set = 0; walk: empty task title \u2192 button disabled, helper text, no toast.",
+          "risk": "No API validation change.",
+          "depends_on": []
+        },
+        {
+          "id": "FB-9",
+          "title": "Humanise error reasons inside toastCopy.failed",
+          "dimensions": [
+            "Feedback"
+          ],
+          "files": [
+            "apps/crm/src/lib/crm/toast-copy.ts (:110-138 usefulReason/reasonToText)",
+            "apps/crm/src/lib/crm/toast-copy.test.ts (:54-56 fix the 'reach the server.' grammar case)"
+          ],
+          "approach": "Map RLS/permission/403 \u2192 'you don't have access to this record'; Failed to fetch/NetworkError \u2192 'no connection'; timeout; HTTP 5xx \u2192 'server error'; drop PGRST noise; cap ~80 chars; keep useful server validation text. Pure; every failed() caller benefits.",
+          "effort": "S",
+          "acceptance_evidence": "New tests pass incl. failed('save the note', new Error('new row violates row-level security policy\u2026')) === \"Couldn't save the note \u2014 you don't have access to this record.\"",
+          "risk": "Never hide a useful validation message (existing tests).",
+          "depends_on": []
+        },
+        {
+          "id": "FB-M1",
+          "title": "Toaster follows the CRM theme (dark-mode toasts)",
+          "dimensions": [
+            "Feedback"
+          ],
+          "files": [
+            "packages/ui/src/components/sonner.tsx (:8-14 accept/pass theme prop)",
+            "apps/crm/src/components/providers/ClientProviders.tsx (:29 <Toaster theme={resolvedTheme}/> from theme-provider.tsx:54-56)"
+          ],
+          "approach": "Additive prop on the shared Toaster (other apps unchanged); crm passes 'dark'/'light'/'system'.",
+          "effort": "S",
+          "acceptance_evidence": "Walk in dark mode: toast card is dark (screenshot); light unchanged.",
+          "risk": "Shared @crm-eco/ui component \u2014 additive only.",
+          "depends_on": []
+        },
+        {
+          "id": "FB-8",
+          "title": "Kanban and Split empty states through ListEmptyStatePanel; one notes empty wording",
+          "dimensions": [
+            "Feedback",
+            "Lists",
+            "Record page"
+          ],
+          "files": [
+            "apps/crm/src/components/crm/views/KanbanView.tsx (:974-990), SplitView.tsx (:405-419) \u2192 useListEmptyState + ListEmptyStatePanel (ListView.tsx:56-140); thread totalCount/activeViewFilterCount from ModuleShell if missing",
+            "apps/crm/src/app/crm/r/[recordId]/NotesPanel.tsx (:579), RecordDetailShellV2.tsx (:2509/:3093) one 'No notes yet \u2014 \u2026' wording (keep legacy variant :548)"
+          ],
+          "approach": "Reuse the tested resolver (list-empty-state.ts, 14 tests).",
+          "effort": "S",
+          "acceptance_evidence": "Kanban with a missed search shows 'No matches\u2026' + Clear, not 'Create Record'; grep 'No records to display|No records found' in views = 0.",
+          "risk": "Low.",
+          "depends_on": []
+        },
+        {
+          "id": "FB-4",
+          "title": "Retire the V1 record shell + per-user Layout toggle (owner-gated) and delete dead files (client.tsx, CrmHeader + barrel export, GlobalSearchOverlay, duplicate ClientProviders)",
+          "dimensions": [
+            "Feedback",
+            "Record page"
+          ],
+          "files": [
+            "apps/crm/src/components/crm/records/RecordDetailShell.tsx",
+            "apps/crm/src/app/crm/r/[recordId]/page.tsx (:231 ternary)",
+            "apps/crm/src/components/crm/shell/LayoutV2Toggle.tsx, app/crm/profile/page.tsx (:28,:374)",
+            "apps/crm/src/app/crm/modules/[moduleKey]/client.tsx (dead)",
+            "apps/crm/src/components/crm/shell/CrmHeader.tsx + components/crm/shell/index.ts:2 (barrel export must go too)",
+            "apps/crm/src/components/zoho/GlobalSearchOverlay.tsx, apps/crm/src/components/ClientProviders.tsx (dead duplicates; grep before rm)"
+          ],
+          "approach": "If the owner keeps V1, template its 15 raw toasts instead. Deleting dead files drops the raw-toast baseline by ~24 and removes the second Add Note path.",
+          "effort": "S",
+          "acceptance_evidence": "typecheck:crm green; grep RecordDetailShell\\b returns only V2 (or V1 has 0 raw toasts); ratchet baseline drops accordingly.",
+          "risk": "Removes the user escape hatch from V2 \u2014 decided-behaviour change.",
+          "depends_on": []
+        },
+        {
+          "id": "NV-1",
+          "title": "One search promise everywhere (visible + aria, no truncation) and residual lexicon drift (absorbs FB-7)",
+          "dimensions": [
+            "Navigation",
+            "Feedback"
+          ],
+          "files": [
+            "apps/crm/src/lib/crm/search-copy.ts (add SEARCH_PLACEHOLDER_SHORT e.g. 'Search name, phone, member #\u2026' OR widen the boxes \u2014 owner/design pick; wire SEARCH_ARIA_LABEL :25)",
+            "apps/crm/src/components/crm/shell/CrmTopBar.tsx (:197 placeholder; :209 aria-label)",
+            "apps/crm/src/components/crm/shell/ZohoContextualSidebar.tsx (:140), CrmCommandBar.tsx (:21 default)",
+            "apps/crm/src/components/crm/shell/bottom-bar/{ContactsPanel:175,ChatPanel:128}.tsx, app/crm/modules/[moduleKey]/{bulk-update:375,mass-delete:277}/page.tsx, filters/FilterSidebar.tsx:1044 ('...'\u2192'\u2026')",
+            "apps/crm/src/components/zoho/ModuleShell.tsx:1677, components/zoho/MassActionsBar.tsx:117, components/crm/records/BulkActions.tsx:76, app/crm/learn/page.tsx:50 ('Advisor / Agent' \u2192 ADVISORS_LABEL copy)",
+            "apps/crm/src/lib/crm/nav-lexicon.ts (:6,11 stale ADVISORS_HREF '/crm/advisors' \u2014 fix or remove) + nav-lexicon.test.ts (file-read style assertion)"
+          ],
+          "approach": "Import the constants; the 38-char canonical string truncates in the 160/220px button and w-52 trigger, so use the short variant there or widen \u2014 acceptance needs an un-truncated screenshot.",
+          "effort": "S",
+          "acceptance_evidence": "nav-lexicon.test asserts no literal 'Search \u2026' placeholder in the shell files; walk screenshots at 1280 and sm show identical, un-truncated text on top bar, sidebar trigger and palette; aria-label equal; grep 'Search or workflow|Search people or work|Advisor / Agent' = 0.",
+          "risk": "Low.",
+          "depends_on": []
+        },
+        {
+          "id": "NV-2",
+          "title": "Sticky tab on client navigation (sidebar never swaps for a link reached from the current tab) + aria-current on ModuleSwitcherRail (owner chooses sticky vs removing the 16 cross-tab links)",
+          "dimensions": [
+            "Navigation"
+          ],
+          "files": [
+            "apps/crm/src/contexts/ModuleContext.tsx (ModulePathSync :115-124 \u2014 track previous pathname; if the current tab's nav (buildFullCrmNav / getNavItemsForModule) has an active href via isNavHrefActive nav-profile.ts:169-185, keep the tab; fresh deep links still resolve synchronously; never let localStorage override a deep link)",
+            "apps/crm/src/components/crm/shell/{ZohoContextualSidebar:293, CrmModuleTabBar:63, ModuleSwitcherRail:48,75-95}.tsx (read the provider's tab; add aria-current='page' to rail links)",
+            "apps/crm/src/contexts/module-context.test.ts (new: CRM\u2192/crm/inbox keeps 'crm'; direct load resolves 'communications')"
+          ],
+          "approach": "Keep resolveTopModuleFromPathname as the synchronous initial/fallback to avoid first-paint flash/SSR mismatch; stickiness only on client navigations. Full cross-tab list: CRM\u2192Inbox; Comms\u2192Templates/Signatures/Email Domains/Notifications/Call Logs; Revenue\u2192Documents/Carriers/Premium Compare; Ops\u2192Import/Data Jobs; Analytics\u2192Reports/Scorecards/Forecast; Settings\u2192Recycle Bin/Developer Hub.",
+          "effort": "M",
+          "acceptance_evidence": "Unit test green; walk: 0 of 16 links swap; exactly one aria-current tab (incl. collapsed rail / mobile grid) and one sidebar link after each hop.",
+          "risk": "Tab/URL divergence by design; localStorage 'crm_active_module' must not resurrect a stale tab.",
+          "depends_on": []
+        },
+        {
+          "id": "NV-3",
+          "title": "Palette covers pages (typed-only), de-duplicated by href, module-gated like the sidebar",
+          "dimensions": [
+            "Navigation"
+          ],
+          "files": [
+            "apps/crm/src/lib/crm/palette-pages.ts (new pure helper + test: flatten getNavItemsForModule for all tabs + buildFullCrmNav(CRM_NAV_ITEMS, modules); drop pipeline unless deals navigable; drop advisors unless navigable)",
+            "apps/crm/src/components/crm/shell/CommandPalette.tsx (:519-587 baseCommands; emit page rows only when query.length \u2265 1; idle shows recents + persona set: Members, Member Roster, Tasks, Calendar, Inbox, Reports, Workqueue, Import)"
+          ],
+          "approach": "filteredBase returns all baseCommands when idle (:590-592) \u2014 so typed-only to avoid 112 idle rows. The 'Add note from \u2318K' idea is dropped (gold-plating).",
+          "effort": "M",
+          "acceptance_evidence": "Unit test: every non-separator nav href appears once; walk: \u2318K \u2192 'task' \u2192 'Go to Tasks' row navigates.",
+          "risk": "Idle flood if not typed-only.",
+          "depends_on": []
+        },
+        {
+          "id": "NV-4",
+          "title": "/crm/search parity with the palette search (phone variants + member # + fuzzy) by relocating the route-private helpers into the existing lib/crm/record-search.ts",
+          "dimensions": [
+            "Navigation",
+            "Task efficiency"
+          ],
+          "files": [
+            "apps/crm/src/app/api/crm/search/route.ts (:245-533 smartSearch/phoneSearch/identifierSearch/ilikeFallback move out)",
+            "apps/crm/src/lib/crm/record-search.ts (EXISTS \u2014 add resolveSearchRows(supabase, orgId, {query, moduleFilter, limit, threshold}))",
+            "apps/crm/src/app/crm/search/page.tsx (:48-57 call it; keep grouping; add SearchMatchChips)"
+          ],
+          "approach": "No duplicate system \u2014 one resolver for palette and page; identical org scoping via profile.organization_id in both callers. (tsvector includes phone fields, so only partial digits/format variants/member # were missing.)",
+          "effort": "M",
+          "acceptance_evidence": "vitest for resolveSearchRows with phone-only and member-# queries; walk: \u2318K phone \u2192 'View all results' lists the same member.",
+          "risk": "Server component vs API auth clients differ \u2014 keep scoping identical.",
+          "depends_on": []
+        },
+        {
+          "id": "NV-5",
+          "title": "Gate the Pipeline link and /crm/pipeline on an enabled deals module (owner-gated)",
+          "dimensions": [
+            "Navigation"
+          ],
+          "files": [
+            "apps/crm/src/lib/crm/nav-profile.ts (buildFullCrmNav :120-143 drop 'pipeline' unless navigableModules contains 'deals'; + nav-profile.test.ts case)",
+            "apps/crm/src/app/crm/pipeline/page.tsx (:129 getModuleByKey null/disabled \u2192 disabledModuleRedirect(dealsModule, getAllModules()) nav-profile.ts:228-237 instead of default stages)"
+          ],
+          "approach": "Same pattern as the advisors guard (:138).",
+          "effort": "S",
+          "acceptance_evidence": "nav-profile.test 'hides Pipeline when deals is disabled'; walk: PIFH CRM sidebar has no Pipeline; /crm/pipeline redirects to /crm/modules/members.",
+          "risk": "Removes a link for PIFH (a kanban they cannot use) \u2014 owner confirms.",
+          "depends_on": []
+        },
+        {
+          "id": "NV-6",
+          "title": "Rename the people section heading from 'Sales Pipeline' (owner names the word)",
+          "dimensions": [
+            "Navigation"
+          ],
+          "files": [
+            "apps/crm/src/lib/crm/nav-lexicon.ts (PEOPLE_SECTION_LABEL)",
+            "apps/crm/src/contexts/ModuleContext.tsx (:158; keep key 'sec-pipeline' for nav-profile.ts:132 injection)"
+          ],
+          "approach": "Constant + test.",
+          "effort": "S",
+          "acceptance_evidence": "Walk screenshot of the CRM sidebar heading; nav-lexicon.test extended.",
+          "risk": "Label change \u2014 owner.",
+          "depends_on": []
+        },
+        {
+          "id": "NV-7",
+          "title": "Sidebar active state on record pages + missing 'ticket'/'search' icons",
+          "dimensions": [
+            "Navigation",
+            "Record page"
+          ],
+          "files": [
+            "apps/crm/src/components/crm/shell/ZohoContextualSidebar.tsx (iconMap :149-230; subscribeRecordCommandContext effect)",
+            "apps/crm/src/lib/crm/record-command-context.ts (:8-13 add moduleKey)",
+            "apps/crm/src/components/crm/records/RecordDetailShellV2.tsx (pass module.key)"
+          ],
+          "approach": "Highlight `module-${moduleKey}` only when resolveActiveNavKey is null and pathname starts with /crm/r/.",
+          "effort": "S",
+          "acceptance_evidence": "Walk: open a member record \u2192 'Members' sidebar link aria-current; Tickets/Provider Search show their icons.",
+          "risk": "Low; fallback is no highlight.",
+          "depends_on": []
+        },
+        {
+          "id": "NV-M1",
+          "title": "Permission-honest navigation for crm_agent: filter SETTINGS_NAV_ITEMS with the same predicate settings/page.tsx uses for cards (owner-gated)",
+          "dimensions": [
+            "Navigation"
+          ],
+          "files": [
+            "apps/crm/src/contexts/ModuleContext.tsx (:322-363 SETTINGS_NAV_ITEMS adminOnly flags)",
+            "apps/crm/src/components/crm/shell/ZohoContextualSidebar.tsx (filter by crm_role like app/crm/settings/page.tsx:208-209)",
+            "apps/crm/src/components/crm/shell/CrmModuleTabBar.tsx (:38-46 keep Settings tab; hide admin-only links)"
+          ],
+          "approach": "Hide, don't break: agents keep their own settings (profile/notifications); admin-only links disappear rather than 403.",
+          "effort": "S",
+          "acceptance_evidence": "Walk as crm_agent: no Settings link leads to a denied/partial page; admin run unchanged; counts recorded per role.",
+          "risk": "Changes what agents see \u2014 owner confirms the predicate.",
+          "depends_on": [
+            "EV-5"
+          ]
+        },
+        {
+          "id": "LS-2",
+          "title": "Real error state for list load failures + page-param clamp (no new error.tsx \u2014 app/crm/error.tsx exists)",
+          "dimensions": [
+            "Lists",
+            "Feedback"
+          ],
+          "files": [
+            "apps/crm/src/app/crm/modules/[moduleKey]/page.tsx (:224-242 pass loadError; :73 page = max(1, parseInt||1))",
+            "apps/crm/src/app/crm/modules/[moduleKey]/ModuleListClient.tsx",
+            "apps/crm/src/lib/crm/list-empty-state.ts (+test: reason 'load-failed', title \"Couldn't load {noun}\", action 'Try again' via the crm:clear-list-state bus)",
+            "apps/crm/src/components/crm/views/ListView.tsx, RecordTable.tsx (render the new reason)"
+          ],
+          "approach": "Extend the tested resolver; retry via router.refresh.",
+          "effort": "S",
+          "acceptance_evidence": "vitest case; walk: ?page=abc and ?page=0 render page 1; forced DB error shows 'Couldn't load' + Try again, never the Create CTA.",
+          "risk": "Low.",
+          "depends_on": []
+        },
+        {
+          "id": "LS-3",
+          "title": "Visible pending state on Apply/page/sort and the rail stays mounted (sized by the Wave 1 observation)",
+          "dimensions": [
+            "Lists"
+          ],
+          "files": [
+            "apps/crm/src/components/zoho/ModuleShell.tsx (pushFiltersToUrl :385, handleSortChange :497, viewMode :1123 \u2192 {scroll:false} + useTransition)",
+            "apps/crm/src/components/crm/filters/FilterWorkspaceRow.tsx (2px progress bar / aria-busy)",
+            "apps/crm/src/app/crm/modules/[moduleKey]/ModuleListClient.tsx, RecordTable.tsx (aria-busy, dimmed rows; isLoading only for first paint)",
+            "IF the walk shows a skeleton flash: apps/crm/src/app/crm/modules/[moduleKey]/layout.tsx (hoist rail/toolbar chrome above the search-param-keyed page segment) or client-side row fetch in ModuleListClient"
+          ],
+          "approach": "Step 2a (stale table observed): useTransition + aria-busy/progress, effort M. Step 2b (Suspense remount observed, page.tsx:461-466): hoist chrome or fetch rows client-side, effort L. Do NOT add a segment loading.tsx.",
+          "effort": "M",
+          "acceptance_evidence": "Walk: within 100 ms of Apply a progress/aria-busy state is visible; rail scroll + expanded field survive Apply and page 2; filters still land in the URL synchronously.",
+          "risk": "If 2b, a structural change to the list page \u2014 rehearse; this is the one item whose effort may double.",
+          "depends_on": [
+            "EV-5"
+          ]
+        },
+        {
+          "id": "LS-4",
+          "title": "list-sort-policy \u2192 list-field-policy: guard filtering and the chips-bar Sort menu for display-only twin fields; user-voice hint",
+          "dimensions": [
+            "Lists"
+          ],
+          "files": [
+            "apps/crm/src/lib/crm/list-sort-policy.ts (+test; module-aware isDisplayOnlyListField; replace DISPLAY_ONLY_SORT_HINT :22-23 with user copy kept in the policy module)",
+            "apps/crm/src/components/crm/filters/FilterSidebar.tsx (:863-867,1059 disabled-with-reason)",
+            "apps/crm/src/components/zoho/FilterChipsBar.tsx (:187-189,339 exclude + prefer visibleColumns)"
+          ],
+          "approach": "Precondition from RO-1: plan_name/effective_date/product exist as members crm_fields. Effect today is partial matches (projectMembersCoverageAliases is blank-fill, queries.ts:864-871). Long-term server-side twin view is an owner decision.",
+          "effort": "S",
+          "acceptance_evidence": "vitest for the predicate; walk on /crm/modules/members: rail shows Plan disabled with the reason; Sort menu never lists Plan/Effective date.",
+          "risk": "Small behaviour change \u2014 visible-but-disabled.",
+          "depends_on": [
+            "RO-1"
+          ]
+        },
+        {
+          "id": "LS-5",
+          "title": "Truthful lane-chip counts: invalidate the status-values cache after bulk status changes; label counts 'of all {noun}' when narrowed (Option B filter-aware later)",
+          "dimensions": [
+            "Lists"
+          ],
+          "files": [
+            "apps/crm/src/lib/crm/status-values-client.ts (:28-41 export invalidate(moduleKey); cache key includes narrowing for B)",
+            "apps/crm/src/components/zoho/ModuleShell.tsx (:733-767 call invalidate after success/undo)",
+            "apps/crm/src/app/api/crm/records/status-values/route.ts (Cache-Control no-store or cache-busting param; Option B accepts search/scope/territory/filters via LS-1's builder)",
+            "apps/crm/src/components/crm/records/v2/QuickFilterChips.tsx (:249-275,334-343 muted count + title/aria when isListNarrowed)"
+          ],
+          "approach": "A now (+cache bust), B behind the same item once LS-1's builder exists.",
+          "effort": "M",
+          "acceptance_evidence": "Walk: bulk-set 3 rows Pending\u2192Active \u2192 chip counts update on the next paint; with a search active the chip count equals pager N (B) or is labelled 'of all contacts' (A); QuickFilterChips.test updated.",
+          "risk": "B multiplies count queries \u2014 60s cache keyed by query.",
+          "depends_on": [
+            "LS-1"
+          ]
+        },
+        {
+          "id": "LS-7",
+          "title": "Pager polish: 'Page X of Y', nav landmark + aria-current + per-page pressed state, remembered page size, PageUp/PageDown paging, one noun for the total",
+          "dimensions": [
+            "Lists",
+            "Feedback"
+          ],
+          "files": [
+            "apps/crm/src/app/crm/modules/[moduleKey]/page.tsx (:365-455 <nav aria-label='Pagination'>, aria-current, aria-pressed; 'Showing X to Y of N {noun}' using the module noun like list-empty-state and FilterChipsBar.tsx:365)",
+            "apps/crm/src/lib/crm/list-preferences.ts (+test: pageSize 25/50/100; URL > prefs in resolveInitialListState)",
+            "apps/crm/src/components/zoho/ModuleShell.tsx (hydrate pageSize)",
+            "apps/crm/src/components/crm/records/RecordTable.tsx (PageUp/PageDown in handleGridKeyDown :1256-1290 \u2014 NOT arrows, which are cell navigation)"
+          ],
+          "approach": "Owner decision only on remembering page size (recommended yes).",
+          "effort": "M",
+          "acceptance_evidence": "list-preferences.test covers pageSize; walk: choose 50 \u2192 leave and return \u2192 50; pager landmark + aria-current observed; one noun across Showing/chips/empty state.",
+          "risk": "Prefs precedence must hold (existing tests).",
+          "depends_on": []
+        },
+        {
+          "id": "LS-7b",
+          "title": "Move the leads converted-row guard into SQL so pager totals and page rows agree (owner-gated: changes leads totals)",
+          "dimensions": [
+            "Lists"
+          ],
+          "files": [
+            "apps/crm/src/lib/crm/queries.ts (:818-832 post-range isConvertedLeadRow \u2192 applyHideConvertedLeadsFilter in the query; reuse in LS-1's builder)"
+          ],
+          "approach": "One predicate for count, rows and ids.",
+          "effort": "S",
+          "acceptance_evidence": "Walk: leads page never shows fewer rows than the 'Showing' range; count equals select-all N.",
+          "risk": "Changes which rows count toward the leads total \u2014 owner sign-off.",
+          "depends_on": [
+            "LS-1"
+          ]
+        },
+        {
+          "id": "LS-8",
+          "title": "Rail keyboard (Enter applies / Esc cancels) + profile-scoped rail/column-width persistence + no open-state hydration flash",
+          "dimensions": [
+            "Lists"
+          ],
+          "files": [
+            "apps/crm/src/components/crm/filters/FilterSidebar.tsx (onKeyDown on the rail root; focus the FilterRailFrame toggle after collapse)",
+            "apps/crm/src/lib/crm/filter-rail.ts (:21-23,44-62 scope key by profile id like useListPreferences.ts:62-64; purge legacy key once) + filter-rail.test.ts",
+            "apps/crm/src/hooks/useColumnResize.ts (:29,39 scoped key)",
+            "apps/crm/src/components/zoho/ModuleShell.tsx (:166,466-468 read the stored open state before first paint / useSyncExternalStore)"
+          ],
+          "approach": "Extend existing tested helpers.",
+          "effort": "S",
+          "acceptance_evidence": "filter-rail.test scoped-key cases; walk: Enter in a value input applies, Esc restores draft; a second user on the same browser gets default rail/widths; rail does not open-then-snap on load.",
+          "risk": "Low.",
+          "depends_on": []
+        },
+        {
+          "id": "DE-M1",
+          "title": "Never offer create to crm_viewer (hide '+ Create' / 'Add Member' / ModuleHeader create; API 403 stays as backstop)",
+          "dimensions": [
+            "Data entry",
+            "Navigation"
+          ],
+          "files": [
+            "apps/crm/src/components/crm/shell/CrmTopBar.tsx (:217-228), SplitCreateButton.tsx, components/zoho/ModuleHeader.tsx (:75-80)",
+            "apps/crm/src/app/api/crm/records/route.ts (:159-160 unchanged)"
+          ],
+          "approach": "Gate on profile.crm_role \u2208 {crm_admin, crm_manager, crm_agent}; reuse useClientAuth profile.",
+          "effort": "S",
+          "acceptance_evidence": "Walk as the crm_viewer fixture user: no create affordance anywhere; POST still 403.",
+          "risk": "None.",
+          "depends_on": [
+            "EV-2"
+          ]
+        }
+      ],
+      "exit_criteria": "Every Wave 2 item's acceptance evidence is observed in an interim walk run (not code-read); owner-gated items either shipped with the decision or explicitly recorded as declined with the resulting ceiling; grep gates (raw toast literals on walked paths = 0, window.location tel = 0, 'Search or workflow' = 0) pass.",
+      "effort": "~7-9 focused days (LS-3 may add 2-3 if the Suspense remount is confirmed)"
+    },
+    {
+      "name": "Wave 3 \u2014 Guards, sweeps, a11y, mobile, CI re-run path",
+      "goal": "Make the voice and the evidence stop drifting: a commit-time toast guard that actually runs on apps/crm, an a11y/keyboard pass on the walked surfaces, the mobile/tablet chrome fixes, and the CI job that reproduces the walk on demand.",
+      "items": [
+        {
+          "id": "FB-2",
+          "title": "Toast regression guard: ESLint rule + lint actually wired for apps/crm (lint-staged / pre-push) + raw-site ratchet test",
+          "dimensions": [
+            "Feedback"
+          ],
+          "files": [
+            "apps/crm/eslint.config.mjs (:13-27 extend no-restricted-syntax: toast.(success|error|info|warning|loading) with Literal/TemplateLiteral first arg \u2192 'Use toastCopy.* from @/lib/crm/toast-copy'; allow-list lib/crm/toast-copy.ts, undo-delete.ts; 'error' on walked-path globs, 'warn' elsewhere)",
+            "package.json (lint-staged: add 'apps/crm/**/*.{ts,tsx}': ['eslint --config apps/crm/eslint.config.mjs --fix --no-warn-ignored'] BEFORE the generic apps/** entry \u2014 root eslint.config.js:8 ignores apps/**) and/or .husky/pre-push (npx turbo lint --filter=@crm-eco/crm)",
+            "apps/crm/src/lib/crm/toast-raw-ratchet.test.ts (baseline via glob, fails if raw count rises)"
+          ],
+          "approach": "The selector is bypassable (`const m='\u2026'; toast.success(m)`), so the ratchet is the load-bearing guard. Tighten to 'error' repo-wide only after FB-10 (owner).",
+          "effort": "M",
+          "acceptance_evidence": "Commit a file with toast.success('x') \u2192 the hook rejects it (proof screenshot/log); `npm run lint:crm` passes otherwise; ratchet baseline committed and passes.",
+          "risk": "Turning the rule to 'error' repo-wide before the codemod breaks lint \u2014 warn/error split.",
+          "depends_on": [
+            "FB-1",
+            "RP-9"
+          ]
+        },
+        {
+          "id": "FB-10",
+          "title": "Codemod the non-persona raw toast sites (settings 214, components/crm, contacts, imports, sequences, system-health, reports, inbox\u2026) \u2014 OPTIONAL, owner-gated (conflicts with toast-copy.ts:18-19 'do NOT mass-edit')",
+          "dimensions": [
+            "Feedback"
+          ],
+          "files": [
+            "apps/crm/scripts/codemod-toast-copy.mjs (ts-morph; three safe rewrites; bail-out report for anything else)",
+            "apps/crm/src/app/crm/settings/**, inbox/**, components/integrations/**, app/crm/imports/**, components/crm/**, components/contacts/**"
+          ],
+          "approach": "Directory by directory with diff review, typecheck + vitest after each; then flip FB-2 to 'error' everywhere.",
+          "effort": "L",
+          "acceptance_evidence": "Ratchet baseline \u2264 50; lint:crm green with the rule at 'error' repo-wide.",
+          "risk": "Blind rewrites can mangle nouns; not a prerequisite for the persona 10.",
+          "depends_on": [
+            "FB-1",
+            "FB-2",
+            "FB-9"
+          ]
+        },
+        {
+          "id": "A11Y-1",
+          "title": "Keyboard/AT pass on the walked surfaces: palette listbox semantics, hero InlineFieldEditor focus ring + test, pager/rail landmarks, grid keyboard, axe run",
+          "dimensions": [
+            "Task efficiency",
+            "Record page",
+            "Lists",
+            "Navigation"
+          ],
+          "files": [
+            "apps/crm/src/components/crm/shell/CommandPalette.tsx (role=listbox/option, aria-activedescendant, aria-selected \u2014 only role today is 'group' :838)",
+            "apps/crm/src/components/crm/records/v2/InlineFieldEditor.tsx (:268-276 visible focus-visible ring; new InlineFieldEditor.test.tsx)",
+            "apps/crm/e2e/specs/walk-a11y.spec.ts (axe-core via @axe-core/playwright on list, record, drawer, palette; Tab-order assertions)"
+          ],
+          "approach": "Fix what axe + the Tab walk find on the four persona surfaces; ModuleSwitcherRail aria-current (NV-2), pager landmark (LS-7), skip link (RP-6) already land in their items.",
+          "effort": "M",
+          "acceptance_evidence": "axe: 0 serious/critical on the four surfaces; keyboard-only T1 and T3 pass; \u2318K results announce selection; walk screenshots of focus rings.",
+          "risk": "Radix components already carry semantics \u2014 don't double-label.",
+          "depends_on": [
+            "EV-5"
+          ]
+        },
+        {
+          "id": "NV-8",
+          "title": "One module switcher on mobile: hide the 7-tab strip below lg, keep the drawer grid (only Settings entry on phones), hide the bottom bar <lg (owner-gated UX)",
+          "dimensions": [
+            "Navigation"
+          ],
+          "files": [
+            "apps/crm/src/components/crm/shell/CrmModuleTabBar.tsx (:70 hidden lg:block)",
+            "apps/crm/src/components/crm/shell/ZohoContextualSidebar.tsx (:495 top-[var(--crm-topbar-h)] on mobile)",
+            "apps/crm/src/components/crm/shell/ModuleSwitcherRail.tsx (aria-current on grid links)",
+            "apps/crm/src/components/crm/shell/bottom-bar/BottomBar.tsx (:46-47 lg-only or keep \u2014 owner)"
+          ],
+          "approach": "--crm-chrome-h used only at ZohoContextualSidebar.tsx:495 and globals.css:347.",
+          "effort": "S",
+          "acceptance_evidence": "Mobile-390 walk: no tab strip; drawer flush under the top bar with the 7-module grid; one aria-current; search icon opens the palette; '+' opens Add Member.",
+          "risk": "Persona is desktop-first; small.",
+          "depends_on": []
+        },
+        {
+          "id": "LS-10",
+          "title": "Mobile <md: one sheet for filters; no phantom rail column",
+          "dimensions": [
+            "Lists"
+          ],
+          "files": [
+            "apps/crm/src/components/zoho/ModuleShell.tsx (:1755-1766 render FilterSidebar variant='dialog' inline in the MobileToolbarDrawer section; Apply closes the drawer)",
+            "apps/crm/src/components/crm/filters/FilterWorkspaceRow.tsx (:28 gap-0 lg:gap-3)",
+            "apps/crm/src/components/zoho/MobileToolbarDrawer.tsx"
+          ],
+          "approach": "Scope to <md only (md-lg tablets already get a single-sheet trigger, ModuleShell.tsx:1425-1426).",
+          "effort": "S",
+          "acceptance_evidence": "Mobile-390 walk: Filters & View \u2192 Status \u2192 Pending \u2192 Apply in \u22644 taps, one overlay; table pane flush-left screenshot; tablet-1024 path also recorded.",
+          "risk": "Drawer height with a tall rail \u2014 reuse its scroll container.",
+          "depends_on": []
+        },
+        {
+          "id": "LS-9",
+          "title": "Trim the PIFH list surface behind an org flag: defaultHidden for Zoho-leftover related-module filters; people modules limited to Table/List/Split (hidden, not removed) \u2014 owner-gated, lowest priority",
+          "dimensions": [
+            "Lists"
+          ],
+          "files": [
+            "apps/crm/src/components/crm/filters/FilterSidebar.tsx (:243-278 defaultHidden on Campaigns/Invoices/Solutions/CirrusMD/Planstin/\u2026)",
+            "apps/crm/src/components/crm/views/ViewModeSwitcher.tsx (:54-62)",
+            "apps/crm/src/lib/crm/feature-flags.ts (org flag)"
+          ],
+          "approach": "Reuse the existing 'Show all' pattern; flag off \u2192 identical to today.",
+          "effort": "S",
+          "acceptance_evidence": "Owner sign-off; before/after rail screenshots; flag off unchanged.",
+          "risk": "Changes a decided surface \u2014 hidden-not-removed.",
+          "depends_on": []
+        },
+        {
+          "id": "EV-7",
+          "title": "Re-run path: npm scripts + GitHub Actions crm-walk job (supabase start \u2192 apply-local-migrations \u2192 seed \u2192 next build \u2192 playwright \u2192 upload walk.json/screens/video) + docs",
+          "dimensions": [
+            "Evidence harness"
+          ],
+          "files": [
+            ".github/workflows/crm-walk.yml (workflow_dispatch first; PR gate later per owner)",
+            "scripts/e2e/apply-local-migrations.sh (from EV-2)",
+            "apps/crm/package.json (walk:crm:ci)",
+            "docs/CRM_WALK_HARNESS.md (how to run, read walk.json, regrade)"
+          ],
+          "approach": "Never `supabase db push/reset` (they target prod); local Docker stack only; `next build --webpack` (apps/crm/package.json:7); fail on any trap or budget breach; retries 1 with trace. Requires diagnosing or tolerating the migration stall after 202608090001.",
+          "effort": "M",
+          "acceptance_evidence": "A green crm-walk run on a PR with uploaded walk.json, 1 video per project, \u226520 step screenshots; a deliberately broken PR (remove the Add Note button) turns the job red naming the task.",
+          "risk": "CI runtime 10-15 min; Docker on the runner; stall root cause unknown (~39 files to psql -f).",
+          "depends_on": [
+            "EV-5"
+          ]
+        }
+      ],
+      "exit_criteria": "Hook rejects a raw toast commit; axe 0 serious on the four surfaces; mobile-390 and tablet-1024 projects green; crm-walk workflow green on demand with artifacts attached.",
+      "effort": "~4-5 focused days (+ ~3 if FB-10 is approved)"
+    },
+    {
+      "name": "Final \u2014 The regrade walk with recorded counts",
+      "goal": "Produce the single artifact a strict grader can open for the commit under review; mark 10s only where walk.json, screenshots and the live-reality table agree; state the honest ceiling for any row blocked by a declined owner decision.",
+      "items": [
+        {
+          "id": "EV-5F",
+          "title": "Final regrade run of EV-5 on the final commit (desktop-1440, tablet-1024, mobile-390; crm_agent + admin + viewer runs) + regrade report",
+          "dimensions": [
+            "Evidence harness",
+            "Task efficiency",
+            "Record page",
+            "Feedback",
+            "Navigation",
+            "Lists",
+            "Data entry"
+          ],
+          "files": [
+            "artifacts/crm-walk/<ts>/walk.json (+ screenshots, video, trace)",
+            "docs/ux/regrade-<date>.md (scoreboard with per-task counts, trap table, RO-1 live-reality table, declined decisions and resulting ceilings)"
+          ],
+          "approach": "Two consecutive runs must yield identical counts; every toast string asserted against toastCopy; UX-state matrix ticked per surface (loading/empty/error/permission/mobile/tablet/keyboard); record commit hash and env URL 127.0.0.1:54321; paste RO-1 + DE-9 outputs; list any owner decision declined and the dimension's resulting ceiling.",
+          "effort": "S",
+          "acceptance_evidence": "walk.json with all tasks pass=true at the agreed budgets, repeatability confirmed, CI link green for the same commit; regrade document published with the counts \u2014 no dimension marked 10 without its row in walk.json.",
+          "risk": "Any late code change invalidates the run \u2014 re-run on the final SHA only.",
+          "depends_on": [
+            "EV-7",
+            "TE-4",
+            "DE-1",
+            "DE-3",
+            "LS-3",
+            "NV-2",
+            "RP-9",
+            "FB-2"
+          ]
+        }
+      ],
+      "exit_criteria": "Every dimension either has a walk.json row + screenshots meeting its 'what ten means' or an explicit, owner-acknowledged ceiling; the artifact folder and regrade doc are committed/linked.",
+      "effort": "~1 day"
+    }
+  ],
+  "cross_cutting": [
+    "One voice: every user-facing toast/validation/progress string on the walked paths is emitted through lib/crm/toast-copy.ts (saved/added/updated/deleted/failed + new counted/queued/partial/viewSaved/required/PROGRESS_LABEL), undo-delete.ts, or list-empty-state.ts; the walk imports toastCopy to assert strings; FB-2's hook-wired lint + ratchet keep it from drifting; '\u2026' glyph everywhere.",
+    "One search promise: search-copy.ts owns placeholder (+ short variant) and aria label for top bar, sidebar trigger, palette and dashboard greeting; ADVISORS_LABEL for every advisor/producer label; nav-lexicon.test reads the files.",
+    "Status vocabulary is DB-enforced: fixture seeds, lane chips (QuickFilterChips), bulk New-status select and any test data use allowed values; STATUS_LANES stays the single lane source.",
+    "Evidence only from the harness: all acceptance is a walk.json row / screenshot / vitest name / query \u2014 never 'verified in code'; counts are trusted-event only; walk.json records commit + env; local stack only, never prod, never Vercel previews.",
+    "Reuse > extend > refactor: note-compose.ts + NoteComposeContext (compose), withReturnTo/sanitizeReturnTo (returnTo), ListEmptyStatePanel/useListEmptyState (empties), QuickFilterPreset (chip sort), status-values-client (counts), list-sort-policy \u2192 list-field-policy, desk QuickActions tel anchor \u2192 CallLink, usStateOptionsWith \u2192 optionsWithCurrent, InlineSelectField current-value pattern, record-search.ts (exists) for search parity, audit-crm-visibility.mjs / audit-crm-vocabulary.mjs for read-only prod audits, create_enrollment_tx / twin conduit for any member write.",
+    "RLS & tenant isolation: every new endpoint/RPC (DE-2 field-values SECURITY INVOKER, LS-1 ids predicate, DE-3 producer search) ships with a two-tenant + anon test; /api/crm/modules/[id]/fields relies on crm_fields RLS \u2014 cite the policy in the check.",
+    "UX-state matrix per surface (loading/empty/error/permission crm_agent+crm_viewer/mobile 390/tablet 1024/desktop 1440/keyboard-only) is part of every walk spec, not a separate pass.",
+    "Members-vs-Contacts: create-intent maps members\u2192contacts; every 'see on list' assertion names the list URL; TE-4 decides the operator's list.",
+    "No prod writes outside the playbook: migrations (DE-2, optional DE-9 picklists, optional crm_views column) rehearsed on the local stack via psql, then `supabase db push`; prod reads only through service-role audit scripts with redacted output.",
+    "Dead code removal before sweeps (client.tsx, CrmHeader + barrel, GlobalSearchOverlay, duplicate ClientProviders, legacy root playwright config, scripts/seed-local.mjs) so counts and grep gates are honest."
+  ],
+  "owner_decisions": [
+    {
+      "question": "After 'Add Member', which list is THE list for the persona: /crm/modules/contacts (where the drawer writes), /crm/modules/members (twin-enriched rows from enrollment), or a 'View in list' toast action back to the originating list? And what should the primary button on /crm/modules/members create ('Add Member' \u2192 contact vs 'New Member record' full form)?",
+      "recommendation": "Option (c): keep contacts as the hand-entry module; after save toast 'Member added \u00b7 View in list' via withReturnTo to the originating list; when opened from Members, say honestly that Members fills from enrollment; keep the 'New Member record' dropdown item. Do not add a second member-create path.",
+      "blocks": [
+        "TE-4",
+        "EV-5 (T4 assertion)",
+        "DE-8 (merged)"
+      ]
+    },
+    {
+      "question": "May the 'Pending' lane chip also sort created_at asc (chips were decided filter-only), and may 'Waiting since'/created_at be added to the PIFH default Members/Contacts view columns? Should the desk reserve a slot for the oldest Pending person ahead of tasks?",
+      "recommendation": "Yes to chip sort (mirrors the desk's own pendingContactsHref); column add optional; NO to changing the approved desk order.",
+      "blocks": [
+        "TE-3b"
+      ]
+    },
+    {
+      "question": "Health Sharing Membership (product / product_type): closed Select from crm_fields.options with an explicit 'Other\u2026' free-text escape, or fully closed? Who maintains the list (admin field-options UI vs migration)? Should a DB guard (crm_status_vocabulary-style) enforce it?",
+      "recommendation": "Select + 'Other\u2026' escape, admin-maintained via the existing field-options UI, seeded from the DE-9 census; DB guard later, only after the decision sheet.",
+      "blocks": [
+        "DE-1",
+        "DE-9 (picklist migration)"
+      ]
+    },
+    {
+      "question": "Health Insurance Plan: free text with real org distinct-value suggestions (DE-2), or bind to the insurance_plans / insurance_carriers catalog?",
+      "recommendation": "Free text + DE-2 suggestions (carrier plan names are unbounded).",
+      "blocks": [
+        "DE-2 (scope only; the RPC ships either way)"
+      ]
+    },
+    {
+      "question": "Producer / Enrolled by source of truth: CRM 'advisors' crm_records module, crm_advisors (DB-commented DEPRECATED), or public.advisors? Store producer_record_id next to producer_name? Allow 'Not in list \u2014 add as typed'?",
+      "recommendation": "CRM 'advisors' crm_records module (org-scoped, already in nav); store the id alongside the display name; allow an explicit 'add as typed' row.",
+      "blocks": [
+        "DE-3"
+      ]
+    },
+    {
+      "question": "Record header de-densification: (a) remove the duplicate in-header global search (\u2318K stays), (b) hide 'Needs Classification'/'Needs Review' badges from non-admins, (c) show 'Add Tags' only on hover/focus for tagless records, (d) keep Timeline tab + Insights tab visible by default for this tenant?",
+      "recommendation": "(a) yes, (b) yes, (c) yes, (d) keep as is (collapsed rail already resolves the cockpit).",
+      "blocks": [
+        "RP-3",
+        "RP-4",
+        "RP-5"
+      ]
+    },
+    {
+      "question": "Inline field save voice: keep the silent emerald check (plus an aria-live 'Saved' for AT) or add a visual toast?",
+      "recommendation": "Silent check + aria-live; no toast.",
+      "blocks": [
+        "RP-M1",
+        "EV-5 (T6 assertion)"
+      ]
+    },
+    {
+      "question": "Keep or retire the per-user Layout V1 toggle (profile page)? Retiring deletes RecordDetailShell.tsx and its 15 raw toasts and the second Add Note path.",
+      "recommendation": "Retire (V2 global since 202607140006; the walk measures V2 only).",
+      "blocks": [
+        "FB-4"
+      ]
+    },
+    {
+      "question": "Toast guard scope and export/bulk copy: lint at 'error' on walked-path globs now and 'warn' elsewhere (error repo-wide only after a codemod)? Export with zero rows: disable the button vs info toast? Bulk titles 'Status \u2192 \"Active\"' vs 'Status updated \u00b7 12 records'? Is the non-persona codemod (FB-10, L) wanted before the walk?",
+      "recommendation": "Warn/error split with the ratchet as the guard; disable Export; 'Status updated \u00b7 12 records'; FB-10 optional/after \u2014 it conflicts with toast-copy.ts:18-19 policy and the grader walks the persona path only.",
+      "blocks": [
+        "FB-1 (detail)",
+        "FB-2 (scope)",
+        "FB-10"
+      ]
+    },
+    {
+      "question": "Navigation: remove the 'Pipeline' link (+ redirect /crm/pipeline) for deals-disabled orgs, or show an explicit 'Deals is not enabled' page? What replaces 'Sales Pipeline' as the people section heading? Sticky tab (no structural change) vs also removing the 16 cross-tab/duplicate links? Palette pages: all ~112 typed-only vs a curated set? Mobile: drawer grid vs tab strip, and hide the bottom bar <lg? Gate admin-only Settings links for crm_agent?",
+      "recommendation": "Remove + redirect; 'People'; sticky tab now, de-dup later; all pages typed-only with a persona set idle; drawer grid + hide bottom bar <lg; gate Settings links with the same predicate settings/page.tsx uses.",
+      "blocks": [
+        "NV-5",
+        "NV-6",
+        "NV-2",
+        "NV-3",
+        "NV-8",
+        "NV-M1"
+      ]
+    },
+    {
+      "question": "Lists: lane-chip counts \u2014 label 'of all {noun}' when narrowed (cheap) vs filter-aware counts (7 count queries, cached)? Plan/Effective date on Members: disabled-for-filter twin overlays vs resolving the twin server-side (view) so they become real columns? Remember page size per user/module? Move the leads converted-row guard into SQL (changes leads totals)? Hide Zoho-leftover related-module filters and limit people-module view modes behind a flag (hidden, not removed)?",
+      "recommendation": "Label now + cache bust, filter-aware later; disabled-with-reason now, server-side view as a follow-up; yes remember page size; yes move the guard to SQL (makes the pager honest); yes, flag-gated, lowest priority.",
+      "blocks": [
+        "LS-5 (scope)",
+        "LS-4 (long-term)",
+        "LS-7",
+        "LS-7b",
+        "LS-9"
+      ]
+    },
+    {
+      "question": "Evidence: numeric click budgets per task; fixture role (crm_agent primary + admin/viewer runs); crm-walk CI as required PR check vs workflow_dispatch; where the walk runs (local stack only vs a sandboxed test org on prod)?",
+      "recommendation": "Budgets: T1 2 keypresses+digits / 2 clicks; T2 0; T3 1 click + \u2318Enter; T4 1 click + Enter (+\u22641 to see on list); T5 1 (desk) / 2 (list); Apply Filter \u22643 (chip = 1); pager next 1; rail toggle 1. crm_agent primary with admin + viewer runs. workflow_dispatch first, required check after two green runs. Local stack only \u2014 never prod, never previews (EV-8 dropped).",
+      "blocks": [
+        "EV-2",
+        "EV-5 (budget assertions)",
+        "EV-7"
+      ]
+    }
+  ],
+  "evidence_gates": [
+    "'Verified from code' can never mint a 10. A dimension is marked 10 only when artifacts/crm-walk/<ts>/walk.json for the exact commit under review (hash recorded; env baseURL http://localhost:3000 with NEXT_PUBLIC_SUPABASE_URL=127.0.0.1:54321 recorded) contains that dimension's tasks with pass=true at the agreed budgets, all preflight traps PASS (prod guard, pin gate, not-empty, right org, nav profile 'full' by explicit flag row, layout-v2, status-vocab, breakpoint, no MFA/session-lock redirect), per-step screenshots and a video per project, and a second run on the same fixture yields identical counts.",
+    "Counts are trusted events only (event.isTrusted via the EV-4 wrapper + injected cross-check); every action in specs goes through the wrapper (CI grep forbids raw page.click).",
+    "Task efficiency: T1 phone \u2192 record (2 keypresses+digits / 2 clicks, with the 'Records' bucket awaited), T2 coverage visible with 0 clicks on RecordDetailShellV2 (asserted), T3 Add Note 1 click with document.activeElement.isContentEditable true and no draft loss, T4 Add Member 1 click + Enter ending on a text field then the record on the owner-agreed list in \u22641 click, T5 oldest Pending \u2192 tel: in 1 (desk) / 2 (list); keyboard-only and 390px variants recorded.",
+    "Record page: 1280/1024/390 screenshots at rest showing one header search input, no amber admin badges for crm_agent, no dashed Add Tags at rest, no duplicate Email/Note below lg, Coverage Snapshot + status + tel: + Enrolled by + member # + Recent notes without scrolling; reload keeps Notes pane; skeleton CLS < 0.05; inline save shows check + aria-live 'Saved' (no toast exists); not-found and cross-tenant ids render explicit states; RO-1 live table shows hero present on leads/contacts/members default layouts.",
+    "Feedback: every toast text in the walk equals the imported toastCopy/undo-delete output; export/select-all/bulk/view-saved/queued/partial/delete strings observed; Export disabled at 0 rows; delete = 'Moved to Trash \u00b7 Undo' on both paths with Undo restoring; empty bodies \u2192 disabled button + inline helper, no toast; dark-mode toast screenshot; a deliberately raw toast.success('x') commit is rejected by the hook (log) and the ratchet baseline is committed.",
+    "Navigation: walk.json lists tab count, links per tab, placeholder + aria text per surface (equal and un-truncated in screenshots at 1280 and sm), 0/16 cross-tab swaps, exactly one aria-current tab + link on every hop incl. record pages and rail/grid, palette finds the seeded member by phone/member #/name and pages by typing, /crm/search parity row, /crm/modules/deals and /crm/pipeline redirects, crm_agent has no admin dead-end links.",
+    "Lists: rail open by default and persisted per user without flash; lane chip 1 click, count == pager N (or labelled 'of all {noun}') and correct right after a bulk status change; rail Status \u2192 Pending \u2192 Apply = 3 moves with visible pending state and rail state preserved; 'Showing 26 to 50 of N' + 'Page 2 of Y' in a nav landmark; ?page=abc/0 \u2192 page 1; forced load error \u2192 'Couldn't load' + Try again; 'Select all N' count == set == pager N under filter/scope/view (API count of changed rows); Plan/Effective date disabled for filter/sort on Members; Enter applies / Esc cancels; Back restores URL/rail/columns; mobile single-sheet filters \u22644 taps; tablet-1024 path recorded.",
+    "Data entry: RTL tests for the combobox (ArrowDown+Enter selects without submitting), date validity ('13/45/2026' and '09/01' rejected inline, no POST), product listbox with current legacy value + 'Other\u2026', producer pick writes name + id; walk: 10 values pasted with zero mouse actions, \u22641 keystroke to save, toast 'Member added', record page shows the values as entered (no blank select), duplicate-phone card keeps values, forced 500 card + Retry, lead Pending saves without a date, crm_viewer sees no create affordance; the server's PENDING_REQUIRES_START_DATE string never appears on screen.",
+    "New endpoints/RPCs (field-values, ids predicate, producer search): two-tenant + anon isolation tests green and cited; DE-2 migration rehearsed on the local stack before `supabase db push`.",
+    "Live DB reality (RO-1) and the product/producer census (DE-9) are pasted into the regrade report; any dimension whose owner decision was declined carries its explicit ceiling in the report instead of a 10."
+  ],
+  "risks": [
+    "Local stack: `supabase start` applies migrations only through 202608090001; ~39 newer files must be psql -f applied every time and the root cause is unknown \u2014 blocks hands-off CI (EV-7) until diagnosed or tolerated; `supabase db push/reset` target PROD and must never be used for the walk stack.",
+    "Fixture drift vs prod crm_fields/crm_views/crm_layouts makes walk numbers unrepresentative; mitigated by RO-1 driving the seed shape and by asserting hero/layout-v2/status-vocab traps, but residual risk stands until the seed mirrors the live rows.",
+    "LS-3 effort may double: if Next 16 search-param pushes remount the page-level Suspense (skeleton flash + rail state loss), the fix is structural (hoist chrome to a layout or client-fetch rows) \u2014 L not M; only the Wave 1 walk can tell.",
+    "Owner decisions gate the hard-fail-1 items (DE-1/DE-3) and several Wave 2 items; if they slip, Wave 1 ships DE-2/DE-4/DE-5/DE-6 and Data entry stays below 10 with the reason stated.",
+    "DB-enforced status vocabulary (20260822200000) rejects non-allowed statuses \u2014 fixtures, chip presets and bulk dialogs must use allowed values or inserts silently fail/strip.",
+    "Selector fragility without testids (EV-6 first) and Radix synthetic events inflating counts (trusted-only counting); dev-server compile latency skews ms (warm-up run).",
+    "Toast lint rule is bypassable (`toast.success(m)`); the vitest ratchet is the real guard; root eslint ignores apps/** today so the hook wiring in FB-2 must be proven with a rejected commit, not assumed.",
+    "Shared-phone households return grouped palette rows \u2014 TE-5's auto-Enter must only fire on a single result/chip; seed a unique phone.",
+    "Changing decided behaviours without sign-off (chips filter-only, desk order, labels the client knows, V1 toggle, Settings links) \u2014 every such item is owner-gated in this plan; implementers must not pre-empt.",
+    "Prod reads for RO-1/DE-9 use the service-role key from apps/crm/.env.local \u2014 read-only, run locally, never logged; prod psql password is rotated so the CLI/service-role path is the only one.",
+    "Toaster theme change touches the shared @crm-eco/ui component \u2014 additive prop only; other apps unchanged.",
+    "DE-2 is a prod migration (SECURITY INVOKER RPC) \u2014 playbook: rehearse on the local stack, push, verify; REVOKE from anon.",
+    "HEAD drift: findings were verified at 8255e324; any commit before the regrade invalidates walk.json \u2014 the final run must be on the final SHA.",
+    "A strict grader re-reading the current code would likely mark Lists (P0 select-all) and Data entry (developer copy / silent null on the default path) lower than 8.5/8 \u2014 these are fixed in Wave 1 to avoid a regression in the regrade."
+  ],
+  "not_required": [
+    "EV-8 read-only Vercel preview smoke \u2014 dropped: touches prod auth/audit logs, needs an owner prod test account, adds no evidence a local walk on the same commit does not already give.",
+    "TE-3c 'reserve a desk slot for the oldest Pending person' \u2014 deferred unless the owner reopens the approved desk order (overdue > today > starting soon > pending).",
+    "NV-3's 'Add note from \u2318K on a record' \u2014 gold-plating for navigation; compose is already one click / 'n' on the record.",
+    "LS-2's new modules/[moduleKey]/error.tsx \u2014 unnecessary: app/crm/error.tsx and loading.tsx already exist; the bug is only the swallowed catch.",
+    "LS-7's ArrowLeft/ArrowRight paging \u2014 conflicts with grid cell navigation (RecordTable.tsx:1256-1290); PageUp/PageDown instead.",
+    "TE-7 as a standalone P2 \u2014 downgraded and merged into DE-5 (render-time Pending hint).",
+    "RP-1's 'saved toast' assertion for inline field patch \u2014 refuted: useRecordFieldSave never toasts on success; assert the check/aria-live state.",
+    "TE-4 option (c) via `currentListReturnTo` \u2014 helper does not exist; use withReturnTo/sanitizeReturnTo (status-lanes.ts:393-416).",
+    "'Reuse the root playwright.config.ts' (FB-11/NV-9/LS-6/RP-1) \u2014 refuted: it targets a Vite app on :5173 with /login; replaced by EV-1's CRM project.",
+    "NV-4 'create lib/crm/record-search.ts' \u2014 it already exists; relocate the route-private helpers into it.",
+    "DE-2 as SECURITY DEFINER \u2014 replaced by SECURITY INVOKER (RLS-respecting, no role caveats).",
+    "Extending supabase/seed.sql with prod-shaped crm_fields \u2014 refuted: its PRE-migration labels are intentional (seed.sql:43-46); the walk fixture stays separate (EV-2).",
+    "FB-10 repo-wide toast codemod as a prerequisite \u2014 not required for the persona 10 and contradicts toast-copy.ts:18-19 'do NOT mass-edit'; kept only as owner-optional.",
+    "Refuted Aug-17 residue needing no work: 'Advisors & Agents' label (0 hits; label is 'Advisors'), '+ Create \u2192 Deal' (absent from SplitCreateButton; gated in bottom bar/palette), 'system presets lead the rail' (Fields section leads; 19 presets defaultHidden), STATUS_LANES/Members-vs-Roster lexicon (consistent).",
+    "Widening the insights rail to lg (RP-6 original) \u2014 dropped in favour of a \u22ef 'Insights' item; the 1024-1279 band is already narrow with stacked actions.",
+    "RP-5's 'h1 is already a group' premise \u2014 false; needs a wrapper, reflected in the corrected item."
+  ]
+}
