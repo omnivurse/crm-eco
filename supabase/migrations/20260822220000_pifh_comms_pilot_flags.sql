@@ -22,6 +22,17 @@
 
 SET lock_timeout = '5s';
 
+-- 2026-08-23: wrapped in a guarded DO block (fresh-database safety, pattern of
+-- commit 7c60dec8): the bare INSERT hit the crm_feature_flags→organizations FK
+-- on a fresh database, where the PIFH org does not exist yet. SQL preserved
+-- verbatim inside; prod never re-runs this file (version recorded).
+DO $do$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM public.organizations WHERE id = '00000000-0000-0000-0000-000000000001') THEN
+    RAISE NOTICE '20260822220000_pifh_comms_pilot_flags: org not present (fresh database) — flag seed skipped';
+    RETURN;
+  END IF;
+
 INSERT INTO public.crm_feature_flags (
   organization_id,
   flag_key,
@@ -57,3 +68,4 @@ DO UPDATE SET
   rollout_percentage = EXCLUDED.rollout_percentage,
   description = EXCLUDED.description,
   updated_at = now();
+END $do$;

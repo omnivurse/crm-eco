@@ -11,6 +11,18 @@ DECLARE
   v_root_domain_id uuid;
   v_mail_domain_id uuid;
 BEGIN
+  -- 2026-08-23: fresh-database guard (pattern of commit 7c60dec8). This is a
+  -- PIFH prod-data backfill: on production it has already run (version
+  -- recorded, never re-run), but on a FRESH database (supabase start, the CI
+  -- walk runner) the org row does not exist yet and the email_domains FK
+  -- (23503) aborted the whole chain (CI run 32661828234). Nothing to backfill
+  -- on a fresh DB: skip loudly. Editing an applied migration is safe precisely
+  -- because prod never replays it.
+  IF NOT EXISTS (SELECT 1 FROM public.organizations WHERE id = v_org_id) THEN
+    RAISE NOTICE '202607261800_pifh_email_addresses: org % not present (fresh database) — email backfill skipped', v_org_id;
+    RETURN;
+  END IF;
+
   -- Root sending domain
   INSERT INTO public.email_domains (
     org_id,
@@ -127,6 +139,17 @@ BEGIN
 END $$;
 
 -- Org email settings
+-- 2026-08-23: wrapped in a guarded DO block (fresh-database safety, pattern of
+-- commit 7c60dec8): the bare INSERT hit the system_settings→organizations FK
+-- on a fresh database. SQL preserved verbatim inside; prod never re-runs this
+-- file (version recorded).
+DO $do$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM public.organizations WHERE id = '00000000-0000-0000-0000-000000000001') THEN
+    RAISE NOTICE '202607261800_pifh_email_addresses: org not present (fresh database) — email settings skipped';
+    RETURN;
+  END IF;
+
 INSERT INTO public.system_settings (
   organization_id,
   setting_key,
@@ -146,6 +169,7 @@ ON CONFLICT (organization_id, setting_key) DO UPDATE
 SET
   setting_value = EXCLUDED.setting_value,
   updated_at = now();
+END $do$;
 
 -- Admin notification targets
 UPDATE public.admin_settings

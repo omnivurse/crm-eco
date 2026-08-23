@@ -25,6 +25,17 @@
 --      AND organization_id = '00000000-0000-0000-0000-000000000001';
 -- =============================================================================
 
+-- 2026-08-23: wrapped in a guarded DO block (fresh-database safety, pattern of
+-- commit 7c60dec8): the bare INSERT hit the crm_feature_flags→organizations FK
+-- on a fresh database, where the PIFH org does not exist yet. SQL preserved
+-- verbatim inside; prod never re-runs this file (version recorded).
+DO $do$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM public.organizations WHERE id = '00000000-0000-0000-0000-000000000001') THEN
+    RAISE NOTICE '20260817180100_pifh_simple_nav_flag: org not present (fresh database) — flag seed skipped';
+    RETURN;
+  END IF;
+
 INSERT INTO public.crm_feature_flags (flag_key, organization_id, enabled, description)
 SELECT
   'crm.nav.simple',
@@ -36,5 +47,6 @@ WHERE NOT EXISTS (
    WHERE flag_key = 'crm.nav.simple'
      AND organization_id = '00000000-0000-0000-0000-000000000001'::uuid
 );
+END $do$;
 
 NOTIFY pgrst, 'reload schema';

@@ -32,6 +32,18 @@ BEGIN
    WHERE org_id = v_org AND key = 'contacts' LIMIT 1;
 
   IF v_contacts IS NULL THEN
+    -- 2026-08-23: fresh-database guard (pattern of commit 7c60dec8). This is a
+    -- PIFH prod-data backfill: on production it has already run (its version is
+    -- recorded, it never re-runs there), but on a FRESH database (supabase start,
+    -- the CI walk runner) the org row does not exist yet and the chain died here.
+    -- Nothing to backfill on a fresh DB: skip loudly. Editing an applied migration
+    -- is safe precisely because prod never replays it.
+    IF NOT EXISTS (SELECT 1 FROM public.organizations WHERE id = v_org) THEN
+      RAISE NOTICE '20260821130000_monthly_premium_currency_type: org % not present (fresh database) — skipped', v_org;
+      RETURN;
+    END IF;
+    -- The org EXISTS but the expected row does not: that is real drift on a
+    -- populated database and still deserves the hard stop (cf 7c60dec8).
     RAISE EXCEPTION 'contacts module not found for org % — refusing to no-op silently', v_org;
   END IF;
 

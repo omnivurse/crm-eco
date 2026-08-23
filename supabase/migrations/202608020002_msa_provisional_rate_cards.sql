@@ -32,6 +32,17 @@ COMMENT ON COLUMN public.plan_rate_sets.age_rating_basis IS
   'primary = employee/member age; older_of_couple = max(member, spouse) for spouse/family tiers';
 
 -- Org settings (PIFH)
+-- 2026-08-23: wrapped in a guarded DO block (fresh-database safety, pattern of
+-- commit 7c60dec8): the bare INSERT hit the system_settings→organizations FK
+-- on a fresh database. SQL preserved verbatim inside; prod never re-runs this
+-- file (version recorded).
+DO $do$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM public.organizations WHERE id = '00000000-0000-0000-0000-000000000001') THEN
+    RAISE NOTICE '202608020002_msa_provisional_rate_cards: org not present (fresh database) — org settings skipped';
+    RETURN;
+  END IF;
+
 INSERT INTO public.system_settings (
   organization_id, setting_key, setting_value, setting_type, category, subcategory, label, is_active
 ) VALUES
@@ -46,6 +57,7 @@ INSERT INTO public.system_settings (
   ('00000000-0000-0000-0000-000000000001', 'enrollment_contribution_split_pifh', '25', 'string', 'rates', 'enrollment_contribution', 'Contribution Split — PIFH', true)
 ON CONFLICT (organization_id, setting_key) DO UPDATE
 SET setting_value = EXCLUDED.setting_value, updated_at = now();
+END $do$;
 
 DO $$
 DECLARE
@@ -54,6 +66,16 @@ DECLARE
   v_rate_set_id uuid;
   v_age_bands jsonb := '[{"id":"18-34","min":18,"max":34,"label":"18–34"},{"id":"35-49","min":35,"max":49,"label":"35–49"},{"id":"50-59","min":50,"max":59,"label":"50–59"},{"id":"60-64","min":60,"max":64,"label":"60–64"}]'::jsonb;
 BEGIN
+  -- 2026-08-23: fresh-database guard (pattern of commit 7c60dec8). This is a
+  -- PIFH prod-data backfill (plans/rate sets for the PIFH org): on production
+  -- it has already run (version recorded, never re-run), but on a FRESH
+  -- database the org row does not exist yet and the plans→organizations FK
+  -- aborted the chain. Nothing to seed on a fresh DB: skip loudly. Editing an
+  -- applied migration is safe precisely because prod never replays it.
+  IF NOT EXISTS (SELECT 1 FROM public.organizations WHERE id = v_org_id) THEN
+    RAISE NOTICE '202608020002_msa_provisional_rate_cards: org % not present (fresh database) — rate-card seed skipped', v_org_id;
+    RETURN;
+  END IF;
   -- PIFH-MSA-IND-1250
   INSERT INTO public.plans (
     organization_id, name, code, plan_code, brand_name, internal_name,

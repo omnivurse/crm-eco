@@ -46,6 +46,18 @@ BEGIN
   SELECT id INTO v_contacts FROM public.crm_modules WHERE org_id = v_org AND key = 'contacts';
   SELECT id INTO v_leads    FROM public.crm_modules WHERE org_id = v_org AND key = 'leads';
   IF v_contacts IS NULL OR v_leads IS NULL THEN
+    -- 2026-08-23: fresh-database guard (pattern of commit 7c60dec8). This is a
+    -- PIFH prod-data backfill: on production it has already run (its version is
+    -- recorded, it never re-runs there), but on a FRESH database (supabase start,
+    -- the CI walk runner) the org row does not exist yet and the chain died here.
+    -- Nothing to backfill on a fresh DB: skip loudly. Editing an applied migration
+    -- is safe precisely because prod never replays it.
+    IF NOT EXISTS (SELECT 1 FROM public.organizations WHERE id = v_org) THEN
+      RAISE NOTICE '20260822200000_status_vocabulary_apply_batch2: org % not present (fresh database) — skipped', v_org;
+      RETURN;
+    END IF;
+    -- The org EXISTS but the expected row does not: that is real drift on a
+    -- populated database and still deserves the hard stop (cf 7c60dec8).
     RAISE EXCEPTION 'PIFH contacts/leads module not found — refusing to run against a bare database';
   END IF;
   SELECT EXISTS (SELECT 1 FROM public.crm_fields WHERE module_id = v_contacts AND key = 'email_opt_out') INTO v_has_optout;
