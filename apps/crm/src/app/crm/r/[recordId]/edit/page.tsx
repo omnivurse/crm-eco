@@ -405,10 +405,8 @@ export default function EditRecordPage() {
         };
         if (cancelled) return;
         if (body.kind === 'merged' && body.keeperId && body.keeperId !== recordId) {
-          const label = body.keeperTitle ? ` into "${body.keeperTitle}"` : '';
-          toast.info(`This record was merged${label}. Opening the current version.`, {
-            duration: 4000,
-          });
+          const copy = toastCopy.mergedInto(body.keeperTitle, { navigating: true });
+          toast.info(copy.title, { description: copy.description, duration: 4000 });
           router.replace(
             `/crm/r/${body.keeperId}/edit?merged_from=${encodeURIComponent(recordId)}`
           );

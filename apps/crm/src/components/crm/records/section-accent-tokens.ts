@@ -229,6 +229,20 @@ export const SECTION_CARD_ACCENT_CLASSES: Record<LayoutSectionAccent, CardAccent
  * Compact (underline-tab) variant keeps the per-section color coding without
  * the pill chrome: accent-tinted label, colored underline when active.
  */
+/**
+ * A11Y-1 contrast: the compact jump-bar tabs are 12px interactive labels, so
+ * they need 4.5:1 — and the `/80` alpha was doing the damage, fading each hue
+ * toward its own background. Measured on white, inactive was
+ *   lime 2.42 · emerald 2.86 · sky 3.04 · pink 3.58 · blue 3.62 · violet 3.97
+ *   · teal 4.43 — every one of them a fail.
+ * On the dark canvas `dark:text-*-400/80` failed for the spruce-remapped
+ * teal/cyan (3.84:1) and grazed on indigo over a card (4.46:1).
+ *
+ * Fix is lightness only, hue untouched: drop the alpha, and take the light
+ * inactive ink from 600 to 700 (worst case lime 4.99:1, amber 5.02:1). Active
+ * moves 700 → 800 (worst case lime 7.08:1) so the selected tab keeps its
+ * colour delta on top of the 500 underline.
+ */
 export const SECTION_COMPACT_NAV_ACCENT_CLASSES: Record<
   LayoutSectionAccent,
   CompactNavAccentClassSet
@@ -239,74 +253,74 @@ export const SECTION_COMPACT_NAV_ACCENT_CLASSES: Record<
       'border-transparent text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white',
   },
   emerald: {
-    active: 'border-emerald-500 text-emerald-700 dark:text-emerald-300',
+    active: 'border-emerald-500 text-emerald-800 dark:text-emerald-300',
     inactive:
-      'border-transparent text-emerald-600/80 hover:text-emerald-700 dark:text-emerald-400/80 dark:hover:text-emerald-300',
+      'border-transparent text-emerald-700 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300',
   },
   blue: {
-    active: 'border-blue-500 text-blue-700 dark:text-blue-300',
+    active: 'border-blue-500 text-blue-800 dark:text-blue-300',
     inactive:
-      'border-transparent text-blue-600/80 hover:text-blue-700 dark:text-blue-400/80 dark:hover:text-blue-300',
+      'border-transparent text-blue-700 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300',
   },
   cyan: {
-    active: 'border-cyan-500 text-cyan-700 dark:text-cyan-300',
+    active: 'border-cyan-500 text-cyan-800 dark:text-cyan-300',
     inactive:
-      'border-transparent text-cyan-600/80 hover:text-cyan-700 dark:text-cyan-400/80 dark:hover:text-cyan-300',
+      'border-transparent text-cyan-700 hover:text-cyan-800 dark:text-cyan-400 dark:hover:text-cyan-300',
   },
   purple: {
-    active: 'border-purple-500 text-purple-700 dark:text-purple-300',
+    active: 'border-purple-500 text-purple-800 dark:text-purple-300',
     inactive:
-      'border-transparent text-purple-600/80 hover:text-purple-700 dark:text-purple-400/80 dark:hover:text-purple-300',
+      'border-transparent text-purple-700 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300',
   },
   amber: {
-    active: 'border-amber-500 text-amber-700 dark:text-amber-300',
+    active: 'border-amber-500 text-amber-800 dark:text-amber-300',
     inactive:
-      'border-transparent text-amber-600/80 hover:text-amber-700 dark:text-amber-400/80 dark:hover:text-amber-300',
+      'border-transparent text-amber-700 hover:text-amber-800 dark:text-amber-400 dark:hover:text-amber-300',
   },
   rose: {
-    active: 'border-rose-500 text-rose-700 dark:text-rose-300',
+    active: 'border-rose-500 text-rose-800 dark:text-rose-300',
     inactive:
-      'border-transparent text-rose-600/80 hover:text-rose-700 dark:text-rose-400/80 dark:hover:text-rose-300',
+      'border-transparent text-rose-700 hover:text-rose-800 dark:text-rose-400 dark:hover:text-rose-300',
   },
   pink: {
-    active: 'border-pink-500 text-pink-700 dark:text-pink-300',
+    active: 'border-pink-500 text-pink-800 dark:text-pink-300',
     inactive:
-      'border-transparent text-pink-600/80 hover:text-pink-700 dark:text-pink-400/80 dark:hover:text-pink-300',
+      'border-transparent text-pink-700 hover:text-pink-800 dark:text-pink-400 dark:hover:text-pink-300',
   },
   indigo: {
-    active: 'border-indigo-500 text-indigo-700 dark:text-indigo-300',
+    active: 'border-indigo-500 text-indigo-800 dark:text-indigo-300',
     inactive:
-      'border-transparent text-indigo-600/80 hover:text-indigo-700 dark:text-indigo-400/80 dark:hover:text-indigo-300',
+      'border-transparent text-indigo-700 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300',
   },
   teal: {
-    active: 'border-teal-500 text-teal-700 dark:text-teal-300',
+    active: 'border-teal-500 text-teal-800 dark:text-teal-300',
     inactive:
-      'border-transparent text-teal-600/80 hover:text-teal-700 dark:text-teal-400/80 dark:hover:text-teal-300',
+      'border-transparent text-teal-700 hover:text-teal-800 dark:text-teal-400 dark:hover:text-teal-300',
   },
   sky: {
-    active: 'border-sky-500 text-sky-700 dark:text-sky-300',
+    active: 'border-sky-500 text-sky-800 dark:text-sky-300',
     inactive:
-      'border-transparent text-sky-600/80 hover:text-sky-700 dark:text-sky-400/80 dark:hover:text-sky-300',
+      'border-transparent text-sky-700 hover:text-sky-800 dark:text-sky-400 dark:hover:text-sky-300',
   },
   violet: {
-    active: 'border-violet-500 text-violet-700 dark:text-violet-300',
+    active: 'border-violet-500 text-violet-800 dark:text-violet-300',
     inactive:
-      'border-transparent text-violet-600/80 hover:text-violet-700 dark:text-violet-400/80 dark:hover:text-violet-300',
+      'border-transparent text-violet-700 hover:text-violet-800 dark:text-violet-400 dark:hover:text-violet-300',
   },
   orange: {
-    active: 'border-orange-500 text-orange-700 dark:text-orange-300',
+    active: 'border-orange-500 text-orange-800 dark:text-orange-300',
     inactive:
-      'border-transparent text-orange-600/80 hover:text-orange-700 dark:text-orange-400/80 dark:hover:text-orange-300',
+      'border-transparent text-orange-700 hover:text-orange-800 dark:text-orange-400 dark:hover:text-orange-300',
   },
   fuchsia: {
-    active: 'border-fuchsia-500 text-fuchsia-700 dark:text-fuchsia-300',
+    active: 'border-fuchsia-500 text-fuchsia-800 dark:text-fuchsia-300',
     inactive:
-      'border-transparent text-fuchsia-600/80 hover:text-fuchsia-700 dark:text-fuchsia-400/80 dark:hover:text-fuchsia-300',
+      'border-transparent text-fuchsia-700 hover:text-fuchsia-800 dark:text-fuchsia-400 dark:hover:text-fuchsia-300',
   },
   lime: {
-    active: 'border-lime-500 text-lime-700 dark:text-lime-300',
+    active: 'border-lime-500 text-lime-800 dark:text-lime-300',
     inactive:
-      'border-transparent text-lime-600/80 hover:text-lime-700 dark:text-lime-400/80 dark:hover:text-lime-300',
+      'border-transparent text-lime-700 hover:text-lime-800 dark:text-lime-400 dark:hover:text-lime-300',
   },
 };
 

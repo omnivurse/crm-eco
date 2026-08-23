@@ -321,13 +321,31 @@
   /* Legibility-first tones: deep 700-level text on a stronger tint + a clearly
      visible 50%-alpha border. Fixes the washed-out pastel pills the client
      couldn't read on contacts / leads lists. */
+  /* A11Y-1: every tone is text on its OWN 14%-alpha tint, so the fg must clear
+     4.5:1 against that tint, not against white. Measured on the tint:
+     neutral 6.12 · info 5.37 · progress 5.63 · danger 5.08 · special 4.75 all
+     pass; attention (4.14) and success (4.49) did not and are nudged one notch
+     darker in the same hue — #b45309→#9a4507 = 5.26:1, #047857→#056b4e = 5.27:1. */
   --tone-neutral-fg:#475569;   --tone-neutral-bg:#47556924;   --tone-neutral-border:#47556980;
   --tone-info-fg:#1d4ed8;      --tone-info-bg:#1d4ed824;      --tone-info-border:#1d4ed880;
   --tone-progress-fg:#6d28d9;  --tone-progress-bg:#6d28d924;  --tone-progress-border:#6d28d980;
-  --tone-attention-fg:#b45309; --tone-attention-bg:#b4530924; --tone-attention-border:#b4530980;
-  --tone-success-fg:#047857;   --tone-success-bg:#04785724;   --tone-success-border:#04785780;
+  --tone-attention-fg:#9a4507; --tone-attention-bg:#9a450724; --tone-attention-border:#9a450780;
+  --tone-success-fg:#056b4e;   --tone-success-bg:#056b4e24;   --tone-success-border:#056b4e80;
   --tone-danger-fg:#b91c1c;    --tone-danger-bg:#b91c1c24;    --tone-danger-border:#b91c1c80;
   --tone-special-fg:#be185d;   --tone-special-bg:#be185d24;   --tone-special-border:#be185d80;
+
+  /* --- Dim chrome ink (A11Y-1) ----------------------------------
+     Bound to `text-slate-400` / `text-slate-500` in tailwind.config.ts, so
+     ~5.4k existing call sites move without a per-component override. `R G B`
+     triples (not hex) so Tailwind's `/80` alpha modifiers keep working.
+     LIGHT — the binding constraint is the kbd chip (`bg-slate-200/60`
+     ≈ #e9eef4), not white:
+       dim   #5b6a7e → 5.52:1 on #ffffff, 4.73:1 on #e9eef4
+       muted #4f5d70 → 6.70:1 on #ffffff, 5.75:1 on #e9eef4
+     Both stay lighter than body ink (slate-700 #334155, 10.35:1), so the
+     title → body → muted → dim ladder survives the darkening. */
+  --crm-ink-dim: 91 106 126;      /* #5b6a7e (was slate-400 #94a3b8) */
+  --crm-ink-muted: 79 93 112;     /* #4f5d70 (was slate-500 #64748b) */
 
   /* --- Density-aware spacing/size scale --------------------------
      The scale itself now lives in @crm-eco/ui/styles/theme.css as --ui-*,
@@ -396,6 +414,17 @@
   --tone-success-fg:#6ee7b7;   --tone-success-bg:#6ee7b724;   --tone-success-border:#6ee7b759;
   --tone-danger-fg:#fca5a5;    --tone-danger-bg:#fca5a524;    --tone-danger-border:#fca5a559;
   --tone-special-fg:#f9a8d4;   --tone-special-bg:#f9a8d424;   --tone-special-border:#f9a8d459;
+
+  /* Dim chrome ink — DARK. Mirrors the light block above; must be restated
+     here for the same cascade reason as --background (CRM :root is declared
+     later than theme.css .dark, and this .dark block is later still).
+     `dark:text-slate-500` was the real dark failure — stock #64748b is
+     4.13:1 on the canvas and 3.07:1 on slate-800. Lifted, not recoloured:
+       dim   #94a3b8 → 7.67:1 on #060b16, 5.71:1 on #1e293b  (unchanged value)
+       muted #8b99ad → 6.80:1 on #060b16, 5.06:1 on #1e293b
+     Ordering holds: 400 stays a hair lighter than 500. */
+  --crm-ink-dim: 148 163 184;     /* #94a3b8 — stock slate-400, already AA here */
+  --crm-ink-muted: 139 153 173;   /* #8b99ad (was slate-500 #64748b) */
 }
 
 /* Density modes now live in @crm-eco/ui/styles/theme.css (:root[data-density])

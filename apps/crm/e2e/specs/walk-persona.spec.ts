@@ -146,14 +146,37 @@ test.describe('persona walk (D12)', () => {
     const notePosts = trackRequests(page, /\/api\/crm\/notes(\?|$)/);
     const suffix = runSuffix();
 
-    const composeAndSave = async (label: string) => {
+    const editorFocused = () =>
+      page.evaluate(() => (document.activeElement as HTMLElement | null)?.isContentEditable === true);
+
+    const composeAndSave = async (label: string, opts: { proveDraftSurvives?: boolean } = {}) => {
       await expect
-        .poll(() => page.evaluate(() => (document.activeElement as HTMLElement | null)?.isContentEditable === true), {
-          message: 'focus must land in the contenteditable composer',
-        })
+        .poll(editorFocused, { message: 'focus must land in the contenteditable composer' })
         .toBe(true);
       const editor = page.getByTestId('crm-notes-composer').locator('[contenteditable]').first();
-      await walk.type(editor, `Walk ${label} ${suffix}`, 'type the note');
+      const body = `Walk ${label} ${suffix}`;
+      await walk.type(editor, body, 'type the note');
+
+      if (opts.proveDraftSurvives) {
+        // Task efficiency is only a 10 when an interrupted user cannot lose
+        // work. Ask for the composer a SECOND time on top of a half-typed
+        // note and prove the draft is still there. `n` is ignored while focus
+        // sits in a contenteditable (useRecordHotkeys.shouldIgnoreEvent), so
+        // Tab out first — keystrokes only, the row's 1-click budget stands.
+        for (let i = 0; i < 3 && (await editorFocused()); i += 1) {
+          await walk.press('Tab', 'Tab out of the composer');
+        }
+        expect(await editorFocused(), 'focus must leave the editor before the n hotkey can fire').toBe(false);
+        await walk.press('n', "'n' again on top of a half-typed note");
+        await expect(page.getByTestId('crm-notes-composer'), 'the composer must stay open').toHaveCount(1);
+        const draft = ((await editor.innerText()) ?? '').trim();
+        walk.note(`${label}.draftAfterSecondCompose`, draft.slice(0, 80));
+        expect(draft, 'a second compose request must NOT wipe the half-typed note').toContain(body);
+        // …and it puts the caret back, so ⌘Enter still saves without a click.
+        expect(await editorFocused(), 'the re-opened composer must re-focus the editor').toBe(true);
+        walk.note(`${label}.draftSurvivedSecondCompose`, true);
+      }
+
       const before = notePosts.filter((r) => r.method === 'POST').length;
       await walk.press(`${modKey()}+Enter`, '⌘Enter saves');
       await expect
@@ -168,7 +191,7 @@ test.describe('persona walk (D12)', () => {
       await expect(toast).toHaveText(added('Note'));
     };
 
-    await walk.task('T3', 'Add a note: Add Note → type → ⌘Enter', 1, async () => {
+    await walk.task('T3', 'Add a note: Add Note → type → ⌘Enter, with no draft loss on a second compose', 1, async () => {
       const headerButton = page.getByTestId('crm-record-add-note');
       const mobileNote = page.locator("nav[aria-label='Quick actions'] button", { hasText: /^Note$/ });
       if (await headerButton.isVisible()) {
@@ -177,7 +200,7 @@ test.describe('persona walk (D12)', () => {
         walk.note('entry', 'mobile action bar');
         await walk.click(mobileNote, 'Note (action bar)');
       }
-      await composeAndSave('T3');
+      await composeAndSave('T3', { proveDraftSurvives: true });
     });
 
     await walk.task('T3-hotkey', "Add a note with the 'n' hotkey (no clicks)", 0, async () => {

@@ -55,3 +55,27 @@ describe('visibleRelatedModules (LS-9)', () => {
     expect(keys(visibleRelatedModules(false, false, NONE))).toEqual(before);
   });
 });
+
+/**
+ * CLOSE-1: the flag is now wired (page.tsx → ModuleListClient → ModuleShell →
+ * FilterSidebar), so the row counts below are the numbers the recorded walk
+ * screenshots show — 27 related-module rows with the flag off, 10 with it on.
+ */
+describe('visibleRelatedModules — wired row counts (CLOSE-1)', () => {
+  it('flag off renders the full 27-row catalogue (byte-identical to pre-LS-9)', () => {
+    expect(visibleRelatedModules(false, false, NONE)).toHaveLength(27);
+  });
+
+  it('flag on renders 10 rows, and "Show all" brings all 27 back', () => {
+    expect(visibleRelatedModules(true, false, NONE)).toHaveLength(10);
+    expect(visibleRelatedModules(true, true, NONE)).toHaveLength(27);
+  });
+
+  it('the default prop value (false) is the untrimmed surface', () => {
+    // FilterSidebar declares `trimSurface = false`, and page.tsx falls back to
+    // false when the flag table errors — both land here.
+    expect(keys(visibleRelatedModules(false, false, NONE))).toEqual(
+      keys(visibleRelatedModules(false, true, NONE)),
+    );
+  });
+});

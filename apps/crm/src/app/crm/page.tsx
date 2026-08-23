@@ -28,6 +28,16 @@ import {
 } from '@/components/dashboard';
 import { preRenderWidgets } from '@/components/dashboard/ServerWidgetRenderer';
 import { DashboardGrid } from '@/components/dashboard/DashboardGrid';
+import { DashboardGateNotice } from './DashboardGateNotice';
+
+/**
+ * `/crm?error=<reason>` — a role gate elsewhere (today /crm/import) bounced
+ * the person here. DashboardGateNotice turns the key into words; anything it
+ * does not recognise renders nothing (PERM-viewer-gated-link).
+ */
+interface DashboardPageProps {
+  searchParams?: Promise<{ error?: string | string[] }>;
+}
 
 // Server-side data fetching based on widget types
 async function fetchWidgetData(
@@ -247,7 +257,7 @@ async function WidgetsBlock({
   );
 }
 
-async function DashboardContent() {
+async function DashboardContent({ gateReason }: { gateReason: string | string[] | null }) {
   let profile;
   try {
     profile = await getCachedCurrentProfile();
@@ -271,6 +281,7 @@ async function DashboardContent() {
 
   return (
     <div className="space-y-4 pb-6">
+      <DashboardGateNotice reason={gateReason} />
       <Suspense fallback={<DeskSkeleton />}>
         <CommandDeskBlock profile={profile} />
       </Suspense>
@@ -281,10 +292,11 @@ async function DashboardContent() {
   );
 }
 
-export default function CrmDashboardPage() {
+export default async function CrmDashboardPage({ searchParams }: DashboardPageProps) {
+  const gateReason = (await searchParams)?.error ?? null;
   return (
     <Suspense fallback={<DashboardSkeleton />}>
-      <DashboardContent />
+      <DashboardContent gateReason={gateReason} />
     </Suspense>
   );
 }

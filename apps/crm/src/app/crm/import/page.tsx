@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Upload, FileSpreadsheet, Database, Sparkles, Users, UserPlus } from 'lucide-react';
 import { getCurrentProfile, getModules } from '@/lib/crm/queries';
+import { isCrmManagerOrAdminRole } from '@/lib/crm/nav-profile';
+import { CRM_GATE_REASON } from '@/lib/crm/gate-notice-copy';
 import { ImportWizard } from './import-wizard';
 
 interface PageProps {
@@ -21,9 +23,12 @@ async function ImportPageContent({ searchParams }: PageProps) {
     redirect('/crm-login');
   }
 
-  // Check permission
-  if (!profile.crm_role || !['crm_admin', 'crm_manager'].includes(profile.crm_role)) {
-    redirect('/crm?error=no_import_permission');
+  // Server-side backstop for the gated nav link: the SAME predicate the
+  // sidebar uses to hide "Import Data" / "Import / Export" (nav-profile
+  // isCrmManagerOrAdminRole). The reason travels as `?error=` so /crm can say
+  // out loud why the person was moved (PERM-viewer-gated-link).
+  if (!isCrmManagerOrAdminRole(profile.crm_role)) {
+    redirect(`/crm?error=${CRM_GATE_REASON.noImportPermission}`);
   }
 
   const modules = await getModules(profile.organization_id);

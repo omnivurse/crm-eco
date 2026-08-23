@@ -23,6 +23,12 @@ interface FilterSidebarTriggerProps {
   moduleKey?: string;
   /** Dialog heading, e.g. “Filter Contacts by”. */
   title?: string;
+  /**
+   * `crm.lists.trim_surface` (LS-9). Forwarded verbatim to the sidebar so the
+   * md–lg sheet trims exactly like the docked rail; false keeps today's
+   * full surface, which is what an org without the flag row sees.
+   */
+  trimSurface?: boolean;
   className?: string;
 }
 
@@ -39,6 +45,7 @@ export function FilterSidebarTrigger({
   orgId,
   moduleKey,
   title,
+  trimSurface = false,
   className,
 }: FilterSidebarTriggerProps) {
   const [open, setOpen] = useState(false);
@@ -82,6 +89,7 @@ export function FilterSidebarTrigger({
             orgId={orgId}
             moduleKey={moduleKey}
             title={title}
+            trimSurface={trimSurface}
             variant="docked"
           />
         </div>

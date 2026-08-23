@@ -20,6 +20,7 @@ import type { AdvisorTreeData, AgentTreeData } from '@/lib/crm/queries';
 import { ModuleListClient, type ListPagerModel } from './ModuleListClient';
 import type { CrmModule, CrmField, CrmView, CrmRecord, ViewSort, ViewFilter, TreeGroupBy, CrmDealStage } from '@/lib/crm/types';
 import { parseCrmRecordPageSize } from '@/lib/crm/record-list-constants';
+import { isListSurfaceTrimEnabled } from '@/lib/crm/feature-flags';
 import { habitPreferredViewId, resolveListQueryState } from '@/lib/crm/list-query-resolve';
 
 /* ---------- Contacts tab components (lazy-loaded) ---------- */
@@ -73,14 +74,22 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
   const page = Math.max(1, parseInt(pageStr || '1', 10) || 1);
   const pageSize = parseCrmRecordPageSize(pageSizeParam);
 
-  // Step 1: module + territories in parallel (both only need org_id)
-  const [moduleResult, territoriesResult] = await Promise.allSettled([
+  // Step 1: module + territories + the list-surface flag in parallel (all
+  // three only need the profile / org_id).
+  const [moduleResult, territoriesResult, trimSurfaceResult] = await Promise.allSettled([
     getModuleByKey(profile.organization_id, moduleKey),
     getCachedTerritories(profile.organization_id),
+    isListSurfaceTrimEnabled(profile),
   ]);
 
   let crmModule = moduleResult.status === 'fulfilled' ? moduleResult.value : null;
   const territories = territoriesResult.status === 'fulfilled' ? territoriesResult.value : [];
+  // LS-9 / decision D11: `crm.lists.trim_surface` moves the Zoho-leftover
+  // related-module filters behind "Show all" and the pipeline/schedule view
+  // modes behind "More views". Hidden, never removed. Fails closed to `false`
+  // so a flag-table outage renders today's full surface.
+  const trimSurface =
+    trimSurfaceResult.status === 'fulfilled' ? trimSurfaceResult.value : false;
 
   // Compatibility fallback:
   // Some production orgs have records under the "members" module while users navigate
@@ -360,6 +369,7 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
         pager={pager}
         loadError={loadError}
         viewerId={profile.id}
+        trimSurface={trimSurface}
       />
     </>
   );

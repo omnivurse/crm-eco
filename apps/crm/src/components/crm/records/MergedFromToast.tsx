@@ -11,6 +11,7 @@
 import { useEffect, useRef } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { toast } from 'sonner';
+import { toastCopy } from '@/lib/crm/toast-copy';
 
 interface Props {
   /** The keeper's title, for friendlier toast copy. */
@@ -29,11 +30,8 @@ export function MergedFromToast({ recordTitle }: Props) {
     if (!mergedFrom) return;
     firedRef.current = true;
 
-    const label = recordTitle ? ` into "${recordTitle}"` : '';
-    toast.info(
-      `That record was merged${label}. You're now viewing the current version.`,
-      { duration: 4500 }
-    );
+    const copy = toastCopy.mergedInto(recordTitle);
+    toast.info(copy.title, { description: copy.description, duration: 4500 });
 
     // Strip the marker so a refresh doesn't retrigger the toast.
     const next = new URLSearchParams(searchParams.toString());

@@ -481,3 +481,75 @@ describe('addedWithAction() — D1 "Member added · View in list"', () => {
     expect(toastCopy.addedWithAction('Lead', { note: '   ' }).description).toBeUndefined();
   });
 });
+
+describe('mergedInto() — CLOSE-1: one voice for a merged-away record URL', () => {
+  it('quotes the keeper when known and says the URL is about to change', () => {
+    const c = toastCopy.mergedInto('Jane Doe', { navigating: true });
+    expect(c.title).toBe('That record was merged into "Jane Doe"');
+    expect(c.description).toBe('Opening the current version…');
+  });
+
+  it('already landed on the keeper: present tense, no navigation promise', () => {
+    const c = toastCopy.mergedInto('Jane Doe');
+    expect(c.title).toBe('That record was merged into "Jane Doe"');
+    expect(c.description).toBe("You're viewing the current version.");
+  });
+
+  it('never prints an empty or undefined keeper name', () => {
+    for (const missing of [undefined, null, '', '   ']) {
+      expect(toastCopy.mergedInto(missing).title).toBe('That record was merged');
+    }
+  });
+
+  it('uses the ellipsis glyph, never three dots', () => {
+    expect(toastCopy.mergedInto('X', { navigating: true }).description).not.toContain('...');
+    expect(toastCopy.mergedInto('X', { navigating: true }).description).toContain('…');
+  });
+
+  it('both callers share one title — only the follow-up sentence differs', () => {
+    expect(toastCopy.mergedInto('Jane Doe', { navigating: true }).title).toBe(
+      toastCopy.mergedInto('Jane Doe').title,
+    );
+  });
+});
+
+describe('bulk-update page copy (CLOSE-1) — partial() over the /records/bulk shape', () => {
+  const unit = { one: 'contact', other: 'contacts' };
+
+  it('clean run: one success toast, module noun, D9 middle dot', () => {
+    const c = toastCopy.partial('Status updated', { changed: 12, skipped: 0, failed: 0 }, { unit });
+    expect(c.title).toBe('Status updated · 12 contacts');
+    expect(c.description).toBeUndefined();
+    expect(c.tone).toBe('success');
+  });
+
+  it('rows the server refused escalate to warning, not a second toast', () => {
+    const c = toastCopy.partial('Owner updated', { changed: 10, skipped: 2, failed: 0 }, { unit });
+    expect(c.title).toBe('Owner updated · 10 contacts');
+    expect(c.description).toContain('2 skipped');
+    expect(c.tone).toBe('warning');
+  });
+
+  it('failures escalate to error and say the rows were not changed', () => {
+    const c = toastCopy.partial('Field updated', { changed: 9, skipped: 2, failed: 1 }, { unit });
+    expect(c.title).toBe('Field updated · 9 contacts');
+    expect(c.description).toBe('2 skipped · 1 failed — failed rows were not changed. Try again.');
+    expect(c.tone).toBe('error');
+  });
+
+  it('the success banner reads with the same noun as the toast', () => {
+    expect(toastCopy.counted(unit, 1, 'Updated')).toBe('Updated 1 contact');
+    expect(toastCopy.counted(unit, 1200, 'Updated')).toBe('Updated 1,200 contacts');
+  });
+
+  it('a failed request names the action and humanises the status, not "Failed to …"', () => {
+    const forbidden = Object.assign(new Error('HTTP 403'), { status: 403 });
+    expect(toastCopy.failed('update the contacts', forbidden, 'Try again')).toBe(
+      "Couldn't update the contacts — you don't have access to this record. Try again.",
+    );
+    const serverDown = Object.assign(new Error('HTTP 500'), { status: 500 });
+    expect(toastCopy.failed('update the contacts', serverDown, 'Try again')).toBe(
+      "Couldn't update the contacts — server error. Try again.",
+    );
+  });
+});

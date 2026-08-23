@@ -106,6 +106,7 @@ import {
   buildSimpleNav,
   recordPageActiveNavKey,
   resolveActiveNavKey,
+  effectiveNavRole,
   visibleNavItemsForRole,
   type NavModule,
   type NavProfile,
@@ -253,6 +254,14 @@ interface ZohoContextualSidebarProps {
     navProfile?: NavProfile;
     /** The org's ENABLED crm_modules (+ field counts) that drive module links. */
     navModules?: readonly NavModule[];
+    /**
+     * `profiles.crm_role` as the SERVER already knows it (CrmShell passes the
+     * layout's session profile). Without it the role-gated links only appear
+     * once the client auth fetch resolves, so the menu grows a link a beat
+     * after first paint — the sidebar "swapping" under a link the user just
+     * clicked (NV-2 cross-tab, admin run).
+     */
+    crmRole?: string | null;
 }
 
 const EMPTY_MODULES: readonly NavModule[] = [];
@@ -267,6 +276,7 @@ export function ZohoContextualSidebar({
     onMobileClose,
     navProfile = 'full',
     navModules = EMPTY_MODULES,
+    crmRole: serverCrmRole = null,
 }: ZohoContextualSidebarProps) {
     const pathname = usePathname();
     const searchParams = useSearchParams();
@@ -307,10 +317,12 @@ export function ZohoContextualSidebar({
     const { activeModule: activeTopModule } = useModule();
 
     // NV-M1 / D10: admin-only Settings links are hidden for non-admins with the
-    // same predicate app/crm/settings/page.tsx uses for its cards. The role
-    // comes from the cached client profile; until it is known we fail closed.
+    // same predicate app/crm/settings/page.tsx uses for its cards. The server
+    // already resolved the role for this request (CrmShell → layout session),
+    // so the gated links are right on the FIRST paint; the cached client
+    // profile is only a fallback (and still fails closed when neither knows).
     const { profile: clientProfile } = useClientAuth();
-    const crmRole = clientProfile?.crm_role ?? null;
+    const crmRole = effectiveNavRole(serverCrmRole, clientProfile?.crm_role);
 
     // simple → one flat menu everywhere (Settings keeps its own sub-menu, with a
     // way back). full → the classic per-tab menus, with the CRM tab's module

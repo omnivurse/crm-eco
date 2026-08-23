@@ -185,6 +185,7 @@ export function CrmShell({
                 onMobileClose={handleMobileClose}
                 navProfile={navProfile}
                 navModules={navModules ?? modules}
+                crmRole={profile.crm_role ?? null}
               />
 
               <main

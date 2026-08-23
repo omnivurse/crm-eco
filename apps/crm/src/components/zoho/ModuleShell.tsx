@@ -75,6 +75,10 @@ const STATUS_FIELD_KEYS = ['contact_status', 'lead_status', 'status'] as const;
  * ViewModeSwitcher's "More views" menu — unless the current view (URL / saved
  * view) already uses one, in which case it is promoted so the active state
  * stays visible.
+ *
+ * Only honoured when the `trimSurface` prop is true (`crm.lists.trim_surface`,
+ * LS-9 / decision D11); with the flag off ViewModeSwitcher ignores this list
+ * and renders every mode as a radio.
  */
 const PRIMARY_VIEW_MODES: ViewMode[] = ['table', 'list', 'split'];
 
@@ -117,6 +121,15 @@ interface ModuleShellProps {
    * stored value; falls back to the cached client profile when omitted.
    */
   viewerId?: string | null;
+  /**
+   * `crm.lists.trim_surface`, resolved server-side in the module list route
+   * (LS-9 / decision D11). On: the Zoho-leftover related-module filters
+   * collapse behind the rail's "Show all", and PRIMARY_VIEW_MODES is honoured
+   * so the pipeline/schedule modes live under "More views". Off (the default,
+   * and what a flag-table failure resolves to): every filter group and every
+   * view mode renders exactly as it did before the flag existed.
+   */
+  trimSurface?: boolean;
 }
 
 export const ModuleShell = memo(function ModuleShell({
@@ -132,6 +145,7 @@ export const ModuleShell = memo(function ModuleShell({
   userRole,
   territories = [],
   viewerId: viewerIdProp,
+  trimSurface = false,
 }: ModuleShellProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -1480,6 +1494,7 @@ export const ModuleShell = memo(function ModuleShell({
               value={viewMode}
               onChange={handleViewModeChange}
               visibleModes={PRIMARY_VIEW_MODES}
+              trimSurface={trimSurface}
             />
 
             <div className="w-px h-6 bg-slate-200 dark:bg-white/10" />
@@ -1517,6 +1532,7 @@ export const ModuleShell = memo(function ModuleShell({
                 orgId={module.org_id}
                 moduleKey={module.key}
                 title={filterRailTitle}
+                trimSurface={trimSurface}
                 onFiltersChange={applyListFilters}
               />
             </div>
@@ -1581,6 +1597,7 @@ export const ModuleShell = memo(function ModuleShell({
                 variant="docked"
                 onCollapse={toggleFilterRail}
                 onFiltersChange={applyListFilters}
+                trimSurface={trimSurface}
               />
             </FilterRailFrame>
           }
@@ -1841,6 +1858,7 @@ export const ModuleShell = memo(function ModuleShell({
                   variant="dialog"
                   onClose={() => setMobileToolbarOpen(false)}
                   onFiltersChange={applyListFilters}
+                  trimSurface={trimSurface}
                 />
               </div>
             ),
@@ -1856,6 +1874,7 @@ export const ModuleShell = memo(function ModuleShell({
                   setMobileToolbarOpen(false);
                 }}
                 visibleModes={PRIMARY_VIEW_MODES}
+                trimSurface={trimSurface}
               />
             ),
           },

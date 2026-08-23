@@ -168,6 +168,27 @@ export function isCrmManagerOrAdminRole(crmRole: string | null | undefined): boo
 }
 
 /**
+ * The role the sidebar gates links with.
+ *
+ * Two sources know it: the SERVER (the CRM layout's session profile, correct
+ * on the first byte) and the client auth cache (an async fetch that resolves a
+ * beat after first paint). Reading only the client one makes the menu GROW its
+ * role-gated links after hydration — the sidebar visibly swapping under a link
+ * the user just clicked (NV-2 cross-tab, admin run). Server wins, the client
+ * cache is the fallback for mounts that have no server role, and an unknown /
+ * blank role stays `null` so `visibleNavItemsForRole` fails closed.
+ */
+export function effectiveNavRole(
+  serverRole?: string | null,
+  clientRole?: string | null,
+): string | null {
+  const server = typeof serverRole === 'string' ? serverRole.trim() : '';
+  if (server) return server;
+  const client = typeof clientRole === 'string' ? clientRole.trim() : '';
+  return client || null;
+}
+
+/**
  * Hide, don't break: drop `adminOnly` links for non-admins and
  * `managerOrAdmin` links for agents / viewers (unknown role = neither, fail
  * closed) and any section header left with no links under it. Admins get the

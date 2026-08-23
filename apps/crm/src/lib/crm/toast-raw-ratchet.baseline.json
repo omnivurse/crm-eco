@@ -1,5 +1,5 @@
 {
-  "total": 551,
+  "total": 548,
   "byDir": {
     "src/app/crm/activities": 1,
     "src/app/crm/analytics": 1,
@@ -31,7 +31,6 @@
     "src/app/crm/invoices": 8,
     "src/app/crm/invoices/[id]/edit": 3,
     "src/app/crm/invoices/new": 2,
-    "src/app/crm/modules/[moduleKey]/bulk-update": 1,
     "src/app/crm/needs/[id]": 4,
     "src/app/crm/playbooks": 3,
     "src/app/crm/playbooks/[id]": 5,
@@ -42,7 +41,6 @@
     "src/app/crm/quotes": 6,
     "src/app/crm/quotes/[id]/edit": 3,
     "src/app/crm/quotes/new": 2,
-    "src/app/crm/r/[recordId]/edit": 1,
     "src/app/crm/reports": 1,
     "src/app/crm/reports/saved": 3,
     "src/app/crm/reports/saved/[id]": 1,
@@ -92,7 +90,6 @@
     "src/components/crm/documents": 10,
     "src/components/crm/offline": 2,
     "src/components/crm/pipeline": 2,
-    "src/components/crm/records": 1,
     "src/components/crm/reports": 7,
     "src/components/email": 13,
     "src/components/integrations": 22,

@@ -34,10 +34,14 @@ interface ViewModeSwitcherProps {
    */
   visibleModes?: ViewMode[];
   /**
-   * `crm.lists.trim_surface` (LS-9 / decision D11). When explicitly `false`
-   * the trim is off and `visibleModes` is ignored: every mode renders as a
-   * radio, byte-identical to omitting `visibleModes` entirely. Defaults to
-   * `true` so callers that already pass `visibleModes` keep their behaviour.
+   * `crm.lists.trim_surface` (LS-9 / decision D11). While it is `false` the
+   * trim is off and `visibleModes` is ignored: every mode renders as a radio,
+   * byte-identical to omitting `visibleModes` entirely.
+   *
+   * Fail-closed, like every other link in the LS-9 chain (ModuleShell,
+   * FilterSidebarTrigger, FilterSidebar): the default is `false`, so a mount
+   * that forgets the prop shows today's full switcher rather than trimming the
+   * surface with the org flag off.
    */
   trimSurface?: boolean;
   /** Accessible label / tooltip for the overflow menu trigger. */
@@ -78,7 +82,7 @@ const OPTION_BY_MODE = new Map(VIEW_MODE_OPTIONS.map((o) => [o.mode, o]));
 export function partitionViewModes(
   value: ViewMode,
   visibleModes?: ViewMode[],
-  trimSurface = true,
+  trimSurface = false,
 ): { visible: ViewModeOption[]; more: ViewModeOption[] } {
   // Flag off → the trim does not exist: fall through to the full catalogue.
   const requested = trimSurface ? visibleModes : undefined;
@@ -108,7 +112,7 @@ export const ViewModeSwitcher = memo(function ViewModeSwitcher({
   value,
   onChange,
   visibleModes,
-  trimSurface = true,
+  trimSurface = false,
   moreLabel = 'More views',
   className,
 }: ViewModeSwitcherProps) {

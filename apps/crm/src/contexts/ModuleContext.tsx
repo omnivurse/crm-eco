@@ -332,7 +332,11 @@ export const OPERATIONS_NAV_ITEMS: NavItem[] = [
 
     { key: 'sec-data', separator: true, sectionTitle: 'Data Management' },
     { key: 'import', label: 'Import / Export', icon: 'upload', href: '/crm/import', managerOrAdmin: true },
-    { key: 'data-jobs', label: 'Data Jobs', icon: 'database', href: '/crm/settings/system-health?tab=jobs' },
+    // The jobs tab lives on /crm/settings/system-health, which redirects anyone
+    // but crm_admin to /crm/settings (settings/system-health/page.tsx) — same
+    // gate here, exactly like Settings › Export, so a manager/agent/viewer is
+    // never offered a link that bounces them (NV-2 cross-tab / NV-M1).
+    { key: 'data-jobs', label: 'Data Jobs', icon: 'database', href: '/crm/settings/system-health?tab=jobs', adminOnly: true },
 ];
 
 // ---------------------------------------------------------------------------

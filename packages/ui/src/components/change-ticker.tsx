@@ -384,7 +384,12 @@ export function ChangeTickerPopover({
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
           'flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-colors',
-          'bg-slate-900/50 border-white/10 hover:border-white/20',
+          // A11Y-1 contrast: this pill is a dark-chrome widget that also sits
+          // in the CRM's LIGHT top bar, where slate-900/50 composited to
+          // #878b95 and left its own slate-300 label at 2.33:1. Value-only
+          // nudge — 80% opacity is 6.45:1 for the same text and is visually
+          // unchanged on a dark host, where the ground is already near-black.
+          'bg-slate-900/80 border-white/10 hover:border-white/20',
           isOpen && 'border-teal-500/50'
         )}
       >

@@ -8,6 +8,7 @@ import {
   visibleNavItemsForRole,
   isCrmAdminRole,
   isCrmManagerOrAdminRole,
+  effectiveNavRole,
   recordPageActiveNavKey,
   type NavModule,
 } from './nav-profile';
@@ -197,6 +198,69 @@ describe('visibleNavItemsForRole (NV-M1)', () => {
       .filter((i) => !i.separator)
       .map((i) => i.href);
     expect(managerHrefs.filter((h) => h.startsWith('/crm/import')).length).toBeGreaterThanOrEqual(2);
+  });
+
+  // NV-2 cross-tab (admin run): Operations › Data Jobs opens the jobs tab of
+  // /crm/settings/system-health, which redirects anyone but crm_admin to
+  // /crm/settings — a bounce that also swaps the sidebar out from under the
+  // click. The link carries the admin gate the page enforces, exactly like
+  // Settings › Export (same page, same tab pattern).
+  it('Operations › Data Jobs is admin-only — nobody else is offered the system-health link', () => {
+    const ops = getNavItemsForModule('operations');
+    const dataJobs = ops
+      .filter((i): i is Extract<NavItem, { separator?: false }> => !i.separator)
+      .find((i) => i.key === 'data-jobs');
+    expect(dataJobs?.label).toBe('Data Jobs');
+    expect(dataJobs?.href).toBe('/crm/settings/system-health?tab=jobs');
+    expect(dataJobs?.adminOnly).toBe(true);
+
+    const systemHealthLinks = (role: string | null | undefined) =>
+      visibleNavItemsForRole(ops, role)
+        .filter((i) => !i.separator)
+        .map((i) => i.href ?? '')
+        .filter((h) => h.startsWith('/crm/settings/system-health'));
+    expect(systemHealthLinks('crm_admin')).toEqual(['/crm/settings/system-health?tab=jobs']);
+    for (const role of ['crm_manager', 'crm_agent', 'crm_viewer', null, undefined]) {
+      expect(systemHealthLinks(role)).toEqual([]);
+    }
+  });
+});
+
+describe('effectiveNavRole (NV-2 cross-tab — no role pop-in)', () => {
+  it('prefers the server role so the gated links are right on the first paint', () => {
+    // The client cache is still empty a beat after paint; the layout already knows.
+    expect(effectiveNavRole('crm_admin', null)).toBe('crm_admin');
+    expect(effectiveNavRole('crm_admin', undefined)).toBe('crm_admin');
+    // …and it stays the answer even if the two ever disagree mid-flight.
+    expect(effectiveNavRole('crm_viewer', 'crm_admin')).toBe('crm_viewer');
+  });
+
+  it('falls back to the client cache when no server role was passed', () => {
+    expect(effectiveNavRole(null, 'crm_manager')).toBe('crm_manager');
+    expect(effectiveNavRole(undefined, 'crm_manager')).toBe('crm_manager');
+    expect(effectiveNavRole('   ', 'crm_manager')).toBe('crm_manager');
+  });
+
+  it('fails closed when neither source knows the role', () => {
+    for (const server of [null, undefined, '', '  ']) {
+      for (const client of [null, undefined, '', '  ']) {
+        expect(effectiveNavRole(server, client)).toBeNull();
+      }
+    }
+    // …and an unknown role hides every gated link.
+    const OPS_REAL = getNavItemsForModule('operations');
+    const keys = visibleNavItemsForRole(OPS_REAL, effectiveNavRole(null, null)).map((i) => i.key);
+    expect(keys).not.toContain('import');
+    expect(keys).not.toContain('data-jobs');
+  });
+
+  it('an admin sees the SAME Operations links before and after the client auth fetch resolves', () => {
+    const OPS_REAL = getNavItemsForModule('operations');
+    const beforeHydration = visibleNavItemsForRole(OPS_REAL, effectiveNavRole('crm_admin', null));
+    const afterHydration = visibleNavItemsForRole(OPS_REAL, effectiveNavRole('crm_admin', 'crm_admin'));
+    expect(beforeHydration.map((i) => i.key)).toEqual(afterHydration.map((i) => i.key));
+    expect(beforeHydration.map((i) => i.key)).toContain('import');
+    expect(beforeHydration.map((i) => i.key)).toContain('data-jobs');
   });
 });
 

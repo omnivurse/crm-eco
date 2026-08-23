@@ -110,7 +110,11 @@ test.describe('lists walk', () => {
         walk.note('pagerTotal', after?.total ?? null);
         walk.note('url', pathWithQuery(page));
         expect(pathWithQuery(page)).toMatch(/contact_status|status/);
-        if (pendingTotal !== null) expect(after?.total, 'rail Pending filter must match the chip result').toBe(pendingTotal);
+        // D11 promises rail == chip. A guarded `if (pendingTotal !== null)` let
+        // the row report PASS on a run where the comparison never executed, so
+        // the missing number is itself the failure.
+        expect(pendingTotal, 'LS-lane-chip must have recorded a pager N for the rail to be compared against').not.toBeNull();
+        expect(after?.total, 'rail Pending filter must match the chip result').toBe(pendingTotal);
         expect(sawPending, 'Apply must show a visible pending/loading state').toBe(true);
       },
       { soft: true },
@@ -279,7 +283,11 @@ test.describe('lists walk', () => {
       4,
       async () => {
         const chip = page.locator(PENDING_CHIP);
-        const chipCount = (await chip.count()) > 0 ? firstInt((await chip.textContent()) ?? '') : null;
+        // Read the chip BEFORE the sheet covers it. A missing chip used to make
+        // the D11 "chip equals pager" comparison silently skip while the row
+        // still reported PASS — so the chip's absence now fails the row.
+        await expect(chip.first(), 'the Pending lane chip must be on the phone list to compare against').toBeVisible({ timeout: 30_000 });
+        const chipCount = firstInt((await chip.first().textContent()) ?? '');
         walk.note('chipCount', chipCount);
         // LS-10: below md the toolbar collapses behind ONE "Filters & View"
         // sheet and the rail is rendered inside it — no second overlay, so the
@@ -320,7 +328,8 @@ test.describe('lists walk', () => {
           .toBe(0);
         walk.note('overlaysAfterApply', await page.getByRole('dialog').locator('visible=true').count());
         expect(pathWithQuery(page)).toMatch(/filters=/);
-        if (chipCount !== null) expect(total).toBe(chipCount);
+        expect(chipCount, 'the Pending chip must carry a count').not.toBeNull();
+        expect(total, 'the sheet-filtered pager N must equal the Pending chip count (D11)').toBe(chipCount);
       },
       { soft: true },
     );
@@ -726,7 +735,8 @@ test.describe('leads pager honesty (LS-7b)', () => {
           expect(rows, 'rows on the page can never exceed what the range promises').toBeLessThanOrEqual(promised);
           expect(promised, 'the range can never promise more than the total').toBeLessThanOrEqual(s!.total);
           // The converted row counts in neither the total nor the rows.
-          if (totalBefore !== null) expect(s!.total, 'only the live lead may join the total').toBe(totalBefore + 1);
+          expect(totalBefore, 'the leads pager must have parsed before the two rows were inserted').not.toBeNull();
+          expect(s!.total, 'only the live lead may join the total').toBe(totalBefore! + 1);
           // Read the rows' own text (the virtualised table positions rows
           // absolutely, so "visible" is a scroll question, not a listing one).
           const rowsText = (await page.locator('tr[id^="crm-row-"], main a[href^="/crm/r/"]').allTextContents())

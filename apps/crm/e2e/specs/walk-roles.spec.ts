@@ -94,7 +94,9 @@ test.describe('viewer persona has no dead ends (PERM-viewer)', () => {
         walk.note('explanationBlocks', explained);
         expect(explained, 'the landing page must explain the refused route').toBeGreaterThan(0);
       },
-      { soft: true },
+      // HARD (wave 4): the viewer bounce off /crm/import lands on a page that
+      // says why, on every project. A regression must turn `playwright test`
+      // red on its own, not only `walk:crm:gate`.
     );
   });
 });

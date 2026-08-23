@@ -55,6 +55,13 @@ interface ModuleListClientProps {
   loadError?: boolean;
   /** Viewer's profile id — scopes remembered rail state / column widths (LS-8). */
   viewerId?: string | null;
+  /**
+   * `crm.lists.trim_surface` resolved server-side (LS-9 / decision D11).
+   * `true` moves the Zoho-leftover related-module filters behind "Show all"
+   * and the pipeline/schedule view modes behind "More views". Defaults to
+   * `false` — the untrimmed surface — so nothing changes without the flag.
+   */
+  trimSurface?: boolean;
 }
 
 /* ---------- Pager (LS-7) ---------- */
@@ -426,6 +433,7 @@ function ModuleListContent({
   pager,
   loadError,
   viewerId,
+  trimSurface = false,
 }: ModuleListClientProps) {
   return (
     <ModuleShell
@@ -439,6 +447,7 @@ function ModuleListContent({
       userRole={userRole}
       territories={territories}
       viewerId={viewerId}
+      trimSurface={trimSurface}
       paneFooter={pager ? (ctx) => <ListPager model={pager} {...ctx} /> : null}
     >
       <ModuleViewContent

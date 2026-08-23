@@ -398,6 +398,9 @@ export async function assertTrapsInTest(args: {
     recordTrap(tagged);
     return assertTrap(tagged);
   };
+  // The walk fixture arms this when the page is created; arming again here is a
+  // no-op that keeps the trap honest for any caller that builds its own page.
+  armPageIssueTrap(args.page);
   keep(await trapPinGate(args.bareRequest, baseURL));
   if (!/^\/crm(\/|$|\?)/.test(new URL(args.page.url(), baseURL).pathname)) {
     await args.page.goto('/crm', { waitUntil: 'domcontentloaded' });
@@ -414,5 +417,106 @@ export async function assertTrapsInTest(args: {
   keep(await trapBreakpoint(args.page, args.project, notEmpty.anchor?.url ?? null));
   if (notEmpty.anchor) keep(await trapLayoutV2(args.page, notEmpty.anchor.url));
   keep(trapStatusVocab(notEmpty.anchor, null));
+  // Last: everything the trap sweep itself loaded (list, record, /crm) must
+  // have loaded without a browser error. The fixture re-asserts at teardown
+  // over the whole test.
+  keep(trapNoPageIssues(args.page, `the trap sweep on ${args.project}`));
   return { traps: results, anchor: notEmpty.anchor, navProfile: nav.navProfile };
+}
+
+// ---------------------------------------------------------------------------
+// page-errors — the browser console is evidence too
+// ---------------------------------------------------------------------------
+
+/**
+ * A run that reports "0 failures" while the Next dev overlay shows a red
+ * "N Issues" badge is not evidence, it is a screenshot of an unread error. The
+ * walk never listened to the browser, so an uncaught exception, a React
+ * hydration mismatch or a failed console.error passed straight through every
+ * green row.
+ *
+ * `armPageIssueTrap` attaches a `pageerror` + `console` listener (idempotent
+ * per Page) and `trapNoPageIssues` grades what they collected. The walk fixture
+ * arms it the moment the page exists — so the window is the WHOLE test — and
+ * asserts it twice: inside `assertTrapsInTest` (everything up to the first
+ * counted task) and again at fixture teardown (everything the walk did).
+ */
+export interface PageIssue {
+  kind: 'pageerror' | 'console';
+  text: string;
+  url: string;
+}
+
+const pageIssues = new WeakMap<Page, PageIssue[]>();
+
+/**
+ * Console noise that is not the application talking. Kept deliberately short
+ * and specific — each entry names WHY it cannot be an app defect. Anything
+ * that is not on this list fails the trap.
+ */
+const PAGE_ISSUE_IGNORE: ReadonlyArray<{ pattern: RegExp; why: string }> = [
+  // The dev server streams HMR over a websocket that Playwright tears down at
+  // navigation; the failure is the runner closing the tab, not the page.
+  { pattern: /_next\/webpack-hmr|websocket connection to .*_next/i, why: 'dev-only HMR socket torn down by navigation' },
+  // Chromium logs a console error for the favicon/apple-touch-icon probe that
+  // `next dev` answers with a 404 before the route is compiled.
+  { pattern: /failed to load resource.*\b(favicon\.ico|apple-touch-icon)/i, why: 'dev-only icon probe 404' },
+];
+
+function ignoredPageIssue(text: string): string | null {
+  for (const entry of PAGE_ISSUE_IGNORE) if (entry.pattern.test(text)) return entry.why;
+  return null;
+}
+
+/** Attach the collectors. Safe to call repeatedly — only the first call binds. */
+export function armPageIssueTrap(page: Page): PageIssue[] {
+  const existing = pageIssues.get(page);
+  if (existing) return existing;
+  const issues: PageIssue[] = [];
+  pageIssues.set(page, issues);
+  page.on('pageerror', (err) => {
+    issues.push({ kind: 'pageerror', text: `${err.name}: ${err.message}`.slice(0, 400), url: safeUrl(page) });
+  });
+  page.on('console', (msg) => {
+    if (msg.type() !== 'error') return;
+    issues.push({ kind: 'console', text: msg.text().slice(0, 400), url: safeUrl(page) });
+  });
+  return issues;
+}
+
+function safeUrl(page: Page): string {
+  try {
+    const u = new URL(page.url());
+    return `${u.pathname}${u.search}`;
+  } catch {
+    return page.url();
+  }
+}
+
+/** Everything the collectors have seen so far (empty when the trap was never armed). */
+export function pageIssuesSoFar(page: Page): readonly PageIssue[] {
+  return pageIssues.get(page) ?? [];
+}
+
+/**
+ * page-errors: no uncaught exception and no console.error since the trap was
+ * armed. `window` is the label that says which slice of the walk was graded.
+ * Not armed at all is itself a failure — a silent trap is worse than none.
+ */
+export function trapNoPageIssues(page: Page, window: string): TrapResult {
+  const name = 'page-errors';
+  const collected = pageIssues.get(page);
+  if (!collected) return trapResult(name, false, `the page-issue collectors were never armed — ${window} was not watched`);
+  const real = collected.filter((i) => ignoredPageIssue(i.text) === null);
+  const ignored = collected.length - real.length;
+  const suffix = ignored > 0 ? ` (${ignored} dev-only entr${ignored === 1 ? 'y' : 'ies'} ignored)` : '';
+  if (real.length > 0) {
+    const lines = real.slice(0, 8).map((i) => `    [${i.kind}] ${i.url} — ${i.text}`).join('\n');
+    return trapResult(
+      name,
+      false,
+      `${real.length} browser error(s) during ${window}${suffix}:\n${lines}${real.length > 8 ? `\n    …and ${real.length - 8} more` : ''}`,
+    );
+  }
+  return trapResult(name, true, `no uncaught exception and no console.error during ${window}${suffix}`);
 }

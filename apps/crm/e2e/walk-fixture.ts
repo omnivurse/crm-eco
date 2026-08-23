@@ -16,6 +16,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { test as base, expect, type Locator, type Page, type APIRequestContext } from '@playwright/test';
 import { runDir } from './env';
+import { armPageIssueTrap, recordTrap, trapNoPageIssues } from './traps';
 import {
   MODIFIER_KEYS,
   WALK_STORAGE_KEY,
@@ -303,6 +304,9 @@ export const test = base.extend<WalkFixtures>({
   walk: async ({ page }, provide, testInfo) => {
     const root = runDir();
     const shotRoot = path.join(root, 'shots', slug(testInfo.project.name), slug(testInfo.title));
+    // Arm the browser-error collectors before the spec's first navigation, so
+    // the graded window is the whole test — not just the trap sweep.
+    armPageIssueTrap(page);
     const walk = createWalk(page, { project: testInfo.project.name, testTitle: testInfo.title, shotRoot, runRoot: root });
     await provide(walk);
     for (const rec of walk.records) {
@@ -311,6 +315,13 @@ export const test = base.extend<WalkFixtures>({
         if (fs.existsSync(abs)) await testInfo.attach(`${rec.id}/${step.label}`, { path: abs, contentType: 'image/png' });
       }
     }
+    // A walk that logged an uncaught exception or a console.error is not a
+    // green walk, however many rows passed. Recorded into the ledger (so
+    // walk.json and the gate carry it) and thrown, so `playwright test` is red
+    // on its own — the report can never sit next to an unexplained red badge.
+    const issues = trapNoPageIssues(page, `${testInfo.title} [${testInfo.project.name}]`);
+    recordTrap({ ...issues, phase: 'in-test', project: testInfo.project.name });
+    if (!issues.pass) throw new Error(`TRAP:${issues.name} — ${issues.detail}`);
   },
 });
 

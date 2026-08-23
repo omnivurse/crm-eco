@@ -1563,6 +1563,15 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
     >
     <RecordAiContextProvider recordId={record.id} enabled>
     <div className={cn('flex h-full min-h-0', className)}>
+      {/* A11Y-1: ONE Radix Tabs root for the whole record document. The pane
+          TabsList lives in the sticky header and the TabsContent lives in the
+          scrolled body, so two separate <Tabs> roots used to generate two
+          different baseIds — the Overview trigger's aria-controls named a
+          panel id that root never rendered (axe aria-valid-attr-value,
+          critical). `asChild` makes <main> itself the root: one baseId, real
+          trigger↔panel ids, and NOT one extra DOM node — the sticky header,
+          the scroll container and the measured offsets are byte-identical. */}
+      <Tabs asChild value={topTab} onValueChange={(v) => setTopTab(v as TopTab)}>
       <main
         ref={recordMainScrollRef}
         className={cn(
@@ -2148,7 +2157,6 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                 is the lg:hidden Timeline item under the header menu) — at rest
                 it spent a full header row restating where the user already is. */}
             <div className={cn('-mb-px', headerCompact ? 'mt-2' : 'mt-2 lg:mt-3', topTab === 'overview' && 'hidden xl:block')}>
-              <Tabs value={topTab} onValueChange={(v) => setTopTab(v as TopTab)}>
                 <TabsList className="bg-transparent border-b border-slate-200 dark:border-white/5 w-full justify-start gap-0 h-auto p-0">
                   <TabsTrigger
                     value="overview"
@@ -2183,7 +2191,6 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                   </TabsTrigger>
                   )}
                 </TabsList>
-              </Tabs>
             </div>
           </div>
 
@@ -2284,7 +2291,6 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
         </div>
 
         {/* Body -------------------------------------------------------------- */}
-        <Tabs value={topTab} onValueChange={(v) => setTopTab(v as TopTab)}>
           <TabsContent value="overview" className="mt-0">
             <div
               className="flex py-3 pb-24 lg:pb-4"
@@ -2540,8 +2546,8 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
               />
             </div>
           </TabsContent>
-        </Tabs>
       </main>
+      </Tabs>
 
       {/* Modals and drawers (shared with V1) ----------------------------------- */}
       <Sheet open={showNotesDrawer} onOpenChange={setShowNotesDrawer}>

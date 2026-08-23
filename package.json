@@ -50,13 +50,13 @@
   },
   "lint-staged": {
     "apps/crm/**/*.{ts,tsx}": [
-      "node apps/crm/e2e/lint-changed.mjs --staged"
+      "node --max-old-space-size=4096 apps/crm/e2e/lint-changed.mjs --staged"
     ],
     "apps/**/*.{ts,tsx}": [
       "eslint --fix --no-warn-ignored"
     ],
     "packages/**/*.{ts,tsx}": [
-      "eslint --fix --no-warn-ignored"
+      "node --max-old-space-size=4096 apps/crm/e2e/lint-changed.mjs --staged"
     ]
   },
   "dependencies": {

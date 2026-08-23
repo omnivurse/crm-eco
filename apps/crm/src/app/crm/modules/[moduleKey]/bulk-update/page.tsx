@@ -40,6 +40,7 @@ import {
   DialogTitle,
 } from '@crm-eco/ui/components/dialog';
 import { toast } from 'sonner';
+import { toastCopy } from '@/lib/crm/toast-copy';
 
 interface CrmRecord {
   id: string;
@@ -74,6 +75,18 @@ interface Profile {
 }
 
 type UpdateType = 'owner' | 'status' | 'stage' | 'field';
+
+/**
+ * Bulk-action toast titles (decision D9): plain verb phrase, then
+ * `toastCopy.partial` appends the middle dot and the count —
+ * "Status updated · 12 contacts".
+ */
+const BULK_UPDATE_TITLE: Record<UpdateType, string> = {
+  owner: 'Owner updated',
+  status: 'Status updated',
+  stage: 'Stage updated',
+  field: 'Field updated',
+};
 
 export default function BulkUpdatePage() {
   return (
@@ -216,6 +229,12 @@ function BulkUpdatePageContent() {
   const handleUpdate = async () => {
     if (selectedIds.size === 0) return;
 
+    // One noun for the toast, the banner and the error — the module's own.
+    const unit = {
+      one: (module?.name || 'record').toLowerCase(),
+      other: (module?.name_plural || 'records').toLowerCase(),
+    };
+
     try {
       setUpdating(true);
       setError(null);
@@ -264,19 +283,29 @@ function BulkUpdatePageContent() {
       });
 
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to update records');
+        // Carry the status, not a restatement of the action: `toastCopy.failed`
+        // turns 403/5xx/timeouts into words and would otherwise print
+        // "Couldn't update the contacts — update records."
+        const body = await response.json().catch(() => ({} as { error?: string }));
+        throw Object.assign(new Error(body.error || `HTTP ${response.status}`), {
+          status: response.status,
+        });
       }
 
       const data = await response.json();
       const failedRows: Array<{ id: string; reason: string }> = Array.isArray(data.failed) ? data.failed : [];
-      const successMessage = `Successfully updated ${data.updated_count} record${data.updated_count !== 1 ? 's' : ''}`;
-      if (failedRows.length > 0) {
-        const firstReason = failedRows[0]?.reason ? `: ${failedRows[0].reason}` : '';
-        toast.error(`${failedRows.length} record${failedRows.length !== 1 ? 's were' : ' was'} not updated${firstReason}`);
-      }
-      setSuccess(successMessage);
-      toast.success(successMessage);
+      const skippedIds: string[] = Array.isArray(data.skipped_ids) ? data.skipped_ids : [];
+      const changed = typeof data.updated_count === 'number' ? data.updated_count : 0;
+      // One toast for the whole outcome — same `/api/crm/records/bulk` shape
+      // and the same escalation tiers the list toolbar uses (FB-2 / D9), so a
+      // partial result no longer arrives as an error toast plus a success one.
+      const copy = toastCopy.partial(
+        BULK_UPDATE_TITLE[updateType],
+        { changed, skipped: skippedIds.length, failed: failedRows.length },
+        { unit },
+      );
+      toast[copy.tone](copy.title, { description: copy.description });
+      setSuccess(toastCopy.counted(unit, changed, 'Updated'));
       setShowUpdateDialog(false);
 
       // Reset form
@@ -292,7 +321,7 @@ function BulkUpdatePageContent() {
       // Clear selection after successful update
       setSelectedIds(new Set());
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to update records';
+      const errorMessage = toastCopy.failed(`update the ${unit.other}`, err, 'Try again');
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {

@@ -66,18 +66,32 @@ function resolveBase() {
 }
 
 /** lint-staged hands us absolute paths; keep the apps/crm ones, repo-relative. */
+/**
+ * Which roots this gate covers, and the cwd ESLint needs for each. apps/crm has
+ * its own flat config whose `files` globs resolve against apps/crm; everything
+ * else uses the repo-root config. Both are gated additively, so pre-existing
+ * debt in a shared package cannot block an unrelated commit (the naive
+ * `eslint --max-warnings 0` entry it replaces did exactly that).
+ */
+const ROOTS = [
+  { rel: APP_REL, cwd: APP_DIR },
+  { rel: 'packages', cwd: REPO_ROOT },
+];
+const rootFor = (rel) => ROOTS.find((r) => rel === r.rel || rel.startsWith(`${r.rel}/`)) ?? null;
+
 function stagedFiles() {
   return [...new Set(FILE_ARGS.map((a) => path.relative(REPO_ROOT, path.resolve(REPO_ROOT, a)).split(path.sep).join('/')))]
-    .filter((rel) => rel.startsWith(`${APP_REL}/`) && LINTABLE.test(rel) && fs.existsSync(path.join(REPO_ROOT, rel)))
+    .filter((rel) => rootFor(rel) && LINTABLE.test(rel) && fs.existsSync(path.join(REPO_ROOT, rel)))
     .sort();
 }
 
 function changedFiles(base) {
-  const tracked = git('diff', '--name-only', '--diff-filter=ACMR', base, '--', APP_REL);
-  const untracked = git('ls-files', '--others', '--exclude-standard', '--', APP_REL);
+  const paths = ROOTS.map((r) => r.rel);
+  const tracked = git('diff', '--name-only', '--diff-filter=ACMR', base, '--', ...paths);
+  const untracked = git('ls-files', '--others', '--exclude-standard', '--', ...paths);
   const all = new Set([...tracked.split('\n'), ...untracked.split('\n')].map((l) => l.trim()).filter(Boolean));
   return [...all]
-    .filter((rel) => LINTABLE.test(rel) && fs.existsSync(path.join(REPO_ROOT, rel)))
+    .filter((rel) => rootFor(rel) && LINTABLE.test(rel) && fs.existsSync(path.join(REPO_ROOT, rel)))
     .sort();
 }
 
@@ -99,12 +113,18 @@ function tally(messages) {
 
 const base = resolveBase();
 const files = STAGED ? stagedFiles() : changedFiles(base);
-const eslint = new ESLint({ cwd: APP_DIR, warnIgnored: false });
+const eslintByCwd = new Map();
+const eslintFor = (rel) => {
+  const { cwd } = rootFor(rel);
+  if (!eslintByCwd.has(cwd)) eslintByCwd.set(cwd, new ESLint({ cwd, warnIgnored: false }));
+  return eslintByCwd.get(cwd);
+};
 
 const report = { base, baseShort: base.slice(0, 8), strict: STRICT, files: [], carried: 0, fresh: 0, checked: 0 };
 
 for (const rel of files) {
   const abs = path.join(REPO_ROOT, rel);
+  const eslint = eslintFor(rel);
   if (await eslint.isPathIgnored(abs)) continue;
   report.checked += 1;
   const [headResult] = await eslint.lintFiles([abs]);
@@ -138,7 +158,7 @@ if (JSON_OUT) {
   process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
 } else {
   const baseLabel = process.env.LINT_BASE ? ' (LINT_BASE)' : STAGED ? ' (HEAD, staged)' : ' (merge-base with main)';
-  console.log(`lint-changed · base ${report.baseShort}${baseLabel} · ${report.checked} changed file(s) under ${APP_REL}${STRICT ? ' · --strict' : ''}`);
+  console.log(`lint-changed · base ${report.baseShort}${baseLabel} · ${report.checked} changed file(s) under ${ROOTS.map((r) => r.rel).join(' + ')}${STRICT ? ' · --strict' : ''}`);
   for (const f of report.files) {
     const flag = f.fresh.length > 0 ? 'NEW ' : f.carried > 0 ? 'debt' : 'ok  ';
     console.log(`  ${flag}  ${f.file}  base=${f.existedAtBase ? f.base : 'n/a'} head=${f.head} carried=${f.carried} new=${f.fresh.length}`);

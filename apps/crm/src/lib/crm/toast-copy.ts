@@ -582,6 +582,40 @@ export function addedWithAction(
     : { title: added(noun), actionLabel: label };
 }
 
+export interface MergedIntoToast {
+  /** 'That record was merged into "Jane Doe"' — or just 'That record was merged'. */
+  title: string;
+  /** What happened next, so the URL change is never a surprise. */
+  description: string;
+}
+
+/**
+ * The one wording for a stale record URL that has since been merged away.
+ * Two callers, one voice: the edit page's stale-URL recovery (still
+ * navigating → `navigating: true`) and MergedFromToast (already landed on the
+ * keeper). The keeper's name is quoted when known and dropped when not — it
+ * is never printed as "undefined".
+ *
+ *   mergedInto('Jane Doe', { navigating: true })
+ *     → { title: 'That record was merged into "Jane Doe"',
+ *         description: 'Opening the current version…' }
+ *   mergedInto(null)
+ *     → { title: 'That record was merged',
+ *         description: "You're viewing the current version." }
+ */
+export function mergedInto(
+  keeperTitle?: string | null,
+  opts: { navigating?: boolean } = {},
+): MergedIntoToast {
+  const name = keeperTitle?.trim();
+  return {
+    title: name ? `That record was merged into "${name}"` : 'That record was merged',
+    description: opts.navigating
+      ? 'Opening the current version…'
+      : "You're viewing the current version.",
+  };
+}
+
 export const toastCopy = {
   saved,
   added,
@@ -602,4 +636,5 @@ export const toastCopy = {
   exportedAll,
   movedToTrash,
   addedWithAction,
+  mergedInto,
 };

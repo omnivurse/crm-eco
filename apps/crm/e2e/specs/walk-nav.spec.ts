@@ -178,7 +178,9 @@ test.describe('navigation walk', () => {
         walk.note('sidebarSwaps', swaps);
         expect(swaps, `${swaps}/${crossTab.length} cross-tab links swapped the sidebar (want 0)`).toBe(0);
       },
-      { soft: true },
+      // HARD (wave 4): D10 sticky-tab holds for every cross-tab link on every
+      // project and role. `walk:crm:gate` already failed on a red soft row, but
+      // a bare `playwright test` would have stayed green on a regression.
     );
 
     // ── Palette: phone / member # / name / a page ─────────────────────────
