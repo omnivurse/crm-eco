@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, getAuthProfile } from '@/lib/supabase-server';
+import { resolveLookupModuleIds } from '@/lib/crm/person-identity-lookup';
 
 /**
  * GET /api/crm/records/check-duplicate?module_key=contacts&email=foo@bar.com&phone=555-1234
@@ -51,22 +52,38 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Module not found' }, { status: 404 });
     }
 
-    const { data: duplicates, error } = await (supabase as any).rpc('check_crm_duplicate', {
-      p_org_id: profile.organization_id,
-      p_module_id: mod.id,
-      p_email: email,
-      p_phone: phone,
-      p_exclude_id: excludeId,
-    });
+    const moduleIds = await resolveLookupModuleIds(
+      supabase,
+      profile.organization_id,
+      mod.id,
+      moduleKey,
+    );
 
-    if (error) {
-      console.error('Duplicate check error:', error);
-      return NextResponse.json({ duplicates: [], hasDuplicates: false });
+    const seen = new Set<string>();
+    const duplicates: unknown[] = [];
+    for (const lookupModuleId of moduleIds) {
+      const { data, error } = await (supabase as any).rpc('check_crm_duplicate', {
+        p_org_id: profile.organization_id,
+        p_module_id: lookupModuleId,
+        p_email: email,
+        p_phone: phone,
+        p_exclude_id: excludeId,
+      });
+      if (error) {
+        console.error('Duplicate check error:', error);
+        return NextResponse.json({ duplicates: [], hasDuplicates: false });
+      }
+      for (const row of data || []) {
+        const id = (row as { id?: string })?.id;
+        if (id && seen.has(id)) continue;
+        if (id) seen.add(id);
+        duplicates.push(row);
+      }
     }
 
     return NextResponse.json({
-      duplicates: duplicates || [],
-      hasDuplicates: (duplicates?.length || 0) > 0,
+      duplicates,
+      hasDuplicates: duplicates.length > 0,
     });
   } catch (error) {
     console.error('Error in GET /api/crm/records/check-duplicate:', error);

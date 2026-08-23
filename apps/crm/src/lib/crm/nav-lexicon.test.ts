@@ -11,6 +11,8 @@ import {
   ADVISORS_HREF,
   ADVISORS_LABEL,
   ADVISOR_LABEL,
+  CRM_HISTORY_HREF,
+  CRM_HISTORY_LABEL,
   CRM_MEMBERS_HREF,
   MEMBER_ROSTER_HREF,
   PEOPLE_SECTION_LABEL,
@@ -34,6 +36,12 @@ describe('nav lexicon', () => {
     expect(CRM_MEMBERS_HREF).toBe('/crm/modules/members');
     expect(MEMBER_ROSTER_HREF).toBe('/crm/members');
     expect(CRM_MEMBERS_HREF).not.toBe(MEMBER_ROSTER_HREF);
+  });
+
+  it('points History at the CRM module list, never Member Roster', () => {
+    expect(CRM_HISTORY_HREF).toBe('/crm/modules/history');
+    expect(CRM_HISTORY_LABEL).toBe('History');
+    expect(CRM_HISTORY_HREF).not.toBe(MEMBER_ROSTER_HREF);
   });
 
   it('points Advisors at the CRM module list (there is no /crm/advisors route)', () => {

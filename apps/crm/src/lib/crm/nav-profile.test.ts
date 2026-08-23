@@ -20,6 +20,7 @@ const PIFH_MODULES: NavModule[] = [
   { key: 'contacts', name: 'Contact', name_plural: 'Contacts', icon: 'user', is_enabled: true, display_order: 1, field_count: 258 },
   { key: 'members', name: 'Member', name_plural: 'Members', icon: 'heart', is_enabled: true, display_order: 2, field_count: 91 },
   { key: 'leads', name: 'Lead', name_plural: 'Leads', icon: 'user-plus', is_enabled: true, display_order: 2, field_count: 148 },
+  { key: 'history', name: 'History', name_plural: 'History', icon: 'archive', is_enabled: true, display_order: 3, field_count: 280 },
   { key: 'advisors', name: 'Advisor', name_plural: 'Advisors', icon: 'briefcase', is_enabled: true, display_order: 3, field_count: 9 },
   { key: 'deals', name: 'Deal', name_plural: 'Members', icon: 'users', is_enabled: false, display_order: 3, field_count: 7 },
   { key: 'accounts', name: 'Account', name_plural: 'Accounts', icon: 'building', is_enabled: true, display_order: 4, field_count: 7 },
@@ -35,7 +36,7 @@ describe('buildSimpleNav', () => {
     expect(nav.some((i) => i.separator)).toBe(false);
     expect(labels(nav)).toEqual([
       'Dashboard', 'Workqueue',
-      'Contacts', 'Leads', 'Members', 'Advisors', 'Accounts',
+      'Contacts', 'Leads', 'Members', 'Advisors', 'History', 'Accounts',
       'Tasks', 'Calendar', 'Reports', 'Inbox',
     ]);
     expect(hrefs(nav)).toContain('/crm/modules/advisors');
@@ -87,7 +88,7 @@ describe('buildFullCrmNav', () => {
     // PIFH has deals disabled → no Pipeline link (NV-5 / D10).
     expect(labels(nav)).toEqual([
       'Dashboard',
-      'Contacts', 'Leads', 'Members', 'Accounts',
+      'Contacts', 'Leads', 'Members', 'History', 'Accounts',
       'Advisors', 'Member Roster',
     ]);
     expect(hrefs(nav)).not.toContain('/crm/modules/deals');
@@ -269,6 +270,7 @@ describe('recordPageActiveNavKey (NV-7)', () => {
   it('highlights the module list link on /crm/r/<id> when the record module is known', () => {
     expect(recordPageActiveNavKey(ITEMS, '/crm/r/abc', 'members')).toBe('module-members');
     expect(recordPageActiveNavKey(ITEMS, '/crm/r/abc', 'contacts')).toBe('module-contacts');
+    expect(recordPageActiveNavKey(ITEMS, '/crm/r/abc', 'history')).toBe('module-history');
   });
   it('falls back to no highlight off record pages, for unknown modules, or modules without a link', () => {
     expect(recordPageActiveNavKey(ITEMS, '/crm/modules/members', 'members')).toBeNull();

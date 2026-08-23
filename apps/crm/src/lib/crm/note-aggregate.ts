@@ -1,7 +1,7 @@
 /**
  * Central resolver: which `crm_records.id` values contribute notes to a given record’s UI.
  *
- * - **Person modules** (leads / contacts / members): this row + Zoho lineage fields
+ * - **Person modules** (leads / contacts / members / history): this row + Zoho lineage fields
  *   (`converted_from_lead_id`, `converted_contact_id`) + `lead_to_contact` graph peers.
  * - **Contacts**: also same-email sibling contacts in the same org (Zoho duplicate contacts
  *   that share an email but were never linked via lead_to_contact).
@@ -12,12 +12,12 @@
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { isPersonModuleKey } from '@/lib/crm/person-module-keys';
 import type { CrmRecord } from './types';
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-const PERSON_MODULE_KEYS = new Set(['leads', 'contacts', 'members']);
 const DEAL_MODULE_KEYS = new Set(['deals']);
 
 const LINK_LEAD_CONTACT = 'lead_to_contact';
@@ -35,9 +35,7 @@ function normalizeModuleKey(moduleKey: string): string {
   return (moduleKey || '').trim().toLowerCase();
 }
 
-export function isPersonModuleKey(moduleKey: string): boolean {
-  return PERSON_MODULE_KEYS.has(normalizeModuleKey(moduleKey));
-}
+export { isPersonModuleKey };
 
 export function isDealModuleKey(moduleKey: string): boolean {
   return DEAL_MODULE_KEYS.has(normalizeModuleKey(moduleKey));

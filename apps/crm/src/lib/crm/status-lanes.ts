@@ -248,7 +248,9 @@ export function laneFilter(
 
 /** Which filter field a module uses for its status lane. */
 export function laneFilterFieldForModule(moduleKey: string | null | undefined): LaneFilter['field'] {
-  return moduleKey === 'contacts' || moduleKey === 'members' ? 'contact_status' : 'status';
+  return moduleKey === 'contacts' || moduleKey === 'members' || moduleKey === 'history'
+    ? 'contact_status'
+    : 'status';
 }
 
 /**

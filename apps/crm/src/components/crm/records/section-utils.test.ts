@@ -38,6 +38,7 @@ describe('section-utils person coverage visibility', () => {
   it('recognizes person modules', () => {
     expect(isPersonModuleKey('contacts')).toBe(true);
     expect(isPersonModuleKey('leads')).toBe(true);
+    expect(isPersonModuleKey('history')).toBe(true);
     expect(isPersonModuleKey('deals')).toBe(false);
   });
 

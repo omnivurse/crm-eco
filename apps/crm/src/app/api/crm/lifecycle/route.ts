@@ -24,7 +24,8 @@ const createEventSchema = z.object({
 
 /**
  * GET /api/crm/lifecycle
- * List lifecycle events with filters
+ * List lifecycle events with filters.
+ * “Ever cancelled” = `?event_type=cancelled` on this table, not History-module rows.
  */
 export async function GET(request: NextRequest) {
   try {

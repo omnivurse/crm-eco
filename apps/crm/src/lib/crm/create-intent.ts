@@ -15,13 +15,16 @@ import { sanitizeReturnTo } from '@/lib/crm/status-lanes';
 export type CreateIntent =
   | { kind: 'quick'; moduleKey: QuickCreateModuleKey }
   | { kind: 'full'; href: string }
-  | { kind: 'blocked'; reason: 'deals-disabled' };
+  | { kind: 'blocked'; reason: 'deals-disabled' | 'history-roster' };
 
 export function resolveCreateIntent(input: {
   moduleKey: string;
   dealsEnabled?: boolean;
 }): CreateIntent {
   const key = input.moduleKey.trim().toLowerCase();
+  if (key === 'history') {
+    return { kind: 'blocked', reason: 'history-roster' };
+  }
   if (key === 'deals' && input.dealsEnabled === false) {
     return { kind: 'blocked', reason: 'deals-disabled' };
   }

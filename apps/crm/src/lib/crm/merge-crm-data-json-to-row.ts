@@ -78,6 +78,7 @@ const PERSON_DISPLAY_NAME_MODULE_KEYS = new Set([
   'contacts',
   'leads',
   'members',
+  'history',
   'prospects',
 ]);
 
@@ -321,7 +322,7 @@ export function mergeCrmDataJsonIntoRowColumns(
   // this guard, `lead_status` could still drive the row when `contact_status`
   // was omitted from a patch payload.
   const personContactStyleModule =
-    ctx.moduleKey === 'contacts' || ctx.moduleKey === 'members';
+    ctx.moduleKey === 'contacts' || ctx.moduleKey === 'members' || ctx.moduleKey === 'history';
   if (!personContactStyleModule) {
     // Leads/deals/etc.: lead_status wins over stale contact_status so converted
     // leads are not re-opened to "In Process" on partial saves.

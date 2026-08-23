@@ -245,6 +245,7 @@ describe('laneValues / laneFilter', () => {
   it('laneFilterFieldForModule', () => {
     expect(laneFilterFieldForModule('contacts')).toBe('contact_status');
     expect(laneFilterFieldForModule('members')).toBe('contact_status');
+    expect(laneFilterFieldForModule('history')).toBe('contact_status');
     expect(laneFilterFieldForModule('leads')).toBe('status');
     expect(laneFilterFieldForModule(undefined)).toBe('status');
   });

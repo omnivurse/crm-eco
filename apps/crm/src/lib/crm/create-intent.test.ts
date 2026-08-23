@@ -25,6 +25,13 @@ describe('resolveCreateIntent', () => {
     });
   });
 
+  it('blocks creating a History row — reactivate an existing person instead', () => {
+    expect(resolveCreateIntent({ moduleKey: 'history' })).toEqual({
+      kind: 'blocked',
+      reason: 'history-roster',
+    });
+  });
+
   it('blocks deal create when deals are disabled', () => {
     expect(resolveCreateIntent({ moduleKey: 'deals', dealsEnabled: false })).toEqual({
       kind: 'blocked',

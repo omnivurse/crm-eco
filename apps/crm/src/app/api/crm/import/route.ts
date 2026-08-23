@@ -10,6 +10,10 @@ import {
 } from '@/lib/crm/merge-crm-data-json-to-row';
 import { requireActiveOrgCrmRoles } from '@/lib/crm/require-crm-role';
 import { fetchAllForDedup } from '@/lib/imports/paged-lookup';
+import {
+  applyModuleIdFilter,
+  resolveLookupModuleIds,
+} from '@/lib/crm/person-identity-lookup';
 
 
 /**
@@ -193,6 +197,14 @@ export async function POST(request: NextRequest) {
       );
     }
     const moduleKey = (moduleRow as { key: string | null }).key ?? null;
+    // People files search Contacts + History so a cancelled person is a skip,
+    // never a second working Contact (unique email is per module).
+    const identityModuleIds = await resolveLookupModuleIds(
+      supabase,
+      organizationId,
+      moduleId,
+      moduleKey,
+    );
 
     /**
      * Build a `crm_records` insert row from a transformed CSV row using the
@@ -362,12 +374,15 @@ export async function POST(request: NextRequest) {
         const existingByEmail = await fetchAllForDedup<{ id: string; email: string | null }>(
           'email',
           (from, to) =>
-            supabase
-              .from('crm_records')
-              .select('id, email')
-              .eq('org_id', organizationId)
-              .eq('module_id', moduleId)
-              .not('email', 'is', null)
+            applyModuleIdFilter(
+              supabase
+                .from('crm_records')
+                .select('id, email')
+                .eq('org_id', organizationId)
+                .is('deleted_at', null)
+                .not('email', 'is', null),
+              identityModuleIds,
+            )
               .order('id', { ascending: true })
               .range(from, to),
         );
@@ -388,12 +403,15 @@ export async function POST(request: NextRequest) {
         const existingByPhone = await fetchAllForDedup<{ id: string; phone: string | null }>(
           'phone',
           (from, to) =>
-            supabase
-              .from('crm_records')
-              .select('id, phone')
-              .eq('org_id', organizationId)
-              .eq('module_id', moduleId)
-              .not('phone', 'is', null)
+            applyModuleIdFilter(
+              supabase
+                .from('crm_records')
+                .select('id, phone')
+                .eq('org_id', organizationId)
+                .is('deleted_at', null)
+                .not('phone', 'is', null),
+              identityModuleIds,
+            )
               .order('id', { ascending: true })
               .range(from, to),
         );
@@ -422,11 +440,14 @@ export async function POST(request: NextRequest) {
           ln: string | null;
           dob: string | null;
         }>('name+dob', (from, to) =>
-          supabase
-            .from('crm_records')
-            .select('id, fn:data->>first_name, ln:data->>last_name, dob:data->>date_of_birth')
-            .eq('org_id', organizationId)
-            .eq('module_id', moduleId)
+          applyModuleIdFilter(
+            supabase
+              .from('crm_records')
+              .select('id, fn:data->>first_name, ln:data->>last_name, dob:data->>date_of_birth')
+              .eq('org_id', organizationId)
+              .is('deleted_at', null),
+            identityModuleIds,
+          )
             .order('id', { ascending: true })
             .range(from, to),
         );

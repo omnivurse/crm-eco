@@ -48,6 +48,10 @@
  */
 
 import { createCrmClient, getCachedModules } from '@/lib/crm/queries';
+import {
+  PENDING_QUEUE_MODULE_KEYS as PENDING_MODULE_KEYS,
+  WORKING_QUEUE_MODULE_KEYS as PEOPLE_MODULE_KEYS,
+} from '@/lib/crm/person-module-keys';
 import { phoneMatchKey } from '@/lib/crm/phone-normalize';
 import { isConvertedLeadRow } from '@/lib/crm/record-search';
 import {
@@ -94,8 +98,6 @@ export interface BuildPeopleQueueOptions {
 const RECORD_COLUMNS =
   'id, module_id, title, email, phone, status, stage, market_type, normalized_advisor_name, normalized_agent_name, updated_at, created_at, data';
 
-const PEOPLE_MODULE_KEYS = ['contacts', 'members', 'leads'] as const;
-const PENDING_MODULE_KEYS = ['contacts', 'members'] as const;
 const STARTING_SOON_KEYS = ['sharing_effective_date', 'start_date', 'effective_date'] as const;
 
 const TASK_LIMIT = 30;

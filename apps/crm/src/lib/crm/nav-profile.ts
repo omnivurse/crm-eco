@@ -37,6 +37,7 @@ const MODULE_ICON_BY_KEY: Record<string, string> = {
   leads: 'user-plus',
   contacts: 'users',
   members: 'shield-check',
+  history: 'archive',
   advisors: 'user-cog',
   accounts: 'building',
   deals: 'dollar-sign',
@@ -108,7 +109,7 @@ export function buildSimpleNav(modules: readonly NavModule[]): NavItem[] {
 // ---------------------------------------------------------------------------
 
 /** Keys inside the static "People" section (`sec-pipeline`) that are module list links. */
-const PIPELINE_MODULE_KEYS = new Set(['leads', 'contacts', 'accounts', 'members']);
+const PIPELINE_MODULE_KEYS = new Set(['leads', 'contacts', 'accounts', 'members', 'history']);
 
 /**
  * Take the static CRM nav and:

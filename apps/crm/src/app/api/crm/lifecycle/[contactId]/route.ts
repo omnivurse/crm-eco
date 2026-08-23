@@ -5,7 +5,9 @@ export const dynamic = 'force-dynamic';
 
 /**
  * GET /api/crm/lifecycle/[contactId]
- * Fetch lifecycle summary and event history for a single contact
+ * Fetch lifecycle summary and event history for a single contact.
+ * “Ever cancelled” is this list (`event_type = 'cancelled'`), not leftover
+ * History-module rows after reactivate.
  */
 export async function GET(
   _request: NextRequest,

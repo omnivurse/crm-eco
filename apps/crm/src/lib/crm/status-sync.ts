@@ -36,7 +36,10 @@ export function applyStatusToRecordUpdates(
   // treated as live after conversion — strip THAT. A real pipeline stage on a
   // Prospect / Lost contact (vocabulary 2026-08-22) stays; the column mirror
   // for these modules is contact_status, never lead_status.
-  if ((moduleKey === 'contacts' || moduleKey === 'members') && base.lead_status === 'Converted') {
+  if (
+    (moduleKey === 'contacts' || moduleKey === 'members' || moduleKey === 'history') &&
+    base.lead_status === 'Converted'
+  ) {
     delete base.lead_status;
   }
   updates.data = base;

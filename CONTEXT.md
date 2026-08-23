@@ -129,6 +129,23 @@ locality) comes from the `/codebase-design` skill; the terms below name the
   `crm_records` (+ `crm_modules`, `crm_fields`, `crm_views`, `crm_layouts`).
   Contrasts with the strongly-typed admin tables (`members`, `advisors`, etc.).
 
+- **Working roster** — Contacts and Members still operable (Active, Pending,
+  In Process, Prospect, Inactive, plus Lost / Declined / Abandoned). Lost /
+  Declined / Abandoned are sales closes, not former members.
+
+- **History** — membership closed: `Cancelled` | `Terminated` | `Deceased`.
+  Same person, same `crm_records.id`, `module_id` points at `crm_modules.key =
+  'history'`. Not Trash. Do not copy the row. Do not move
+  `system.source_table = 'members'` twins.
+
+- **Trash** — `crm_records.deleted_at`. Unchanged. Recycle-bin purge must never
+  be how cancelled people leave the working list.
+
+- **PersonIdentityLookup** — create-import, monthly CSV update, and
+  `sync_member_to_crm` find the existing person across Contacts **and** History
+  before inserting. Unique email is per `(org, module, email, names)`, so a
+  History miss would legally insert a second working Contact.
+
 - **Entity Reupload (Trickle Update)** — update-only CSV refresh of existing
   `crm_records` (Zoho-style dumps). Match order: `zoho_id` → `email` → `phone` →
   `name`+`DOB`. Unmatched rows are ignored (never inserted); ambiguous matches

@@ -67,7 +67,9 @@ export function isPipelineStatusModule(moduleKey?: string | null): boolean {
 /** Every status a record in this module may hold. Unknown module → the union. */
 export function allowedStatusesForModule(moduleKey?: string | null): readonly string[] {
   if (isPipelineStatusModule(moduleKey)) return CRM_PIPELINE_STATUSES;
-  if (moduleKey === 'contacts' || moduleKey === 'members') return CRM_LIFECYCLE_STATUSES;
+  if (moduleKey === 'contacts' || moduleKey === 'members' || moduleKey === 'history') {
+    return CRM_LIFECYCLE_STATUSES;
+  }
   return CRM_ALLOWED_STATUSES;
 }
 

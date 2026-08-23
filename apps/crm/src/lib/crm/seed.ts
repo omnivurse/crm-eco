@@ -26,11 +26,25 @@ const DEFAULT_MODULES = [
   { key: 'deals', name: 'Member', name_plural: 'Members', icon: 'users', description: 'Manage member applications and lifecycle', display_order: 3 },
   { key: 'accounts', name: 'Account', name_plural: 'Accounts', icon: 'building', description: 'Manage organizations and companies', display_order: 4 },
   { key: 'prospects', name: 'Prospect', name_plural: 'Prospects', icon: 'target', description: 'Manage potential customers and sales opportunities', display_order: 5 },
+  { key: 'history', name: 'History', name_plural: 'History', icon: 'archive', description: 'Former members whose membership is closed', display_order: 6 },
 ];
 
 // Default fields for each module
 const DEFAULT_FIELDS: Record<string, Array<{ key: string; label: string; type: string; required?: boolean; is_system?: boolean; is_title_field?: boolean; display_order: number; section: string; options?: string[] }>> = {
   contacts: [
+    { key: 'first_name', label: 'First Name', type: 'text', required: true, is_system: true, is_title_field: true, display_order: 1, section: 'main' },
+    { key: 'last_name', label: 'Last Name', type: 'text', required: true, is_system: true, is_title_field: true, display_order: 2, section: 'main' },
+    { key: 'email', label: 'Email', type: 'email', required: true, is_system: true, display_order: 3, section: 'main' },
+    { key: 'phone', label: 'Phone', type: 'phone', is_system: true, display_order: 4, section: 'main' },
+    { key: 'contact_status', label: 'Status', type: 'select', is_system: true, display_order: 5, section: 'main', options: ['Active', 'Inactive', 'Pending', 'In Process', 'Cancelled', 'Terminated', 'Deceased', 'Prospect', 'Lost', 'Declined', 'Abandoned'] },
+    { key: 'mailing_city', label: 'City', type: 'text', display_order: 10, section: 'address' },
+    { key: 'mailing_state', label: 'State', type: 'text', display_order: 11, section: 'address' },
+    { key: 'county', label: 'County', type: 'text', display_order: 12, section: 'address' },
+    { key: 'agency', label: 'Agency', type: 'text', display_order: 17, section: 'relationships' },
+    { key: 'partners', label: 'Partners', type: 'textarea', display_order: 18, section: 'relationships' },
+    { key: 'support_team', label: 'Support Team', type: 'text', display_order: 19, section: 'relationships' },
+  ],
+  history: [
     { key: 'first_name', label: 'First Name', type: 'text', required: true, is_system: true, is_title_field: true, display_order: 1, section: 'main' },
     { key: 'last_name', label: 'Last Name', type: 'text', required: true, is_system: true, is_title_field: true, display_order: 2, section: 'main' },
     { key: 'email', label: 'Email', type: 'email', required: true, is_system: true, display_order: 3, section: 'main' },

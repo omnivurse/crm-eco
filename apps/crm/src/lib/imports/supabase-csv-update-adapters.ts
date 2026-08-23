@@ -3,6 +3,11 @@
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
+import {
+  applyModuleIdFilter,
+  phoneLookupModuleKeys,
+  resolveLookupModuleIds,
+} from '@/lib/crm/person-identity-lookup';
 import { nameDobKey } from './csv-update';
 import { DedupLookupError, fetchAllForDedup } from './paged-lookup';
 import type {
@@ -53,6 +58,13 @@ export function createSupabaseRecordLookup(input: {
   moduleKey: string;
 }): RecordLookup {
   const { supabase, orgId, moduleId, moduleKey } = input;
+  let resolvedModuleIds: Promise<string[]> | null = null;
+  const moduleIds = () => {
+    if (!resolvedModuleIds) {
+      resolvedModuleIds = resolveLookupModuleIds(supabase, orgId, moduleId, moduleKey);
+    }
+    return resolvedModuleIds;
+  };
 
   return {
     async findByZohoIds(ids) {
@@ -61,13 +73,16 @@ export function createSupabaseRecordLookup(input: {
       // truncated match set makes existing records look unmatched — the update
       // is then skipped rather than applied.
       try {
+        const idsForModule = await moduleIds();
         return await fetchAllForDedup<MatchableRecord>('zoho_id', (from, to) =>
-          supabase
-            .from('crm_records')
-            .select(RECORD_SELECT)
-            .eq('org_id', orgId)
-            .eq('module_id', moduleId)
-            .is('deleted_at', null)
+          applyModuleIdFilter(
+            supabase
+              .from('crm_records')
+              .select(RECORD_SELECT)
+              .eq('org_id', orgId)
+              .is('deleted_at', null),
+            idsForModule,
+          )
             .in('data->>zoho_id', ids)
             .order('id', { ascending: true })
             .range(from, to),
@@ -89,6 +104,7 @@ export function createSupabaseRecordLookup(input: {
       // ("John.Smith@Gmail.com"), silently reporting those rows unmatched.
       // The orchestrator additionally groups by exact lowercased equality,
       // so even an over-fetch could be ignored, never mis-matched.
+      const idsForModule = await moduleIds();
       const out: MatchableRecord[] = [];
       for (const batch of chunk(emails, KEY_CHUNK)) {
         const orFilter = batch
@@ -97,12 +113,14 @@ export function createSupabaseRecordLookup(input: {
         const rows = await fetchAllForDedup<MatchableRecord>(
           'email',
           (from, to) =>
-            supabase
-              .from('crm_records')
-              .select(RECORD_SELECT)
-              .eq('org_id', orgId)
-              .eq('module_id', moduleId)
-              .is('deleted_at', null)
+            applyModuleIdFilter(
+              supabase
+                .from('crm_records')
+                .select(RECORD_SELECT)
+                .eq('org_id', orgId)
+                .is('deleted_at', null),
+              idsForModule,
+            )
               .or(orFilter)
               .order('id', { ascending: true })
               .range(from, to),
@@ -130,10 +148,13 @@ export function createSupabaseRecordLookup(input: {
       // orchestrator fails that phone closed rather than trusting a
       // "unique" match that simply out-ranked the rows it never saw.
       const PHONE_LIMIT = 25;
-      const queries: Array<{ phone: string; q: string }> = [];
+      const moduleKeys = phoneLookupModuleKeys(moduleKey);
+      const queries: Array<{ phone: string; q: string; moduleKey: string }> = [];
       for (const p of phones) {
-        queries.push({ phone: p, q: p });
-        if (p.length > 10) queries.push({ phone: p, q: p.slice(-10) });
+        for (const key of moduleKeys) {
+          queries.push({ phone: p, q: p, moduleKey: key });
+          if (p.length > 10) queries.push({ phone: p, q: p.slice(-10), moduleKey: key });
+        }
       }
 
       const out: PhoneCandidate[] = [];
@@ -142,11 +163,11 @@ export function createSupabaseRecordLookup(input: {
       for (let i = 0; i < queries.length; i += CONCURRENCY) {
         const slice = queries.slice(i, i + CONCURRENCY);
         const results = await Promise.all(
-          slice.map(({ q }) =>
+          slice.map(({ q, moduleKey: key }) =>
             supabase.rpc('crm_phone_lookup', {
               p_org_id: orgId,
               p_query: q,
-              p_module_key: moduleKey,
+              p_module_key: key,
               p_limit: PHONE_LIMIT,
             }),
           ),
@@ -191,30 +212,55 @@ export function createSupabaseRecordLookup(input: {
       // hide the second holder of a name+DOB key and let the ambiguity gate
       // pass a match it should have refused. Same fail-closed stance as
       // fetchAllForDedup.
-      const probe = await supabase.rpc('crm_name_dob_lookup', {
-        p_org_id: orgId,
-        p_module_id: moduleId,
-        p_keys: nameDobKeys,
-      }).range(0, 0);
-      if (!probe.error) {
+      const idsForModule = await moduleIds();
+      const rpcRows: Array<Record<string, unknown>> = [];
+      let rpcUnavailable = false;
+      let rpcHardError: { message: string; code?: string } | null = null;
+
+      for (const lookupModuleId of idsForModule) {
+        const probe = await supabase.rpc('crm_name_dob_lookup', {
+          p_org_id: orgId,
+          p_module_id: lookupModuleId,
+          p_keys: nameDobKeys,
+        }).range(0, 0);
+        if (probe.error?.code === 'PGRST202') {
+          rpcUnavailable = true;
+          break;
+        }
+        if (probe.error) {
+          rpcHardError = probe.error;
+          break;
+        }
         const rows = await fetchAllForDedup<Record<string, unknown>>(
           'name_dob_rpc',
           (from, to) =>
             supabase
               .rpc('crm_name_dob_lookup', {
                 p_org_id: orgId,
-                p_module_id: moduleId,
+                p_module_id: lookupModuleId,
                 p_keys: nameDobKeys,
               })
               .range(from, to),
         );
-        return rows.map((row) =>
-          Object.assign({}, row, {
-            nameDobKey: row.name_dob_key as string,
-          }) as unknown as MatchableRecord & { nameDobKey: string },
-        );
+        rpcRows.push(...rows);
       }
-      const viaRpc = probe;
+
+      if (!rpcHardError && !rpcUnavailable) {
+        const seen = new Set<string>();
+        const matched: Array<MatchableRecord & { nameDobKey: string }> = [];
+        for (const row of rpcRows) {
+          const rec = Object.assign({}, row, {
+            nameDobKey: row.name_dob_key as string,
+          }) as unknown as MatchableRecord & { nameDobKey: string };
+          if (!rec.id || seen.has(rec.id)) continue;
+          seen.add(rec.id);
+          matched.push(rec);
+        }
+        return matched;
+      }
+      const viaRpc = rpcHardError
+        ? { error: rpcHardError }
+        : { error: { code: 'PGRST202', message: 'crm_name_dob_lookup missing' } };
       // PGRST202 = function not in the schema cache, i.e. the migration has
       // not been applied yet. Any other error is a real failure and must not
       // be masked by a silent full scan.
@@ -227,12 +273,14 @@ export function createSupabaseRecordLookup(input: {
       }
 
       const data = await fetchAllForDedup<MatchableRecord>('name_dob', (from, to) =>
-        supabase
-          .from('crm_records')
-          .select(RECORD_SELECT)
-          .eq('org_id', orgId)
-          .eq('module_id', moduleId)
-          .is('deleted_at', null)
+        applyModuleIdFilter(
+          supabase
+            .from('crm_records')
+            .select(RECORD_SELECT)
+            .eq('org_id', orgId)
+            .is('deleted_at', null),
+          idsForModule,
+        )
           .not('data->>date_of_birth', 'is', null)
           .order('id', { ascending: true })
           .range(from, to),
@@ -256,17 +304,20 @@ export function createSupabaseRecordLookup(input: {
 
     async findByIds(ids) {
       if (ids.length === 0) return [];
+      const idsForModule = await moduleIds();
       const out: MatchableRecord[] = [];
       for (const batch of chunk(ids, KEY_CHUNK)) {
         const rows = await fetchAllForDedup<MatchableRecord>(
           'by_id',
           (from, to) =>
-            supabase
-              .from('crm_records')
-              .select(RECORD_SELECT)
-              .eq('org_id', orgId)
-              .eq('module_id', moduleId)
-              .is('deleted_at', null)
+            applyModuleIdFilter(
+              supabase
+                .from('crm_records')
+                .select(RECORD_SELECT)
+                .eq('org_id', orgId)
+                .is('deleted_at', null),
+              idsForModule,
+            )
               .in('id', batch)
               .order('id', { ascending: true })
               .range(from, to),

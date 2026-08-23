@@ -158,6 +158,8 @@ import {
 import { RecordLinksEditorDialog } from './v2/RecordLinksEditorDialog';
 import { FollowUpReminderDialog } from './FollowUpReminderDialog';
 import { FollowUpBanner } from './FollowUpBanner';
+import { HistoryRosterBanner, PreviouslyCancelledChip } from './HistoryRosterBanner';
+import { isHistoricalStatus } from '@/lib/crm/person-module-keys';
 import { useSyncBroadcast } from '@/hooks/useSyncBroadcast';
 import { RecordFieldSaveProvider, useRecordFieldSaveOptional } from '@/hooks/useRecordFieldSave';
 import { NoteComposeProvider, noteTemplateBodyToHtml } from '@/components/crm/notes/NoteComposeContext';
@@ -680,6 +682,8 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
 
   const isLeads = module.key === 'leads';
   const isContacts = module.key === 'contacts';
+  const isHistory = module.key === 'history';
+  const isMembers = module.key === 'members';
   const isDeals = module.key === 'deals';
   const isAlreadyConverted = isLeadRecordConverted(record);
   const linkedEnrollmentMemberId = (() => {
@@ -1725,6 +1729,9 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                       recordId={record.id}
                     />
                     )}
+                    {!isHistory && (isContacts || isMembers) && (
+                      <PreviouslyCancelledChip recordId={record.id} />
+                    )}
                   </h1>
                   {!headerCompact && (
                   <RecordTagsRow
@@ -2288,6 +2295,22 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
               refreshKey={followUpRefreshKey}
               className="mt-4"
             />
+
+            {isHistory && (
+              <HistoryRosterBanner
+                recordId={record.id}
+                status={record.status}
+                onReactivated={() => router.refresh()}
+              />
+            )}
+            {isMembers && isHistoricalStatus(record.status) && (
+              <HistoryRosterBanner
+                recordId={record.id}
+                status={record.status}
+                variant="members"
+                onReactivated={() => router.refresh()}
+              />
+            )}
         </div>
 
         {/* Body -------------------------------------------------------------- */}

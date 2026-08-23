@@ -129,7 +129,7 @@ export function mergeCrmRecordRowIntoFormDefaults(
     const moduleKey = options?.moduleKey ?? null;
     if (moduleKey === 'leads') {
       base.lead_status = row.status;
-    } else if (moduleKey === 'contacts' || moduleKey === 'members') {
+    } else if (moduleKey === 'contacts' || moduleKey === 'members' || moduleKey === 'history') {
       base.contact_status = row.status;
       // Converted leads often keep historical lead_status in JSONB — strip THAT
       // so form PATCH does not remirror "Converted" onto an Active contact/member.

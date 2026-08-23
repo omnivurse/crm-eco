@@ -34,6 +34,8 @@ describe('status vocabulary', () => {
     expect(isAllowedCrmStatus('Converted')).toBe(true);
     expect(isAllowedCrmStatus('Converted', 'advisors')).toBe(true);
     expect(allowedStatusesForModule('leads')).toEqual(CRM_PIPELINE_STATUSES);
+    expect(allowedStatusesForModule('history')).toEqual(CRM_LIFECYCLE_STATUSES);
+    expect(isAllowedCrmStatus('Cancelled', 'history')).toBe(true);
   });
 
   it('groups the header picker per module with every word accounted for', () => {

@@ -186,6 +186,7 @@ export function ModuleHeader({
               </>
             )}
 
+            {module.key !== 'history' ? (
             <Button
               variant="outline"
               size="sm"
@@ -197,6 +198,7 @@ export function ModuleHeader({
                 Import
               </Link>
             </Button>
+            ) : null}
 
             <Button
               variant="outline"
@@ -213,7 +215,7 @@ export function ModuleHeader({
               Export
             </Button>
 
-            {!canCreate ? null : usesQuickCreate ? (
+            {!canCreate || createIntent.kind === 'blocked' ? null : usesQuickCreate ? (
               <Button
                 size="sm"
                 className="h-9 shadow-sm"

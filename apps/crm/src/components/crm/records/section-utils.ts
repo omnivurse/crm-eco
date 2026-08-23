@@ -14,6 +14,12 @@ import type {
 import { shouldShowAddressFieldInForm } from '@/lib/crm/address-field-dedupe';
 import { shouldShowEndDateFieldInSection } from '@/lib/crm/coverage-end-date-fields';
 import { shouldShowOwnershipFieldInForm } from '@/lib/crm/ownership-field-dedupe';
+import {
+  PERSON_MODULE_KEYS,
+  isPersonModuleKey,
+} from '@/lib/crm/person-module-keys';
+
+export { PERSON_MODULE_KEYS, isPersonModuleKey };
 
 /**
  * Fields that must not render inside record forms / drawers.
@@ -467,9 +473,6 @@ function titleCaseSectionKey(sectionKey: string): string {
   return sectionKey.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-/** Modules where reps enter / edit coverage after lead conversion. */
-export const PERSON_MODULE_KEYS = ['contacts', 'leads', 'members'] as const;
-
 /**
  * Sections that must stay visible (and editable) even when every field is blank.
  * Without this, read-only detail views collapse empty cards to 1px anchors and
@@ -487,10 +490,6 @@ export const PERSON_COVERAGE_SECTION_KEYS = [
   'product',
 ] as const;
 
-export function isPersonModuleKey(moduleKey?: string | null): boolean {
-  if (!moduleKey) return false;
-  return (PERSON_MODULE_KEYS as readonly string[]).includes(moduleKey);
-}
 
 export function isPersonCoverageSectionKey(sectionKey: string): boolean {
   return (PERSON_COVERAGE_SECTION_KEYS as readonly string[]).includes(sectionKey);
