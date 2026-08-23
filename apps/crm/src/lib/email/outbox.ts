@@ -239,23 +239,50 @@ export async function claimOutboxBatch(
   supabase: LooseClient,
   limit = 25,
   workerId = 'outbox-worker',
+  nowMs = Date.now(),
 ): Promise<OutboxRow[]> {
-  const now = new Date().toISOString();
-  const leaseUntil = new Date(Date.now() + 2 * 60_000).toISOString();
+  const now = new Date(nowMs).toISOString();
+  const leaseUntil = new Date(nowMs + 2 * 60_000).toISOString();
 
-  const { data: candidates } = await supabase
+  // A worker can terminate after claiming a batch but before processing every
+  // row. Reclaim expired leases first so those messages are not lost forever.
+  const { data: expiredLeases, error: expiredLeasesError } = await supabase
     .from('email_send_outbox')
     .select('*')
-    .in('status', ['queued', 'failed'])
-    .lte('next_attempt_at', now)
-    .order('next_attempt_at', { ascending: true })
+    .eq('status', 'leased')
+    .lte('leased_until', now)
+    .order('leased_until', { ascending: true })
     .limit(limit);
 
-  const rows = (candidates ?? []) as OutboxRow[];
+  if (expiredLeasesError) {
+    throw new Error(expiredLeasesError.message || 'Failed to load expired email outbox leases');
+  }
+
+  const expiredRows = (expiredLeases ?? []) as OutboxRow[];
+  const remaining = Math.max(0, limit - expiredRows.length);
+  let readyRows: OutboxRow[] = [];
+
+  if (remaining > 0) {
+    const { data: candidates, error: candidatesError } = await supabase
+      .from('email_send_outbox')
+      .select('*')
+      .in('status', ['queued', 'failed'])
+      .lte('next_attempt_at', now)
+      .order('next_attempt_at', { ascending: true })
+      .limit(remaining);
+
+    if (candidatesError) {
+      throw new Error(candidatesError.message || 'Failed to load ready email outbox rows');
+    }
+
+    readyRows = (candidates ?? []) as OutboxRow[];
+  }
+
+  const rows = [...expiredRows, ...readyRows];
   const claimed: OutboxRow[] = [];
 
   for (const row of rows) {
-    const { data } = await supabase
+    let update = supabase
       .from('email_send_outbox')
       .update({
         status: 'leased',
@@ -263,10 +290,18 @@ export async function claimOutboxBatch(
         leased_by: workerId,
         updated_at: now,
       })
-      .eq('id', row.id)
-      .in('status', ['queued', 'failed'])
-      .select('*')
-      .maybeSingle();
+      .eq('id', row.id);
+
+    update =
+      row.status === 'leased'
+        ? update.eq('status', 'leased').lte('leased_until', now)
+        : update.in('status', ['queued', 'failed']);
+
+    const { data, error } = await update.select('*').maybeSingle();
+
+    if (error) {
+      throw new Error(error.message || `Failed to lease email outbox row ${row.id}`);
+    }
     if (data) claimed.push(data as OutboxRow);
   }
 
