@@ -126,12 +126,32 @@ export async function GET() {
     const dbUrl = resolveSweepDbUrl();
     if (dbUrl) {
       const startedAt = Date.now();
+      // Per-statement timing, measured at the conduit seam so the catalog stays
+      // unaware of it. The sweep has only ever been timed against 46 fixture
+      // rows; prod is ~16k and `dupes.open-pairs` windows over
+      // crm_probable_duplicates — the view whose statement_timeout 500ed the
+      // duplicates page. When the first prod run is watched, this line says
+      // WHICH statement is close to the 20s ceiling instead of only that the
+      // whole sweep was slow.
+      const slowest: number[] = [];
       const report = await withSweepExecutor(dbUrl, (executor) =>
-        runRules(executor, { orgId }),
+        runRules(
+          async (sql) => {
+            const at = Date.now();
+            try {
+              return await executor(sql);
+            } finally {
+              slowest.push(Date.now() - at);
+            }
+          },
+          { orgId },
+        ),
       );
+      const top = slowest.sort((a, b) => b - a).slice(0, 3).join('/');
       console.log(
         `[data-health] live sweep org=${orgId} score=${report.score} book=${report.bookSize} ` +
-          `errors=${report.errors.length} ms=${Date.now() - startedAt}`,
+          `errors=${report.errors.length} ms=${Date.now() - startedAt} ` +
+          `statements=${slowest.length} slowest_ms=${top}`,
       );
       return cached(payloadFrom(report, 'live', report.generatedAt.slice(0, 10)));
     }

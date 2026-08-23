@@ -202,6 +202,34 @@ describe('page-errors trap', () => {
     expect(result.detail).toContain('resolve-record.ts:169');
   });
 
+  it('PI-2 still matches when next-dev interleaves %c CSS between the colon and the postgres error', () => {
+    const { page, emitConsole } = fakePage('http://localhost:3000/crm/r/not-a-uuid');
+    armPageIssueTrap(page);
+    emitConsole(
+      'error',
+      '[resolve-record] audit entity_id_tombstone: background: #e6e6e6;border-radius: 2px Server invalid input syntax for type uuid: "not-a-uuid"',
+    );
+    const result = trapNoPageIssues(page, 'the malformed-id door');
+    expect(result.pass).toBe(false);
+    expect(result.detail).toContain('PI-2');
+    expect(hasUntrackedPageIssue(page)).toBe(false);
+  });
+
+  it('a hydration line with no radix id is unlabelled and still aborts — PI-n is not a mute button', () => {
+    const { page, emitPageError } = fakePage('http://localhost:3000/crm/modules/contacts');
+    armPageIssueTrap(page);
+    emitPageError(
+      'Error',
+      "Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client.\n" +
+        '    <ModulePage>\n      <ModuleShell>',
+    );
+    const result = trapNoPageIssues(page, 'the contacts module');
+    expect(result.pass).toBe(false);
+    expect(result.detail).not.toContain('PI-1');
+    expect(result.detail).not.toContain('PI-3');
+    expect(hasUntrackedPageIssue(page)).toBe(true);
+  });
+
   it('a suppressed line is still carried whole, with its reason, for walk.json', () => {
     const { page, emitConsole } = fakePage();
     armPageIssueTrap(page);

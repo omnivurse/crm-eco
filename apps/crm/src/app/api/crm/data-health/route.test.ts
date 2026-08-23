@@ -134,6 +134,23 @@ describe('GET /api/crm/data-health', () => {
     expect(endSpy).toHaveBeenCalled();
   });
 
+  it('logs statement count and the slowest statements — the first prod run is watched', async () => {
+    // The sweep has only ever been timed at fixture scale. Prod is ~16k rows and
+    // dupes.open-pairs windows over the view that historically hit
+    // statement_timeout, so the log has to say WHICH statement is near the
+    // ceiling, not just that the sweep was slow.
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    mockGetAuthProfile.mockResolvedValue(admin());
+    await GET();
+    const line = log.mock.calls.map((c) => String(c[0])).find((t) => t.includes('live sweep'));
+    expect(line).toBeTruthy();
+    expect(line).toMatch(/statements=\d+/);
+    expect(line).toMatch(/slowest_ms=\d+(\/\d+)*/);
+    // Every statement the catalog ran is counted, not just the rules.
+    expect(line).toContain(`statements=${executed.length}`);
+    log.mockRestore();
+  });
+
   it('opens the connection read-only, single, with a statement timeout', async () => {
     mockGetAuthProfile.mockResolvedValue(admin());
     await GET();

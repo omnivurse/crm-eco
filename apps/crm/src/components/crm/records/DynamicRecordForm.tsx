@@ -43,7 +43,7 @@ import type {
   LayoutSection,
   LayoutSectionAccent,
 } from '@/lib/crm/types';
-import { getFieldOptions, optionsWithCurrent } from '@/lib/crm/utils';
+import { choicesWithCurrent, getFieldOptionChoices } from '@/lib/crm/utils';
 import { toDatetimeLocalValue } from '@/lib/crm/datetime-local';
 import { normalizeDateColumnValue } from '@/lib/crm/merge-crm-data-json-to-row';
 import { classifyCarrierValue } from '@/lib/crm/coverage-carriers';
@@ -512,8 +512,8 @@ const FormFieldRenderer = memo(function FormFieldRenderer({
               {/* The stored value stays selectable even when it is not in
                   crm_fields.options (legacy spelling) — displayed, never
                   rewritten; same rule as the quick-create drawer / state picker. */}
-              {optionsWithCurrent(
-                getFieldOptions(field.options, field.key),
+              {choicesWithCurrent(
+                getFieldOptionChoices(field.options, field.key),
                 typeof value === 'string' ? value : null,
               ).map((option) => (
                 <SelectItem key={option.value} value={option.value}>
@@ -531,20 +531,20 @@ const FormFieldRenderer = memo(function FormFieldRenderer({
       const selectedValues = (value as string[]) || [];
       input = (
         <div className="space-y-2 border rounded-md p-3 max-h-40 overflow-y-auto">
-          {getFieldOptions(field.options, field.key).map((option) => (
-            <div key={option} className="flex items-center space-x-2">
+          {getFieldOptionChoices(field.options, field.key).map((option) => (
+            <div key={option.value} className="flex items-center space-x-2">
               <Checkbox
-                id={`${field.key}-${option}`}
-                checked={selectedValues.includes(option)}
+                id={`${field.key}-${option.value}`}
+                checked={selectedValues.includes(option.value)}
                 onCheckedChange={(checked) => {
                   const newValues = checked
-                    ? [...selectedValues, option]
-                    : selectedValues.filter((v) => v !== option);
+                    ? [...selectedValues, option.value]
+                    : selectedValues.filter((v) => v !== option.value);
                   setValue(field.key, newValues);
                 }}
               />
-              <Label htmlFor={`${field.key}-${option}`} className="text-sm font-normal">
-                {option}
+              <Label htmlFor={`${field.key}-${option.value}`} className="text-sm font-normal">
+                {option.label}
               </Label>
             </div>
           ))}

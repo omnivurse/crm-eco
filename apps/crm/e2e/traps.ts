@@ -499,21 +499,27 @@ const PAGE_ISSUE_KNOWN: ReadonlyArray<{ id: string; pattern: RegExp; note: strin
   //     · CrmTopBar.tsx:295 — the second top-bar dropdown trigger (id)
   //     · BottomBar.tsx:57/84/111/146/173 — Chats, Channels, Contacts,
   //       Quick Actions, Sticky Notes (aria-controls)
-  //   CAUSE: the shell interleaves `next/dynamic({ ssr: false })` children with
-  //   those triggers (CrmShell.tsx:18-30, CrmTopBar.tsx:58-68), so the client
-  //   tree does not have the same hook order as the server tree and `useId`
-  //   diverges. The `<LoadableComponent>` markers sit next to the mismatched
-  //   nodes in the reported tree.
+  //   CAUSE (verified by experiment; `next/dynamic({ssr:false})` was disproved —
+  //   removing every such import left the server ids byte-identical):
+  //     D1 (product): ThemeProvider sat above the dehydrated
+  //     `<Suspense>` at app/crm/layout.tsx:41-45 and published a new context
+  //     value on mount, so React discarded the server HTML (`_r_<n>` ids).
+  //     theme-store.ts keeps that context referentially stable.
+  //     D2 (next-dev only): Next 16 `AppDevOverlayErrorBoundary` wraps the app
+  //     as a 2-child array on the server and mounts the overlay as a separate
+  //     client root, shifting every `useId`. Absent from
+  //     app-page.runtime.prod.js.
   //   SEVERITY: React says of this class "This won't be patched up" — the
   //   server-rendered value stays in the DOM. Five of the eight are
   //   `aria-controls`, so the a11y wiring, not just cosmetics, is at stake.
   //   It surfaces on /crm, /crm/modules/contacts and /crm/r/<id>.
-  //   NOT FIXED HERE: the fix is in the shell's dynamic-import layout, which is
-  //   product code outside this wave's file ownership.
+  //   This entry LABELS a radix-id hydration line. It does not suppress it
+  //   (still a red row) and it does not absorb a hydration mismatch that
+  //   names no radix id — that stays unlabelled and still aborts.
   {
     id: 'PI-1',
     pattern: /A tree hydrated but some attributes of the server rendered HTML didn't match[\s\S]*radix-/,
-    note: 'PI-1 React useId hydration mismatch on 8 CRM-shell controls (SplitCreateButton.tsx:185, CrmTopBar.tsx:295, BottomBar.tsx:57/84/111/146/173) — caused by next/dynamic({ssr:false}) children in CrmShell.tsx:18-30 / CrmTopBar.tsx:58-68. Product fix required.',
+    note: 'PI-1 React useId hydration mismatch on 8 CRM-shell controls (SplitCreateButton.tsx:185, CrmTopBar.tsx:295, BottomBar.tsx:57/84/111/146/173). Not next/dynamic({ssr:false}) — disproved. D1: ThemeProvider context churn above app/crm/layout.tsx:41-45 <Suspense> (theme-store.ts). D2: Next 16 AppDevOverlayErrorBoundary tree fork, next-dev only.',
   },
   // Found by this trap on its first graded run, on /crm/r/not-a-uuid.
   //
@@ -528,7 +534,11 @@ const PAGE_ISSUE_KNOWN: ReadonlyArray<{ id: string; pattern: RegExp; note: strin
   //   NOT FIXED HERE: guarding the probe with a uuid test is product code.
   {
     id: 'PI-2',
-    pattern: /\[resolve-record\] audit [a-z_]+: *(Server *)?invalid input syntax for type uuid/i,
+    // The live line interleaves next-dev `%c` CSS between the colon and
+    // `Server invalid input…`. `[\s\S]*` keeps the match on the words we
+    // actually own (`[resolve-record] audit <probe>:`) and the postgres
+    // error, without requiring them to be adjacent.
+    pattern: /\[resolve-record\] audit [a-z_]+:[\s\S]*invalid input syntax for type uuid/i,
     note: 'PI-2 resolve-record.ts:169 logs a console.error for every non-uuid record id — the entity_id_tombstone probe (resolve-record.ts:141-149) sends the raw path segment to a uuid column. Guard the probe with a uuid test.',
   },
 ];

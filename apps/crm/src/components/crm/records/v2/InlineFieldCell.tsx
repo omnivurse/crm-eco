@@ -14,7 +14,7 @@
 
 import { memo, useMemo, type ReactNode } from 'react';
 import type { CrmField } from '@/lib/crm/types';
-import { getFieldOptions } from '@/lib/crm/utils';
+import { getFieldOptionChoices, getFieldOptions } from '@/lib/crm/utils';
 import { describeRecordedAge, householdAgeSlot } from '@/lib/crm/household-age';
 import { formatPhoneOwnerLabel, isCleanPhoneValue } from '@/lib/crm/phone-owner';
 import type { FieldSaveTarget } from '@/hooks/useRecordFieldSave';
@@ -76,10 +76,12 @@ export const InlineFieldCell = memo(function InlineFieldCell({
   className,
   relatedValues,
 }: InlineFieldCellProps) {
+  // Value/label pairs, not bare values: a curated picklist stores the code
+  // ("2_legacy_zoho") and shows the label ("Legacy — Zoho"). Flattening the
+  // pair back to one string is what put `[object Object]` in this dropdown.
   const selectOptions = useMemo(() => {
     if (field.type !== 'select' && field.type !== 'picklist') return [];
-    const raw = getFieldOptions(field.options, field.key);
-    return raw.map((v) => ({ value: v, label: v }));
+    return getFieldOptionChoices(field.options, field.key);
   }, [field]);
 
   // Legacy notes_history HTML is owned by LegacyNotesCard / Notes tab.
