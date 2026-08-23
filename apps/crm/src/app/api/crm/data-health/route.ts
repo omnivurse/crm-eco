@@ -40,7 +40,11 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 /** Browser-side cache window for one admin's own repeated reads. */
-export const CACHE_SECONDS = 60;
+// NOT exported: a Next.js route module may only export its handlers and a
+// fixed set of config fields (runtime, dynamic, revalidate, …). Exporting
+// anything else — even a plain constant — fails the production build with
+// "is not a valid Route export field", which `tsc --noEmit` does not catch.
+const CACHE_SECONDS = 60;
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
