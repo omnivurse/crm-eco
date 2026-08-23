@@ -1,0 +1,215 @@
+# CRM click-walk — the re-run path for the "Road to Ten" evidence harness (plan item EV-7).
+#
+# It rebuilds the whole walk from scratch on a disposable runner: local Supabase
+# stack → repo migrations → walk fixture → Playwright walk at three viewports →
+# a graded walk.json uploaded as the run's evidence.
+#
+# TRIGGER POLICY (decision D12 — deliberately manual first)
+#   Today: workflow_dispatch only. Nothing here can block a merge.
+#   Promotion: after TWO consecutive green dispatch runs on the same commit,
+#   uncomment the `pull_request:` trigger below and mark this job required in
+#   branch protection (Settings → Branches → main → Require status checks →
+#   "CRM walk / walk"). Record the two run URLs in docs/CRM_WALK_HARNESS.md
+#   when you flip it.
+#
+# NEVER in this workflow: `supabase db push`, `supabase db reset`,
+# `supabase link`, or any PIFH_* / production secret. The walk is local-stack
+# only — the harness traps (TRAP:prod-guard) and the gate both refuse evidence
+# recorded against any host that is not 127.0.0.1, so a mis-pointed run fails
+# loudly instead of quietly grading production.
+#
+# Runtime budget: ~20 min (stack ~4, npm ci ~2, browsers ~1, walk ~10). The
+# walk step is capped at 25 min and the job at 35.
+name: CRM walk
+
+on:
+  workflow_dispatch:
+    inputs:
+      role:
+        description: 'Fixture role to walk as (WALK_ROLE)'
+        type: choice
+        options: [operator, admin, viewer]
+        default: operator
+      projects:
+        description: 'Playwright projects, comma-separated'
+        default: 'desktop-1440,tablet-1024,mobile-390'
+      allow_soft:
+        description: 'Task ids allowed to fail without failing the job (soft rows only, comma-separated)'
+        default: ''
+      supabase_exclude:
+        description: 'Containers to skip on `supabase start` (blank = start everything)'
+        default: 'studio,imgproxy,inbucket,edge-runtime,functions,analytics,vector'
+  # Enable only after two green dispatch runs (see TRIGGER POLICY above):
+  # pull_request:
+  #   branches: [main]
+  #   paths:
+  #     - 'apps/crm/**'
+  #     - 'packages/**'
+  #     - 'supabase/migrations/**'
+  #     - 'scripts/e2e/**'
+  #     - '.github/workflows/crm-walk.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  # Never cancel a run that is producing evidence — two consecutive green runs
+  # are what promotes this job to a required check.
+  group: crm-walk-${{ github.ref }}-${{ inputs.role || 'operator' }}
+  cancel-in-progress: false
+
+env:
+  # The walk is pinned to the local stack; apps/crm/e2e/playwright.config.ts
+  # passes the same URL + public demo keys to `next dev`.
+  LOCAL_SUPABASE_URL: http://127.0.0.1:54321
+  LOCAL_DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+  WALK_ROLE: ${{ inputs.role || 'operator' }}
+  WALK_ALLOW_SOFT: ${{ inputs.allow_soft || '' }}
+  NEXT_TELEMETRY_DISABLED: '1'
+  # Bounds every psql connect in scripts/e2e/apply-local-migrations.sh.
+  WAIT_FOR_DB_SECONDS: '90'
+
+jobs:
+  walk:
+    name: walk
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # e2e/lint-changed.mjs compares each changed file against merge-base(HEAD, main).
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          # package.json engines: >=18; Next 16 needs >=20.9. 24 is the LTS the
+          # harness is pinned to (the sibling workflows still say 22 — they do
+          # not build the app).
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          # Pinned to the version the harness was proven on locally.
+          version: 2.106.0
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Harness guards (no raw actions, e2e typecheck, no new lint findings)
+        working-directory: apps/crm
+        run: npm run walk:crm:check
+
+      - name: Install Chromium (+ system deps)
+        run: npx playwright install --with-deps chromium
+
+      - name: Start the LOCAL Supabase stack
+        env:
+          SUPABASE_EXCLUDE: ${{ inputs.supabase_exclude || '' }}
+        run: |
+          set -o pipefail
+          log="$GITHUB_WORKSPACE/apps/crm/e2e/artifacts/ci-logs/supabase-start.log"
+          mkdir -p "$(dirname "$log")"
+          echo "::group::supabase start"
+          if [ -n "$SUPABASE_EXCLUDE" ]; then
+            supabase start -x "$SUPABASE_EXCLUDE" 2>&1 | tee "$log" || start_rc=$?
+          else
+            supabase start 2>&1 | tee "$log" || start_rc=$?
+          fi
+          echo "::endgroup::"
+          if [ -n "${start_rc:-}" ]; then
+            # `supabase start` also applies supabase/migrations; one bad file makes
+            # it exit non-zero with the containers already healthy. Do not fail
+            # here — apply-local-migrations.sh names the offending file instead.
+            echo "::warning::supabase start exited ${start_rc}; continuing if Postgres is healthy (see the migrations step)."
+          fi
+          # pg_isready does not retry, so poll it.
+          for i in $(seq 1 45); do
+            pg_isready -h 127.0.0.1 -p 54322 -q && break
+            [ "$i" -eq 45 ] && { echo "::error::local Postgres never became ready on 127.0.0.1:54322"; exit 1; }
+            sleep 2
+          done
+          curl -fsS -o /dev/null "$LOCAL_SUPABASE_URL/rest/v1/" \
+            || { echo "::error::the local REST API is not answering on $LOCAL_SUPABASE_URL"; exit 1; }
+          echo "local stack up"
+
+      - name: Assert the local demo keys still match the harness constants
+        run: |
+          set -uo pipefail
+          # `supabase status` inspects every container and exits non-zero when one
+          # was excluded from `start`, so its failure is not the harness's failure.
+          if ! supabase status -o env > /tmp/supabase-status.env 2>/tmp/supabase-status.err; then
+            echo "::warning::supabase status exited non-zero (excluded containers?) — skipping the key comparison; global-setup's prod-guard traps still prove the app only talks to 127.0.0.1."
+            head -5 /tmp/supabase-status.err || true
+          fi
+          anon=$(sed -n 's/^ANON_KEY="\(.*\)"$/\1/p' /tmp/supabase-status.env)
+          service=$(sed -n 's/^SERVICE_ROLE_KEY="\(.*\)"$/\1/p' /tmp/supabase-status.env)
+          if [ -z "$anon" ] && [ -z "$service" ]; then
+            echo "no keys reported — nothing to compare"
+            exit 0
+          fi
+          for key in "$anon" "$service"; do
+            [ -n "$key" ] || continue
+            if ! grep -qF "$key" apps/crm/e2e/env.ts; then
+              echo "::error::the running stack's keys differ from the constants in apps/crm/e2e/env.ts — update the harness (these are the public CLI demo keys; never paste a production key)."
+              exit 1
+            fi
+          done
+          echo "local demo keys match apps/crm/e2e/env.ts"
+
+      - name: Apply repo migrations to the local DB
+        run: scripts/e2e/apply-local-migrations.sh --strict
+
+      - name: Seed the walk fixture
+        run: node scripts/e2e/seed-walk-fixture.mjs --prune-walk-rows
+
+      - name: Verify the fixture (preflight)
+        run: node scripts/e2e/seed-walk-fixture.mjs --verify-only
+
+      - name: Record the walk
+        working-directory: apps/crm
+        timeout-minutes: 25
+        env:
+          # Through env, never interpolated into the script (no shell injection).
+          WALK_PROJECTS: ${{ inputs.projects || 'desktop-1440,tablet-1024,mobile-390' }}
+        run: |
+          set -euo pipefail
+          flags=""
+          for p in $(printf '%s' "$WALK_PROJECTS" | tr ',' ' '); do
+            flags="$flags --project=$p"
+          done
+          echo "playwright projects:$flags · role $WALK_ROLE"
+          # Retries stay at 0 (playwright.config.ts): a retried task appends a
+          # second row to walk.json and the gate rejects the double count.
+          npm run walk:crm:ci -- $flags
+
+      - name: Grade walk.json (traps + budgets)
+        if: always()
+        working-directory: apps/crm
+        run: npm run walk:crm:gate -- --summary "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload walk evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: crm-walk-${{ inputs.role || 'operator' }}-${{ github.run_number }}
+          # warn, not error: when the walk dies before it opens a run folder the
+          # real failure is the step above — do not bury it under an upload error.
+          if-no-files-found: warn
+          retention-days: 30
+          path: |
+            apps/crm/e2e/artifacts/crm-walk/**
+            apps/crm/e2e/artifacts/test-results/**
+            apps/crm/e2e/report/last-run.json
+
+      - name: Stop the local stack
+        if: always()
+        run: supabase stop --no-backup || true

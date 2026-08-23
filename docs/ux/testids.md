@@ -65,6 +65,10 @@ branch `feat/usability-road-to-ten` (Wave 2 interim tree, 2026-08-23).
 | `crm-sidenav-item` + `data-nav-key="<item.key>"` | components/crm/shell/ZohoContextualSidebar.tsx | `<a>` | Contextual sidebar nav links (desktop + mobile sheet); admin-only Settings links are absent for non-admins (NV-M1) |
 | `data-display-only` + `title={DISPLAY_ONLY_FIELD_HINT}` | components/crm/filters/FilterSidebar.tsx:1122 | `<button disabled aria-disabled>` | Rail field rows for display-only twins (Members plan / effective date) — LS-4 |
 | `aria-current="page"` | components/crm/shell/ModuleSwitcherRail.tsx:78 (+ CrmModuleTabBar, sidebar links) | `<a data-crm-module>` | Exactly one current tab on every surface (NV-2 sticky tab) |
+| `crm-module-tabbar` | components/crm/shell/CrmModuleTabBar.tsx:73 | `<nav aria-label="Modules">` | Module tab strip root — `hidden lg:block` (NV-8/D10): assert `:visible` count `0` below lg |
+| `crm-bottom-bar` | components/crm/shell/bottom-bar/BottomBar.tsx:47 | `<div>` | Bottom action bar root — `hidden lg:block` (NV-8/D10) |
+| `crm-mobile-nav-drawer` | components/crm/shell/ZohoContextualSidebar.tsx:519 | `<aside lg:hidden>` | Mobile nav drawer root; NV-8 measures its top against the header (flush, no tab-strip offset) and counts `a[data-crm-module][aria-current="page"]` inside it |
+| `crm-mobile-toolbar-sheet` | components/zoho/MobileToolbarDrawer.tsx:52 | `<SheetContent side=bottom>` | "Filters & View" sheet — LS-10: the ONE filter overlay below md; the rail renders inside it (no `crm-filter-trigger` there) |
 
 Notes for harness authors
 - Desktop/mobile twins (`crm-row-*` vs `crm-card-*`, `crm-topbar-search` vs `-mobile`,
@@ -74,3 +78,6 @@ Notes for harness authors
   `data-crm-module`, the field key, or `.filter({ hasText })`.
 - `crm-filter-rail` is rendered in both states with `data-state`; `crm-filter-toggle` exists only
   while collapsed (the open rail is closed from inside FilterSidebar / by the rail's own chrome).
+- Filters by breakpoint (LS-10): lg+ = docked `crm-filter-rail`; md–lg = `crm-filter-trigger`
+  (its own sheet); below md = the rail rendered inline in `crm-mobile-toolbar-sheet`, so
+  `crm-filter-trigger` does NOT exist on a phone and exactly one dialog is open while filtering.

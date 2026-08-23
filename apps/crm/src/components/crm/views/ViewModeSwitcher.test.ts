@@ -29,4 +29,32 @@ describe('partitionViewModes', () => {
     ]);
     expect(modes(partitionViewModes('tree').visible)).toContain('tree');
   });
+
+  // ── LS-9 / decision D11: the trim is org-flag gated ──
+  it('trimSurface=false ignores visibleModes — byte-identical to the untrimmed default', () => {
+    const off = partitionViewModes('table', ['table', 'list', 'split'], false);
+    const untrimmed = partitionViewModes('table');
+    expect(modes(off.visible)).toEqual(modes(untrimmed.visible));
+    expect(off.more).toEqual([]);
+    expect(untrimmed.more).toEqual([]);
+  });
+
+  it('trimSurface=false keeps an active pipeline mode as a plain radio (no menu)', () => {
+    const { visible, more } = partitionViewModes('kanban', ['table', 'list', 'split'], false);
+    expect(modes(visible)).toEqual(['table', 'list', 'kanban', 'chart', 'timeline', 'calendar', 'split']);
+    expect(more).toEqual([]);
+  });
+
+  it('trimSurface=true trims, and defaults to true for callers that omit it', () => {
+    const on = partitionViewModes('table', ['table', 'list', 'split'], true);
+    expect(modes(on.visible)).toEqual(['table', 'list', 'split']);
+    expect(modes(on.more)).toEqual(['kanban', 'chart', 'timeline', 'calendar']);
+    expect(on).toEqual(partitionViewModes('table', ['table', 'list', 'split']));
+  });
+
+  it('trimSurface has no effect when no visibleModes are given', () => {
+    expect(partitionViewModes('table', undefined, true)).toEqual(
+      partitionViewModes('table', undefined, false),
+    );
+  });
 });

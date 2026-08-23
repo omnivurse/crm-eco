@@ -49,6 +49,9 @@
     "test:e2e:unit": "npm run walk:crm:unit --workspace=@crm-eco/crm"
   },
   "lint-staged": {
+    "apps/crm/**/*.{ts,tsx}": [
+      "node apps/crm/e2e/lint-changed.mjs --staged"
+    ],
     "apps/**/*.{ts,tsx}": [
       "eslint --fix --no-warn-ignored"
     ],
@@ -79,6 +82,7 @@
     "zustand": "^4.5.7"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@playwright/test": "^1.62.1",
     "@types/node": "^20.19.30",
     "@vitejs/plugin-react": "^4.7.0",

@@ -24,7 +24,7 @@
  * sense with a deals pipeline are hidden unless the org has `deals` enabled.
  */
 
-import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import { useEffect, useId, useState, useCallback, useMemo, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import {
   Dialog,
@@ -92,6 +92,13 @@ import { canDraftAiEmail as roleCanDraftAiEmail } from '@/lib/crm/ai/email-draft
 import { resolveCreateIntent } from '@/lib/crm/create-intent';
 import { openCrmQuickCreate } from '@/lib/crm/create-intent-bus';
 import { buildPalettePages, personaIdlePages } from '@/lib/crm/palette-pages';
+import {
+  PALETTE_LISTBOX_LABEL,
+  paletteActiveOptionId,
+  paletteCategoryId,
+  paletteListboxId,
+  paletteOptionId,
+} from '@/lib/crm/palette-a11y';
 import type { NavProfile } from '@/lib/crm/nav-profile';
 
 interface CommandPaletteProps {
@@ -666,6 +673,18 @@ export function CommandPalette({ open, onOpenChange, modules, navProfile = 'full
     [orderedCategories],
   );
 
+  // A11Y-1 — combobox/listbox wiring. `uid` is stable per mounted palette;
+  // the listbox is only rendered when there is at least one row, so
+  // aria-controls / aria-activedescendant never dangle.
+  const uid = useId();
+  const listboxId = paletteListboxId(uid);
+  const hasRows = flatCommands.length > 0;
+  const activeOptionId = paletteActiveOptionId({
+    uid,
+    selectedIndex,
+    rowCount: flatCommands.length,
+  });
+
   // Keyboard navigation.
   useEffect(() => {
     if (!open) return;
@@ -786,6 +805,11 @@ export function CommandPalette({ open, onOpenChange, modules, navProfile = 'full
                 : SEARCH_PLACEHOLDER
             }
             aria-label={SEARCH_ARIA_LABEL}
+            role="combobox"
+            aria-autocomplete="list"
+            aria-expanded={hasRows}
+            aria-controls={hasRows ? listboxId : undefined}
+            aria-activedescendant={activeOptionId}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="flex-1 border-0 focus-visible:ring-0 h-12 placeholder:text-muted-foreground"
@@ -856,117 +880,125 @@ export function CommandPalette({ open, onOpenChange, modules, navProfile = 'full
                 </button>
               ) : null}
             </div>
-          ) : (
-            orderedCategories.map(({ category, items }) => (
-              <div key={category}>
-                <div className="px-3 py-1.5 text-xs font-medium text-muted-foreground">
-                  {category}
-                </div>
-                {items.map((cmd) => {
-                  const index = flatCommands.indexOf(cmd);
-                  const isSelected = index === selectedIndex;
-                  return (
-                    <button
-                      key={cmd.id}
-                      data-testid="crm-palette-result"
-                      onClick={() => cmd.action()}
-                      className={cn(
-                        'w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-muted/50 transition-colors',
-                        isSelected && 'bg-muted',
-                      )}
-                      onMouseEnter={() => setSelectedIndex(index)}
-                    >
-                      <span className="flex items-center justify-center w-8 h-8 rounded-md bg-muted text-muted-foreground">
-                        {cmd.icon}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">
-                          {cmd.matches && cmd.matches.length > 0 ? (
-                            <HighlightedText text={cmd.label} query={query} />
-                          ) : (
-                            cmd.label
-                          )}
-                        </p>
-                        {cmd.chips && cmd.chips.length > 1 ? (
-                          // Chips are NOT interactive elements (a <button> may not
-                          // nest one). Keyboard: ←/→ arm a chip on the selected
-                          // row, Enter opens it. Mouse: click a chip directly.
-                          <div
-                            className="mt-1 flex flex-wrap items-center gap-1"
-                            role="group"
-                            aria-label={`${cmd.label} appears in ${cmd.chips.length} modules`}
-                          >
-                            {cmd.chips.map((chip, ci) => {
-                              const isArmed = isSelected && ci === chipIndex;
-                              return (
-                                <span
-                                  key={chip.id}
-                                  aria-current={isArmed ? 'true' : undefined}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    navigate(chip.url);
-                                  }}
-                                  onMouseDown={(e) => e.preventDefault()}
-                                  title={`Open ${chip.label} record`}
-                                  className={cn(
-                                    'inline-flex items-center rounded-md border px-1.5 py-0.5 text-[11px] font-medium transition-colors',
-                                    isArmed
-                                      ? 'border-primary bg-primary/10 text-foreground ring-1 ring-primary/40'
-                                      : 'border-border bg-background/60 text-muted-foreground hover:text-foreground hover:bg-muted',
-                                  )}
-                                >
-                                  {chip.label}
-                                </span>
-                              );
-                            })}
-                            {isSelected ? (
-                              <span className="sr-only">
-                                Use left and right arrow keys to pick a record type, Enter to open.
-                              </span>
-                            ) : null}
-                          </div>
-                        ) : null}
-                        {cmd.matches && cmd.matches.length > 0 ? (
-                          <>
-                            {cmd.moduleLabel && !cmd.chips ? (
-                              <p className="text-[11px] text-muted-foreground truncate">
-                                {cmd.moduleLabel}
-                              </p>
-                            ) : null}
-                            <SearchMatchChips matches={cmd.matches} className="mt-1" />
-                          </>
-                        ) : cmd.description ? (
-                          <p className="text-xs text-muted-foreground truncate">
-                            {cmd.description}
+          ) : hasRows ? (
+            <div role="listbox" id={listboxId} aria-label={PALETTE_LISTBOX_LABEL}>
+              {orderedCategories.map(({ category, items }) => (
+                <div key={category} role="group" aria-labelledby={paletteCategoryId(uid, category)}>
+                  <div
+                    id={paletteCategoryId(uid, category)}
+                    className="px-3 py-1.5 text-xs font-medium text-muted-foreground"
+                  >
+                    {category}
+                  </div>
+                  {items.map((cmd) => {
+                    const index = flatCommands.indexOf(cmd);
+                    const isSelected = index === selectedIndex;
+                    return (
+                      <button
+                        key={cmd.id}
+                        id={paletteOptionId(uid, index)}
+                        role="option"
+                        aria-selected={isSelected}
+                        data-testid="crm-palette-result"
+                        onClick={() => cmd.action()}
+                        className={cn(
+                          'w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-muted/50 transition-colors',
+                          isSelected && 'bg-muted',
+                        )}
+                        onMouseEnter={() => setSelectedIndex(index)}
+                      >
+                        <span className="flex items-center justify-center w-8 h-8 rounded-md bg-muted text-muted-foreground">
+                          {cmd.icon}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">
+                            {cmd.matches && cmd.matches.length > 0 ? (
+                              <HighlightedText text={cmd.label} query={query} />
+                            ) : (
+                              cmd.label
+                            )}
                           </p>
+                          {cmd.chips && cmd.chips.length > 1 ? (
+                            // Chips are NOT interactive elements (a <button> may not
+                            // nest one). Keyboard: ←/→ arm a chip on the selected
+                            // row, Enter opens it. Mouse: click a chip directly.
+                            <div
+                              className="mt-1 flex flex-wrap items-center gap-1"
+                              role="group"
+                              aria-label={`${cmd.label} appears in ${cmd.chips.length} modules`}
+                            >
+                              {cmd.chips.map((chip, ci) => {
+                                const isArmed = isSelected && ci === chipIndex;
+                                return (
+                                  <span
+                                    key={chip.id}
+                                    aria-current={isArmed ? 'true' : undefined}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      navigate(chip.url);
+                                    }}
+                                    onMouseDown={(e) => e.preventDefault()}
+                                    title={`Open ${chip.label} record`}
+                                    className={cn(
+                                      'inline-flex items-center rounded-md border px-1.5 py-0.5 text-[11px] font-medium transition-colors',
+                                      isArmed
+                                        ? 'border-primary bg-primary/10 text-foreground ring-1 ring-primary/40'
+                                        : 'border-border bg-background/60 text-muted-foreground hover:text-foreground hover:bg-muted',
+                                    )}
+                                  >
+                                    {chip.label}
+                                  </span>
+                                );
+                              })}
+                              {isSelected ? (
+                                <span className="sr-only">
+                                  Use left and right arrow keys to pick a record type, Enter to open.
+                                </span>
+                              ) : null}
+                            </div>
+                          ) : null}
+                          {cmd.matches && cmd.matches.length > 0 ? (
+                            <>
+                              {cmd.moduleLabel && !cmd.chips ? (
+                                <p className="text-[11px] text-muted-foreground truncate">
+                                  {cmd.moduleLabel}
+                                </p>
+                              ) : null}
+                              <SearchMatchChips matches={cmd.matches} className="mt-1" />
+                            </>
+                          ) : cmd.description ? (
+                            <p className="text-xs text-muted-foreground truncate">
+                              {cmd.description}
+                            </p>
+                          ) : null}
+                        </div>
+                        {isSelected && cmd.secondary ? (
+                          <>
+                            {/* Screen readers get the shortcut spelled out; sighted
+                                users get the compact ⌘↵ badge (hidden on mobile). */}
+                            <span className="sr-only">
+                              Press Command or Control plus Enter to {cmd.secondary.label}.
+                            </span>
+                            <span
+                              aria-hidden="true"
+                              className="hidden sm:inline-flex items-center gap-1 text-[11px] text-muted-foreground shrink-0"
+                            >
+                              {cmd.secondary.icon}
+                              <kbd className="px-1 py-0.5 rounded bg-muted font-mono">⌘↵</kbd>
+                              {cmd.secondary.label}
+                            </span>
+                          </>
                         ) : null}
-                      </div>
-                      {isSelected && cmd.secondary ? (
-                        <>
-                          {/* Screen readers get the shortcut spelled out; sighted
-                              users get the compact ⌘↵ badge (hidden on mobile). */}
-                          <span className="sr-only">
-                            Press Command or Control plus Enter to {cmd.secondary.label}.
-                          </span>
-                          <span
-                            aria-hidden="true"
-                            className="hidden sm:inline-flex items-center gap-1 text-[11px] text-muted-foreground shrink-0"
-                          >
-                            {cmd.secondary.icon}
-                            <kbd className="px-1 py-0.5 rounded bg-muted font-mono">⌘↵</kbd>
-                            {cmd.secondary.label}
-                          </span>
-                        </>
-                      ) : null}
-                      {isSelected && (
-                        <ArrowRight className="w-4 h-4 text-muted-foreground shrink-0" />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            ))
-          )}
+                        {isSelected && (
+                          <ArrowRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          ) : null}
         </div>
 
         <div className="border-t px-3 py-2 flex items-center justify-between text-xs text-muted-foreground gap-2">

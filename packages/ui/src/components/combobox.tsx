@@ -31,6 +31,12 @@ interface ComboboxProps {
   clearable?: boolean;
   className?: string;
   triggerClassName?: string;
+  /**
+   * A11Y-1: `role="combobox"` takes its accessible name from the author only —
+   * the visible label inside the button does NOT name it. Defaults to the
+   * selected option / placeholder so every existing caller gets a name.
+   */
+  ariaLabel?: string;
 }
 
 export function Combobox({
@@ -44,6 +50,7 @@ export function Combobox({
   clearable = true,
   className,
   triggerClassName,
+  ariaLabel,
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false);
 
@@ -55,6 +62,7 @@ export function Combobox({
         <Button
           variant="outline"
           role="combobox"
+          aria-label={ariaLabel ?? (selectedOption ? selectedOption.label : placeholder)}
           aria-expanded={open}
           disabled={disabled}
           className={cn(

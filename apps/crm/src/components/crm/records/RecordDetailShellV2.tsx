@@ -102,6 +102,7 @@ import { statusPickerGroupsForModule } from '@/lib/crm/status-allowlist';
 import { statusLane, statusToneForValue, sanitizeReturnTo, withReturnTo } from '@/lib/crm/status-lanes';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { toastCopy } from '@/lib/crm/toast-copy';
+import { canManageRecords } from '@/lib/crm/can-create-records';
 import { toastDeletedWithUndo } from '@/lib/crm/undo-delete';
 import { stripLegacyAuthorAttribution } from '@/lib/crm/note-sanitize';
 import { MergeRecordDialog } from '@/components/crm/records/MergeRecordDialog';
@@ -1080,8 +1081,12 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
   // task / attachment. Toasts intentionally only fire for events from
   // *other* users, via `useLiveRecord`'s `isSelf` flag.
   const { user: clientUser, profile: clientProfile } = useClientAuth();
-  const viewerCanNormalize =
-    clientProfile?.crm_role === 'crm_admin' || clientProfile?.crm_role === 'crm_manager';
+  // PERM-1: one predicate for the manager-only record routes. DELETE
+  // /api/crm/records/[id] 403s crm_agent, so the Delete Record item below is
+  // hidden for them instead of dead-ending. Fails closed while the profile
+  // loads. Normalize was already this exact role pair — same source now.
+  const viewerCanManage = canManageRecords(clientProfile?.crm_role);
+  const viewerCanNormalize = viewerCanManage;
   const {
     participants: presenceParticipants,
     setIntent: setPresenceIntent,
@@ -2090,42 +2095,48 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                           )}
                         </>
                       )}
-                    <DropdownMenuSeparator className="bg-slate-200 dark:bg-white/10" />
-                    <DropdownMenuItem
-                      className="text-red-600 dark:text-red-400 focus:text-red-700 dark:focus:text-red-300 focus:bg-red-50 dark:focus:bg-red-500/10"
-                      onClick={async () => {
-                        // FB-5: honest delete — the record is soft-deleted to
-                        // Trash (route returns the batchId), so the dialog and
-                        // the toast say so and Undo restores it in place.
-                        if (
-                          !(await confirmDialog({
-                            title: `Delete this ${module.name.toLowerCase()}?`,
-                            description: 'It moves to Trash — you can restore it from there.',
-                            confirmLabel: 'Delete',
-                            destructive: true,
-                          }))
-                        )
-                          return;
-                        try {
-                          const res = await fetch(`/api/crm/records/${record.id}`, { method: 'DELETE' });
-                          const data = (await res.json().catch(() => ({}))) as {
-                            error?: string;
-                            batchId?: string | null;
-                          };
-                          if (!res.ok) throw new Error(data.error || 'Delete failed');
-                          const recordHref = keepReturnTo(`/crm/r/${record.id}`);
-                          toastDeletedWithUndo({
-                            batchId: data.batchId ?? null,
-                            onUndo: () => router.push(recordHref),
-                          });
-                          router.push(backUrl);
-                        } catch (err) {
-                          toast.error(toastCopy.failed('delete the record', err, 'Try again'));
-                        }
-                      }}
-                    >
-                      Delete Record
-                    </DropdownMenuItem>
+                    {/* PERM-1: agents never see Delete — the route 403s them. */}
+                    {viewerCanManage && (
+                      <>
+                        <DropdownMenuSeparator className="bg-slate-200 dark:bg-white/10" />
+                        <DropdownMenuItem
+                          data-testid="crm-record-delete"
+                          className="text-red-600 dark:text-red-400 focus:text-red-700 dark:focus:text-red-300 focus:bg-red-50 dark:focus:bg-red-500/10"
+                          onClick={async () => {
+                            // FB-5: honest delete — the record is soft-deleted to
+                            // Trash (route returns the batchId), so the dialog and
+                            // the toast say so and Undo restores it in place.
+                            if (
+                              !(await confirmDialog({
+                                title: `Delete this ${module.name.toLowerCase()}?`,
+                                description: 'It moves to Trash — you can restore it from there.',
+                                confirmLabel: 'Delete',
+                                destructive: true,
+                              }))
+                            )
+                              return;
+                            try {
+                              const res = await fetch(`/api/crm/records/${record.id}`, { method: 'DELETE' });
+                              const data = (await res.json().catch(() => ({}))) as {
+                                error?: string;
+                                batchId?: string | null;
+                              };
+                              if (!res.ok) throw new Error(data.error || 'Delete failed');
+                              const recordHref = keepReturnTo(`/crm/r/${record.id}`);
+                              toastDeletedWithUndo({
+                                batchId: data.batchId ?? null,
+                                onUndo: () => router.push(recordHref),
+                              });
+                              router.push(backUrl);
+                            } catch (err) {
+                              toast.error(toastCopy.failed('delete the record', err, 'Try again'));
+                            }
+                          }}
+                        >
+                          Delete Record
+                        </DropdownMenuItem>
+                      </>
+                    )}
                   </DropdownMenuContent>
                 </DropdownMenu>
                 </>

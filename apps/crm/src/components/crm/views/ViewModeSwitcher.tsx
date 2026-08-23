@@ -33,6 +33,13 @@ interface ViewModeSwitcherProps {
    * is promoted into the radios so the checked state is always visible.
    */
   visibleModes?: ViewMode[];
+  /**
+   * `crm.lists.trim_surface` (LS-9 / decision D11). When explicitly `false`
+   * the trim is off and `visibleModes` is ignored: every mode renders as a
+   * radio, byte-identical to omitting `visibleModes` entirely. Defaults to
+   * `true` so callers that already pass `visibleModes` keep their behaviour.
+   */
+  trimSurface?: boolean;
   /** Accessible label / tooltip for the overflow menu trigger. */
   moreLabel?: string;
   className?: string;
@@ -71,7 +78,10 @@ const OPTION_BY_MODE = new Map(VIEW_MODE_OPTIONS.map((o) => [o.mode, o]));
 export function partitionViewModes(
   value: ViewMode,
   visibleModes?: ViewMode[],
+  trimSurface = true,
 ): { visible: ViewModeOption[]; more: ViewModeOption[] } {
+  // Flag off → the trim does not exist: fall through to the full catalogue.
+  const requested = trimSurface ? visibleModes : undefined;
   const visible: ViewModeOption[] = [];
   const seen = new Set<ViewMode>();
   const push = (mode: ViewMode) => {
@@ -80,15 +90,15 @@ export function partitionViewModes(
     seen.add(mode);
     visible.push(opt);
   };
-  if (visibleModes) {
-    visibleModes.forEach(push);
+  if (requested) {
+    requested.forEach(push);
   } else {
     // Default: every choosable mode, in catalogue order.
     VIEW_MODE_OPTIONS.filter((o) => !o.activeOnly).forEach((o) => push(o.mode));
   }
   // Promote the active mode so a radiogroup always has its checked radio.
   push(value);
-  const more = visibleModes
+  const more = requested
     ? VIEW_MODE_OPTIONS.filter((o) => !seen.has(o.mode) && !o.activeOnly)
     : [];
   return { visible, more };
@@ -98,10 +108,11 @@ export const ViewModeSwitcher = memo(function ViewModeSwitcher({
   value,
   onChange,
   visibleModes,
+  trimSurface = true,
   moreLabel = 'More views',
   className,
 }: ViewModeSwitcherProps) {
-  const { visible, more } = partitionViewModes(value, visibleModes);
+  const { visible, more } = partitionViewModes(value, visibleModes, trimSurface);
   const moreActive = more.some((m) => m.mode === value);
 
   const radios = (

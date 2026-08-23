@@ -8,7 +8,9 @@ import {
   DropdownMenuTrigger,
 } from '@crm-eco/ui/components/dropdown-menu';
 import { cn } from '@crm-eco/ui/lib/utils';
+import { canManageRecords } from '@/lib/crm/can-create-records';
 import { ADVISOR_LABEL } from '@/lib/crm/nav-lexicon';
+import { useClientAuth } from '@/hooks/useClientAuth';
 import {
   X,
   UserPlus,
@@ -53,9 +55,17 @@ export function MassActionsBar({
   moduleKey,
   className,
 }: MassActionsBarProps) {
+  // PERM-1: Assign / Status / Stage go to PATCH /api/crm/records/bulk and
+  // Delete to DELETE /api/crm/records/bulk — both 403 for crm_agent. Hide
+  // them rather than offer a dead end (the API check stays authoritative).
+  // Same shape as ModuleHeader's DE-M1 gate: cached profile, fails closed
+  // while it loads. Add Tag / Email / Export stay — those routes take agents.
+  const { profile } = useClientAuth();
+  const canManage = canManageRecords(profile?.crm_role);
+
   if (selectedCount === 0) return null;
 
-  const showStageAction = moduleKey === 'deals';
+  const showStageAction = moduleKey === 'deals' && canManage;
   const allSelected = selectedCount === totalCount;
 
   return (
@@ -108,25 +118,31 @@ export function MassActionsBar({
 
       {/* Actions Row - scrollable on mobile */}
       <div className="flex items-center gap-1 overflow-x-auto pb-1 md:pb-0 -mx-1 px-1 scrollbar-none">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onAssignOwner}
-          className="h-9 px-3 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 flex-shrink-0"
-        >
-          <UserPlus className="w-4 h-4 mr-1.5" />
-          <span className="hidden sm:inline">Assign {ADVISOR_LABEL}</span>
-        </Button>
+        {canManage && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onAssignOwner}
+            data-testid="crm-bulk-assign"
+            className="h-9 px-3 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 flex-shrink-0"
+          >
+            <UserPlus className="w-4 h-4 mr-1.5" />
+            <span className="hidden sm:inline">Assign {ADVISOR_LABEL}</span>
+          </Button>
+        )}
 
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onChangeStatus}
-          className="h-9 px-3 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 flex-shrink-0"
-        >
-          <Tag className="w-4 h-4 mr-1.5" />
-          <span className="hidden sm:inline">Status</span>
-        </Button>
+        {canManage && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onChangeStatus}
+            data-testid="crm-bulk-status"
+            className="h-9 px-3 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 flex-shrink-0"
+          >
+            <Tag className="w-4 h-4 mr-1.5" />
+            <span className="hidden sm:inline">Status</span>
+          </Button>
+        )}
 
         {showStageAction && onChangeStage && (
           <Button
@@ -152,15 +168,18 @@ export function MassActionsBar({
           </Button>
         )}
 
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onDelete}
-          className="h-9 px-3 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-500/10 flex-shrink-0"
-        >
-          <Trash2 className="w-4 h-4 mr-1.5" />
-          <span className="hidden sm:inline">Delete</span>
-        </Button>
+        {canManage && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onDelete}
+            data-testid="crm-bulk-delete"
+            className="h-9 px-3 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-500/10 flex-shrink-0"
+          >
+            <Trash2 className="w-4 h-4 mr-1.5" />
+            <span className="hidden sm:inline">Delete</span>
+          </Button>
+        )}
 
         {/* More Actions Dropdown */}
         <DropdownMenu>

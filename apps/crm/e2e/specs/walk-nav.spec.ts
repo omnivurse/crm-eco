@@ -3,13 +3,15 @@
  * every search box (placeholder/aria parity), cross-tab sidebar links (D10
  * sticky tab), exactly one aria-current tab + link per hop, palette finds the
  * seeded member by phone / member # / name and a page by typing "task",
- * /crm/modules/deals + /crm/pipeline behaviour.
+ * /crm/modules/deals + /crm/pipeline behaviour, and (NV-8/D10) the one mobile
+ * module switcher: no tab strip, no bottom bar, the drawer grid flush under the
+ * top bar.
  *
  * Inventory facts land in walk.json `tasks[].notes`; parity/sticky assertions
  * are soft (they describe Wave-2 work and WILL fail today).
  */
 import { expect, test } from '../walk-fixture';
-import { FIXTURE } from '../env';
+import { FIXTURE, walkRole } from '../env';
 import { assertTrapsInTest } from '../traps';
 import { SEARCH_ARIA_LABEL, SEARCH_PLACEHOLDER } from '../../src/lib/crm/search-copy';
 import { TOP_TAB_HREFS, topModuleForPath } from '../nav-tabs';
@@ -24,7 +26,7 @@ test.describe('navigation walk', () => {
     const mobile = isMobileProject(project);
     await assertTrapsInTest({ page, request, bareRequest, project });
 
-    const activeTabKey = async () => page.locator(`${TAB}[aria-current="page"]`).first().getAttribute('data-crm-module');
+    const activeTabKey = async () => page.locator(`${TAB}[aria-current="page"]:visible`).first().getAttribute('data-crm-module');
     const sidebarLinks = async () =>
       page.locator(`${SIDENAV}:visible`).evaluateAll((els) =>
         els.map((el) => ({
@@ -45,17 +47,28 @@ test.describe('navigation walk', () => {
         let tabCount: number | null = null;
         for (const tab of TOP_TAB_HREFS) {
           await page.goto(tab.href, { waitUntil: 'domcontentloaded' });
-          await expect(page.locator(TAB).first()).toBeVisible({ timeout: 30_000 });
-          tabCount = await page.locator(TAB).count();
-          const currentTabs = await page.locator(`${TAB}[aria-current="page"]`).count();
+          if (mobile) {
+            // NV-8 (D10): the strip is lg+ chrome. Settle on top-bar chrome that
+            // exists at every width, then prove the strip is NOT painted here —
+            // the phone's one switcher is the drawer grid (NV-8-mobile-switcher).
+            await expect(page.getByTestId('crm-topbar-search-mobile')).toBeVisible({ timeout: 30_000 });
+          } else {
+            await expect(page.locator(TAB).first()).toBeVisible({ timeout: 30_000 });
+          }
+          tabCount = await page.locator(`${TAB}:visible`).count();
+          const currentTabs = await page.locator(`${TAB}[aria-current="page"]:visible`).count();
           const links = mobile ? [] : await sidebarLinks();
           perTab.set(tab.key, links.map((l) => ({ key: l.key, href: l.href })));
           const currentLinks = links.filter((l) => l.current).length;
           walk.note(`links.${tab.key}`, mobile ? 'n/a (mobile sheet)' : links.length);
           walk.note(`ariaCurrent.${tab.key}`, `tab=${currentTabs}${mobile ? '' : ` link=${currentLinks}`}`);
-          if (currentTabs !== 1) problems.push(`${tab.key}: ${currentTabs} aria-current tabs`);
-          if (!mobile && currentLinks !== 1) problems.push(`${tab.key}: ${currentLinks} aria-current sidebar links`);
-          if ((await activeTabKey()) !== tab.key) problems.push(`${tab.key}: active tab is ${await activeTabKey()}`);
+          if (mobile) {
+            if (tabCount !== 0) problems.push(`${tab.key}: ${tabCount} module tabs painted below lg (NV-8 wants 0)`);
+          } else {
+            if (currentTabs !== 1) problems.push(`${tab.key}: ${currentTabs} aria-current tabs`);
+            if (currentLinks !== 1) problems.push(`${tab.key}: ${currentLinks} aria-current sidebar links`);
+            if ((await activeTabKey()) !== tab.key) problems.push(`${tab.key}: active tab is ${await activeTabKey()}`);
+          }
         }
         walk.note('tabCount', tabCount);
         expect(problems, problems.join('; ')).toEqual([]);
@@ -280,13 +293,19 @@ test.describe('search parity + record sidebar state', () => {
     await walk.task(
       'NV-7-record-aria-current',
       "Open records highlight their module's sidebar link (contacts anchor + members twin)",
-      0,
+      // Below lg the sidebar lives in the menu sheet: one tap per record to read it.
+      mobile ? 2 : 0,
       async () => {
-        if (mobile) {
-          walk.note('skipped', 'sidebar lives in the mobile sheet');
-          return;
-        }
+        // The sheet is `inert` while closed, so its links are never `:visible`
+        // until it is opened — open it and read the SAME aria-current contract
+        // the docked rail carries, so mobile is evidence, not a skip.
+        const openSheet = async (label: string) => {
+          if (!mobile) return;
+          await walk.click(page.getByRole('button', { name: 'Open menu' }), label);
+        };
+        walk.note('sidebarSurface', mobile ? 'mobile menu sheet' : 'docked sidebar');
         await page.goto(anchor!.url, { waitUntil: 'domcontentloaded' });
+        await openSheet('Open menu (contacts record)');
         const contactsLink = page.locator(`${SIDENAV}[data-nav-key="module-contacts"][aria-current="page"]:visible`);
         await expect(contactsLink, 'contacts record must light the Contacts link').toBeVisible({ timeout: 30_000 });
         walk.note('contactsCurrent', true);
@@ -301,6 +320,7 @@ test.describe('search parity + record sidebar state', () => {
         walk.note('membersTwinFound', Boolean(twin));
         if (twin) {
           await page.goto(twin.url, { waitUntil: 'domcontentloaded' });
+          await openSheet('Open menu (members record)');
           const membersLink = page.locator(`${SIDENAV}[data-nav-key="module-members"][aria-current="page"]:visible`);
           await expect(membersLink, 'members record must light the Members link').toBeVisible({ timeout: 30_000 });
           walk.note('membersCurrent', true);
@@ -311,3 +331,78 @@ test.describe('search parity + record sidebar state', () => {
   });
 });
 
+
+// ---------------------------------------------------------------------------
+// NV-8 (D10) — one module switcher on a phone: the 7-tab strip and the bottom
+// action bar are lg+ chrome, the nav drawer opens flush under the top bar with
+// the module grid (exactly one aria-current), the search icon opens the palette
+// and "+" opens Add Member.
+// ---------------------------------------------------------------------------
+test.describe('mobile module switcher (NV-8)', () => {
+  test('no tab strip / bottom bar; drawer grid, search and create', async ({ page, request, bareRequest, walk }, testInfo) => {
+    const project = testInfo.project.name;
+    test.skip(!isMobileProject(project), 'NV-8 is the below-lg chrome contract');
+    await assertTrapsInTest({ page, request, bareRequest, project });
+    await page.goto('/crm', { waitUntil: 'domcontentloaded' });
+    await expect(page.getByTestId('crm-topbar-search-mobile')).toBeVisible({ timeout: 30_000 });
+
+    await walk.task(
+      'NV-8-mobile-switcher',
+      'Phone: no tab strip, no bottom bar; menu (1 tap) → drawer flush under the top bar with the module grid, one aria-current; search icon → palette; + → Add Member',
+      3,
+      async () => {
+        // ── Desktop chrome must not be painted here ──
+        const strips = await page.locator('[data-testid="crm-module-tabbar"]:visible').count();
+        const bars = await page.locator('[data-testid="crm-bottom-bar"]:visible').count();
+        walk.note('tabStripsVisible', strips);
+        walk.note('bottomBarsVisible', bars);
+        expect(strips, 'no module tab strip below lg').toBe(0);
+        expect(bars, 'no bottom action bar below lg').toBe(0);
+
+        // ── One tap to the switcher, flush under the top bar ──
+        await walk.click(page.getByRole('button', { name: 'Open menu' }), 'Open menu');
+        const drawer = page.getByTestId('crm-mobile-nav-drawer');
+        await expect(drawer).toBeVisible();
+        // The top bar is the <header> that owns the mobile search icon — not
+        // whatever <header> a page body happens to render first.
+        const headerBottom = await page
+          .getByTestId('crm-topbar-search-mobile')
+          .evaluate((el) => {
+            const header = el.closest('header');
+            if (!header) return null;
+            const r = header.getBoundingClientRect();
+            return r.y + r.height;
+          });
+        const drawerBox = await drawer.boundingBox();
+        const gap = headerBottom !== null && drawerBox ? Math.round(drawerBox.y - headerBottom) : null;
+        walk.note('drawerTopGapPx', gap);
+        expect(gap, 'drawer starts flush under the top bar (no tab-strip offset)').toBe(0);
+
+        const gridLinks = drawer.locator('a[data-crm-module]');
+        walk.note('moduleGridLinks', await gridLinks.count());
+        expect(await gridLinks.count(), 'the drawer grid is the mobile switcher').toBeGreaterThan(1);
+        const current = drawer.locator('a[data-crm-module][aria-current="page"]');
+        walk.note('ariaCurrentModules', await current.count());
+        expect(await current.count(), 'exactly one aria-current module link').toBe(1);
+        await walk.shot('mobile nav drawer');
+
+        // ── Search icon → palette (navigate to close the drawer: 0 taps) ──
+        await page.goto('/crm', { waitUntil: 'domcontentloaded' });
+        await walk.click(page.getByTestId('crm-topbar-search-mobile'), 'search icon');
+        await expect(page.getByTestId('crm-palette-input')).toBeVisible();
+        walk.note('searchOpensPalette', true);
+        await walk.press('Escape', 'close palette');
+
+        // ── "+" → Add Member (crm_viewer has no create affordance, DE-M1) ──
+        if (walkRole() === 'viewer') {
+          walk.note('createAffordance', 'n/a (viewer)');
+          return;
+        }
+        await walk.click(page.getByTestId('crm-create-primary-mobile'), '+ Add Member');
+        await expect(page.getByTestId('crm-qc-form')).toBeVisible({ timeout: 30_000 });
+        walk.note('plusOpensAddMember', true);
+      },
+      { soft: true },
+    );
+  });
+});

@@ -245,6 +245,13 @@ interface RelatedModuleDef {
   label: string;
   icon: typeof Phone;
   enabled: boolean;
+  /**
+   * Zoho-migration leftovers (Campaigns, Invoices, Solutions, CirrusMD,
+   * Planstin…). A PIFH desk never filters people by them, so under the
+   * `crm.lists.trim_surface` org flag they move behind "Show all". With the
+   * flag off nothing is hidden — the list is exactly as it was.
+   */
+  defaultHidden?: boolean;
 }
 
 const RELATED_MODULES: RelatedModuleDef[] = [
@@ -259,28 +266,45 @@ const RELATED_MODULES: RelatedModuleDef[] = [
   { key: 'accounts', label: 'Accounts (Connected Records)', icon: Users, enabled: true },
   { key: 'contacts', label: 'Contacts (Connected Records)', icon: Users, enabled: true },
   { key: 'leads', label: 'Leads (Converted)', icon: Target, enabled: true },
-  { key: 'campaigns', label: 'Campaigns (Connected Records)', icon: Mail, enabled: true },
-  { key: 'products', label: 'Products (Connected Records)', icon: Package, enabled: true },
-  { key: 'lead_products', label: 'Lead Product Relation (Products)', icon: Package, enabled: true },
-  { key: 'invoices', label: 'Invoices (Connected Records)', icon: FileText, enabled: true },
-  { key: 'prospects', label: 'Prospects (Connected Records)', icon: Users, enabled: true },
-  { key: 'prospect_roles', label: 'Prospect Contact Roles', icon: Users, enabled: true },
-  { key: 'providers', label: 'Providers (Connected Records)', icon: Package, enabled: true },
+  { key: 'campaigns', defaultHidden: true, label: 'Campaigns (Connected Records)', icon: Mail, enabled: true },
+  { key: 'products', defaultHidden: true, label: 'Products (Connected Records)', icon: Package, enabled: true },
+  { key: 'lead_products', defaultHidden: true, label: 'Lead Product Relation (Products)', icon: Package, enabled: true },
+  { key: 'invoices', defaultHidden: true, label: 'Invoices (Connected Records)', icon: FileText, enabled: true },
+  { key: 'prospects', defaultHidden: true, label: 'Prospects (Connected Records)', icon: Users, enabled: true },
+  { key: 'prospect_roles', defaultHidden: true, label: 'Prospect Contact Roles', icon: Users, enabled: true },
+  { key: 'providers', defaultHidden: true, label: 'Providers (Connected Records)', icon: Package, enabled: true },
   // Health sharing specific
   { key: 'aca_clients', label: 'ACA Clients (Connected Records)', icon: Heart, enabled: true },
-  { key: 'cirrusmd_contacts', label: 'CirrusMD Contacts (Connected Records)', icon: Shield, enabled: true },
-  { key: 'planstin_contacts', label: 'Planstin Contacts (Connected Records)', icon: Shield, enabled: true },
-  { key: 'pricing_matrix', label: 'Pricing Matrix (Connected Records)', icon: Package, enabled: true },
-  { key: 'producers', label: 'Producers (Connected Records)', icon: Users, enabled: true },
+  { key: 'cirrusmd_contacts', defaultHidden: true, label: 'CirrusMD Contacts (Connected Records)', icon: Shield, enabled: true },
+  { key: 'planstin_contacts', defaultHidden: true, label: 'Planstin Contacts (Connected Records)', icon: Shield, enabled: true },
+  { key: 'pricing_matrix', defaultHidden: true, label: 'Pricing Matrix (Connected Records)', icon: Package, enabled: true },
+  { key: 'producers', defaultHidden: true, label: 'Producers (Connected Records)', icon: Users, enabled: true },
   // Service & support
-  { key: 'services', label: 'Services (Connected Records)', icon: Package, enabled: true },
-  { key: 'solutions', label: 'Solutions (Connected Records)', icon: Package, enabled: true },
-  { key: 'support', label: 'Support (Connected Records)', icon: AlertTriangle, enabled: true },
+  { key: 'services', defaultHidden: true, label: 'Services (Connected Records)', icon: Package, enabled: true },
+  { key: 'solutions', defaultHidden: true, label: 'Solutions (Connected Records)', icon: Package, enabled: true },
+  { key: 'support', defaultHidden: true, label: 'Support (Connected Records)', icon: AlertTriangle, enabled: true },
   // System
-  { key: 'data_subject_requests', label: 'Data Subject Requests', icon: FileText, enabled: true },
-  { key: 'meeting_invitees', label: 'Invitees (Invited Meetings)', icon: Calendar, enabled: true },
-  { key: 'reporting_contacts', label: 'Contacts (Reporting Contacts)', icon: Users, enabled: true },
+  { key: 'data_subject_requests', defaultHidden: true, label: 'Data Subject Requests', icon: FileText, enabled: true },
+  { key: 'meeting_invitees', defaultHidden: true, label: 'Invitees (Invited Meetings)', icon: Calendar, enabled: true },
+  { key: 'reporting_contacts', defaultHidden: true, label: 'Contacts (Reporting Contacts)', icon: Users, enabled: true },
 ];
+
+/**
+ * Related-module rows to render. Pure, exported for tests.
+ *
+ * `trimSurface` off → every module, in catalogue order (today's behaviour).
+ * On → the Zoho leftovers collapse behind "Show all", except any module the
+ * draft already filters by, which always stays visible.
+ */
+export function visibleRelatedModules(
+  trimSurface: boolean,
+  showAll: boolean,
+  activeKeys: ReadonlySet<string>,
+  catalogue: readonly RelatedModuleDef[] = RELATED_MODULES,
+): RelatedModuleDef[] {
+  if (!trimSurface || showAll) return [...catalogue];
+  return catalogue.filter((m) => !m.defaultHidden || activeKeys.has(m.key));
+}
 
 // ============================================================================
 // Status-type fields — live values grouped by lane
@@ -726,6 +750,11 @@ interface FilterSidebarProps {
   variant?: FilterSidebarVariant;
   /** Docked rail only — collapse the column without discarding the draft. */
   onCollapse?: () => void;
+  /**
+   * `crm.lists.trim_surface` (LS-9 / decision D11). Off by default, so the
+   * rail renders exactly as it does today unless the org opts in.
+   */
+  trimSurface?: boolean;
 }
 
 const SECTION_TRIGGER_CLASS =
@@ -743,12 +772,14 @@ export function FilterSidebar({
   title = 'Filters',
   variant = 'dialog',
   onCollapse,
+  trimSurface = false,
 }: FilterSidebarProps) {
   // ── Draft state: nothing reaches the URL/list until Apply ──
   const [draft, setDraft] = useState<ViewFilter[]>(filters);
   const [fieldSearch, setFieldSearch] = useState('');
   const [expandedField, setExpandedField] = useState<string | null>(null);
   const [showAllSystem, setShowAllSystem] = useState(false);
+  const [showAllRelated, setShowAllRelated] = useState(false);
   const [advisorsList, setAdvisorsList] = useState<ComboboxOption[]>([]);
   const [advisorsStatus, setAdvisorsStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
 
@@ -864,6 +895,13 @@ export function FilterSidebar({
     [showAllSystem, activeSystemPresets],
   );
   const hiddenSystemCount = SYSTEM_FILTERS.length - visibleSystemFilters.length;
+
+  // Related modules — same "hidden, not removed" contract as the system list.
+  const relatedModulesToRender = useMemo(
+    () => visibleRelatedModules(trimSurface, showAllRelated, new Set(activeRelatedModules.keys())),
+    [trimSurface, showAllRelated, activeRelatedModules],
+  );
+  const hiddenRelatedCount = RELATED_MODULES.length - relatedModulesToRender.length;
   const systemFilterCount = Array.from(activeSystemPresets).filter((p) => p !== 'owner_is').length;
 
   // Field search
@@ -1323,7 +1361,7 @@ export function FilterSidebar({
             </AccordionTrigger>
             <AccordionContent className="px-2 pb-3">
               <div className="space-y-0.5">
-                {RELATED_MODULES.map(({ key, label, icon: Icon, enabled }) => {
+                {relatedModulesToRender.map(({ key, label, icon: Icon, enabled }) => {
                   const currentCondition = activeRelatedModules.get(key);
                   const isActive = currentCondition !== undefined;
 
@@ -1383,6 +1421,19 @@ export function FilterSidebar({
                     </div>
                   );
                 })}
+                {(hiddenRelatedCount > 0 || showAllRelated) && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAllRelated((v) => !v)}
+                    aria-expanded={showAllRelated}
+                    className="mt-1 flex w-full items-center gap-2 px-3 py-1.5 rounded-lg text-[11px] text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  >
+                    {showAllRelated ? <ChevronDown className="w-3 h-3" aria-hidden /> : <ChevronRight className="w-3 h-3" aria-hidden />}
+                    {showAllRelated
+                      ? 'Hide the rest'
+                      : `Show all (${hiddenRelatedCount} more related modules)`}
+                  </button>
+                )}
               </div>
             </AccordionContent>
           </AccordionItem>

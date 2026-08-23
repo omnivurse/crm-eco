@@ -23,6 +23,7 @@
 import {
   memo,
   useCallback,
+  useEffect,
   useId,
   useRef,
   useState,
@@ -120,6 +121,17 @@ export const InlineFieldEditor = memo(function InlineFieldEditor({
   const [localError, setLocalError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
   const focusInitialisedRef = useRef(false);
+  // A11Y-1: leaving edit mode from the keyboard (Escape / Enter) must hand
+  // focus back to the trigger, not drop it on <body> — a keyboard user who
+  // cancels an edit would otherwise restart tabbing from the top of the page.
+  const triggerRef = useRef<HTMLSpanElement | null>(null);
+  const restoreFocusRef = useRef(false);
+  // A11Y-1: some callers render the value as a real link (tel:/mailto:). A
+  // widget (role="button") may not contain focusable descendants — axe flags
+  // it `nested-interactive` and AT cannot reach the link inside it. When the
+  // rendered value turns out to be interactive, the wrapper stops claiming to
+  // be a button and the pencil becomes the real, named edit control.
+  const [interactiveDisplay, setInteractiveDisplay] = useState(false);
   const isTextarea = type === 'textarea';
 
   // Stable ref callback that focus + selects ONCE when the input mounts,
@@ -144,6 +156,12 @@ export const InlineFieldEditor = memo(function InlineFieldEditor({
     },
     [],
   );
+
+  useEffect(() => {
+    if (editing || !restoreFocusRef.current) return;
+    restoreFocusRef.current = false;
+    triggerRef.current?.focus();
+  }, [editing]);
 
   // Keep local draft in sync when the parent value changes (e.g. after
   // a realtime update from another user). Uses React's recommended
@@ -172,6 +190,19 @@ export const InlineFieldEditor = memo(function InlineFieldEditor({
       ? (fieldState.lastValue as string | number | null)
       : value;
 
+  // Measured on the value span itself (never on the wrapper, which owns the
+  // edit button we add below). The callback identity changes with the value,
+  // so React re-runs it whenever the rendered display can have changed.
+  const measureDisplay = useCallback(
+    (el: HTMLSpanElement | null) => {
+      if (!el) return;
+      const found =
+        el.querySelector('a[href], button, input, select, textarea, [tabindex]:not([tabindex="-1"])') !== null;
+      setInteractiveDisplay((prev) => (prev === found ? prev : found));
+    },
+    [displayValue],
+  );
+
   const enterEdit = useCallback(() => {
     if (readOnly || lockOwner) return;
     setDraft(stringify(displayValue));
@@ -182,6 +213,7 @@ export const InlineFieldEditor = memo(function InlineFieldEditor({
   }, [readOnly, lockOwner, displayValue, onEditStart, acquireFieldLock, field]);
 
   const cancelEdit = useCallback(() => {
+    restoreFocusRef.current = true;
     setEditing(false);
     setLocalError(null);
     setDraft(stringify(displayValue));
@@ -227,9 +259,11 @@ export const InlineFieldEditor = memo(function InlineFieldEditor({
       // In textarea mode, plain Enter inserts a newline. Ctrl/Cmd+Enter
       // (or the blur handler) commits.
       e.preventDefault();
+      restoreFocusRef.current = true;
       void commit();
     } else if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && isTextarea) {
       e.preventDefault();
+      restoreFocusRef.current = true;
       void commit();
     } else if (e.key === 'Escape') {
       e.preventDefault();
@@ -264,25 +298,43 @@ export const InlineFieldEditor = memo(function InlineFieldEditor({
   }
 
   if (!editing) {
+    const statusIcon =
+      isSaving || isPending ? (
+        <Loader2 className="w-3 h-3 text-teal-500 animate-spin shrink-0" />
+      ) : externalError ? (
+        <AlertTriangle className="w-3 h-3 text-rose-500 shrink-0" />
+      ) : isSaved ? (
+        <Check className="w-3 h-3 text-emerald-500 shrink-0" />
+      ) : (
+        <Pencil className="w-3 h-3 text-slate-300 dark:text-slate-600 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity shrink-0" />
+      );
     return (
       <>
       <span
-        role="button"
-        tabIndex={0}
+        ref={triggerRef}
+        role={interactiveDisplay ? undefined : 'button'}
+        tabIndex={interactiveDisplay ? undefined : 0}
         onClick={enterEdit}
         onKeyDown={(e) => {
+          // Never swallow a key meant for a link inside the value.
+          if (e.target !== e.currentTarget) return;
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
             enterEdit();
           }
         }}
-        aria-label={`Edit ${ariaLabel ?? field}`}
+        aria-label={interactiveDisplay ? undefined : `Edit ${ariaLabel ?? field}`}
         className={cn(
           // Block + full width so overview grid cells don't let the control
           // expand into the neighboring column when the placeholder is long.
           'group flex w-full min-w-0 max-w-full items-center gap-1 rounded-md px-1.5 py-0.5 -mx-1 cursor-text',
           'hover:bg-slate-100/70 dark:hover:bg-white/5 transition-colors',
+          // A11Y-1: a 1px offset in the surface colour separates the ring
+          // from the hover wash and the rose error fill so the focused cell
+          // is unmistakable (1.4.11); wider would risk clipping in the
+          // truncating overview grid cells.
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500',
+          'focus-visible:ring-offset-1 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-950',
           (isSaving || isPending) && 'opacity-80',
           externalError && 'ring-1 ring-rose-300 dark:ring-rose-500/50 bg-rose-50/50 dark:bg-rose-500/5',
           className,
@@ -290,17 +342,27 @@ export const InlineFieldEditor = memo(function InlineFieldEditor({
         data-field={field}
         title={externalError ?? undefined}
       >
-        <span className="min-w-0 flex-1 truncate">
+        <span ref={measureDisplay} className="min-w-0 flex-1 truncate" data-inline-value>
           {display ? display(displayValue) : <DisplayValue value={displayValue} placeholder={placeholder} />}
         </span>
-        {isSaving || isPending ? (
-          <Loader2 className="w-3 h-3 text-teal-500 animate-spin shrink-0" />
-        ) : externalError ? (
-          <AlertTriangle className="w-3 h-3 text-rose-500 shrink-0" />
-        ) : isSaved ? (
-          <Check className="w-3 h-3 text-emerald-500 shrink-0" />
+        {interactiveDisplay ? (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              enterEdit();
+            }}
+            aria-label={`Edit ${ariaLabel ?? field}`}
+            className={cn(
+              'shrink-0 rounded-sm leading-none',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500',
+              'focus-visible:ring-offset-1 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-950',
+            )}
+          >
+            {statusIcon}
+          </button>
         ) : (
-          <Pencil className="w-3 h-3 text-slate-300 dark:text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+          statusIcon
         )}
       </span>
       {/* RP-M1 / D7: the silent emerald check is the visual voice; this

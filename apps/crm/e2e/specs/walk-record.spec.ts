@@ -17,6 +17,11 @@ const T6_FIELD_CANDIDATES = ['preferred_name', 'middle_name', 'referring_member'
 test.describe('record page walk', () => {
   test('T6 patch one field inline + header density at rest', async ({ page, request, bareRequest, walk }, testInfo) => {
     const project = testInfo.project.name;
+    // T6/T6-aria-live/T6-restore all PATCH the anchor; crm_viewer is refused with
+    // 403 and the whole test aborts before RP-header-density. Header density is
+    // role-independent and already recorded on operator + admin at all three
+    // breakpoints, so the viewer run skips the test rather than half-running it.
+    test.skip(walkRole() === 'viewer', 'crm_viewer cannot PATCH a record (403) — see DE-viewer-post-403');
     const { anchor } = await assertTrapsInTest({ page, request, bareRequest, project });
     expect(anchor).not.toBeNull();
     await page.goto(anchor!.url, { waitUntil: 'domcontentloaded' });
@@ -489,3 +494,83 @@ test.describe('dark-mode toast (FB-M1)', () => {
   });
 });
 
+
+// ---------------------------------------------------------------------------
+// PERM-1 — the agent persona is never offered an action the API refuses.
+// DELETE /api/crm/records/[id] and PATCH|DELETE /api/crm/records/bulk both
+// answer 403 to crm_agent, so the record ⋯ menu must carry no Delete Record
+// item and the list MassActionsBar no Assign / Status / Delete button.
+// (The list half lives here, not in walk-lists, to keep PERM-1 in one file.)
+// ---------------------------------------------------------------------------
+test.describe('manager-only actions hidden from crm_agent (PERM-1)', () => {
+  test('no delete dead end on the record page or the bulk bar', async ({ page, request, bareRequest, walk }, testInfo) => {
+    const project = testInfo.project.name;
+    test.skip(walkRole() !== 'operator', 'PERM-1 is the crm_agent contract (default WALK_ROLE)');
+    const { anchor } = await assertTrapsInTest({ page, request, bareRequest, project });
+    expect(anchor).not.toBeNull();
+    await page.goto(anchor!.url, { waitUntil: 'domcontentloaded' });
+    await expect(page.getByRole('group', { name: 'Add note' })).toBeVisible();
+
+    await walk.task(
+      'PERM-1-record-delete',
+      'crm_agent: the record ⋯ menu offers no Delete Record (the route 403s them) — 1 click',
+      1,
+      async () => {
+        // The server contract this mirrors, proven in the same run.
+        const refused = await request.delete(`/api/crm/records/${anchor!.id}`);
+        walk.note('deleteStatus', refused.status());
+        expect(refused.status(), 'DELETE /api/crm/records/[id] must 403 the agent').toBe(403);
+
+        await walk.click(page.getByTestId('crm-record-more'), '⋯ menu');
+        const menu = page.getByRole('menu').first();
+        await expect(menu).toBeVisible();
+        const deleteItem = page.getByRole('menuitem', { name: 'Delete Record' });
+        walk.note('deleteItems', await deleteItem.count());
+        walk.note('deleteTestIds', await page.getByTestId('crm-record-delete').count());
+        expect(await deleteItem.count(), 'crm_agent must not be offered Delete Record').toBe(0);
+        expect(await page.getByTestId('crm-record-delete').count()).toBe(0);
+        // Hidden, not emptied: the menu still carries its agent-legal items.
+        await expect(page.getByRole('menuitem', { name: /^Clone Record$/ })).toBeVisible();
+        await walk.press('Escape', 'close the ⋯ menu');
+      },
+      { soft: true },
+    );
+
+    await walk.task(
+      'PERM-1-bulk-actions',
+      'crm_agent: selecting a row offers no Assign / Status / Delete on the bulk bar — 1 click',
+      1,
+      async () => {
+        const refused = await request.patch('/api/crm/records/bulk', {
+          data: { record_ids: [anchor!.id], updates: { status: 'Active' } },
+        });
+        walk.note('bulkPatchStatus', refused.status());
+        expect(refused.status(), 'PATCH /api/crm/records/bulk must 403 the agent').toBe(403);
+
+        if (isMobileProject(project)) {
+          // Same line the LS-5 bulk row draws: the bulk bar is lg+ chrome.
+          walk.note('skipped', 'bulk bar is lg+ chrome (see LS-5-bulk-recount)');
+          return;
+        }
+        await page.goto('/crm/modules/contacts', { waitUntil: 'domcontentloaded' });
+        await expect(page.getByTestId('crm-pager-showing').first()).toBeVisible({ timeout: 30_000 });
+        await walk.click(page.getByRole('checkbox', { name: 'Select all rows' }), 'select the rows');
+
+        const bar = page.getByText(/\d+ selected/).locator('visible=true').first();
+        await expect(bar, 'the bulk bar must appear on selection').toBeVisible({ timeout: 15_000 });
+        for (const [key, testid] of [
+          ['assign', 'crm-bulk-assign'],
+          ['status', 'crm-bulk-status'],
+          ['delete', 'crm-bulk-delete'],
+        ] as const) {
+          const count = await page.getByTestId(testid).locator('visible=true').count();
+          walk.note(`bulk.${key}`, count);
+          expect(count, `crm_agent must not be offered bulk ${key}`).toBe(0);
+        }
+        // Export stays: GET, and the agent-legal Add Tag route is POST /api/crm/tags.
+        walk.note('bulk.exportStillOffered', await page.getByRole('button', { name: /export/i }).locator('visible=true').count());
+      },
+      { soft: true },
+    );
+  });
+});

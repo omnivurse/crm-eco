@@ -30,11 +30,14 @@ export function FilterWorkspaceRow({ rail, children, footer, pending = false }: 
   const ref = useRef<HTMLDivElement>(null);
   const height = useRemainingViewportHeight(ref);
 
+  // LS-10: the rail cell is `display:none` below `lg` (FilterRailFrame is
+  // `lg:flex`), so a gap there would be a phantom column — the table pane must
+  // sit flush against the left edge on a phone.
   return (
     <div
       ref={ref}
       data-filter-workspace
-      className="grid grid-cols-[auto_minmax(0,1fr)] gap-3 overflow-hidden"
+      className="grid grid-cols-[auto_minmax(0,1fr)] gap-0 lg:gap-3 overflow-hidden"
       style={{ height: height ?? 240 }}
     >
       <div className="min-h-0 h-full overflow-hidden">{rail}</div>

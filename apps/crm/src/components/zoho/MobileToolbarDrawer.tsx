@@ -12,6 +12,10 @@
  * The drawer is intentionally a thin, presentation-only wrapper. ModuleShell
  * passes the actual JSX for each section as children, which keeps the state
  * owned by the parent and avoids a parallel render tree.
+ *
+ * LS-10: below `md` this is the ONE overlay for filtering. ModuleShell renders
+ * the filter rail inline in the first section instead of a trigger that would
+ * open a second sheet, so Status → Pending → Apply is four taps, not five.
  */
 
 import { memo, type ReactNode } from 'react';
@@ -32,7 +36,12 @@ export interface MobileToolbarDrawerProps {
   activeCount?: number;
   sections: Array<{
     id: string;
-    label: string;
+    /**
+     * Section heading. Omit it when the section's own chrome already names
+     * itself — LS-10 renders the filter rail inline, and it carries its own
+     * "Filter {Module} by" header.
+     */
+    label?: string;
     content: ReactNode;
   }>;
   className?: string;
@@ -49,6 +58,7 @@ export const MobileToolbarDrawer = memo(function MobileToolbarDrawer({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
+        data-testid="crm-mobile-toolbar-sheet"
         className={cn(
           'max-h-[85vh] overflow-y-auto bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10',
           className,
@@ -72,9 +82,11 @@ export const MobileToolbarDrawer = memo(function MobileToolbarDrawer({
         <div className="mt-5 space-y-5 pb-6">
           {sections.map((section) => (
             <div key={section.id} className="space-y-2">
-              <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                {section.label}
-              </div>
+              {section.label ? (
+                <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                  {section.label}
+                </div>
+              ) : null}
               <div>{section.content}</div>
             </div>
           ))}

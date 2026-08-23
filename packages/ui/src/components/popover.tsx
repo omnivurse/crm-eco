@@ -7,6 +7,11 @@ const Popover = PopoverPrimitive.Root
 
 const PopoverTrigger = PopoverPrimitive.Trigger
 
+// A11Y-1: an anchor positions the popover WITHOUT stamping button semantics
+// (type/aria-haspopup/aria-expanded) onto whatever it wraps — use it instead of
+// PopoverTrigger when the child is a plain element or an input.
+const PopoverAnchor = PopoverPrimitive.Anchor
+
 const PopoverContent = React.forwardRef<
   React.ElementRef<typeof PopoverPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Content>
@@ -26,4 +31,4 @@ const PopoverContent = React.forwardRef<
 ))
 PopoverContent.displayName = PopoverPrimitive.Content.displayName
 
-export { Popover, PopoverTrigger, PopoverContent }
+export { Popover, PopoverAnchor, PopoverTrigger, PopoverContent }

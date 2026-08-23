@@ -13,7 +13,7 @@
  * tel: anchor). Every action goes through `walk` so the tally stays honest.
  */
 import { expect, test } from '../walk-fixture';
-import { FIXTURE } from '../env';
+import { FIXTURE, walkRole } from '../env';
 import { assertTrapsInTest } from '../traps';
 import { added } from '../../src/lib/crm/toast-copy';
 import {
@@ -135,6 +135,10 @@ test.describe('persona walk (D12)', () => {
 
   test('T3 Add Note — button + ⌘Enter, then the n hotkey', async ({ page, request, bareRequest, walk }, testInfo) => {
     const project = testInfo.project.name;
+    // POST /api/crm/notes requires a writer role — crm_viewer is refused with 403,
+    // so T3/T3-hotkey walk the writing personas. The viewer contract is asserted by
+    // DE-viewer-post-403 (walk-viewer-api) and DE-viewer-no-create (walk-drawer).
+    test.skip(walkRole() === 'viewer', 'crm_viewer cannot write notes (403) — see DE-viewer-post-403');
     const { anchor } = await assertTrapsInTest({ page, request, bareRequest, project });
     expect(anchor).not.toBeNull();
     await page.goto(anchor!.url, { waitUntil: 'domcontentloaded' });
@@ -186,6 +190,10 @@ test.describe('persona walk (D12)', () => {
   test('T4 Add Member — 1 click + Enter, then see it on the list (D1)', async ({ page, request, bareRequest, walk }, testInfo) => {
     const project = testInfo.project.name;
     const mobile = isMobileProject(project);
+    // canCreateRecords(crm_viewer) is false, so the Add Member affordance is not
+    // rendered at all — the click would hang rather than prove anything. That
+    // hiding IS the viewer contract, asserted by DE-viewer-no-create.
+    test.skip(walkRole() === 'viewer', 'crm_viewer has no create affordance — see DE-viewer-no-create');
     await assertTrapsInTest({ page, request, bareRequest, project });
     // Contacts is the hand-entry module and the originating list (D1).
     await page.goto('/crm/modules/contacts', { waitUntil: 'domcontentloaded' });

@@ -42,8 +42,13 @@ export const BottomBar = memo(function BottomBar({ modules, profile }: BottomBar
     setActivePanel(null);
   }, []);
 
+  // NV-8 (D10): desktop chrome. On a phone the bar stole a whole row of the
+  // viewport from the record/list content it sits under, so it is lg+ only.
   return (
-    <div className="relative z-40 border-t border-slate-200/60 dark:border-white/10 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md pb-[env(safe-area-inset-bottom)]">
+    <div
+      data-testid="crm-bottom-bar"
+      className="relative z-40 hidden lg:block border-t border-slate-200/60 dark:border-white/10 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md pb-[env(safe-area-inset-bottom)]"
+    >
       <div className="flex items-center h-10 px-2 lg:px-4 gap-1">
         {/* Left Section: Chat, Channels, Contacts */}
         <div className="flex items-center gap-0.5">
@@ -51,6 +56,7 @@ export const BottomBar = memo(function BottomBar({ modules, profile }: BottomBar
             <div className="group relative">
               <PopoverTrigger asChild>
                 <button
+                  aria-label="Chats"
                   onClick={() => togglePanel('chat')}
                   className={cn(
                     'relative flex items-center justify-center w-8 h-8 rounded-md transition-colors',
@@ -77,6 +83,7 @@ export const BottomBar = memo(function BottomBar({ modules, profile }: BottomBar
             <div className="group relative">
               <PopoverTrigger asChild>
                 <button
+                  aria-label="Channels"
                   onClick={() => togglePanel('channels')}
                   className={cn(
                     'flex items-center justify-center w-8 h-8 rounded-md transition-colors',
@@ -103,6 +110,7 @@ export const BottomBar = memo(function BottomBar({ modules, profile }: BottomBar
             <div className="group relative">
               <PopoverTrigger asChild>
                 <button
+                  aria-label="Contacts"
                   onClick={() => togglePanel('contacts')}
                   className={cn(
                     'flex items-center justify-center w-8 h-8 rounded-md transition-colors',
@@ -137,6 +145,7 @@ export const BottomBar = memo(function BottomBar({ modules, profile }: BottomBar
             <div className="group relative">
               <PopoverTrigger asChild>
                 <button
+                  aria-label="Quick Actions"
                   onClick={() => togglePanel('commands')}
                   className={cn(
                     'flex items-center justify-center w-8 h-8 rounded-md transition-colors',
@@ -163,6 +172,7 @@ export const BottomBar = memo(function BottomBar({ modules, profile }: BottomBar
             <div className="group relative">
               <PopoverTrigger asChild>
                 <button
+                  aria-label="Sticky Notes"
                   onClick={() => togglePanel('notes')}
                   className={cn(
                     'flex items-center justify-center w-8 h-8 rounded-md transition-colors',
@@ -187,6 +197,7 @@ export const BottomBar = memo(function BottomBar({ modules, profile }: BottomBar
 
           <div className="group relative">
             <button
+              aria-label="Help"
               onClick={() => router.push('/crm/learn/getting-started')}
               className="flex items-center justify-center w-8 h-8 rounded-md transition-colors text-slate-500 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-slate-100 dark:hover:bg-slate-800"
             >

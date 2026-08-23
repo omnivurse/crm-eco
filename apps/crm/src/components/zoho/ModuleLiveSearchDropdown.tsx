@@ -1,6 +1,6 @@
 'use client';
 
-import { Popover, PopoverContent, PopoverTrigger } from '@crm-eco/ui';
+import { Popover, PopoverAnchor, PopoverContent } from '@crm-eco/ui';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { Loader2, Search } from 'lucide-react';
 import { SearchMatchChips, HighlightedText } from '@/components/crm/records/SearchMatchChips';
@@ -60,7 +60,11 @@ export function ModuleLiveSearchDropdown({
         onSubmit={onSubmit}
         className="relative flex-1 min-w-[12rem] max-w-2xl group"
       >
-        <PopoverTrigger asChild>
+        {/* A11Y-1: an ANCHOR, not a trigger — PopoverTrigger asChild stamped
+            type/aria-haspopup/aria-expanded onto this plain <div>, which axe
+            flags critical (aria-allowed-attr). The panel is opened by the
+            input's own focus/typing handlers, so nothing else changes. */}
+        <PopoverAnchor asChild>
           <div className="relative w-full">
             <Search
               className={cn(
@@ -91,7 +95,7 @@ export function ModuleLiveSearchDropdown({
               spellCheck={false}
             />
           </div>
-        </PopoverTrigger>
+        </PopoverAnchor>
 
         <PopoverContent
           align="start"

@@ -20,6 +20,15 @@
  *   LINT_BASE=HEAD node e2e/lint-changed.mjs  # only the working tree vs the last commit
  *   node e2e/lint-changed.mjs --strict        # any finding fails (plain eslint bar)
  *   node e2e/lint-changed.mjs --json          # machine-readable report on stdout
+ *   node e2e/lint-changed.mjs --staged <paths…>  # lint-staged / pre-commit mode
+ *
+ * --staged is what the root package.json lint-staged entry runs: base = HEAD and
+ * the file set comes from the arguments lint-staged appends, so committing a file
+ * that already carried findings is fine while anything the commit ADDS (a raw
+ * `toast.success('…')`, say) fails the hook. It also runs ESLint with cwd =
+ * apps/crm, which the flat config needs: `files` globs resolve against the cwd,
+ * so `eslint --config apps/crm/eslint.config.mjs` from the repo root silently
+ * mis-scopes every path-specific override.
  *
  * Read-only: it never writes files and never fixes anything.
  */
@@ -35,6 +44,8 @@ const APP_REL = path.relative(REPO_ROOT, APP_DIR).split(path.sep).join('/');
 const LINTABLE = /\.(ts|tsx|js|jsx|mjs|cjs)$/;
 const STRICT = process.argv.includes('--strict');
 const JSON_OUT = process.argv.includes('--json');
+const STAGED = process.argv.includes('--staged');
+const FILE_ARGS = process.argv.slice(2).filter((a) => !a.startsWith('-'));
 
 const git = (...args) =>
   execFileSync('git', args, { cwd: REPO_ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
@@ -42,6 +53,8 @@ const git = (...args) =>
 function resolveBase() {
   const explicit = process.env.LINT_BASE?.trim();
   if (explicit) return git('rev-parse', '--verify', `${explicit}^{commit}`);
+  // Pre-commit: "did THIS commit add a finding?" — compare against the last commit.
+  if (STAGED) return git('rev-parse', 'HEAD');
   for (const ref of ['origin/main', 'main']) {
     try {
       return git('merge-base', 'HEAD', ref);
@@ -50,6 +63,13 @@ function resolveBase() {
     }
   }
   return git('rev-parse', 'HEAD');
+}
+
+/** lint-staged hands us absolute paths; keep the apps/crm ones, repo-relative. */
+function stagedFiles() {
+  return [...new Set(FILE_ARGS.map((a) => path.relative(REPO_ROOT, path.resolve(REPO_ROOT, a)).split(path.sep).join('/')))]
+    .filter((rel) => rel.startsWith(`${APP_REL}/`) && LINTABLE.test(rel) && fs.existsSync(path.join(REPO_ROOT, rel)))
+    .sort();
 }
 
 function changedFiles(base) {
@@ -78,7 +98,7 @@ function tally(messages) {
 }
 
 const base = resolveBase();
-const files = changedFiles(base);
+const files = STAGED ? stagedFiles() : changedFiles(base);
 const eslint = new ESLint({ cwd: APP_DIR, warnIgnored: false });
 
 const report = { base, baseShort: base.slice(0, 8), strict: STRICT, files: [], carried: 0, fresh: 0, checked: 0 };
@@ -117,13 +137,20 @@ for (const rel of files) {
 if (JSON_OUT) {
   process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
 } else {
-  console.log(`lint-changed · base ${report.baseShort}${process.env.LINT_BASE ? ' (LINT_BASE)' : ' (merge-base with main)'} · ${report.checked} changed file(s) under ${APP_REL}${STRICT ? ' · --strict' : ''}`);
+  const baseLabel = process.env.LINT_BASE ? ' (LINT_BASE)' : STAGED ? ' (HEAD, staged)' : ' (merge-base with main)';
+  console.log(`lint-changed · base ${report.baseShort}${baseLabel} · ${report.checked} changed file(s) under ${APP_REL}${STRICT ? ' · --strict' : ''}`);
   for (const f of report.files) {
     const flag = f.fresh.length > 0 ? 'NEW ' : f.carried > 0 ? 'debt' : 'ok  ';
     console.log(`  ${flag}  ${f.file}  base=${f.existedAtBase ? f.base : 'n/a'} head=${f.head} carried=${f.carried} new=${f.fresh.length}`);
     for (const m of f.fresh) console.log(`        ${m.line}:${m.column}  ${m.rule}  ${m.message}`);
   }
   console.log(`\ncarried (pre-existing, not introduced here): ${report.carried}   new: ${report.fresh}`);
-  console.log(report.fresh === 0 ? 'OK: no new lint findings in changed files.' : 'FAIL: new lint findings — fix them before the walk counts anything.');
+  console.log(
+    report.fresh === 0
+      ? 'OK: no new lint findings in changed files.'
+      : STAGED
+        ? 'FAIL: this commit adds lint findings — fix them (raw toast copy → toastCopy.* from @/lib/crm/toast-copy).'
+        : 'FAIL: new lint findings — fix them before the walk counts anything.',
+  );
 }
 process.exit(report.fresh === 0 ? 0 : 1);

@@ -136,7 +136,13 @@ export function NotificationsPanel() {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative h-8 w-8 rounded-md">
+        {/* A11Y-1: icon-only trigger — the unread count belongs in the name. */}
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : 'Notifications'}
+          className="relative h-8 w-8 rounded-md"
+        >
           <Bell className="w-4 h-4" />
           {unreadCount > 0 && (
             <Badge

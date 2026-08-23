@@ -120,6 +120,24 @@ export function CrmShell({
         <div className="relative flex flex-col h-screen overflow-hidden bg-background [scrollbar-gutter:stable]">
           {/* Content Container */}
           <div className="relative flex flex-col w-full h-full min-h-0">
+            {/* A11Y-1: the first Tab stop of every CRM page. Without it a
+                keyboard user walks the whole top bar, module tab bar and
+                sidebar (18+ stops) before reaching the page itself; from here
+                the next Tab is the page's own first control (on a record, its
+                "Skip to record details" link). Invisible until focused. */}
+            <a
+              href="#crm-main-content"
+              onClick={(e) => {
+                const target = document.getElementById('crm-main-content');
+                if (!target) return;
+                e.preventDefault();
+                target.focus({ preventScroll: false });
+              }}
+              className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-2 focus:z-50 focus:rounded-md focus:bg-teal-600 focus:px-3 focus:py-1.5 focus:text-sm focus:font-medium focus:text-white focus:shadow-lg focus:outline-none"
+              data-testid="crm-skip-to-content"
+            >
+              Skip to content
+            </a>
             {/* Offline banner — sits above the topbar so the user
                 notices it immediately when connectivity drops. Returns
                 null when navigator.onLine is true, so there's zero
@@ -169,7 +187,11 @@ export function CrmShell({
                 navModules={navModules ?? modules}
               />
 
-              <main className="flex-1 min-w-0 min-h-0 overflow-auto [scrollbar-gutter:stable] px-2 py-1.5 sm:px-3 sm:py-1.5 lg:px-4 lg:py-2 scrollbar-thin">
+              <main
+                id="crm-main-content"
+                tabIndex={-1}
+                className="flex-1 min-w-0 min-h-0 overflow-auto [scrollbar-gutter:stable] px-2 py-1.5 sm:px-3 sm:py-1.5 lg:px-4 lg:py-2 scrollbar-thin focus:outline-none"
+              >
                 {/* Full-bleed within the shell — no ultrawide max-width cap.
                     Page-level max-w is reserved for reading/forms only. */}
                 <div className="w-full pb-10">

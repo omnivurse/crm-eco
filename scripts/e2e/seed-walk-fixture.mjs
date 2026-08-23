@@ -10,7 +10,7 @@
  *       walk-viewer@example.invalid   / Walk-Viewer-2026!    role staff, crm_role crm_viewer
  *     (the profiles_sync_to_org_members trigger creates organization_members)
  *   - crm_feature_flags: PIFH crm.nav.simple = FALSE (owner decision: full
- *     shell), asserts the global crm.layout.v2 row exists and is enabled, and
+ *     shell), PIFH crm.lists.trim_surface = TRUE (LOCAL ONLY — LS-9/D11), asserts the global crm.layout.v2 row exists and is enabled, and
  *     mirrors the other prod global/PIFH flag values
  *   - PIFH CRM CONFIG mirrored from prod via scripts/e2e/fixture-shapes.json
  *     (captured read-only by dump-prod-fixture-shapes.mjs — config tables only,
@@ -247,6 +247,14 @@ async function seedFlags() {
   if (navSimple) navSimple.enabled = false;
   else wanted.push({ scope: 'pifh', organization_id: ORG_ID, flag_key: 'crm.nav.simple', enabled: false, rollout_percentage: 0, description: 'Simple tenant navigation: flat sidebar driven by enabled crm_modules, no top module tabs.' });
 
+  // LOCAL ONLY (LS-9 / decision D11): turn the PIFH list-surface trim on so the
+  // walk exercises the trimmed rail. Prod stays untouched — the rollback-ready
+  // INSERT lives in docs/ux/live-reality-2026-08-22.md, "Pending prod config
+  // writes". Idempotent: the loop below updates the row if it already exists.
+  const trim = wanted.find((f) => f.scope === 'pifh' && f.flag_key === 'crm.lists.trim_surface');
+  if (trim) trim.enabled = true;
+  else wanted.push({ scope: 'pifh', organization_id: ORG_ID, flag_key: 'crm.lists.trim_surface', enabled: true, rollout_percentage: 0, description: 'Trim the list surface: Zoho-leftover related-module filters behind "Show all", pipeline/schedule view modes behind "More views".' });
+
   for (const f of wanted) {
     const orgId = f.scope === 'global' ? null : ORG_ID;
     let q = sb.from('crm_feature_flags').select('id,enabled').eq('flag_key', f.flag_key);
@@ -263,7 +271,7 @@ async function seedFlags() {
   }
   const v2 = must(await sb.from('crm_feature_flags').select('enabled').eq('flag_key', 'crm.layout.v2').is('organization_id', null).maybeSingle(), 'layout.v2');
   if (!v2?.enabled) throw new Error('global crm.layout.v2 flag row missing or disabled — apply migrations first (202607140006)');
-  console.log(`flags mirrored  ${wanted.length} (crm.nav.simple@PIFH=false, crm.layout.v2@global=true)`);
+  console.log(`flags mirrored  ${wanted.length} (crm.nav.simple@PIFH=false, crm.lists.trim_surface@PIFH=true [local only], crm.layout.v2@global=true)`);
 }
 
 // ---------------------------------------------------------------------------

@@ -16,6 +16,7 @@ import type { CrmProfile } from './types';
 export type CrmFeatureFlagKey =
   | 'crm.layout.v2'
   | 'crm.nav.simple'
+  | 'crm.lists.trim_surface'
   | (string & { readonly __brand?: never });
 
 interface ResolvedFlag {
@@ -90,4 +91,20 @@ export async function resolveCrmNavProfile(
 ): Promise<'simple' | 'full'> {
   const flag = await resolveCrmFeatureFlag('crm.nav.simple', profile, false);
   return flag.enabled ? 'simple' : 'full';
+}
+
+/**
+ * Road to Ten LS-9 (decision D11): trim the PIFH list surface — the
+ * Zoho-leftover related-module filter groups and the pipeline/schedule view
+ * modes — down to what a health-share desk actually uses.
+ *
+ * Hidden, never removed: both surfaces keep a "Show all" / "More views"
+ * disclosure, and anything already active stays visible. Default `false`, so
+ * an org without a row (and any DB failure) sees today's full surface.
+ */
+export async function isListSurfaceTrimEnabled(
+  profile: Pick<CrmProfile, 'organization_id' | 'ui_preferences'> | null | undefined,
+): Promise<boolean> {
+  const flag = await resolveCrmFeatureFlag('crm.lists.trim_surface', profile, false);
+  return flag.enabled;
 }

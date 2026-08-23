@@ -520,13 +520,16 @@ export function ZohoContextualSidebar({
             {/* Mobile Sidebar - Slide-in Drawer */}
             <aside
                 ref={mobileDrawerRef}
+                data-testid="crm-mobile-nav-drawer"
                 data-crm-module={activeTopModule}
                 aria-hidden={!mobileMenuOpen}
                 inert={!mobileMenuOpen}
                 className={cn(
                     'fixed left-0 bottom-0 w-72 z-40 lg:hidden',
-                    // No module tab bar under the simple profile → drawer starts right under the top bar.
-                    isSimple ? 'top-[var(--crm-topbar-h)]' : 'top-[var(--crm-chrome-h)]',
+                    // NV-8 (D10): the module tab strip is lg+ chrome, so below lg
+                    // there is nothing between the top bar and this drawer — it
+                    // starts flush under the top bar for every nav profile.
+                    'top-[var(--crm-topbar-h)]',
                     'flex flex-col bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-white/10',
                     'transform transition-transform duration-300 ease-in-out',
                     mobileMenuOpen ? 'translate-x-0' : '-translate-x-full pointer-events-none',

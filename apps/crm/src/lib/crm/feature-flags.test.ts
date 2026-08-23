@@ -21,7 +21,7 @@ vi.mock('./queries', () => ({
   }),
 }));
 
-import { isLayoutV2Enabled, resolveCrmFeatureFlag } from './feature-flags';
+import { isLayoutV2Enabled, isListSurfaceTrimEnabled, resolveCrmFeatureFlag } from './feature-flags';
 
 const ORG = '00000000-0000-0000-0000-000000000001';
 
@@ -67,5 +67,34 @@ describe('resolveCrmFeatureFlag (FB-4: no per-user override)', () => {
   it('DB errors fall back closed to the fallback arg', async () => {
     dbError = { message: 'boom' };
     expect(await isLayoutV2Enabled({ organization_id: ORG, ui_preferences: { crm_layout_v2: true } })).toBe(false);
+  });
+});
+
+describe('isListSurfaceTrimEnabled (LS-9 / decision D11)', () => {
+  beforeEach(() => {
+    rows = [];
+    dbError = null;
+  });
+
+  it('defaults to false with no row — orgs keep the full list surface', async () => {
+    expect(await isListSurfaceTrimEnabled({ organization_id: ORG, ui_preferences: null })).toBe(false);
+  });
+
+  it('an org row turns the trim on', async () => {
+    rows = [{ organization_id: ORG, enabled: true }];
+    expect(await isListSurfaceTrimEnabled({ organization_id: ORG, ui_preferences: null })).toBe(true);
+  });
+
+  it('an org row wins over a global one', async () => {
+    rows = [
+      { organization_id: null, enabled: true },
+      { organization_id: ORG, enabled: false },
+    ];
+    expect(await isListSurfaceTrimEnabled({ organization_id: ORG, ui_preferences: null })).toBe(false);
+  });
+
+  it('DB errors fall back to the untrimmed surface', async () => {
+    dbError = { message: 'boom' };
+    expect(await isListSurfaceTrimEnabled({ organization_id: ORG, ui_preferences: null })).toBe(false);
   });
 });

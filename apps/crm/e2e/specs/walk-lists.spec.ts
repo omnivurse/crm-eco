@@ -1,14 +1,15 @@
 /**
  * EV-5 — lists: rail + lane chips + rail filter + pager + back-restores +
  * ?page=abc + Export disabled at zero rows (D9) + select-all count + the
- * mobile single-sheet filter.
+ * mobile single-sheet filter (LS-10: one overlay, ≤4 taps, no phantom rail
+ * column).
  * Budgets (D12): lane chip 1, Apply filter ≤3, pager next 1, rail toggle 1.
  *
  * Soft tasks describe Wave-2 work (LS-*: filter-aware lane counts, pager
  * honesty, select-all under the rail filter) and record pass=false today.
  */
 import { expect, test } from '../walk-fixture';
-import { FIXTURE, walkRole } from '../env';
+import { FIXTURE, LOCAL_SUPABASE_SERVICE_ROLE_KEY, LOCAL_SUPABASE_URL, PIFH_ORG_ID, walkRole } from '../env';
 import { assertTrapsInTest } from '../traps';
 import { armPendingStateLatch, firstInt, isMobileProject, parseShowing, pathWithQuery, readPendingStateLatch, runSuffix, toastTitles, trackRequests } from '../walk-helpers';
 import { DISPLAY_ONLY_FIELD_BADGE, DISPLAY_ONLY_FIELD_HINT } from '../../src/lib/crm/list-field-policy';
@@ -163,16 +164,19 @@ test.describe('lists walk', () => {
 
     await walk.task(
       'LS-page-abc',
-      '?page=abc renders page 1',
+      '?page=abc and ?page=0 both render page 1 (LS-2 clamp)',
       0,
       async () => {
-        await page.goto(`${LIST}?page=abc`, { waitUntil: 'domcontentloaded' });
-        await expect(showing()).toBeVisible({ timeout: 30_000 });
-        const text = (await showing().textContent())?.replace(/\s+/g, ' ').trim() ?? '';
-        walk.note('showing', text);
-        const s = parseShowing(text);
-        expect(s, `pager text "${text}" must parse (no NaN)`).not.toBeNull();
-        expect(s?.from).toBe(1);
+        // LS-2 acceptance names both spellings of a junk page param.
+        for (const raw of ['abc', '0']) {
+          await page.goto(`${LIST}?page=${raw}`, { waitUntil: 'domcontentloaded' });
+          await expect(showing()).toBeVisible({ timeout: 30_000 });
+          const text = (await showing().textContent())?.replace(/\s+/g, ' ').trim() ?? '';
+          walk.note(`showing.page-${raw}`, text);
+          const s = parseShowing(text);
+          expect(s, `pager text "${text}" for ?page=${raw} must parse (no NaN)`).not.toBeNull();
+          expect(s?.from, `?page=${raw} must land on page 1`).toBe(1);
+        }
       },
       { soft: true },
     );
@@ -277,19 +281,23 @@ test.describe('lists walk', () => {
         const chip = page.locator(PENDING_CHIP);
         const chipCount = (await chip.count()) > 0 ? firstInt((await chip.textContent()) ?? '') : null;
         walk.note('chipCount', chipCount);
-        // Below md the toolbar collapses behind "Filters & View" (MobileToolbarDrawer)
-        // and the filter trigger lives inside that sheet — one extra tap today.
+        // LS-10: below md the toolbar collapses behind ONE "Filters & View"
+        // sheet and the rail is rendered inside it — no second overlay, so the
+        // fields are one tap away instead of two.
         const directTrigger = page.getByTestId('crm-filter-trigger').locator('visible=true');
         if ((await directTrigger.count()) === 0) {
           walk.note('viaFiltersAndView', true);
           await walk.click(page.getByRole('button', { name: /Filters & View/ }), 'Filters & View');
-          await walk.click(page.getByRole('dialog').getByTestId('crm-filter-trigger'), 'Filters (inside the sheet)');
         } else {
           walk.note('viaFiltersAndView', false);
           await walk.click(directTrigger.first(), 'Filters');
         }
         const sheet = page.getByRole('dialog').filter({ has: page.locator('button').filter({ hasText: /^Contact Status/ }) }).first();
         await expect(sheet).toBeVisible();
+        // One overlay: the rail must not be stacked on top of the toolbar sheet.
+        const overlays = await page.getByRole('dialog').locator('visible=true').count();
+        walk.note('overlays', overlays);
+        expect(overlays, 'exactly one overlay is open while filtering').toBe(1);
         const fieldsTrigger = sheet.getByRole('button', { name: /^Filter By Fields/ });
         if ((await fieldsTrigger.count()) > 0 && (await fieldsTrigger.getAttribute('aria-expanded')) === 'false') {
           await walk.click(fieldsTrigger, 'expand Filter By Fields');
@@ -302,8 +310,44 @@ test.describe('lists walk', () => {
         const total = (await readShowing())?.total ?? null;
         walk.note('pagerTotal', total);
         walk.note('url', pathWithQuery(page));
+        // Apply closes the one sheet — the filtered list is visible, not buried.
+        // (Radix animates the sheet out, so poll rather than read once.)
+        await expect
+          .poll(async () => page.getByRole('dialog').locator('visible=true').count(), {
+            timeout: 10_000,
+            message: 'Apply must close the mobile sheet',
+          })
+          .toBe(0);
+        walk.note('overlaysAfterApply', await page.getByRole('dialog').locator('visible=true').count());
         expect(pathWithQuery(page)).toMatch(/filters=/);
         if (chipCount !== null) expect(total).toBe(chipCount);
+      },
+      { soft: true },
+    );
+
+    await walk.task(
+      'LS-10-flush-left',
+      'No phantom rail column: the records pane starts at the workspace left edge on a phone',
+      0,
+      async () => {
+        const workspace = page.locator('[data-filter-workspace]').first();
+        await expect(workspace).toBeVisible({ timeout: 30_000 });
+        const gap = await workspace.evaluate((el) => {
+          const pane = el.children[1] as HTMLElement | undefined;
+          const railCell = el.children[0] as HTMLElement | undefined;
+          return {
+            columnGap: getComputedStyle(el).columnGap,
+            railCellWidth: railCell ? Math.round(railCell.getBoundingClientRect().width) : null,
+            offsetPx: pane
+              ? Math.round(pane.getBoundingClientRect().left - el.getBoundingClientRect().left)
+              : null,
+          };
+        });
+        walk.note('columnGap', gap.columnGap);
+        walk.note('railCellWidth', gap.railCellWidth);
+        walk.note('paneOffsetPx', gap.offsetPx);
+        await walk.shot('table pane flush-left');
+        expect(gap.offsetPx, 'the records pane must sit flush against the left edge').toBe(0);
       },
       { soft: true },
     );
@@ -507,3 +551,195 @@ test.describe('rail keyboard (LS-8)', () => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// LS-2 — a list whose rows query FAILS says so: "Couldn't load {noun}" + Try
+// again, and never the Create/Import CTA (zero rows must not read as "empty").
+//
+// The rows query runs server-side (page.tsx → getRecords → Supabase from Node),
+// so a browser route intercept cannot reach it — the failure is forced from the
+// URL instead, with a filter PostgREST refuses (`contains` on the uuid `id`
+// column) and, failing that, a range far past the end (PostgREST 416). Both
+// make `getRecords` throw exactly like a real outage; the walk records which
+// one produced the state.
+// ---------------------------------------------------------------------------
+test.describe('list load failure (LS-2)', () => {
+  test("a failed rows query renders Couldn't load + Try again, never Create", async ({ page, request, bareRequest, walk }, testInfo) => {
+    const project = testInfo.project.name;
+    await assertTrapsInTest({ page, request, bareRequest, project });
+
+    const forced: Array<{ how: string; url: string }> = [
+      {
+        // created_at is a REAL timestamptz column (report-field-path.ts system
+        // fields), so `gt` with junk is rejected by Postgres itself — the same
+        // shape of failure a broken index or a dropped column would produce.
+        how: 'timestamptz column compared to junk (PostgREST 400)',
+        url: `${LIST}?filters=${encodeURIComponent(JSON.stringify([{ field: 'created_at', operator: 'gt', value: 'zz-not-a-date' }]))}`,
+      },
+      { how: 'range far past the end (PostgREST 416)', url: `${LIST}?page=99999` },
+    ];
+    // The list renders desktop and mobile twins; only one of them is displayed.
+    const panel = () => page.locator('[role="status"][data-reason]').locator('visible=true').first();
+    const settled = () =>
+      page.locator('[data-testid="crm-pager-showing"], [role="status"][data-reason]').locator('visible=true').first();
+
+    const probes: string[] = [];
+    let how: string | null = null;
+    let landedReason: string | null = null;
+    for (const attempt of forced) {
+      await page.goto(attempt.url, { waitUntil: 'domcontentloaded' });
+      await expect(settled(), `${attempt.how}: the list must settle on rows or an empty state`).toBeVisible({ timeout: 30_000 });
+      landedReason = (await panel().count()) > 0 ? await panel().getAttribute('data-reason') : 'rows';
+      probes.push(`${attempt.how} → ${landedReason}`);
+      if (landedReason === 'load-failed') {
+        how = attempt.how;
+        break;
+      }
+    }
+
+    await walk.task(
+      'LS-2-load-error',
+      "Forced rows-query failure → \"Couldn't load contacts\" + Try again, no Create/Import CTA (retry = 1 click)",
+      1,
+      async () => {
+        walk.note('forcedBy', how ?? '(none of the forced URLs failed the query)');
+        walk.note('probes', probes.join(' | '));
+        walk.note('emptyReason', landedReason);
+        walk.note('url', pathWithQuery(page));
+        expect(landedReason, 'a failed rows query must resolve to the load-failed empty state').toBe('load-failed');
+        const title = (await panel().locator('p').first().textContent())?.replace(/\s+/g, ' ').trim() ?? '';
+        walk.note('title', title);
+        expect(title, 'the load-failure title names the module noun').toMatch(/^Couldn.t load contacts$/i);
+        const description = (await panel().locator('p').nth(1).textContent())?.replace(/\s+/g, ' ').trim() ?? '';
+        walk.note('description', description);
+        expect(description, 'the copy must promise the filters are unchanged').toMatch(/filters are unchanged/i);
+        // Never the "empty module" doors: the rows are unknown, not absent.
+        const cta = panel().getByRole('button', { name: /Create|Import/i });
+        walk.note('createOrImportButtons', await cta.count());
+        expect(await cta.count(), 'a failed load must not offer Create/Import').toBe(0);
+        const retry = panel().getByRole('button', { name: 'Try again' });
+        await expect(retry, 'the only door out is Try again').toBeVisible();
+        const before = pathWithQuery(page);
+        await walk.click(retry, 'Try again');
+        // Retry is router.refresh(): same URL, so the state comes back (the
+        // forced failure is still forced) — what matters is that it re-runs
+        // without navigating away or throwing the app into its error boundary.
+        await expect(panel()).toBeVisible({ timeout: 30_000 });
+        walk.note('urlAfterRetry', pathWithQuery(page));
+        expect(pathWithQuery(page), 'Try again keeps the URL (LS-2: filters untouched)').toBe(before);
+        expect(await page.getByText(/Application error|Unhandled Runtime Error/i).count(), 'no error boundary').toBe(0);
+      },
+      { soft: true },
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// LS-7b — the leads list never promises rows it does not render: the converted
+// -lead guard lives in the query, so the "Showing 1 to Y of N" range, the rows
+// on the page and the total all agree. A throwaway pair (one live lead, one
+// converted) is created for the check and removed afterwards.
+// ---------------------------------------------------------------------------
+test.describe('leads pager honesty (LS-7b)', () => {
+  test('rendered rows fill the Showing range; a converted lead counts in neither', async ({ page, request, bareRequest, walk }, testInfo) => {
+    const project = testInfo.project.name;
+    await assertTrapsInTest({ page, request, bareRequest, project });
+    const suffix = runSuffix();
+    const LEADS = '/crm/modules/leads';
+    const restHeaders = {
+      apikey: LOCAL_SUPABASE_SERVICE_ROLE_KEY,
+      Authorization: `Bearer ${LOCAL_SUPABASE_SERVICE_ROLE_KEY}`,
+      'Content-Type': 'application/json',
+      Prefer: 'return=representation',
+    };
+    const rest = `${LOCAL_SUPABASE_URL}/rest/v1/crm_records`;
+
+    const showing = () => page.getByTestId('crm-pager-showing').first();
+    const readShowing = async () => parseShowing((await showing().textContent()) ?? '');
+    // Desktop/tablet render <tr id="crm-row-…">; mobile renders RecordCards whose
+    // title is the only link to /crm/r/. Count whichever this breakpoint drew.
+    const renderedRows = async () => {
+      const rows = await page.locator('tr[id^="crm-row-"]').count();
+      if (rows > 0) return rows;
+      return page.locator('main a[href^="/crm/r/"]').evaluateAll((els) => new Set(els.map((el) => el.getAttribute('href'))).size);
+    };
+
+    const modRes = await request.get(`${LOCAL_SUPABASE_URL}/rest/v1/crm_modules?org_id=eq.${PIFH_ORG_ID}&key=eq.leads&select=id`, {
+      headers: restHeaders,
+    });
+    const leadsModuleId = ((await modRes.json()) as Array<{ id: string }>)[0]?.id;
+    expect(leadsModuleId, 'the local fixture must have a leads module').toBeTruthy();
+
+    await page.goto(LEADS, { waitUntil: 'domcontentloaded' });
+    await expect(showing()).toBeVisible({ timeout: 30_000 });
+    const totalBefore = (await readShowing())?.total ?? null;
+
+    // first_name 'Walk' is the prune convention (scripts/e2e/seed-walk-fixture.mjs).
+    const made = await request.post(rest, {
+      headers: restHeaders,
+      data: [
+        {
+          org_id: PIFH_ORG_ID,
+          module_id: leadsModuleId,
+          title: `Walk Live${suffix}`,
+          status: 'New',
+          data: { first_name: 'Walk', last_name: `Live${suffix}`, walk_fixture: 'true' },
+        },
+        {
+          org_id: PIFH_ORG_ID,
+          module_id: leadsModuleId,
+          title: `Walk Conv${suffix}`,
+          status: 'Converted',
+          data: { first_name: 'Walk', last_name: `Conv${suffix}`, is_converted: true, lead_status: 'Converted', walk_fixture: 'true' },
+        },
+      ],
+    });
+    expect(made.status(), 'seed the LS-7b lead pair').toBeLessThan(300);
+    const ids = ((await made.json()) as Array<{ id: string }>).map((r) => r.id);
+
+    try {
+      await page.goto(LEADS, { waitUntil: 'domcontentloaded' });
+      await expect(showing()).toBeVisible({ timeout: 30_000 });
+
+      await walk.task(
+        'LS-7b-leads-rows',
+        'Leads: the page renders every row the "Showing" range promises, and the converted lead is in neither',
+        0,
+        async () => {
+          const s = await readShowing();
+          walk.note('showing', (await showing().textContent())?.replace(/\s+/g, ' ').trim() ?? '');
+          expect(s, 'the leads pager must parse').not.toBeNull();
+          const rows = await renderedRows();
+          walk.note('renderedRows', rows);
+          walk.note('promisedRows', s ? s.to - s.from + 1 : null);
+          walk.note('totalBefore', totalBefore);
+          walk.note('totalAfter', s?.total ?? null);
+          const promised = s!.to - s!.from + 1;
+          // The desktop table virtualises: on a long page only the visible
+          // window is in the DOM, so exact equality is only meaningful while
+          // the promised range fits one screen — which the leads fixture does.
+          if (promised <= 10) {
+            expect(rows, 'the list must render every row the range promises').toBe(promised);
+          } else {
+            walk.note('virtualised', true);
+            expect(rows, 'a virtualised page still renders rows').toBeGreaterThan(0);
+          }
+          expect(rows, 'rows on the page can never exceed what the range promises').toBeLessThanOrEqual(promised);
+          expect(promised, 'the range can never promise more than the total').toBeLessThanOrEqual(s!.total);
+          // The converted row counts in neither the total nor the rows.
+          if (totalBefore !== null) expect(s!.total, 'only the live lead may join the total').toBe(totalBefore + 1);
+          // Read the rows' own text (the virtualised table positions rows
+          // absolutely, so "visible" is a scroll question, not a listing one).
+          const rowsText = (await page.locator('tr[id^="crm-row-"], main a[href^="/crm/r/"]').allTextContents())
+            .join(' | ')
+            .replace(/\s+/g, ' ');
+          walk.note('rowsText', rowsText.slice(0, 200));
+          expect(rowsText, 'the live lead is listed').toContain(`Live${suffix}`);
+          expect(rowsText, 'a converted lead must not appear in the list').not.toContain(`Conv${suffix}`);
+        },
+        { soft: true },
+      );
+    } finally {
+      for (const id of ids) await request.delete(`${rest}?id=eq.${id}`, { headers: restHeaders });
+    }
+  });
+});

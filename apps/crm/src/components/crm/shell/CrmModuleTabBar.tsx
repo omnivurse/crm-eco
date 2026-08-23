@@ -54,6 +54,10 @@ interface CrmModuleTabBarProps {
 /**
  * Sticky module tab strip under the top bar. Full profile only: reps switch
  * CRM / Communications / Revenue without hunting in menus.
+ *
+ * NV-8 (D10): desktop chrome. Below `lg` the phone gets exactly ONE module
+ * switcher — the grid inside the nav drawer (`ModuleSwitcherRail`) — so the
+ * strip is hidden rather than duplicating it above a 390px viewport.
  */
 export function CrmModuleTabBar({ navProfile = 'full' }: CrmModuleTabBarProps) {
   // NV-2: the provider's tab (sticky on cross-tab sidebar hops; URL-resolved
@@ -65,7 +69,8 @@ export function CrmModuleTabBar({ navProfile = 'full' }: CrmModuleTabBarProps) {
   return (
     <nav
       aria-label="Modules"
-      className="sticky top-[var(--crm-topbar-h)] z-[35] isolate shrink-0 border-b border-border bg-background"
+      data-testid="crm-module-tabbar"
+      className="hidden lg:block sticky top-[var(--crm-topbar-h)] z-[35] isolate shrink-0 border-b border-border bg-background"
     >
       <div className="flex items-center gap-0.5 overflow-x-auto scrollbar-thin px-1.5 sm:px-3 lg:px-4">
         {MODULE_TABS.map((module) => {

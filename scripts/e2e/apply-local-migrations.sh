@@ -27,9 +27,24 @@
 #       # (e.g. applied by hand, and a later migration changed a signature so
 #       # the re-run can no longer succeed) — no SQL from the file is run
 #
+# CI (.github/workflows/crm-walk.yml) runs it right after `supabase start`, as
+#   LOCAL_DB_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres \
+#     scripts/e2e/apply-local-migrations.sh --strict
+# and relies on these non-interactive guarantees:
+#   - psql is called with -w, so a URL without a password FAILS instead of
+#     blocking on a password prompt forever
+#   - WAIT_FOR_DB_SECONDS (default 60) polls the DB before doing anything, so a
+#     container that is still coming up is a wait, not a flake; 0 disables it
+#   - PGCONNECT_TIMEOUT (default 10) bounds every connection attempt
+#   - LC_ALL=C makes the version comparison collation-independent
+#   - no prompts, no editors, no psqlrc (-X), no writes outside the local DB
+#
 # Exit codes: 0 ok (or soft failures without --strict), 1 hard failure in
-# --strict mode, 2 refused (non-local URL / missing psql / bad args).
+# --strict mode, 2 refused (non-local URL / missing psql / unreachable DB /
+# bad args).
 set -uo pipefail
+export LC_ALL=C
+export PGCONNECT_TIMEOUT="${PGCONNECT_TIMEOUT:-10}"
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 MIG_DIR="$REPO_ROOT/supabase/migrations"
@@ -42,7 +57,7 @@ while [[ $# -gt 0 ]]; do
     --strict) STRICT=1 ;;
     --dry-run) DRY=1 ;;
     --mark) shift; MARK="${1:-}"; [[ -n "$MARK" ]] || { echo "--mark needs a version" >&2; exit 2; } ;;
-    -h|--help) sed -n '2,34p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,/^set -uo pipefail/p' "$0" | sed '$d'; exit 0 ;;
     *) echo "unknown arg: $1" >&2; exit 2 ;;
   esac
   shift
@@ -56,7 +71,20 @@ case "$host" in
 esac
 command -v psql >/dev/null || { echo "psql not found" >&2; exit 2; }
 
-PSQL=(psql "$DB_URL" -X -q -v ON_ERROR_STOP=1)
+PSQL=(psql "$DB_URL" -X -q -w -v ON_ERROR_STOP=1)
+
+# ---- wait for the local DB (CI: the container may still be starting) ---------
+wait_secs="${WAIT_FOR_DB_SECONDS:-60}"
+waited=0
+until "${PSQL[@]}" -At -c 'select 1' >/dev/null 2>&1; do
+  if [[ "$waited" -ge "$wait_secs" ]]; then
+    echo "REFUSED: no local Postgres on $host after ${wait_secs}s. Start the stack first (CI: \`supabase start\`)." >&2
+    exit 2
+  fi
+  sleep 2
+  waited=$((waited + 2))
+done
+[[ "$waited" -gt 0 ]] && echo "waited ${waited}s for the local DB"
 
 ledger_max="$("${PSQL[@]}" -At -c "select coalesce(max(version),'0') from supabase_migrations.schema_migrations")" || { echo "cannot read ledger" >&2; exit 2; }
 ledger_versions="$("${PSQL[@]}" -At -c "select version from supabase_migrations.schema_migrations")"

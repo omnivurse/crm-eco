@@ -352,6 +352,25 @@ interface RecordCardProps {
   onDelete?: () => void;
 }
 
+/**
+ * A11Y-1: the row/card controls (select checkbox, ⋯ menu) are icon-only, so
+ * they need the record's name in their accessible name — "Select Wendy Walker"
+ * beats 25 identical "Select" checkboxes. Same precedence the card title uses.
+ */
+export function recordDisplayName(record: CrmRecord): string {
+  const firstName = (record.data?.first_name as string) || '';
+  const lastName = (record.data?.last_name as string) || '';
+  const fullName = [firstName, lastName].filter(Boolean).join(' ');
+  return (
+    (record.title && record.title !== 'Untitled' ? record.title : '') ||
+    fullName ||
+    (record.data?.account_name as string) ||
+    (record.data?.name as string) ||
+    record.title ||
+    'Untitled'
+  );
+}
+
 const RecordCard = memo(function RecordCard({
   record,
   isSelected,
@@ -365,10 +384,7 @@ const RecordCard = memo(function RecordCard({
   onDelete,
 }: RecordCardProps) {
   // Build display name: prefer DB-generated title, then common data fields
-  const firstName = record.data?.first_name || '';
-  const lastName = record.data?.last_name || '';
-  const fullName = [firstName, lastName].filter(Boolean).join(' ');
-  const displayName = (record.title && record.title !== 'Untitled' ? record.title : '') || fullName || record.data?.account_name as string || record.data?.name as string || record.title || 'Untitled';
+  const displayName = recordDisplayName(record);
 
   // Get status
   const rawStatus = record.status ?? record.data?.status ?? record.data?.lead_status ?? record.data?.contact_status;
@@ -393,6 +409,7 @@ const RecordCard = memo(function RecordCard({
           checked={isSelected}
           onCheckedChange={() => onSelect()}
           onClick={(e) => e.stopPropagation()}
+          aria-label={`Select ${displayName}`}
           className="mt-1 border-slate-400 dark:border-slate-600 data-[state=checked]:bg-teal-500 data-[state=checked]:border-teal-500"
         />
         <div className="flex-1 min-w-0">
@@ -422,6 +439,7 @@ const RecordCard = memo(function RecordCard({
               variant="ghost"
               size="icon"
               onClick={(e) => e.stopPropagation()}
+              aria-label={`More actions for ${displayName}`}
               className="h-8 w-8 text-slate-500 hover:text-slate-900 dark:hover:text-white flex-shrink-0"
             >
               <MoreHorizontal className="w-4 h-4" />
@@ -1280,8 +1298,9 @@ export const RecordTable = memo(function RecordTable({
   // Home/End jump, PageUp/Down change the results page, Esc clears.
   const handleGridKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     // Defer to inline-edit inputs and any focused interactive control (buttons,
-    // links, checkboxes) — nav keys only act when the grid container itself is
-    // focused (the aria-activedescendant pattern keeps focus there).
+    // links, checkboxes) — nav keys only act when the grid <table> itself is
+    // focused (the aria-activedescendant pattern keeps focus there); this
+    // handler sits on the scroller the table's keydowns bubble to.
     if (editingCell) return;
     const t = e.target as HTMLElement;
     if (
@@ -1407,21 +1426,18 @@ export const RecordTable = memo(function RecordTable({
           }
         }}
         // Keyboard-navigable grid: Tab or click into it, then arrows / j·k to
-        // move, Enter to open, Space to select. Focus stays here (survives
-        // virtualized row remount) and the active row is announced via
-        // aria-activedescendant.
-        role="grid"
-        tabIndex={0}
-        aria-label="Records — arrow keys to move, Enter to open, Space to select"
-        aria-rowcount={records.length}
-        aria-activedescendant={activeDescId}
+        // move, Enter to open, Space to select. Focus lives on the <table>
+        // (A11Y-1: role="grid" must own the rows directly — a div wrapping a
+        // <table> is an "unallowed child" and axe flags it critical), and the
+        // active row is announced from there via aria-activedescendant. The
+        // keydown handler stays on this scroller, which the row keys bubble to.
         onKeyDown={handleGridKeyDown}
         className={cn(
           'hidden md:block glass-card rounded-lg border border-slate-200 dark:border-white/10 overflow-auto scrollbar-thin sticky-scrollbar',
           fillParent
             ? 'h-full max-h-full'
             : 'h-full max-h-[calc(100vh-var(--crm-view-offset))]',
-          'focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-teal-500/40',
+          'focus:outline-none focus-within:ring-2 focus-within:ring-inset focus-within:ring-teal-500/40',
           isResizing && 'select-none'
         )}
         // Workspace lists fill the parent pane. Other hosts keep a measured cap
@@ -1438,7 +1454,15 @@ export const RecordTable = memo(function RecordTable({
           second `overflow-auto` div, which put the horizontal scrollbar below
           the LAST row (off-screen on long lists) and broke the sticky header.
           The container above is the single scroller for both axes. */}
-      <table className="w-full caption-bottom text-sm" style={{ minWidth: totalMinWidth }}>
+      <table
+        role="grid"
+        tabIndex={0}
+        aria-label="Records — arrow keys to move, Enter to open, Space to select"
+        aria-rowcount={records.length}
+        aria-activedescendant={activeDescId}
+        className="w-full caption-bottom text-sm focus:outline-none"
+        style={{ minWidth: totalMinWidth }}
+      >
         <TableHeader className={cn(
           'sticky top-0 z-10 transition-shadow block',
           isScrolled && 'shadow-md shadow-black/5 dark:shadow-black/20'
@@ -1570,6 +1594,7 @@ export const RecordTable = memo(function RecordTable({
                     <Checkbox
                       checked={selectedIds.has(record.id)}
                       onCheckedChange={() => handleSelectRow(record.id)}
+                      aria-label={`Select ${recordDisplayName(record)}`}
                       className="border-slate-400 dark:border-slate-600 data-[state=checked]:bg-teal-500 data-[state=checked]:border-teal-500"
                     />
                   </TableCell>
@@ -1672,6 +1697,7 @@ export const RecordTable = memo(function RecordTable({
                           <Button
                             variant="ghost"
                             size="icon"
+                            aria-label={`More actions for ${recordDisplayName(record)}`}
                             className="h-7 w-7 text-slate-500 hover:text-slate-900 dark:hover:text-white"
                           >
                             <MoreHorizontal className="w-3.5 h-3.5" />

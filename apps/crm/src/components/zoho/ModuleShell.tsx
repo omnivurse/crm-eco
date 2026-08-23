@@ -1410,7 +1410,10 @@ export const ModuleShell = memo(function ModuleShell({
           {/* Scope + Territory Filters (hidden on mobile — lives in the sheet) */}
           <div className="hidden md:flex items-center gap-2">
             <Select value={scope} onValueChange={(v) => handleScopeChange(v as RecordScope)}>
-              <SelectTrigger className="h-9 w-[150px] text-sm rounded-lg bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10">
+              <SelectTrigger
+                aria-label="Record scope"
+                className="h-9 w-[150px] text-sm rounded-lg bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10"
+              >
                 <Users className="w-3.5 h-3.5 mr-1.5 text-slate-400" />
                 <SelectValue />
               </SelectTrigger>
@@ -1812,12 +1815,36 @@ export const ModuleShell = memo(function ModuleShell({
       {/* Mobile-only "Filters & View" bottom sheet — re-uses every
           control from the desktop toolbar so there's exactly one source
           of state, just a different presentation. Opens via the compact
-          trigger rendered above. */}
+          trigger rendered above.
+
+          LS-10: below md this is the ONLY filter overlay. The rail is
+          rendered inline as the first section (same component, same
+          draft-until-Apply contract as the docked lg+ rail) instead of a
+          trigger that opened a second sheet on top of this one — Apply
+          closes the drawer, so Status → Pending → Apply is four taps. */}
       <MobileToolbarDrawer
         open={mobileToolbarOpen}
         onOpenChange={setMobileToolbarOpen}
         activeCount={mobileActiveCount}
         sections={[
+          {
+            id: 'filters',
+            // No section label: the rail carries its own "Filter {Module} by".
+            content: (
+              <div className="h-[58vh] min-h-0 overflow-hidden rounded-lg border border-slate-200 dark:border-white/10">
+                <FilterSidebar
+                  fields={fields}
+                  filters={filters}
+                  orgId={module.org_id}
+                  moduleKey={module.key}
+                  title={filterRailTitle}
+                  variant="dialog"
+                  onClose={() => setMobileToolbarOpen(false)}
+                  onFiltersChange={applyListFilters}
+                />
+              </div>
+            ),
+          },
           {
             id: 'viewmode',
             label: 'View mode',
@@ -1860,20 +1887,6 @@ export const ModuleShell = memo(function ModuleShell({
                 },
               ]
             : []),
-          {
-            id: 'filters',
-            label: 'Advanced filters',
-            content: (
-              <FilterSidebarTrigger
-                fields={fields}
-                filters={filters}
-                orgId={module.org_id}
-                moduleKey={module.key}
-                title={filterRailTitle}
-                onFiltersChange={applyListFilters}
-              />
-            ),
-          },
           ...(viewMode === 'table' || viewMode === 'split'
             ? [
                 {
