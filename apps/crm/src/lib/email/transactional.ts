@@ -7,6 +7,8 @@
  */
 
 import { Resend } from 'resend';
+import { inboundReplyTo } from '@crm-eco/lib/email';
+import { buildInviteAcceptPath } from '@/lib/team/invite-token';
 
 // Re-export shared transactional email functions
 export {
@@ -215,13 +217,14 @@ export async function sendTeamInviteEmail(params: {
     fromName = DEFAULT_FROM_NAME,
   } = params;
 
-  const inviteLink = `${getAppUrl()}/accept-invite#token=${inviteToken}`;
+  const inviteLink = `${getAppUrl()}${buildInviteAcceptPath(inviteToken)}`;
 
   try {
     const resend = getResendClient();
     const { data, error } = await resend.emails.send({
       from: `${fromName} <${fromEmail}>`,
       to: [toEmail],
+      replyTo: inboundReplyTo('support@payitforwardhealth.com'),
       subject: `You're invited to join ${organizationName}`,
       html: getTeamInviteEmailHtml({
         inviteeName,

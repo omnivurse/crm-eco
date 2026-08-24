@@ -31,6 +31,18 @@ export const X_ROBOTS_TAG_NOINDEX = 'noindex, nofollow, noarchive, nosnippet';
 /** Website paths left reachable without a PIN (banking / legal review). */
 export const WEBSITE_PIN_PUBLIC_PATHS = ['/legal/privacy', '/legal/sms-privacy'] as const;
 
+/**
+ * CRM paths that must work for someone who only has an email link.
+ * `/accept-invite` used to bounce to the PIN disguise, which dropped the
+ * invite token and made team invites look like they never arrived.
+ */
+export const CRM_PIN_PUBLIC_PATHS = [
+  '/accept-invite',
+  '/legal',
+  '/reset-password',
+  '/update-password',
+] as const;
+
 export const PIN_LOCK_ROBOTS_METADATA = {
   index: false,
   follow: false,

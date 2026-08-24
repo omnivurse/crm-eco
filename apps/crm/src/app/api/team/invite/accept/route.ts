@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, getAuthUser } from '@/lib/supabase-server';
 import { createServerClient } from '@supabase/ssr';
+import { crmRoleForTenantRole } from '@/lib/crm/tenant-role-mapping';
 
 /**
  * GET /api/team/invite/accept?token=xxx
@@ -84,6 +85,18 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createClient();
 
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+    const serviceClient = createServerClient(supabaseUrl, serviceRoleKey, {
+      cookies: { getAll() { return []; }, setAll() {} },
+    });
+
+    const { data: invitation } = await serviceClient
+      .from('team_invitations')
+      .select('role')
+      .eq('token', token)
+      .single();
+
     // Call the DB function that validates and creates the profile
     const { data: profileId, error } = await (supabase as any).rpc('accept_team_invitation', {
       p_token: token,
@@ -99,6 +112,19 @@ export async function POST(request: NextRequest) {
         : message.includes('already has a profile') ? 409
         : 500;
       return NextResponse.json({ error: message }, { status });
+    }
+
+    // accept_team_invitation writes org `role` only. Without crm_role the
+    // new user lands in "No CRM Access" even when invited as Admin.
+    const crmRole = invitation?.role ? crmRoleForTenantRole(invitation.role) : null;
+    if (crmRole && profileId) {
+      const { error: crmRoleError } = await serviceClient
+        .from('profiles')
+        .update({ crm_role: crmRole })
+        .eq('id', profileId);
+      if (crmRoleError) {
+        console.error('[Invite] Failed to set crm_role after accept:', crmRoleError);
+      }
     }
 
     return NextResponse.json({

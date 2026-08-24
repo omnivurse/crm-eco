@@ -77,7 +77,8 @@ import {
   SelectValue,
 } from '@crm-eco/ui/components/select';
 import { toast } from 'sonner';
-import { createClient } from '@crm-eco/lib/supabase/client';
+import { toastCopy } from '@/lib/crm/toast-copy';
+import { supabase } from '@/lib/supabase-client';
 import { useClientAuth } from '@/hooks/useClientAuth';
 import type { CrmRole } from '@/lib/crm/types';
 
@@ -297,12 +298,12 @@ export default function UsersPage() {
 function UsersPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const supabase = createClient();
   const { user: authUser, profile: authProfile, loading: authLoading } = useClientAuth();
   const rolesRef = useRef<HTMLDivElement>(null);
 
   // Data state
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
 
@@ -345,52 +346,59 @@ function UsersPageContent() {
   // ========================================================================
 
   const loadUsers = useCallback(async () => {
-    if (!authProfile?.organization_id) return;
+    if (!authProfile?.organization_id) {
+      throw new Error('Your session is missing an organization. Sign in again.');
+    }
 
-    // Redirect non-admins
     if (authProfile.crm_role !== 'crm_admin') {
       router.push('/crm/settings?error=admin_only');
-      return;
+      throw new Error('Admin access required');
     }
 
-    try {
-      // Get all org users
-      const { data: orgUsers } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('organization_id', authProfile.organization_id)
-        .order('full_name');
+    const { data: orgUsers, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('organization_id', authProfile.organization_id)
+      .order('full_name');
 
-      setUsers((orgUsers || []) as UserProfile[]);
-    } catch (error) {
-      console.error('Failed to load users:', error);
-      toast.error('Failed to load users');
-    } finally {
-      setLoading(false);
-    }
-  }, [supabase, router, authProfile]);
+    if (error) throw new Error(error.message || 'Failed to load users');
+    setUsers((orgUsers || []) as UserProfile[]);
+  }, [router, authProfile]);
 
   const loadInvitations = useCallback(async () => {
-    if (!authProfile?.organization_id) return;
-
-    try {
-      const { data } = await supabase
-        .from('team_invitations')
-        .select('*, inviter:profiles!team_invitations_invited_by_fkey(full_name)')
-        .eq('organization_id', authProfile.organization_id)
-        .eq('status', 'pending')
-        .order('created_at', { ascending: false });
-
-      setInvitations(
-        (data || []).map((inv: Record<string, unknown>) => ({
-          ...inv,
-          inviter_name: (inv.inviter as { full_name?: string } | null)?.full_name || 'Unknown',
-        })) as Invitation[]
-      );
-    } catch (error) {
-      console.error('Failed to load invitations:', error);
+    if (!authProfile?.organization_id) {
+      throw new Error('Your session is missing an organization. Sign in again.');
     }
-  }, [supabase, authProfile]);
+
+    const { data, error } = await supabase
+      .from('team_invitations')
+      .select('*, inviter:profiles!team_invitations_invited_by_fkey(full_name)')
+      .eq('organization_id', authProfile.organization_id)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false });
+
+    if (error) throw new Error(error.message || 'Failed to load invitations');
+
+    setInvitations(
+      (data || []).map((inv: Record<string, unknown>) => ({
+        ...inv,
+        inviter_name: (inv.inviter as { full_name?: string } | null)?.full_name || 'Unknown',
+      })) as Invitation[]
+    );
+  }, [authProfile]);
+
+  const refreshLists = useCallback(async (opts?: { silent?: boolean }) => {
+    try {
+      await Promise.all([loadUsers(), loadInvitations()]);
+      if (!opts?.silent) toast.success(toastCopy.updated('User list'));
+    } catch (error) {
+      console.error('Failed to refresh users:', error);
+      toast.error(toastCopy.failed('refresh the user list', error, 'Try again'));
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [loadUsers, loadInvitations]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -398,9 +406,9 @@ function UsersPageContent() {
       router.push('/crm-login');
       return;
     }
-    loadUsers();
-    loadInvitations();
-  }, [authLoading, authUser, loadUsers, loadInvitations, router]);
+    if (!authProfile) return;
+    void refreshLists({ silent: true });
+  }, [authLoading, authUser, authProfile, refreshLists, router]);
 
   // ========================================================================
   // Actions
@@ -615,15 +623,15 @@ function UsersPageContent() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
 
-      toast.success(data.emailSent
-        ? `Invitation sent to ${email}`
-        : `Invitation created for ${email} (email delivery pending)`
-      );
+      if (data.emailSent === false) {
+        throw new Error(data.error || 'Invitation saved but the email failed to send');
+      }
+      toast.success(`Invitation sent to ${email}`);
 
       setInviteDialog(false);
       setInviteEmail('');
       setInviteRole('staff');
-      loadInvitations();
+      await refreshLists({ silent: true });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to send invitation');
     } finally {
@@ -659,11 +667,14 @@ function UsersPageContent() {
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
+      if (data.emailSent === false) {
+        throw new Error(data.error || 'Invitation updated but the email failed to send');
+      }
 
-      toast.success('Invitation resent');
-      loadInvitations();
+      toast.success(toastCopy.updated('Invitation'));
+      await refreshLists({ silent: true });
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to resend invitation');
+      toast.error(toastCopy.failed('resend the invitation', error, 'Try again'));
     }
   }
 
@@ -733,8 +744,17 @@ function UsersPageContent() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => { loadUsers(); loadInvitations(); }}>
-            <RefreshCw className="w-4 h-4 mr-2" />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={refreshing}
+            onClick={() => {
+              setRefreshing(true);
+              void refreshLists();
+            }}
+          >
+            <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
           <Button size="sm" onClick={() => setInviteDialog(true)}>

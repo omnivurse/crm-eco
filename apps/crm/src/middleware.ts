@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { enforcePinLock } from '@crm-eco/ui/lib/pin-lock-next';
+import { CRM_PIN_PUBLIC_PATHS } from '@crm-eco/ui/lib/pin-lock';
 import {
   MFA_STEP_UP_PATH,
   hasVerifiedTotpFactor,
@@ -177,7 +178,7 @@ function redirectWithCookies(
 // ---------------------------------------------------------------------------
 
 export async function middleware(request: NextRequest) {
-  const pin = enforcePinLock(request);
+  const pin = enforcePinLock(request, CRM_PIN_PUBLIC_PATHS);
   if (pin) return pin;
 
   let supabaseResponse = NextResponse.next({ request });

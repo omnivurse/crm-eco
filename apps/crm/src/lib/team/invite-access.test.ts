@@ -1,0 +1,24 @@
+import { describe, expect, it } from 'vitest';
+import { canAccessTeamSettings, canInviteOrgAdmin, canSendTeamInvite } from './invite-access';
+
+describe('team invite access', () => {
+  it('lets a CRM admin manage the team page and send invites', () => {
+    const crmAdmin = { crm_role: 'crm_admin', role: 'staff' };
+    expect(canAccessTeamSettings(crmAdmin)).toBe(true);
+    expect(canSendTeamInvite(crmAdmin)).toBe(true);
+    expect(canInviteOrgAdmin(crmAdmin)).toBe(true);
+  });
+
+  it('lets an organization owner invite even without a CRM role column', () => {
+    const owner = { crm_role: null, role: 'owner' };
+    expect(canSendTeamInvite(owner)).toBe(true);
+    expect(canInviteOrgAdmin(owner)).toBe(true);
+  });
+
+  it('does not treat a CRM agent as a team admin', () => {
+    const agent = { crm_role: 'crm_agent', role: 'advisor' };
+    expect(canAccessTeamSettings(agent)).toBe(false);
+    expect(canSendTeamInvite(agent)).toBe(false);
+    expect(canInviteOrgAdmin(agent)).toBe(false);
+  });
+});

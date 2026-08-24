@@ -15,6 +15,7 @@ import {
   UserPlus,
   LogIn,
 } from 'lucide-react';
+import { readInviteToken } from '@/lib/team/invite-token';
 
 interface InvitationDetails {
   email: string;
@@ -25,21 +26,13 @@ interface InvitationDetails {
 
 type PageState = 'loading' | 'unauthenticated' | 'check-email' | 'email-mismatch' | 'ready' | 'signup' | 'accepting' | 'success' | 'error';
 
-/** Extract token from URL fragment (#token=xxx) — never sent to servers */
-function getTokenFromHash(): string | null {
-  if (typeof window === 'undefined') return null;
-  const hash = window.location.hash; // e.g. "#token=abc123"
-  if (!hash.startsWith('#token=')) return null;
-  return hash.slice('#token='.length) || null;
-}
-
 export default function AcceptInvitePage() {
   const router = useRouter();
   const [token, setToken] = useState<string | null | undefined>(undefined);
 
-  // Read token from fragment on mount (fragment is client-only)
+  // Query first (new mail), then hash (already-sent mail).
   useEffect(() => {
-    setToken(getTokenFromHash());
+    setToken(readInviteToken(window.location.search, window.location.hash));
   }, []);
 
   const [state, setState] = useState<PageState>('loading');

@@ -23,6 +23,7 @@ import {
 import { CapacityBadges } from '@/components/shared/capacity-badge';
 import { supabase } from '@/lib/supabase-client';
 import { useClientAuth } from '@/hooks/useClientAuth';
+import { canAccessTeamSettings } from '@/lib/team/invite-access';
 import { toast } from 'sonner';
 import {
   DropdownMenu,
@@ -152,12 +153,12 @@ export default function TeamManagementPage() {
         id: authProfile.id,
         user_id: authProfile.user_id,
         full_name: authProfile.full_name || '',
-        role: (authProfile.crm_role || 'staff') as UserRole,
+        role: (authProfile.role || 'staff') as UserRole,
       } as TeamMember);
 
-      // Check if user has permission
-      const userRole = authProfile.crm_role;
-      if (!userRole || !['owner', 'super_admin', 'admin'].includes(userRole)) {
+      // CRM admins use crm_role=crm_admin; this page used to compare that
+      // against organization roles (owner/admin) and always denied access.
+      if (!canAccessTeamSettings(authProfile)) {
         toast.error('You do not have permission to access this page');
         return;
       }
@@ -234,6 +235,9 @@ export default function TeamManagementPage() {
         throw new Error(result.error || 'Failed to send invitation');
       }
 
+      if (result.emailSent === false) {
+        throw new Error(result.error || 'Invitation saved but the email failed to send');
+      }
       toast.success(`Invitation sent to ${inviteEmail}`);
       setShowInviteModal(false);
       setInviteEmail('');
@@ -270,11 +274,13 @@ export default function TeamManagementPage() {
         method: 'POST',
       });
 
+      const result = await response.json();
       if (!response.ok) {
-        const result = await response.json();
         throw new Error(result.error || 'Failed to resend invitation');
       }
-
+      if (result.emailSent === false) {
+        throw new Error(result.error || 'Invitation updated but the email failed to send');
+      }
       toast.success('Invitation resent');
       loadTeamData();
     } catch (error) {

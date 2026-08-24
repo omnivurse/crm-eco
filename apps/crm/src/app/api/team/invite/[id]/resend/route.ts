@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient, getAuthProfile } from '@/lib/supabase-server';
 import crypto from 'crypto';
 import { sendTeamInviteEmail } from '@/lib/email/transactional';
+import { canSendTeamInvite } from '@/lib/team/invite-access';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,8 +27,7 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Check permissions using org-level role
-    if (!profile.role || !['owner', 'super_admin', 'admin'].includes(profile.role)) {
+    if (!canSendTeamInvite(profile)) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
 
@@ -94,12 +94,19 @@ export async function POST(
 
     if (!emailResult.success) {
       console.warn(`Failed to resend invite email to ${invitation.email}:`, emailResult.error);
+      return NextResponse.json(
+        {
+          error: 'Invitation was updated but the email failed to send. Try Resend again.',
+          emailSent: false,
+        },
+        { status: 502 }
+      );
     }
 
     return NextResponse.json({
       success: true,
       expires_at: newExpiresAt.toISOString(),
-      emailSent: emailResult.success,
+      emailSent: true,
     });
   } catch (error) {
     console.error('Resend invitation error:', error);

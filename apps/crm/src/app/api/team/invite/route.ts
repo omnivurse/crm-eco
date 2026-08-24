@@ -8,6 +8,7 @@ import { createClient, getAuthProfile } from '@/lib/supabase-server';
 import crypto from 'crypto';
 import { sendTeamInviteEmail } from '@/lib/email/transactional';
 import { rateLimitDurable, getRateLimitHeaders } from '@crm-eco/lib/rate-limit';
+import { canInviteOrgAdmin, canSendTeamInvite } from '@/lib/team/invite-access';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,9 +38,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check permissions using org-level role
-    const allowedRoles = ['owner', 'super_admin', 'admin'];
-    if (!profile.role || !allowedRoles.includes(profile.role)) {
+    if (!canSendTeamInvite(profile)) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
 
@@ -56,8 +55,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
     }
 
-    // Only owner/super_admin can invite admins
-    if (role === 'admin' && !['owner', 'super_admin'].includes(profile.role!)) {
+    if (role === 'admin' && !canInviteOrgAdmin(profile)) {
       return NextResponse.json({ error: 'Cannot invite admin role' }, { status: 403 });
     }
 
@@ -135,7 +133,19 @@ export async function POST(request: NextRequest) {
 
     if (!emailResult.success) {
       console.warn(`Failed to send invite email to ${email}:`, emailResult.error);
-      // Don't fail the request - invitation was created, just email failed
+      return NextResponse.json(
+        {
+          error: 'Invitation was saved but the email failed to send. Use Resend.',
+          invitation: {
+            id: invitation.id,
+            email: invitation.email,
+            role: invitation.role,
+            expires_at: invitation.expires_at,
+          },
+          emailSent: false,
+        },
+        { status: 502 }
+      );
     }
 
     return NextResponse.json({
@@ -146,7 +156,7 @@ export async function POST(request: NextRequest) {
         role: invitation.role,
         expires_at: invitation.expires_at,
       },
-      emailSent: emailResult.success,
+      emailSent: true,
     });
   } catch (error) {
     console.error('Team invite error:', error);

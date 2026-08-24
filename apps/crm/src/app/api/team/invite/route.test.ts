@@ -13,6 +13,8 @@ vi.mock('@/lib/email/transactional', () => ({
   sendTeamInviteEmail: vi.fn(() => Promise.resolve({ success: true })),
 }));
 
+import { sendTeamInviteEmail } from '@/lib/email/transactional';
+
 vi.mock('crypto', () => ({
   default: {
     randomBytes: vi.fn(() => ({
@@ -199,6 +201,39 @@ describe('POST /api/team/invite', () => {
     const body = await res.json();
     expect(body.success).toBe(true);
     expect(body.invitation.email).toBe('new@example.com');
+    expect(body.emailSent).toBe(true);
+  });
+
+  it('returns 502 when the invitation is saved but the email fails', async () => {
+    mockGetAuthProfile.mockResolvedValue({ ...buildProfile({ crm_role: 'admin' }), role: 'admin' });
+    const sb = buildMockClient();
+    mockCreateClient.mockResolvedValue(sb);
+    vi.mocked(sendTeamInviteEmail).mockResolvedValueOnce({ success: false, error: 'Resend down' });
+    const req = buildRequest('http://localhost:3000/api/team/invite', {
+      method: 'POST',
+      body: { email: 'new@example.com', role: 'advisor' },
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(502);
+    const body = await res.json();
+    expect(body.emailSent).toBe(false);
+    expect(body.invitation.email).toBe('new@example.com');
+  });
+
+  it('lets a CRM admin invite even when organization role is not admin', async () => {
+    mockGetAuthProfile.mockResolvedValue({
+      ...buildProfile({ crm_role: 'crm_admin' }),
+      role: 'staff',
+      crm_role: 'crm_admin',
+    });
+    const sb = buildMockClient();
+    mockCreateClient.mockResolvedValue(sb);
+    const req = buildRequest('http://localhost:3000/api/team/invite', {
+      method: 'POST',
+      body: { email: 'new@example.com', role: 'advisor' },
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(200);
   });
 
   it('returns 500 on DB insert error', async () => {

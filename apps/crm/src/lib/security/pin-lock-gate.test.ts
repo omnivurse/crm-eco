@@ -10,6 +10,7 @@ import {
   PIN_LOCK_PATH_HEADER,
   pinLockRobots,
   sanitizePinLockNext,
+  CRM_PIN_PUBLIC_PATHS,
   WEBSITE_PIN_PUBLIC_PATHS,
 } from '@crm-eco/ui/lib/pin-lock';
 
@@ -85,6 +86,28 @@ describe('evaluatePinLockRequest', () => {
         nextParam: '/plans',
       }),
     ).toEqual({ action: 'redirect', location: '/plans' });
+  });
+
+  it('leaves CRM invite and password-reset links public', () => {
+    expect(
+      evaluatePinLockRequest({
+        pathname: '/accept-invite',
+        search: '?token=abc',
+        extraExemptPaths: CRM_PIN_PUBLIC_PATHS,
+      }),
+    ).toEqual({ action: 'allow', lockPath: false });
+    expect(
+      evaluatePinLockRequest({
+        pathname: '/reset-password',
+        extraExemptPaths: CRM_PIN_PUBLIC_PATHS,
+      }),
+    ).toEqual({ action: 'allow', lockPath: false });
+    expect(
+      evaluatePinLockRequest({
+        pathname: '/crm-login',
+        extraExemptPaths: CRM_PIN_PUBLIC_PATHS,
+      }).action,
+    ).toBe('redirect');
   });
 
   it('leaves website legal review paths public', () => {

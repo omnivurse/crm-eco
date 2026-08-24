@@ -39,6 +39,8 @@ export interface ClientProfile {
   organization_id: string;
   full_name: string | null;
   crm_role: string | null;
+  /** Organization role (owner / admin / staff). Distinct from crm_role. */
+  role?: string | null;
   user_id: string;
 }
 
@@ -153,7 +155,7 @@ async function fetchAuth(force = false): Promise<void> {
 
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('id, organization_id, full_name, crm_role, user_id')
+        .select('id, organization_id, full_name, crm_role, role, user_id')
         .eq('user_id', authUser.id)
         .single();
 
