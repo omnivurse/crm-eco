@@ -129,8 +129,9 @@ export function FilterableTimeline({
               disabled={pill.id !== 'all' && count === 0}
               className={cn(
                 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-medium transition-colors',
+                // A11Y: white on teal-600 is 3.74:1. teal-700 is 5.47:1.
                 active
-                  ? 'bg-teal-600 border-teal-600 text-white'
+                  ? 'bg-teal-700 border-teal-700 text-white'
                   : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:border-teal-400 hover:text-teal-600 dark:hover:text-teal-400',
                 pill.id !== 'all' && count === 0 && 'opacity-40 cursor-not-allowed hover:border-slate-200 hover:text-slate-600',
               )}
@@ -140,8 +141,11 @@ export function FilterableTimeline({
               <span
                 className={cn(
                   'inline-flex items-center justify-center h-4 min-w-[1rem] px-1 rounded-full text-[10px] font-semibold',
+                  // A11Y: `bg-white/20` LIGHTENS the chip it sits on, so white
+                  // count text landed at 4.43:1. A darker pill inside the chip
+                  // reads the same and measures 9.48:1 opaque.
                   active
-                    ? 'bg-white/20 text-white'
+                    ? 'bg-teal-900 text-white'
                     : 'bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-300',
                 )}
               >

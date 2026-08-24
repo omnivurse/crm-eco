@@ -26,7 +26,12 @@ function Fact({ label, value, hint }: { label: string; value: string | null; hin
     <div className="min-w-0">
       <dt className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</dt>
       <dd
-        className={cn('truncate text-xs', present ? 'text-foreground' : 'italic text-muted-foreground/70')}
+        // A11Y: `text-muted-foreground/70` composited to #7a8491 on the card —
+        // 3.79:1, under the 4.5:1 floor, on the three "Not on file" facts. The
+        // token at full strength is #414f62 (8.33:1) and the italic still
+        // distinguishes an absent value from `text-foreground`, so the fade was
+        // buying nothing the type style did not already say.
+        className={cn('truncate text-xs', present ? 'text-foreground' : 'italic text-muted-foreground')}
         title={present ? (value ?? undefined) : NOT_ON_FILE}
       >
         {present ? value : NOT_ON_FILE}

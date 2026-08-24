@@ -71,6 +71,22 @@ export const InlineSelectField = memo(function InlineSelectField({
     return found?.label ?? (pick ? String(pick) : null);
   }, [options, pick]);
 
+  /**
+   * The list the `<select>` really offers.
+   *
+   * `getFieldOptionChoices` stopped offering options a curator deactivated
+   * (`is_active: false`) — correct for NEW picks, but a record that already
+   * holds a retired value then had no matching `<option>`, so the native select
+   * fell back to the empty placeholder and the control read as "nothing
+   * chosen" over a field that is not empty. The retired value is re-attached
+   * here, disabled so it cannot be re-picked and labelled so it can be read.
+   */
+  const offered = useMemo(() => {
+    const current = pick ?? value;
+    if (!current || options.some((o) => o.value === current)) return options;
+    return [...options, { value: current, label: String(current), disabled: true }];
+  }, [options, pick, value]);
+
   /** Read-only / locked: always reflect server-provided value, not local pick */
   const serverLabel = useMemo(() => {
     const found = options.find((o) => o.value === value);
@@ -176,7 +192,7 @@ export const InlineSelectField = memo(function InlineSelectField({
         aria-label={ariaLabel ?? field}
       >
         <option value="">{placeholder}</option>
-        {options.map((opt) => (
+        {offered.map((opt) => (
           <option key={opt.value} value={opt.value} disabled={opt.disabled}>
             {opt.label}
           </option>

@@ -11,6 +11,7 @@ branch `feat/usability-road-to-ten` (Wave 2 interim tree, 2026-08-23).
 
 | testid / attribute | file:line | element | purpose |
 |---|---|---|---|
+| `crm-topbar` | components/crm/shell/CrmTopBar.tsx:174 | `<header>` | "The CRM shell has rendered" anchor. The `nav-profile` trap waits for it so it can tell the simple shell (no module tab strip) apart from a page that has not painted yet — sampling the strip alone reported `simple` at random against the streaming production server |
 | `crm-palette-input` | components/crm/shell/CommandPalette.tsx:736 | `<Input>` | Command palette query box |
 | `crm-palette-result` | components/crm/shell/CommandPalette.tsx:815 | `<button>` (one per row) | Palette result / command row — `getByTestId(...).first()` or filter by text |
 | `crm-qc-form` | components/zoho/QuickCreateDrawer.tsx:1085 | `<form>` | Quick-create drawer form root |

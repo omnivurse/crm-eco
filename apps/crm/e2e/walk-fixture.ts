@@ -199,7 +199,15 @@ export function createWalk(page: Page, meta: { project: string; testTitle: strin
     fs.mkdirSync(dir, { recursive: true });
     const file = path.join(dir, `${String(t.shotIndex).padStart(2, '0')}-${slug(label)}.png`);
     try {
-      await page.screenshot({ path: file, timeout: 10_000 });
+      // `caret: 'initial'` — Playwright's DEFAULT is 'hide', which paints
+      // `caret-color: transparent` into the live document to keep shots stable.
+      // The page-errors trap then read that back as a React hydration mismatch
+      // (`+ style={{caret-color:"transparent"}}` on the record's find-in-record
+      // input) — the harness reporting its own footprint as a product defect,
+      // which is the exact class of false result this trap exists to kill. The
+      // walk's screenshots are evidence for a human, not pixel comparisons, so
+      // a blinking caret costs nothing.
+      await page.screenshot({ path: file, timeout: 10_000, caret: 'initial' });
     } catch {
       // A navigation in flight can reject the screenshot; the step still counts.
     }

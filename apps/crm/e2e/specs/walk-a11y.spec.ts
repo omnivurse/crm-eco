@@ -562,11 +562,25 @@ test.describe('a11y walk (A11Y-1)', () => {
  *     project, both themes.
  *   button-name (critical) — the mass-actions bar's overflow trigger, and the
  *     card-view row checkboxes on the phone list (ListView.tsx:255).
- *   color-contrast — NextUpRail.tsx:29 `text-muted-foreground/70` 3.79:1;
- *     RecordRelatedListChips.tsx:118 white on bg-violet-500 4.23:1;
- *     FilterableTimeline.tsx:144 white on bg-white/20 over the active chip
- *     4.43:1; ListView.tsx:188-191 avatar initials, white on bg-emerald-500
- *     2.53 / bg-blue-500 3.67 / bg-indigo-500 4.46:1.
+ *   color-contrast — FIXED for the seven nodes this sweep reported at
+ *     desktop-1440/operator, each with a measured replacement and a unit test
+ *     that fails if the shade slides back:
+ *       · NextUpRail.tsx `text-muted-foreground/70` 3.79:1 → the token at full
+ *         strength, 8.33:1 (next-up-rail-contrast.test.ts). The italic already
+ *         said "not on file"; the fade was saying it twice, illegibly.
+ *       · RecordRelatedListChips.tsx white on bg-violet-500 4.23:1 → violet-600
+ *         5.70:1. Every OTHER hue in that map was below the floor too
+ *         (emerald-500 2.54, cyan-500 2.43, amber-500 2.15 …), so all 13 active
+ *         styles moved to the first shade that clears 4.5:1
+ *         (chip-contrast.test.ts grades the whole map, not just the hue axe
+ *         happened to open).
+ *       · FilterableTimeline.tsx white on bg-white/20 4.43:1 → an opaque
+ *         teal-900 badge, 9.48:1. The translucent white was LIGHTENING the chip
+ *         beneath it, so the subtle treatment was the defect. The chip itself
+ *         (bg-teal-600, 3.74:1) moved to teal-700, 5.47:1.
+ *     STILL OPEN, and not in this wave's seven: ListView.tsx:188-191 avatar
+ *     initials, white on bg-emerald-500 2.53 / bg-blue-500 3.67 /
+ *     bg-indigo-500 4.46:1.
  *   duplicate React key (console.error, admin only) —
  *     app/crm/settings/page.tsx:228 keys the cards by `card.href`, and :59 and
  *     :147 both point at /crm/settings/fields.

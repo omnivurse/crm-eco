@@ -23,11 +23,19 @@ import {
   useFieldLockOwner,
 } from '@/hooks/useRecordFieldLocks';
 import { LockedFieldBadge } from './LockedFieldBadge';
+import type { FieldOptionChoice } from '@/lib/crm/utils';
 
 export interface InlineMultiSelectFieldProps {
   field: string;
   value: string[] | null | undefined;
-  options: string[];
+  /**
+   * Value/label pairs, not bare values. A curated picklist stores a code
+   * ("2_legacy_zoho") and shows a label ("Legacy — Zoho"); this cell used to be
+   * handed `getFieldOptions()`, which flattens the pair back to the code, so a
+   * curated multiselect would have offered — and shown — raw codes. Same
+   * contract as InlineSelectField.
+   */
+  options: readonly FieldOptionChoice[];
   target?: FieldSaveTarget;
   readOnly?: boolean;
   placeholder?: string;
@@ -57,6 +65,14 @@ export const InlineMultiSelectField = memo(function InlineMultiSelectField({
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLSpanElement>(null);
   const selected = Array.isArray(value) ? value : [];
+
+  // A stored value whose option was curated away (or renamed) still has to be
+  // readable and removable, so an unknown code falls back to showing itself
+  // rather than disappearing from the chips.
+  const labelFor = useCallback(
+    (v: string) => options.find((o) => o.value === v)?.label ?? v,
+    [options],
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -153,7 +169,7 @@ export const InlineMultiSelectField = memo(function InlineMultiSelectField({
             variant="secondary"
             className="font-normal gap-1 pr-1"
           >
-            {v}
+            {labelFor(v)}
             <button
               type="button"
               onClick={(e) => {
@@ -161,7 +177,7 @@ export const InlineMultiSelectField = memo(function InlineMultiSelectField({
                 void handleRemove(v);
               }}
               className="inline-flex items-center justify-center rounded-sm hover:bg-slate-300/70 dark:hover:bg-white/10"
-              aria-label={`Remove ${v}`}
+              aria-label={`Remove ${labelFor(v)}`}
             >
               <X className="w-3 h-3" />
             </button>
@@ -194,12 +210,12 @@ export const InlineMultiSelectField = memo(function InlineMultiSelectField({
             </div>
           ) : (
             options.map((opt) => {
-              const active = selected.includes(opt);
+              const active = selected.includes(opt.value);
               return (
                 <button
-                  key={opt}
+                  key={opt.value}
                   type="button"
-                  onClick={() => void handleToggle(opt)}
+                  onClick={() => void handleToggle(opt.value)}
                   className={cn(
                     'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-left',
                     'hover:bg-slate-100 dark:hover:bg-slate-800',
@@ -216,7 +232,7 @@ export const InlineMultiSelectField = memo(function InlineMultiSelectField({
                   >
                     {active ? <Check className="h-3 w-3" /> : null}
                   </span>
-                  <span className="truncate">{opt}</span>
+                  <span className="truncate">{opt.label}</span>
                 </button>
               );
             })

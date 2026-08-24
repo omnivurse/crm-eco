@@ -18,8 +18,16 @@
 # recorded against any host that is not 127.0.0.1, so a mis-pointed run fails
 # loudly instead of quietly grading production.
 #
-# Runtime budget: ~20 min (stack ~4, npm ci ~2, browsers ~1, walk ~10). The
-# walk step is capped at 25 min and the job at 35.
+# The walk grades a PRODUCTION build: playwright.config.ts's `webServer` runs
+# `next build` and then `next start`, because `next dev` carries framework
+# artefacts production does not have (the dev overlay's server-side error
+# boundary shifts every useId below <body>) and production minifies React's
+# messages. WALK_DEV=1 is a local-only escape hatch and this workflow must never
+# set it — the config throws when CI does, walk.json records env.serverMode and
+# the gate refuses anything that is not "prod".
+#
+# Runtime budget: ~25 min (stack ~4, npm ci ~2, browsers ~1, next build ~3,
+# walk ~10). The walk step is capped at 30 min and the job at 40.
 name: CRM walk
 
 on:
@@ -60,7 +68,8 @@ concurrency:
 
 env:
   # The walk is pinned to the local stack; apps/crm/e2e/playwright.config.ts
-  # passes the same URL + public demo keys to `next dev`.
+  # passes the same URL + public demo keys to the `next build` AND the
+  # `next start` it runs, so the graded bundle has the local keys inlined.
   LOCAL_SUPABASE_URL: http://127.0.0.1:54321
   LOCAL_DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
   WALK_ROLE: ${{ inputs.role || 'operator' }}
@@ -73,7 +82,9 @@ jobs:
   walk:
     name: walk
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    # +5 over the pre-build harness: a graded run compiles the app before the
+    # first request (webServer.timeout is 600 s).
+    timeout-minutes: 40
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -176,7 +187,8 @@ jobs:
 
       - name: Record the walk
         working-directory: apps/crm
-        timeout-minutes: 25
+        # Includes the `next build` that webServer runs before the first request.
+        timeout-minutes: 30
         env:
           # Through env, never interpolated into the script (no shell injection).
           WALK_PROJECTS: ${{ inputs.projects || 'desktop-1440,tablet-1024,mobile-390' }}

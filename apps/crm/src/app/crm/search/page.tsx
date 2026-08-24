@@ -184,8 +184,16 @@ export default async function SearchPage({ searchParams }: PageProps) {
     <div className="w-full">
       {/* Header */}
       <div className="mb-6">
+        {/*
+          The dashboard is `/crm` (the command desk) — `/crm/dashboard` has
+          never been a route, so this sent every "Back to Dashboard" click to
+          the 404 page and made Next prefetch a missing route on every render of
+          this page. It stayed invisible because `next dev` does not prefetch;
+          only the production build asks for it, and only since the walk started
+          grading one.
+        */}
         <Link
-          href="/crm/dashboard"
+          href="/crm"
           className="inline-flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 mb-3 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />

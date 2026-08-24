@@ -73,6 +73,26 @@ function normalizeRecordId(id: string): string {
   return id.trim().toLowerCase();
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * PI-2 — `crm_records.id` and `crm_audit_log.entity_id` are `uuid` columns, so
+ * Postgres does not merely fail to match a non-uuid comparand: it ABORTS the
+ * statement with `invalid input syntax for type uuid`. `/crm/r/<segment>` puts
+ * a raw URL segment in front of those columns, so every typo'd or scanned-bot
+ * record URL used to raise a server error that `next dev` forwarded straight
+ * into the browser console.
+ *
+ * The guard is a filter, not a swallow: a value that cannot be a uuid cannot be
+ * a record id either, so skipping the query loses no result. The JSONB probes
+ * (`diff->>deleted_id`, `diff->deleted_snapshot->>id`) compare TEXT and are
+ * left alone — they are safe with any input, and audit diffs are the one place
+ * a non-uuid id could legitimately have been recorded.
+ */
+function isUuid(value: string): boolean {
+  return UUID_RE.test(value.trim());
+}
+
 function keeperIdFromDiff(diff: Record<string, unknown>, cursorNormalized: string): string | null {
   const raw = diff.kept_id;
   let asText: string | null = null;
@@ -137,18 +157,25 @@ async function findMergeHopFromAudit(
         .limit(1)
         .maybeSingle(),
     },
-    {
-      label: 'entity_id_tombstone',
-      builder: admin
-        .from('crm_audit_log')
-        .select('diff, created_at')
-        .in('entity', ['record', 'crm_records'])
-        .eq('action', 'merge')
-        .eq('entity_id', cursor)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle(),
-    },
+    // `entity_id` is a uuid column — see isUuid(). Only ask when the cursor
+    // could be one; otherwise this single query aborts and takes its
+    // console.error with it, while the two JSONB probes still run.
+    ...(isUuid(cursor)
+      ? [
+          {
+            label: 'entity_id_tombstone',
+            builder: admin
+              .from('crm_audit_log')
+              .select('diff, created_at')
+              .in('entity', ['record', 'crm_records'])
+              .eq('action', 'merge')
+              .eq('entity_id', cursor)
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .maybeSingle(),
+          },
+        ]
+      : []),
     {
       label: 'snapshotted_duplicate',
       builder: admin
@@ -180,6 +207,10 @@ export async function resolveRecordOrMergeDestination(
   recordId: string
 ): Promise<ResolveRecordResult> {
   if (!recordId) return { kind: 'missing' };
+  // A segment that is not a uuid is not a record id and never was one, so
+  // there is nothing for the audit walk to find. Returning here keeps the raw
+  // segment away from every uuid column at once (PI-2).
+  if (!isUuid(recordId)) return { kind: 'missing' };
 
   if (await recordExistsForUser(recordId)) {
     return { kind: 'found', recordId };
@@ -203,6 +234,10 @@ export async function resolveRecordOrMergeDestination(
 
     cursor = hopResult.keeperId;
     if (hopResult.mergedAt) lastMergedAt = hopResult.mergedAt;
+
+    // `kept_id` comes out of an audit diff, which is free-form JSON — a bad
+    // historical row could hold anything. `crm_records.id` is a uuid column.
+    if (!isUuid(cursor)) break;
 
     const { data: keeper } = await admin
       .from('crm_records')

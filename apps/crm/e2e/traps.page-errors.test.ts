@@ -39,6 +39,29 @@ function fakePage(url = 'http://localhost:3000/crm/r/abc'): {
   };
 }
 
+/**
+ * A faithful replica of the line `next dev` really logs (captured from
+ * /crm/modules/contacts, 2026-08-23). Two details matter and both are load
+ * bearing: React's PROSE bullets also start with "- ", and the real diff only
+ * begins after the docs link. A rule that scanned the whole message would read
+ * "- Invalid HTML tag nesting." as a diff line and never fire.
+ */
+const DEV_TREE_ID_SHIFT = [
+  "A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up.",
+  '',
+  "- A server/client branch `if (typeof window !== 'undefined')`.",
+  '- Invalid HTML tag nesting.',
+  '',
+  '%s%s https://react.dev/link/hydration-mismatch',
+  '',
+  '  <button type="button"',
+  '+                 id="radix-_R_ke7cmitplb_"',
+  '-                 id="radix-_R_2hotiqbn6lb_"',
+  '+                 aria-controls="radix-_R_2scmitplb_"',
+  '-                 aria-controls="radix-_R_bhiqbn6lb_"',
+  '    aria-haspopup="menu">',
+].join('\n');
+
 describe('page-errors trap', () => {
   it('fails when it was never armed — a silent trap is worse than none', () => {
     const { page } = fakePage();
@@ -140,35 +163,161 @@ describe('page-errors trap', () => {
   });
 
   // ── PI-1: the defect this trap was built to find ──
-  it('does NOT suppress the diagnosed Radix useId hydration mismatch — a known defect is still a red row', () => {
+  it('suppresses the dev-overlay tree-id shift — and says so, with the reason, in the row', () => {
     const { page, emitConsole } = fakePage();
     armPageIssueTrap(page);
     emitConsole(
       'error',
-      "A tree hydrated but some attributes of the server rendered HTML didn't match the client properties.\n" +
-        '  <button type="button"\n+ id="radix-_R_ke7cmitplb_"\n- id="radix-_R_2hotiqbn6lb_"\n aria-haspopup="menu">',
+      DEV_TREE_ID_SHIFT,
     );
     const result = trapNoPageIssues(page, 'the record page');
-    // Allowlisting it would rebuild the very false result this trap exists to
-    // kill: a green row printed beside a red dev-overlay badge.
-    expect(result.pass).toBe(false);
-    expect(result.detail).toMatch(/1 browser error/);
-    // …and the reader is told what it is instead of re-diagnosing it.
-    expect(result.detail).toContain('PI-1');
-    expect(result.detail).toContain('SplitCreateButton.tsx:185');
+    // Every +/- line React printed is a React tree id on a radix attribute —
+    // a value no application data can produce. `next build && next start` never
+    // emits it (136 cold loads, 0 occurrences), so it cannot reach a user.
+    expect(result.pass).toBe(true);
+    expect(result.detail).toContain('1 suppressed');
+    expect(result.detail).toMatch(/next-dev only/);
+    expect(hasUntrackedPageIssue(page)).toBe(false);
   });
 
-  it('staples the PI-n diagnosis onto the graded issue for walk.json', () => {
+  it('turns that allowance OFF when the walk drives a production build', () => {
+    const previous = process.env.WALK_SERVER_MODE;
+    process.env.WALK_SERVER_MODE = 'prod';
+    try {
+      const { page, emitConsole } = fakePage();
+      armPageIssueTrap(page);
+      emitConsole(
+        'error',
+        DEV_TREE_ID_SHIFT,
+      );
+      const result = trapNoPageIssues(page, 'the record page');
+      expect(result.pass).toBe(false);
+      expect(result.detail).toMatch(/1 browser error/);
+      expect(hasUntrackedPageIssue(page)).toBe(true);
+    } finally {
+      if (previous === undefined) delete process.env.WALK_SERVER_MODE;
+      else process.env.WALK_SERVER_MODE = previous;
+    }
+  });
+
+  it('does NOT excuse a hydration mismatch that changes anything other than a tree id', () => {
     const { page, emitConsole } = fakePage();
     armPageIssueTrap(page);
     emitConsole(
       'error',
-      "A tree hydrated but some attributes of the server rendered HTML didn't match the client properties.\n id=\"radix-_R_1a_\"",
+      DEV_TREE_ID_SHIFT.replace(
+        '    aria-haspopup="menu">',
+        '+                 title="Saved 2 minutes ago"\n-                 title="Saved just now">',
+      ),
     );
-    const split = splitPageIssues(pageIssuesSoFar(page));
-    expect(split.suppressed).toHaveLength(0);
-    expect(split.real).toHaveLength(1);
-    expect(split.real[0].known).toMatch(/^PI-1 /);
+    const result = trapNoPageIssues(page, 'the record page');
+    expect(result.pass).toBe(false);
+    expect(hasUntrackedPageIssue(page)).toBe(true);
+  });
+
+  it('excuses the composed Radix id family too (Tabs stamps one useId into three)', () => {
+    const { page, emitConsole } = fakePage();
+    armPageIssueTrap(page);
+    emitConsole(
+      'error',
+      DEV_TREE_ID_SHIFT.replace(
+        '+                 aria-controls="radix-_R_2scmitplb_"\n-                 aria-controls="radix-_R_bhiqbn6lb_"',
+        '+                 aria-controls="radix-_R_1l5esnebnacmitplb_-content-overview"\n' +
+          '-                 aria-controls="radix-_R_6klritpet9iqbn6lb_-content-overview"\n' +
+          '+                 aria-labelledby="radix-_R_p95esnebnacmitplb_"\n' +
+          '-                 aria-labelledby="radix-_R_354lritpet9iqbn6lb_"',
+      ),
+    );
+    expect(trapNoPageIssues(page, 'w').pass).toBe(true);
+    expect(hasUntrackedPageIssue(page)).toBe(false);
+  });
+
+  it('does NOT excuse a className or title difference — that is not an id', () => {
+    // Observed on /crm/modules/contacts in dev: two DIFFERENT buttons compared
+    // at one tree position. Production shows zero hydration errors, so this is
+    // dev-runtime too — but "probably the same thing" is not evidence, and the
+    // rule only excuses what it can prove is a tree id.
+    const { page, emitConsole } = fakePage('http://localhost:3000/crm/modules/contacts');
+    armPageIssueTrap(page);
+    emitConsole(
+      'error',
+      DEV_TREE_ID_SHIFT.replace(
+        '    aria-haspopup="menu">',
+        '+                 className="inline-flex items-center justify-center whitespace-nowrap text-sm font-me..."\n' +
+          '-                 className="inline-flex items-center justify-center whitespace-nowrap rounded-md text..."\n' +
+          '+                 title="Add Member — quick create (more options in the menu)">',
+      ),
+    );
+    expect(trapNoPageIssues(page, 'w').pass).toBe(false);
+    expect(hasUntrackedPageIssue(page)).toBe(true);
+  });
+
+  it('does NOT excuse a client-only `_r_` id — that is the server HTML being thrown away', () => {
+    const { page, emitConsole } = fakePage();
+    armPageIssueTrap(page);
+    emitConsole(
+      'error',
+      DEV_TREE_ID_SHIFT.replace('radix-_R_ke7cmitplb_', 'radix-_r_4_'),
+    );
+    expect(trapNoPageIssues(page, 'w').pass).toBe(false);
+    expect(hasUntrackedPageIssue(page)).toBe(true);
+  });
+
+  it('excuses React\u2019s companion umbrella only when the same page logged a qualifying line', () => {
+    const alone = fakePage();
+    armPageIssueTrap(alone.page);
+    alone.emitPageError(
+      'Error',
+      "Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client.",
+    );
+    expect(trapNoPageIssues(alone.page, 'w').pass).toBe(false);
+    expect(hasUntrackedPageIssue(alone.page)).toBe(true);
+
+    const paired = fakePage();
+    armPageIssueTrap(paired.page);
+    paired.emitConsole(
+      'error',
+      DEV_TREE_ID_SHIFT,
+    );
+    paired.emitPageError(
+      'Error',
+      "Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client.",
+    );
+    expect(trapNoPageIssues(paired.page, 'w').pass).toBe(true);
+    expect(hasUntrackedPageIssue(paired.page)).toBe(false);
+  });
+
+  it('carries both suppressed lines whole into walk.json, each with its reason', () => {
+    const { page, emitConsole, emitPageError } = fakePage();
+    armPageIssueTrap(page);
+    emitConsole(
+      'error',
+      DEV_TREE_ID_SHIFT,
+    );
+    emitPageError(
+      'Error',
+      "Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client.",
+    );
+    const { real, suppressed } = splitPageIssues(pageIssuesSoFar(page));
+    expect(real).toHaveLength(0);
+    expect(suppressed).toHaveLength(2);
+    expect(suppressed.every((s) => /next-dev only/.test(s.why))).toBe(true);
+    expect(suppressed[0].text).toContain('radix-_R_2hotiqbn6lb_');
+  });
+
+  it('PAGE_ISSUE_KNOWN is empty — a fixed defect keeps no standing excuse', () => {
+    const { page, emitConsole } = fakePage();
+    armPageIssueTrap(page);
+    emitConsole(
+      'error',
+      DEV_TREE_ID_SHIFT.replace(
+        '  <button type="button"\n+                 id="radix-_R_ke7cmitplb_"\n-                 id="radix-_R_2hotiqbn6lb_"\n+                 aria-controls="radix-_R_2scmitplb_"\n-                 aria-controls="radix-_R_bhiqbn6lb_"\n    aria-haspopup="menu">',
+        '  <time\n+                 dateTime="2026-08-23"\n-                 dateTime="2026-08-22">',
+      ),
+    );
+    const { real } = splitPageIssues(pageIssuesSoFar(page));
+    expect(real).toHaveLength(1);
+    expect(real[0].known).toBeUndefined();
   });
 
   it('an unknown error carries no PI-n label — the tag is evidence, not decoration', () => {
@@ -178,44 +327,22 @@ describe('page-errors trap', () => {
     expect(splitPageIssues(pageIssuesSoFar(page)).real[0].known).toBeUndefined();
   });
 
-  it('PI-1 is matched narrowly — a hydration mismatch WITHOUT a radix id is an unlabelled failure', () => {
-    const { page, emitConsole } = fakePage();
-    armPageIssueTrap(page);
-    emitConsole(
-      'error',
-      "A tree hydrated but some attributes of the server rendered HTML didn't match the client properties.\n" +
-        '  <time\n+ dateTime="2026-08-23"\n- dateTime="2026-08-22">',
-    );
-    const result = trapNoPageIssues(page, 'the record page');
-    expect(result.pass).toBe(false);
-    expect(result.detail).toMatch(/1 browser error/);
-    expect(result.detail).not.toContain('PI-1');
-  });
-
-  it('PI-2 labels the resolve-record uuid console.error — and still fails the trap', () => {
-    const { page, emitConsole } = fakePage('http://localhost:3000/crm/r/not-a-uuid');
-    armPageIssueTrap(page);
-    emitConsole('error', '%c%s%c [resolve-record] audit entity_id_tombstone: Server invalid input syntax for type uuid: "not-a-uuid"');
-    const result = trapNoPageIssues(page, 'the malformed-id door');
-    expect(result.pass).toBe(false);
-    expect(result.detail).toContain('PI-2');
-    expect(result.detail).toContain('resolve-record.ts:169');
-  });
-
-  it('PI-2 still matches when next-dev interleaves %c CSS between the colon and the postgres error', () => {
+  it('the resolve-record uuid error is now UNKNOWN — the product guard landed, so it aborts', () => {
+    // PI-2 is fixed (lib/crm/resolve-record.ts isUuid()). A line that reappears
+    // is a NEW regression and must stop the run, not arrive pre-excused.
     const { page, emitConsole } = fakePage('http://localhost:3000/crm/r/not-a-uuid');
     armPageIssueTrap(page);
     emitConsole(
       'error',
-      '[resolve-record] audit entity_id_tombstone: background: #e6e6e6;border-radius: 2px Server invalid input syntax for type uuid: "not-a-uuid"',
+      '%c%s%c [resolve-record] audit entity_id_tombstone: Server invalid input syntax for type uuid: "not-a-uuid"',
     );
     const result = trapNoPageIssues(page, 'the malformed-id door');
     expect(result.pass).toBe(false);
-    expect(result.detail).toContain('PI-2');
-    expect(hasUntrackedPageIssue(page)).toBe(false);
+    expect(result.detail).not.toContain('PI-2');
+    expect(hasUntrackedPageIssue(page)).toBe(true);
   });
 
-  it('a hydration line with no radix id is unlabelled and still aborts — PI-n is not a mute button', () => {
+  it('a hydration umbrella on its own is unlabelled and still aborts', () => {
     const { page, emitPageError } = fakePage('http://localhost:3000/crm/modules/contacts');
     armPageIssueTrap(page);
     emitPageError(
@@ -226,7 +353,6 @@ describe('page-errors trap', () => {
     const result = trapNoPageIssues(page, 'the contacts module');
     expect(result.pass).toBe(false);
     expect(result.detail).not.toContain('PI-1');
-    expect(result.detail).not.toContain('PI-3');
     expect(hasUntrackedPageIssue(page)).toBe(true);
   });
 
@@ -242,17 +368,11 @@ describe('page-errors trap', () => {
   });
 
   // ── the verdict / abort split ──
-  it('a diagnosed PI-n line is RED but does not abort the run', () => {
+  it('a suppressed line is neither red nor aborting; everything else is both', () => {
     const { page, emitConsole } = fakePage();
     armPageIssueTrap(page);
-    emitConsole(
-      'error',
-      "A tree hydrated but some attributes of the server rendered HTML didn't match the client properties.\n" +
-        '  <button\n+ id="radix-_R_ke7cmitplb_"\n- id="radix-_R_2hotiqbn6lb_">',
-    );
-    // Verdict: still a failure — the programme cannot claim "0 failures".
-    expect(trapNoPageIssues(page, 'w').pass).toBe(false);
-    // Abort: no. PI-1 is in the shared shell; throwing here would cost every row.
+    emitConsole('error', 'WebSocket connection to ws://localhost:3000/_next/webpack-hmr failed');
+    expect(trapNoPageIssues(page, 'w').pass).toBe(true);
     expect(hasUntrackedPageIssue(page)).toBe(false);
   });
 
@@ -264,27 +384,30 @@ describe('page-errors trap', () => {
     expect(hasUntrackedPageIssue(page)).toBe(true);
   });
 
-  it('a PI-n line cannot shield an undiagnosed one in the same run', () => {
+  it('a suppressed line cannot shield an undiagnosed one in the same run', () => {
     const { page, emitConsole, emitPageError } = fakePage();
     armPageIssueTrap(page);
-    emitConsole('error', "A tree hydrated but some attributes of the server rendered HTML didn't match\n+ id=\"radix-a\"");
+    emitConsole('error', 'WebSocket connection to ws://localhost:3000/_next/webpack-hmr failed');
     emitPageError('TypeError', 'boom');
     expect(hasUntrackedPageIssue(page)).toBe(true);
+    expect(trapNoPageIssues(page, 'w').pass).toBe(false);
   });
 
-  it('labels a PI-n line with `known` — the field the task row filters on', () => {
+  it('charges the task row with every graded line — nothing carries a `known` pass any more', () => {
     const { page, emitConsole, emitPageError } = fakePage();
     armPageIssueTrap(page);
-    emitConsole('error', "A tree hydrated but some attributes of the server rendered HTML didn't match\n+ id=\"radix-a\"");
+    emitConsole(
+      'error',
+      DEV_TREE_ID_SHIFT.replace(
+        '  <button type="button"\n+                 id="radix-_R_ke7cmitplb_"\n-                 id="radix-_R_2hotiqbn6lb_"\n+                 aria-controls="radix-_R_2scmitplb_"\n-                 aria-controls="radix-_R_bhiqbn6lb_"\n    aria-haspopup="menu">',
+        '  <time\n+                 dateTime="2026-08-23"\n-                 dateTime="2026-08-22">',
+      ),
+    );
     emitPageError('TypeError', 'boom');
     const { real } = splitPageIssues(pageIssuesSoFar(page));
     expect(real).toHaveLength(2);
     // walk-fixture charges the row with `real.filter(i => !i.known)`.
-    const chargeable = real.filter((i) => !i.known);
-    const known = real.filter((i) => i.known);
-    expect(chargeable.map((i) => i.kind)).toEqual(['pageerror']);
-    expect(known).toHaveLength(1);
-    expect(known[0].known).toMatch(/PI-1/);
+    expect(real.filter((i) => !i.known)).toHaveLength(2);
   });
 
   it('never armed is treated as the loudest failure, not as silence', () => {

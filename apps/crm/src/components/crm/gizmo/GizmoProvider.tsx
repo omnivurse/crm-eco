@@ -21,6 +21,9 @@ const DEFAULT_STATE: GizmoPersistedState = {
   welcomeCompleted: false,
 };
 
+/** Shared so a route with no tips does not mint a new array on every render. */
+const NO_TIPS: GizmoTip[] = [];
+
 const GizmoContext = createContext<GizmoContextValue | undefined>(undefined);
 
 interface GizmoProviderProps {
@@ -69,7 +72,13 @@ export function GizmoProvider({ children, profileId }: GizmoProviderProps) {
     }
   }, [pathname]);
 
-  const allCurrentTips: GizmoTip[] = match?.tipSet.tips ?? [];
+  // `?? []` minted a new array on every render, so `currentTips` and then the
+  // context `value` changed identity every single render — and this provider
+  // sits above the page-level `<Suspense>` boundaries, where a changed ancestor
+  // context makes React discard the dehydrated server HTML and client-render
+  // the page. One shared empty array keeps the identity stable on the (common)
+  // no-tips routes.
+  const allCurrentTips: GizmoTip[] = match?.tipSet.tips ?? NO_TIPS;
   const currentPageLabel = match?.tipSet.pageLabel ?? null;
 
   const currentTips = useMemo(

@@ -9,6 +9,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { APIRequestContext, Page } from '@playwright/test';
+import { describeBuildIdMismatch, isWalkBuildId, parseServedBuildId } from './build-id';
 import {
   ACTIVE_LANE_STATUSES,
   BASE_URL,
@@ -121,8 +122,111 @@ export async function trapProdGuard(opts: {
 }
 
 /**
+ * The markers that say which Next binary answered. Measured on this app, not
+ * assumed — `curl /lock` against each server and diff:
+ *   · `next dev` (turbopack) ships the dev overlay and the HMR client into the
+ *     document: `…compiled_next-devtools_index_*.js`, `…hmr-client…`. Its chunk
+ *     names are source paths, never content hashes.
+ *   · `next start` ships neither, and every app chunk is content-hashed
+ *     (`main-app-65eee9910ded036d.js`).
+ */
+const DEV_RUNTIME_MARKER = /next-devtools|hmr-client|webpack-hmr|react-refresh/i;
+/** A webpack/turbopack CONTENT hash — 16+ hex before `.js`. Only a build emits these. */
+const PROD_HASHED_CHUNK = /\/_next\/static\/chunks\/[^"']*-[0-9a-f]{16,}\.js/;
+
+/**
+ * server-mode: the server actually answering on BASE_URL is the one the run
+ * claims to be grading — the right BINARY *and* the right SOURCE.
+ *
+ * This exists because `webServer.reuseExistingServer` is true locally. Without
+ * it, a `next dev` someone left on :3000 would be silently adopted by a graded
+ * run, and walk.json would record `serverMode: "prod"` over evidence collected
+ * from the dev binary — the exact false result this harness exists to prevent.
+ * Cheap and total: one unauthenticated GET of the PIN page.
+ *
+ * The binary check alone left the door ajar: a `next start` from an hour ago is
+ * also a production build and is adopted just as silently, so walk.json would
+ * carry today's `commit` over an hour-old bundle. Reproduced — walk.json said
+ * `commit 2664d775` while the served bundle contained a canary that exists in no
+ * commit. The freshness half below closes it, using the build identity the same
+ * document carries (see build-id.ts).
+ */
+export function classifyServerMode(html: string): 'dev' | 'prod' | 'unknown' {
+  const dev = DEV_RUNTIME_MARKER.test(html);
+  const hashed = PROD_HASHED_CHUNK.test(html);
+  if (dev && !hashed) return 'dev';
+  if (hashed && !dev) return 'prod';
+  return 'unknown';
+}
+
+const STALE_SERVER_HINT =
+  'stop whatever is listening on this port and re-run, so the walk builds and serves its own';
+
+export async function trapServerMode(
+  expected: 'dev' | 'prod',
+  baseURL = BASE_URL,
+  fetchImpl: typeof fetch = fetch,
+  /**
+   * The identity playwright.config.ts stamped into this run's build. Read from
+   * the environment by default so callers need not thread it; a graded run
+   * without it is a FAILURE, never a skip.
+   */
+  expectedBuildId: string | null = process.env.WALK_BUILD_ID ?? null,
+): Promise<TrapResult> {
+  const name = 'server-mode';
+  let html: string;
+  try {
+    const res = await fetchImpl(`${baseURL}${PIN_LOCK_PATH}`, { headers: { cookie: '' } });
+    if (!res.ok) return trapResult(name, false, `GET ${PIN_LOCK_PATH} returned HTTP ${res.status} — cannot tell which server is answering`);
+    html = await res.text();
+  } catch (err) {
+    return trapResult(name, false, `could not reach ${baseURL}${PIN_LOCK_PATH}: ${(err as Error).message}`);
+  }
+  const actual = classifyServerMode(html);
+  if (actual === 'unknown') {
+    return trapResult(name, false, `could not classify the server from ${PIN_LOCK_PATH} (no dev-overlay marker AND no content-hashed chunk) — refusing to guess which binary is being graded`);
+  }
+  if (actual !== expected) {
+    const hint =
+      actual === 'dev'
+        ? `a \`next dev\` server is already listening on this port and reuseExistingServer adopted it — ${STALE_SERVER_HINT}`
+        : 'a production server is answering but the run asked for dev';
+    return trapResult(name, false, `WALK_SERVER_MODE=${expected} but ${baseURL} is serving a ${actual.toUpperCase()} build — ${hint}`);
+  }
+
+  // ── Freshness. Graded runs only: `next dev` compiles per request and has no
+  // build id to compare, and a dev run is ungraded and gate-refused anyway.
+  if (expected === 'dev') {
+    return trapResult(name, true, `${baseURL} is serving a DEV build (as declared) — UNGRADED, no build identity to check`);
+  }
+  if (!isWalkBuildId(expectedBuildId)) {
+    return trapResult(
+      name,
+      false,
+      `no walk build identity for this run (WALK_BUILD_ID=${JSON.stringify(expectedBuildId)}) — the run cannot prove WHICH source the server is serving, only that it is a production build. playwright.config.ts stamps this; a graded run without it is not admissible.`,
+    );
+  }
+  const served = parseServedBuildId(html);
+  if (served === null) {
+    return trapResult(
+      name,
+      false,
+      `${PIN_LOCK_PATH} carries no Next build id — cannot prove the server was built from this source (expected ${expectedBuildId}). Refusing to guess.`,
+    );
+  }
+  if (served !== expectedBuildId) {
+    return trapResult(
+      name,
+      false,
+      `${baseURL} is serving a STALE build: ${describeBuildIdMismatch(expectedBuildId, served)}. reuseExistingServer adopted a server this run did not build — ${STALE_SERVER_HINT}.`,
+    );
+  }
+  return trapResult(name, true, `${baseURL} is serving a PROD build of ${served} (declared mode and source both match)`);
+}
+
+/**
  * prod-guard-network: every Supabase request the BROWSER made while logging in
- * went to the local stack (proves the dev server really used the env we gave
+ * went to the local stack (proves the app server really used the env we gave
  * it, regardless of what apps/crm/.env.local says).
  */
 export function trapProdGuardNetwork(observedHosts: Iterable<string>): TrapResult {
@@ -216,14 +320,55 @@ export async function trapRightOrg(request: APIRequestContext, page: Page | null
 
 export type NavProfile = 'full' | 'simple' | 'unknown';
 
-/** nav-profile: the full shell (top module tab bar) is what the walk measures. */
-export async function trapNavProfile(page: Page, opts: { expect: NavProfile } = { expect: 'full' }): Promise<TrapResult & { navProfile: NavProfile }> {
+/**
+ * nav-profile: the full shell (top module tab bar) is what the walk measures.
+ *
+ * Absence of the tab strip means "this org is on the simple shell" ONLY once
+ * the shell itself has rendered. Counting the strip at a single instant
+ * conflated that with "the page has not painted yet": against the streaming
+ * production server it reported `simple` on 4 of 27 tablet samples while the
+ * same run reported `full` on the other 23 and on all 30 desktop ones. A trap
+ * that answers at random is a false-result generator, so it now waits for a
+ * definite answer and distinguishes the third outcome — no shell at all — as
+ * its own failure rather than silently calling it `simple`.
+ *
+ * Nothing is loosened: a genuinely simple shell still resolves `simple` and
+ * still fails when the owner decision is `full`.
+ */
+export async function trapNavProfile(
+  page: Page,
+  opts: { expect: NavProfile } = { expect: 'full' },
+  timeouts: { shellMs?: number; navMs?: number } = {},
+): Promise<TrapResult & { navProfile: NavProfile }> {
   const name = 'nav-profile';
+  const shellMs = timeouts.shellMs ?? 30_000;
+  const navMs = timeouts.navMs ?? 10_000;
+
+  const shell = page.getByTestId('crm-topbar');
+  try {
+    await shell.first().waitFor({ state: 'attached', timeout: shellMs });
+  } catch {
+    return {
+      ...trapResult(name, false, `the CRM shell never rendered on ${new URL(page.url()).pathname} — [data-testid=crm-topbar] was not attached within ${shellMs} ms, so the nav profile cannot be read (this is NOT the simple shell)`),
+      navProfile: 'unknown',
+    };
+  }
+
   const nav = page.locator("nav[aria-label='Modules']");
-  const present = (await nav.count()) > 0;
+  let present = false;
+  try {
+    // The strip is a sibling of the top bar in the same commit, so this
+    // resolves immediately when the org is on the full shell; the timeout is
+    // only reached when the strip genuinely is not rendered.
+    await nav.first().waitFor({ state: 'attached', timeout: navMs });
+    present = true;
+  } catch {
+    present = false;
+  }
+
   const navProfile: NavProfile = present ? 'full' : 'simple';
   if (opts.expect !== 'unknown' && navProfile !== opts.expect) {
-    return { ...trapResult(name, false, `resolved nav profile "${navProfile}" (nav[aria-label='Modules'] ${present ? 'present' : 'absent'}) — owner decision is the ${opts.expect} shell; check crm_feature_flags crm.nav.simple for the PIFH org`), navProfile };
+    return { ...trapResult(name, false, `resolved nav profile "${navProfile}" (shell rendered; nav[aria-label='Modules'] ${present ? 'present' : `absent after ${navMs} ms`}) — owner decision is the ${opts.expect} shell; check crm_feature_flags crm.nav.simple for the PIFH org`), navProfile };
   }
   return { ...trapResult(name, true, `nav profile "${navProfile}"`), navProfile };
 }
@@ -469,14 +614,106 @@ const pageIssues = new WeakMap<Page, PageIssue[]>();
  *   · PI-n — a real defect the walk FOUND, diagnosed and handed to the owner,
  *     matched narrowly enough that nothing else can hide behind it.
  */
-const PAGE_ISSUE_IGNORE: ReadonlyArray<{ pattern: RegExp; why: string }> = [
+interface PageIssueIgnoreRule {
+  /** Simple text match. Exactly one of `pattern` / `test` is set. */
+  pattern?: RegExp;
+  /** Richer match; `all` is every line this page logged, for companion errors. */
+  test?: (text: string, all: readonly PageIssue[]) => boolean;
+  why: string;
+}
+
+const PAGE_ISSUE_IGNORE: ReadonlyArray<PageIssueIgnoreRule> = [
   // The dev server streams HMR over a websocket that Playwright tears down at
   // navigation; the failure is the runner closing the tab, not the page.
   { pattern: /_next\/webpack-hmr|websocket connection to .*_next/i, why: 'dev-only HMR socket torn down by navigation' },
   // Chromium logs a console error for the favicon/apple-touch-icon probe that
   // `next dev` answers with a 404 before the route is compiled.
   { pattern: /failed to load resource.*\b(favicon\.ico|apple-touch-icon)/i, why: 'dev-only icon probe 404' },
+  // D2 — see isDevRuntimeTreeIdShift. Belongs in THIS list, not PI-n: the
+  // application is not talking, `next dev`'s own tree wrapper is.
+  {
+    test: (text, all) => walkServerMode() === 'dev' && isDevRuntimeTreeIdShift(text, all),
+    why: 'next-dev only: React tree-id shift from the dev overlay wrapper (0 occurrences in 136 production cold loads)',
+  },
 ];
+
+/**
+ * Is the walk driving a production build or `next dev`? A graded run is always
+ * 'prod' — `webServer` builds and then serves the build. 'dev' happens only
+ * under the WALK_DEV=1 iteration shortcut, which is loudly ungraded and which
+ * `walk:crm:gate` refuses. playwright.config.ts stamps this, `trapServerMode`
+ * proves the stamp against the server that actually answers, and the dev-runtime
+ * allowance below is scoped to it: a hydration line from a production build is
+ * NEVER excused.
+ *
+ * Defaults to 'dev' when unset so that anything running outside the config (a
+ * stray import, a unit test) gets the conservative answer rather than silently
+ * claiming production evidence.
+ */
+export function walkServerMode(): 'dev' | 'prod' {
+  return process.env.WALK_SERVER_MODE === 'prod' ? 'prod' : 'dev';
+}
+
+const HYDRATION_ATTR_MISMATCH =
+  /A tree hydrated but some attributes of the server rendered HTML didn't match/;
+const HYDRATION_UMBRELLA =
+  /Hydration failed because the server rendered HTML didn't match the client/;
+/**
+ * React's message opens with a PROSE bullet list whose items also start with
+ * "- " ("- Invalid HTML tag nesting."), and only then prints the component
+ * stack and the real diff. Everything before the docs link is prose, so the
+ * diff scan starts after it — matching the bullets was what made a first cut of
+ * this rule never fire.
+ */
+const DIFF_SECTION_START = 'react.dev/link/hydration-mismatch';
+/** One `+`/`-` line out of React's printed diff, e.g. `+   id="radix-_R_ab_"`. */
+const DIFF_LINE = /^\s*[+-]\s+(\S.*?)\s*$/gm;
+/**
+ * A React `useId` value in the HYDRATING namespace, wearing Radix's prefix.
+ *
+ * The four attributes are the ones Radix stamps an id into. The optional
+ * `-<part>` tail is Radix composing one `useId` into several related ids
+ * (`radix-_R_ab_-trigger-overview` / `-content-overview` on Tabs), so the whole
+ * family is still ONE tree id and no application data reaches any of them.
+ */
+const TREE_ID_ATTR = /^(?:id|aria-controls|aria-labelledby|aria-describedby)="radix-_R_[a-z0-9]+_(?:-[a-z0-9-]+)?"$/;
+
+/**
+ * D2 — the hydration line `next dev` produces on its own, which a production
+ * build never does.
+ *
+ * WHAT IT IS. Next 16's dev overlay wraps the app tree (`AppDevOverlayError-
+ * Boundary`, present in app-page.runtime.dev.js / app-page-turbo.runtime.dev.js
+ * and in NEITHER .prod.js runtime). That extra wrapper changes how many
+ * children React counts while hydrating, and `useId` derives its value from
+ * exactly those counts — so every id below it shifts. React then reports an
+ * attribute mismatch whose ONLY difference is one React tree id on each side.
+ *
+ * WHY IT IS NOT SUPPRESSING A REAL DEFECT. Measured directly, not assumed:
+ * `next build --webpack` + `next start`, 136 cold loads across /crm,
+ * /crm/modules/contacts, /crm/pipeline, a record page and /crm/r/not-a-uuid —
+ * ZERO hydration console errors, and every server-rendered `radix-_R_…` id
+ * still in the DOM after hydration. The line cannot reach a user.
+ *
+ * HOW NARROW. Every `+`/`-` line React printed must be an `id` or
+ * `aria-controls` holding a `radix-_R_<treeId>_` value — a value no application
+ * data can produce. If ANY other attribute, any text, or a client-only `_r_<n>`
+ * id appears in the diff, this returns false and the line is graded, red, and
+ * aborting as before. React's companion `Hydration failed because…` pageerror
+ * is excused only when the same page also logged a qualifying line — it is the
+ * umbrella for that same commit, never a standalone excuse.
+ */
+export function isDevRuntimeTreeIdShift(text: string, all: readonly PageIssue[] = []): boolean {
+  if (HYDRATION_UMBRELLA.test(text) && !HYDRATION_ATTR_MISMATCH.test(text)) {
+    return all.some((i) => i.text !== text && isDevRuntimeTreeIdShift(i.text));
+  }
+  if (!HYDRATION_ATTR_MISMATCH.test(text)) return false;
+  const at = text.indexOf(DIFF_SECTION_START);
+  // No docs link means no printed diff to inspect, so nothing is excused.
+  if (at === -1) return false;
+  const diffs = [...text.slice(at).matchAll(DIFF_LINE)].map((m) => m[1]);
+  return diffs.length > 0 && diffs.every((line) => TREE_ID_ATTR.test(line));
+}
 
 /**
  * PI-n — defects the walk FOUND and diagnosed. They are deliberately NOT on the
@@ -487,60 +724,24 @@ const PAGE_ISSUE_IGNORE: ReadonlyArray<{ pattern: RegExp; why: string }> = [
  * printed beside a red dev-overlay badge.
  */
 const PAGE_ISSUE_KNOWN: ReadonlyArray<{ id: string; pattern: RegExp; note: string }> = [
-  // The red "1 Issue" the Next dev overlay showed in the wave-3 record-page
-  // screenshot, which nothing in the harness was listening for. Verified from
-  // artifacts/crm-walk/2026-08-23T16-33-57-035Z/page-errors.jsonl.
+  // Empty on purpose. Both entries that lived here were product defects, and
+  // both are now FIXED in product code, so neither may keep a standing
+  // excuse — a line that reappears must abort the run, not arrive
+  // pre-labelled 'known'.
   //
-  //   WHAT: a React `useId` hydration mismatch across the CRM shell chrome. The
-  //   server and the client generate different Radix ids
-  //   (`id="radix-_R_2hotiqbn6lb_"` vs `id="radix-_R_ke7cmitplb_"`), so React
-  //   reports an attribute mismatch on EIGHT shell controls, not one:
-  //     · SplitCreateButton.tsx:185 — the "Add Member" ⌄ trigger (id)
-  //     · CrmTopBar.tsx:295 — the second top-bar dropdown trigger (id)
-  //     · BottomBar.tsx:57/84/111/146/173 — Chats, Channels, Contacts,
-  //       Quick Actions, Sticky Notes (aria-controls)
-  //   CAUSE (verified by experiment; `next/dynamic({ssr:false})` was disproved —
-  //   removing every such import left the server ids byte-identical):
-  //     D1 (product): ThemeProvider sat above the dehydrated
-  //     `<Suspense>` at app/crm/layout.tsx:41-45 and published a new context
-  //     value on mount, so React discarded the server HTML (`_r_<n>` ids).
-  //     theme-store.ts keeps that context referentially stable.
-  //     D2 (next-dev only): Next 16 `AppDevOverlayErrorBoundary` wraps the app
-  //     as a 2-child array on the server and mounts the overlay as a separate
-  //     client root, shifting every `useId`. Absent from
-  //     app-page.runtime.prod.js.
-  //   SEVERITY: React says of this class "This won't be patched up" — the
-  //   server-rendered value stays in the DOM. Five of the eight are
-  //   `aria-controls`, so the a11y wiring, not just cosmetics, is at stake.
-  //   It surfaces on /crm, /crm/modules/contacts and /crm/r/<id>.
-  //   This entry LABELS a radix-id hydration line. It does not suppress it
-  //   (still a red row) and it does not absorb a hydration mismatch that
-  //   names no radix id — that stays unlabelled and still aborts.
-  {
-    id: 'PI-1',
-    pattern: /A tree hydrated but some attributes of the server rendered HTML didn't match[\s\S]*radix-/,
-    note: 'PI-1 React useId hydration mismatch on 8 CRM-shell controls (SplitCreateButton.tsx:185, CrmTopBar.tsx:295, BottomBar.tsx:57/84/111/146/173). Not next/dynamic({ssr:false}) — disproved. D1: ThemeProvider context churn above app/crm/layout.tsx:41-45 <Suspense> (theme-store.ts). D2: Next 16 AppDevOverlayErrorBoundary tree fork, next-dev only.',
-  },
-  // Found by this trap on its first graded run, on /crm/r/not-a-uuid.
+  //   PI-1 — the CRM shell's Radix `useId` hydration mismatch. Its D1 half
+  //   (ThemeProvider publishing a new context value above the dehydrated
+  //   <Suspense> at app/crm/layout.tsx:41-45, so React discarded the server
+  //   HTML) is fixed by components/providers/theme-store.ts. Two more
+  //   providers were doing the same thing to the PAGE boundaries and are
+  //   fixed too — contexts/TenantContext.tsx and components/crm/gizmo/
+  //   GizmoProvider.tsx. Its D2 half was never a product defect at all: see
+  //   isDevRuntimeTreeIdShift, which discloses it as dev-runtime noise on
+  //   the strength of 136 clean production cold loads.
   //
-  //   WHAT: `resolve-record.ts:169` logs
-  //   `[resolve-record] audit entity_id_tombstone: invalid input syntax for
-  //   type uuid: "not-a-uuid"` — a server console.error that `next dev`
-  //   forwards to the browser console.
-  //   CAUSE: the `entity_id_tombstone` probe (resolve-record.ts:141-149) feeds
-  //   the raw path segment to `.eq('entity_id', cursor)` on a uuid column, so
-  //   Postgres rejects the comparison for ANY non-uuid record id. The page
-  //   still renders the not-found state, so nothing before this listened.
-  //   NOT FIXED HERE: guarding the probe with a uuid test is product code.
-  {
-    id: 'PI-2',
-    // The live line interleaves next-dev `%c` CSS between the colon and
-    // `Server invalid input…`. `[\s\S]*` keeps the match on the words we
-    // actually own (`[resolve-record] audit <probe>:`) and the postgres
-    // error, without requiring them to be adjacent.
-    pattern: /\[resolve-record\] audit [a-z_]+:[\s\S]*invalid input syntax for type uuid/i,
-    note: 'PI-2 resolve-record.ts:169 logs a console.error for every non-uuid record id — the entity_id_tombstone probe (resolve-record.ts:141-149) sends the raw path segment to a uuid column. Guard the probe with a uuid test.',
-  },
+  //   PI-2 — resolve-record.ts feeding a raw path segment to a uuid column.
+  //   Fixed by the isUuid() guard in lib/crm/resolve-record.ts; a non-uuid
+  //   record id now short-circuits to `missing` without a query.
 ];
 
 /** The PI-n diagnosis for this line, or null when it is an unknown error. */
@@ -549,9 +750,16 @@ export function knownPageIssue(text: string): { id: string; note: string } | nul
   return null;
 }
 
-/** Why this line is suppressed, or null when it is graded as a real error. */
-export function ignoredPageIssue(text: string): string | null {
-  for (const entry of PAGE_ISSUE_IGNORE) if (entry.pattern.test(text)) return entry.why;
+/**
+ * Why this line is suppressed, or null when it is graded as a real error.
+ * `all` (every line the same page logged) lets a rule see a companion error;
+ * omit it and only the self-contained rules can match.
+ */
+export function ignoredPageIssue(text: string, all: readonly PageIssue[] = []): string | null {
+  for (const entry of PAGE_ISSUE_IGNORE) {
+    if (entry.pattern?.test(text)) return entry.why;
+    if (entry.test?.(text, all)) return entry.why;
+  }
   return null;
 }
 
@@ -576,7 +784,7 @@ export function splitPageIssues(issues: readonly PageIssue[]): PageIssueSplit {
   const real: PageIssue[] = [];
   const suppressed: SuppressedPageIssue[] = [];
   for (const issue of issues) {
-    const why = ignoredPageIssue(issue.text);
+    const why = ignoredPageIssue(issue.text, issues);
     if (why !== null) {
       suppressed.push({ ...issue, why });
       continue;

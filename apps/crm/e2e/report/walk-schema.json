@@ -66,6 +66,19 @@
             "admin",
             "viewer"
           ]
+        },
+        "serverMode": {
+          "type": "string",
+          "enum": [
+            "dev",
+            "prod"
+          ]
+        },
+        "buildId": {
+          "type": [
+            "string",
+            "null"
+          ]
         }
       }
     },

@@ -80,6 +80,20 @@ export interface WalkEnv {
   viewport: string;
   project: string;
   role: 'operator' | 'admin' | 'viewer';
+  /**
+   * Which Next binary produced this evidence. 'prod' = `next build` + `next
+   * start`, the only admissible value; 'dev' = the WALK_DEV=1 shortcut, which
+   * the gate rejects. Optional only so a walk.json recorded before the harness
+   * started stamping it still parses — the gate treats its absence as ungraded.
+   */
+  serverMode?: 'dev' | 'prod';
+  /**
+   * Identity of the build the server actually served — `<head 12>-<worktree
+   * digest 8>`, proved against the served document by TRAP:server-mode (see
+   * build-id.ts). null under WALK_DEV (no build); absent on a walk.json recorded
+   * before the harness stamped it, which the gate treats as unprovable.
+   */
+  buildId?: string | null;
 }
 
 export interface WalkJson {
@@ -113,7 +127,10 @@ export function buildWalkJson(dir: string, finishedAt = new Date().toISOString()
 
 export function formatSummary(doc: WalkJson): string {
   const lines: string[] = [];
-  lines.push(`walk.json · commit ${doc.commit.slice(0, 8)} · ${doc.env.baseURL} → ${doc.env.supabaseUrl} · nav=${doc.env.navProfile} · v2=${doc.env.layoutV2} · role=${doc.env.role}`);
+  lines.push(`walk.json · commit ${doc.commit.slice(0, 8)} · ${doc.env.baseURL} → ${doc.env.supabaseUrl} · nav=${doc.env.navProfile} · v2=${doc.env.layoutV2} · role=${doc.env.role} · server=${doc.env.serverMode ?? 'unrecorded'}`);
+  if (doc.env.serverMode !== 'prod') {
+    lines.push(`  !! UNGRADED — recorded against serverMode=${doc.env.serverMode ?? 'unrecorded'}, not the production build. walk:crm:gate will refuse it.`);
+  }
   lines.push('traps:');
   for (const t of doc.traps) lines.push(`  ${t.pass ? 'PASS' : 'FAIL'}  ${t.name.padEnd(20)} ${t.project ? `[${t.project}] ` : ''}${t.detail}`);
   lines.push('tasks:');

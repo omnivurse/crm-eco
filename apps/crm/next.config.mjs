@@ -5,8 +5,22 @@ const withBundleAnalyzer = bundleAnalyzer({
   enabled: process.env.ANALYZE === 'true',
 });
 
+/**
+ * The click-walk harness stamps an identity for the source it is building
+ * (`apps/crm/e2e/build-id.ts`) so its `server-mode` trap can refuse a stale
+ * `next start` that `reuseExistingServer` would otherwise adopt. Writing it
+ * through `generateBuildId` puts it in `.next/BUILD_ID` and in every document's
+ * flight payload, i.e. it describes the BUILD ON DISK and cannot be faked by
+ * restarting an old build under a fresh env.
+ *
+ * Unset everywhere else — normal builds and the Vercel deploy keep Next's own
+ * default build id, and the key is simply absent from the config.
+ */
+const walkBuildId = process.env.WALK_BUILD_ID;
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  ...(walkBuildId ? { generateBuildId: () => walkBuildId } : {}),
   poweredByHeader: false,
   productionBrowserSourceMaps: false,
   transpilePackages: ['@crm-eco/ui', '@crm-eco/lib', '@crm-eco/shared', '@crm-eco/enrollment'],

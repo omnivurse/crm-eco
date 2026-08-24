@@ -130,15 +130,64 @@ writes `apps/crm/e2e/e2e/report/…` instead.
 
 ### Choices worth knowing
 
-- **`next dev`, not `next build` + `next start`.** The walk boots the dev server
-  because `playwright.config.ts` owns `webServer` and forces the local Supabase
-  env there. `NEXT_PUBLIC_*` is inlined at **compile** time: with a production
-  build the local keys would have to be baked into a build step and the config
-  forked for CI, so CI and laptop would no longer prove the same binary. Click
-  counts are what the walk measures and they do not change between dev and prod
-  builds; the cost is the first-render compile, which the config already absorbs
-  (180 s webServer timeout, 90 s login timeout). Revisit only if CI walk time
-  becomes the bottleneck.
+- **`next build` + `next start`, not `next dev`.** A graded walk measures the
+  binary that ships. The harness used to boot the dev server on the reasoning
+  that "click counts do not change between dev and prod builds" — true for
+  clicks, and false for everything the `page-errors` trap grades. `next dev` is
+  a different program: Next 16 wraps the app on the **server** in
+  `<AppDevOverlayErrorBoundary>{[<ReplaySsrOnlyErrors/>, children]}` while the
+  client hydrates without it, which shifts every `useId` below `<body>` and
+  makes genuinely-hydrating subtrees report a mismatch production cannot
+  produce. (`grep -c AppDevOverlayErrorBoundary`: 1 in `app-page.runtime.dev.js`
+  and `app-page-turbo.runtime.dev.js`, 0 in **both** `.prod.js` runtimes.) The
+  reverse hazard is worse: production **minifies** React's messages, so a real
+  hydration failure reads only as `Minified React error #418` and prose-matching
+  reports a clean build that is in fact broken.
+
+  The old objection — `NEXT_PUBLIC_*` is inlined at compile time, so the local
+  keys would have to be baked in — is answered by `webServer` running **both**
+  halves under one env block: `npm run build && npm run start -- --port 3000`
+  inherits `webServer.env`, so the local URL and demo anon key are inlined by
+  that build and the `prod-guard-network` trap still proves the browser only
+  ever talked to `127.0.0.1`. CI and laptop run the same command. The cost is
+  the build (measured cold locally: 74 s; `next start` ready in 90 ms), which
+  the config absorbs with a 600 s `webServer.timeout`.
+
+  Two consequences to know:
+  - `apps/crm/.next` is left holding a build with the **local** Supabase keys
+    inlined. Rebuild before serving that folder for anything else.
+  - `WALK_DEV=1` falls back to `next dev` for a fast edit loop. It is loudly
+    **ungraded**: the config prints a banner, `walk.json` records
+    `env.serverMode: "dev"`, and `walk:crm:gate` refuses the document. CI throws
+    if `WALK_DEV` is set. The `server-mode` trap closes the matching hole in
+    `reuseExistingServer` — a `next dev` already listening on :3000 is detected
+    and fails the run instead of being silently adopted as production evidence.
+  - **`reuseExistingServer` also has a *freshness* hole, and it is closed the
+    same way.** "This is a production build" says nothing about *which source*
+    that build came from: a `next start` left running from an hour ago answers
+    `/lock` exactly like a fresh one, so a graded local run adopts it and
+    `walk.json` records today's `commit` over an hour-old bundle. Reproduced —
+    `walk.json` said `commit 2664d775` while the served bundle still contained a
+    canary that exists in no commit. Note that comparing `git rev-parse HEAD`
+    would *not* have caught that: HEAD never moved, only the working tree did.
+
+    So the build stamps an identity of the source it compiled — `<HEAD 12>-<8
+    hex of a digest over every uncommitted change under the bundled paths>`,
+    computed in [`apps/crm/e2e/build-id.ts`](../apps/crm/e2e/build-id.ts) and fed
+    to `generateBuildId` through `WALK_BUILD_ID`, so it lands in
+    `.next/BUILD_ID` and in every document's flight payload. It describes the
+    build **on disk**, so restarting a stale `.next` under fresh env cannot fake
+    it. `server-mode` reads it back out of `/lock` and fails on any mismatch,
+    naming the cause (older commit vs. same commit + uncommitted edit vs. a build
+    this harness never made). `walk:crm:gate` then refuses any graded `walk.json`
+    whose `env.buildId` is missing or does not lead with its own `commit`.
+
+    Reuse is *not* disabled to buy this: the identity is stable while the source
+    is, so re-running against a server that really is current still skips the
+    build. Editing `apps/crm/e2e/**` deliberately does not change it — the
+    harness is never bundled, so working on a trap must not invalidate a good
+    server. `WALK_DEV=1` skips the mechanism entirely (`next dev` has no build
+    id, and the gate refuses a dev run anyway).
 - **Retries stay 0.** A retried task appends a *second* row to `walk.json` and
   the counts stop being trustworthy, so `playwright.config.ts` pins
   `retries: 0`, the gate fails a duplicated `(task, project)` pair, and CI does
@@ -292,7 +341,7 @@ go red. Both were exercised on `066eb1ce`.
 
 ## 5. Traps
 
-Eleven traps run before anything is counted (`pre-login`/`post-login` in
+Twelve traps run before anything is counted (`pre-login`/`post-login` in
 `global-setup`) and again inside each project (`in-test`, via
 `assertTrapsInTest`). Full assertions in
 [`docs/ux/click-walk.md`](ux/click-walk.md#traps-ev-3--fail-loudly-before-counting-anything).
@@ -301,6 +350,7 @@ Eleven traps run before anything is counted (`pre-login`/`post-login` in
 |---|---|
 | `prod-guard` | the harness Supabase host is 127.0.0.1/localhost **and** org `0000…0001` is `pifh-local` |
 | `prod-guard-network` | every Supabase request the *browser* made went to the local stack |
+| `server-mode` | the server answering on `BASE_URL` is the **binary** the run declares (`next start`, not `next dev`) **and** a build of **this source** — its `.next/BUILD_ID` equals the identity this run stamped |
 | `pin-gate` | `/crm` without the `lgq_ok` cookie redirects to `/lock`; with it, no PIN page |
 | `pin-page` | the current document is not the disguise page |
 | `no-lock-redirect` | no MFA step-up, no session-lock overlay, no login bounce |

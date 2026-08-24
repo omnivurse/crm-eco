@@ -16,6 +16,8 @@ function doc(overrides: Partial<WalkJson> = {}): WalkJson {
       viewport: '1440x900',
       project: 'desktop-1440',
       role: 'operator',
+      serverMode: 'prod',
+      buildId: '49c16870dead-0a1b2c3d',
     },
     traps: [{ name: 'prod-guard', pass: true, detail: 'local' }],
     tasks: [task({})],
@@ -78,6 +80,55 @@ describe('gradeWalk', () => {
     const r = gradeWalk(doc({ env: { ...doc().env, supabaseUrl: 'https://sffisarikcreyyjzdjvb.supabase.co' } }));
     expect(r.ok).toBe(false);
     expect(r.failures[0]).toContain('not local');
+  });
+
+  it('refuses a run recorded against `next dev` however green it is', () => {
+    const r = gradeWalk(doc({ env: { ...doc().env, serverMode: 'dev' } }));
+    expect(r.ok).toBe(false);
+    expect(r.failures.join(' ')).toContain('UNGRADED');
+    expect(r.failures.join(' ')).toContain('WALK_DEV');
+    // and it is not waivable through the soft-failure escape hatch
+    expect(gradeWalk(doc({ env: { ...doc().env, serverMode: 'dev' } }), { allowSoft: ['T1'] }).ok).toBe(false);
+  });
+
+  it('refuses a run that never recorded which binary it graded', () => {
+    const env = { ...doc().env };
+    delete env.serverMode;
+    const r = gradeWalk(doc({ env }));
+    expect(r.ok).toBe(false);
+    expect(r.failures.join(' ')).toContain('did not record which binary');
+  });
+
+  it('refuses a graded run that cannot say which build it graded', () => {
+    // serverMode:"prod" only says the BINARY was a build. Without a build
+    // identity the document cannot show that build came from `commit` rather
+    // than from a `next start` reuseExistingServer adopted.
+    const env = { ...doc().env };
+    delete env.buildId;
+    const r = gradeWalk(doc({ env }));
+    expect(r.ok).toBe(false);
+    expect(r.failures.join(' ')).toContain('env.buildId is missing');
+    expect(gradeWalk(doc({ env }), { allowSoft: ['T1'] }).ok).toBe(false);
+  });
+
+  it('refuses a graded run whose build came from another commit', () => {
+    const r = gradeWalk(doc({ env: { ...doc().env, buildId: 'ffffffffffff-0a1b2c3d' } }));
+    expect(r.ok).toBe(false);
+    expect(r.failures.join(' ')).toContain('names a commit it did not grade');
+  });
+
+  it('does not demand a build identity from an ungraded dev run', () => {
+    // The dev refusal already covers it; a second failure would only be noise.
+    const env = { ...doc().env, serverMode: 'dev' as const, buildId: null };
+    const r = gradeWalk(doc({ env }));
+    expect(r.failures.join(' ')).not.toContain('env.buildId');
+  });
+
+  it('marks the server mode in the markdown summary', () => {
+    const good = doc();
+    expect(summarizeWalk(good, gradeWalk(good))).toContain('production build');
+    const bad = doc({ env: { ...doc().env, serverMode: 'dev' } });
+    expect(summarizeWalk(bad, gradeWalk(bad))).toContain('UNGRADED');
   });
 
   it('summarizes counts and failures as markdown', () => {

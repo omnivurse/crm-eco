@@ -14,7 +14,7 @@
 
 import { memo, useMemo, type ReactNode } from 'react';
 import type { CrmField } from '@/lib/crm/types';
-import { getFieldOptionChoices, getFieldOptions } from '@/lib/crm/utils';
+import { getFieldOptionChoices } from '@/lib/crm/utils';
 import { describeRecordedAge, householdAgeSlot } from '@/lib/crm/household-age';
 import { formatPhoneOwnerLabel, isCleanPhoneValue } from '@/lib/crm/phone-owner';
 import type { FieldSaveTarget } from '@/hooks/useRecordFieldSave';
@@ -80,7 +80,9 @@ export const InlineFieldCell = memo(function InlineFieldCell({
   // ("2_legacy_zoho") and shows the label ("Legacy — Zoho"). Flattening the
   // pair back to one string is what put `[object Object]` in this dropdown.
   const selectOptions = useMemo(() => {
-    if (field.type !== 'select' && field.type !== 'picklist') return [];
+    if (field.type !== 'select' && field.type !== 'picklist' && field.type !== 'multiselect') {
+      return [];
+    }
     return getFieldOptionChoices(field.options, field.key);
   }, [field]);
 
@@ -174,7 +176,7 @@ export const InlineFieldCell = memo(function InlineFieldCell({
         <InlineMultiSelectField
           {...common}
           value={Array.isArray(value) ? (value as string[]) : value == null ? [] : [String(value)]}
-          options={getFieldOptions(field.options, field.key)}
+          options={selectOptions}
           placeholder={`Add ${field.label.toLowerCase()}`}
         />
       );

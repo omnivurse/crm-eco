@@ -10,6 +10,16 @@
  * CI must be red for both, so the gate reads walk.json — the artifact the
  * regrade is scored from — and grades it independently of the runner.
  *
+ * It also refuses a run that did not measure what ships: the evidence must come
+ * from the LOCAL Supabase stack (env.supabaseUrl) and from a PRODUCTION build
+ * (env.serverMode === 'prod'). The WALK_DEV=1 shortcut is for iterating, and a
+ * walk.json it produced is rejected here rather than quietly scored.
+ *
+ * "A production build" is not the same as "a build of this commit", so a graded
+ * document must also carry env.buildId — the identity of the build that actually
+ * answered — leading with the commit it claims. Without it the run could have
+ * adopted a leftover `next start` and scored an older bundle under today's SHA.
+ *
  * CLI (from apps/crm):
  *   npm run walk:crm:gate                       # grades the run in artifacts/crm-walk/latest.txt
  *   npm run walk:crm:gate -- --dir <run dir>
@@ -74,6 +84,37 @@ export function gradeWalk(doc: WalkJson, options: GateOptions = {}): GateResult 
   // other Supabase host is not admissible, however green it looks.
   if (!isLocalSupabaseHost(doc.env.supabaseUrl)) {
     failures.push(`env.supabaseUrl is not local: ${doc.env.supabaseUrl}`);
+  }
+  // …and from the binary that ships. `next dev` carries framework artefacts
+  // production does not have (Next 16 wraps the app in the dev overlay's own
+  // error boundary on the server only, shifting every useId below <body>), so a
+  // dev-mode walk grades hydration against a build no user will ever load. The
+  // harness allows WALK_DEV=1 for a fast edit loop; it is never a result.
+  if (doc.env.serverMode !== 'prod') {
+    failures.push(
+      doc.env.serverMode === 'dev'
+        ? 'env.serverMode is "dev" — this run measured `next dev`, not the production build. It is an UNGRADED iteration run (WALK_DEV=1); re-record without WALK_DEV.'
+        : `env.serverMode is ${JSON.stringify(doc.env.serverMode ?? null)} — the run did not record which binary it graded, so it is not admissible evidence. Re-record with the current harness.`,
+    );
+  }
+  // …and from a build of THIS source. serverMode only proves the binary; a
+  // `next start` left over from an earlier state of the tree is production too,
+  // and reuseExistingServer will adopt it while the document goes on claiming
+  // today's commit. env.buildId is the identity the server actually served
+  // (TRAP:server-mode proved it against the document); its first field is the
+  // commit that build came from, so a document whose buildId does not lead with
+  // its own `commit` is describing a bundle it did not grade.
+  if (doc.env.serverMode === 'prod') {
+    const buildId = doc.env.buildId;
+    if (typeof buildId !== 'string' || buildId.length === 0) {
+      failures.push(
+        'env.buildId is missing — the run recorded no identity for the build it graded, so it cannot show the evidence came from this commit rather than a stale server. Re-record with the current harness.',
+      );
+    } else if (!buildId.startsWith(doc.commit.slice(0, 12))) {
+      failures.push(
+        `env.buildId is ${buildId} but the run claims commit ${doc.commit.slice(0, 12)} — the document names a commit it did not grade.`,
+      );
+    }
   }
   if (tasks.length < minTasks) {
     failures.push(`only ${tasks.length} task row(s) recorded (expected at least ${minTasks}) — the run produced no evidence`);
@@ -164,6 +205,11 @@ export function summarizeWalk(doc: WalkJson, result: GateResult): string {
   lines.push('');
   lines.push(`commit \`${doc.commit.slice(0, 8)}\` · role ${doc.env.role} · nav ${doc.env.navProfile} · layoutV2 ${doc.env.layoutV2}`);
   lines.push(`${doc.env.baseURL} → ${doc.env.supabaseUrl}`);
+  lines.push(
+    doc.env.serverMode === 'prod'
+      ? `server: **production build** (\`next build\` + \`next start\`, build \`${doc.env.buildId ?? 'unstamped'}\`)`
+      : `server: **${doc.env.serverMode ?? 'unrecorded'}** — ⚠️ UNGRADED, this is not the build that ships`,
+  );
   lines.push('');
   lines.push(`| | pass | fail |`);
   lines.push(`| --- | ---: | ---: |`);

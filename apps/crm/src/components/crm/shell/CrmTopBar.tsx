@@ -165,7 +165,14 @@ export const CrmTopBar = memo(function CrmTopBar({
 
   return (
     <TooltipProvider delayDuration={300}>
-    <header className="relative z-40 h-[var(--crm-topbar-h)] flex items-center px-3 sm:px-4 lg:px-5 xl:px-6 glass border-b border-border shrink-0">
+    {/*
+      `crm-topbar` is the walk harness's anchor for "the CRM shell has
+      rendered". The nav-profile trap needs to tell "this org is on the simple
+      shell" apart from "the shell has not painted yet" — without it, sampling
+      the tab strip against a streaming production server reported `simple` at
+      random. Attribute only; no behaviour.
+    */}
+    <header data-testid="crm-topbar" className="relative z-40 h-[var(--crm-topbar-h)] flex items-center px-3 sm:px-4 lg:px-5 xl:px-6 glass border-b border-border shrink-0">
       {/* Mobile Menu Toggle */}
       <Tooltip>
         <TooltipTrigger asChild>

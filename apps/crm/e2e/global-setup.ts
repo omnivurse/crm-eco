@@ -41,7 +41,9 @@ import {
   trapProdGuard,
   trapProdGuardNetwork,
   trapRightOrg,
+  trapServerMode,
   trapStatusVocab,
+  walkServerMode,
   type TrapResult,
 } from './traps';
 
@@ -141,7 +143,11 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
     return assertTrap(tagged);
   };
 
-  console.log(`\n[walk] run ${runId} · role=${role} · ${baseURL} → ${supabaseUrl}`);
+  const serverMode = walkServerMode();
+  console.log(`\n[walk] run ${runId} · role=${role} · ${baseURL} → ${supabaseUrl} · server=${serverMode}`);
+  if (serverMode !== 'prod') {
+    console.warn('[walk] UNGRADED RUN — this walk is measuring `next dev`, not the build that ships. walk.json records env.serverMode="dev" and walk:crm:gate will refuse it.');
+  }
   const negatives = [
     NEGATIVE.skipPinCookie ? 'E2E_SKIP_PIN_COOKIE=1' : null,
     NEGATIVE.anchorPhoneOverride ? `E2E_ANCHOR_PHONE=${NEGATIVE.anchorPhoneOverride}` : null,
@@ -168,6 +174,12 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
             viewport: first ? `${first.width}x${first.height}` : '1440x900',
             project: projects.join(','),
             role,
+            serverMode,
+            // The identity of the build that actually answered — proved against
+            // the served document by TRAP:server-mode. It is what makes the
+            // `commit` above evidence rather than an assertion: without it the
+            // document could name any commit over any bundle.
+            buildId: process.env.WALK_BUILD_ID ?? null,
           },
         },
         null,
@@ -206,6 +218,10 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
   console.log('[walk] pre-login traps');
   try {
     keep(await trapProdGuard({ supabaseUrl, serviceRoleKey: serviceKey }), 'pre-login');
+    // Before anything is measured: the server answering on baseURL really is the
+    // binary this run claims to grade. reuseExistingServer is on locally, so an
+    // already-running `next dev` would otherwise be adopted silently.
+    keep(await trapServerMode(serverMode, baseURL), 'pre-login');
     const bare = await pwRequest.newContext({ baseURL });
     try {
       keep(await trapPinGate(bare, baseURL), 'pre-login');

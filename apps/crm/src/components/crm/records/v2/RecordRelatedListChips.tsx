@@ -80,14 +80,14 @@ interface ChipAccent {
  */
 const CHIP_ACCENTS: Record<string, ChipAccent> = {
   details: {
-    active: 'bg-teal-500 text-white border-teal-500 shadow-sm',
+    active: 'bg-teal-700 text-white border-teal-700 shadow-sm',
     inactive:
       'bg-teal-50 dark:bg-teal-500/10 text-teal-700 dark:text-teal-300 border-transparent hover:bg-teal-100 dark:hover:bg-teal-500/20',
     icon: 'text-teal-500 dark:text-teal-400',
     badge: 'bg-teal-100 dark:bg-teal-500/20 text-teal-700 dark:text-teal-300',
   },
   notes: {
-    active: 'bg-amber-500 text-white border-amber-500 shadow-sm',
+    active: 'bg-amber-700 text-white border-amber-700 shadow-sm',
     inactive:
       'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300 border-transparent hover:bg-amber-100 dark:hover:bg-amber-500/20',
     icon: 'text-amber-500 dark:text-amber-400',
@@ -101,70 +101,70 @@ const CHIP_ACCENTS: Record<string, ChipAccent> = {
     badge: 'bg-primary/15 text-primary',
   },
   open_activities: {
-    active: 'bg-cyan-500 text-white border-cyan-500 shadow-sm',
+    active: 'bg-cyan-700 text-white border-cyan-700 shadow-sm',
     inactive:
       'bg-cyan-50 dark:bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border-transparent hover:bg-cyan-100 dark:hover:bg-cyan-500/20',
     icon: 'text-cyan-500 dark:text-cyan-400',
     badge: 'bg-cyan-100 dark:bg-cyan-500/20 text-cyan-700 dark:text-cyan-300',
   },
   closed_activities: {
-    active: 'bg-emerald-500 text-white border-emerald-500 shadow-sm',
+    active: 'bg-emerald-700 text-white border-emerald-700 shadow-sm',
     inactive:
       'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-transparent hover:bg-emerald-100 dark:hover:bg-emerald-500/20',
     icon: 'text-emerald-500 dark:text-emerald-400',
     badge: 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300',
   },
   attachments: {
-    active: 'bg-violet-500 text-white border-violet-500 shadow-sm',
+    active: 'bg-violet-600 text-white border-violet-600 shadow-sm',
     inactive:
       'bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-300 border-transparent hover:bg-violet-100 dark:hover:bg-violet-500/20',
     icon: 'text-violet-500 dark:text-violet-400',
     badge: 'bg-violet-100 dark:bg-violet-500/20 text-violet-700 dark:text-violet-300',
   },
   connected: {
-    active: 'bg-indigo-500 text-white border-indigo-500 shadow-sm',
+    active: 'bg-indigo-600 text-white border-indigo-600 shadow-sm',
     inactive:
       'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-transparent hover:bg-indigo-100 dark:hover:bg-indigo-500/20',
     icon: 'text-indigo-500 dark:text-indigo-400',
     badge: 'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300',
   },
   campaigns: {
-    active: 'bg-pink-500 text-white border-pink-500 shadow-sm',
+    active: 'bg-pink-600 text-white border-pink-600 shadow-sm',
     inactive:
       'bg-pink-50 dark:bg-pink-500/10 text-pink-700 dark:text-pink-300 border-transparent hover:bg-pink-100 dark:hover:bg-pink-500/20',
     icon: 'text-pink-500 dark:text-pink-400',
     badge: 'bg-pink-100 dark:bg-pink-500/20 text-pink-700 dark:text-pink-300',
   },
   cadences: {
-    active: 'bg-purple-500 text-white border-purple-500 shadow-sm',
+    active: 'bg-purple-600 text-white border-purple-600 shadow-sm',
     inactive:
       'bg-purple-50 dark:bg-purple-500/10 text-purple-700 dark:text-purple-300 border-transparent hover:bg-purple-100 dark:hover:bg-purple-500/20',
     icon: 'text-purple-500 dark:text-purple-400',
     badge: 'bg-purple-100 dark:bg-purple-500/20 text-purple-700 dark:text-purple-300',
   },
   products: {
-    active: 'bg-orange-500 text-white border-orange-500 shadow-sm',
+    active: 'bg-orange-700 text-white border-orange-700 shadow-sm',
     inactive:
       'bg-orange-50 dark:bg-orange-500/10 text-orange-700 dark:text-orange-300 border-transparent hover:bg-orange-100 dark:hover:bg-orange-500/20',
     icon: 'text-orange-500 dark:text-orange-400',
     badge: 'bg-orange-100 dark:bg-orange-500/20 text-orange-700 dark:text-orange-300',
   },
   visits: {
-    active: 'bg-sky-500 text-white border-sky-500 shadow-sm',
+    active: 'bg-sky-700 text-white border-sky-700 shadow-sm',
     inactive:
       'bg-sky-50 dark:bg-sky-500/10 text-sky-700 dark:text-sky-300 border-transparent hover:bg-sky-100 dark:hover:bg-sky-500/20',
     icon: 'text-sky-500 dark:text-sky-400',
     badge: 'bg-sky-100 dark:bg-sky-500/20 text-sky-700 dark:text-sky-300',
   },
   social: {
-    active: 'bg-fuchsia-500 text-white border-fuchsia-500 shadow-sm',
+    active: 'bg-fuchsia-600 text-white border-fuchsia-600 shadow-sm',
     inactive:
       'bg-fuchsia-50 dark:bg-fuchsia-500/10 text-fuchsia-700 dark:text-fuchsia-300 border-transparent hover:bg-fuchsia-100 dark:hover:bg-fuchsia-500/20',
     icon: 'text-fuchsia-500 dark:text-fuchsia-400',
     badge: 'bg-fuchsia-100 dark:bg-fuchsia-500/20 text-fuchsia-700 dark:text-fuchsia-300',
   },
   invited_meetings: {
-    active: 'bg-rose-500 text-white border-rose-500 shadow-sm',
+    active: 'bg-rose-600 text-white border-rose-600 shadow-sm',
     inactive:
       'bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-300 border-transparent hover:bg-rose-100 dark:hover:bg-rose-500/20',
     icon: 'text-rose-500 dark:text-rose-400',
@@ -181,7 +181,7 @@ CHIP_ACCENTS.related = CHIP_ACCENTS.connected;
 CHIP_ACCENTS.meetings = CHIP_ACCENTS.invited_meetings;
 
 const DEFAULT_CHIP_ACCENT: ChipAccent = {
-  active: 'bg-teal-500 text-white border-teal-500 shadow-sm',
+  active: 'bg-teal-700 text-white border-teal-700 shadow-sm',
   inactive:
     'bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 border-transparent hover:bg-slate-200 dark:hover:bg-slate-800',
   icon: 'text-slate-400 dark:text-slate-500',

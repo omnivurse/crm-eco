@@ -10,7 +10,7 @@ Everything lives in `apps/crm/e2e/`:
 
 | File | Role |
 |------|------|
-| `playwright.config.ts` | runner — projects `desktop-1440`, `tablet-1024`, `mobile-390`; boots `next dev --port 3000` pinned at the local stack |
+| `playwright.config.ts` | runner — projects `desktop-1440`, `desktop-1280`, `tablet-1024`, `mobile-390`; builds and boots a **production** server (`next build` → `next start --port 3000`) pinned at the local stack. `WALK_DEV=1` swaps in `next dev` for a fast, loudly **ungraded** edit loop |
 | `global-setup.ts` | pre-login traps → PIN cookie → `/crm-login` → storageState `.auth/<role>.json` → post-login traps → opens the run folder |
 | `global-teardown.ts` | merges the run ledger into `walk.json` and validates it against `report/walk-schema.json` |
 | `traps.ts` | every false-result trap + `assertTrapsInTest()` for per-project re-assertion |
@@ -47,10 +47,13 @@ Ports: the app is `http://localhost:3000` (`WALK_BASE_URL` overrides). Locally t
 runner reuses a server already on :3000 (`reuseExistingServer: !CI`) — if that
 server is pointed at prod the **prod-guard** traps fail the run before login.
 
-## Environment the runner forces onto `next dev`
+## Environment the runner forces onto the app server
 
 `webServer.env` in `playwright.config.ts` (Next.js never overrides variables already
-in `process.env`, so these beat `apps/crm/.env.local`):
+in `process.env`, so these beat `apps/crm/.env.local`). The whole `webServer.command`
+runs under this block, so a graded run's `next build` inlines these `NEXT_PUBLIC_*`
+values into the bundle it then serves — and `prod-guard-network` proves the browser
+only ever reached `127.0.0.1`:
 
 | Var | Value |
 |-----|-------|
@@ -322,7 +325,9 @@ search selector is `[aria-label="${SEARCH_PLACEHOLDER}"]`; `walk-helpers.ts`
 BEFORE Apply) because the LS-3 pending state is shorter than an outside poll on a warm server;
 `DE-lead-pending` reads its outcome from the request tracker armed before the press;
 `e2e/tsconfig.json` resolves `@/*` → `src/*` (ModuleContext → nav-profile imports the alias);
-`next-env.d.ts` is rewritten by `next dev` on every walk — restore with
+`next-env.d.ts` is rewritten by whichever Next binary ran last (`next dev` points it at
+`./.next/dev/types/routes.d.ts`, `next build` at `./.next/types/routes.d.ts`) — a graded
+walk therefore leaves it correct, and a `WALK_DEV=1` run does not. Restore with
 `git show HEAD:apps/crm/next-env.d.ts > apps/crm/next-env.d.ts` before committing.
 
 Server log noise seen on every run (not walk failures): `⨯ TypeError: DOMPurify.default.sanitize
@@ -426,8 +431,17 @@ Untracked files must be clean. A cleanup item retiring the carried debt (then fl
   handler; the click is still counted and the href is what is asserted.
 - `e2e/tsconfig.json` sets `"jsx": "preserve"` so `nav-tabs.test.ts` can import the
   app's `ModuleContext.tsx` and pin the nav mirror to the real resolver.
-- First `next dev` render compiles on demand: the global-setup login waits up to
-  120 s and `webServer.timeout` is 180 s; one walk per dev server.
+- A graded run compiles the whole app before the first request: `webServer.timeout`
+  is 600 s (measured cold locally — `next build --webpack` 74 s, `next start` ready
+  in 90 ms — with generous headroom for a CI runner's cold cache). Under
+  `WALK_DEV=1` the first render compiles on demand instead and the timeout drops
+  back to 180 s. The global-setup login waits up to 120 s either way.
+- `server-mode` (pre-login trap) refuses to grade the wrong binary. `reuseExistingServer`
+  is on locally, so a `next dev` already listening on :3000 would otherwise be adopted
+  by a graded run; the trap `GET`s `/lock` and classifies the document (dev ships the
+  `next-devtools`/`hmr-client` bundles and source-path chunk names; a build ships
+  content-hashed chunks and neither), and fails the run when it disagrees with
+  `WALK_SERVER_MODE`. An unclassifiable document also fails — it never guesses.
 - Retries are hard-pinned to 0 — a retried task would be counted twice.
 - The legacy Vite-era runner now lives at `tests/playwright/legacy.config.ts`
   (`tickets.spec.ts` beside it, port 5173); it is not part of the walk.
