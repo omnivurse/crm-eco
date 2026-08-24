@@ -3,7 +3,7 @@
 -- existing History helpers. No row move.
 --
 -- Rollback:
---   Re-apply the function bodies from 20260823180000_crm_history_module_lookup_and_roster.sql
+--   Re-apply the function bodies from 20260823210132_crm_history_module_lookup_and_roster.sql
 --   (event_date = now(), contacts+history only). Ledger rows already inserted
 --   stay; delete where source IN ('history_backfill','history_roster') if needed.
 

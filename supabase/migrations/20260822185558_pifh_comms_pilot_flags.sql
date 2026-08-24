@@ -29,7 +29,7 @@ SET lock_timeout = '5s';
 DO $do$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM public.organizations WHERE id = '00000000-0000-0000-0000-000000000001') THEN
-    RAISE NOTICE '20260822220000_pifh_comms_pilot_flags: org not present (fresh database) — flag seed skipped';
+    RAISE NOTICE '20260822185558_pifh_comms_pilot_flags: org not present (fresh database) — flag seed skipped';
     RETURN;
   END IF;
 
