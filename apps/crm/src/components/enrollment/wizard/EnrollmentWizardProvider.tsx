@@ -2,25 +2,12 @@
 
 import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
 import type { MedicationInput, RxPricingResult } from '@crm-eco/lib';
+import { WIZARD_STEPS, type WizardStep } from '@/lib/enrollment/wizard-steps';
 
-export type WizardStep = 
-  | 'intake' 
-  | 'household' 
-  | 'plan_selection' 
-  | 'compliance' 
-  | 'payment' 
-  | 'confirmation';
+export type { WizardStep };
+export { WIZARD_STEPS };
 
 export type EnrollmentMode = 'advisor_assisted' | 'member_self_serve' | 'internal_ops';
-
-export const WIZARD_STEPS: { key: WizardStep; label: string; description: string }[] = [
-  { key: 'intake', label: 'Intake', description: 'Basic enrollment information' },
-  { key: 'household', label: 'Household', description: 'Family members and dependents' },
-  { key: 'plan_selection', label: 'Plan Selection', description: 'Choose your coverage plan' },
-  { key: 'compliance', label: 'Compliance', description: 'Acknowledgements and notices' },
-  { key: 'payment', label: 'Payment', description: 'Billing preferences' },
-  { key: 'confirmation', label: 'Confirmation', description: 'Review and submit' },
-];
 
 export interface HouseholdMember {
   relationship: 'primary' | 'spouse' | 'child' | 'other';

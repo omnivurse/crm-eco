@@ -2,11 +2,11 @@ import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { getEnrollmentWizardData } from '@/app/crm/enrollment/actions';
 import {
   EnrollmentWizardShell,
-  firstIncompleteWizardStep,
   type EnrollmentWizardBootstrap,
   type EnrollmentWizardResumeData,
 } from '@/components/enrollment/EnrollmentWizardShell';
 import type { WizardStep, StepStatus } from '@/components/enrollment/wizard';
+import { firstIncompleteWizardStep } from '@/lib/enrollment/wizard-steps';
 import {
   applyActiveCrmLeadsFilters,
   crmRecordToLeadListItem,

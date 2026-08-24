@@ -6,7 +6,6 @@ import {
   EnrollmentWizardProvider,
   WizardStepper,
   useEnrollmentWizard,
-  WIZARD_STEPS,
   type WizardStep,
   type WizardSnapshot,
   type StepStatus,
@@ -130,13 +129,4 @@ export function EnrollmentWizardShell({ isNew, resume, ...bootstrap }: Enrollmen
       </EnrollmentWizardProvider>
     </div>
   );
-}
-
-export function firstIncompleteWizardStep(
-  stepStatuses: Record<string, { isCompleted: boolean }>
-): WizardStep {
-  for (const step of WIZARD_STEPS) {
-    if (!stepStatuses[step.key]?.isCompleted) return step.key;
-  }
-  return 'confirmation';
 }
