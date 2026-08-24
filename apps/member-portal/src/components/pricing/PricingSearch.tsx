@@ -4,7 +4,33 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'rea
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { BookmarkSimple, PushPin, PushPinSlash, X } from '@phosphor-icons/react';
-import { clipIdentity } from '@crm-eco/cash-pay';
+import {
+  classifyPayer,
+  clipIdentity,
+  describeFacilityLine,
+  describePayer,
+  describePlan,
+  facilitySpread,
+  familyForCode,
+  flagRateOutliers,
+  listDiscount,
+  mapsUrl,
+  medianListDiscount,
+  mixEntries,
+  npiUrl,
+  partitionRates,
+  payerClassLabel,
+  payerMix,
+  planNegotiation,
+  qualityLookupUrl,
+  searchProcedureFamilies,
+  tickIdentity,
+  uniquePayers,
+  websiteHref,
+  type CashRateRow,
+  type PayerClass,
+  type ProcedureFamily,
+} from '@crm-eco/cash-pay';
 import { toast } from 'sonner';
 import styles from './instrument.module.css';
 
@@ -29,19 +55,16 @@ interface SpecialtyOption {
   codeHint: string;
 }
 
-interface HclRate {
-  id: number | string;
-  hospitalId: number | null;
-  facilityName: string;
-  city: string;
-  state: string;
-  procedureCode: string;
-  codeDescription: string;
-  category: string;
-  rate: number;
-  paymentMethod: string | null;
-  cmsRelativity: number | null;
-}
+type HclRate = CashRateRow;
+
+const PAYER_FILTERS: Array<{ id: 'all' | PayerClass; label: string }> = [
+  { id: 'all', label: 'All payers' },
+  { id: 'medicare', label: 'Medicare' },
+  { id: 'commercial', label: 'Commercial' },
+  { id: 'medicaid', label: 'Medicaid' },
+  { id: 'cash', label: 'Cash pay' },
+  { id: 'workers_comp', label: 'Workers’ comp' },
+];
 
 interface SliceSummary {
   sliceCount: number;
@@ -73,7 +96,7 @@ interface PricingSearchProps {
   procedures: Procedure[];
 }
 
-type SortBy = 'price_asc' | 'price_desc';
+type SortBy = 'price_asc' | 'price_desc' | 'cms_asc' | 'payer' | 'off_list';
 
 function formatCash(price: number): string {
   return new Intl.NumberFormat('en-US', {
@@ -86,11 +109,22 @@ function formatCash(price: number): string {
 
 function formatNeedle(value: number | null | undefined): string {
   if (value == null || !Number.isFinite(value)) return '';
-  return `${value.toFixed(2)}x CMS`;
+  return `${value.toFixed(2)}× Medicare`;
 }
 
-function tickKey(row: { id: number | string; facilityName: string; procedureCode: string }): string {
-  return `${row.id}-${row.facilityName}-${row.procedureCode}`;
+function formatPct(value: number | null | undefined): string {
+  if (value == null || !Number.isFinite(value)) return '';
+  return `${Math.round(value * 100)}%`;
+}
+
+function tickKey(row: {
+  id: number | string;
+  facilityName: string;
+  procedureCode: string;
+  carrier?: string | null;
+  planName?: string | null;
+}): string {
+  return `${row.id}-${row.facilityName}-${row.procedureCode}-${row.carrier || ''}-${row.planName || ''}`;
 }
 
 function groupByFacility(rows: HclRate[]) {
@@ -131,7 +165,11 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
   const [stateName, setStateName] = useState(searchParams.get('state') || memberState || '');
   const [msaName, setMsaName] = useState(searchParams.get('msa') || '');
   const [procedureCode, setProcedureCode] = useState(searchParams.get('code') || '');
+  const [procedureQuery, setProcedureQuery] = useState(searchParams.get('q') || '');
   const [category, setCategory] = useState(searchParams.get('category') || '');
+  const [payerFilter, setPayerFilter] = useState<'all' | PayerClass>('all');
+  const [showOutliers, setShowOutliers] = useState(false);
+  const [bid, setBid] = useState('');
   const [specialty, setSpecialty] = useState('');
   const [specialties, setSpecialties] = useState<SpecialtyOption[]>([]);
   const [selectedProcedureName, setSelectedProcedureName] = useState('');
@@ -164,6 +202,12 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
     () => (stateName ? allMsas.filter((m) => m.stateName === stateName) : []),
     [allMsas, stateName],
   );
+
+  const familyMatches = useMemo(
+    () => (procedureQuery.trim().length >= 2 ? searchProcedureFamilies(procedureQuery) : []),
+    [procedureQuery],
+  );
+  const activeFamily = useMemo(() => familyForCode(procedureCode), [procedureCode]);
 
   const writeUrl = useCallback(
     (next: Record<string, string>) => {
@@ -254,6 +298,7 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
         state: stateName,
         msa: msaName,
         code: procedureCode.trim(),
+        q: procedureQuery.trim(),
         category: category.trim(),
         page: String(nextPage),
       });
@@ -306,7 +351,7 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
         setLoading(false);
       }
     },
-    [category, msaName, procedureCode, runLegacySearch, specialty, stateName, writeUrl, zipCode],
+    [category, msaName, procedureCode, procedureQuery, runLegacySearch, specialty, stateName, writeUrl, zipCode],
   );
 
   const autoSearched = useRef(false);
@@ -321,13 +366,33 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
     void search(Number(searchParams.get('page') || '1') || 1);
   }, [allMsas.length, metaLoading, msaName, search, searchParams, stateName]);
 
+  const hidden = useMemo(() => flagRateOutliers(hclRates), [hclRates]);
+  const { kept, outliers } = useMemo(() => partitionRates(hclRates, hidden), [hclRates, hidden]);
+  const visible = useMemo(() => {
+    const base = showOutliers ? [...kept, ...outliers] : kept;
+    return payerFilter === 'all' ? base : base.filter((row) => classifyPayer(row) === payerFilter);
+  }, [kept, outliers, payerFilter, showOutliers]);
+
   const sortedHcl = useMemo(() => {
-    return [...hclRates].sort((a, b) =>
-      sortBy === 'price_asc' ? a.rate - b.rate : b.rate - a.rate,
-    );
-  }, [hclRates, sortBy]);
+    return [...visible].sort((a, b) => {
+      if (sortBy === 'price_asc') return a.rate - b.rate;
+      if (sortBy === 'price_desc') return b.rate - a.rate;
+      if (sortBy === 'cms_asc') return (a.cmsRelativity ?? 99) - (b.cmsRelativity ?? 99);
+      if (sortBy === 'off_list') return (listDiscount(b) ?? -1) - (listDiscount(a) ?? -1);
+      return describePayer(a).localeCompare(describePayer(b));
+    });
+  }, [sortBy, visible]);
 
   const groups = useMemo(() => groupByFacility(sortedHcl), [sortedHcl]);
+  const coach = useMemo(() => planNegotiation(kept), [kept]);
+  const namedPayers = useMemo(() => uniquePayers(kept), [kept]);
+  const mix = useMemo(() => mixEntries(payerMix(kept)), [kept]);
+  const offList = useMemo(() => medianListDiscount(kept), [kept]);
+  const bidNumber = Number(bid.replace(/[^0-9.]/g, ''));
+  const bidVsMedicare =
+    Number.isFinite(bidNumber) && bidNumber > 0 && coach.medicare
+      ? bidNumber - coach.medicare
+      : null;
 
   const sortedLegacy = useMemo(() => {
     return [...legacyResults].sort((a, b) =>
@@ -357,7 +422,7 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
       codeDescription: row.codeDescription,
       category: row.category,
       rate: row.rate,
-      paymentMethod: row.paymentMethod,
+      paymentMethod: describePayer(row),
       cmsRelativity: row.cmsRelativity,
       queryStateName: stateName,
       queryMsaName: msaName,
@@ -553,6 +618,39 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
                 this key.
               </p>
             )}
+            <label className={styles.field}>
+              <span className={styles.label}>Procedure</span>
+              <input
+                className={styles.control}
+                value={procedureQuery}
+                placeholder="Knee surgery, mole, 27447…"
+                onChange={(e) => {
+                  setProcedureQuery(e.target.value);
+                  const onlyCode = e.target.value.replace(/[^A-Za-z0-9]/g, '');
+                  if (/^\d{4,5}$/.test(onlyCode) || /^[A-Za-z]\d{4}$/.test(onlyCode)) {
+                    setProcedureCode(onlyCode.toUpperCase());
+                  }
+                }}
+              />
+            </label>
+            {familyMatches.length > 0 ? (
+              <ul className={styles.suggest}>
+                {familyMatches.slice(0, 6).map((family: ProcedureFamily) => (
+                  <li key={family.id}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setProcedureCode(family.code);
+                        setProcedureQuery(family.label);
+                      }}
+                    >
+                      <span>{family.label}</span>
+                      <span className={styles.mono}>{family.code}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
             <label className={`${styles.field} ${styles.heroCode}`}>
               <span className={styles.label}>
                 {specialties.find((s) => s.hclName === specialty)?.codeHint || 'CPT / HCPCS'}
@@ -566,6 +664,27 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
                 }
               />
             </label>
+            {activeFamily ? (
+              <div className={styles.companions}>
+                <span className={styles.label}>Typical bill</span>
+                <div className={styles.chipRow}>
+                  <span className={styles.chipOn}>{activeFamily.code} hospital</span>
+                  {activeFamily.companions.map((c) => (
+                    <button
+                      key={c.code}
+                      type="button"
+                      className={styles.chip}
+                      onClick={() => {
+                        setProcedureCode(c.code);
+                        setProcedureQuery(c.label);
+                      }}
+                    >
+                      {c.label} · {c.code}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
             <label className={styles.field}>
               <span className={styles.label}>Category</span>
               <input
@@ -584,6 +703,9 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
               >
                 <option value="price_asc">Price: low to high</option>
                 <option value="price_desc">Price: high to low</option>
+                <option value="cms_asc">Closest to Medicare</option>
+                <option value="off_list">Biggest cut off list</option>
+                <option value="payer">Payer name</option>
               </select>
             </label>
             {procedures.length > 0 ? (
@@ -624,33 +746,124 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
 
           {searched && source === 'hcl' ? (
             <>
-              <p className={styles.note}>This page, not the metro.</p>
+              <p className={styles.note}>
+                This page, not the metro. Every tick names who pays. Stats below are kept ticks
+                after the junk fence.
+              </p>
               <div className={styles.strip}>
                 <div className={styles.stat}>
-                  <span className={styles.statLabel}>This page</span>
-                  <span className={styles.statValue}>{slice.sliceCount}</span>
+                  <span className={styles.statLabel}>Kept / hidden</span>
+                  <span className={styles.statValue}>
+                    {kept.length}
+                    <span className={styles.statQuiet}> / {outliers.length}</span>
+                  </span>
                 </div>
                 <div className={styles.stat}>
                   <span className={styles.statLabel}>Low / median / high</span>
                   <span className={styles.statValue} data-signal="true">
-                    {slice.low != null ? formatCash(slice.low) : 'n/a'}
-                    {slice.median != null ? ` · ${formatCash(slice.median)}` : ''}
-                    {slice.high != null ? ` · ${formatCash(slice.high)}` : ''}
+                    {coach.lowestKept != null ? formatCash(coach.lowestKept) : 'n/a'}
+                    {coach.medianKept != null ? ` · ${formatCash(coach.medianKept)}` : ''}
+                    {kept.length ? ` · ${formatCash(Math.max(...kept.map((r) => r.rate)))}` : ''}
                   </span>
                 </div>
                 <div className={styles.stat}>
-                  <span className={styles.statLabel}>CMS needle</span>
+                  <span className={styles.statLabel}>Medicare analog</span>
                   <span className={styles.statValue}>
-                    {slice.cmsMin != null
-                      ? `${slice.cmsMin.toFixed(2)}-${slice.cmsMax?.toFixed(2)}x`
-                      : 'n/a'}
+                    {coach.medicare != null ? formatCash(coach.medicare) : 'n/a'}
                   </span>
+                </div>
+                <div className={styles.stat}>
+                  <span className={styles.statLabel}>Named payers</span>
+                  <span className={styles.statValue}>{namedPayers.length}</span>
+                </div>
+                <div className={styles.stat}>
+                  <span className={styles.statLabel}>Off list</span>
+                  <span className={styles.statValue}>{formatPct(offList) || 'n/a'}</span>
                 </div>
                 <div className={styles.stat}>
                   <span className={styles.statLabel}>File size</span>
                   <span className={styles.statValue}>{slice.fileSize.toLocaleString()}</span>
                 </div>
               </div>
+              {mix.length > 0 ? (
+                <div className={styles.mix} aria-label="Payer mix on this page">
+                  {mix.map((entry) => (
+                    <span
+                      key={entry.id}
+                      className={styles.mixSeg}
+                      data-class={entry.id}
+                      style={{ flex: entry.count }}
+                    >
+                      {entry.label} {entry.count}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+              <div className={styles.coach}>
+                <div>
+                  <p className={styles.label}>Coach</p>
+                  <p className={styles.coachLine}>
+                    Medicare on this tape is{' '}
+                    <strong>{coach.medicare != null ? formatCash(coach.medicare) : 'not published'}</strong>
+                    . Lowest kept is{' '}
+                    <strong>{coach.lowestKept != null ? formatCash(coach.lowestKept) : 'n/a'}</strong>
+                    . If Medicare is refused, offer{' '}
+                    <strong>{coach.cashOffer != null ? formatCash(coach.cashOffer) : 'n/a'}</strong>
+                    {' '}
+                    (20% above the lowest kept rate) as cash, paid now.
+                  </p>
+                </div>
+                <label className={styles.field}>
+                  <span className={styles.label}>I would pay</span>
+                  <input
+                    className={styles.control}
+                    inputMode="decimal"
+                    value={bid}
+                    placeholder={coach.medicare != null ? String(Math.round(coach.medicare)) : ''}
+                    onChange={(e) => setBid(e.target.value)}
+                  />
+                  <span className={styles.note} style={{ margin: '0.35rem 0 0' }}>
+                    {bidVsMedicare == null
+                      ? 'Type a bid to see it against Medicare.'
+                      : bidVsMedicare === 0
+                        ? 'Matches the Medicare analog.'
+                        : bidVsMedicare < 0
+                          ? `${formatCash(Math.abs(bidVsMedicare))} under Medicare.`
+                          : `${formatCash(bidVsMedicare)} above Medicare.`}
+                  </span>
+                </label>
+              </div>
+              <div className={styles.chipRow} role="group" aria-label="Payer filter">
+                {PAYER_FILTERS.map((chip) => {
+                  const count =
+                    chip.id === 'all'
+                      ? kept.length
+                      : mix.find((entry) => entry.id === chip.id)?.count ?? 0;
+                  return (
+                    <button
+                      key={chip.id}
+                      type="button"
+                      className={payerFilter === chip.id ? styles.chipOn : styles.chip}
+                      onClick={() => setPayerFilter(chip.id)}
+                    >
+                      {chip.label} {count}
+                    </button>
+                  );
+                })}
+                <button
+                  type="button"
+                  className={showOutliers ? styles.chipOn : styles.chip}
+                  onClick={() => setShowOutliers((v) => !v)}
+                >
+                  {showOutliers ? 'Hiding junk off' : `Show ${outliers.length} hidden`}
+                </button>
+              </div>
+              {namedPayers.length > 0 ? (
+                <p className={styles.note}>
+                  On this page: {namedPayers.slice(0, 12).join(', ')}
+                  {namedPayers.length > 12 ? ` +${namedPayers.length - 12}` : ''}.
+                </p>
+              ) : null}
             </>
           ) : !searched ? (
             <p className={styles.note}>
@@ -674,11 +887,12 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
                   <thead>
                     <tr>
                       <th>Facility</th>
-                      <th>Code</th>
-                      <th>Description</th>
-                      <th>Method</th>
-                      <th>CMS</th>
-                      <th style={{ textAlign: 'right' }}>Cash</th>
+                      <th>Payer</th>
+                      <th>Plan</th>
+                      <th>List</th>
+                      <th>Medicare $</th>
+                      <th>vs CMS</th>
+                      <th style={{ textAlign: 'right' }}>Published</th>
                       <th> </th>
                       <th> </th>
                     </tr>
@@ -687,7 +901,7 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
                     {groups.map((group) => (
                       <Fragment key={group.facility}>
                         <tr className={styles.groupRow}>
-                          <td colSpan={8}>
+                          <td colSpan={9}>
                             <button
                               type="button"
                               className={`${styles.rowBtn} ${styles.facility}`}
@@ -696,7 +910,14 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
                               {group.facility}
                             </button>
                             <div className={styles.groupMeta}>
-                              {[group.city, group.state].filter(Boolean).join(', ')}
+                              {group.ticks[0]
+                                ? describeFacilityLine(group.ticks[0])
+                                : [group.city, group.state].filter(Boolean).join(', ')}
+                              {(() => {
+                                const spread = facilitySpread(group.ticks);
+                                if (spread.low == null || spread.high == null) return '';
+                                return ` · ${spread.payerCount} payers · ${formatCash(spread.low)}–${formatCash(spread.high)}`;
+                              })()}
                             </div>
                           </td>
                         </tr>
@@ -704,13 +925,29 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
                           const key = tickKey(r);
                           const pinned = pins.some((p) => tickKey(p) === key);
                           const clipped = clippedKeys.has(clipIdentity(r));
+                          const junk = hidden.has(tickIdentity(r));
                           return (
-                            <tr key={key}>
+                            <tr key={key} data-outlier={junk ? 'true' : undefined}>
                               <td />
-                              <td className={styles.mono}>{r.procedureCode}</td>
-                              <td>{r.codeDescription || r.category}</td>
+                              <td>
+                                <div className={styles.payer}>
+                                  {describePayer(r)}
+                                  <span className={styles.payerClass}>
+                                    {payerClassLabel(classifyPayer(r))}
+                                  </span>
+                                </div>
+                              </td>
                               <td className={styles.note} style={{ margin: 0 }}>
-                                {r.paymentMethod || 'n/a'}
+                                {describePlan(r) || r.product || r.procedureCode}
+                              </td>
+                              <td className={styles.list}>
+                                {r.grossCharges != null ? formatCash(r.grossCharges) : '—'}
+                                {listDiscount(r) != null ? (
+                                  <div className={styles.groupMeta}>{formatPct(listDiscount(r))} off</div>
+                                ) : null}
+                              </td>
+                              <td className={styles.mono}>
+                                {r.cmsRate != null ? formatCash(r.cmsRate) : '—'}
                               </td>
                               <td className={styles.needle}>{formatNeedle(r.cmsRelativity)}</td>
                               <td className={styles.rate}>{formatCash(r.rate)}</td>
@@ -762,19 +999,26 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
                       {group.facility}
                     </button>
                     <p className={styles.groupMeta}>
-                      {[group.city, group.state].filter(Boolean).join(', ')}
+                      {group.ticks[0]
+                        ? describeFacilityLine(group.ticks[0])
+                        : [group.city, group.state].filter(Boolean).join(', ')}
                     </p>
                     {group.ticks.map((r) => {
                       const key = tickKey(r);
                       const pinned = pins.some((p) => tickKey(p) === key);
                       const clipped = clippedKeys.has(clipIdentity(r));
                       return (
-                        <div key={key} className={styles.cardTick}>
+                        <div
+                          key={key}
+                          className={styles.cardTick}
+                          data-outlier={hidden.has(tickIdentity(r)) ? 'true' : undefined}
+                        >
                           <div>
-                            <div className={styles.mono}>{r.procedureCode}</div>
+                            <div className={styles.payer}>{describePayer(r)}</div>
                             <div className={styles.groupMeta}>
-                              {r.codeDescription || r.category}
-                              {r.paymentMethod ? ` · ${r.paymentMethod}` : ''}
+                              {describePlan(r)}
+                              {r.grossCharges != null ? ` · list ${formatCash(r.grossCharges)}` : ''}
+                              {r.cmsRate != null ? ` · Medicare ${formatCash(r.cmsRate)}` : ''}
                             </div>
                             <div className={styles.needle}>{formatNeedle(r.cmsRelativity)}</div>
                           </div>
@@ -883,7 +1127,7 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
             {pins.map((p) => (
               <div key={tickKey(p)} className={styles.trayCard}>
                 <strong>{p.facilityName}</strong>
-                <div className={styles.mono}>{p.procedureCode}</div>
+                <div>{describePayer(p)}</div>
                 <div className={styles.rate}>{formatCash(p.rate)}</div>
                 <div className={styles.needle}>{formatNeedle(p.cmsRelativity)}</div>
                 <button
@@ -909,13 +1153,56 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
         <div className={styles.drawerHead}>
           <div>
             <h2 id="facility-drawer-title">{drawer?.facility}</h2>
-            <p className={styles.note}>Same metro slice, this facility only.</p>
+            <p className={styles.note}>Same query, this facility only. Every published payer on the page.</p>
           </div>
           <button type="button" className={styles.pinBtn} onClick={closeDrawer} aria-label="Close">
             <X weight="light" />
           </button>
         </div>
-        <div style={{ padding: '0.85rem 1.1rem 1.2rem' }}>
+        <div className={styles.drawerBody}>
+          {drawerRates[0] ? (
+            <div className={styles.facilityFacts}>
+              <p className={styles.dossierKicker}>{describeFacilityLine(drawerRates[0], { includeMetro: true })}</p>
+              <p>
+                {[drawerRates[0].address, drawerRates[0].city, drawerRates[0].state, drawerRates[0].zip]
+                  .filter(Boolean)
+                  .join(', ')}
+              </p>
+              <div className={styles.chipRow}>
+                {drawerRates[0].phone ? (
+                  <a className={styles.chip} href={`tel:${drawerRates[0].phone.replace(/\D/g, '')}`}>
+                    Call
+                  </a>
+                ) : null}
+                <a className={styles.chip} href={mapsUrl(drawerRates[0])} target="_blank" rel="noreferrer">
+                  Map
+                </a>
+                {websiteHref(drawerRates[0].website) ? (
+                  <a
+                    className={styles.chip}
+                    href={websiteHref(drawerRates[0].website)!}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Website
+                  </a>
+                ) : null}
+                <a
+                  className={styles.chip}
+                  href={qualityLookupUrl(drawerRates[0])}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Outcomes (Healthgrades)
+                </a>
+                {npiUrl(drawerRates[0].npi) ? (
+                  <a className={styles.chip} href={npiUrl(drawerRates[0].npi)!} target="_blank" rel="noreferrer">
+                    NPI {drawerRates[0].npi}
+                  </a>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
           {drawerLoading ? <div className={styles.skeleton} aria-busy="true" /> : null}
           {!drawerLoading && drawerRates.length === 0 ? (
             <p className={styles.note}>No more ticks for this facility in the current query.</p>
@@ -923,17 +1210,14 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
           {drawerRates.map((r) => (
             <div
               key={tickKey(r)}
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                gap: 12,
-                padding: '0.55rem 0',
-                borderBottom: '1px solid var(--hairline)',
-              }}
+              className={styles.drawerTick}
+              data-outlier={hidden.has(tickIdentity(r)) ? 'true' : undefined}
             >
               <div>
-                <div className={styles.mono}>{r.procedureCode}</div>
-                <div>{r.codeDescription || r.category}</div>
+                <div className={styles.payer}>{describePayer(r)}</div>
+                <div className={styles.groupMeta}>
+                  {[describePlan(r), r.product].filter(Boolean).join(' · ')}
+                </div>
               </div>
               <div className={styles.cardRate}>
                 <div className={styles.rate}>{formatCash(r.rate)}</div>

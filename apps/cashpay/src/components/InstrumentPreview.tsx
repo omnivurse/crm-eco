@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { describePayer } from '@crm-eco/cash-pay';
 import { formatCash, formatNeedle } from '@/lib/format';
 import type { HclRate, SliceSummary } from '@/lib/hcl-types';
 import styles from '@/app/instrument.module.css';
@@ -70,14 +71,16 @@ export function InstrumentPreview() {
           <thead>
             <tr>
               <th>Facility</th>
+              <th>Payer</th>
               <th>CMS</th>
-              <th style={{ textAlign: 'right' }}>Cash</th>
+              <th style={{ textAlign: 'right' }}>Published</th>
             </tr>
           </thead>
           <tbody>
             {rates.map((r) => (
               <tr key={`${r.id}-${r.facilityName}`}>
                 <td>{r.facilityName}</td>
+                <td>{describePayer(r)}</td>
                 <td className={styles.needle}>{formatNeedle(r.cmsRelativity)}</td>
                 <td className={styles.rate}>{formatCash(r.rate)}</td>
               </tr>

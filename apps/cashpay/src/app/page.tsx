@@ -34,9 +34,9 @@ export default function HomePage() {
         <section className={`lp-hero ${styles.hero}`} aria-label={`${brand.name} ${brand.product}`}>
           <div className={`lp-hero-copy ${styles.heroCopy}`}>
             <p className="lp-eyebrow">{brand.product}</p>
-            <h1 className="lp-display">Hospital cash files, finally designed.</h1>
+            <h1 className="lp-display">Every published payer, on one tape.</h1>
             <p className="lp-lede">
-              Published rates for 55 HCL markets. Not a quote. Not insurance.
+              Anthem, UHC, Cigna, Medicare, cash — named on the tick, not guessed. 55 HCL markets.
             </p>
             <div className="lp-hero-actions">
               <a href="/search" className="lp-btn-primary">
@@ -64,21 +64,21 @@ export default function HomePage() {
         <LandingSection id="file" aria-label="What the file contains">
           <LandingSectionHead
             heading="One tick from the file"
-            lede="Hospital cash is live on this key. Pharmacy, imaging, and laboratory are not mapped yet, so they are not offered as if they work."
+            lede="Hospital cash is live. Every tick already carries carrier, plan, LOB, product, chargemaster list, Medicare analog, NPI, and address. Clinic, pharmacy, imaging, and laboratory files 400 on this key until HCL maps them."
           />
           <div className={tape.specimen}>
             <div>
-              <span className={tape.statLabel}>Code</span>
-              <span className={tape.mono}>CPT / HCPCS</span>
+              <span className={tape.statLabel}>Who pays</span>
+              <strong>Anthem · Medicare</strong>
             </div>
             <div>
-              <span className={tape.statLabel}>Tick</span>
-              <strong>Facility, city, payment method</strong>
+              <span className={tape.statLabel}>List / analog</span>
+              <span className={tape.mono}>Chargemaster · CMS $</span>
             </div>
             <div>
               <span className={tape.statLabel}>Loud / quiet</span>
-              <div className={tape.rate}>Cash rate</div>
-              <div className={tape.needle}>CMS relativity</div>
+              <div className={tape.rate}>Published rate</div>
+              <div className={tape.needle}>× Medicare</div>
             </div>
           </div>
         </LandingSection>
@@ -99,8 +99,8 @@ export default function HomePage() {
             <div className={tape.contrastCol}>
               <strong>The instrument</strong>
               <p className={tape.note}>
-                HCL market, exact metro, CPT as the hero query, slice stats labeled as this page,
-                compare tray, facility drawer.
+                Named payer on every tick. List vs Medicare vs published. Procedure typeahead,
+                radius, outlier fence, coach, compare tray, facility dossier.
               </p>
             </div>
           </div>

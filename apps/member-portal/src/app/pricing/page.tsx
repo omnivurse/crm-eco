@@ -29,7 +29,7 @@ export default async function PricingPage() {
     <div className="space-y-6">
       <PageHeader
         title="Cash prices"
-        description="Read published hospital cash for one code in one HCL metro. This page is a slice, not the market."
+        description="Named payers, chargemaster list, Medicare analog, and the published rate — this page is a slice, not the market."
         kicker="Pricing"
         backHref="/services"
         backLabel="Back to Services"

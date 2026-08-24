@@ -60,8 +60,57 @@ export type {
   PreferredMarket,
 } from './rate-query';
 
+export { asNumber, asText } from './normalize';
+
 export { summarizeResultSlice } from './result-slice';
 export type { SliceTick, ResultSliceSummary } from './result-slice';
+
+export {
+  classifyPayer,
+  describePayer,
+  describePlan,
+  payerClassLabel,
+  uniquePayers,
+} from './payer';
+export type { PayerClass } from './payer';
+
+export { flagRateOutliers, partitionRates, tickIdentity, LOW_CMS_FLOOR, HIGH_CMS_CEILING } from './outliers';
+
+export { planNegotiation, bidDelta } from './negotiate';
+export type { NegotiatePlan } from './negotiate';
+
+export {
+  PROCEDURE_FAMILIES,
+  searchProcedureFamilies,
+  familyForCode,
+} from './procedure-families';
+export type { ProcedureFamily, CompanionCode } from './procedure-families';
+
+export {
+  RADIUS_MILES,
+  haversineMiles,
+  pointFromRow,
+  originFromSlice,
+  milesFromOrigin,
+  filterByRadius,
+  mapsUrl,
+  qualityLookupUrl,
+  npiUrl,
+} from './geo';
+export type { GeoPoint, RadiusMiles } from './geo';
+
+export {
+  PAYER_MIX_ORDER,
+  emptyPayerMix,
+  payerMix,
+  mixEntries,
+  listDiscount,
+  medianListDiscount,
+  websiteHref,
+  describeFacilityLine,
+  facilitySpread,
+} from './tape-intel';
+export type { PayerMix, FacilitySpread } from './tape-intel';
 
 export {
   clipIdentity,

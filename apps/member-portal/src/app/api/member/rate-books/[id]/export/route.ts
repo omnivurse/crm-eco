@@ -20,7 +20,7 @@ const HEADERS = [
   'description',
   'cash',
   'cms_needle',
-  'payment_method',
+  'payer',
   'page_high_at_clip',
   'page_median_at_clip',
 ];

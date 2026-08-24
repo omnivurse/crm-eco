@@ -5,31 +5,63 @@ export function defaultSpecialty(): string {
   return catalogDefaultHclName();
 }
 
+export function asNumber(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string') {
+    const trimmed = value.trim().replace(/,/g, '');
+    if (!trimmed) return null;
+    const n = Number(trimmed);
+    return Number.isFinite(n) ? n : null;
+  }
+  return null;
+}
+
+export function asText(...candidates: unknown[]): string {
+  for (const value of candidates) {
+    if (typeof value === 'string' && value.trim()) return value.trim();
+    if (typeof value === 'number' && Number.isFinite(value)) return String(value);
+  }
+  return '';
+}
+
 export function normalizeRate(raw: HclRawRate): CashRateRow | null {
-  const rate = typeof raw.rate === 'number' ? raw.rate : Number(raw.rate);
-  if (!Number.isFinite(rate)) return null;
-  const facilityName = (raw.facilityName || '').trim();
+  const rate = asNumber(raw.rate);
+  if (rate == null) return null;
+  const facilityName = asText(raw.facilityName);
   if (!facilityName) return null;
 
   return {
-    id: raw.id ?? `${facilityName}-${raw.procedureCode ?? ''}-${rate}`,
-    hospitalId: raw.hospitalID ?? raw.hospitalId ?? null,
+    id: raw.id ?? `${facilityName}-${asText(raw.procedureCode)}-${rate}`,
+    hospitalId: asNumber(raw.hospitalID ?? raw.hospitalId),
     facilityName,
-    city: (raw.cityName || raw.location || '').trim(),
-    state: (raw.stateName || '').trim(),
-    procedureCode: (raw.procedureCode || '').trim(),
-    codeDescription: (raw.codeDescription || '').trim(),
-    category: (raw.category || '').trim(),
+    city: asText(raw.cityName, raw.location),
+    state: asText(raw.stateName),
+    msaName: asText(raw.msaName) || null,
+    procedureCode: asText(raw.procedureCode),
+    codeDescription: asText(raw.codeDescription),
+    category: asText(raw.category),
+    codeType: asText(raw.codeType) || null,
     rate,
-    paymentMethod: raw.paymentMethod?.trim() || null,
-    carrier: raw.carrier?.trim() || null,
-    planName: raw.planName?.trim() || null,
-    lob: raw.lob?.trim() || null,
-    product: raw.product?.trim() || null,
-    cmsRelativity:
-      typeof raw.cmsRelativity === 'number' && Number.isFinite(raw.cmsRelativity)
-        ? raw.cmsRelativity
-        : null,
+    paymentMethod: asText(raw.paymentMethod) || null,
+    carrier: asText(raw.carrier) || null,
+    planName: asText(raw.planName) || null,
+    lob: asText(raw.lob) || null,
+    product: asText(raw.product) || null,
+    cmsRelativity: asNumber(raw.cmsRelativity),
+    cmsRate: asNumber(raw.cmsRate),
+    grossCharges: asNumber(raw.grossCharges),
+    address: asText(raw.address) || null,
+    zip: asText(raw.zip) || null,
+    phone: asText(raw.phone) || null,
+    website: asText(raw.website) || null,
+    npi: asText(raw.npi) || null,
+    latitude: asNumber(raw.latitude),
+    longitude: asNumber(raw.longitude),
+    hospitalType: asText(raw.hospitalType) || null,
+    healthsystemType: asText(raw.healthsystemType) || null,
+    corporateEntity: asText(raw.corporateEntity) || null,
+    additionalPayerNotes: asText(raw.additionalPayerNotes) || null,
+    methodology: asText(raw.methodology) || null,
   };
 }
 

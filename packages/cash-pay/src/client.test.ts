@@ -34,6 +34,8 @@ describe('normalizeRate', () => {
       planName: 'BlueCare',
       procedureCode: '99213',
       cmsRelativity: 1.25,
+      cmsRate: '13077.14',
+      grossCharges: '20337',
       paymentMethod: 'Negotiated',
       carrier: 'BlueCross',
       lob: 'Commercial',
@@ -50,6 +52,10 @@ describe('normalizeRate', () => {
       procedureCode: '99213',
       city: 'Dallas',
       state: 'Texas',
+      cmsRate: 13077.14,
+      grossCharges: 20337,
+      carrier: 'BlueCross',
+      lob: 'Commercial',
     });
   });
 

@@ -54,10 +54,10 @@ export function RateNoteButton({
         const when = clip.clippedAt ? new Date(clip.clippedAt).toLocaleDateString() : '—';
         return `<tr>
           <td>${escapeHtml(clip.facilityName)}</td>
+          <td>${escapeHtml(clip.paymentMethod || 'Unnamed payer')}</td>
           <td class="mono">${escapeHtml(clip.procedureCode)}</td>
-          <td>${escapeHtml(clip.codeDescription || clip.category || '')}</td>
           <td class="cash">${escapeHtml(money(clip.rate))}</td>
-          <td class="mono">${clip.cmsRelativity == null ? '—' : `${clip.cmsRelativity.toFixed(2)}x`}</td>
+          <td class="mono">${clip.cmsRelativity == null ? '—' : `${clip.cmsRelativity.toFixed(2)}×`}</td>
           <td>${escapeHtml([clip.queryStateName, clip.queryMsaName].filter(Boolean).join(' · '))}</td>
           <td class="mono">${escapeHtml(when)}</td>
         </tr>`;
@@ -99,12 +99,12 @@ export function RateNoteButton({
       <div class="stat"><span>This book</span><strong>${compile.clipCount}</strong></div>
       <div class="stat"><span>Cash</span><strong class="cash">${escapeHtml(money(compile.cashTotal))}</strong></div>
       <div class="stat"><span>Vs page high</span><strong class="cash">${escapeHtml(money(compile.vsSliceHigh))}</strong></div>
-      <div class="stat"><span>CMS needle</span><strong>${
-        compile.cmsMin == null ? '—' : `${compile.cmsMin.toFixed(2)}–${compile.cmsMax?.toFixed(2)}x`
+      <div class="stat"><span>vs Medicare</span><strong>${
+        compile.cmsMin == null ? '—' : `${compile.cmsMin.toFixed(2)}–${compile.cmsMax?.toFixed(2)}×`
       }</strong></div>
     </div>
     <table>
-      <thead><tr><th>Facility</th><th>Code</th><th>Description</th><th>Cash</th><th>CMS</th><th>Metro</th><th>As of</th></tr></thead>
+      <thead><tr><th>Facility</th><th>Payer</th><th>Code</th><th>Published</th><th>vs Medicare</th><th>Metro</th><th>As of</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
     <p class="foot">Published hospital cash. Not a quote. Not insurance. Page high / median were stored when the tick was clipped.</p>

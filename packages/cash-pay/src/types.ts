@@ -20,9 +20,11 @@ export interface CashRateRow {
   facilityName: string;
   city: string;
   state: string;
+  msaName: string | null;
   procedureCode: string;
   codeDescription: string;
   category: string;
+  codeType: string | null;
   rate: number;
   paymentMethod: string | null;
   carrier: string | null;
@@ -30,6 +32,20 @@ export interface CashRateRow {
   lob: string | null;
   product: string | null;
   cmsRelativity: number | null;
+  cmsRate: number | null;
+  grossCharges: number | null;
+  address: string | null;
+  zip: string | null;
+  phone: string | null;
+  website: string | null;
+  npi: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  hospitalType: string | null;
+  healthsystemType: string | null;
+  corporateEntity: string | null;
+  additionalPayerNotes: string | null;
+  methodology: string | null;
 }
 
 export interface GetRateDataPagedInput {
@@ -62,15 +78,17 @@ export interface GetRateDataPagedFailure {
 
 export type GetRateDataPagedResult = GetRateDataPagedSuccess | GetRateDataPagedFailure;
 
-/** Raw Azure ratesList item (field casing as documented). */
+/** Raw Azure ratesList item. Live 2026 file fills every named field below. */
 export interface HclRawRate {
   id?: number | string;
-  hospitalID?: number;
-  hospitalId?: number;
+  hospitalID?: number | string;
+  hospitalId?: number | string;
   facilityName?: string;
   planName?: string;
   procedureCode?: string;
-  cmsRelativity?: number;
+  cmsRelativity?: number | string;
+  cmsRate?: number | string;
+  grossCharges?: number | string;
   location?: string;
   paymentMethod?: string;
   carrier?: string;
@@ -78,9 +96,23 @@ export interface HclRawRate {
   product?: string;
   codeDescription?: string;
   category?: string;
-  rate?: number;
+  codeType?: string;
+  rate?: number | string;
   stateName?: string;
   cityName?: string;
+  address?: string;
+  zip?: string;
+  phone?: string;
+  website?: string;
+  npi?: string | number;
+  latitude?: number | string;
+  longitude?: number | string;
+  hospitalType?: string;
+  healthsystemType?: string;
+  corporateEntity?: string;
+  additionalPayerNotes?: string;
+  methodology?: string;
+  msaName?: string;
 }
 
 export interface HclPagedResponse {

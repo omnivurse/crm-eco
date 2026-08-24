@@ -177,8 +177,11 @@ locality) comes from the `/codebase-design` skill; the terms below name the
 
 - **HCL Market** — inventory state or region label HCL invented (`Oregon`, `CA-S California`, `TX-North Texas DFW`). Not a USPS state when split.
 - **HCL Metro** — exact CMSA string `GetRateDataPaged` requires (`Portland-Salem`). Must match the catalog character-for-character.
-- **Cash Rate Tick** — one published facility × procedure code × cash rate row.
+- **Cash Rate Tick** — one published facility × procedure × named payer × rate. Live hospital file fills `carrier`, `planName`, `lob`, `product`, `cmsRate`, `cmsRelativity`, `grossCharges`, address, NPI, lat/long, hospital type, methodology. `paymentMethod` is usually `facility only` and is not who pays.
+- **Who pays** — HCL `carrier` + `lob` (Anthem · Medicare). Never invent a carrier.
+- **Medicare analog** — HCL `cmsRate` / `cmsRelativity`. Never label it “vs insurance.”
+- **List / chargemaster** — `grossCharges`. The loud figure is the published contracted or cash rate.
+- **Outlier fence** — hide `cmsRelativity` < 0.35 or > 4, or `rate` < 0.4 × `cmsRate` (the Rose $1,759 junk tick).
 - **Result Slice** — the current page (≤50 ticks). Never present slice min/max as the metro.
 - **File Size** — HCL `totalCount` for the query (often millions).
-- **CMS Relativity** — tick vs Medicare (`cmsRelativity`).
-- **Live Specialty** — a specialty string this API key can fulfill. Today: `Hospital cash prices`. Pharmacy / Imaging / Laboratory 400 until HCL maps them.
+- **Live Specialty** — a specialty string this API key can fulfill. Today: `Hospital cash prices`. Clinic / Pharmacy / Imaging / Laboratory / ASC 400 until HCL maps them. Do not offer those files as if they work.

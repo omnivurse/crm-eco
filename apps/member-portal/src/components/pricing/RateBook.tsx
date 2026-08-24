@@ -27,7 +27,7 @@ function formatCash(price: number): string {
 
 function formatNeedle(value: number | null | undefined): string {
   if (value == null || !Number.isFinite(value)) return '';
-  return `${value.toFixed(2)}x CMS`;
+  return `${value.toFixed(2)}× Medicare`;
 }
 
 interface RateBookProps {
@@ -236,11 +236,11 @@ export function RateBook({ memberName, postalCode }: RateBookProps) {
             </span>
           </div>
           <div className={styles.stat}>
-            <span className={styles.statLabel}>CMS needle</span>
+            <span className={styles.statLabel}>vs Medicare</span>
             <span className={styles.statValue}>
               {compile.cmsMin == null
                 ? 'n/a'
-                : `${compile.cmsMin.toFixed(2)}–${compile.cmsMax?.toFixed(2)}x`}
+                : `${compile.cmsMin.toFixed(2)}–${compile.cmsMax?.toFixed(2)}×`}
             </span>
           </div>
         </div>
@@ -282,12 +282,12 @@ export function RateBook({ memberName, postalCode }: RateBookProps) {
               <thead>
                 <tr>
                   <th>Facility</th>
+                  <th>Payer</th>
                   <th>Code</th>
-                  <th>Description</th>
                   <th>Metro</th>
                   <th>As of</th>
-                  <th>CMS</th>
-                  <th style={{ textAlign: 'right' }}>Cash</th>
+                  <th>vs CMS</th>
+                  <th style={{ textAlign: 'right' }}>Published</th>
                   <th> </th>
                 </tr>
               </thead>
@@ -304,8 +304,8 @@ export function RateBook({ memberName, postalCode }: RateBookProps) {
                           {[clip.city, clip.state].filter(Boolean).join(', ')}
                         </div>
                       </td>
+                      <td>{clip.paymentMethod || clip.codeDescription || 'Unnamed payer'}</td>
                       <td className={styles.mono}>{clip.procedureCode}</td>
-                      <td>{clip.codeDescription || clip.category}</td>
                       <td className={styles.note} style={{ margin: 0 }}>
                         {[clip.queryStateName, clip.queryMsaName].filter(Boolean).join(' · ')}
                       </td>
@@ -346,7 +346,7 @@ export function RateBook({ memberName, postalCode }: RateBookProps) {
                     <div>
                       <div className={styles.mono}>{clip.procedureCode}</div>
                       <div className={styles.groupMeta}>
-                        {clip.codeDescription || clip.category}
+                        {clip.paymentMethod || clip.codeDescription || clip.category}
                       </div>
                       <div className={styles.needle}>{formatNeedle(clip.cmsRelativity)}</div>
                     </div>
