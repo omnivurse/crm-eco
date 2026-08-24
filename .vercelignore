@@ -1,2 +1,18 @@
-# Vercel ignore file
-# Add paths to ignore during deployment if needed
+# CLI / Git uploads. Do not ship local caches or agent trees (a prior
+# cashpay CLI deploy tried to upload 9GB and never finished).
+.claude
+.agents
+.cursor
+.audit/schema
+.audit/code
+.audit/reports
+.backups
+docs/_clean
+**/.next
+**/.turbo
+**/node_modules
+**/*.tsbuildinfo
+coverage
+playwright-report
+test-results
+.DS_Store

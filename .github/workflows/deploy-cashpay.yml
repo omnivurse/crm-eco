@@ -1,0 +1,42 @@
+name: Deploy Cash Pay
+
+# cashpay.doublehelixhub.com is not Git-linked on Vercel (link is null),
+# so main pushes never built it. This workflow is the production hook.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/cashpay/**'
+      - 'packages/cash-pay/**'
+      - 'packages/ui/**'
+      - 'package-lock.json'
+      - '.github/workflows/deploy-cashpay.yml'
+      - '.vercelignore'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: vercel --prod
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      VERCEL_ORG_ID: team_4p59kaGWOEG3XaoIJYptg3l3
+      VERCEL_PROJECT_ID: prj_NJELaszQqnYSJIqknc0JuE7UsVNi
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install Vercel CLI
+        run: npm install -g vercel@54.6.1
+      - name: Pull production env
+        run: vercel pull --yes --environment=production --scope oi-agent --token "$VERCEL_TOKEN"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      - name: Deploy production
+        run: vercel deploy --prod --yes --archive=tgz --scope oi-agent --token "$VERCEL_TOKEN"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
