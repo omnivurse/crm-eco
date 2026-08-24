@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { inboundReplyTo } from '@crm-eco/lib/email';
 import { createClient, getAuthProfile } from '@/lib/supabase-server';
 
 // GET /api/settings/email-domains/[id]/senders - List sender addresses for domain
@@ -109,16 +110,23 @@ export async function POST(
         .eq('org_id', profile.organization_id);
     }
 
+    const normalizedEmail = email.toLowerCase();
+    const replyTo =
+      typeof body.reply_to === 'string' && body.reply_to.trim()
+        ? inboundReplyTo(body.reply_to)
+        : inboundReplyTo(normalizedEmail);
+
     // Create sender address
     const { data: sender, error } = await supabase
       .from('email_sender_addresses')
       .insert({
         org_id: profile.organization_id,
         domain_id: id,
-        email: email.toLowerCase(),
+        email: normalizedEmail,
         name: name || null,
         is_default: isDefault || false,
         is_verified: domain.status === 'verified',
+        reply_to: replyTo,
       })
       .select()
       .single();

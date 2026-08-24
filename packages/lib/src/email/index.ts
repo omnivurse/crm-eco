@@ -31,6 +31,8 @@ export {
   PIFH_DEFAULT_REPLY_TO,
   PIFH_MONITORED_ADDRESSES,
   pifhEmail,
+  pifhInboundEmail,
+  inboundReplyTo,
   type PifhEmailRole,
   type PifhEmailAddress,
 } from './pifh-email-addresses';

@@ -17,6 +17,7 @@ console.log("ok: comms foundation tables are typed");
 '
 
 echo "== mail unit tests =="
+npm --prefix packages/lib test -- src/email/pifh-email-addresses.test.ts
 npm --prefix apps/crm test -- src/lib/email src/lib/inbox/resend-inbound.test.ts src/lib/inbox/reply-from.test.ts src/lib/inbox/mailbox-address.test.ts
 
 echo "== mail skill =="

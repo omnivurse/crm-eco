@@ -45,6 +45,7 @@ export interface HydratableEmail {
   body_text: string;
   body_html?: string;
   reply_to?: string[];
+  received_for?: string[];
   headers?: Record<string, string>;
   attachments?: Array<{
     filename: string;
@@ -103,6 +104,14 @@ export function mergeHydratedEmail<T extends HydratableEmail>(
     merged.reply_to = fetched.reply_to;
   }
 
+  if (
+    Array.isArray(fetched.received_for) &&
+    fetched.received_for.length > 0 &&
+    !base.received_for?.length
+  ) {
+    merged.received_for = fetched.received_for;
+  }
+
   // Attachment metadata only — content is deliberately not downloaded here, so
   // a large attachment can never blow the function's memory or timeout budget.
   if (Array.isArray(fetched.attachments) && fetched.attachments.length > 0 && !base.attachments?.length) {
@@ -137,6 +146,21 @@ export function preferredRecipient(
     if (domain && owned.has(domain)) return addr;
   }
   return null;
+}
+
+/**
+ * Prefer the original recipient (forward / Received-for) when routing a
+ * thread onto a shared mailbox, then fall back to envelope To.
+ */
+export function routeInboundRecipients(
+  to: string[],
+  receivedFor: string[] | null | undefined,
+  ownedDomains: string[],
+): string[] {
+  const preferred = preferredRecipient(receivedFor, ownedDomains);
+  if (!preferred) return to;
+  const rest = to.filter((addr) => addr.trim().toLowerCase() !== preferred);
+  return [preferred, ...rest];
 }
 
 /**

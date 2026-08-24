@@ -73,6 +73,12 @@ interface SenderAddress {
   name: string | null;
   is_default: boolean;
   is_verified: boolean;
+  reply_to?: string | null;
+}
+
+function inboundHostFor(domain: string): string {
+  const host = domain.trim().toLowerCase();
+  return host.startsWith('mail.') ? host : `mail.${host}`;
 }
 
 // ============================================================================
@@ -147,15 +153,21 @@ function DnsRecordRow({ record, onCopy }: { record: DnsRecord; onCopy: (text: st
 
 function DomainCard({
   domain,
+  allDomains,
   onVerify,
   onDelete,
   onAddSender,
 }: {
   domain: EmailDomain;
+  allDomains: EmailDomain[];
   onVerify: (id: string) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   onAddSender: (domainId: string, email: string, name: string) => Promise<void>;
 }) {
+  const inboundHost = inboundHostFor(domain.domain);
+  const inboundDomain = allDomains.find((d) => d.domain.toLowerCase() === inboundHost);
+  const isInboundDomain = domain.domain.toLowerCase() === inboundHost;
+  const inboundReady = inboundDomain?.status === 'verified';
   const [dnsRecords, setDnsRecords] = useState<DnsRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [verifying, setVerifying] = useState(false);
@@ -278,6 +290,35 @@ function DomainCard({
             </div>
           ))}
         </div>
+
+        <div
+          className={cn(
+            'mt-3 flex items-start gap-2 rounded-lg px-3 py-2 text-xs',
+            inboundReady
+              ? 'bg-teal-50 dark:bg-teal-500/10 text-teal-800 dark:text-teal-300'
+              : 'bg-amber-50 dark:bg-amber-500/10 text-amber-800 dark:text-amber-300',
+          )}
+        >
+          <Mail className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+          <div>
+            {isInboundDomain ? (
+              <p>
+                Resend inbound domain. Incoming mail here is filed onto the matching apex mailbox
+                (for example <code className="font-mono">wendy@</code>).
+              </p>
+            ) : (
+              <p>
+                Replies use Reply-To on <code className="font-mono">{inboundHost}</code> so they
+                reach the CRM inbox instead of staff MX.
+                {inboundDomain
+                  ? inboundReady
+                    ? ' Receiving domain is verified.'
+                    : ` Receiving domain is ${inboundDomain.status}.`
+                  : ' Add and verify the mail. receiving domain to complete inbound.'}
+              </p>
+            )}
+          </div>
+        </div>
       </div>
 
       <Accordion type="single" collapsible>
@@ -338,6 +379,11 @@ function DomainCard({
                       {sender.name || sender.email}
                     </p>
                     <p className="text-sm text-slate-500">{sender.email}</p>
+                    {sender.reply_to && (
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        Reply-To {sender.reply_to}
+                      </p>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     {sender.is_default && (
@@ -667,6 +713,7 @@ export default function EmailDomainsPage() {
             <DomainCard
               key={domain.id}
               domain={domain}
+              allDomains={domains}
               onVerify={handleVerifyDomain}
               onDelete={handleDeleteDomain}
               onAddSender={handleAddSender}
@@ -705,7 +752,7 @@ export default function EmailDomainsPage() {
             </div>
             <div>
               <p className="font-medium text-slate-900 dark:text-white">Verify & Send</p>
-              <p className="text-slate-500">Once verified, start sending from your domain</p>
+              <p className="text-slate-500">Once verified, start sending from your domain. Replies use Reply-To on the mail. inbound host so they land in the CRM inbox.</p>
             </div>
           </div>
         </div>

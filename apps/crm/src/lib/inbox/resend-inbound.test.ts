@@ -13,6 +13,7 @@ import {
   mergeHydratedEmail,
   normaliseResendHeaders,
   preferredRecipient,
+  routeInboundRecipients,
   type HydratableEmail,
 } from '../../../../../supabase/functions/_shared/resend-inbound';
 
@@ -79,6 +80,12 @@ describe('mergeHydratedEmail', () => {
     expect(mergeHydratedEmail(preset, { reply_to: ['other@b.com'] }).reply_to).toEqual(['keep@b.com']);
   });
 
+  it('adopts received_for so intake can prefer the original recipient', () => {
+    expect(
+      mergeHydratedEmail(base, { received_for: ['wendy@payitforwardhealth.com'] }).received_for,
+    ).toEqual(['wendy@payitforwardhealth.com']);
+  });
+
   it('records attachment metadata without downloading content', () => {
     const merged = mergeHydratedEmail(base, {
       attachments: [{ filename: 'eob.pdf', content_type: 'application/pdf', size: 1024 }],
@@ -114,6 +121,26 @@ describe('preferredRecipient', () => {
   it('is null when the field is absent', () => {
     expect(preferredRecipient(undefined, owned)).toBeNull();
     expect(preferredRecipient([], owned)).toBeNull();
+  });
+});
+
+describe('routeInboundRecipients', () => {
+  const owned = ['payitforwardhealth.com', 'mail.payitforwardhealth.com'];
+
+  it('puts the original apex recipient first when a forward lands on mail.', () => {
+    expect(
+      routeInboundRecipients(
+        ['wendy@mail.payitforwardhealth.com'],
+        ['wendy@payitforwardhealth.com'],
+        owned,
+      ),
+    ).toEqual(['wendy@payitforwardhealth.com', 'wendy@mail.payitforwardhealth.com']);
+  });
+
+  it('leaves envelope To unchanged when received_for is missing', () => {
+    expect(
+      routeInboundRecipients(['wendy@mail.payitforwardhealth.com'], undefined, owned),
+    ).toEqual(['wendy@mail.payitforwardhealth.com']);
   });
 });
 

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { inboundReplyTo } from '@crm-eco/lib/email';
 import { createClient, getAuthProfile } from '@/lib/supabase-server';
 
 // PATCH /api/settings/email-domains/[id]/senders/[senderId] - Update sender address
@@ -15,7 +16,7 @@ export async function PATCH(
     const supabase = await createClient();
     const { id, senderId } = await params;
     const body = await request.json();
-    const { name, isDefault } = body;
+    const { name, isDefault, reply_to: replyTo } = body;
 
     // Verify domain and sender belong to org
     const { data: sender } = await supabase
@@ -42,6 +43,9 @@ export async function PATCH(
     const updateData: Record<string, unknown> = {};
     if (name !== undefined) updateData.name = name;
     if (isDefault !== undefined) updateData.is_default = isDefault;
+    if (typeof replyTo === 'string' && replyTo.trim()) {
+      updateData.reply_to = inboundReplyTo(replyTo);
+    }
 
     const { data: updated, error } = await supabase
       .from('email_sender_addresses')

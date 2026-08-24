@@ -27,6 +27,7 @@ import {
   type OutboxRow,
 } from '@/lib/email/outbox';
 import { persistOutboundInboxMessage } from '@/lib/email/persist-inbox-reply';
+import { inboundReplyTo } from '@crm-eco/lib/email';
 
 // ============================================================================
 // Email Send Service
@@ -168,10 +169,11 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
     process.env.RESEND_FROM_EMAIL ||
     process.env.FROM_EMAIL ||
     'noreply@payitforwardhealth.com';
-  const replyTo =
+  const replyTo = inboundReplyTo(
     params.reply_to ||
-    process.env.SUPPORT_EMAIL ||
-    'support@payitforwardhealth.com';
+      process.env.SUPPORT_EMAIL ||
+      'support@payitforwardhealth.com',
+  );
 
   // Auto-generate plain text from HTML if not provided (improves deliverability)
   const bodyText = params.body_text || (params.body_html ? htmlToPlainText(params.body_html) : undefined);

@@ -1,6 +1,10 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { resolveMailboxAddress } from "../_shared/mailbox-address.ts";
-import { fetchReceivedEmail, mergeHydratedEmail } from "../_shared/resend-inbound.ts";
+import {
+  fetchReceivedEmail,
+  mergeHydratedEmail,
+  routeInboundRecipients,
+} from "../_shared/resend-inbound.ts";
 import {
   inboundEventHash,
   isClosedLoopEnabled,
@@ -36,6 +40,7 @@ interface EmailPayload {
   body_text: string;
   body_html?: string;
   reply_to?: string[];
+  received_for?: string[];
   headers?: Record<string, string>;
   attachments?: Array<{
     filename: string;
@@ -59,6 +64,7 @@ interface ResendInboundEvent {
     text?: string;
     html?: string;
     reply_to?: string[];
+    received_for?: string[];
     headers?: Record<string, string> | Array<{ name: string; value: string }>;
     attachments?: Array<{
       filename: string;
@@ -360,9 +366,10 @@ async function handleInboxMessage(
   const from = parseEmailAddress(emailData.from);
   const toAddresses = Array.isArray(emailData.to) ? emailData.to : [emailData.to];
   const toFirst = parseEmailAddress(toAddresses[0] || "");
+  const orgLookup = [...toAddresses, ...(emailData.received_for || [])];
 
-  // Resolve org_id from the recipient domain
-  const orgContext = await resolveOrgContext(toAddresses, supabaseUrl, headers);
+  // Resolve org_id from the recipient domain (envelope To or original Received-for)
+  const orgContext = await resolveOrgContext(orgLookup, supabaseUrl, headers);
   if (!orgContext) {
     console.error("Could not resolve org_id from to addresses:", toAddresses);
     return new Response(
@@ -372,11 +379,19 @@ async function handleInboxMessage(
   }
   const { orgId, ownedDomains, registeredAddresses } = orgContext;
 
+  // Prefer Received-for (original recipient / forward) so a reply to
+  // local@mail… or a Liberation forward files under the apex mailbox.
+  const routingTo = routeInboundRecipients(
+    toAddresses,
+    emailData.received_for,
+    ownedDomains,
+  );
+
   // Which shared mailbox owns this thread (billing@, enrollment@, support@, ...).
   // Forwarded mail arriving on a receiving subdomain collapses onto the
   // registered apex address so each role has exactly one queue.
   const mailboxAddress = resolveMailboxAddress(
-    toAddresses,
+    routingTo,
     emailData.cc || [],
     ownedDomains,
     registeredAddresses
@@ -771,6 +786,7 @@ function normaliseResendInbound(event: ResendInboundEvent): EmailPayload {
     body_text: d.text || "",
     body_html: d.html || undefined,
     reply_to: d.reply_to,
+    received_for: d.received_for,
     headers: hdrs,
     attachments: d.attachments?.map(a => ({
       filename: a.filename,
@@ -828,17 +844,17 @@ Deno.serve(async (req: Request) => {
     // the mail is visible rather than silently dropped.
     const resendEmailId = parsed?.data?.email_id;
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
-    if (resendEmailId && !emailData.body_text && !emailData.body_html) {
+    if (resendEmailId) {
       if (resendApiKey) {
         const hydrated = await fetchReceivedEmail(resendEmailId, resendApiKey);
         if (hydrated) {
           emailData = mergeHydratedEmail(emailData, hydrated);
-        } else {
+        } else if (!emailData.body_text && !emailData.body_html) {
           console.error(
             `Inbound ${resendEmailId} filed WITHOUT a body: hydration failed. Thread will show subject only.`,
           );
         }
-      } else {
+      } else if (!emailData.body_text && !emailData.body_html) {
         console.error(
           "RESEND_API_KEY is not set; inbound bodies cannot be hydrated and will be empty.",
         );
@@ -846,7 +862,8 @@ Deno.serve(async (req: Request) => {
     }
 
     const toAddresses = Array.isArray(emailData.to) ? emailData.to : [emailData.to];
-    const orgContext = await resolveOrgContext(toAddresses, supabaseUrl, supabaseHeaders);
+    const orgLookup = [...toAddresses, ...(emailData.received_for || [])];
+    const orgContext = await resolveOrgContext(orgLookup, supabaseUrl, supabaseHeaders);
     const closedLoop = await isClosedLoopEnabled(
       supabaseUrl,
       supabaseHeaders,
