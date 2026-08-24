@@ -155,7 +155,17 @@ export async function createShareRequest(data: ShareRequestData): Promise<Action
     .single();
 
   if (needError || !newNeed) {
-    return { success: false, message: 'Failed to create your request. Please try again.' };
+    console.error('createShareRequest insert failed', {
+      code: needError?.code,
+      message: needError?.message,
+      details: needError?.details,
+    });
+    return {
+      success: false,
+      message: needError?.message
+        ? `Failed to create your request: ${needError.message}`
+        : 'Failed to create your request. Please try again.',
+    };
   }
 
   // Initial audit event (best-effort).

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { useClientAuth } from '@/hooks/useClientAuth';
@@ -37,7 +37,7 @@ function getSlaTargetDate(daysFromNow: number): string {
   return date.toISOString().split('T')[0];
 }
 
-export function CreateNeedDialog() {
+export function CreateNeedDialog({ trigger }: { trigger?: ReactNode }) {
   const router = useRouter();
   const { profile: authProfile } = useClientAuth();
   const [open, setOpen] = useState(false);
@@ -196,10 +196,12 @@ export function CreateNeedDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="gap-2">
-          <Plus className="h-4 w-4" />
-          Create Need
-        </Button>
+        {trigger ?? (
+          <Button className="gap-2">
+            <Plus className="h-4 w-4" />
+            Create Need
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>

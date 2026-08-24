@@ -21,9 +21,18 @@ import { Input } from '@crm-eco/ui/components/input';
 import { getCurrentProfile } from '@/lib/crm/queries';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import type { Need as CanonicalNeed } from '@crm-eco/lib/types';
+import { CreateNeedDialog } from '@/components/needs';
+import {
+  APPROVED_NEED_STATUSES,
+  HIGH_URGENCY_LIGHTS,
+  PENDING_NEED_STATUSES,
+  isPortalShareRequest,
+} from '@/lib/needs/display';
 
 // Need status configuration
 const NEED_STATUSES: Record<string, { label: string; color: string; bg: string; border: string }> = {
+  open: { label: 'New', color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/30' },
+  new: { label: 'New', color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/30' },
   submitted: { label: 'Submitted', color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/30' },
   in_review: { label: 'In Review', color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/30' },
   pending_docs: { label: 'Pending Docs', color: 'text-violet-400', bg: 'bg-violet-500/10', border: 'border-violet-500/30' },
@@ -32,17 +41,25 @@ const NEED_STATUSES: Record<string, { label: string; color: string; bg: string; 
   denied: { label: 'Denied', color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/30' },
 };
 
-// Urgency levels
+// Live `needs.urgency_light` is green / orange / red (needs_apply_sla).
 const URGENCY_LEVELS: Record<string, { label: string; color: string; bg: string }> = {
-  low: { label: 'Low', color: 'text-slate-400', bg: 'bg-slate-500/10' },
-  medium: { label: 'Medium', color: 'text-amber-400', bg: 'bg-amber-500/10' },
-  high: { label: 'High', color: 'text-orange-400', bg: 'bg-orange-500/10' },
-  urgent: { label: 'Urgent', color: 'text-red-400', bg: 'bg-red-500/10' },
+  green: { label: 'On track', color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
+  orange: { label: 'Due soon', color: 'text-amber-400', bg: 'bg-amber-500/10' },
+  red: { label: 'Overdue', color: 'text-red-400', bg: 'bg-red-500/10' },
+  low: { label: 'On track', color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
+  medium: { label: 'Due soon', color: 'text-amber-400', bg: 'bg-amber-500/10' },
+  high: { label: 'Overdue', color: 'text-red-400', bg: 'bg-red-500/10' },
+  urgent: { label: 'Overdue', color: 'text-red-400', bg: 'bg-red-500/10' },
 };
 
-type NeedRow = Pick<CanonicalNeed, 'id' | 'need_type' | 'description' | 'total_amount' | 'status' | 'urgency_light' | 'sla_target_date' | 'created_at'>;
+type NeedRow = Pick<CanonicalNeed, 'id' | 'need_type' | 'description' | 'total_amount' | 'status' | 'urgency_light' | 'sla_target_date' | 'created_at'> & {
+  custom_fields?: unknown;
+};
+
+const STATUS_FILTER_KEYS = ['open', 'in_review', 'pending_docs', 'approved'] as const;
 
 type Need = NeedRow & {
+  fromPortal: boolean;
   member?: {
     id: string;
     title: string;
@@ -54,8 +71,6 @@ type Need = NeedRow & {
   } | null;
 };
 
-type NeedStats = Pick<CanonicalNeed, 'status' | 'urgency_light' | 'total_amount'>;
-
 interface RecentNeedStats {
   status: string;
   sla_target_date: string | null;
@@ -65,7 +80,7 @@ interface RecentNeedStats {
 
 function NeedCard({ need, now }: { need: Need; now: number }) {
   const status = NEED_STATUSES[need.status] || NEED_STATUSES.submitted;
-  const urgency = URGENCY_LEVELS[need.urgency_light || 'medium'] || URGENCY_LEVELS.medium;
+  const urgency = URGENCY_LEVELS[need.urgency_light || 'green'] || URGENCY_LEVELS.green;
   const memberName = need.member?.title || 'Unknown Member';
   const memberId = need.member?.data?.membership_number as string || need.member?.id?.slice(0, 8) || 'N/A';
 
@@ -88,6 +103,11 @@ function NeedCard({ need, now }: { need: Need; now: number }) {
                 <span className={`px-2 py-0.5 rounded text-xs font-medium ${urgency.bg} ${urgency.color}`}>
                   {urgency.label}
                 </span>
+                {need.fromPortal && (
+                  <span className="px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                    Member portal
+                  </span>
+                )}
               </div>
               <p className="text-slate-500 text-sm">{memberId} &bull; {need.need_type}</p>
             </div>
@@ -159,6 +179,7 @@ async function NeedsContent() {
       urgency_light,
       sla_target_date,
       created_at,
+      custom_fields,
       member_id,
       assigned_to_profile_id
     `)
@@ -215,6 +236,7 @@ async function NeedsContent() {
       urgency_light: need.urgency_light,
       sla_target_date: need.sla_target_date,
       created_at: need.created_at,
+      fromPortal: isPortalShareRequest(need.custom_fields),
       member: memberRow
         ? {
             id: memberRow.id,
@@ -230,19 +252,38 @@ async function NeedsContent() {
   // eslint-disable-next-line react-hooks/purity -- Server Component: Date.now() per-request is correct
   const now = Date.now();
 
-  // Calculate stats
-  const { data: allNeedsData } = await supabase
-    .from('needs')
-    .select('status, urgency_light, total_amount')
-    .eq('organization_id', profile.organization_id);
+  const orgId = profile.organization_id;
+  const [
+    { count: totalNeedsCount },
+    { count: pendingReviewCount },
+    { count: urgentNeedsCount },
+    { data: approvedRows },
+  ] = await Promise.all([
+    supabase.from('needs').select('id', { count: 'exact', head: true }).eq('organization_id', orgId),
+    supabase
+      .from('needs')
+      .select('id', { count: 'exact', head: true })
+      .eq('organization_id', orgId)
+      .in('status', [...PENDING_NEED_STATUSES]),
+    supabase
+      .from('needs')
+      .select('id', { count: 'exact', head: true })
+      .eq('organization_id', orgId)
+      .in('urgency_light', [...HIGH_URGENCY_LIGHTS]),
+    supabase
+      .from('needs')
+      .select('total_amount')
+      .eq('organization_id', orgId)
+      .in('status', [...APPROVED_NEED_STATUSES]),
+  ]);
 
-  const allNeeds = (allNeedsData || []) as unknown as NeedStats[];
-  const totalNeeds = allNeeds.length;
-  const pendingReview = allNeeds.filter(n => ['submitted', 'in_review'].includes(n.status)).length;
-  const approvedAmount = allNeeds
-    .filter(n => n.status === 'approved' || n.status === 'paid')
-    .reduce((sum, n) => sum + (n.total_amount || 0), 0);
-  const urgentNeeds = allNeeds.filter(n => n.urgency_light === 'urgent' || n.urgency_light === 'high').length;
+  const totalNeeds = totalNeedsCount ?? 0;
+  const pendingReview = pendingReviewCount ?? 0;
+  const urgentNeeds = urgentNeedsCount ?? 0;
+  const approvedAmount = (approvedRows ?? []).reduce(
+    (sum, n) => sum + (Number(n.total_amount) || 0),
+    0,
+  );
 
   // Calculate SLA stats (last 30 days)
   const thirtyDaysAgo = new Date();
@@ -287,7 +328,7 @@ async function NeedsContent() {
           </div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Needs Management</h1>
           <p className="text-slate-500 dark:text-slate-400 mt-0.5">
-            Process and track member health sharing needs
+            Process staff-created needs and member-portal share requests
           </p>
         </div>
 
@@ -299,14 +340,14 @@ async function NeedsContent() {
             <Filter className="w-4 h-4 mr-2" />
             Filter
           </Button>
-          <Button
-              className="bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-400 hover:to-pink-400 text-white"
-             asChild>
-            <Link href="/crm/needs?new=true">
-              <Plus className="w-4 h-4 mr-2" />
-              Submit Need
-            </Link>
-          </Button>
+          <CreateNeedDialog
+            trigger={
+              <Button className="bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-400 hover:to-pink-400 text-white">
+                <Plus className="w-4 h-4 mr-2" />
+                Submit Need
+              </Button>
+            }
+          />
         </div>
       </div>
 
@@ -369,14 +410,17 @@ async function NeedsContent() {
         </div>
 
         <div className="flex items-center gap-2">
-          {Object.entries(NEED_STATUSES).slice(0, 4).map(([key, status]) => (
-            <button
-              key={key}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all hover:scale-105 ${status.bg} ${status.color} ${status.border}`}
-            >
-              {status.label}
-            </button>
-          ))}
+          {STATUS_FILTER_KEYS.map((key) => {
+            const status = NEED_STATUSES[key];
+            return (
+              <button
+                key={key}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all hover:scale-105 ${status.bg} ${status.color} ${status.border}`}
+              >
+                {status.label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -392,13 +436,17 @@ async function NeedsContent() {
               <HeartHandshake className="w-8 h-8 text-slate-400 dark:text-slate-600" />
             </div>
             <p className="text-slate-900 dark:text-white font-medium mb-1">No needs submitted yet</p>
-            <p className="text-slate-500 dark:text-slate-500 text-sm mb-4">Member health sharing needs will appear here.</p>
-            <Button className="bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-400 hover:to-pink-400 text-white" asChild>
-              <Link href="/crm/needs?new=true">
-                <Plus className="w-4 h-4 mr-2" />
-                Submit First Need
-              </Link>
-            </Button>
+            <p className="text-slate-500 dark:text-slate-500 text-sm mb-4">
+              Staff-created needs and member-portal share requests appear here.
+            </p>
+            <CreateNeedDialog
+              trigger={
+                <Button className="bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-400 hover:to-pink-400 text-white">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Submit First Need
+                </Button>
+              }
+            />
           </div>
         )}
       </div>
