@@ -87,7 +87,8 @@ test.describe('navigation walk', () => {
     await walk.task(
       'NV-search-copy',
       'Top bar, sidebar trigger and palette carry the same search promise (placeholder + aria)',
-      0,
+      // Phone chrome has no ⌘K. NV-8's door is the search icon — one tap.
+      mobile ? 1 : 0,
       async () => {
         const topBar = mobile ? page.getByTestId('crm-topbar-search-mobile') : page.getByTestId('crm-topbar-search');
         const topBarText = mobile ? await topBar.getAttribute('aria-label') : (await topBar.textContent())?.replace(/⌘K/, '').trim();
@@ -102,7 +103,11 @@ test.describe('navigation walk', () => {
           else if ((await collapsed.count()) > 0) sidebarText = await collapsed.getAttribute('aria-label');
         }
         walk.note('sidebarTrigger', sidebarText);
-        await walk.press(`${modKey()}+k`, 'open palette (⌘K)');
+        if (mobile) {
+          await walk.click(topBar, 'open palette (search icon)');
+        } else {
+          await walk.press(`${modKey()}+k`, 'open palette (⌘K)');
+        }
         const input = page.getByTestId('crm-palette-input');
         await expect(input).toBeVisible();
         const placeholder = await input.getAttribute('placeholder');
