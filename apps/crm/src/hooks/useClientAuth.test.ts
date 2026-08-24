@@ -60,9 +60,11 @@ describe('client-auth store', () => {
     const unsubscribe = subscribe(() => {
       calls += 1;
     });
-    setSnapshot({ loading: false });
+    // The store starts signed-out (loading:false) after clearClientAuthCache,
+    // so `true` is the value that actually changes here.
+    setSnapshot({ loading: true });
     expect(calls).toBe(1);
-    setSnapshot({ loading: false });
+    setSnapshot({ loading: true });
     expect(calls).toBe(1);
     setSnapshot({ profile: PROFILE });
     expect(calls).toBe(2);
@@ -71,9 +73,17 @@ describe('client-auth store', () => {
     expect(calls).toBe(2);
   });
 
-  it('clearClientAuthCache returns the store to the hydration snapshot', () => {
+  it('clearClientAuthCache signs out without stranding consumers on a spinner', () => {
     setSnapshot({ user: { id: 'u1' } as never, profile: PROFILE, loading: false });
     clearClientAuthCache();
-    expect(getSnapshot()).toBe(EMPTY_SNAPSHOT);
+    const after = getSnapshot();
+    expect(after.user).toBeNull();
+    expect(after.profile).toBeNull();
+    expect(after.error).toBeNull();
+    // NOT EMPTY_SNAPSHOT: that carries loading:true, which is right during
+    // hydration (a fetch follows) and wrong after logout (nothing follows) —
+    // every consumer would wait on a fetch that is never scheduled.
+    expect(after.loading).toBe(false);
+    expect(after).not.toBe(EMPTY_SNAPSHOT);
   });
 });

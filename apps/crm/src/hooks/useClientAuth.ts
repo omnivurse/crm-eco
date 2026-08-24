@@ -223,12 +223,29 @@ export function useClientAuth(): UseClientAuthResult {
 }
 
 /**
- * Clear the auth cache (call on logout)
+ * A signed-out store: nobody is loaded, and — unlike EMPTY_SNAPSHOT — nothing
+ * is being waited for. Frozen for the same reason EMPTY_SNAPSHOT is.
+ */
+const SIGNED_OUT_SNAPSHOT: AuthSnapshot = Object.freeze({
+  user: null,
+  profile: null,
+  loading: false,
+  error: null,
+});
+
+/**
+ * Clear the auth cache (call on logout).
+ *
+ * Deliberately NOT `EMPTY_SNAPSHOT`: that one carries `loading: true`, which is
+ * the right answer during hydration because a fetch is about to run, and the
+ * wrong answer here because nothing is scheduled afterwards — every consumer
+ * would pin to a spinner that never resolves. This matches what the SIGNED_OUT
+ * handler above already does.
  */
 export function clearClientAuthCache(): void {
   lastFetchTime = 0;
   fetchPromise = null;
-  snapshot = EMPTY_SNAPSHOT;
+  snapshot = SIGNED_OUT_SNAPSHOT;
   for (const listener of listeners) listener();
 }
 

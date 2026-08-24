@@ -24,6 +24,22 @@ const DEFAULT_STATE: GizmoPersistedState = {
 /** Shared so a route with no tips does not mint a new array on every render. */
 const NO_TIPS: GizmoTip[] = [];
 
+/**
+ * Value-equality over the persisted state, so restoring localStorage can keep
+ * the object it already has when nothing actually changed. `dismissedTipIds` is
+ * compared element-wise and IN ORDER: the only writer is `dismissTip`, which
+ * appends, so order is stable and a positional compare cannot report two
+ * genuinely different sets as equal.
+ */
+export function samePersistedState(a: GizmoPersistedState, b: GizmoPersistedState): boolean {
+  return (
+    a.enabled === b.enabled &&
+    a.welcomeCompleted === b.welcomeCompleted &&
+    a.dismissedTipIds.length === b.dismissedTipIds.length &&
+    a.dismissedTipIds.every((id, i) => id === b.dismissedTipIds[i])
+  );
+}
+
 const GizmoContext = createContext<GizmoContextValue | undefined>(undefined);
 
 interface GizmoProviderProps {
@@ -38,14 +54,26 @@ export function GizmoProvider({ children, profileId }: GizmoProviderProps) {
   const [persisted, setPersisted] = useState<GizmoPersistedState>(DEFAULT_STATE);
   const [isOpen, setIsOpen] = useState(false);
 
-  // Hydrate from localStorage on mount
+  // Hydrate from localStorage on mount.
+  //
+  // The bail-out is load-bearing, not a micro-optimisation. This provider wraps
+  // `children` in CrmShell, i.e. it sits ABOVE the page-level <Suspense>
+  // boundaries, and React discards a boundary's server HTML when an ancestor
+  // context changes while that boundary is still dehydrated. Merging
+  // unconditionally minted a NEW state object even when the stored value was
+  // identical to what we already hold, so every returning viewer who had ever
+  // dismissed a tip (i.e. anyone with a `gizmo_state*` key) paid one context
+  // change on mount — and could see the CRM page body blank and repaint. Only
+  // a state that genuinely differs is worth that.
   useEffect(() => {
     try {
       const raw = localStorage.getItem(storageKey);
-      if (raw) {
-        const parsed = JSON.parse(raw) as Partial<GizmoPersistedState>;
-        setPersisted((prev) => ({ ...prev, ...parsed }));
-      }
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as Partial<GizmoPersistedState>;
+      setPersisted((prev) => {
+        const next = { ...prev, ...parsed };
+        return samePersistedState(prev, next) ? prev : next;
+      });
     } catch {
       // localStorage unavailable or corrupt
     }
