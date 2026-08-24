@@ -33,8 +33,13 @@ import {
   TabsList,
   TabsTrigger,
 } from '@crm-eco/ui';
-import { Mail, MessageSquare, Send, AlertCircle, CheckCircle, Clock, XCircle, Ban } from 'lucide-react';
+import { Mail, MessageSquare, Send, AlertCircle, CheckCircle, Clock, XCircle, Ban, Paperclip } from 'lucide-react';
 import type { CrmMessage, CrmMessageTemplate, CrmContactPreferences } from '@/lib/comms/types';
+import { EmailAttachments, type EmailAttachment } from '@/components/email/EmailAttachments';
+import {
+  assertComposerAttachmentsReady,
+  composerAttachmentsToRefs,
+} from '@/lib/email/outbound-attachments';
 
 interface CommunicationsTabProps {
   recordId: string;
@@ -82,6 +87,16 @@ function MessageItem({ message }: { message: CrmMessage }) {
           <p className="font-medium text-sm mb-1">{message.subject}</p>
         )}
         <p className="text-sm whitespace-pre-wrap">{message.body}</p>
+        {message.meta?.attachments && message.meta.attachments.length > 0 && (
+          <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs opacity-80">
+            <Paperclip className="h-3 w-3" />
+            {message.meta.attachments.map((attachment) => (
+              <span key={`${attachment.filename}-${attachment.size}`}>
+                {attachment.filename}
+              </span>
+            ))}
+          </div>
+        )}
         <div className="flex items-center justify-between mt-2 gap-4">
           <span className="text-xs opacity-70" suppressHydrationWarning>
             {new Date(message.created_at).toLocaleString()}
@@ -103,6 +118,14 @@ export function CommunicationsTab({ recordId, orgId, email, phone }: Communicati
   const [templateId, setTemplateId] = useState<string>('');
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
+  const [attachments, setAttachments] = useState<EmailAttachment[]>([]);
+
+  const resetCompose = () => {
+    setSubject('');
+    setBody('');
+    setTemplateId('');
+    setAttachments([]);
+  };
 
   // Load messages with React Query (cached, deduplicated)
   const messagesQuery = useQuery({
@@ -171,6 +194,10 @@ export function CommunicationsTab({ recordId, orgId, email, phone }: Communicati
 
     setSending(true);
     try {
+      if (channel === 'email') {
+        assertComposerAttachmentsReady(attachments);
+      }
+
       const response = await fetch('/api/comms/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -180,6 +207,7 @@ export function CommunicationsTab({ recordId, orgId, email, phone }: Communicati
           templateId: templateId || undefined,
           subject: channel === 'email' ? subject : undefined,
           body,
+          attachments: channel === 'email' ? composerAttachmentsToRefs(attachments) : undefined,
         }),
       });
 
@@ -189,10 +217,7 @@ export function CommunicationsTab({ recordId, orgId, email, phone }: Communicati
         // Invalidate cache to trigger refetch (React Query handles this efficiently)
         queryClient.invalidateQueries({ queryKey: ['communications', 'messages', recordId] });
 
-        // Reset form
-        setSubject('');
-        setBody('');
-        setTemplateId('');
+        resetCompose();
         setComposeOpen(false);
       } else {
         toast.error(toastCopy.failed('send the message', result.error, 'Try again'));
@@ -203,6 +228,8 @@ export function CommunicationsTab({ recordId, orgId, email, phone }: Communicati
       setSending(false);
     }
   };
+
+  const attachmentsBusy = attachments.some((attachment) => attachment.is_uploading || Boolean(attachment.error));
 
   // Filter messages by channel
   const emailMessages = messages.filter(m => m.channel === 'email');
@@ -263,7 +290,13 @@ export function CommunicationsTab({ recordId, orgId, email, phone }: Communicati
               Email and SMS message history
             </CardDescription>
           </div>
-          <Dialog open={composeOpen} onOpenChange={setComposeOpen}>
+          <Dialog
+            open={composeOpen}
+            onOpenChange={(open) => {
+              setComposeOpen(open);
+              if (!open) resetCompose();
+            }}
+          >
             <DialogTrigger asChild>
               <Button disabled={!canEmail && !canSms}>
                 <Send className="h-4 w-4 mr-2" />
@@ -281,7 +314,14 @@ export function CommunicationsTab({ recordId, orgId, email, phone }: Communicati
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Channel</Label>
-                    <Select value={channel} onValueChange={(v) => setChannel(v as 'email' | 'sms')}>
+                    <Select
+                      value={channel}
+                      onValueChange={(v) => {
+                        const next = v as 'email' | 'sms';
+                        setChannel(next);
+                        if (next === 'sms') setAttachments([]);
+                      }}
+                    >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -343,12 +383,20 @@ export function CommunicationsTab({ recordId, orgId, email, phone }: Communicati
                     </p>
                   )}
                 </div>
+                {channel === 'email' && (
+                  <EmailAttachments
+                    attachments={attachments}
+                    onAttachmentsChange={setAttachments}
+                    disabled={sending}
+                    compact
+                  />
+                )}
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setComposeOpen(false)}>
                   Cancel
                 </Button>
-                <Button onClick={handleSend} disabled={sending || !body.trim()}>
+                <Button onClick={handleSend} disabled={sending || !body.trim() || attachmentsBusy}>
                   {sending ? toastCopy.loadingCopy('Sending') : 'Send Message'}
                 </Button>
               </DialogFooter>

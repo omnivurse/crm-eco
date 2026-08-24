@@ -4,6 +4,7 @@
  */
 
 import type { ProviderSendRequest, ProviderSendResult } from '../types';
+import { toSendGridAttachments } from '@/lib/email/outbound-attachments';
 
 // ============================================================================
 // Helpers
@@ -67,6 +68,12 @@ interface SendGridMailRequest {
   content: SendGridContent[];
   headers?: Record<string, string>;
   custom_args?: Record<string, string>;
+  attachments?: Array<{
+    content: string;
+    filename: string;
+    type: string;
+    disposition: 'attachment';
+  }>;
   tracking_settings?: {
     click_tracking?: { enable: boolean };
     open_tracking?: { enable: boolean };
@@ -131,6 +138,10 @@ export async function sendEmail(request: ProviderSendRequest): Promise<ProviderS
         'List-Unsubscribe': `<${unsubscribeUrl}>`,
         'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
       };
+    }
+
+    if (request.attachments && request.attachments.length > 0) {
+      mailRequest.attachments = toSendGridAttachments(request.attachments);
     }
     
     // Send request

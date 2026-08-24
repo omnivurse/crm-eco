@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient, getAuthProfile } from '@/lib/supabase-server';
 import { z } from 'zod';
 import { dispatchMessage } from '@/lib/comms';
+import { parseCommsSendAttachments } from '@/lib/email/outbound-attachments';
 
 const sendMessageSchema = z.object({
   recordId: z.string().uuid(),
@@ -11,6 +12,7 @@ const sendMessageSchema = z.object({
   body: z.string().optional(),
   to: z.string().optional(),
   dryRun: z.boolean().optional().default(false),
+  attachments: z.array(z.unknown()).optional(),
 });
 
 /**
@@ -69,8 +71,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    let attachments;
+    try {
+      attachments = parseCommsSendAttachments(parsed.data.channel, parsed.data.attachments);
+    } catch (error) {
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : 'Invalid attachments' },
+        { status: 400 }
+      );
+    }
+
     // Dispatch message
-    const result = await dispatchMessage(parsed.data, profile.id);
+    const result = await dispatchMessage(
+      { ...parsed.data, attachments },
+      profile.id
+    );
 
     if (result.blocked) {
       return NextResponse.json({

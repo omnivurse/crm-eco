@@ -11,6 +11,13 @@ import { isValidEmail } from './providers/sendgrid';
 import { isValidPhoneNumber, normalizePhoneNumber } from './providers/twilio';
 import { enqueueOutbox, markOutboxAccepted, markOutboxFailed, classifyProviderError, createOutboxAdminClient } from '@/lib/email/outbox';
 import { generateRfc822MessageId, domainFromEmail } from '@/lib/email/rfc822';
+import {
+  EMAIL_ATTACHMENT_BUCKET,
+  attachmentMetaFromRefs,
+  attachmentRefsFromMeta,
+  resolveOutboundAttachments,
+  type ResolvedOutboundAttachment,
+} from '@/lib/email/outbound-attachments';
 import type {
   MessageChannel,
   CrmMessage,
@@ -292,7 +299,7 @@ export async function dispatchMessage(
   request: SendMessageRequest,
   profileId?: string
 ): Promise<SendMessageResult> {
-  const { recordId, channel, templateId, subject, body, to, dryRun } = request;
+  const { recordId, channel, templateId, subject, body, to, dryRun, attachments } = request;
   
   // 1. Load record
   const record = await getRecord(recordId);
@@ -436,6 +443,9 @@ export async function dispatchMessage(
     meta: {
       template_name: template?.name,
       merge_context: mergeContext as unknown as Record<string, unknown>,
+      attachments: channel === 'email' && attachments?.length
+        ? attachmentMetaFromRefs(attachments)
+        : undefined,
     },
     created_by: profileId || null,
     sent_at: null,
@@ -481,6 +491,48 @@ export async function sendMessageNow(
     }
   }
   
+  let resolvedAttachments: ResolvedOutboundAttachment[] = [];
+  if (message.channel === 'email') {
+    const refs = attachmentRefsFromMeta(message.meta?.attachments);
+    if (refs.length > 0) {
+      try {
+        const supabase = await createClient();
+        resolvedAttachments = await resolveOutboundAttachments({
+          refs,
+          inline: [],
+          organizationId: message.org_id,
+          lookup: async (id) => {
+            const { data } = await supabase
+              .from('email_attachments')
+              .select('file_path, file_name, mime_type, org_id')
+              .eq('id', id)
+              .eq('org_id', message.org_id)
+              .maybeSingle();
+            return data ?? null;
+          },
+          download: async (path) => {
+            const { data, error } = await supabase.storage
+              .from(EMAIL_ATTACHMENT_BUCKET)
+              .download(path);
+            if (error || !data) {
+              throw new Error('Could not read the attached file.');
+            }
+            return new Uint8Array(await data.arrayBuffer());
+          },
+        });
+      } catch (error) {
+        const attachError = error instanceof Error ? error.message : 'Failed to attach files';
+        await updateMessageStatus(message.id, 'failed', { error: attachError });
+        return {
+          success: false,
+          messageId: message.id,
+          status: 'failed',
+          error: attachError,
+        };
+      }
+    }
+  }
+
   let outboxId: string | null = null;
   if (message.channel === 'email') {
     const outboxAdmin = createOutboxAdminClient();
@@ -500,6 +552,11 @@ export async function sendMessageNow(
         persist_inbox: false,
         email_type: 'crm_message',
         source: 'dispatcher',
+        attachments: (message.meta?.attachments ?? []).map((attachment) => ({
+          filename: attachment.filename,
+          content_type: attachment.content_type,
+          size: attachment.size,
+        })),
       },
     });
     outboxId = enqueued.row.id;
@@ -517,6 +574,7 @@ export async function sendMessageNow(
     meta: {
       unsubscribe_url: provider.config.unsubscribe_url,
     },
+    attachments: resolvedAttachments.length > 0 ? resolvedAttachments : undefined,
   });
   
   if (result.success) {

@@ -102,6 +102,9 @@ export interface MessageMeta {
     content_type: string;
     size: number;
     url?: string;
+    id?: string;
+    file_path?: string;
+    bucket_path?: string;
   }>;
   headers?: Record<string, string>;
   tracking?: {
@@ -187,6 +190,15 @@ export interface CrmContactPreferences {
 // Send Message Request
 // ============================================================================
 
+export interface SendMessageAttachmentRef {
+  id?: string;
+  file_name: string;
+  mime_type?: string;
+  file_path?: string;
+  bucket_path?: string;
+  file_size?: number;
+}
+
 export interface SendMessageRequest {
   recordId: string;
   channel: MessageChannel;
@@ -196,6 +208,7 @@ export interface SendMessageRequest {
   to?: string;       // Override recipient
   dryRun?: boolean;
   scheduledAt?: string;
+  attachments?: SendMessageAttachmentRef[];
 }
 
 export interface SendMessageResult {
@@ -220,6 +233,12 @@ export interface ProviderSendRequest {
   replyTo?: string;
   messageId: string;
   meta?: Record<string, unknown>;
+  attachments?: Array<{
+    filename: string;
+    content: string;
+    contentType: string;
+    size: number;
+  }>;
 }
 
 export interface ProviderSendResult {

@@ -4,6 +4,7 @@
  */
 
 import type { ProviderSendRequest, ProviderSendResult } from '../types';
+import { toResendAttachments } from '@/lib/email/outbound-attachments';
 
 // ============================================================================
 // Helpers
@@ -77,6 +78,10 @@ export async function sendEmail(request: ProviderSendRequest): Promise<ProviderS
         'List-Unsubscribe': `<${unsubscribeUrl}>`,
         'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
       };
+    }
+
+    if (request.attachments && request.attachments.length > 0) {
+      payload.attachments = toResendAttachments(request.attachments);
     }
 
     // Add message ID as tag for tracking

@@ -4,6 +4,9 @@ import {
   assertComposerAttachmentsReady,
   buildResendSendPayload,
   collectJsonAttachmentRefs,
+  parseCommsSendAttachments,
+  attachmentMetaFromRefs,
+  attachmentRefsFromMeta,
   composerAttachmentsToRefs,
   composerDataToCommunicationsSendBody,
   emailAttachmentInsertRow,
@@ -107,6 +110,39 @@ describe('assertComposerAttachmentsReady', () => {
         { id: 'temp-1', file_name: 'benefits.pdf', is_uploading: false },
       ]),
     ).toThrow(/not ready/i);
+  });
+});
+
+describe('parseCommsSendAttachments', () => {
+  it('accepts email attachment refs', () => {
+    const refs = parseCommsSendAttachments('email', [
+      { id: 'att-1', file_name: 'benefits.pdf', file_path: uploaded.file_path, file_size: 2048 },
+    ]);
+    expect(refs).toHaveLength(1);
+    expect(refs[0].file_name).toBe('benefits.pdf');
+  });
+
+  it('rejects SMS with attachments', () => {
+    expect(() =>
+      parseCommsSendAttachments('sms', [
+        { file_name: 'benefits.pdf', file_path: uploaded.file_path },
+      ]),
+    ).toThrow(/SMS messages cannot include attachments/i);
+  });
+
+  it('round-trips refs through message meta for dispatcher resolve', () => {
+    const refs = parseCommsSendAttachments('email', [uploaded]);
+    const meta = attachmentMetaFromRefs(refs);
+    expect(attachmentRefsFromMeta(meta)).toEqual([
+      {
+        id: 'att-1',
+        file_name: 'benefits.pdf',
+        mime_type: 'application/pdf',
+        file_path: uploaded.file_path,
+        bucket_path: uploaded.bucket_path,
+        file_size: 2048,
+      },
+    ]);
   });
 });
 

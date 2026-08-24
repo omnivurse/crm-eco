@@ -179,6 +179,62 @@ export function splitRecipientField(value: unknown): string[] | undefined {
   return undefined;
 }
 
+export function parseCommsSendAttachments(
+  channel: 'email' | 'sms',
+  raw: unknown,
+): OutboundAttachmentRef[] {
+  const refs = collectJsonAttachmentRefs(raw);
+  if (refs.length > 0 && channel === 'sms') {
+    throw new Error('SMS messages cannot include attachments');
+  }
+  return refs;
+}
+
+export function attachmentMetaFromRefs(
+  refs: OutboundAttachmentRef[],
+): Array<{
+  filename: string;
+  content_type: string;
+  size: number;
+  id?: string;
+  file_path?: string;
+  bucket_path?: string;
+}> {
+  return refs.map((ref) => ({
+    filename: ref.file_name,
+    content_type: ref.mime_type || 'application/octet-stream',
+    size: ref.file_size ?? 0,
+    id: ref.id,
+    file_path: ref.file_path,
+    bucket_path: ref.bucket_path,
+  }));
+}
+
+export function attachmentRefsFromMeta(
+  attachments:
+    | Array<{
+        filename: string;
+        content_type: string;
+        size: number;
+        id?: string;
+        file_path?: string;
+        bucket_path?: string;
+      }>
+    | undefined,
+): OutboundAttachmentRef[] {
+  if (!attachments?.length) return [];
+  return attachments
+    .filter((attachment) => attachment.id || attachment.file_path || attachment.bucket_path)
+    .map((attachment) => ({
+      id: attachment.id,
+      file_name: attachment.filename,
+      mime_type: attachment.content_type,
+      file_path: attachment.file_path,
+      bucket_path: attachment.bucket_path,
+      file_size: attachment.size,
+    }));
+}
+
 export function collectJsonAttachmentRefs(value: unknown): OutboundAttachmentRef[] {
   if (!Array.isArray(value)) return [];
   const refs: OutboundAttachmentRef[] = [];
