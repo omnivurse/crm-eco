@@ -19,6 +19,8 @@ import {
   AtSign,
   X,
   ChevronDown,
+  ChevronRight,
+  PanelLeft,
 } from 'lucide-react';
 import { cn } from '@crm-eco/ui/lib/utils';
 import type { InboxChannel, InboxStats, ConversationStatus } from '@/lib/inbox/types';
@@ -50,6 +52,9 @@ interface InboxFiltersProps {
   draftsCount?: number;
   isMobileOpen?: boolean;
   onMobileClose?: () => void;
+  /** Desktop reading mode: hide the folder list behind a reopen rail. FilterItems stay mounted. */
+  collapsed?: boolean;
+  onCollapsedChange?: (collapsed: boolean) => void;
 }
 
 interface FolderItem {
@@ -421,13 +426,42 @@ const FilterItems = React.memo(function FilterItems({
 });
 
 export const InboxFilters = React.memo(function InboxFilters(props: InboxFiltersProps) {
-  const { isMobileOpen, onMobileClose } = props;
+  const { isMobileOpen, onMobileClose, collapsed = false, onCollapsedChange } = props;
 
   return (
     <>
-      {/* Desktop Sidebar */}
-      <div className="hidden lg:block w-52 flex-shrink-0 overflow-y-auto">
-        <FilterItems {...props} />
+      {/* Desktop Sidebar — hidden with CSS when reading so filter state is not remounted */}
+      <div
+        className={cn(
+          'hidden lg:flex flex-col flex-shrink-0 min-h-0',
+          collapsed ? 'w-10' : 'w-52',
+        )}
+      >
+        {onCollapsedChange && (
+          <button
+            type="button"
+            onClick={() => onCollapsedChange(!collapsed)}
+            className="hidden lg:inline-flex items-center justify-center h-9 w-full shrink-0 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
+            aria-expanded={!collapsed}
+            aria-label={collapsed ? 'Show folders' : 'Hide folders'}
+            title={collapsed ? 'Show folders' : 'Hide folders'}
+          >
+            {collapsed ? (
+              <ChevronRight className="w-4 h-4" aria-hidden />
+            ) : (
+              <PanelLeft className="w-4 h-4" aria-hidden />
+            )}
+          </button>
+        )}
+        <div
+          className={cn(
+            'flex-1 min-h-0 overflow-y-auto',
+            collapsed && 'hidden',
+          )}
+          aria-hidden={collapsed}
+        >
+          <FilterItems {...props} />
+        </div>
       </div>
 
       {/* Mobile Overlay */}

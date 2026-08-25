@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   MessageSquare,
   Clock,
@@ -26,6 +26,14 @@ import {
 } from '@crm-eco/ui/components/select';
 import { toast } from 'sonner';
 import type { InboxConversation, InboxMessage, InboxChannel, ConversationStatus } from '@/lib/inbox/types';
+import {
+  EMAIL_IFRAME_SANDBOX,
+  attachmentByteSize,
+  emailIframeHeight,
+  formatInboxFileSize,
+  measureEmailDocument,
+  readingPaneFloor,
+} from './inbox-reading';
 
 const CHANNEL_ICONS: Record<InboxChannel, React.ReactNode> = {
   email: <span className="w-4 h-4 inline-flex items-center justify-center">✉</span>,
@@ -87,11 +95,6 @@ function getInitials(name: string | null) {
     .slice(0, 2);
 }
 
-function formatFileSize(bytes: number) {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
 
 interface MessageThreadProps {
   conversation: InboxConversation;
@@ -101,70 +104,126 @@ interface MessageThreadProps {
   onBackToList: () => void;
 }
 
+function findScrollParent(el: HTMLElement | null): HTMLElement | null {
+  let node = el?.parentElement ?? null;
+  while (node) {
+    const style = getComputedStyle(node);
+    if (style.overflowY === 'auto' || style.overflowY === 'scroll') return node;
+    node = node.parentElement;
+  }
+  return null;
+}
+
 /** Renders HTML email body in a sandboxed iframe that auto-sizes to content */
 function HtmlEmailBody({ html }: { html: string }) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const [height, setHeight] = useState(200);
+  const [height, setHeight] = useState(() =>
+    readingPaneFloor(0, typeof window !== 'undefined' ? window.innerHeight : 800),
+  );
+  const [dark, setDark] = useState(false);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const sync = () => setDark(root.classList.contains('dark'));
+    sync();
+    const observer = new MutationObserver(sync);
+    observer.observe(root, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     const iframe = iframeRef.current;
     if (!iframe) return;
 
-    const resizeObserver = new ResizeObserver(() => {
-      try {
-        const doc = iframe.contentDocument;
-        if (doc?.body) {
-          setHeight(Math.max(60, doc.body.scrollHeight + 16));
-        }
-      } catch {
-        // cross-origin restriction - ignore
-      }
-    });
+    const imageCleanups: Array<() => void> = [];
+    const resizeObserver = new ResizeObserver(() => applyMeasure());
 
-    const handleLoad = () => {
+    const paneFloorNow = () => {
+      const pane = findScrollParent(iframe);
+      return readingPaneFloor(
+        pane?.clientHeight ?? 0,
+        window.innerHeight,
+      );
+    };
+
+    const applyMeasure = () => {
       try {
         const doc = iframe.contentDocument;
-        if (doc?.body) {
-          setHeight(Math.max(60, doc.body.scrollHeight + 16));
-          resizeObserver.observe(doc.body);
-        }
+        const measured = doc ? measureEmailDocument(doc) : 80;
+        setHeight(emailIframeHeight(measured, paneFloorNow()));
       } catch {
-        // cross-origin restriction - ignore
+        setHeight(emailIframeHeight(80, paneFloorNow()));
       }
     };
 
-    iframe.addEventListener('load', handleLoad);
+    const watchImages = (doc: Document) => {
+      imageCleanups.splice(0).forEach((fn) => fn());
+      doc.querySelectorAll('img').forEach((img) => {
+        if (img.complete) return;
+        const onDone = () => applyMeasure();
+        img.addEventListener('load', onDone);
+        img.addEventListener('error', onDone);
+        imageCleanups.push(() => {
+          img.removeEventListener('load', onDone);
+          img.removeEventListener('error', onDone);
+        });
+      });
+    };
+
+    const watchDocument = () => {
+      applyMeasure();
+      try {
+        const doc = iframe.contentDocument;
+        if (!doc) return;
+        if (doc.documentElement) resizeObserver.observe(doc.documentElement);
+        if (doc.body) resizeObserver.observe(doc.body);
+        watchImages(doc);
+      } catch {
+        // ignore
+      }
+      requestAnimationFrame(applyMeasure);
+    };
+
+    iframe.addEventListener('load', watchDocument);
+    // srcDoc often finishes before addEventListener — measure now too.
+    watchDocument();
+
+    const pane = findScrollParent(iframe);
+    if (pane) resizeObserver.observe(pane);
+
     return () => {
-      iframe.removeEventListener('load', handleLoad);
+      iframe.removeEventListener('load', watchDocument);
       resizeObserver.disconnect();
+      imageCleanups.splice(0).forEach((fn) => fn());
     };
-  }, [html]);
+  }, [html, dark]);
 
-  // Wrap HTML in a basic document with reset styles
   const srcDoc = `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
   <style>
-    body {
+    html, body {
       margin: 0;
       padding: 0;
+      overflow: visible;
+      background: ${dark ? '#1e293b' : '#ffffff'};
+      color: ${dark ? '#e2e8f0' : '#1e293b'};
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       font-size: 14px;
       line-height: 1.5;
-      color: #1e293b;
       word-wrap: break-word;
       overflow-wrap: break-word;
     }
     img { max-width: 100%; height: auto; }
     a { color: #0d9488; }
     blockquote {
-      border-left: 3px solid #e2e8f0;
+      border-left: 3px solid ${dark ? '#334155' : '#e2e8f0'};
       margin: 8px 0;
       padding: 4px 12px;
-      color: #64748b;
+      color: ${dark ? '#94a3b8' : '#64748b'};
     }
-    pre { overflow-x: auto; background: #f8fafc; padding: 8px; border-radius: 4px; }
+    pre { overflow-x: auto; background: ${dark ? '#0f172a' : '#f8fafc'}; padding: 8px; border-radius: 4px; }
   </style>
 </head>
 <body>${html}</body>
@@ -174,9 +233,9 @@ function HtmlEmailBody({ html }: { html: string }) {
     <iframe
       ref={iframeRef}
       srcDoc={srcDoc}
-      sandbox="allow-popups allow-popups-to-escape-sandbox"
+      sandbox={EMAIL_IFRAME_SANDBOX}
       className="w-full border-0"
-      style={{ height: `${height}px`, minHeight: 60 }}
+      style={{ height: `${height}px`, minHeight: height, overflow: 'hidden' }}
       title="Email content"
     />
   );
@@ -193,12 +252,13 @@ function EmailMessage({ msg }: { msg: InboxMessage }) {
 
   return (
     <div className={cn(
-      'rounded-xl border overflow-hidden',
+      'rounded-xl border',
       isOutbound
         ? 'border-teal-200 dark:border-teal-500/30 bg-teal-50/50 dark:bg-teal-500/5'
         : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50'
     )}>
-      {/* Message header - always visible */}
+      {/* Clip header only — a tall iframe must be able to grow the card */}
+      <div className="overflow-hidden rounded-t-xl">
       <button
         onClick={() => setExpanded(!expanded)}
         className="w-full flex items-center justify-between p-3 lg:p-4 hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-colors"
@@ -255,6 +315,7 @@ function EmailMessage({ msg }: { msg: InboxMessage }) {
           )}
         </div>
       </button>
+      </div>
 
       {/* Message body - collapsible */}
       {expanded && (
@@ -300,7 +361,9 @@ function EmailMessage({ msg }: { msg: InboxMessage }) {
                 {msg.attachments.length} attachment{msg.attachments.length > 1 ? 's' : ''}
               </div>
               <div className="flex flex-wrap gap-2">
-                {msg.attachments.map((att, i) => (
+                {msg.attachments.map((att, i) => {
+                  const sizeLabel = formatInboxFileSize(attachmentByteSize(att));
+                  return (
                   <a
                     key={i}
                     href={att.url || '#'}
@@ -317,12 +380,15 @@ function EmailMessage({ msg }: { msg: InboxMessage }) {
                     <span className="truncate max-w-[150px] text-slate-700 dark:text-slate-300">
                       {att.filename}
                     </span>
+                    {sizeLabel && (
                     <span className="text-xs text-slate-400 flex-shrink-0">
-                      {formatFileSize(att.size)}
+                      {sizeLabel}
                     </span>
+                    )}
                     {att.url && <Download className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />}
                   </a>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}

@@ -77,6 +77,8 @@ function InboxPageContent() {
   // Mobile responsive state
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
   const [mobileView, setMobileView] = useState<'list' | 'detail'>('list');
+  /** Desktop: user pinned folders open while a thread is selected. */
+  const [foldersOpenWhileReading, setFoldersOpenWhileReading] = useState(false);
 
   // Load conversations
   const loadConversations = useCallback(async () => {
@@ -301,6 +303,7 @@ function InboxPageContent() {
   const handleBackToList = useCallback(() => {
     setMobileView('list');
     setSelectedConversation(null);
+    setFoldersOpenWhileReading(false);
   }, []);
 
   // Update conversation status
@@ -419,6 +422,9 @@ function InboxPageContent() {
     [mailboxFilter, mailboxes],
   );
 
+  const readingMode = Boolean(selectedConversation);
+  const foldersCollapsed = readingMode && !foldersOpenWhileReading;
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -496,6 +502,12 @@ function InboxPageContent() {
           conversationCount={conversations.length}
           isMobileOpen={showMobileSidebar}
           onMobileClose={handleMobileFiltersClose}
+          collapsed={foldersCollapsed}
+          onCollapsedChange={
+            readingMode
+              ? (next) => setFoldersOpenWhileReading(!next)
+              : undefined
+          }
         />
 
         {/* Conversation List */}
@@ -507,6 +519,7 @@ function InboxPageContent() {
           onSearchChange={setSearchQuery}
           mobileView={mobileView}
           onBulkAction={loadConversations}
+          readingMode={readingMode}
         />
 
         {/* Conversation Detail */}

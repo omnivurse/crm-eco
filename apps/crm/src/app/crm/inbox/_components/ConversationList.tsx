@@ -83,6 +83,8 @@ interface ConversationListProps {
   onSearchChange: (query: string) => void;
   mobileView: 'list' | 'detail';
   onBulkAction?: () => void;
+  /** Desktop: narrower list so the reading pane can take the leftover width. */
+  readingMode?: boolean;
 }
 
 export const ConversationList = React.memo(function ConversationList({
@@ -93,6 +95,7 @@ export const ConversationList = React.memo(function ConversationList({
   onSearchChange,
   mobileView,
   onBulkAction,
+  readingMode = false,
 }: ConversationListProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkMode, setBulkMode] = useState(false);
@@ -156,7 +159,8 @@ export const ConversationList = React.memo(function ConversationList({
 
   return (
     <div className={cn(
-      "flex-1 lg:flex-none lg:w-80 xl:w-96 flex-shrink-0 glass-card border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden flex flex-col",
+      "flex-1 lg:flex-none flex-shrink-0 glass-card border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden flex flex-col",
+      readingMode ? 'lg:w-64' : 'lg:w-80 xl:w-96',
       mobileView === 'detail' ? 'hidden lg:flex' : 'flex'
     )}>
       {/* Search + bulk actions bar */}
