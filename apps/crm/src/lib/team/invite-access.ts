@@ -37,6 +37,7 @@ export function canManageTeamMembers(profile: {
 }
 
 type OrgRole = 'owner' | 'super_admin' | 'admin' | 'advisor' | 'staff';
+type InvitedCrmRole = 'crm_admin' | 'crm_agent';
 
 const ORG_ROLE_HIERARCHY: Record<OrgRole, number> = {
   owner: 5,
@@ -76,4 +77,23 @@ export function normalizeInvitableOrgRole(
     return role as 'admin' | 'advisor' | 'staff' | 'super_admin';
   }
   return null;
+}
+
+/**
+ * CRM access granted when a new profile is created from a team invitation.
+ *
+ * This intentionally differs from tenant-switch role mapping: `advisor` is a
+ * first-class invite role but is not an organization_members role recognized
+ * by the tenant RLS bridge.
+ */
+export function crmRoleForInvitedOrgRole(role: string): InvitedCrmRole | null {
+  switch (role) {
+    case 'admin':
+      return 'crm_admin';
+    case 'advisor':
+    case 'staff':
+      return 'crm_agent';
+    default:
+      return null;
+  }
 }
