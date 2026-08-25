@@ -66,6 +66,7 @@ import {
 import { toast } from 'sonner';
 import { toastCopy } from '@/lib/crm/toast-copy';
 import type { CrmRecord, CrmField, CrmDealStage } from '@/lib/crm/types';
+import { getFieldOptions } from '@/lib/crm/utils';
 import { StageHistoryDrawer } from './StageHistoryDrawer';
 import { ListEmptyStatePanel, useListEmptyState } from './ListView';
 
@@ -781,8 +782,7 @@ export const KanbanView = memo(function KanbanView({
     const field = fields.find((f) => f.key === groupByField);
     const uniqueValues = new Set<string>();
     if (field?.options) {
-      const opts = Array.isArray(field.options) ? field.options : [];
-      opts.forEach((o) => uniqueValues.add(o));
+      getFieldOptions(field.options, field.key).forEach((o) => uniqueValues.add(o));
     }
     records.forEach((r) => {
       const val = getFieldValue(r, groupByField);

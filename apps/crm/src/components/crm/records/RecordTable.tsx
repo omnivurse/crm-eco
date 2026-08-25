@@ -66,6 +66,7 @@ import { prefetchRecordForDrawer } from '@/lib/prefetch';
 import { ListEmptyStatePanel, useListEmptyState } from '@/components/crm/views/ListView';
 import { stepListPageParams } from '@/lib/crm/list-empty-state';
 import type { CrmRecord, CrmField, CrmView } from '@/lib/crm/types';
+import { getFieldOptionChoices } from '@/lib/crm/utils';
 import {
   MoreHorizontal,
   Eye,
@@ -191,7 +192,9 @@ function InlineEditor({
 
   // Select field (status is a special system field that behaves like select)
   if (fieldType === 'select' || (fieldType as string) === 'status' || options) {
-    const selectOptions = options || (field?.options as unknown as { choices?: string[] })?.choices || field?.options || [];
+    const selectOptions = options?.length
+      ? options
+      : getFieldOptionChoices(field?.options, field?.key).map((o) => o.value);
     return (
       <div className="flex items-center gap-1">
         <Select
@@ -205,7 +208,7 @@ function InlineEditor({
             <SelectValue placeholder="Select…" />
           </SelectTrigger>
           <SelectContent>
-            {selectOptions.filter(Boolean).map((opt: string) => (
+            {selectOptions.filter(Boolean).map((opt) => (
               <SelectItem key={opt} value={opt}>
                 {opt}
               </SelectItem>

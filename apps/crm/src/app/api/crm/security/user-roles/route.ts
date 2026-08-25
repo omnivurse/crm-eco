@@ -217,7 +217,7 @@ export async function POST(request: NextRequest) {
           targetEntityId: target.id,
           targetUserId: target.user_id ?? undefined,
           description: `Catalog role "${role.key}" assigned; CRM role synced to ${mapped}`,
-          metadata: {
+          details: {
             source: 'catalog_role_assign',
             catalog_role_key: role.key,
             crm_role: mapped,
