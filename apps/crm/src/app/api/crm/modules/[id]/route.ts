@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, getAuthProfile } from '@/lib/supabase-server';
+import { invalidateOrgChrome } from '@/lib/crm/org-chrome-cache';
 
 export async function PATCH(
   request: NextRequest,
@@ -8,7 +9,7 @@ export async function PATCH(
   try {
     const { id } = await params;
     const supabase = await createClient();
-    
+
     const profile = await getAuthProfile();
     if (!profile) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -40,8 +41,12 @@ export async function PATCH(
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    if (profile.organization_id) {
+      invalidateOrgChrome(profile.organization_id);
+    }
+
     return NextResponse.json(module);
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -53,7 +58,7 @@ export async function DELETE(
   try {
     const { id } = await params;
     const supabase = await createClient();
-    
+
     const profile = await getAuthProfile();
     if (!profile) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -63,7 +68,6 @@ export async function DELETE(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Check if module is a system module
     const { data: existingModule } = await supabase
       .from('crm_modules')
       .select('is_system')
@@ -85,8 +89,12 @@ export async function DELETE(
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    if (profile.organization_id) {
+      invalidateOrgChrome(profile.organization_id);
+    }
+
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

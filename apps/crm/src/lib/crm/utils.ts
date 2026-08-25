@@ -171,3 +171,34 @@ export function choicesWithCurrent(
   if (!t || base.some((o) => o.value === t)) return base;
   return [{ value: t, label: t }, ...base];
 }
+
+/**
+ * True when a field should render a closed option picker (not free text).
+ * Covers select/picklist/multiselect and text fields that carry curated menus
+ * (Dropdown lists curates `text` as well — see field-options CURATABLE_TYPES).
+ */
+export function fieldOffersOptionChoices(field: {
+  type?: string | null;
+  options?: unknown;
+  key?: string | null;
+}): boolean {
+  if (isClinicalGenderFieldKey(field.key)) return true;
+  const t = (field.type || '').toLowerCase();
+  if (t === 'select' || t === 'picklist' || t === 'multiselect') return true;
+  if (t === 'text' || t === 'textarea') {
+    return getFieldOptionChoices(field.options, field.key).length > 0;
+  }
+  return false;
+}
+
+/** Resolve a stored option value to its curated label (falls back to the raw value). */
+export function labelForFieldOption(
+  options: unknown,
+  value: unknown,
+  fieldKey?: string | null,
+): string {
+  const raw = value == null ? '' : String(value);
+  if (!raw) return '';
+  const match = getFieldOptionChoices(options, fieldKey).find((o) => o.value === raw);
+  return match?.label || raw;
+}

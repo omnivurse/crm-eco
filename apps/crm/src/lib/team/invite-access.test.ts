@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { canAccessTeamSettings, canInviteOrgAdmin, canSendTeamInvite } from './invite-access';
+import {
+  canAccessTeamSettings,
+  canInviteOrgAdmin,
+  canManageTeamMembers,
+  canSendTeamInvite,
+  effectiveOrgRole,
+  normalizeInvitableOrgRole,
+} from './invite-access';
 
 describe('team invite access', () => {
   it('lets a CRM admin manage the team page and send invites', () => {
@@ -7,6 +14,7 @@ describe('team invite access', () => {
     expect(canAccessTeamSettings(crmAdmin)).toBe(true);
     expect(canSendTeamInvite(crmAdmin)).toBe(true);
     expect(canInviteOrgAdmin(crmAdmin)).toBe(true);
+    expect(canManageTeamMembers(crmAdmin)).toBe(true);
   });
 
   it('lets an organization owner invite even without a CRM role column', () => {
@@ -20,5 +28,15 @@ describe('team invite access', () => {
     expect(canAccessTeamSettings(agent)).toBe(false);
     expect(canSendTeamInvite(agent)).toBe(false);
     expect(canInviteOrgAdmin(agent)).toBe(false);
+  });
+
+  it('maps sales invite label to advisor org role', () => {
+    expect(normalizeInvitableOrgRole('sales')).toBe('advisor');
+    expect(normalizeInvitableOrgRole('admin')).toBe('admin');
+  });
+
+  it('elevates crm_admin to admin for org-role hierarchy', () => {
+    expect(effectiveOrgRole({ crm_role: 'crm_admin', role: 'staff' })).toBe('admin');
+    expect(effectiveOrgRole({ crm_role: null, role: 'owner' })).toBe('owner');
   });
 });

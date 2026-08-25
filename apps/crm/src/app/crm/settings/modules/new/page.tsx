@@ -116,7 +116,12 @@ export default function NewModulePage() {
       }
 
       toast.success(toastCopy.added('Module'));
-      router.push('/crm/settings/modules');
+      const created = await response.json().catch(() => null);
+      if (created?.id) {
+        router.push(`/crm/settings/fields?module=${created.id}`);
+      } else {
+        router.push('/crm/settings/modules');
+      }
       router.refresh();
     } catch (error) {
       console.error('Error creating module:', error);
@@ -266,8 +271,9 @@ export default function NewModulePage() {
       <div className="glass-card border border-slate-200 dark:border-slate-700 rounded-xl p-4">
         <p className="text-sm text-slate-500 dark:text-slate-400">
           <strong className="text-slate-700 dark:text-slate-300">Note:</strong> After creating a module,
-          you can add custom fields from the Fields settings page. The module will appear in your
-          sidebar once enabled.
+          you can refine fields and sections from Fields settings. A default layout,
+          Name field, and list view are created automatically so the module can appear
+          in navigation immediately.
         </p>
       </div>
     </div>

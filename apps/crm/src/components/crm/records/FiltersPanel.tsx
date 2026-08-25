@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from '@crm-eco/ui/components/select';
 import { ChevronLeft, ChevronRight, Filter, X, Plus, Search } from 'lucide-react';
-import { getFieldOptions } from '@/lib/crm/utils';
+import { getFieldOptions, fieldOffersOptionChoices, getFieldOptionChoices } from '@/lib/crm/utils';
 
 interface CrmField {
   id: string;
@@ -130,6 +130,9 @@ export function FiltersPanel({ fields, moduleKey, isOpen, onToggle }: FiltersPan
 
   const getOperatorsForField = (fieldKey: string) => {
     const field = fields.find(f => f.key === fieldKey);
+    if (field && fieldOffersOptionChoices(field)) {
+      return OPERATORS.select;
+    }
     const type = field?.type || 'text';
     return OPERATORS[type] || OPERATORS.text;
   };
@@ -271,31 +274,37 @@ export function FiltersPanel({ fields, moduleKey, isOpen, onToggle }: FiltersPan
                 {/* Value Input */}
                 {filter.field && !['is_empty', 'is_not_empty'].includes(filter.operator) && (
                   <>
-                    {fields.find(f => f.key === filter.field)?.type === 'select' ? (
-                      <Select
-                        value={filter.value}
-                        onValueChange={(value) => updateFilter(index, { value })}
-                      >
-                        <SelectTrigger className="h-10 lg:h-8 text-sm bg-white dark:bg-slate-900/50">
-                          <SelectValue placeholder="Select value" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {optionsForField(filter.field).map((option) => (
-                            <SelectItem key={option} value={option}>
-                              {option}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <Input
-                        type={fields.find(f => f.key === filter.field)?.type === 'number' ? 'number' : 'text'}
-                        placeholder="Enter value"
-                        value={filter.value}
-                        onChange={(e) => updateFilter(index, { value: e.target.value })}
-                        className="h-10 lg:h-8 text-sm bg-white dark:bg-slate-900/50"
-                      />
-                    )}
+                    {(() => {
+                      const f = fields.find((x) => x.key === filter.field);
+                      if (f && fieldOffersOptionChoices(f)) {
+                        return (
+                          <Select
+                            value={filter.value}
+                            onValueChange={(value) => updateFilter(index, { value })}
+                          >
+                            <SelectTrigger className="h-10 lg:h-8 text-sm bg-white dark:bg-slate-900/50">
+                              <SelectValue placeholder="Select value" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {getFieldOptionChoices(f.options, f.key).map((option) => (
+                                <SelectItem key={option.value} value={option.value}>
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        );
+                      }
+                      return (
+                        <Input
+                          type={f?.type === 'number' ? 'number' : 'text'}
+                          placeholder="Enter value"
+                          value={filter.value}
+                          onChange={(e) => updateFilter(index, { value: e.target.value })}
+                          className="h-10 lg:h-8 text-sm bg-white dark:bg-slate-900/50"
+                        />
+                      );
+                    })()}
                   </>
                 )}
               </div>

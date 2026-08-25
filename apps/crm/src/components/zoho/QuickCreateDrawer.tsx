@@ -81,7 +81,7 @@ import type { FieldValuesResponse } from '@/lib/crm/field-values';
 import { formatPhoneDisplay } from '@/lib/crm/phone-normalize';
 import { MEMBERS_FILLS_FROM_ENROLLMENT, toastCopy } from '@/lib/crm/toast-copy';
 import { usStateOptionsWith } from '@/lib/crm/us-states';
-import { optionsWithCurrent } from '@/lib/crm/utils';
+import { choicesWithCurrent, getFieldOptionChoices, type FieldOptionChoice } from '@/lib/crm/utils';
 import {
   PRODUCER_RECORD_ID_KEY,
   QUICK_CREATE_FIELDS,
@@ -160,29 +160,9 @@ const OTHER_OPTION_VALUE = '__qc_other__';
 /** Server backstop code for the Pending rule (record-create-service.ts). */
 const PENDING_REQUIRES_START_DATE = 'PENDING_REQUIRES_START_DATE';
 
-/** crm_fields.options arrive as string[] | {value,label}[] | "[]" (legacy). */
-function optionValues(raw: unknown): string[] {
-  let parsed: unknown = raw;
-  if (typeof raw === 'string') {
-    try {
-      parsed = JSON.parse(raw);
-    } catch {
-      return [];
-    }
-  }
-  if (!Array.isArray(parsed)) return [];
-  const out: string[] = [];
-  for (const entry of parsed) {
-    if (typeof entry === 'string') {
-      if (entry.trim()) out.push(entry);
-    } else if (entry && typeof entry === 'object') {
-      const o = entry as { value?: unknown; label?: unknown; is_active?: unknown };
-      if (o.is_active === false) continue;
-      const v = String(o.value ?? o.label ?? '').trim();
-      if (v) out.push(v);
-    }
-  }
-  return Array.from(new Set(out));
+/** Map legacy string fallbacks into value/label choices. */
+function choicesFromStrings(values: string[] | undefined): FieldOptionChoice[] {
+  return (values ?? []).filter((v) => v.trim()).map((v) => ({ value: v, label: v }));
 }
 
 export function QuickCreateDrawer({
@@ -224,7 +204,7 @@ export function QuickCreateDrawer({
   const modules: ModuleLite[] | null = modulesProp ?? fetchedModules;
 
   // --- select options sourced from crm_fields, per module ------------------
-  const [fieldOptions, setFieldOptions] = useState<Record<string, Record<string, string[]>>>({});
+  const [fieldOptions, setFieldOptions] = useState<Record<string, Record<string, FieldOptionChoice[]>>>({});
   const [fieldOptionsLoaded, setFieldOptionsLoaded] = useState<Record<string, boolean>>({});
 
   // --- submission / feedback ----------------------------------------------
@@ -363,9 +343,9 @@ export function QuickCreateDrawer({
         if (!res.ok) throw new Error(String(res.status));
         const json = (await res.json()) as { fields?: { key: string; options?: unknown }[] };
         if (cancelled) return;
-        const map: Record<string, string[]> = {};
+        const map: Record<string, FieldOptionChoice[]> = {};
         for (const f of json.fields ?? []) {
-          if (wanted.includes(f.key)) map[f.key] = optionValues(f.options);
+          if (wanted.includes(f.key)) map[f.key] = getFieldOptionChoices(f.options, f.key);
         }
         setFieldOptions((p) => ({ ...p, [moduleKey]: map }));
       } catch {
@@ -413,10 +393,10 @@ export function QuickCreateDrawer({
     return list.length > 0 ? list : [selectedModule];
   }, [modules, selectedModule]);
 
-  const optionsFor = (field: QuickCreateField): string[] => {
+  const optionsFor = (field: QuickCreateField): FieldOptionChoice[] => {
     const live = fieldOptions[selectedModule]?.[field.key];
     if (live && live.length > 0) return live;
-    return field.fallbackOptions ?? [];
+    return choicesFromStrings(field.fallbackOptions);
   };
 
   /**
@@ -432,7 +412,7 @@ export function QuickCreateDrawer({
     const sources = [
       sessionSuggestions[field.key] ?? [],
       fieldValueSuggestions[selectedModule]?.[field.key] ?? [],
-      optionsFor(field),
+      optionsFor(field).map((o) => o.value),
     ];
     for (const v of sources.flat()) {
       const key = v.trim().toLowerCase();
@@ -950,7 +930,7 @@ export function QuickCreateDrawer({
         // selectable even when it is not in the org's list (legacy spelling
         // carried over by "Save & add another") — never rewritten.
         const isOther = otherMode[field.key] === true;
-        const listed = isOther ? opts.map((o) => ({ value: o, label: o })) : optionsWithCurrent(opts, value);
+        const listed = isOther ? opts : choicesWithCurrent(opts, value);
         const selectValue = isOther ? OTHER_OPTION_VALUE : value;
         const otherId = `${id}-other`;
         control = (
@@ -964,7 +944,7 @@ export function QuickCreateDrawer({
                   setOtherMode((p) => ({ ...p, [field.key]: true }));
                   // Keep a value that is not in the list (nothing typed is lost);
                   // a listed pick starts the free-text box blank.
-                  setField(field.key, opts.includes(value) ? '' : value);
+                  setField(field.key, opts.some((o) => o.value === value) ? '' : value);
                   window.requestAnimationFrame(() => document.getElementById(otherId)?.focus());
                   return;
                 }
@@ -1010,9 +990,9 @@ export function QuickCreateDrawer({
               <SelectValue placeholder="Select…" />
             </SelectTrigger>
             <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10">
-              {opts.map((o) => (
-                <SelectItem key={o} value={o}>
-                  {o}
+              {choicesWithCurrent(opts, value).map((o) => (
+                <SelectItem key={o.value} value={o.value}>
+                  {o.label}
                 </SelectItem>
               ))}
             </SelectContent>

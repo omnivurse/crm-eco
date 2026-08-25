@@ -13,6 +13,7 @@ import {
 } from '@/lib/crm/carrier-field';
 import { Mail, Phone, ExternalLink, Check, X, Copy } from 'lucide-react';
 import DOMPurify from 'dompurify';
+import { fieldOffersOptionChoices, labelForFieldOption } from '@/lib/crm/utils';
 
 // Parse a value into a Date for display. Date-only strings (YYYY-MM-DD) are
 // constructed in local time so they render as the same calendar day in every
@@ -212,6 +213,13 @@ export const FieldRenderer = memo(function FieldRenderer({
           />
         );
       }
+      if (fieldOffersOptionChoices(field)) {
+        return (
+          <Badge variant="secondary" className={className}>
+            {labelForFieldOption(field.options, value, field.key)}
+          </Badge>
+        );
+      }
       return <span className={className}>{str}</span>;
     }
 
@@ -340,7 +348,7 @@ export const FieldRenderer = memo(function FieldRenderer({
     case 'picklist':
       return (
         <Badge variant="secondary" className={className}>
-          {String(value)}
+          {labelForFieldOption(field.options, value, field.key)}
         </Badge>
       );
 
@@ -350,7 +358,7 @@ export const FieldRenderer = memo(function FieldRenderer({
         <div className={cn('flex flex-wrap gap-1', className)}>
           {values.map((v, i) => (
             <Badge key={i} variant="secondary">
-              {String(v)}
+              {labelForFieldOption(field.options, v, field.key)}
             </Badge>
           ))}
         </div>

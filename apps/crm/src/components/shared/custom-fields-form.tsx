@@ -146,8 +146,20 @@ function renderField(
         </label>
       );
 
-    case 'select':
-      const options = Array.isArray(field.options) ? field.options as string[] : [];
+    case 'select': {
+      const options = (Array.isArray(field.options) ? field.options : [])
+        .map((option) => {
+          if (typeof option === 'string') return { value: option, label: option };
+          if (option && typeof option === 'object') {
+            const o = option as { value?: string; label?: string; is_active?: boolean };
+            if (o.is_active === false) return null;
+            const value = String(o.value ?? o.label ?? '');
+            if (!value) return null;
+            return { value, label: String(o.label ?? value) };
+          }
+          return null;
+        })
+        .filter(Boolean) as { value: string; label: string }[];
       return (
         <Select
           value={value || '__none__'}
@@ -159,30 +171,43 @@ function renderField(
           <SelectContent>
             <SelectItem value="__none__">None</SelectItem>
             {options.map((option) => (
-              <SelectItem key={option} value={option}>
-                {option}
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
       );
+    }
 
-    case 'multiselect':
-      const multiOptions = Array.isArray(field.options) ? field.options as string[] : [];
+    case 'multiselect': {
+      const multiOptions = (Array.isArray(field.options) ? field.options : [])
+        .map((option) => {
+          if (typeof option === 'string') return { value: option, label: option };
+          if (option && typeof option === 'object') {
+            const o = option as { value?: string; label?: string; is_active?: boolean };
+            if (o.is_active === false) return null;
+            const val = String(o.value ?? o.label ?? '');
+            if (!val) return null;
+            return { value: val, label: String(o.label ?? val) };
+          }
+          return null;
+        })
+        .filter(Boolean) as { value: string; label: string }[];
       const selectedValues = Array.isArray(value) ? value : [];
-      
+
       return (
         <div className="flex flex-wrap gap-2 p-3 border rounded-lg bg-slate-50">
           {multiOptions.map((option) => {
-            const isSelected = selectedValues.includes(option);
+            const isSelected = selectedValues.includes(option.value);
             return (
               <button
-                key={option}
+                key={option.value}
                 type="button"
                 onClick={() => {
                   const newValue = isSelected
-                    ? selectedValues.filter((v: string) => v !== option)
-                    : [...selectedValues, option];
+                    ? selectedValues.filter((v: string) => v !== option.value)
+                    : [...selectedValues, option.value];
                   onChange(newValue);
                 }}
                 className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
@@ -191,7 +216,7 @@ function renderField(
                     : 'bg-white text-slate-600 hover:bg-slate-100 border'
                 }`}
               >
-                {option}
+                {option.label}
               </button>
             );
           })}
@@ -200,6 +225,7 @@ function renderField(
           )}
         </div>
       );
+    }
 
     default:
       return (

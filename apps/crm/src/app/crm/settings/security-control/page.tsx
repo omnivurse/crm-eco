@@ -31,6 +31,7 @@ import {
   DialogTitle,
 } from '@crm-eco/ui/components/dialog';
 import { toast } from 'sonner';
+import { toastCopy } from '@/lib/crm/toast-copy';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Role {
@@ -108,6 +109,18 @@ export default function SecurityControlPage() {
   // Expanded role for permission editing
   const [expandedRole, setExpandedRole] = useState<string | null>(null);
   const [rolePermIds, setRolePermIds] = useState<Set<string>>(new Set());
+  const [roleAssignees, setRoleAssignees] = useState<
+    Array<{
+      id: string;
+      profile_id: string;
+      full_name: string | null;
+      email: string | null;
+    }>
+  >([]);
+  const [orgUsers, setOrgUsers] = useState<
+    Array<{ id: string; full_name: string | null; email: string | null }>
+  >([]);
+  const [assignProfileId, setAssignProfileId] = useState('');
 
   const [saving, setSaving] = useState(false);
 
@@ -130,7 +143,7 @@ export default function SecurityControlPage() {
       if (loginsRes.ok) setLoginHistory((await loginsRes.json()).entries || []);
     } catch (err) {
       console.error('[SecurityControl] Fetch error:', err);
-      toast.error('Failed to load security data');
+      toast.error(toastCopy.failed('load security data', err, 'Try again'));
     } finally {
       setLoading(false);
     }
@@ -140,18 +153,127 @@ export default function SecurityControlPage() {
 
   // ── Load permissions for a role ───────────────────────────────────────────
   async function loadRolePermissions(roleId: string) {
-    // We already have roles with permission_count, but we need the actual mapping
-    // For now we fetch all role_permissions from the role endpoint
-    // The role already has permissions in its JSONB — but we want granular IDs
+    if (expandedRole === roleId) {
+      setExpandedRole(null);
+      setRoleAssignees([]);
+      setAssignProfileId('');
+      return;
+    }
     setExpandedRole(roleId);
-    // Placeholder: load from crm_role_permissions would need a dedicated endpoint
-    // For now show all permissions and let admin toggle
-    setRolePermIds(new Set());
+    setAssignProfileId('');
+    try {
+      const [permsRes, assignRes, usersRes] = await Promise.all([
+        fetch(`/api/crm/security/roles/${roleId}/permissions`),
+        fetch(`/api/crm/security/user-roles?role_id=${roleId}`),
+        fetch('/api/crm/users?limit=50'),
+      ]);
+      if (permsRes.ok) {
+        const data = await permsRes.json();
+        setRolePermIds(new Set(data.permission_ids || []));
+      } else {
+        setRolePermIds(new Set());
+      }
+      if (assignRes.ok) {
+        const data = await assignRes.json();
+        setRoleAssignees(data.assignments || []);
+      } else {
+        setRoleAssignees([]);
+      }
+      if (usersRes.ok) {
+        const data = await usersRes.json();
+        setOrgUsers(data.users || []);
+      }
+    } catch {
+      toast.error(toastCopy.failed('load role details', undefined, 'Try again'));
+      setRolePermIds(new Set());
+      setRoleAssignees([]);
+    }
+  }
+
+  async function saveRolePermissions(roleId: string) {
+    setSaving(true);
+    try {
+      const res = await fetch('/api/crm/security/roles', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: roleId,
+          permission_ids: Array.from(rolePermIds),
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Failed to save');
+      }
+      toast.success(toastCopy.saved('Permissions'));
+      fetchData();
+    } catch (err: unknown) {
+      toast.error(toastCopy.failed('save permissions', err, 'Try again'));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function refreshRoleAssignees(roleId: string) {
+    const assignRes = await fetch(`/api/crm/security/user-roles?role_id=${roleId}`);
+    if (assignRes.ok) {
+      const data = await assignRes.json();
+      setRoleAssignees(data.assignments || []);
+    }
+  }
+
+  async function assignUserToRole(roleId: string) {
+    if (!assignProfileId) {
+      toast.error(toastCopy.chooseFirst('a user'));
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await fetch('/api/crm/security/user-roles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ profile_id: assignProfileId, role_id: roleId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Assign failed');
+      toast.success(
+        data.synced_crm_role
+          ? toastCopy.updated(`Role assignment (${data.synced_crm_role})`)
+          : data.already_assigned
+            ? toastCopy.saved('Role assignment')
+            : toastCopy.added('User to role'),
+      );
+      setAssignProfileId('');
+      await refreshRoleAssignees(roleId);
+    } catch (err: unknown) {
+      toast.error(toastCopy.failed('assign the user', err, 'Try again'));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function removeUserAssignment(assignmentId: string, roleId: string) {
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/crm/security/user-roles?id=${assignmentId}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) throw new Error('Remove failed');
+      toast.success(toastCopy.deleted('Role assignment'));
+      await refreshRoleAssignees(roleId);
+    } catch (err: unknown) {
+      toast.error(toastCopy.failed('remove the assignment', err, 'Try again'));
+    } finally {
+      setSaving(false);
+    }
   }
 
   // ── Create role ───────────────────────────────────────────────────────────
   async function handleCreateRole() {
-    if (!newRoleKey || !newRoleName) { toast.error('Key and name required'); return; }
+    if (!newRoleKey || !newRoleName) {
+      toast.error(toastCopy.chooseFirst('a key and name'));
+      return;
+    }
     setSaving(true);
     try {
       const res = await fetch('/api/crm/security/roles', {
@@ -163,18 +285,21 @@ export default function SecurityControlPage() {
         const err = await res.json();
         throw new Error(err.error || 'Failed');
       }
-      toast.success(`Role "${newRoleName}" created`);
+      toast.success(toastCopy.added(`Role "${newRoleName}"`));
       setShowAddRole(false);
       setNewRoleKey(''); setNewRoleName(''); setNewRoleDesc('');
       fetchData();
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err: unknown) {
+      toast.error(toastCopy.failed('create the role', err, 'Try again'));
     } finally { setSaving(false); }
   }
 
   // ── Add domain ────────────────────────────────────────────────────────────
   async function handleAddDomain() {
-    if (!newDomain) { toast.error('Domain required'); return; }
+    if (!newDomain) {
+      toast.error(toastCopy.chooseFirst('a domain'));
+      return;
+    }
     setSaving(true);
     try {
       const res = await fetch('/api/crm/security/trusted-domains', {
@@ -186,12 +311,12 @@ export default function SecurityControlPage() {
         const err = await res.json();
         throw new Error(err.error || 'Failed');
       }
-      toast.success(`Domain "${newDomain}" added`);
+      toast.success(toastCopy.added(`Domain "${newDomain}"`));
       setShowAddDomain(false);
       setNewDomain(''); setNewDomainAutoApprove(false);
       fetchData();
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err: unknown) {
+      toast.error(toastCopy.failed('add the domain', err, 'Try again'));
     } finally { setSaving(false); }
   }
 
@@ -206,11 +331,11 @@ export default function SecurityControlPage() {
       };
       const res = await fetch(urlMap[deleteTarget.type], { method: 'DELETE' });
       if (!res.ok) throw new Error('Delete failed');
-      toast.success(`Deleted ${deleteTarget.label}`);
+      toast.success(toastCopy.deleted(deleteTarget.label));
       setDeleteTarget(null);
       fetchData();
-    } catch {
-      toast.error('Failed to delete');
+    } catch (err: unknown) {
+      toast.error(toastCopy.failed('delete', err, 'Try again'));
     }
   }
 
@@ -278,6 +403,23 @@ export default function SecurityControlPage() {
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {activeTab === 'roles' && (
         <div className="space-y-4">
+          <div className="rounded-xl border border-amber-200 bg-amber-50 dark:border-amber-800/50 dark:bg-amber-950/30 px-4 py-3 text-sm text-amber-900 dark:text-amber-100">
+            <p className="font-semibold mb-1">How CRM access is wired</p>
+            <p>
+              Expand a role to edit catalog permissions and assign users (
+              <code className="text-xs">crm_user_roles</code>
+              ). System roles <code className="text-xs">admin</code> /{' '}
+              <code className="text-xs">manager</code> / <code className="text-xs">advisor</code> /{' '}
+              <code className="text-xs">support</code> also sync{' '}
+              <code className="text-xs">profiles.crm_role</code> used by CRM APIs. You can still set
+              CRM roles directly under{' '}
+              <a href="/crm/settings/users" className="underline underline-offset-2 font-medium">
+                Settings → Users
+              </a>
+              .
+            </p>
+          </div>
+
           <div className="flex justify-end">
             <Button onClick={() => setShowAddRole(true)}>
               <Plus className="w-4 h-4 mr-2" /> Add Role
@@ -291,9 +433,17 @@ export default function SecurityControlPage() {
                 className="bg-white dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-white/10 overflow-hidden"
               >
                 <div className="flex items-center justify-between px-5 py-4">
-                  <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    className="flex items-center gap-3 text-left flex-1"
+                    onClick={() => loadRolePermissions(role.id)}
+                  >
                     <div className="p-2 rounded-lg bg-violet-100 dark:bg-violet-500/20">
-                      <Key className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+                      {expandedRole === role.id ? (
+                        <ChevronDown className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+                      ) : (
+                        <ChevronRight className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+                      )}
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
@@ -305,7 +455,7 @@ export default function SecurityControlPage() {
                         <p className="text-sm text-slate-500 mt-0.5">{role.description}</p>
                       )}
                     </div>
-                  </div>
+                  </button>
                   <div className="flex items-center gap-2">
                     <Badge variant="outline">{role.permission_count} permissions</Badge>
                     {!role.is_system && (
@@ -319,6 +469,127 @@ export default function SecurityControlPage() {
                     )}
                   </div>
                 </div>
+
+                {expandedRole === role.id && (
+                  <div className="border-t border-slate-200 dark:border-white/10 px-5 py-4 space-y-6 bg-slate-50/80 dark:bg-slate-950/40">
+                    <div className="space-y-3">
+                      <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                        Assigned users
+                      </h4>
+                      {roleAssignees.length === 0 ? (
+                        <p className="text-xs text-slate-500">No users assigned to this role yet.</p>
+                      ) : (
+                        <ul className="space-y-2">
+                          {roleAssignees.map((a) => (
+                            <li
+                              key={a.id}
+                              className="flex items-center justify-between rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 px-3 py-2 text-sm"
+                            >
+                              <span>
+                                {a.full_name || a.email || a.profile_id}
+                                {a.email && a.full_name ? (
+                                  <span className="text-xs text-slate-500 ml-2">{a.email}</span>
+                                ) : null}
+                              </span>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="text-red-500"
+                                disabled={saving}
+                                onClick={() => removeUserAssignment(a.id, role.id)}
+                              >
+                                Remove
+                              </Button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                      <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
+                        <select
+                          className="flex-1 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm"
+                          value={assignProfileId}
+                          onChange={(e) => setAssignProfileId(e.target.value)}
+                        >
+                          <option value="">Select user to assign…</option>
+                          {orgUsers
+                            .filter((u) => !roleAssignees.some((a) => a.profile_id === u.id))
+                            .map((u) => (
+                              <option key={u.id} value={u.id}>
+                                {u.full_name || u.email || u.id}
+                              </option>
+                            ))}
+                        </select>
+                        <Button
+                          size="sm"
+                          disabled={saving || !assignProfileId}
+                          onClick={() => assignUserToRole(role.id)}
+                          className="bg-teal-600 hover:bg-teal-500 text-white"
+                        >
+                          Assign user
+                        </Button>
+                      </div>
+                      <p className="text-xs text-slate-500">
+                        System catalog roles sync <code>profiles.crm_role</code>. Removing an
+                        assignment does not revoke CRM access — change that under Users.
+                      </p>
+                    </div>
+
+                    <div className="space-y-4">
+                      <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                        Catalog permissions
+                      </h4>
+                      <p className="text-xs text-slate-500">
+                        These feed <code>has_org_permission</code> (e.g. payables) for assigned users.
+                      </p>
+                      {Object.entries(permsByCategory).map(([cat, perms]) => (
+                        <div key={cat}>
+                          <h5 className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">
+                            {cat}
+                          </h5>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {perms.map((p) => {
+                              const checked = rolePermIds.has(p.id);
+                              return (
+                                <label
+                                  key={p.id}
+                                  className="flex items-start gap-2 rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 px-3 py-2 text-sm cursor-pointer"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    className="mt-1"
+                                    checked={checked}
+                                    onChange={() => {
+                                      setRolePermIds((prev) => {
+                                        const next = new Set(prev);
+                                        if (next.has(p.id)) next.delete(p.id);
+                                        else next.add(p.id);
+                                        return next;
+                                      });
+                                    }}
+                                  />
+                                  <span>
+                                    <code className="text-xs text-teal-600 dark:text-teal-400">{p.key}</code>
+                                    <span className="block text-xs text-slate-500">{p.name}</span>
+                                  </span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                      <div className="flex justify-end">
+                        <Button
+                          size="sm"
+                          disabled={saving}
+                          onClick={() => saveRolePermissions(role.id)}
+                          className="bg-teal-600 hover:bg-teal-500 text-white"
+                        >
+                          {saving ? 'Saving…' : 'Save permissions'}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>

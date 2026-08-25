@@ -40,7 +40,65 @@ import {
     DialogFooter,
 } from '@crm-eco/ui/components/dialog';
 import { cn } from '@crm-eco/ui/lib/utils';
-import type { CrmModule, CrmField, FieldType } from '@/lib/crm/types';
+import type { CrmModule, CrmField, FieldType, LayoutSection } from '@/lib/crm/types';
+import { normalizeOptions, type FieldOption } from '@/lib/crm/field-options';
+
+function optionsAreCuratedObjects(options: unknown): boolean {
+    if (!Array.isArray(options) || options.length === 0) return false;
+    return options.some(
+        (o) => o && typeof o === 'object' && 'value' in (o as object) && 'is_active' in (o as object),
+    );
+}
+
+function optionsToEditableLines(options: unknown): string {
+    return normalizeOptions(options)
+        .filter((o) => o.is_active)
+        .map((o) => o.label || o.value)
+        .join('\n');
+}
+
+/** Preserve curated option ids when admin edits labels as newline text. */
+function linesToPreservedOptions(text: string, previous: unknown): FieldOption[] {
+    const prev = normalizeOptions(previous);
+    const lines = text
+        .split('\n')
+        .map((l) => l.trim())
+        .filter(Boolean);
+    const usedIds = new Set<string>();
+    const next: FieldOption[] = lines.map((line, idx) => {
+        const match =
+            prev.find((p) => !usedIds.has(p.id) && (p.value === line || p.label === line)) ||
+            prev.find((p) => !usedIds.has(p.id) && p.label.toLowerCase() === line.toLowerCase());
+        if (match) {
+            usedIds.add(match.id);
+            return {
+                ...match,
+                label: line,
+                value: match.value || line,
+                display_order: idx,
+                is_active: true,
+            };
+        }
+        return {
+            id: crypto.randomUUID(),
+            value: line,
+            label: line,
+            color: null,
+            icon: null,
+            is_default: false,
+            is_active: true,
+            display_order: idx,
+            metadata: {},
+        };
+    });
+    // Soft-deactivate removed options so record values stay valid.
+    for (const p of prev) {
+        if (!usedIds.has(p.id) && !next.some((n) => n.id === p.id)) {
+            next.push({ ...p, is_active: false });
+        }
+    }
+    return next;
+}
 
 // ============================================================================
 // Types
@@ -50,6 +108,8 @@ interface FieldsManagerClientProps {
     modules: CrmModule[];
     selectedModule: CrmModule | null;
     initialFields: CrmField[];
+    /** Sections from the module's default crm_layouts.config.sections (canonical). */
+    layoutSections: LayoutSection[];
     orgId: string;
 }
 
@@ -251,7 +311,7 @@ function FieldRow({
                         </button>
                     </>
                 )}
-                {field.is_system && ['select', 'multiselect', 'picklist'].includes(field.type) && (
+                {field.is_system && ['select', 'multiselect', 'picklist', 'text'].includes(field.type) && (
                     <button
                         onClick={() => onEdit(field)}
                         className="p-1.5 text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 rounded-md hover:bg-teal-50 dark:hover:bg-teal-500/10 transition-colors"
@@ -269,10 +329,17 @@ function FieldRow({
 // Main Component
 // ============================================================================
 
+function defaultSectionKey(layoutSections: LayoutSection[]): string {
+    if (layoutSections.some((s) => s.key === 'core')) return 'core';
+    if (layoutSections.some((s) => s.key === 'main')) return 'main';
+    return layoutSections[0]?.key || 'core';
+}
+
 export function FieldsManagerClient({
     modules,
     selectedModule,
     initialFields,
+    layoutSections,
     orgId,
 }: FieldsManagerClientProps) {
     const router = useRouter();
@@ -300,10 +367,38 @@ export function FieldsManagerClient({
         type: 'text' as FieldType,
         required: false,
         options: '',
-        section: 'core',
+        section: defaultSectionKey(layoutSections),
         tooltip: '',
     });
     const [isCreating, setIsCreating] = useState(false);
+
+    // Keep create-form section + field list in sync when the selected module changes.
+    useEffect(() => {
+        setFields(initialFields);
+        setHasChanges(false);
+        setNewField((prev) => ({
+            ...prev,
+            section: defaultSectionKey(layoutSections),
+        }));
+    }, [selectedModule?.id, initialFields, layoutSections]);
+
+    /** Layout sections (canonical) + any orphan keys already used on fields. */
+    const sectionOptions = useMemo(() => {
+        const map = new Map<string, string>();
+        for (const s of layoutSections) {
+            map.set(s.key, s.label || s.key.replace(/_/g, ' '));
+        }
+        for (const f of fields) {
+            const key = f.section || 'core';
+            if (!map.has(key)) {
+                map.set(key, `${key.replace(/_/g, ' ')} (not on layout)`);
+            }
+        }
+        if (map.size === 0) {
+            map.set('core', 'Core');
+        }
+        return Array.from(map.entries()).map(([key, label]) => ({ key, label }));
+    }, [layoutSections, fields]);
 
     // Group fields by section
     const fieldsBySection = fields.reduce((acc, field) => {
@@ -433,10 +528,7 @@ export function FieldsManagerClient({
 
         setIsCreating(true);
         try {
-            const options = newField.options
-                .split('\n')
-                .map(o => o.trim())
-                .filter(Boolean);
+            const options = linesToPreservedOptions(newField.options, []);
 
             const response = await fetch('/api/crm/fields', {
                 method: 'POST',
@@ -448,8 +540,8 @@ export function FieldsManagerClient({
                     key: newField.key || newField.label.toLowerCase().replace(/[^a-z0-9]/g, '_'),
                     type: newField.type,
                     required: newField.required,
-                    options: ['select', 'multiselect'].includes(newField.type) ? options : [],
-                    section: newField.section || 'core',
+                    options: ['select', 'multiselect', 'picklist', 'text'].includes(newField.type) ? options : [],
+                    section: newField.section || defaultSectionKey(layoutSections),
                     tooltip: newField.tooltip,
                 }),
             });
@@ -464,7 +556,7 @@ export function FieldsManagerClient({
                     type: 'text',
                     required: false,
                     options: '',
-                    section: 'core',
+                    section: defaultSectionKey(layoutSections),
                     tooltip: '',
                 });
                 setToast({ message: 'Field created successfully', type: 'success' });
@@ -478,7 +570,7 @@ export function FieldsManagerClient({
         } finally {
             setIsCreating(false);
         }
-    }, [newField, selectedModule, orgId]);
+    }, [newField, selectedModule, orgId, layoutSections]);
 
     const updateField = useCallback(async () => {
         if (!editingField) return;
@@ -493,6 +585,7 @@ export function FieldsManagerClient({
                     required: editingField.required,
                     options: editingField.options,
                     tooltip: editingField.tooltip,
+                    section: editingField.section,
                 }),
             });
 
@@ -727,7 +820,7 @@ export function FieldsManagerClient({
                                 </SelectContent>
                             </Select>
                         </div>
-                        {['select', 'multiselect'].includes(newField.type) && (
+                        {['select', 'multiselect', 'picklist', 'text'].includes(newField.type) && (
                             <div>
                                 <Label>Options (one per line)</Label>
                                 <Textarea
@@ -737,16 +830,46 @@ export function FieldsManagerClient({
                                     rows={4}
                                     className="mt-1"
                                 />
+                                <p className="text-xs text-slate-500 mt-1">
+                                    Optional for text fields — when set, the field becomes a closed dropdown on records.
+                                </p>
                             </div>
                         )}
                         <div>
                             <Label>Section</Label>
-                            <Input
-                                placeholder="e.g., financial, contact_info"
+                            <Select
                                 value={newField.section}
-                                onChange={(e) => setNewField(prev => ({ ...prev, section: e.target.value }))}
-                                className="mt-1"
-                            />
+                                onValueChange={(value) =>
+                                    setNewField((prev) => ({ ...prev, section: value }))
+                                }
+                            >
+                                <SelectTrigger className="mt-1">
+                                    <SelectValue placeholder="Select a layout section" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-white dark:bg-slate-900">
+                                    {sectionOptions.map((opt) => (
+                                        <SelectItem key={opt.key} value={opt.key}>
+                                            {opt.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            {layoutSections.length === 0 ? (
+                                <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                                    No layout sections for this module.{' '}
+                                    <Link
+                                        href="/crm/settings/layouts"
+                                        className="underline underline-offset-2"
+                                    >
+                                        Configure layouts
+                                    </Link>{' '}
+                                    so fields land on the record form.
+                                </p>
+                            ) : (
+                                <p className="text-xs text-slate-500 mt-1">
+                                    Must match a section on the module&apos;s default layout.
+                                </p>
+                            )}
                         </div>
                         <div>
                             <Label>Tooltip (optional)</Label>
@@ -829,26 +952,89 @@ export function FieldsManagerClient({
                                     </p>
                                 </div>
                             )}
-                            {['select', 'multiselect', 'picklist'].includes(editingField.type) && (
+                            {['select', 'multiselect', 'picklist', 'text'].includes(editingField.type) && (
                                 <div>
-                                    <Label>Options (one per line)</Label>
-                                    <Textarea
-                                        value={editingField.options?.join('\n') || ''}
-                                        onChange={(e) => setEditingField(prev => prev ? {
-                                            ...prev,
-                                            options: e.target.value.split('\n').map(o => o.trim()).filter(Boolean)
-                                        } : null)}
-                                        rows={6}
-                                        className="mt-1"
-                                        placeholder="Enter each option on a new line"
-                                    />
-                                    <p className="text-xs text-slate-500 mt-1">
-                                        Add your custom sources — referral partners, events, marketing channels, etc.
-                                    </p>
+                                    {optionsAreCuratedObjects(editingField.options) ? (
+                                        <>
+                                            <Label>Dropdown options</Label>
+                                            <p className="text-sm text-slate-600 dark:text-slate-400 mt-1 mb-2">
+                                                This field uses curated option objects (active/inactive, ids).
+                                                Edit them in Dropdown lists so values stay wired to records.
+                                            </p>
+                                            <Link
+                                                href={`/crm/settings/field-options?module=${encodeURIComponent(selectedModule?.key || '')}&field=${encodeURIComponent(editingField.key)}`}
+                                                className="inline-flex items-center rounded-md border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800"
+                                            >
+                                                Open Dropdown lists
+                                            </Link>
+                                            <p className="text-xs text-slate-500 mt-2">
+                                                Active options:{' '}
+                                                {normalizeOptions(editingField.options)
+                                                    .filter((o) => o.is_active)
+                                                    .map((o) => o.label)
+                                                    .join(', ') || 'none'}
+                                            </p>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Label>Options (one per line)</Label>
+                                            <Textarea
+                                                value={optionsToEditableLines(editingField.options)}
+                                                onChange={(e) =>
+                                                    setEditingField((prev) =>
+                                                        prev
+                                                            ? {
+                                                                  ...prev,
+                                                                  options: linesToPreservedOptions(
+                                                                      e.target.value,
+                                                                      prev.options,
+                                                                  ) as unknown as string[],
+                                                              }
+                                                            : null,
+                                                    )
+                                                }
+                                                rows={6}
+                                                className="mt-1"
+                                                placeholder="Enter each option on a new line"
+                                            />
+                                            <p className="text-xs text-slate-500 mt-1">
+                                                Prefer{' '}
+                                                <Link
+                                                    href="/crm/settings/field-options"
+                                                    className="underline underline-offset-2"
+                                                >
+                                                    Dropdown lists
+                                                </Link>{' '}
+                                                for hide/reorder after options are in use.
+                                            </p>
+                                        </>
+                                    )}
                                 </div>
                             )}
                             {!editingField.is_system && (
                                 <>
+                                    <div>
+                                        <Label>Section</Label>
+                                        <Select
+                                            value={editingField.section || defaultSectionKey(layoutSections)}
+                                            onValueChange={(value) =>
+                                                setEditingField((prev) =>
+                                                    prev ? { ...prev, section: value } : null,
+                                                )
+                                            }
+                                        >
+                                            <SelectTrigger className="mt-1">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent className="bg-white dark:bg-slate-900">
+                                                {sectionOptions.map((opt) => (
+                                                    <SelectItem key={opt.key} value={opt.key}>
+                                                        {opt.label}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
                                     <div>
                                         <Label>Tooltip</Label>
                                         <Input

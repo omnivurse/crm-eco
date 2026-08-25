@@ -64,7 +64,7 @@ import {
   shouldCloseFilterHost,
   railKeyTargetInOwnKeyScope,
 } from '@/lib/crm/filter-rail';
-import { getFieldOptions } from '@/lib/crm/utils';
+import { getFieldOptions, fieldOffersOptionChoices, getFieldOptionChoices } from '@/lib/crm/utils';
 import {
   DISPLAY_ONLY_FIELD_BADGE,
   DISPLAY_ONLY_FIELD_HINT,
@@ -655,7 +655,7 @@ function FieldFilterRow({
                 className="h-7 text-xs flex-1 bg-white dark:bg-slate-900/50"
               />
             </>
-          ) : fieldType === 'select' && field?.options?.length ? (
+          ) : field && fieldOffersOptionChoices(field) && !isStatus ? (
             <Select
               value={String(filter.value || '')}
               onValueChange={(v) => onUpdate({ ...filter, value: v })}
@@ -664,8 +664,8 @@ function FieldFilterRow({
                 <SelectValue placeholder="Select…" />
               </SelectTrigger>
               <SelectContent className="bg-white dark:bg-slate-900 max-h-60">
-                {getFieldOptions(field.options, field.key).map((opt) => (
-                  <SelectItem key={opt} value={opt} className="text-xs">{opt}</SelectItem>
+                {getFieldOptionChoices(field.options, field.key).map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value} className="text-xs">{opt.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>

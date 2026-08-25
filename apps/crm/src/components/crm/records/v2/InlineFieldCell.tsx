@@ -14,7 +14,7 @@
 
 import { memo, useMemo, type ReactNode } from 'react';
 import type { CrmField } from '@/lib/crm/types';
-import { getFieldOptionChoices } from '@/lib/crm/utils';
+import { getFieldOptionChoices, fieldOffersOptionChoices } from '@/lib/crm/utils';
 import { describeRecordedAge, householdAgeSlot } from '@/lib/crm/household-age';
 import { formatPhoneOwnerLabel, isCleanPhoneValue } from '@/lib/crm/phone-owner';
 import type { FieldSaveTarget } from '@/hooks/useRecordFieldSave';
@@ -80,9 +80,7 @@ export const InlineFieldCell = memo(function InlineFieldCell({
   // ("2_legacy_zoho") and shows the label ("Legacy — Zoho"). Flattening the
   // pair back to one string is what put `[object Object]` in this dropdown.
   const selectOptions = useMemo(() => {
-    if (field.type !== 'select' && field.type !== 'picklist' && field.type !== 'multiselect') {
-      return [];
-    }
+    if (!fieldOffersOptionChoices(field)) return [];
     return getFieldOptionChoices(field.options, field.key);
   }, [field]);
 
@@ -115,6 +113,18 @@ export const InlineFieldCell = memo(function InlineFieldCell({
         {...common}
         value={value == null ? null : String(value)}
         carrierType={resolveInlineCarrierType(field, relatedValues)}
+        placeholder={`Select ${field.label.toLowerCase()}`}
+      />
+    );
+  }
+
+  // Text (or other) fields with curated menus render as closed selects.
+  if (field.type === 'text' && fieldOffersOptionChoices(field)) {
+    return (
+      <InlineSelectField
+        {...common}
+        value={value == null ? null : String(value)}
+        options={selectOptions}
         placeholder={`Select ${field.label.toLowerCase()}`}
       />
     );

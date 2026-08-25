@@ -1280,7 +1280,7 @@ export default function FeaturesPage() {
             'Field-level security',
             'Data sharing rules',
           ]}
-          href="/crm/settings/users?tab=roles"
+          href="/crm/settings/security-control"
         />
         <FeatureCard
           icon={<Lock className="w-6 h-6" />}

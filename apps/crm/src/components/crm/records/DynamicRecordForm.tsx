@@ -43,7 +43,7 @@ import type {
   LayoutSection,
   LayoutSectionAccent,
 } from '@/lib/crm/types';
-import { choicesWithCurrent, getFieldOptionChoices } from '@/lib/crm/utils';
+import { choicesWithCurrent, getFieldOptionChoices, fieldOffersOptionChoices } from '@/lib/crm/utils';
 import { toDatetimeLocalValue } from '@/lib/crm/datetime-local';
 import { normalizeDateColumnValue } from '@/lib/crm/merge-crm-data-json-to-row';
 import { classifyCarrierValue } from '@/lib/crm/coverage-carriers';
@@ -326,7 +326,33 @@ const FormFieldRenderer = memo(function FormFieldRenderer({
 
   switch (field.type) {
     case 'text':
-      input = <Input {...commonProps} type="text" />;
+      if (fieldOffersOptionChoices(field)) {
+        input = (
+          <>
+            <Select
+              value={value as string}
+              onValueChange={(val) => setValue(field.key, val)}
+            >
+              <SelectTrigger className={cn(error && 'border-destructive')}>
+                <SelectValue placeholder={`Select ${field.label.toLowerCase()}`} />
+              </SelectTrigger>
+              <SelectContent>
+                {choicesWithCurrent(
+                  getFieldOptionChoices(field.options, field.key),
+                  typeof value === 'string' ? value : null,
+                ).map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <input type="hidden" name={field.key} value={(value as string) || ''} {...(field.required && { required: true })} />
+          </>
+        );
+      } else {
+        input = <Input {...commonProps} type="text" />;
+      }
       break;
 
     case 'phone': {

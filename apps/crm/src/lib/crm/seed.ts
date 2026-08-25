@@ -228,6 +228,74 @@ export async function seedDefaultModules(orgId: string): Promise<{ success: bool
 }
 
 /**
+ * Seed foundation for a newly created custom module:
+ * default layout sections (so Fields → Section dropdown has options),
+ * a title field (so nav field_count > 0), and a default list view.
+ */
+export async function seedModuleFoundation(
+  supabase: { from: (table: string) => any },
+  args: {
+    orgId: string;
+    moduleId: string;
+    moduleName: string;
+    namePlural: string;
+  },
+): Promise<{ ok: boolean; error?: string }> {
+  const { orgId, moduleId, moduleName, namePlural } = args;
+
+  const { error: fieldError } = await supabase.from('crm_fields').insert({
+    org_id: orgId,
+    module_id: moduleId,
+    key: 'name',
+    label: 'Name',
+    type: 'text',
+    required: true,
+    is_system: false,
+    is_title_field: true,
+    display_order: 1,
+    section: 'core',
+    options: [],
+  });
+  if (fieldError) {
+    console.error('[seedModuleFoundation] field insert failed:', fieldError);
+    return { ok: false, error: fieldError.message };
+  }
+
+  const { error: layoutError } = await supabase.from('crm_layouts').insert({
+    org_id: orgId,
+    module_id: moduleId,
+    name: 'Default Layout',
+    is_default: true,
+    config: {
+      sections: [
+        { key: 'core', label: 'Core', columns: 2, collapsed: false },
+        { key: 'details', label: 'Details', columns: 2, collapsed: false },
+      ],
+    },
+  });
+  if (layoutError) {
+    console.error('[seedModuleFoundation] layout insert failed:', layoutError);
+    return { ok: false, error: layoutError.message };
+  }
+
+  const { error: viewError } = await supabase.from('crm_views').insert({
+    org_id: orgId,
+    module_id: moduleId,
+    name: `All ${namePlural}`,
+    is_default: true,
+    is_shared: true,
+    columns: ['name'],
+    sort: [{ field: 'created_at', direction: 'desc' }],
+  });
+  if (viewError) {
+    console.error('[seedModuleFoundation] view insert failed:', viewError);
+    // Non-fatal — layout + field are enough for Fields/Section + nav.
+  }
+
+  return { ok: true };
+}
+
+/**
  * Server action to ensure modules exist
  */
 export async function ensureDefaultModules(orgId: string): Promise<boolean> {

@@ -26,7 +26,7 @@ import {
     ChevronDown,
 } from 'lucide-react';
 import type { CrmField, FieldType } from '@/lib/crm/types';
-import { getFieldOptions } from '@/lib/crm/utils';
+import { getFieldOptions, fieldOffersOptionChoices, getFieldOptionChoices } from '@/lib/crm/utils';
 import {
   CURRENCY_INPUT_STEP,
   formatCurrencyInputValue,
@@ -139,7 +139,10 @@ const BOOLEAN_OPERATORS: OperatorConfig[] = [
     { key: 'equals', label: 'is', requiresValue: true },
 ];
 
-function getOperatorsForFieldType(fieldType: FieldType): OperatorConfig[] {
+function getOperatorsForFieldType(fieldType: FieldType, field?: CrmField): OperatorConfig[] {
+    if (field && fieldOffersOptionChoices(field)) {
+        return SELECT_OPERATORS;
+    }
     switch (fieldType) {
         case 'number':
         case 'currency':
@@ -148,6 +151,7 @@ function getOperatorsForFieldType(fieldType: FieldType): OperatorConfig[] {
         case 'datetime':
             return DATE_OPERATORS;
         case 'select':
+        case 'picklist':
         case 'multiselect':
         case 'user':
         case 'lookup':
@@ -213,12 +217,12 @@ function ConditionRow({
     onRemove,
 }: ConditionRowProps) {
     const selectedField = fields.find(f => f.key === condition.fieldKey);
-    const operators = selectedField ? getOperatorsForFieldType(selectedField.type) : TEXT_OPERATORS;
+    const operators = selectedField ? getOperatorsForFieldType(selectedField.type, selectedField) : TEXT_OPERATORS;
     const selectedOperator = operators.find(o => o.key === condition.operator);
 
     const handleFieldChange = (fieldKey: string) => {
         const field = fields.find(f => f.key === fieldKey);
-        const newOperators = field ? getOperatorsForFieldType(field.type) : TEXT_OPERATORS;
+        const newOperators = field ? getOperatorsForFieldType(field.type, field) : TEXT_OPERATORS;
         onUpdate({
             ...condition,
             fieldKey,
@@ -231,7 +235,7 @@ function ConditionRow({
         if (!selectedOperator?.requiresValue) return null;
         if (!selectedField) return null;
 
-        if (selectedField.type === 'select' || selectedField.type === 'multiselect') {
+        if (fieldOffersOptionChoices(selectedField)) {
             return (
                 <Select
                     value={Array.isArray(condition.value) ? condition.value[0] : condition.value}
@@ -241,9 +245,9 @@ function ConditionRow({
                         <SelectValue placeholder="Select value" />
                     </SelectTrigger>
                     <SelectContent className="bg-white dark:bg-slate-900">
-                        {getFieldOptions(selectedField.options, selectedField.key).map((option) => (
-                            <SelectItem key={option} value={option}>
-                                {option}
+                        {getFieldOptionChoices(selectedField.options, selectedField.key).map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                                {option.label}
                             </SelectItem>
                         ))}
                     </SelectContent>

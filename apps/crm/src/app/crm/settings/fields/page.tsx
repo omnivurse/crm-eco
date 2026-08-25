@@ -1,8 +1,8 @@
 import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
-import { getCurrentProfile, getAllModules, getFieldsForModule } from '@/lib/crm/queries';
-import type { CrmModule, CrmField } from '@/lib/crm/types';
+import { getCurrentProfile, getAllModules, getFieldsForModule, getDefaultLayout } from '@/lib/crm/queries';
+import type { CrmModule, CrmField, LayoutSection } from '@/lib/crm/types';
 import { FieldsManagerClient } from './FieldsManagerClient';
 
 interface PageProps {
@@ -54,11 +54,24 @@ async function FieldsContent({ searchParams }: PageProps) {
   // Sort fields by display_order
   const sortedFields = [...fields].sort((a, b) => a.display_order - b.display_order);
 
+  // Canonical section options come from the module's default layout.
+  let layoutSections: LayoutSection[] = [];
+  if (selectedModule) {
+    try {
+      const layout = await getDefaultLayout(selectedModule.id);
+      layoutSections = layout?.config?.sections ?? [];
+    } catch (err) {
+      console.error('[Fields] Failed to load default layout sections:', err);
+      layoutSections = [];
+    }
+  }
+
   return (
     <FieldsManagerClient
       modules={modules}
       selectedModule={selectedModule || null}
       initialFields={sortedFields}
+      layoutSections={layoutSections}
       orgId={profile.organization_id}
     />
   );

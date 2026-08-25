@@ -18,7 +18,7 @@ import {
 } from '@crm-eco/ui/components/popover';
 import { cn } from '@crm-eco/ui/lib/utils';
 import type { CrmField, ViewFilter } from '@/lib/crm/types';
-import { getFieldOptions } from '@/lib/crm/utils';
+import { getFieldOptions, fieldOffersOptionChoices, getFieldOptionChoices } from '@/lib/crm/utils';
 import {
   CURRENCY_INPUT_STEP,
   formatCurrencyInputValue,
@@ -74,7 +74,7 @@ function FilterRow({
   const renderValueInput = () => {
     if (!needsValue) return null;
 
-    if (fieldType === 'select' && field?.options?.length) {
+    if (field && fieldOffersOptionChoices(field)) {
       return (
         <Select
           value={String(filter.value || '')}
@@ -84,13 +84,13 @@ function FilterRow({
             <SelectValue placeholder="Select value" />
           </SelectTrigger>
           <SelectContent className="glass-card border-slate-200 dark:border-white/10">
-            {getFieldOptions(field.options, field.key).map((option) => (
+            {getFieldOptionChoices(field.options, field.key).map((option) => (
               <SelectItem 
-                key={option} 
-                value={option}
+                key={option.value} 
+                value={option.value}
                 className="text-slate-300 focus:text-white focus:bg-white/10"
               >
-                {option}
+                {option.label}
               </SelectItem>
             ))}
           </SelectContent>

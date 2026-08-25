@@ -136,7 +136,7 @@ export interface CrmField {
   is_indexed: boolean;
   is_title_field: boolean;
   is_pinned: boolean; // Starred/pinned fields always show in forms & list views
-  options: string[];
+  options: string[] | Array<Record<string, unknown>>;
   validation: FieldValidation;
   default_value: string | null;
   tooltip: string | null;

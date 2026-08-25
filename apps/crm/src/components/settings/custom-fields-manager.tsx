@@ -30,10 +30,18 @@ import {
   Textarea,
   Separator,
 } from '@crm-eco/ui';
+import { getFieldOptionChoices } from '@/lib/crm/utils';
 import { Plus, Pencil, Trash2, Layers, GripVertical, Check, X } from 'lucide-react';
 import type { Database } from '@crm-eco/lib/types';
 
 type CustomFieldDefinition = Database['public']['Tables']['custom_field_definitions']['Row'];
+
+function optionsToCsv(options: unknown): string {
+  return getFieldOptionChoices(options)
+    .map((o) => o.label || o.value)
+    .filter(Boolean)
+    .join(', ');
+}
 
 interface CustomFieldsManagerProps {
   definitions: CustomFieldDefinition[];
@@ -134,7 +142,7 @@ export function CustomFieldsManager({ definitions, organizationId }: CustomField
       isRequired: field.is_required ?? false,
       isFilterable: field.is_filterable ?? false,
       isVisible: field.is_visible ?? true,
-      options: Array.isArray(field.options) ? (field.options as string[]).join(', ') : '',
+      options: optionsToCsv(field.options),
       orderIndex: field.order_index ?? 0,
       displayOrder: field.display_order ?? 0,
     });

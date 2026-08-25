@@ -8,11 +8,11 @@ import { createClient, getAuthProfile } from '@/lib/supabase-server';
 import crypto from 'crypto';
 import { sendTeamInviteEmail } from '@/lib/email/transactional';
 import { rateLimitDurable, getRateLimitHeaders } from '@crm-eco/lib/rate-limit';
-import { canInviteOrgAdmin, canSendTeamInvite } from '@/lib/team/invite-access';
+import { canInviteOrgAdmin, canSendTeamInvite, normalizeInvitableOrgRole } from '@/lib/team/invite-access';
 
 export const dynamic = 'force-dynamic';
 
-type InvitableRole = 'admin' | 'advisor' | 'staff';
+type InvitableRole = 'admin' | 'advisor' | 'staff' | 'super_admin' | 'sales';
 
 function generateToken(): string {
   return crypto.randomBytes(32).toString('hex');
@@ -43,15 +43,21 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { email, role } = body as { email: string; role: InvitableRole };
+    const { email, role: rawRole } = body as { email: string; role: InvitableRole };
 
-    // Validate input
-    if (!email || !role) {
+    if (!email || !rawRole) {
       return NextResponse.json({ error: 'Email and role are required' }, { status: 400 });
     }
 
-    // Validate role
-    if (!['admin', 'advisor', 'staff'].includes(role)) {
+    const role = normalizeInvitableOrgRole(rawRole);
+    if (!role || role === 'super_admin') {
+      // Persist only admin|advisor|staff; map sales→advisor; refuse super_admin via invite.
+      if (rawRole === 'super_admin') {
+        return NextResponse.json(
+          { error: 'Super admin cannot be invited; promote from Team after join' },
+          { status: 400 },
+        );
+      }
       return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
     }
 

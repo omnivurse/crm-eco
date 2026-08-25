@@ -134,7 +134,8 @@ export async function PUT(request: NextRequest) {
       const { error } = await supabase
         .from('crm_roles')
         .update(updates)
-        .eq('id', id);
+        .eq('id', id)
+        .or(`organization_id.eq.${profile.organization_id},organization_id.is.null`);
       if (error) {
         console.error('[Security/Roles] Update error:', error);
         return NextResponse.json({ error: 'Failed to update role' }, { status: 500 });

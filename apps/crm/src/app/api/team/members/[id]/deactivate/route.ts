@@ -5,21 +5,16 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, getAuthProfile } from '@/lib/supabase-server';
+import {
+  canManageTeamMembers,
+  effectiveOrgRole,
+  orgRoleLevel,
+} from '@/lib/team/invite-access';
 
 export const dynamic = 'force-dynamic';
 
-type UserRole = 'owner' | 'super_admin' | 'admin' | 'advisor' | 'staff';
-
-const ROLE_HIERARCHY: Record<UserRole, number> = {
-  owner: 5,
-  super_admin: 4,
-  admin: 3,
-  advisor: 2,
-  staff: 1,
-};
-
 export async function POST(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -30,12 +25,10 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Check permissions
-    if (!currentProfile.crm_role || !['owner', 'super_admin', 'admin'].includes(currentProfile.crm_role)) {
+    if (!canManageTeamMembers(currentProfile)) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
 
-    // Get target member
     const { data: targetMember, error: memberError } = await supabase
       .from('profiles')
       .select('*')
@@ -46,30 +39,26 @@ export async function POST(
       return NextResponse.json({ error: 'Member not found' }, { status: 404 });
     }
 
-    // Check member belongs to same org
     if (targetMember.organization_id !== currentProfile.organization_id) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
-    // Cannot deactivate yourself
     if (targetMember.id === currentProfile.id) {
       return NextResponse.json({ error: 'Cannot deactivate yourself' }, { status: 400 });
     }
 
-    // Cannot deactivate owner
     if (targetMember.role === 'owner') {
       return NextResponse.json({ error: 'Cannot deactivate organization owner' }, { status: 403 });
     }
 
-    // Cannot deactivate someone with higher or equal role (unless owner)
-    const currentRoleLevel = ROLE_HIERARCHY[currentProfile.crm_role as UserRole];
-    const targetRoleLevel = ROLE_HIERARCHY[targetMember.role as UserRole];
+    const actorRole = effectiveOrgRole(currentProfile);
+    const currentRoleLevel = orgRoleLevel(actorRole);
+    const targetRoleLevel = orgRoleLevel(targetMember.role);
 
-    if (currentProfile.crm_role !== 'owner' && targetRoleLevel >= currentRoleLevel) {
+    if (actorRole !== 'owner' && targetRoleLevel >= currentRoleLevel) {
       return NextResponse.json({ error: 'Cannot deactivate user with equal or higher role' }, { status: 403 });
     }
 
-    // Deactivate member
     const { error: updateError } = await supabase
       .from('profiles')
       .update({

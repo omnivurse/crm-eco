@@ -405,8 +405,7 @@ export const SETTINGS_NAV_ITEMS: NavItem[] = [
     // Audit, Configuration, Developer Hub. Agents keep their own settings
     // (General, Templates, Signatures, Notifications, Import mappings).
     { key: 'users', label: 'Users & Teams', icon: 'users', href: '/crm/settings/users', adminOnly: true },
-    { key: 'roles', label: 'Roles & Permissions', icon: 'shield', href: '/crm/settings/users?tab=roles', adminOnly: true },
-    { key: 'security', label: 'Security Control', icon: 'lock', href: '/crm/settings/security-control', adminOnly: true },
+    { key: 'roles', label: 'Roles & Permissions', icon: 'shield', href: '/crm/settings/security-control', adminOnly: true },
 
     { key: 'sec-custom', separator: true, sectionTitle: 'Customization' },
     { key: 'modules', label: 'Modules', icon: 'layers', href: '/crm/settings/modules', adminOnly: true },

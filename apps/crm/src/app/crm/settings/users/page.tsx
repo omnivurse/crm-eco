@@ -766,7 +766,23 @@ function UsersPageContent() {
 
       {/* Role Legend */}
       <div ref={rolesRef} className="glass-card border border-slate-200 dark:border-slate-700 rounded-xl p-4">
-        <h3 className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-3">Role Permissions</h3>
+        <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
+          <h3 className="text-sm font-medium text-slate-600 dark:text-slate-400">CRM access roles</h3>
+          <Link
+            href="/crm/settings/security-control"
+            className="text-xs font-medium text-teal-600 dark:text-teal-400 hover:underline"
+          >
+            Catalog roles &amp; permissions →
+          </Link>
+        </div>
+        <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
+          These four CRM roles gate live API access. Assign granular catalog roles
+          (and sync system keys into CRM access) under{' '}
+          <Link href="/crm/settings/security-control" className="underline underline-offset-2">
+            Security Control
+          </Link>
+          .
+        </p>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {(Object.entries(ROLE_LABELS) as [CrmRole, (typeof ROLE_LABELS)[CrmRole]][]).map(
             ([role, info]) => (
