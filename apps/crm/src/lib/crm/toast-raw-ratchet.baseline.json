@@ -1,5 +1,5 @@
 {
-  "total": 547,
+  "total": 538,
   "byDir": {
     "src/app/crm/activities": 1,
     "src/app/crm/analytics": 1,
@@ -65,7 +65,6 @@
     "src/app/crm/settings/email": 1,
     "src/app/crm/settings/email-domains": 8,
     "src/app/crm/settings/experience": 14,
-    "src/app/crm/settings/fields": 2,
     "src/app/crm/settings/layouts": 7,
     "src/app/crm/settings/marketplace": 8,
     "src/app/crm/settings/modules": 9,
@@ -74,7 +73,6 @@
     "src/app/crm/settings/pipelines": 4,
     "src/app/crm/settings/scorecards": 1,
     "src/app/crm/settings/security": 15,
-    "src/app/crm/settings/security-control": 7,
     "src/app/crm/settings/signatures": 2,
     "src/app/crm/settings/team": 10,
     "src/app/crm/settings/templates": 6,
