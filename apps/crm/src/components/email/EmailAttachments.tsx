@@ -212,20 +212,52 @@ export function EmailAttachments({
     removeAttachment(attachment.id);
   };
 
-  if (compact && attachments.length === 0) {
+  if (compact) {
     return (
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        className="gap-2"
-        disabled={disabled}
-        {...getRootProps()}
-      >
-        <input {...getInputProps()} />
-        <Paperclip className="w-4 h-4" />
-        Attach
-      </Button>
+      <div className="flex flex-wrap items-center gap-2 min-w-0">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="gap-2"
+          disabled={disabled}
+          {...getRootProps()}
+        >
+          <input {...getInputProps()} />
+          <Paperclip className="w-4 h-4" />
+          Attach
+        </Button>
+        {attachments.map((attachment) => (
+          <span
+            key={attachment.id}
+            className={cn(
+              'inline-flex items-center gap-1.5 max-w-[14rem] rounded-md border px-2 py-1 text-xs',
+              attachment.error
+                ? 'border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10 text-red-600'
+                : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300',
+            )}
+          >
+            {attachment.is_uploading ? (
+              <Loader2 className="w-3 h-3 animate-spin text-teal-500 shrink-0" />
+            ) : (
+              <Paperclip className="w-3 h-3 shrink-0 text-slate-400" />
+            )}
+            <span className="truncate">{attachment.file_name}</span>
+            <button
+              type="button"
+              onClick={() => removeAttachment(attachment.id)}
+              disabled={disabled}
+              className="shrink-0 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+              aria-label={`Remove ${attachment.file_name}`}
+            >
+              <X className="w-3 h-3" />
+            </button>
+          </span>
+        ))}
+        {uploadError && (
+          <span className="text-xs text-red-600 dark:text-red-400">{uploadError}</span>
+        )}
+      </div>
     );
   }
 

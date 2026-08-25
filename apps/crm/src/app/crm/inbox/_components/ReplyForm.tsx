@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   Send,
   Loader2,
@@ -8,6 +8,9 @@ import {
   ReplyAll,
   Forward,
   ChevronDown,
+  ChevronUp,
+  Maximize2,
+  Minimize2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@crm-eco/ui/lib/utils';
@@ -50,6 +53,32 @@ export function ReplyForm({
   const [replyMode, setReplyMode] = useState<ReplyMode>('reply');
   const [showModeMenu, setShowModeMenu] = useState(false);
   const [attachments, setAttachments] = useState<EmailAttachment[]>([]);
+  const [composerOpen, setComposerOpen] = useState(false);
+  const [composerExpanded, setComposerExpanded] = useState(false);
+  const [editorMounted, setEditorMounted] = useState(false);
+
+  const hasDraft =
+    (replyHtml.trim() !== '' && replyHtml !== '<p></p>') || attachments.length > 0;
+
+  useEffect(() => {
+    setComposerOpen(false);
+    setComposerExpanded(false);
+    setReplyHtml('');
+    setAttachments([]);
+    setReplyMode('reply');
+    setShowModeMenu(false);
+  }, [selectedConversation.id]);
+
+  const openComposer = useCallback(() => {
+    setEditorMounted(true);
+    setComposerOpen(true);
+  }, []);
+
+  const closeComposer = useCallback(() => {
+    setComposerOpen(false);
+    setComposerExpanded(false);
+    setShowModeMenu(false);
+  }, []);
 
   // Find the last inbound message for threading
   const lastInbound = useMemo(() => {
@@ -108,6 +137,8 @@ export function ReplyForm({
       onForward(fwdSubject, quotedBody);
       setReplyHtml('');
       setAttachments([]);
+      setComposerOpen(false);
+      setComposerExpanded(false);
       return;
     }
 
@@ -183,6 +214,8 @@ export function ReplyForm({
       toast.success('Reply sent');
       setReplyHtml('');
       setAttachments([]);
+      setComposerOpen(false);
+      setComposerExpanded(false);
       onReplySent(selectedConversation.id);
     } catch (error) {
       console.error('Failed to send reply:', error);
@@ -215,11 +248,72 @@ export function ReplyForm({
   const currentMode = modeOptions.find(m => m.mode === replyMode)!;
 
   return (
-    <div className="border-t border-slate-200 dark:border-slate-700">
+    <div
+      className={cn(
+        'border-t border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-900/80 flex flex-col min-h-0',
+        composerOpen
+          ? composerExpanded
+            ? 'flex-[2.2] min-h-[18rem] sm:min-h-[22rem]'
+            : 'flex-1 min-h-[14rem] sm:min-h-[18rem]'
+          : 'shrink-0',
+      )}
+    >
+      <div className="flex items-stretch shrink-0">
+        <button
+          type="button"
+          aria-expanded={composerOpen}
+          aria-controls="inbox-reply-composer"
+          aria-label={composerOpen ? 'Collapse reply' : 'Open reply'}
+          onClick={() => (composerOpen ? closeComposer() : openComposer())}
+          className="flex-1 flex items-center justify-between gap-3 px-3 lg:px-4 py-2.5 text-left hover:bg-slate-100/80 dark:hover:bg-slate-800/70 transition-colors"
+        >
+          <span className="flex items-center gap-2.5 min-w-0">
+            <span className="inline-flex items-center rounded-md bg-slate-200/90 dark:bg-slate-700 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">
+              Reply
+            </span>
+            <span className="text-sm text-slate-500 dark:text-slate-400 truncate">
+              {hasDraft
+                ? 'Draft saved in this thread'
+                : composerOpen
+                  ? monitoredFrom
+                    ? `Replying as ${monitoredFrom}`
+                    : 'Write a reply'
+                  : monitoredFrom
+                    ? `Reply as ${monitoredFrom}`
+                    : 'Write a reply'}
+            </span>
+          </span>
+          {composerOpen ? (
+            <ChevronDown className="w-4 h-4 shrink-0 text-slate-400" aria-hidden />
+          ) : (
+            <ChevronUp className="w-4 h-4 shrink-0 text-slate-400" aria-hidden />
+          )}
+        </button>
+        {composerOpen && (
+          <button
+            type="button"
+            onClick={() => setComposerExpanded((open) => !open)}
+            className="px-3 hover:bg-slate-100/80 dark:hover:bg-slate-800/70 text-slate-400 transition-colors"
+            aria-pressed={composerExpanded}
+            aria-label={composerExpanded ? 'Shrink reply' : 'Give reply more space'}
+            title={composerExpanded ? 'Shrink reply' : 'Give reply more space'}
+          >
+            {composerExpanded ? (
+              <Minimize2 className="w-4 h-4" aria-hidden />
+            ) : (
+              <Maximize2 className="w-4 h-4" aria-hidden />
+            )}
+          </button>
+        )}
+      </div>
+
+      {composerOpen && (
+      <div id="inbox-reply-composer" className="flex flex-col flex-1 min-h-0 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
       {/* Reply mode selector & CC display */}
-      <div className="px-3 lg:px-4 pt-3 flex items-center gap-2">
+      <div className="px-3 lg:px-4 pt-2.5 flex items-center gap-2 shrink-0">
         <div className="relative">
           <button
+            type="button"
             onClick={() => setShowModeMenu(!showModeMenu)}
             className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors"
           >
@@ -233,6 +327,7 @@ export function ReplyForm({
               <div className="absolute bottom-full left-0 mb-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-50 min-w-[140px]">
                 {modeOptions.map(opt => (
                   <button
+                    type="button"
                     key={opt.mode}
                     onClick={() => { setReplyMode(opt.mode); setShowModeMenu(false); }}
                     className={cn(
@@ -269,31 +364,31 @@ export function ReplyForm({
         )}
       </div>
 
-      {/* Rich text editor */}
-      <div className="px-3 lg:px-4 py-2">
-        <div className="rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
-          <LazyEmailEditor
-            content={replyHtml}
-            onChange={setReplyHtml}
-            placeholder="Type your reply..."
-            minHeight={120}
-            className="border-0 rounded-none"
-          />
+      {/* Rich text editor — fills the dock so composing has real height */}
+      <div className="px-3 lg:px-4 py-2 flex-1 min-h-0 flex flex-col">
+        <div className="rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden flex-1 min-h-0 flex flex-col">
+          {editorMounted && (
+            <LazyEmailEditor
+              content={replyHtml}
+              onChange={setReplyHtml}
+              placeholder="Type your reply..."
+              minHeight={140}
+              showSourceToggle={false}
+              className="border-0 rounded-none h-full min-h-0"
+            />
+          )}
         </div>
       </div>
 
-      <div className="px-3 lg:px-4 pb-2">
+      <div className="px-3 lg:px-4 pb-3 flex items-center justify-between gap-2 shrink-0">
         <EmailAttachments
           attachments={attachments}
           onAttachmentsChange={setAttachments}
           disabled={sending}
           compact
         />
-      </div>
-
-      {/* Send button */}
-      <div className="px-3 lg:px-4 pb-3 flex justify-end">
         <button
+          type="button"
           onClick={handleSendReply}
           disabled={(!replyHtml.trim() || replyHtml === '<p></p>') || sending || attachments.some((a) => a.is_uploading)}
           className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium rounded-lg transition-colors"
@@ -312,6 +407,8 @@ export function ReplyForm({
             : 'Send'}
         </button>
       </div>
+      </div>
+      )}
     </div>
   );
 }

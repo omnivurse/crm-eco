@@ -428,9 +428,9 @@ function InboxPageContent() {
   }
 
   return (
-    <div className="h-[calc(100vh-8rem)] flex flex-col">
+    <div className="h-[calc(100dvh-7.25rem)] flex flex-col min-h-0">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4 lg:mb-6">
+      <div className="flex items-center justify-between mb-3 shrink-0">
         <div className="flex items-center gap-3">
           <button
             onClick={() => setShowMobileSidebar(true)}

@@ -340,7 +340,7 @@ export const MessageThread = React.memo(function MessageThread({
   onBackToList,
 }: MessageThreadProps) {
   return (
-    <>
+    <div className="flex-1 min-h-0 flex flex-col">
       {/* Header */}
       <div className="p-3 lg:p-4 border-b border-slate-200 dark:border-slate-700">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
@@ -430,6 +430,6 @@ export const MessageThread = React.memo(function MessageThread({
           ))
         )}
       </div>
-    </>
+    </div>
   );
 });

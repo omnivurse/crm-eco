@@ -10,7 +10,7 @@ const EmailEditor = dynamic(
   () => import('./EmailEditor').then((mod) => mod.EmailEditor),
   {
     loading: () => (
-      <div className="flex items-center justify-center p-8 min-h-[300px] bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
+      <div className="flex items-center justify-center p-8 min-h-[8rem] h-full bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
         <div className="flex flex-col items-center gap-2 text-slate-500">
           <Loader2 className="w-6 h-6 animate-spin" />
           <span className="text-sm">Loading editor...</span>
