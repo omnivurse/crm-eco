@@ -9,19 +9,24 @@ const ROLE_ID = '55555555-5555-4555-8555-555555555555';
 
 const mockCreateClient = vi.fn();
 const mockGetAuthProfile = vi.fn();
+const mockCreateRoleSyncClient = vi.fn();
 
 vi.mock('@/lib/supabase-server', () => ({
   createClient: () => mockCreateClient(),
   getAuthProfile: () => mockGetAuthProfile(),
 }));
 
+vi.mock('@supabase/supabase-js', () => ({
+  createClient: (...args: unknown[]) => mockCreateRoleSyncClient(...args),
+}));
+
 vi.mock('@/lib/security/revoke-sessions', () => ({
-  revokeUserSessions: vi.fn(),
+  revokeUserSessions: vi.fn(() => Promise.resolve()),
 }));
 
 vi.mock('@crm-eco/lib/audit', () => ({
   AuditActions: { ROLE_CHANGED: 'role_changed' },
-  logAuditEvent: vi.fn(),
+  logAuditEvent: vi.fn(() => Promise.resolve()),
 }));
 
 import { POST } from './route';
@@ -41,6 +46,8 @@ function terminalQuery(result: QueryResult) {
 describe('POST /api/crm/security/user-roles tenant scope', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://example.supabase.co';
+    process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-service-role-key';
     mockGetAuthProfile.mockResolvedValue({
       id: ACTOR_PROFILE_ID,
       organization_id: ORG_ID,
@@ -109,6 +116,15 @@ describe('POST /api/crm/security/user-roles tenant scope', () => {
     };
     mockCreateClient.mockResolvedValue(client);
 
+    const roleSyncQuery = terminalQuery({
+      data: { id: TARGET_PROFILE_ID },
+      error: null,
+    });
+    roleSyncQuery.update = vi.fn(() => roleSyncQuery);
+    mockCreateRoleSyncClient.mockReturnValue({
+      from: vi.fn(() => roleSyncQuery),
+    });
+
     const request = buildRequest(
       'http://localhost:3000/api/crm/security/user-roles',
       {
@@ -116,7 +132,6 @@ describe('POST /api/crm/security/user-roles tenant scope', () => {
         body: {
           profile_id: TARGET_PROFILE_ID,
           role_id: ROLE_ID,
-          sync_crm_role: false,
         },
       },
     );
@@ -124,6 +139,9 @@ describe('POST /api/crm/security/user-roles tenant scope', () => {
     const response = await POST(request);
 
     expect(response.status).toBe(201);
+    await expect(response.json()).resolves.toMatchObject({
+      synced_crm_role: 'crm_admin',
+    });
     expect(insertedAssignment).toEqual({
       organization_id: ORG_ID,
       user_id: TARGET_USER_ID,
