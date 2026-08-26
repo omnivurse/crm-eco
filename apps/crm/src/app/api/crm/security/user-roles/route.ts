@@ -54,8 +54,9 @@ export async function GET(request: NextRequest) {
 
       const { data: assignments, error } = await supabase
         .from('crm_user_roles')
-        .select('id, user_id, role_id, granted_by, created_at')
-        .eq('role_id', roleId);
+        .select('id, organization_id, user_id, role_id, granted_by, created_at')
+        .eq('role_id', roleId)
+        .eq('organization_id', profile.organization_id);
 
       if (error) {
         return NextResponse.json({ error: error.message }, { status: 500 });
@@ -111,8 +112,9 @@ export async function GET(request: NextRequest) {
 
     const { data: assignments, error } = await supabase
       .from('crm_user_roles')
-      .select('id, user_id, role_id, granted_by, created_at, crm_roles(id, key, name, is_system)')
-      .eq('user_id', target.user_id);
+      .select('id, organization_id, user_id, role_id, granted_by, created_at, crm_roles(id, key, name, is_system)')
+      .eq('user_id', target.user_id)
+      .eq('organization_id', profile.organization_id);
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
@@ -177,6 +179,7 @@ export async function POST(request: NextRequest) {
       .select('id')
       .eq('user_id', target.user_id)
       .eq('role_id', role_id)
+      .eq('organization_id', profile.organization_id)
       .maybeSingle();
 
     if (existing) {
@@ -186,11 +189,12 @@ export async function POST(request: NextRequest) {
     const { data: assignment, error } = await supabase
       .from('crm_user_roles')
       .insert({
+        organization_id: profile.organization_id,
         user_id: target.user_id,
         role_id,
         granted_by: profile.id,
       })
-      .select('id, user_id, role_id, granted_by, created_at')
+      .select('id, organization_id, user_id, role_id, granted_by, created_at')
       .single();
 
     if (error) {
@@ -263,8 +267,9 @@ export async function DELETE(request: NextRequest) {
     const supabase = await createClient();
     const { data: row } = await supabase
       .from('crm_user_roles')
-      .select('id, user_id, role_id')
+      .select('id, organization_id, user_id, role_id')
       .eq('id', id)
+      .eq('organization_id', profile.organization_id)
       .maybeSingle();
 
     if (!row) {
@@ -283,7 +288,11 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Assignment not in this organization' }, { status: 403 });
     }
 
-    const { error } = await supabase.from('crm_user_roles').delete().eq('id', id);
+    const { error } = await supabase
+      .from('crm_user_roles')
+      .delete()
+      .eq('id', id)
+      .eq('organization_id', profile.organization_id);
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
