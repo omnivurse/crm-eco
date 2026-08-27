@@ -9,11 +9,11 @@ import {
 } from './invite-access';
 
 describe('team invite access', () => {
-  it('lets a CRM admin manage the team page and send invites', () => {
+  it('lets a CRM admin manage the team page without granting org-admin invitations', () => {
     const crmAdmin = { crm_role: 'crm_admin', role: 'staff' };
     expect(canAccessTeamSettings(crmAdmin)).toBe(true);
     expect(canSendTeamInvite(crmAdmin)).toBe(true);
-    expect(canInviteOrgAdmin(crmAdmin)).toBe(true);
+    expect(canInviteOrgAdmin(crmAdmin)).toBe(false);
     expect(canManageTeamMembers(crmAdmin)).toBe(true);
   });
 

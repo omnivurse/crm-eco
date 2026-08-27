@@ -17,7 +17,9 @@ export function canInviteOrgAdmin(profile: {
   role?: string | null;
   crm_role?: string | null;
 }): boolean {
-  if (profile.crm_role === 'crm_admin') return true;
+  // CRM administration is scoped to the CRM application. Granting an
+  // organization-admin invitation also unlocks billing and organization-wide
+  // settings, so only organization owners/super-admins may cross that boundary.
   return ['owner', 'super_admin'].includes(profile.role || '');
 }
 
