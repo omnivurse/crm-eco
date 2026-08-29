@@ -14,6 +14,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const KEEPER = '11111111-1111-4111-8111-111111111111';
 const STALE = '22222222-2222-4222-8222-222222222222';
+const ORG_ID = '33333333-3333-4333-8333-333333333333';
 
 /** Every `.eq(column, value)` any client made, in order. */
 let eqCalls: Array<{ table: string; column: string; value: unknown }> = [];
@@ -97,7 +98,7 @@ describe('resolveRecordOrMergeDestination — uuid columns (PI-2)', () => {
   it('never sends a non-uuid segment to a uuid column', async () => {
     const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    const result = await resolveRecordOrMergeDestination('not-a-uuid');
+    const result = await resolveRecordOrMergeDestination('not-a-uuid', ORG_ID);
 
     expect(result).toEqual({ kind: 'missing' });
     // The whole point: no query at all, so nothing can raise
@@ -115,7 +116,7 @@ describe('resolveRecordOrMergeDestination — uuid columns (PI-2)', () => {
     ['a sql-ish payload', "1' OR '1'='1"],
   ])('returns missing without querying for %s', async (_label, segment) => {
     const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
-    expect(await resolveRecordOrMergeDestination(segment)).toEqual({ kind: 'missing' });
+    expect(await resolveRecordOrMergeDestination(segment, ORG_ID)).toEqual({ kind: 'missing' });
     expect(eqCalls).toEqual([]);
     expect(errors).not.toHaveBeenCalled();
     errors.mockRestore();
@@ -123,7 +124,7 @@ describe('resolveRecordOrMergeDestination — uuid columns (PI-2)', () => {
 
   it('still resolves a live record the viewer can see', async () => {
     rlsSees = true;
-    expect(await resolveRecordOrMergeDestination(KEEPER)).toEqual({
+    expect(await resolveRecordOrMergeDestination(KEEPER, ORG_ID)).toEqual({
       kind: 'found',
       recordId: KEEPER,
     });
@@ -133,7 +134,7 @@ describe('resolveRecordOrMergeDestination — uuid columns (PI-2)', () => {
     auditRows.diff_deleted_id = { diff: { kept_id: KEEPER }, created_at: '2026-01-02T03:04:05Z' };
     recordRows[KEEPER] = { id: KEEPER, title: 'Wendy Walker' };
 
-    expect(await resolveRecordOrMergeDestination(STALE)).toEqual({
+    expect(await resolveRecordOrMergeDestination(STALE, ORG_ID)).toEqual({
       kind: 'merged',
       keeperId: KEEPER,
       keeperTitle: 'Wendy Walker',
@@ -141,6 +142,15 @@ describe('resolveRecordOrMergeDestination — uuid columns (PI-2)', () => {
     });
     // The uuid path is untouched: the entity_id probe is still offered.
     expect(eqCalls.some((c) => c.column === 'entity_id' && c.value === STALE)).toBe(true);
+    const auditOrgFilters = eqCalls.filter(
+      (c) => c.table === 'crm_audit_log' && c.column === 'org_id' && c.value === ORG_ID,
+    );
+    expect(auditOrgFilters).toHaveLength(3);
+    expect(eqCalls).toContainEqual({
+      table: 'crm_records',
+      column: 'org_id',
+      value: ORG_ID,
+    });
   });
 
   it('stops the walk when an audit diff carries a non-uuid kept_id', async () => {
@@ -148,7 +158,7 @@ describe('resolveRecordOrMergeDestination — uuid columns (PI-2)', () => {
     // `crm_records.id` is a uuid column.
     auditRows.diff_deleted_id = { diff: { kept_id: 'legacy-zoho-4471' }, created_at: null };
 
-    expect(await resolveRecordOrMergeDestination(STALE)).toEqual({ kind: 'missing' });
+    expect(await resolveRecordOrMergeDestination(STALE, ORG_ID)).toEqual({ kind: 'missing' });
     expect(eqCalls.some((c) => c.table === 'crm_records' && c.value === 'legacy-zoho-4471')).toBe(
       false,
     );
