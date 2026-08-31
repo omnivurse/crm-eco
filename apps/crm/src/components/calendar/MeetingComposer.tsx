@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, type FormEvent, type JSX } from 'react';
+import { useMemo, useState, type FormEvent, type JSX } from 'react';
 import { fromZonedTime } from 'date-fns-tz';
 import { toast } from 'sonner';
 import { toastCopy } from '@/lib/crm/toast-copy';

@@ -245,20 +245,43 @@ export async function claimOutboxBatch(
 ): Promise<OutboxRow[]> {
   const now = new Date().toISOString();
   const leaseUntil = new Date(Date.now() + 2 * 60_000).toISOString();
+  // A row stuck in 'leased'/'provider_submitting' past this horizon belongs
+  // to a worker or inline send that died mid-flight. 10 minutes is 5x the
+  // lease window — long enough that a healthy in-flight submit (60s provider
+  // timeout) can never be stolen, short enough that wedged mail retries the
+  // same day instead of never.
+  const staleBefore = new Date(Date.now() - 10 * 60_000).toISOString();
 
-  const { data: candidates } = await supabase
-    .from('email_send_outbox')
-    .select('*')
-    .in('status', ['queued', 'failed'])
-    .lte('next_attempt_at', now)
-    .order('next_attempt_at', { ascending: true })
-    .limit(limit);
+  const [{ data: readyCandidates }, { data: staleCandidates }] = await Promise.all([
+    supabase
+      .from('email_send_outbox')
+      .select('*')
+      .in('status', ['queued', 'failed'])
+      .lte('next_attempt_at', now)
+      .order('next_attempt_at', { ascending: true })
+      .limit(limit),
+    // Reclaim wedged rows: previously nothing ever consulted leased_until,
+    // so a crashed worker's batch (or an inline send that threw between
+    // markOutboxSubmitting and the provider response) stayed "in-flight"
+    // forever and the mail silently never left.
+    supabase
+      .from('email_send_outbox')
+      .select('*')
+      .in('status', ['leased', 'provider_submitting'])
+      .lt('updated_at', staleBefore)
+      .order('updated_at', { ascending: true })
+      .limit(limit),
+  ]);
 
-  const rows = (candidates ?? []) as OutboxRow[];
+  const rows = [
+    ...((readyCandidates ?? []) as OutboxRow[]),
+    ...((staleCandidates ?? []) as OutboxRow[]),
+  ].slice(0, limit);
   const claimed: OutboxRow[] = [];
 
   for (const row of rows) {
-    const { data } = await supabase
+    const wasStale = row.status === 'leased' || row.status === 'provider_submitting';
+    let query = supabase
       .from('email_send_outbox')
       .update({
         status: 'leased',
@@ -267,9 +290,14 @@ export async function claimOutboxBatch(
         updated_at: now,
       })
       .eq('id', row.id)
-      .in('status', ['queued', 'failed'])
-      .select('*')
-      .maybeSingle();
+      .in('status', wasStale ? ['leased', 'provider_submitting'] : ['queued', 'failed']);
+    if (wasStale) {
+      // Compare-and-swap on the timestamp so two workers reaping the same
+      // stale row cannot both claim it, and a row that just made progress
+      // (updated_at moved) is left alone.
+      query = query.eq('updated_at', row.updated_at);
+    }
+    const { data } = await query.select('*').maybeSingle();
     if (data) claimed.push(data as OutboxRow);
   }
 
