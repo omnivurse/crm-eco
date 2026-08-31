@@ -284,26 +284,27 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Execute matching workflows
-    const results = [];
-    for (const wf of targetWorkflows) {
-      try {
-        const workflowResults = await executeMatchingWorkflows({
-          orgId: workflow.org_id,
-          moduleId: moduleId,
-          record,
-          trigger: 'inbound_webhook',
-          dryRun: false,
-        });
-        results.push(...workflowResults);
-      } catch (error) {
-        console.error('Workflow execution error:', error);
-        results.push({
-          workflowId: wf.id,
-          status: 'failed',
-          error: error instanceof Error ? error.message : 'Unknown error',
-        });
-      }
+    // Execute matching workflows — ONCE. executeMatchingWorkflows already
+    // runs every enabled inbound_webhook workflow for this org/module, so the
+    // previous per-workflow loop executed all N workflows N times: with two
+    // workflows sharing the webhook, each delivery fired each workflow twice
+    // (duplicate welcome emails, double notifications).
+    let results = [];
+    try {
+      results = await executeMatchingWorkflows({
+        orgId: workflow.org_id,
+        moduleId: moduleId,
+        record,
+        trigger: 'inbound_webhook',
+        dryRun: false,
+      });
+    } catch (error) {
+      console.error('Workflow execution error:', error);
+      results = targetWorkflows.map((wf) => ({
+        workflowId: wf.id,
+        status: 'failed',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      }));
     }
 
     return NextResponse.json({

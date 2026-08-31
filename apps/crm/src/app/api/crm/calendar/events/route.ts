@@ -8,7 +8,7 @@ import type { CalendarAttendeeRow, CalendarEventRow } from '@/lib/calendar/types
 // cannot collide with the existing /api/calendar/* provider-sync routes.
 // The new tables are not yet in generated DB types; rows are typed locally.
 
-export const MAX_ATTENDEES_PER_EVENT = 50;
+const MAX_ATTENDEES_PER_EVENT = 50;
 
 const attendeeSchema = z.object({
   email: z.string().email(),

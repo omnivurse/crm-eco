@@ -161,15 +161,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Suppress future sends on hard bounce or complaint
-    if ((ourEventType === 'bounced' || ourEventType === 'complained') && sentEmail.recipient_email && sentEmail.organization_id) {
+    // Suppress future sends on PERMANENT bounce or complaint only. Resend
+    // classifies bounces (bounce.type: 'Permanent' | 'Transient' |
+    // 'Undetermined'); a transient bounce — full mailbox, greylisting, a
+    // temporarily unreachable server — previously landed the address on the
+    // suppression list forever, silently cutting the recipient off from every
+    // future campaign and sequence with no UI to see why.
+    const bounceType = (event.data.bounce?.type || '').toLowerCase();
+    const isPermanentBounce = ourEventType === 'bounced' && bounceType !== 'transient';
+    if (ourEventType === 'bounced' && bounceType === 'transient') {
+      console.log('[resend webhook] transient bounce, not suppressing', {
+        emailId,
+        recipient: sentEmail.recipient_email,
+        message: event.data.bounce?.message || null,
+      });
+    }
+    if ((isPermanentBounce || ourEventType === 'complained') && sentEmail.recipient_email && sentEmail.organization_id) {
       await supabase
         .from('email_unsubscribes')
         .upsert({
           org_id: sentEmail.organization_id,
           email: sentEmail.recipient_email,
           reason: ourEventType === 'bounced'
-            ? `Hard bounce: ${event.data.bounce?.message || 'unknown'}`
+            ? `Hard bounce (${event.data.bounce?.type || 'unclassified'}): ${event.data.bounce?.message || 'unknown'}`
             : `Spam complaint: ${event.data.complaint?.type || 'unknown'}`,
           source: 'webhook',
         }, { onConflict: 'org_id,email' });

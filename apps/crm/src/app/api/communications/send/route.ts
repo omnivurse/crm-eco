@@ -10,6 +10,13 @@ import {
   type OutboundAttachmentRef,
 } from '@/lib/email/outbound-attachments';
 
+/**
+ * Deliberately loose e-mail shape check: one @, no whitespace/control chars,
+ * a dot in the domain. Tight enough to stop header-breaking garbage without
+ * rejecting valid unusual addresses.
+ */
+const EMAIL_SHAPE = /^[^@\s]+@[^@\s]+[.][^@\s]+$/;
+
 const RATE_LIMIT_MAX = 50;
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 
@@ -90,6 +97,15 @@ export async function POST(request: NextRequest) {
       attachmentRefs = collectJsonAttachmentRefs(body.attachments);
     }
 
+    // Multipart form fields arrive as strings — 'false' is truthy, so a
+    // FormData caller could never opt out of inbox persistence.
+    if (typeof body.persist_inbox === 'string') {
+      body.persist_inbox = body.persist_inbox !== 'false' && body.persist_inbox !== '0';
+    }
+    if (typeof body.references === 'string') {
+      body.references = splitRecipientField(body.references);
+    }
+
     const { channel, ...params } = body;
 
     if (!channel) {
@@ -111,6 +127,30 @@ export async function POST(request: NextRequest) {
       if (!params.body_html && !params.body_text) {
         return NextResponse.json(
           { error: 'Email must have body_html or body_text' },
+          { status: 400 }
+        );
+      }
+
+      // Recipient hygiene: this 1:1 path previously accepted any strings and
+      // any count — a single request could bulk-mail thousands via bcc,
+      // bypassing every campaign throttle. Cap matches Resend's 50-recipient
+      // per-message limit; real bulk belongs in campaigns.
+      const toList = Array.isArray(params.to) ? (params.to as string[]) : [params.to as string];
+      const ccList = (params.cc as string[] | undefined) ?? [];
+      const bccList = (params.bcc as string[] | undefined) ?? [];
+      const allRecipients = [...toList, ...ccList, ...bccList];
+      if (allRecipients.length > 50) {
+        return NextResponse.json(
+          { error: 'Too many recipients (max 50 across to/cc/bcc). Use a campaign for bulk sends.' },
+          { status: 400 }
+        );
+      }
+      const invalidRecipient = allRecipients.find(
+        (addr) => typeof addr !== 'string' || !EMAIL_SHAPE.test(addr.trim())
+      );
+      if (invalidRecipient !== undefined) {
+        return NextResponse.json(
+          { error: `Invalid recipient address: "${String(invalidRecipient).slice(0, 100)}"` },
           { status: 400 }
         );
       }
