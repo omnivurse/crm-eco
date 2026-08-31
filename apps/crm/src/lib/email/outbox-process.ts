@@ -26,10 +26,15 @@ type LooseClient = {
   };
 };
 
+type ResolvedProvider = {
+  provider: 'resend' | 'sendgrid';
+  apiKey: string;
+};
+
 async function resolveProvider(
   supabase: LooseClient,
   organizationId: string,
-): Promise<{ provider: 'resend' | 'sendgrid'; apiKey: string } | { error: string }> {
+): Promise<ResolvedProvider | { error: string }> {
   const { data: connection } = await supabase
     .from('integration_connections')
     .select('provider, api_key_enc, status')
@@ -53,8 +58,9 @@ async function resolveProvider(
 export async function submitOutboxRow(
   supabase: LooseClient,
   row: OutboxRow,
+  resolvedProvider?: ResolvedProvider,
 ): Promise<{ success: boolean; messageId?: string; provider?: string; error?: string }> {
-  const resolved = await resolveProvider(supabase, row.organization_id);
+  const resolved = resolvedProvider ?? await resolveProvider(supabase, row.organization_id);
   if ('error' in resolved) {
     return { success: false, error: resolved.error };
   }
@@ -220,8 +226,27 @@ export async function processEmailOutbox(
       continue;
     }
 
-    await markOutboxSubmitting(supabase, row.id, row.organization_id);
-    const result = await submitOutboxRow(supabase, row);
+    const resolvedProvider = await resolveProvider(supabase, row.organization_id);
+    if ('error' in resolvedProvider) {
+      await markOutboxFailed(
+        supabase,
+        row.id,
+        row.organization_id,
+        resolvedProvider.error,
+        'permanent',
+        row.attempt_count + 1,
+      );
+      failed += 1;
+      continue;
+    }
+
+    await markOutboxSubmitting(
+      supabase,
+      row.id,
+      row.organization_id,
+      resolvedProvider.provider,
+    );
+    const result = await submitOutboxRow(supabase, row, resolvedProvider);
     if (result.success && result.messageId) {
       await markOutboxAccepted(
         supabase,

@@ -184,15 +184,22 @@ export async function markOutboxSubmitting(
   supabase: LooseClient,
   id: string,
   organizationId: string,
+  provider?: string,
 ): Promise<void> {
-  await supabase
+  const { data, error } = await supabase
     .from('email_send_outbox')
     .update({
       status: 'provider_submitting',
+      ...(provider ? { provider } : {}),
       updated_at: new Date().toISOString(),
     })
     .eq('id', id)
-    .eq('organization_id', organizationId);
+    .eq('organization_id', organizationId)
+    .select('id')
+    .maybeSingle();
+  if (error || !data) {
+    throw new Error(error?.message || 'Failed to persist outbox submitting state');
+  }
 }
 
 export async function markOutboxAccepted(
@@ -203,7 +210,7 @@ export async function markOutboxAccepted(
   providerMessageId: string,
 ): Promise<void> {
   const now = new Date().toISOString();
-  await supabase
+  const { data, error } = await supabase
     .from('email_send_outbox')
     .update({
       status: 'sent',
@@ -215,7 +222,12 @@ export async function markOutboxAccepted(
       updated_at: now,
     })
     .eq('id', id)
-    .eq('organization_id', organizationId);
+    .eq('organization_id', organizationId)
+    .select('id')
+    .maybeSingle();
+  if (error || !data) {
+    throw new Error(error?.message || 'Failed to persist provider acceptance');
+  }
 }
 
 export async function markOutboxFailed(
@@ -248,14 +260,17 @@ export async function claimOutboxBatch(
 ): Promise<OutboxRow[]> {
   const now = new Date().toISOString();
   const leaseUntil = new Date(Date.now() + 2 * 60_000).toISOString();
-  // A row stuck in 'leased'/'provider_submitting' past this horizon belongs
-  // to a worker or inline send that died mid-flight. 10 minutes is 5x the
-  // lease window — long enough that a healthy in-flight submit (60s provider
-  // timeout) can never be stolen, short enough that wedged mail retries the
-  // same day instead of never.
+  // A stale lease is safe to reclaim because provider submission has not
+  // started. A stale provider_submitting row is ambiguous and may be retried
+  // automatically only for Resend, where the stable idempotency key prevents
+  // a second delivery. SendGrid ambiguity requires manual reconciliation.
   const staleBefore = new Date(Date.now() - 10 * 60_000).toISOString();
 
-  const [{ data: readyCandidates }, { data: staleCandidates }] = await Promise.all([
+  const [
+    { data: readyCandidates },
+    { data: staleLeasedCandidates },
+    { data: staleResendCandidates },
+  ] = await Promise.all([
     supabase
       .from('email_send_outbox')
       .select('*')
@@ -263,14 +278,18 @@ export async function claimOutboxBatch(
       .lte('next_attempt_at', now)
       .order('next_attempt_at', { ascending: true })
       .limit(limit),
-    // Reclaim wedged rows: previously nothing ever consulted leased_until,
-    // so a crashed worker's batch (or an inline send that threw between
-    // markOutboxSubmitting and the provider response) stayed "in-flight"
-    // forever and the mail silently never left.
     supabase
       .from('email_send_outbox')
       .select('*')
-      .in('status', ['leased', 'provider_submitting'])
+      .eq('status', 'leased')
+      .lt('updated_at', staleBefore)
+      .order('updated_at', { ascending: true })
+      .limit(limit),
+    supabase
+      .from('email_send_outbox')
+      .select('*')
+      .eq('status', 'provider_submitting')
+      .eq('provider', 'resend')
       .lt('updated_at', staleBefore)
       .order('updated_at', { ascending: true })
       .limit(limit),
@@ -278,7 +297,8 @@ export async function claimOutboxBatch(
 
   const rows = [
     ...((readyCandidates ?? []) as OutboxRow[]),
-    ...((staleCandidates ?? []) as OutboxRow[]),
+    ...((staleLeasedCandidates ?? []) as OutboxRow[]),
+    ...((staleResendCandidates ?? []) as OutboxRow[]),
   ].slice(0, limit);
   const claimed: OutboxRow[] = [];
 
@@ -299,6 +319,9 @@ export async function claimOutboxBatch(
       // stale row cannot both claim it, and a row that just made progress
       // (updated_at moved) is left alone.
       query = query.eq('updated_at', row.updated_at);
+      if (row.status === 'provider_submitting') {
+        query = query.eq('provider', 'resend');
+      }
     }
     const { data } = await query.select('*').maybeSingle();
     if (data) claimed.push(data as OutboxRow);

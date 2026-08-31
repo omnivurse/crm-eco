@@ -370,7 +370,12 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
           outbox_id: outboxRow.id,
         };
       }
-      await markOutboxSubmitting(outboxAdmin, outboxRow.id, profile.organization_id);
+      await markOutboxSubmitting(
+        outboxAdmin,
+        outboxRow.id,
+        profile.organization_id,
+        provider,
+      );
     }
 
     const threadHeaders = {
