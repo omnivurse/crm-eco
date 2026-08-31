@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import type { OutboxAttachmentMeta } from './outbound-attachments';
 
 export const OUTBOX_STATUSES = [
   'queued',
@@ -17,7 +18,8 @@ export type OutboxPayload = {
   rfc822_message_id?: string;
   in_reply_to?: string | null;
   references?: string[];
-  attachments?: Array<{ filename: string; content_type: string; size: number }>;
+  /** Durable storage locators; display-only metadata is never safe to retry. */
+  attachments?: OutboxAttachmentMeta[];
   /** iTIP part for meeting invites — full ICS text so worker retries rebuild it byte-identically. */
   calendar?: { method: 'REQUEST' | 'CANCEL'; ics: string; filename?: string } | null;
   calendar_event_id?: string | null;

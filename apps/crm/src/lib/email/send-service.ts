@@ -3,6 +3,7 @@ import { createLog } from '@/lib/integrations';
 import { decrypt } from '@/lib/integrations/adapters/credentials';
 import {
   EMAIL_ATTACHMENT_BUCKET,
+  attachmentMetaFromRefs,
   buildResendSendPayload,
   resolveOutboundAttachments,
   toSendGridAttachments,
@@ -341,11 +342,19 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
           source: 'communications.send',
           calendar: params.calendar ?? null,
           calendar_event_id: params.calendar_event_id ?? null,
-          attachments: outboundAttachments.map((attachment) => ({
-            filename: attachment.filename,
-            content_type: attachment.contentType,
-            size: attachment.size,
-          })),
+          // Keep storage locators, not just display metadata, so an outbox
+          // worker can reconstruct the exact documents after a transient
+          // provider failure. Inline multipart files have no durable locator;
+          // record them so the worker fails closed instead of sending a
+          // silently truncated email.
+          attachments: [
+            ...attachmentMetaFromRefs(params.attachments ?? []),
+            ...(params.inline_attachments ?? []).map((attachment) => ({
+              filename: attachment.filename,
+              content_type: attachment.mimeType || 'application/octet-stream',
+              size: attachment.bytes.byteLength,
+            })),
+          ],
         },
       });
       outboxRow = enqueued.row;

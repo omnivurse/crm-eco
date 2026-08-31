@@ -10,9 +10,20 @@ import {
 } from '@/lib/email/outbox';
 import { persistInputFromOutboxPayload, persistOutboundInboxMessage } from '@/lib/email/persist-inbox-reply';
 import { sendViaResend, sendViaSendGrid } from '@/lib/email/send-service';
+import {
+  EMAIL_ATTACHMENT_BUCKET,
+  requireOutboxAttachmentRefs,
+  resolveOutboundAttachments,
+  type ResolvedOutboundAttachment,
+} from '@/lib/email/outbound-attachments';
 
 type LooseClient = {
   from: (table: string) => any;
+  storage: {
+    from: (bucket: string) => {
+      download: (path: string) => Promise<{ data: Blob | null; error: { message?: string } | null }>;
+    };
+  };
 };
 
 async function resolveProvider(
@@ -39,7 +50,7 @@ async function resolveProvider(
   return { error: 'No email provider configured' };
 }
 
-async function submitOutboxRow(
+export async function submitOutboxRow(
   supabase: LooseClient,
   row: OutboxRow,
 ): Promise<{ success: boolean; messageId?: string; provider?: string; error?: string }> {
@@ -51,6 +62,39 @@ async function submitOutboxRow(
   const payload = row.payload ?? {};
   const fromName = row.from_name || 'Pay It Forward Health';
   const fromEmail = row.sender_address || process.env.RESEND_FROM_EMAIL || 'noreply@payitforwardhealth.com';
+
+  let storedAttachments: ResolvedOutboundAttachment[];
+  try {
+    const refs = requireOutboxAttachmentRefs(payload.attachments);
+    storedAttachments = await resolveOutboundAttachments({
+      refs,
+      inline: [],
+      organizationId: row.organization_id,
+      lookup: async (id) => {
+        const { data } = await supabase
+          .from('email_attachments')
+          .select('file_path, file_name, mime_type, org_id')
+          .eq('id', id)
+          .eq('org_id', row.organization_id)
+          .maybeSingle();
+        return data ?? null;
+      },
+      download: async (path) => {
+        const { data, error } = await supabase.storage
+          .from(EMAIL_ATTACHMENT_BUCKET)
+          .download(path);
+        if (error || !data) {
+          throw new Error(error?.message || 'Could not read the queued attachment.');
+        }
+        return new Uint8Array(await data.arrayBuffer());
+      },
+    });
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Could not restore queued attachments.',
+    };
+  }
 
   // Rebuild the iTIP calendar part byte-identically from the stored payload so
   // worker retries send the same invite the first attempt did.
@@ -64,9 +108,13 @@ async function submitOutboxRow(
         size: Buffer.byteLength(payload.calendar.ics, 'utf8'),
       }]
     : undefined;
+  const attachments = [
+    ...storedAttachments,
+    ...(calendarAttachment ?? []),
+  ];
 
   if (resolved.provider === 'sendgrid') {
-    return sendViaSendGrid(resolved.apiKey, {
+    const result = await sendViaSendGrid(resolved.apiKey, {
       from: { email: fromEmail, name: fromName },
       to: row.to_addresses,
       cc: row.cc_addresses,
@@ -75,15 +123,21 @@ async function submitOutboxRow(
       html: row.body_html ?? undefined,
       text: row.body_text ?? undefined,
       replyTo: row.reply_to ?? undefined,
-      attachments: calendarAttachment,
+      attachments: attachments.length > 0 ? attachments : undefined,
       calendar: payload.calendar ?? undefined,
       message_id: payload.rfc822_message_id,
       in_reply_to: payload.in_reply_to,
       references: payload.references,
     });
+    return {
+      success: result.success,
+      messageId: result.message_id,
+      provider: result.provider,
+      error: result.error,
+    };
   }
 
-  return sendViaResend(resolved.apiKey, {
+  const result = await sendViaResend(resolved.apiKey, {
     from: `${fromName} <${fromEmail}>`,
     to: row.to_addresses,
     cc: row.cc_addresses,
@@ -93,12 +147,18 @@ async function submitOutboxRow(
     text: row.body_text ?? undefined,
     reply_to: row.reply_to ?? undefined,
     unsubscribe_url: payload.unsubscribe_url ?? undefined,
-    attachments: calendarAttachment,
+    attachments: attachments.length > 0 ? attachments : undefined,
     idempotencyKey: row.idempotency_key,
     message_id: payload.rfc822_message_id,
     in_reply_to: payload.in_reply_to,
     references: payload.references,
   });
+  return {
+    success: result.success,
+    messageId: result.message_id,
+    provider: result.provider,
+    error: result.error,
+  };
 }
 
 async function logSentEmail(supabase: LooseClient, row: OutboxRow, result: {
