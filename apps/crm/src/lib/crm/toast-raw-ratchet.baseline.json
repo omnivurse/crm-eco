@@ -1,5 +1,5 @@
 {
-  "total": 538,
+  "total": 534,
   "byDir": {
     "src/app/crm/activities": 1,
     "src/app/crm/analytics": 1,
@@ -73,7 +73,6 @@
     "src/app/crm/settings/pipelines": 4,
     "src/app/crm/settings/scorecards": 1,
     "src/app/crm/settings/security": 15,
-    "src/app/crm/settings/signatures": 2,
     "src/app/crm/settings/team": 10,
     "src/app/crm/settings/templates": 6,
     "src/app/crm/settings/users": 9,
@@ -89,7 +88,7 @@
     "src/components/crm/offline": 2,
     "src/components/crm/pipeline": 2,
     "src/components/crm/reports": 7,
-    "src/components/email": 13,
+    "src/components/email": 11,
     "src/components/integrations": 22,
     "src/components/sequences": 4,
     "src/components/system-health": 18,
