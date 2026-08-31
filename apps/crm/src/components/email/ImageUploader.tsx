@@ -28,6 +28,10 @@ interface ImageUploaderProps {
   onOpenChange: (open: boolean) => void;
   onImageInsert: (url: string, alt?: string) => void;
   uploadEndpoint?: string;
+  folder?: string;
+  title?: string;
+  description?: string;
+  insertLabel?: string;
 }
 
 interface UploadedImage {
@@ -45,6 +49,10 @@ export function ImageUploader({
   onOpenChange,
   onImageInsert,
   uploadEndpoint = '/api/email/assets',
+  folder = 'email-images',
+  title = 'Insert Image',
+  description = 'Upload an image from your computer or enter a URL.',
+  insertLabel = 'Insert Image',
 }: ImageUploaderProps) {
   const [mode, setMode] = useState<'upload' | 'url'>('upload');
   const [isDragging, setIsDragging] = useState(false);
@@ -97,13 +105,12 @@ export function ImageUploader({
     }
   };
 
-  const uploadFile = async (file: File) => {
+  const uploadFile = useCallback(async (file: File) => {
     setIsUploading(true);
     setUploadProgress(0);
     setError(null);
 
     try {
-      // Validate
       const validationError = validateFile(file);
       if (validationError) {
         setError(validationError);
@@ -111,15 +118,13 @@ export function ImageUploader({
         return;
       }
 
-      // Compress if needed
       setUploadProgress(20);
       const processedFile = file.size > 1024 * 1024 ? await compressImage(file) : file;
 
-      // Create form data
       setUploadProgress(40);
       const formData = new FormData();
       formData.append('file', processedFile);
-      formData.append('folder', 'email-images');
+      formData.append('folder', folder);
 
       // Upload
       setUploadProgress(60);
@@ -136,11 +141,14 @@ export function ImageUploader({
       }
 
       const data = await response.json();
+      const uploadedUrl = data.public_url || data.url;
+      if (!uploadedUrl) {
+        throw new Error('Upload succeeded but no image URL was returned');
+      }
       setUploadProgress(100);
 
-      // Set preview
       setPreviewImage({
-        url: data.public_url || data.url,
+        url: uploadedUrl,
         alt: altText || file.name.replace(/\.[^/.]+$/, ''),
         width: data.width,
         height: data.height,
@@ -150,7 +158,7 @@ export function ImageUploader({
     } finally {
       setIsUploading(false);
     }
-  };
+  }, [altText, folder, uploadEndpoint]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -168,16 +176,16 @@ export function ImageUploader({
 
     const files = Array.from(e.dataTransfer.files);
     if (files.length > 0 && files[0].type.startsWith('image/')) {
-      uploadFile(files[0]);
+      void uploadFile(files[0]);
     }
-  }, []);
+  }, [uploadFile]);
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
-      uploadFile(files[0]);
+      void uploadFile(files[0]);
     }
-  }, []);
+  }, [uploadFile]);
 
   const handleUrlSubmit = useCallback(() => {
     if (!urlInput.trim()) {
@@ -210,10 +218,8 @@ export function ImageUploader({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Insert Image</DialogTitle>
-          <DialogDescription>
-            Upload an image or enter a URL to insert into your email.
-          </DialogDescription>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
 
         {/* Mode Tabs */}
@@ -367,7 +373,7 @@ export function ImageUploader({
             onClick={handleInsert}
             disabled={!previewImage}
           >
-            Insert Image
+            {insertLabel}
           </Button>
         </DialogFooter>
       </DialogContent>

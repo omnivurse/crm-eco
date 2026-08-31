@@ -367,6 +367,32 @@
   --crm-section-gap: var(--ui-section-gap);
   --crm-cell-py: var(--ui-cell-py);
   --crm-view-offset: var(--ui-view-offset);
+
+  /* --- Full-height page budget inside the CRM shell -------------------
+     Pages that fill the shell (inbox, record detail, the workflow builder)
+     were each hardcoding their own guess at the chrome height: 7.25rem in
+     two places, 10rem in another, and plain `h-screen` in the builder. All
+     of them were short, so the page overflowed <main>, pushing its own
+     scroll region's bottom below the fold — you had to scroll the page to
+     reach the end of a panel that looked like it should scroll itself.
+
+     One derived value instead, density-aware via --ui-chrome-h:
+       viewport
+       − top chrome (top bar + module bar)     --ui-chrome-h
+       − bottom bar                            --crm-bottombar-h  (lg only)
+       − <main> padding + wrapper pb-10        --crm-main-inset
+     Use as h-[var(--crm-page-h)]. */
+  --crm-bottombar-h: 0px;
+  --crm-main-inset: 52px;
+  --crm-page-h: calc(100dvh - var(--ui-chrome-h) - var(--crm-bottombar-h) - var(--crm-main-inset));
+}
+
+/* BottomBar is lg-only (h-10 + 1px border); <main> also switches py-1.5 -> py-2. */
+@media (min-width: 1024px) {
+  :root {
+    --crm-bottombar-h: 41px;
+    --crm-main-inset: 56px;
+  }
 }
 
 .dark {
@@ -465,4 +491,19 @@
   --mod-bg:       hsl(var(--mod-h) var(--mod-s) var(--mod-l) / 0.11);
   --mod-bg-hover: hsl(var(--mod-h) var(--mod-s) var(--mod-l) / 0.16);
   --mod-border:   hsl(var(--mod-h) var(--mod-s) var(--mod-l));
+}
+
+/* Coverage snapshot: Referring Member / Referral Source (and other wrap
+   cells) must show the full string. Inline editors use `.truncate` so
+   names like "Dave with CO Sharing" became "Dave with CO S…". */
+.crm-snapshot-cell-wrap .truncate,
+.crm-snapshot-cell-wrap [data-inline-value] {
+  overflow: visible;
+  text-overflow: unset;
+  white-space: normal;
+  overflow-wrap: break-word;
+}
+
+.crm-snapshot-cell-wrap [data-field] {
+  align-items: flex-start;
 }

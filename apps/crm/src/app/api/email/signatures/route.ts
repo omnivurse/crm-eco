@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, getAuthProfile } from '@/lib/supabase-server';
+import { DEFAULT_PIFH_LOGO_PATH } from '@/lib/email/signature-html';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 // GET - List user's signatures
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const profile = await getAuthProfile();
     if (!profile) {
@@ -31,7 +32,41 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch signatures' }, { status: 500 });
     }
 
-    return NextResponse.json({ signatures });
+    const [{ data: profileRow }, { data: org }] = await Promise.all([
+      supabase
+        .from('profiles')
+        .select('full_name, email, phone, avatar_url')
+        .eq('id', profile.id)
+        .maybeSingle(),
+      supabase
+        .from('organizations')
+        .select('name, domain, branding')
+        .eq('id', profile.organization_id)
+        .maybeSingle(),
+    ]);
+
+    const branding =
+      org?.branding && typeof org.branding === 'object' && !Array.isArray(org.branding)
+        ? (org.branding as Record<string, unknown>)
+        : {};
+    const brandingLogo = typeof branding.logo_url === 'string' ? branding.logo_url : '';
+    const brandingWebsite =
+      (typeof branding.website === 'string' && branding.website) ||
+      (typeof branding.company_website === 'string' && branding.company_website) ||
+      '';
+
+    return NextResponse.json({
+      signatures,
+      defaults: {
+        full_name: profileRow?.full_name || profile.full_name || '',
+        email: profileRow?.email || '',
+        phone: profileRow?.phone || '',
+        company_name: org?.name || '',
+        website: brandingWebsite || org?.domain || '',
+        logo_url: brandingLogo || DEFAULT_PIFH_LOGO_PATH,
+        photo_url: profileRow?.avatar_url || '',
+      },
+    });
   } catch (error) {
     console.error('Error in GET /api/email/signatures:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

@@ -616,6 +616,15 @@ export function mergedInto(
   };
 }
 
+/** Imported Members twin opened — notes live on the Contact. */
+export function openedContactTwin(keeperTitle?: string | null): MergedIntoToast {
+  const name = keeperTitle?.trim();
+  return {
+    title: name ? `Opened the Contact record for ${name}` : 'Opened the Contact record',
+    description: 'Notes and history live here, not on the imported Member copy.',
+  };
+}
+
 export const toastCopy = {
   saved,
   added,
@@ -637,4 +646,5 @@ export const toastCopy = {
   movedToTrash,
   addedWithAction,
   mergedInto,
+  openedContactTwin,
 };

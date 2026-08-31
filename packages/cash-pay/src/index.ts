@@ -74,7 +74,27 @@ export {
 } from './payer';
 export type { PayerClass } from './payer';
 
-export { flagRateOutliers, partitionRates, tickIdentity, LOW_CMS_FLOOR, HIGH_CMS_CEILING } from './outliers';
+export {
+  flagRateOutliers,
+  flagHighExtremes,
+  partitionRates,
+  mergeHidden,
+  toggleHiddenId,
+  tickIdentity,
+  highestRate,
+  LOW_CMS_FLOOR,
+  HIGH_CMS_CEILING,
+  EXTREME_MIN_N,
+  EXTREME_MEDIAN_MULT,
+} from './outliers';
+
+export {
+  discardedStorageKey,
+  readDiscardedIds,
+  serializeDiscardedIds,
+  persistDiscardedIds,
+  DISCARDED_STORAGE_PREFIX,
+} from './discard';
 
 export { planNegotiation, bidDelta } from './negotiate';
 export type { NegotiatePlan } from './negotiate';

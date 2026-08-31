@@ -197,6 +197,13 @@
 
 .statValue[data-signal='true'] {
   color: var(--signal);
+}
+
+.statValue [data-extreme='true'] {
+  text-decoration: underline;
+  text-underline-offset: 0.16em;
+  font-weight: 750;
+}
   font-weight: 700;
 }
 
@@ -527,6 +534,24 @@
 .pinBtn[data-on='true'] {
   background: var(--signal-subtle);
   border-color: color-mix(in oklch, var(--signal) 40%, var(--hairline));
+}
+
+.tickActions {
+  display: flex;
+  gap: 0.3rem;
+  justify-content: flex-end;
+}
+
+.textBtn {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: inherit;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+  cursor: pointer;
 }
 
 .pager {

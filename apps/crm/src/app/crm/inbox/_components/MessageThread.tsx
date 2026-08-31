@@ -447,9 +447,14 @@ export const MessageThread = React.memo(function MessageThread({
               </SelectContent>
             </Select>
             <button
-              onClick={() => toast.info('More actions coming soon')}
-              className="hidden sm:block p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+              type="button"
+              onClick={(e) => {
+                toast.info('More actions coming soon');
+                e.currentTarget.blur();
+              }}
+              className="hidden sm:inline-flex p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
               title="More actions"
+              aria-label="More actions"
             >
               <MoreVertical className="w-5 h-5 text-slate-400" />
             </button>

@@ -151,6 +151,12 @@
   font-weight: 700;
 }
 
+.statValue [data-extreme='true'] {
+  text-decoration: underline;
+  text-underline-offset: 0.16em;
+  font-weight: 750;
+}
+
 .statQuiet {
   color: var(--ink-muted);
   font-weight: 500;

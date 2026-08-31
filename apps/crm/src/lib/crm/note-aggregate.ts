@@ -13,6 +13,11 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { isPersonModuleKey } from '@/lib/crm/person-module-keys';
+import {
+  buildTwinLookup,
+  pickRicherTwin,
+} from './resolve-record-twin';
+import type { MemberCrmRecordCandidate } from './resolve-member-crm-record';
 import type { CrmRecord } from './types';
 
 const UUID_RE =
@@ -296,9 +301,70 @@ async function resolvePersonNoteSources(
       root,
       ids,
     );
+    await addRicherContactTwin(supabase, record, ids);
   }
 
   return [...ids];
+}
+
+/**
+ * Members twins often have a blank `data.email` and a Contacts row that holds
+ * the Zoho note history. Reuse the same identity match as field overlay so
+ * notes follow the richer Contact even when the module-join sibling queries
+ * miss (org_id vs organization_id, missing JSONB email, etc.).
+ */
+export async function addRicherContactTwin(
+  supabase: SupabaseClient,
+  record: NoteAggregateRecord,
+  into: Set<string>,
+): Promise<void> {
+  const org = parseUuidLoose(record.org_id);
+  const exclude = parseUuidLoose(record.id);
+  const lookup = buildTwinLookup({
+    id: record.id,
+    email: record.email,
+    data: record.data,
+  });
+  if (!org || !exclude || !lookup) return;
+
+  const columns = 'id, email, phone, data';
+  const byId = new Map<string, MemberCrmRecordCandidate>();
+
+  const ingest = (rows: MemberCrmRecordCandidate[] | null | undefined) => {
+    for (const row of rows ?? []) {
+      if (row?.id) byId.set(row.id, row);
+    }
+  };
+
+  if (lookup.email) {
+    const { data, error } = await supabase
+      .from('crm_records')
+      .select(columns)
+      .eq('org_id', org)
+      .is('deleted_at' as never, null)
+      .neq('id', exclude)
+      .ilike('email', lookup.email)
+      .limit(20);
+    if (!error) ingest(data as MemberCrmRecordCandidate[] | null);
+  }
+  if (lookup.member_number) {
+    const { data, error } = await supabase
+      .from('crm_records')
+      .select(columns)
+      .eq('org_id', org)
+      .is('deleted_at' as never, null)
+      .neq('id', exclude)
+      .eq('data->>member_number', lookup.member_number)
+      .limit(20);
+    if (!error) ingest(data as MemberCrmRecordCandidate[] | null);
+  }
+
+  const twin = pickRicherTwin(
+    { id: record.id, email: record.email, data: record.data },
+    [...byId.values()],
+  );
+  const id = parseUuidLoose(twin?.id);
+  if (id) into.add(id);
 }
 
 async function resolveDealNoteSources(

@@ -434,7 +434,7 @@ function InboxPageContent() {
   }
 
   return (
-    <div className="h-[calc(100dvh-7.25rem)] flex flex-col min-h-0">
+    <div className="h-[var(--crm-page-h)] flex flex-col min-h-0">
       {/* Header */}
       <div className="flex items-center justify-between mb-3 shrink-0">
         <div className="flex items-center gap-3">

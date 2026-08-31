@@ -94,7 +94,11 @@ import { formatPhoneDisplay } from '@/lib/crm/phone-normalize';
 import {
   INLINE_EDIT_GRID_CLASS,
   FULL_ROW_SPAN_CLASS,
+  COVERAGE_SNAPSHOT_GLANCE_COLUMNS,
+  COVERAGE_SNAPSHOT_WIDE_GRID_CLASS,
+  COVERAGE_SNAPSHOT_WRAP_CELL_CLASS,
   fieldSpansFullRow,
+  isCoverageSnapshotWideField,
   shouldUseDenseFieldRow,
 } from './field-layout';
 import { getSectionCardAccent } from './section-accent-tokens';
@@ -1048,6 +1052,11 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
         labelTitle?: string;
         /** Extra classes on the cell root (e.g. snapshot max-md:hidden for empty cells). */
         className?: string;
+        /**
+         * Coverage snapshot: show the full label + value (wrap) instead of
+         * ellipsizing inside the dense glance grid.
+         */
+        wrap?: boolean;
       },
     ) => {
       const cellReadOnly = readOnly || Boolean(opts?.readOnlyView);
@@ -1080,6 +1089,12 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
           ? opts.displayValue
           : defaultValues[field.key];
       const labeledField = cellLabel === field.label ? field : { ...field, label: cellLabel };
+      const wrapTitle =
+        opts?.wrap &&
+        (typeof cellValue === 'string' || typeof cellValue === 'number') &&
+        String(cellValue).trim() !== ''
+          ? String(cellValue)
+          : undefined;
 
       const valueNode = cellReadOnly ? (
         <div
@@ -1119,8 +1134,11 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
           <div
             key={field.key}
             data-field-key={field.key}
+            title={wrapTitle}
             className={cn(
-              'flex min-w-0 items-baseline gap-3 border-b border-border/40 py-1.5 overflow-hidden',
+              'flex min-w-0 items-baseline gap-3 border-b border-border/40 py-1.5',
+              opts?.wrap ? 'overflow-visible' : 'overflow-hidden',
+              opts?.wrap && COVERAGE_SNAPSHOT_WRAP_CELL_CLASS,
               fieldSpansFullRow(field) && FULL_ROW_SPAN_CLASS,
               opts?.className,
             )}
@@ -1130,13 +1148,18 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
               htmlFor={opts?.readOnlyView ? undefined : field.key}
               title={cellLabelTitle}
               className={cn(
-                'shrink-0 truncate text-muted-foreground text-[11px] font-medium uppercase leading-snug tracking-wide',
+                'shrink-0 text-muted-foreground text-[11px] font-medium uppercase leading-snug tracking-wide',
+                opts?.wrap
+                  ? 'max-w-[40%] whitespace-normal break-words'
+                  : 'truncate',
                 opts?.tightLabel ? 'w-32' : 'w-40',
               )}
             >
               {cellLabel}
             </Label>
-            <div className="min-w-0 flex-1 overflow-hidden">{valueNode}</div>
+            <div className={cn('min-w-0 flex-1', opts?.wrap ? 'overflow-visible' : 'overflow-hidden')}>
+              {valueNode}
+            </div>
           </div>
         );
       }
@@ -1147,15 +1170,20 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
         <div
           key={field.key}
           data-field-key={field.key}
+          title={wrapTitle}
           className={cn(
             'relative min-w-0 max-w-full rounded-md',
+            opts?.wrap && COVERAGE_SNAPSHOT_WRAP_CELL_CLASS,
             opts?.className,
             fieldSpansFullRow(field) && FULL_ROW_SPAN_CLASS,
           )}
         >
           <Label
             htmlFor={field.key}
-            className="mb-0.5 block truncate text-muted-foreground text-[11px] font-medium uppercase tracking-wider"
+            className={cn(
+              'mb-0.5 block text-muted-foreground text-[11px] font-medium uppercase tracking-wider',
+              opts?.wrap ? 'whitespace-normal break-words' : 'truncate',
+            )}
             title={cellLabelTitle}
           >
             {cellLabel}
@@ -1510,6 +1538,16 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
     const hasDetail = heroProductPlanSnapshotFields.length > 0 || showDate;
     const hasReferral = heroReferralSnapshotFields.length > 0;
     const isEmpty = staticView && !carrierHasValue && !hasDetail && !hasReferral;
+    const isWideSnapshotField = (key: string) =>
+      isCoverageSnapshotWideField(key) ||
+      key === heroReferringMemberField?.key ||
+      key === heroReferralSourceField?.key;
+    const wideReferralFields = heroReferralSnapshotFields.filter((f) =>
+      isWideSnapshotField(f.key),
+    );
+    const glanceReferralFields = heroReferralSnapshotFields.filter(
+      (f) => !isWideSnapshotField(f.key),
+    );
 
     const divider = (
       <div className={cn('hidden w-px self-stretch xl:block', accent.divider)} aria-hidden />
@@ -1574,70 +1612,87 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
           ) : (
             <>
               {divider}
-              {/* One dense auto-fill grid for plan / product / effective date
-                  AND the referral + enrolled-by + member-ID context. Reps
-                  want everything at a glance; the earlier three-rail layout
-                  stacked one field per row and left two rails mostly empty. */}
-              <div
-                className="grid flex-1 gap-x-4 gap-y-1.5 border-t border-dashed pt-2 xl:gap-x-6 xl:gap-y-2 xl:border-0 xl:pt-0"
-                style={{
-                  // RP-6: 8.75rem packs 2 columns at 390 and 4 at 1024 —
-                  // 13rem collapsed both to a single tall column.
-                  gridTemplateColumns:
-                    'repeat(auto-fill, minmax(min(100%, 8.75rem), 1fr))',
-                }}
-              >
-                {heroProductPlanSnapshotFields.map((field) =>
-                  renderFieldCell(field, {
-                    row: true,
-                    tightLabel: true,
-                    readOnlyView: !readOnly,
-                    // Phone glance keeps the FIRST populated plan/product cell
-                    // and any member-id/number cell (the member # is part of
-                    // the glance set wherever the module stores it).
-                    className: snapshotCellPhoneClass(
-                      field.key,
-                      field.key === firstPopulatedPlanKey || /member.?(number|id)$/i.test(field.key),
-                    ),
-                    // Capacity aliases ("Health Insurance") must not read as a
-                    // Membership / plan name — show the empty placeholder instead.
-                    displayValue: coerceCoverageSnapshotFieldValue(
-                      field.key,
-                      defaultValues[field.key],
-                    ),
-                  }),
-                )}
-                {showDate &&
-                  heroStartDateField &&
-                  renderFieldCell(heroStartDateField, {
-                    row: true,
-                    tightLabel: true,
-                    readOnlyView: !readOnly,
-                    className: snapshotCellPhoneClass(heroStartDateField.key, true),
+              {/* Glance grid (plan / date / enrolled-by / member #) plus a
+                  wider row for referring member + referral source — those
+                  names do not fit the RP-6 8.75rem columns. */}
+              <div className="flex min-w-0 flex-1 flex-col gap-y-2 border-t border-dashed pt-2 xl:gap-y-2.5 xl:border-0 xl:pt-0">
+                <div
+                  className="grid gap-x-4 gap-y-1.5 xl:gap-x-6 xl:gap-y-2"
+                  style={{
+                    gridTemplateColumns: COVERAGE_SNAPSHOT_GLANCE_COLUMNS,
+                  }}
+                >
+                  {heroProductPlanSnapshotFields.map((field) =>
+                    renderFieldCell(field, {
+                      row: true,
+                      tightLabel: true,
+                      wrap: true,
+                      readOnlyView: !readOnly,
+                      // Phone glance keeps the FIRST populated plan/product cell
+                      // and any member-id/number cell (the member # is part of
+                      // the glance set wherever the module stores it).
+                      className: snapshotCellPhoneClass(
+                        field.key,
+                        field.key === firstPopulatedPlanKey || /member.?(number|id)$/i.test(field.key),
+                      ),
+                      // Capacity aliases ("Health Insurance") must not read as a
+                      // Membership / plan name — show the empty placeholder instead.
+                      displayValue: coerceCoverageSnapshotFieldValue(
+                        field.key,
+                        defaultValues[field.key],
+                      ),
+                    }),
+                  )}
+                  {showDate &&
+                    heroStartDateField &&
+                    renderFieldCell(heroStartDateField, {
+                      row: true,
+                      tightLabel: true,
+                      wrap: true,
+                      readOnlyView: !readOnly,
+                      className: snapshotCellPhoneClass(heroStartDateField.key, true),
+                    })}
+                  {glanceReferralFields.map((field) => {
+                    // "Who enrolled" wears ONE label everywhere (matches the
+                    // dashboard's "Enrolled by" column) no matter whether
+                    // producer_name / agent / advisor supplied the value; the
+                    // field's own label stays available as the hover title.
+                    const enrolledBy =
+                      heroEnrolledByField && field.key === heroEnrolledByField.key
+                        ? coverageSnapshotEnrolledByLabel(field)
+                        : null;
+                    return renderFieldCell(field, {
+                      row: true,
+                      tightLabel: true,
+                      wrap: true,
+                      readOnlyView: !readOnly,
+                      // Phone glance: who enrolled + member id; referral context is md+.
+                      className: snapshotCellPhoneClass(
+                        field.key,
+                        field.key === heroEnrolledByField?.key || field.key === heroMemberIdField?.key,
+                      ),
+                      ...(enrolledBy
+                        ? { label: enrolledBy.label, labelTitle: enrolledBy.title }
+                        : {}),
+                    });
                   })}
-                {heroReferralSnapshotFields.map((field) => {
-                  // "Who enrolled" wears ONE label everywhere (matches the
-                  // dashboard's "Enrolled by" column) no matter whether
-                  // producer_name / agent / advisor supplied the value; the
-                  // field's own label stays available as the hover title.
-                  const enrolledBy =
-                    heroEnrolledByField && field.key === heroEnrolledByField.key
-                      ? coverageSnapshotEnrolledByLabel(field)
-                      : null;
-                  return renderFieldCell(field, {
-                    row: true,
-                    tightLabel: true,
-                    readOnlyView: !readOnly,
-                    // Phone glance: who enrolled + member id; referral context is md+.
-                    className: snapshotCellPhoneClass(
-                      field.key,
-                      field.key === heroEnrolledByField?.key || field.key === heroMemberIdField?.key,
-                    ),
-                    ...(enrolledBy
-                      ? { label: enrolledBy.label, labelTitle: enrolledBy.title }
-                      : {}),
-                  });
-                })}
+                </div>
+                {wideReferralFields.length > 0 ? (
+                  <div
+                    data-testid="crm-record-snapshot-referral"
+                    className={COVERAGE_SNAPSHOT_WIDE_GRID_CLASS}
+                  >
+                    {wideReferralFields.map((field) =>
+                      renderFieldCell(field, {
+                        // Stacked: the name uses the full cell, not a 8.75rem clip.
+                        row: false,
+                        wrap: true,
+                        readOnlyView: !readOnly,
+                        className: snapshotCellPhoneClass(field.key, false),
+                      }),
+                    )}
+                  </div>
+                ) : null}
               </div>
             </>
           )}

@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   Mail,
   MessageSquare,
@@ -427,6 +427,18 @@ const FilterItems = React.memo(function FilterItems({
 
 export const InboxFilters = React.memo(function InboxFilters(props: InboxFiltersProps) {
   const { isMobileOpen, onMobileClose, collapsed = false, onCollapsedChange } = props;
+  const foldersRef = useRef<HTMLDivElement>(null);
+
+  // Collapsing with aria-hidden while a folder button still has focus trips
+  // Chrome's "Blocked aria-hidden" warning. inert + blur matches the shell drawer.
+  useEffect(() => {
+    if (!collapsed) return;
+    const root = foldersRef.current;
+    const active = document.activeElement;
+    if (root && active instanceof HTMLElement && root.contains(active)) {
+      active.blur();
+    }
+  }, [collapsed]);
 
   return (
     <>
@@ -454,11 +466,12 @@ export const InboxFilters = React.memo(function InboxFilters(props: InboxFilters
           </button>
         )}
         <div
+          ref={foldersRef}
           className={cn(
             'flex-1 min-h-0 overflow-y-auto',
             collapsed && 'hidden',
           )}
-          aria-hidden={collapsed}
+          inert={collapsed}
         >
           <FilterItems {...props} />
         </div>

@@ -3,28 +3,35 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { BookmarkSimple, PushPin, PushPinSlash, X } from '@phosphor-icons/react';
+import { BookmarkSimple, Eye, EyeSlash, PushPin, PushPinSlash, X } from '@phosphor-icons/react';
 import {
   classifyPayer,
   clipIdentity,
+  discardedStorageKey,
   describeFacilityLine,
   describePayer,
   describePlan,
   facilitySpread,
   familyForCode,
+  flagHighExtremes,
   flagRateOutliers,
+  highestRate,
   listDiscount,
   mapsUrl,
   medianListDiscount,
+  mergeHidden,
   mixEntries,
   npiUrl,
   partitionRates,
   payerClassLabel,
   payerMix,
+  persistDiscardedIds,
   planNegotiation,
   qualityLookupUrl,
+  readDiscardedIds,
   searchProcedureFamilies,
   tickIdentity,
+  toggleHiddenId,
   uniquePayers,
   websiteHref,
   type CashRateRow,
@@ -169,6 +176,7 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
   const [category, setCategory] = useState(searchParams.get('category') || '');
   const [payerFilter, setPayerFilter] = useState<'all' | PayerClass>('all');
   const [showOutliers, setShowOutliers] = useState(false);
+  const [discarded, setDiscarded] = useState<Set<string>>(() => new Set());
   const [bid, setBid] = useState('');
   const [specialty, setSpecialty] = useState('');
   const [specialties, setSpecialties] = useState<SpecialtyOption[]>([]);
@@ -245,7 +253,7 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
       }
       if (data.preferredZip && !zip) setZipCode(data.preferredZip);
     } catch {
-      setNotice('Metro list unavailable. Backup search still works with a ZIP.');
+      setNotice('Region list unavailable. Backup search still works with a ZIP.');
     } finally {
       setMetaLoading(false);
     }
@@ -281,7 +289,7 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
     setHasMore(false);
     setNotice(
       noticeOverride ||
-        'Backup cash-price directory. Published hospital files for this metro are not on this key yet.',
+        'Backup cash-price directory. Published hospital files for this region are not on this key yet.',
     );
     return true;
   }, [zipCode, selectedProcedureName]);
@@ -324,7 +332,7 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
             setSlice(data.slice || EMPTY_SLICE);
             setHasMore(Boolean(data.hasMore));
             if ((data.rates || []).length === 0) {
-              setNotice('No ticks in this slice. Add a CPT or pick another metro.');
+              setNotice('No results on this page. Add a CPT or pick another region.');
             }
             return;
           }
@@ -340,7 +348,7 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
             );
             return;
           }
-          setError(data.message || 'Unable to read the tape.');
+          setError(data.message || 'Search failed. Please try again.');
           return;
         }
         await runLegacySearch();
@@ -366,7 +374,22 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
     void search(Number(searchParams.get('page') || '1') || 1);
   }, [allMsas.length, metaLoading, msaName, search, searchParams, stateName]);
 
-  const hidden = useMemo(() => flagRateOutliers(hclRates), [hclRates]);
+  const discardKey = discardedStorageKey(procedureCode, msaName);
+
+  useEffect(() => {
+    setDiscarded(readDiscardedIds(window.localStorage.getItem(discardKey)));
+  }, [discardKey]);
+
+  const commitDiscarded = useCallback(
+    (next: Set<string>) => {
+      setDiscarded(next);
+      persistDiscardedIds(window.localStorage, discardKey, next);
+    },
+    [discardKey],
+  );
+
+  const autoHidden = useMemo(() => flagRateOutliers(hclRates), [hclRates]);
+  const hidden = useMemo(() => mergeHidden(autoHidden, discarded), [autoHidden, discarded]);
   const { kept, outliers } = useMemo(() => partitionRates(hclRates, hidden), [hclRates, hidden]);
   const visible = useMemo(() => {
     const base = showOutliers ? [...kept, ...outliers] : kept;
@@ -388,6 +411,10 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
   const namedPayers = useMemo(() => uniquePayers(kept), [kept]);
   const mix = useMemo(() => mixEntries(payerMix(kept)), [kept]);
   const offList = useMemo(() => medianListDiscount(kept), [kept]);
+  const highKept = useMemo(() => highestRate(kept), [kept]);
+  const extremeIds = useMemo(() => flagHighExtremes(kept), [kept]);
+  const highLooksExtreme =
+    coach.medianKept != null && highKept != null && highKept > coach.medianKept * 2.5;
   const bidNumber = Number(bid.replace(/[^0-9.]/g, ''));
   const bidVsMedicare =
     Number.isFinite(bidNumber) && bidNumber > 0 && coach.medicare
@@ -399,6 +426,20 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
       sortBy === 'price_asc' ? a.cash_price - b.cash_price : b.cash_price - a.cash_price,
     );
   }, [legacyResults, sortBy]);
+
+  const toggleDiscard = (row: HclRate) => {
+    commitDiscarded(toggleHiddenId(discarded, tickIdentity(row)));
+  };
+
+  const hideExtremes = () => {
+    if (extremeIds.size === 0) return;
+    commitDiscarded(mergeHidden(discarded, extremeIds));
+    setShowOutliers(false);
+  };
+
+  const restoreDiscarded = () => {
+    commitDiscarded(new Set());
+  };
 
   const togglePin = (row: HclRate) => {
     setPins((prev) => {
@@ -532,7 +573,7 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
               one. <Link href="/pricing/book">Your tape</Link> keeps clipped ticks.
             </p>
             <p className={styles.note} style={{ marginTop: '-0.35rem' }}>
-              Metro: {msaName || 'none selected'}
+              Region: {msaName || 'none selected'}
             </p>
             <label className={styles.field}>
               <span className={styles.label}>ZIP</span>
@@ -563,7 +604,7 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
               {zipHint ? <span className={styles.error}>{zipHint}</span> : null}
             </label>
             <label className={styles.field}>
-              <span className={styles.label}>HCL Market</span>
+              <span className={styles.label}>State / Region</span>
               <select
                 className={styles.control}
                 value={stateName}
@@ -573,7 +614,7 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
                   setMsaName('');
                 }}
               >
-                <option value="">Select market</option>
+                <option value="">Select state / region</option>
                 {states.map((s) => (
                   <option key={s} value={s}>
                     {s}
@@ -582,14 +623,14 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
               </select>
             </label>
             <label className={styles.field}>
-              <span className={styles.label}>Metro</span>
+              <span className={styles.label}>Nearest Region</span>
               <select
                 className={styles.control}
                 value={msaName}
                 disabled={!stateName || msas.length === 0}
                 onChange={(e) => setMsaName(e.target.value)}
               >
-                <option value="">Select metro</option>
+                <option value="">Select region</option>
                 {msas.map((m) => (
                   <option key={`${m.stateName}-${m.msaName}`} value={m.msaName}>
                     {m.msaName}
@@ -735,7 +776,7 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
               type="submit"
               disabled={loading || metaLoading}
             >
-              {loading ? 'Reading…' : 'Read the tape'}
+              {loading ? 'Searching…' : 'Search'}
             </button>
           </form>
         </aside>
@@ -763,7 +804,12 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
                   <span className={styles.statValue} data-signal="true">
                     {coach.lowestKept != null ? formatCash(coach.lowestKept) : 'n/a'}
                     {coach.medianKept != null ? ` · ${formatCash(coach.medianKept)}` : ''}
-                    {kept.length ? ` · ${formatCash(Math.max(...kept.map((r) => r.rate)))}` : ''}
+                    {highKept != null ? (
+                      <>
+                        {' · '}
+                        <span data-extreme={highLooksExtreme || undefined}>{formatCash(highKept)}</span>
+                      </>
+                    ) : null}
                   </span>
                 </div>
                 <div className={styles.stat}>
@@ -855,8 +901,18 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
                   className={showOutliers ? styles.chipOn : styles.chip}
                   onClick={() => setShowOutliers((v) => !v)}
                 >
-                  {showOutliers ? 'Hiding junk off' : `Show ${outliers.length} hidden`}
+                  {showOutliers ? 'Hidden ticks on' : `Show ${outliers.length} hidden`}
                 </button>
+                {extremeIds.size > 0 ? (
+                  <button type="button" className={styles.chip} onClick={hideExtremes}>
+                    Hide {extremeIds.size} extreme{extremeIds.size === 1 ? '' : 's'}
+                  </button>
+                ) : null}
+                {discarded.size > 0 ? (
+                  <button type="button" className={styles.chip} onClick={restoreDiscarded}>
+                    Restore discarded
+                  </button>
+                ) : null}
               </div>
               {namedPayers.length > 0 ? (
                 <p className={styles.note}>
@@ -867,8 +923,8 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
             </>
           ) : !searched ? (
             <p className={styles.note}>
-              Pick an HCL market and metro, then read the tape. Stats describe this page, not the
-              metro.
+              Pick a state / region and nearest region, then search. Stats describe this page, not
+              the whole region.
             </p>
           ) : null}
 
@@ -925,7 +981,9 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
                           const key = tickKey(r);
                           const pinned = pins.some((p) => tickKey(p) === key);
                           const clipped = clippedKeys.has(clipIdentity(r));
-                          const junk = hidden.has(tickIdentity(r));
+                          const id = tickIdentity(r);
+                          const junk = hidden.has(id);
+                          const userDiscarded = discarded.has(id);
                           return (
                             <tr key={key} data-outlier={junk ? 'true' : undefined}>
                               <td />
@@ -952,20 +1010,35 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
                               <td className={styles.needle}>{formatNeedle(r.cmsRelativity)}</td>
                               <td className={styles.rate}>{formatCash(r.rate)}</td>
                               <td>
-                                <button
-                                  type="button"
-                                  className={styles.pinBtn}
-                                  data-on={pinned}
-                                  aria-pressed={pinned}
-                                  aria-label={pinned ? 'Unpin from compare' : 'Pin to compare'}
-                                  onClick={() => togglePin(r)}
-                                >
-                                  {pinned ? (
-                                    <PushPinSlash weight="light" />
-                                  ) : (
-                                    <PushPin weight="light" />
-                                  )}
-                                </button>
+                                <div className={styles.tickActions}>
+                                  <button
+                                    type="button"
+                                    className={styles.pinBtn}
+                                    data-on={pinned}
+                                    aria-pressed={pinned}
+                                    aria-label={pinned ? 'Unpin from compare' : 'Pin to compare'}
+                                    onClick={() => togglePin(r)}
+                                  >
+                                    {pinned ? (
+                                      <PushPinSlash weight="light" />
+                                    ) : (
+                                      <PushPin weight="light" />
+                                    )}
+                                  </button>
+                                  {!(autoHidden.has(id) && !userDiscarded) ? (
+                                    <button
+                                      type="button"
+                                      className={styles.pinBtn}
+                                      data-on={userDiscarded || undefined}
+                                      aria-pressed={userDiscarded}
+                                      aria-label={userDiscarded ? 'Restore to tape' : 'Hide from tape'}
+                                      title={userDiscarded ? 'Put this rate back on the tape' : 'Hide from tape — drops this rate from the coach and high'}
+                                      onClick={() => toggleDiscard(r)}
+                                    >
+                                      {userDiscarded ? <Eye weight="light" /> : <EyeSlash weight="light" />}
+                                    </button>
+                                  ) : null}
+                                </div>
                               </td>
                               <td>
                                 <button
@@ -1039,6 +1112,18 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
                                   <PushPin weight="light" />
                                 )}
                               </button>
+                              {!(autoHidden.has(tickIdentity(r)) && !discarded.has(tickIdentity(r))) ? (
+                                <button
+                                  type="button"
+                                  className={styles.pinBtn}
+                                  data-on={discarded.has(tickIdentity(r)) || undefined}
+                                  aria-pressed={discarded.has(tickIdentity(r))}
+                                  aria-label={discarded.has(tickIdentity(r)) ? 'Restore to tape' : 'Hide from tape'}
+                                  onClick={() => toggleDiscard(r)}
+                                >
+                                  {discarded.has(tickIdentity(r)) ? <Eye weight="light" /> : <EyeSlash weight="light" />}
+                                </button>
+                              ) : null}
                               <button
                                 type="button"
                                 className={styles.clipBtn}
@@ -1062,7 +1147,7 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
           ) : null}
 
           {!loading && searched && source === 'hcl' && sortedHcl.length === 0 && !error ? (
-            <p className={styles.note}>No ticks in this slice. Add a CPT or pick another metro.</p>
+            <p className={styles.note}>No results on this page. Add a CPT or pick another region.</p>
           ) : null}
 
           {!loading && searched && source === 'legacy' && sortedLegacy.length === 0 && !error ? (

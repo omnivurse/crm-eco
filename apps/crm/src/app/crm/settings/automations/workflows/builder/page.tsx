@@ -156,7 +156,7 @@ function WorkflowBuilderContent() {
   };
 
   return (
-    <div className="h-screen flex flex-col">
+    <div className="h-[var(--crm-page-h)] flex flex-col">
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-4 py-3 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 sm:gap-4">
         <div className="flex items-center gap-4 min-w-0 flex-1">

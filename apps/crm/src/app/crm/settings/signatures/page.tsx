@@ -11,7 +11,6 @@ import {
   CardTitle,
 } from '@crm-eco/ui/components/card';
 import { Badge } from '@crm-eco/ui/components/badge';
-import { cn } from '@crm-eco/ui/lib/utils';
 import {
   Plus,
   Edit2,
@@ -21,9 +20,10 @@ import {
   FileSignature,
   ArrowLeft,
 } from 'lucide-react';
-import { SignatureBuilder } from '@/components/email/SignatureBuilder';
+import { SignatureBuilder, type SignatureDefaults } from '@/components/email/SignatureBuilder';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import { toastCopy } from '@/lib/crm/toast-copy';
 
 interface EmailSignature {
   id: string;
@@ -48,6 +48,7 @@ export default function SignaturesSettingsPage() {
   const [isCreating, setIsCreating] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [settingDefault, setSettingDefault] = useState<string | null>(null);
+  const [defaults, setDefaults] = useState<SignatureDefaults>({});
 
   const fetchSignatures = useCallback(async () => {
     setLoading(true);
@@ -61,6 +62,9 @@ export default function SignaturesSettingsPage() {
 
       const data = await response.json();
       setSignatures(data.signatures || []);
+      if (data.defaults && typeof data.defaults === 'object') {
+        setDefaults(data.defaults);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load signatures');
     } finally {
@@ -121,9 +125,9 @@ export default function SignaturesSettingsPage() {
       }
 
       setSignatures((prev) => prev.filter((s) => s.id !== id));
-      toast.success('Signature deleted');
+      toast.success(toastCopy.deleted('Signature'));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to delete signature');
+      toast.error(toastCopy.failed('delete the signature', err, 'Try again'));
     } finally {
       setDeletingId(null);
     }
@@ -149,9 +153,9 @@ export default function SignaturesSettingsPage() {
           is_default: s.id === id,
         }))
       );
-      toast.success('Default signature updated');
+      toast.success(toastCopy.updated('Default signature'));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to set default');
+      toast.error(toastCopy.failed('set the default signature', err, 'Try again'));
     } finally {
       setSettingDefault(null);
     }
@@ -163,6 +167,7 @@ export default function SignaturesSettingsPage() {
       <div className="w-full py-8 px-4">
         <SignatureBuilder
           signature={editingSignature || undefined}
+          defaults={defaults}
           onSave={handleSaveSignature}
           onCancel={() => {
             setEditingSignature(null);

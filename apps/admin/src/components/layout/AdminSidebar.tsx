@@ -238,7 +238,7 @@ export function AdminSidebar({
   };
 
   const sidebarContent = (forMobile: boolean = false) => (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full min-h-0 flex-col">
       {(forMobile || !isCollapsed) && (
         <div className="border-b border-[var(--adm-hairline)] px-4 py-3">
           <div className="flex items-center justify-between">
@@ -277,7 +277,7 @@ export function AdminSidebar({
 
       <nav
         className={cn(
-          'flex-1 overflow-y-auto py-3 scrollbar-thin transition-all duration-500 ease-[var(--adm-ease)]',
+          'min-h-0 flex-1 overflow-y-auto py-3 scrollbar-thin transition-all duration-500 ease-[var(--adm-ease)]',
           'px-2',
         )}
       >
@@ -435,7 +435,7 @@ export function AdminSidebar({
         )}
       >
         <div className="adm-rail sticky top-0 h-full">
-          <div className="adm-rail-inner flex h-full min-h-[calc(100dvh-8rem)] flex-col">
+          <div className="adm-rail-inner flex h-full min-h-0 flex-col">
             {sidebarContent(false)}
           </div>
         </div>

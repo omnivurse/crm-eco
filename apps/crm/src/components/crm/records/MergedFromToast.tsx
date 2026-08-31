@@ -27,15 +27,19 @@ export function MergedFromToast({ recordTitle }: Props) {
   useEffect(() => {
     if (firedRef.current) return;
     const mergedFrom = searchParams.get('merged_from');
-    if (!mergedFrom) return;
+    const fromTwin = searchParams.get('from_twin');
+    if (!mergedFrom && !fromTwin) return;
     firedRef.current = true;
 
-    const copy = toastCopy.mergedInto(recordTitle);
+    const copy = fromTwin
+      ? toastCopy.openedContactTwin(recordTitle)
+      : toastCopy.mergedInto(recordTitle);
     toast.info(copy.title, { description: copy.description, duration: 4500 });
 
     // Strip the marker so a refresh doesn't retrigger the toast.
     const next = new URLSearchParams(searchParams.toString());
     next.delete('merged_from');
+    next.delete('from_twin');
     const qs = next.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname);
   }, [searchParams, pathname, router, recordTitle]);

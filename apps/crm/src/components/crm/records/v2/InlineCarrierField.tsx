@@ -390,7 +390,7 @@ export const InlineCarrierField = memo(function InlineCarrierField({
         }
       >
         {currentLabel ? (
-          <Badge variant="secondary" className="max-w-full min-w-0 truncate font-normal">
+          <Badge variant="secondary" className="max-w-full min-w-0 truncate font-medium">
             {currentLabel}
           </Badge>
         ) : value ? (

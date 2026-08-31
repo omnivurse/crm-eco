@@ -174,7 +174,7 @@
     {
       "module_key": "members",
       "key": "relationship_type",
-      "label": "Relationship",
+      "label": "Partner Type",
       "type": "select",
       "required": false,
       "is_system": false,
@@ -214,7 +214,7 @@
     {
       "module_key": "leads",
       "key": "relationship_type",
-      "label": "Relationship",
+      "label": "Partner Type",
       "type": "select",
       "required": false,
       "is_system": false,
@@ -254,7 +254,7 @@
     {
       "module_key": "contacts",
       "key": "relationship_type",
-      "label": "Relationship",
+      "label": "Partner Type",
       "type": "select",
       "required": false,
       "is_system": false,
@@ -14586,7 +14586,7 @@
           },
           {
             "key": "relationships",
-            "label": "Relationships",
+            "label": "Partner Type",
             "accent": "slate",
             "columns": 2,
             "collapsed": true
@@ -15119,7 +15119,7 @@
           },
           {
             "key": "relationships",
-            "label": "Relationships",
+            "label": "Partner Type",
             "accent": "slate",
             "columns": 2,
             "collapsed": true

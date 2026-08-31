@@ -1127,10 +1127,10 @@ export async function getRecordWithModule(recordId: string): Promise<{ record: C
  * Scoped to the caller's organization and executed through the RLS-bound CRM
  * client, so it can never reach across tenants.
  */
-export async function getTwinDataForRecord(
+export async function getRicherTwinRecord(
   record: CrmRecord,
   moduleKey: string,
-): Promise<Record<string, unknown> | null> {
+): Promise<MemberCrmRecordCandidate | null> {
   // Only the Members module has a known thinner-twin population. Widening this
   // needs the same evidence (a measured fill-rate deficit), not a guess.
   if (moduleKey !== 'members') return null;
@@ -1184,7 +1184,14 @@ export async function getTwinDataForRecord(
     }
   }
 
-  const twin = pickRicherTwin(row, [...byId.values()]);
+  return pickRicherTwin(row, [...byId.values()]);
+}
+
+export async function getTwinDataForRecord(
+  record: CrmRecord,
+  moduleKey: string,
+): Promise<Record<string, unknown> | null> {
+  const twin = await getRicherTwinRecord(record, moduleKey);
   const twinData = twin?.data;
   return twinData && typeof twinData === 'object' && !Array.isArray(twinData)
     ? (twinData as Record<string, unknown>)

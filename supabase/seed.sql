@@ -104,15 +104,15 @@ ON CONFLICT DO NOTHING;
 INSERT INTO public.crm_fields (org_id, module_id, key, label, type, section, options) VALUES
   ('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-00000000c001','contact_status','Contact Status','select','core','["Active","Inactive","Pending","Cancelled","Deceased","Terminated"]'),
   ('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-00000000c001','lead_status','Lead Status','select','core','["New","Contacted","Qualified","Unqualified","Converted","Lost"]'),
-  ('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-00000000c001','relationship_type','Relationship','select','main','["Member","Advisor","Agency","DPC Provider","Provider","Employee"]'),
+  ('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-00000000c001','relationship_type','Partner Type','select','main','["Member","Advisor","Agency","DPC Provider","Provider","Employee"]'),
   ('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-00000000c001','record_type','Record Type','select','management','["individual","group","unknown"]'),
   ('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-00000000c002','contact_status','Contact Status','select','core','["New","Contacted","In Process","Qualified","Future Prospect","Pending","Converted","Unqualified","Lost"]'),
   ('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-00000000c002','lead_status','Lead Status','select','core','["New","Contacted","In Process","Qualified","Future Prospect","Pending","Converted","Unqualified","Lost"]'),
-  ('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-00000000c002','relationship_type','Relationship','select','main','["Member","Advisor","Agency","DPC Provider","Provider","Employee"]'),
+  ('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-00000000c002','relationship_type','Partner Type','select','main','["Member","Advisor","Agency","DPC Provider","Provider","Employee"]'),
   ('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-00000000c002','record_type','Record Type','select','management','["individual","group","unknown"]'),
   ('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-00000000c003','contact_status','Contact Status','select','core','["Active","Inactive","Pending","Cancelled","Deceased","Terminated"]'),
   ('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-00000000c003','lead_status','Lead Status','select','core','["New","Contacted","Qualified","Unqualified","Converted","Lost"]'),
-  ('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-00000000c003','relationship_type','Relationship','select','main','["Member","Advisor","Agency","DPC Provider","Provider","Employee"]')
+  ('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-00000000c003','relationship_type','Partner Type','select','main','["Member","Advisor","Agency","DPC Provider","Provider","Employee"]')
 ON CONFLICT DO NOTHING;
 
 -- ---------------------------------------------------------------------------

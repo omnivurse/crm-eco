@@ -90,6 +90,16 @@ describe('groupPaletteResults', () => {
     expect(groups).toHaveLength(2);
   });
 
+  it('prefers the Contact as primary when a Member twin ranks first', () => {
+    const groups = groupPaletteResults([
+      mk({ id: 'm1', title: 'John Raker', module: 'Members', moduleKey: 'members' }),
+      mk({ id: 'c1', title: 'John Raker', module: 'Contacts', moduleKey: 'contacts' }),
+    ]);
+    expect(groups).toHaveLength(1);
+    expect(groups[0].primary.id).toBe('c1');
+    expect(groups[0].chips.map((c) => c.moduleKey)).toEqual(['members', 'contacts']);
+  });
+
   it('folds Contact + Member with the same name AND phone into one row with chips', () => {
     const groups = groupPaletteResults([
       mk({ id: 'c1', title: 'Jane Smith', subtitle: '(555) 010-4242' }),

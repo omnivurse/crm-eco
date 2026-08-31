@@ -100,7 +100,7 @@ export default function HomePage() {
               <strong>The instrument</strong>
               <p className={tape.note}>
                 Named payer on every tick. List vs Medicare vs published. Procedure typeahead,
-                radius, outlier fence, coach, compare tray, facility dossier.
+                radius, outlier fence you can override, coach, compare tray, facility dossier.
               </p>
             </div>
           </div>

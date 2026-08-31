@@ -35,3 +35,31 @@ export function fieldSpansFullRow(field: { type: string; width?: string | null }
 
 /** Span class for {@link fieldSpansFullRow} fields inside any of the grids above. */
 export const FULL_ROW_SPAN_CLASS = 'md:col-span-full' as const;
+
+/**
+ * Coverage-snapshot cells that hold a person or org name. The glance grid is
+ * `minmax(8.75rem)` so a value like "Dave with CO Sharing" becomes
+ * "Dave with CO S…". These keys render on a wider 2-column row instead.
+ */
+export const COVERAGE_SNAPSHOT_WIDE_FIELD_KEYS = [
+  'referring_member',
+  'referral_source',
+] as const;
+
+export function isCoverageSnapshotWideField(key: string): boolean {
+  return (COVERAGE_SNAPSHOT_WIDE_FIELD_KEYS as readonly string[]).includes(key);
+}
+
+/** RP-6 glance grid: 2 columns at 390px, 4 at 1024 when the identity rail stacks. */
+export const COVERAGE_SNAPSHOT_GLANCE_COLUMNS =
+  'repeat(auto-fill, minmax(min(100%, 8.75rem), 1fr))' as const;
+
+/** Referring member / referral source sit beside each other with room to wrap. */
+export const COVERAGE_SNAPSHOT_WIDE_GRID_CLASS =
+  'grid min-w-0 grid-cols-1 gap-x-6 gap-y-1.5 min-[22rem]:grid-cols-2' as const;
+
+/**
+ * Unwraps `.truncate` / `[data-inline-value]` inside a snapshot cell so a
+ * long name is readable. Inline editors keep truncate in section cards.
+ */
+export const COVERAGE_SNAPSHOT_WRAP_CELL_CLASS = 'crm-snapshot-cell-wrap' as const;

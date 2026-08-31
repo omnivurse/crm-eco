@@ -18,9 +18,9 @@ import { TableHeader } from '@tiptap/extension-table-header';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { useEffect, useCallback, useState } from 'react';
 import { EmailToolbar } from './EmailToolbar';
+import { ImageUploader } from './ImageUploader';
 import { MergeFieldExtension } from './extensions/MergeFieldExtension';
 import { Button } from '@crm-eco/ui/components/button';
-import { promptDialog } from '@crm-eco/ui/components/prompt-dialog';
 import { Code, Eye } from 'lucide-react';
 import { replaceMergeFields } from './types';
 
@@ -50,6 +50,7 @@ export function EmailEditor({
   const [showSource, setShowSource] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [sourceContent, setSourceContent] = useState('');
+  const [showImageUploader, setShowImageUploader] = useState(false);
 
   const editor = useEditor({
     extensions: [
@@ -161,23 +162,13 @@ export function EmailEditor({
     return replaceMergeFields(editor.getHTML(), previewData);
   }, [editor, previewData]);
 
-  const handleImageUploadClick = useCallback(async () => {
+  const handleImageUploadClick = useCallback(() => {
     if (onImageUpload) {
       onImageUpload();
-    } else {
-      // Default image insertion via URL prompt
-      const url = await promptDialog({
-        title: 'Insert image',
-        label: 'Image URL',
-        placeholder: 'https://…',
-        inputType: 'url',
-        confirmLabel: 'Insert',
-      });
-      if (url && editor) {
-        editor.chain().focus().setImage({ src: url }).run();
-      }
+      return;
     }
-  }, [editor, onImageUpload]);
+    setShowImageUploader(true);
+  }, [onImageUpload]);
 
   return (
     <div className={cn('email-editor flex flex-col rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900', className)}>
@@ -242,9 +233,9 @@ export function EmailEditor({
       )}
 
       {/* Editor Content */}
-      <div className="flex-1 min-h-0 overflow-y-auto">
+      <div className="flex-1 min-h-0 overflow-y-auto flex flex-col">
         {showSource ? (
-          <div className="p-3 flex flex-col" style={{ minHeight }}>
+          <div className="p-3 flex-1 flex flex-col" style={{ minHeight }}>
             <textarea
               value={sourceContent}
               onChange={handleSourceChange}
@@ -270,32 +261,38 @@ export function EmailEditor({
           </div>
         ) : showPreview ? (
           <div
-            className="p-4 prose prose-sm dark:prose-invert max-w-none"
+            className="p-4 flex-1 prose prose-sm dark:prose-invert max-w-none"
             style={{ minHeight }}
             dangerouslySetInnerHTML={{ __html: getPreviewContent() }}
           />
         ) : (
           <EditorContent
             editor={editor}
-            className="p-4"
+            className="flex-1 flex flex-col [&_.ProseMirror]:flex-1 [&_.ProseMirror]:p-4 cursor-text"
             style={{ minHeight }}
           />
         )}
       </div>
 
+      <ImageUploader
+        open={showImageUploader}
+        onOpenChange={setShowImageUploader}
+        folder="email-images"
+        onImageInsert={(url, alt) => {
+          editor?.chain().focus().setImage({ src: url, alt }).run();
+        }}
+      />
+
       {/* Editor Styles */}
       <style jsx global>{`
-        .ProseMirror {
-          min-height: ${minHeight - 100}px;
-        }
-        .ProseMirror p.is-editor-empty:first-child::before {
+        .email-editor .ProseMirror p.is-editor-empty:first-child::before {
           color: #9ca3af;
           content: attr(data-placeholder);
           float: left;
           height: 0;
           pointer-events: none;
         }
-        .ProseMirror:focus {
+        .email-editor .ProseMirror:focus {
           outline: none;
         }
         .ProseMirror img.email-image {

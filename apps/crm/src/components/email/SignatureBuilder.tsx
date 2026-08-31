@@ -2,8 +2,8 @@
 
 import { toast } from 'sonner';
 import DOMPurify from 'dompurify';
-import { useState, useCallback, useEffect } from 'react';
-import Image from 'next/image';
+import { toastCopy } from '@/lib/crm/toast-copy';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
 import { Label } from '@crm-eco/ui/components/label';
@@ -39,6 +39,16 @@ import {
   Check,
   Sparkles,
 } from 'lucide-react';
+import { ImageUploader } from './ImageUploader';
+import {
+  DEFAULT_PIFH_LOGO_PATH,
+  SIGNATURE_LAYOUTS,
+  type SignatureFields,
+  absolutizeSignatureHtml,
+  getSignatureOrigin,
+  renderFullImageSignature,
+  renderLayoutHtml,
+} from '@/lib/email/signature-html';
 
 interface SignatureData {
   id?: string;
@@ -59,10 +69,22 @@ interface SignatureData {
   include_in_new: boolean;
 }
 
+export interface SignatureDefaults {
+  full_name?: string;
+  email?: string;
+  phone?: string;
+  title?: string;
+  company_name?: string;
+  website?: string;
+  logo_url?: string;
+  photo_url?: string;
+}
+
 interface SignatureBuilderProps {
   signature?: SignatureData;
   onSave: (signature: SignatureData) => Promise<void>;
   onCancel: () => void;
+  defaults?: SignatureDefaults;
   userProfile?: {
     full_name?: string;
     email?: string;
@@ -77,121 +99,104 @@ interface SignatureBuilderProps {
   };
 }
 
-// Preset Double Helix Hub signature images
-const PRESET_SIGNATURES = [
-  {
-    id: 'dhh-horizontal',
-    name: 'Horizontal',
-    description: 'Wide banner style with tagline',
-    image: '/signatures/EmailSignature-01.jpg',
-  },
-  {
-    id: 'dhh-gradient',
-    name: 'Gradient',
-    description: 'Modern gradient background',
-    image: '/signatures/EmailSignature-02.jpg',
-  },
-  {
-    id: 'dhh-stacked',
-    name: 'Stacked',
-    description: 'Vertical logo with tagline',
-    image: '/signatures/EmailSignature-03.jpg',
-  },
-];
+type UploadTarget = 'logo' | 'photo' | 'full';
 
-const SIGNATURE_TEMPLATES = [
-  {
-    id: 'professional',
-    name: 'Professional',
-    description: 'Clean and professional with contact info',
-    template: `<table style="font-family: Arial, sans-serif; font-size: 14px; color: #333;">
-  <tr>
-    <td style="padding-right: 15px; border-right: 2px solid #0d9488;">
-      <img src="{{photo_url}}" alt="Photo" width="80" height="80" style="border-radius: 50%; display: block;" />
-    </td>
-    <td style="padding-left: 15px;">
-      <p style="margin: 0 0 4px 0; font-weight: bold; font-size: 16px; color: #111;">{{full_name}}</p>
-      <p style="margin: 0 0 8px 0; color: #666;">{{title}}</p>
-      <p style="margin: 0 0 2px 0;">{{email}}</p>
-      <p style="margin: 0;">{{phone}}</p>
-    </td>
-  </tr>
-</table>`,
-  },
-  {
-    id: 'modern',
-    name: 'Modern',
-    description: 'Modern style with social icons',
-    template: `<table style="font-family: Arial, sans-serif; font-size: 14px; color: #333;">
-  <tr>
-    <td>
-      <p style="margin: 0 0 4px 0; font-weight: bold; font-size: 16px; color: #0d9488;">{{full_name}}</p>
-      <p style="margin: 0 0 8px 0; color: #666;">{{title}} at {{company_name}}</p>
-      <table>
-        <tr>
-          <td style="padding-right: 8px;"><a href="mailto:{{email}}" style="color: #0d9488;">Email</a></td>
-          <td style="padding-right: 8px;"><a href="tel:{{phone}}" style="color: #0d9488;">Phone</a></td>
-          <td><a href="{{website}}" style="color: #0d9488;">Website</a></td>
-        </tr>
-      </table>
-    </td>
-  </tr>
-</table>`,
-  },
-  {
-    id: 'minimal',
-    name: 'Minimal',
-    description: 'Simple text-only signature',
-    template: `<p style="font-family: Arial, sans-serif; font-size: 14px; color: #333; margin: 0;">
-  <strong>{{full_name}}</strong><br />
-  {{title}}<br />
-  {{email}} | {{phone}}
-</p>`,
-  },
-  {
-    id: 'branded',
-    name: 'Branded',
-    description: 'With company logo and branding',
-    template: `<table style="font-family: Arial, sans-serif; font-size: 14px; color: #333;">
-  <tr>
-    <td style="padding-bottom: 10px;">
-      <img src="{{logo_url}}" alt="Logo" height="40" style="display: block;" />
-    </td>
-  </tr>
-  <tr>
-    <td style="border-top: 2px solid #0d9488; padding-top: 10px;">
-      <p style="margin: 0 0 4px 0; font-weight: bold;">{{full_name}}</p>
-      <p style="margin: 0 0 4px 0; color: #666;">{{title}}</p>
-      <p style="margin: 0 0 2px 0;">{{email}} | {{phone}}</p>
-      <p style="margin: 0; color: #666;">{{company_name}} | {{website}}</p>
-    </td>
-  </tr>
-</table>`,
-  },
-];
+const PIFH_LAYOUTS = SIGNATURE_LAYOUTS.filter((layout) => layout.group === 'pifh');
+const CUSTOM_LAYOUTS = SIGNATURE_LAYOUTS.filter((layout) => layout.group === 'custom');
+
+function mergeInitialFields(
+  signature: SignatureData | undefined,
+  defaults: SignatureDefaults | undefined,
+  userProfile: SignatureBuilderProps['userProfile'],
+  companyInfo: SignatureBuilderProps['companyInfo'],
+): SignatureFields {
+  return {
+    full_name: defaults?.full_name || userProfile?.full_name || '',
+    title: defaults?.title || userProfile?.title || '',
+    email: defaults?.email || userProfile?.email || '',
+    phone: defaults?.phone || userProfile?.phone || '',
+    company_name: defaults?.company_name || companyInfo?.name || '',
+    website: defaults?.website || companyInfo?.website || '',
+    logo_url: signature?.logo_url || defaults?.logo_url || DEFAULT_PIFH_LOGO_PATH,
+    photo_url: signature?.photo_url || defaults?.photo_url || '',
+  };
+}
+
+function htmlFromFields(layoutId: string | null, fields: SignatureFields): string {
+  if (!layoutId || layoutId === 'full-image') return '';
+  return renderLayoutHtml(layoutId, fields) || '';
+}
 
 export function SignatureBuilder({
   signature,
   onSave,
   onCancel,
+  defaults,
   userProfile,
   companyInfo,
 }: SignatureBuilderProps) {
   const [activeTab, setActiveTab] = useState('editor');
   const [saving, setSaving] = useState(false);
-  const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
-  const [signatureMode, setSignatureMode] = useState<'preset' | 'custom'>('custom');
-  const [formData, setFormData] = useState<SignatureData>({
-    name: signature?.name || 'My Signature',
-    content_html: signature?.content_html || '',
-    content_text: signature?.content_text || '',
-    logo_url: signature?.logo_url || '',
-    photo_url: signature?.photo_url || '',
-    social_links: signature?.social_links || {},
-    is_default: signature?.is_default ?? true,
-    include_in_replies: signature?.include_in_replies ?? true,
-    include_in_new: signature?.include_in_new ?? true,
+  const [selectedLayoutId, setSelectedLayoutId] = useState<string | null>(
+    signature?.content_html ? null : 'pifh-horizontal',
+  );
+  const [fields, setFields] = useState<SignatureFields>(() =>
+    mergeInitialFields(signature, defaults, userProfile, companyInfo),
+  );
+  const [formData, setFormData] = useState<SignatureData>(() => {
+    const initialFields = mergeInitialFields(signature, defaults, userProfile, companyInfo);
+    const initialHtml =
+      signature?.content_html ||
+      renderLayoutHtml('pifh-horizontal', initialFields) ||
+      '';
+    return {
+      name: signature?.name || 'My Signature',
+      content_html: initialHtml,
+      content_text: signature?.content_text || '',
+      logo_url: initialFields.logo_url,
+      photo_url: initialFields.photo_url,
+      social_links: signature?.social_links || {},
+      is_default: signature?.is_default ?? true,
+      include_in_replies: signature?.include_in_replies ?? true,
+      include_in_new: signature?.include_in_new ?? true,
+    };
   });
+  const [uploadTarget, setUploadTarget] = useState<UploadTarget | null>(null);
+
+  const applyLayout = useCallback((layoutId: string, nextFields: SignatureFields) => {
+    const html = htmlFromFields(layoutId, nextFields);
+    setSelectedLayoutId(layoutId);
+    setFormData((prev) => ({
+      ...prev,
+      content_html: html,
+      logo_url: nextFields.logo_url,
+      photo_url: nextFields.photo_url,
+    }));
+  }, []);
+
+  const updateField = (key: keyof SignatureFields, value: string) => {
+    setFields((prev) => {
+      const next = { ...prev, [key]: value };
+      if (selectedLayoutId && selectedLayoutId !== 'full-image') {
+        const html = htmlFromFields(selectedLayoutId, next);
+        setFormData((current) => ({
+          ...current,
+          content_html: html,
+          logo_url: next.logo_url,
+          photo_url: next.photo_url,
+        }));
+      } else if (!selectedLayoutId) {
+        applyLayout('pifh-horizontal', next);
+      } else {
+        setFormData((current) => ({
+          ...current,
+          logo_url: next.logo_url,
+          photo_url: next.photo_url,
+        }));
+      }
+      return next;
+    });
+  };
 
   const handleChange = (field: keyof SignatureData, value: string | boolean | object) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -204,68 +209,63 @@ export function SignatureBuilder({
     }));
   };
 
-  const applyTemplate = (templateId: string) => {
-    const template = SIGNATURE_TEMPLATES.find((t) => t.id === templateId);
-    if (template) {
-      let html = template.template;
-      // Replace placeholders with actual values
-      html = html.replace(/\{\{full_name\}\}/g, userProfile?.full_name || 'Your Name');
-      html = html.replace(/\{\{email\}\}/g, userProfile?.email || 'email@example.com');
-      html = html.replace(/\{\{phone\}\}/g, userProfile?.phone || '(555) 123-4567');
-      html = html.replace(/\{\{title\}\}/g, userProfile?.title || 'Your Title');
-      html = html.replace(/\{\{company_name\}\}/g, companyInfo?.name || 'Company Name');
-      html = html.replace(/\{\{website\}\}/g, companyInfo?.website || 'www.example.com');
-      html = html.replace(/\{\{photo_url\}\}/g, formData.photo_url || 'https://placehold.co/80x80');
-      html = html.replace(/\{\{logo_url\}\}/g, formData.logo_url || 'https://placehold.co/200x40');
-
-      setFormData((prev) => ({ ...prev, content_html: html }));
+  const handleUploadedImage = (url: string, alt?: string) => {
+    if (uploadTarget === 'full') {
+      setSelectedLayoutId('full-image');
+      setFormData((prev) => ({
+        ...prev,
+        content_html: renderFullImageSignature(url, alt || 'Email Signature'),
+        logo_url: url,
+      }));
+      setFields((prev) => ({ ...prev, logo_url: url }));
+      return;
     }
-  };
 
-  const applyPresetSignature = (presetId: string) => {
-    const preset = PRESET_SIGNATURES.find((p) => p.id === presetId);
-    if (preset) {
-      setSelectedPreset(presetId);
-      setSignatureMode('preset');
-      // Create HTML with the preset image
-      const html = `<table style="font-family: Arial, sans-serif;">
-  <tr>
-    <td>
-      <img src="${preset.image}" alt="Double Helix Hub" style="max-width: 100%; height: auto; display: block;" />
-    </td>
-  </tr>
-</table>`;
-      setFormData((prev) => ({ ...prev, content_html: html }));
+    if (uploadTarget === 'photo') {
+      const next = { ...fields, photo_url: url };
+      setFields(next);
+      if (!selectedLayoutId || selectedLayoutId === 'full-image') {
+        applyLayout('professional', next);
+      } else {
+        applyLayout(selectedLayoutId, next);
+      }
+      return;
     }
-  };
 
-  const switchToCustomMode = () => {
-    setSignatureMode('custom');
-    setSelectedPreset(null);
+    const next = { ...fields, logo_url: url };
+    setFields(next);
+    if (!selectedLayoutId || selectedLayoutId === 'full-image') {
+      applyLayout('pifh-horizontal', next);
+    } else {
+      applyLayout(selectedLayoutId, next);
+    }
   };
 
   const handleSave = async () => {
     if (!formData.name.trim() || !formData.content_html.trim()) {
-      toast.error('Please provide a name and signature content.');
+      toast.error(toastCopy.failed('save the signature', 'add a name and signature content', 'Fill both fields and try again'));
       return;
     }
 
     setSaving(true);
     try {
+      const origin = getSignatureOrigin();
       await onSave({
         ...formData,
         id: signature?.id,
+        logo_url: fields.logo_url,
+        photo_url: fields.photo_url,
+        content_html: absolutizeSignatureHtml(formData.content_html, origin),
       });
     } catch (error) {
       console.error('Failed to save signature:', error);
-      toast.error('Failed to save signature. Please try again.');
+      toast.error(toastCopy.failed('save the signature', error, 'Try again'));
     } finally {
       setSaving(false);
     }
   };
 
   const generatePlainText = useCallback(() => {
-    // Strip HTML tags for plain text version
     const div = document.createElement('div');
     div.innerHTML = DOMPurify.sanitize(formData.content_html);
     return div.textContent || div.innerText || '';
@@ -278,16 +278,23 @@ export function SignatureBuilder({
     }));
   }, [generatePlainText]);
 
+  const previewHtml = useMemo(
+    () => DOMPurify.sanitize(formData.content_html),
+    [formData.content_html],
+  );
+
+  const layoutPreview = (layoutId: string) =>
+    DOMPurify.sanitize(renderLayoutHtml(layoutId, fields) || '');
+
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
             {signature?.id ? 'Edit Signature' : 'Create Signature'}
           </h2>
           <p className="text-sm text-slate-500">
-            Design your email signature with rich formatting and images.
+            Edit your name and details, then upload a logo from your computer.
           </p>
         </div>
         <div className="flex gap-2">
@@ -305,11 +312,8 @@ export function SignatureBuilder({
         </div>
       </div>
 
-      {/* Main Content */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Left: Editor */}
         <div className="space-y-4">
-          {/* Name */}
           <div className="space-y-2">
             <Label htmlFor="name">Signature Name</Label>
             <Input
@@ -320,94 +324,138 @@ export function SignatureBuilder({
             />
           </div>
 
-          {/* Preset Signatures */}
+          <Card>
+            <CardHeader className="py-3">
+              <CardTitle className="text-sm">Your details</CardTitle>
+              <CardDescription className="text-xs">
+                These fields update the live preview. They are not locked inside an image.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-0">
+              <div className="space-y-2">
+                <Label htmlFor="full_name">Name</Label>
+                <Input
+                  id="full_name"
+                  value={fields.full_name}
+                  onChange={(e) => updateField('full_name', e.target.value)}
+                  placeholder="Your name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="title">Title</Label>
+                <Input
+                  id="title"
+                  value={fields.title}
+                  onChange={(e) => updateField('title', e.target.value)}
+                  placeholder="Your title"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={fields.email}
+                  onChange={(e) => updateField('email', e.target.value)}
+                  placeholder="you@company.com"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone</Label>
+                <Input
+                  id="phone"
+                  value={fields.phone}
+                  onChange={(e) => updateField('phone', e.target.value)}
+                  placeholder="(555) 123-4567"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="company_name">Company</Label>
+                <Input
+                  id="company_name"
+                  value={fields.company_name}
+                  onChange={(e) => updateField('company_name', e.target.value)}
+                  placeholder="Company name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="website">Website</Label>
+                <Input
+                  id="website"
+                  value={fields.website}
+                  onChange={(e) => updateField('website', e.target.value)}
+                  placeholder="www.example.com"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader className="py-3">
               <CardTitle className="text-sm flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-teal-500" />
-                Double Helix Hub Signatures
+                Pay it Forward Health signatures
               </CardTitle>
               <CardDescription className="text-xs">
-                Choose a pre-designed branded signature
+                Branded layouts using the current wordmark. Your details stay editable.
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-0">
               <div className="grid grid-cols-1 gap-3">
-                {PRESET_SIGNATURES.map((preset) => (
+                {PIFH_LAYOUTS.map((layout) => (
                   <button
-                    key={preset.id}
+                    key={layout.id}
                     type="button"
-                    onClick={() => applyPresetSignature(preset.id)}
+                    onClick={() => applyLayout(layout.id, fields)}
                     className={cn(
-                      'relative rounded-lg border-2 overflow-hidden transition-all hover:border-teal-500/50 group',
-                      selectedPreset === preset.id
+                      'relative rounded-lg border-2 overflow-hidden text-left transition-all hover:border-teal-500/50 bg-white dark:bg-slate-900',
+                      selectedLayoutId === layout.id
                         ? 'border-teal-500 ring-2 ring-teal-500/20'
-                        : 'border-slate-200 dark:border-slate-700'
+                        : 'border-slate-200 dark:border-slate-700',
                     )}
                   >
-                    <Image
-                      src={preset.image}
-                      alt={preset.name}
-                      width={800}
-                      height={200}
-                      className="w-full h-auto"
-                    />
-                    {selectedPreset === preset.id && (
+                    <div className="p-3 min-h-[88px]">
+                      <div
+                        className="pointer-events-none scale-[0.92] origin-top-left"
+                        dangerouslySetInnerHTML={{ __html: layoutPreview(layout.id) }}
+                      />
+                    </div>
+                    {selectedLayoutId === layout.id && (
                       <div className="absolute top-2 right-2 p-1 bg-teal-500 rounded-full">
                         <Check className="w-3 h-3 text-white" />
                       </div>
                     )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end">
-                      <div className="p-2 text-white text-left">
-                        <p className="font-medium text-sm">{preset.name}</p>
-                        <p className="text-xs text-white/80">{preset.description}</p>
-                      </div>
+                    <div className="px-3 pb-2">
+                      <p className="font-medium text-sm">{layout.name}</p>
+                      <p className="text-xs text-slate-500">{layout.description}</p>
                     </div>
                   </button>
                 ))}
               </div>
-              {selectedPreset && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={switchToCustomMode}
-                  className="mt-3 w-full text-slate-500"
-                >
-                  Switch to custom signature
-                </Button>
-              )}
             </CardContent>
           </Card>
 
-          {/* Custom Templates */}
           <Card>
             <CardHeader className="py-3">
               <CardTitle className="text-sm flex items-center gap-2">
                 <Palette className="w-4 h-4" />
-                Custom Templates
+                More layouts
               </CardTitle>
-              <CardDescription className="text-xs">
-                Build your own signature from a template
-              </CardDescription>
             </CardHeader>
             <CardContent className="pt-0">
               <div className="grid grid-cols-2 gap-2">
-                {SIGNATURE_TEMPLATES.map((template) => (
+                {CUSTOM_LAYOUTS.map((layout) => (
                   <Button
-                    key={template.id}
+                    key={layout.id}
                     type="button"
-                    variant="outline"
+                    variant={selectedLayoutId === layout.id ? 'default' : 'outline'}
                     size="sm"
-                    onClick={() => {
-                      applyTemplate(template.id);
-                      switchToCustomMode();
-                    }}
+                    onClick={() => applyLayout(layout.id, fields)}
                     className="justify-start h-auto py-2 overflow-hidden"
                   >
                     <div className="text-left min-w-0">
-                      <p className="font-medium truncate">{template.name}</p>
-                      <p className="text-xs text-slate-500 truncate">{template.description}</p>
+                      <p className="font-medium truncate">{layout.name}</p>
+                      <p className="text-xs text-slate-500 truncate">{layout.description}</p>
                     </div>
                   </Button>
                 ))}
@@ -415,7 +463,6 @@ export function SignatureBuilder({
             </CardContent>
           </Card>
 
-          {/* Tabs: Editor / Source */}
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="editor" className="gap-2">
@@ -430,78 +477,83 @@ export function SignatureBuilder({
 
             <TabsContent value="editor" className="mt-4">
               <div className="space-y-4">
-                {/* Custom Signature Image Upload */}
                 <Card className="border-dashed">
                   <CardHeader className="py-3">
                     <CardTitle className="text-sm flex items-center gap-2">
                       <Upload className="w-4 h-4" />
-                      Upload Custom Signature Image
+                      Images
                     </CardTitle>
                     <CardDescription className="text-xs">
-                      Upload your own signature image (JPG, PNG, GIF)
+                      Upload a file from your computer. URL paste still works if you already have one.
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="pt-0 space-y-3">
-                    <div className="space-y-2">
-                      <Label htmlFor="custom_signature_url">Image URL</Label>
-                      <Input
-                        id="custom_signature_url"
-                        placeholder="https://... or paste image URL"
-                        onChange={(e) => {
-                          if (e.target.value) {
-                            switchToCustomMode();
-                            const html = `<table style="font-family: Arial, sans-serif;">
-  <tr>
-    <td>
-      <img src="${e.target.value}" alt="Email Signature" style="max-width: 100%; height: auto; display: block;" />
-    </td>
-  </tr>
-</table>`;
-                            setFormData((prev) => ({ ...prev, content_html: html }));
-                          }
-                        }}
-                      />
-                      <p className="text-xs text-slate-500">
-                        Tip: Upload your image to the Asset Library first, then paste the URL here
-                      </p>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                        onClick={() => setUploadTarget('logo')}
+                      >
+                        <Upload className="w-4 h-4" />
+                        Upload logo
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                        onClick={() => setUploadTarget('photo')}
+                      >
+                        <Upload className="w-4 h-4" />
+                        Upload photo
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                        onClick={() => setUploadTarget('full')}
+                      >
+                        <Upload className="w-4 h-4" />
+                        Upload full signature image
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="photo_url" className="flex items-center gap-2">
+                          <ImageIcon className="w-4 h-4" />
+                          Photo URL
+                        </Label>
+                        <Input
+                          id="photo_url"
+                          value={fields.photo_url}
+                          onChange={(e) => updateField('photo_url', e.target.value)}
+                          placeholder="https://..."
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="logo_url" className="flex items-center gap-2">
+                          <ImageIcon className="w-4 h-4" />
+                          Logo URL
+                        </Label>
+                        <Input
+                          id="logo_url"
+                          value={fields.logo_url}
+                          onChange={(e) => updateField('logo_url', e.target.value)}
+                          placeholder="https://... or /signatures/pifh-logo.png"
+                        />
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
 
-                {/* Image URLs for templates */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="photo_url" className="flex items-center gap-2">
-                      <ImageIcon className="w-4 h-4" />
-                      Photo URL
-                    </Label>
-                    <Input
-                      id="photo_url"
-                      value={formData.photo_url}
-                      onChange={(e) => handleChange('photo_url', e.target.value)}
-                      placeholder="https://..."
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="logo_url" className="flex items-center gap-2">
-                      <ImageIcon className="w-4 h-4" />
-                      Logo URL
-                    </Label>
-                    <Input
-                      id="logo_url"
-                      value={formData.logo_url}
-                      onChange={(e) => handleChange('logo_url', e.target.value)}
-                      placeholder="https://..."
-                    />
-                  </div>
-                </div>
-
-                {/* Social Links */}
                 <Card>
                   <CardHeader className="py-3">
                     <CardTitle className="text-sm">Social Links</CardTitle>
                     <CardDescription className="text-xs">
-                      Add links to your social profiles
+                      Stored with the signature for later use
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-3 pt-0">
@@ -558,14 +610,16 @@ export function SignatureBuilder({
             <TabsContent value="source" className="mt-4">
               <Textarea
                 value={formData.content_html}
-                onChange={(e) => handleChange('content_html', e.target.value)}
+                onChange={(e) => {
+                  setSelectedLayoutId(null);
+                  handleChange('content_html', e.target.value);
+                }}
                 className="font-mono text-sm min-h-[300px]"
                 placeholder="Enter HTML for your signature..."
               />
             </TabsContent>
           </Tabs>
 
-          {/* Settings */}
           <Card>
             <CardHeader className="py-3">
               <CardTitle className="text-sm">Signature Settings</CardTitle>
@@ -608,7 +662,6 @@ export function SignatureBuilder({
           </Card>
         </div>
 
-        {/* Right: Preview */}
         <div className="space-y-4">
           <Card className="sticky top-4">
             <CardHeader className="py-3">
@@ -620,7 +673,7 @@ export function SignatureBuilder({
             <CardContent>
               <div className="p-4 bg-white border border-slate-200 rounded-lg min-h-[200px]">
                 {formData.content_html ? (
-                  <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(formData.content_html) }} />
+                  <div dangerouslySetInnerHTML={{ __html: previewHtml }} />
                 ) : (
                   <p className="text-sm text-slate-400 italic">
                     Your signature preview will appear here...
@@ -628,14 +681,13 @@ export function SignatureBuilder({
                 )}
               </div>
 
-              {/* Dark Mode Preview */}
               <div className="mt-4">
                 <p className="text-xs text-slate-500 mb-2">Dark Mode Preview</p>
                 <div className="p-4 bg-slate-900 border border-slate-700 rounded-lg min-h-[200px]">
                   {formData.content_html ? (
                     <div
                       className="[&_*]:!text-slate-200"
-                      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(formData.content_html) }}
+                      dangerouslySetInnerHTML={{ __html: previewHtml }}
                     />
                   ) : (
                     <p className="text-sm text-slate-500 italic">
@@ -648,6 +700,24 @@ export function SignatureBuilder({
           </Card>
         </div>
       </div>
+
+      <ImageUploader
+        open={uploadTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setUploadTarget(null);
+        }}
+        folder="signatures"
+        title={
+          uploadTarget === 'photo'
+            ? 'Upload photo'
+            : uploadTarget === 'full'
+              ? 'Upload signature image'
+              : 'Upload logo'
+        }
+        description="Choose a file from your computer, or paste an image URL."
+        insertLabel="Use image"
+        onImageInsert={handleUploadedImage}
+      />
     </div>
   );
 }

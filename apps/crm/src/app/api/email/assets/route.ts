@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, getAuthProfile } from '@/lib/supabase-server';
+import {
+  buildPublicEmailAssetUrl,
+  publicAssetOriginFromRequest,
+  sanitizeEmailAssetFolder,
+} from '@/lib/email/public-email-asset';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -83,7 +88,7 @@ export async function POST(request: NextRequest) {
     // Parse form data
     const formData = await request.formData();
     const file = formData.get('file') as File;
-    const folder = (formData.get('folder') as string) || 'general';
+    const folder = sanitizeEmailAssetFolder(formData.get('folder') as string);
     const name = formData.get('name') as string;
     const altText = formData.get('alt_text') as string;
     const tags = formData.get('tags') as string;
@@ -125,14 +130,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to upload file' }, { status: 500 });
     }
 
-    // Get public URL
-    const { data: urlData } = supabase.storage.from('email-assets').getPublicUrl(bucketPath);
+    const origin = publicAssetOriginFromRequest(request.nextUrl.origin);
 
-    // Get image dimensions if possible
     let width: number | undefined;
     let height: number | undefined;
 
-    // Create database record
     const { data: asset, error: dbError } = await supabase
       .from('email_assets')
       .insert({
@@ -149,7 +151,7 @@ export async function POST(request: NextRequest) {
         folder,
         tags: tags ? tags.split(',').map((t) => t.trim()) : [],
         is_public: true,
-        public_url: urlData.publicUrl,
+        public_url: null,
         created_by: profile.user_id,
       })
       .select()
@@ -157,12 +159,23 @@ export async function POST(request: NextRequest) {
 
     if (dbError) {
       console.error('Database error:', dbError);
-      // Try to clean up the uploaded file
       await supabase.storage.from('email-assets').remove([bucketPath]);
       return NextResponse.json({ error: 'Failed to save asset' }, { status: 500 });
     }
 
-    return NextResponse.json(asset, { status: 201 });
+    const publicUrl = buildPublicEmailAssetUrl(origin, asset.id);
+    if (publicUrl !== asset.public_url) {
+      const { error: urlError } = await supabase
+        .from('email_assets')
+        .update({ public_url: publicUrl })
+        .eq('id', asset.id)
+        .eq('org_id', profile.organization_id);
+      if (urlError) {
+        console.error('Failed to persist public asset URL', { assetId: asset.id });
+      }
+    }
+
+    return NextResponse.json({ ...asset, public_url: publicUrl }, { status: 201 });
   } catch (error) {
     console.error('Error in POST /api/email/assets:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

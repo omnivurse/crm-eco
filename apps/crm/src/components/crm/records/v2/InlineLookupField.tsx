@@ -273,7 +273,7 @@ export const InlineLookupField = memo(function InlineLookupField({
       >
         {displayIcon}
         {label ? (
-          <span className="text-sm text-slate-700 dark:text-slate-200">{label}</span>
+          <span className="text-sm font-medium text-slate-900 dark:text-slate-100">{label}</span>
         ) : value ? (
           <span className="text-sm text-slate-500">{String(value).slice(0, 8)}…</span>
         ) : (

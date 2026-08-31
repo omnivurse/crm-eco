@@ -37,4 +37,23 @@ describe('InboxFilters reading rail', () => {
     render(<InboxFilters {...baseProps} />);
     expect(screen.queryByRole('button', { name: /folders/i })).toBeNull();
   });
+
+  it('makes collapsed folders inert and blurs a focused folder', () => {
+    const { rerender } = render(
+      <InboxFilters {...baseProps} collapsed={false} onCollapsedChange={vi.fn()} />,
+    );
+
+    const inbox = screen.getByRole('button', { name: /inbox/i });
+    inbox.focus();
+    expect(document.activeElement).toBe(inbox);
+
+    rerender(
+      <InboxFilters {...baseProps} collapsed onCollapsedChange={vi.fn()} />,
+    );
+
+    const folderPane = inbox.closest('[inert]');
+    expect(folderPane).not.toBeNull();
+    expect(folderPane?.hasAttribute('inert')).toBe(true);
+    expect(document.activeElement === inbox).toBe(false);
+  });
 });

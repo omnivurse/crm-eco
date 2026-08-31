@@ -105,8 +105,8 @@ export function PortalShell({ profile, children }: PortalShellProps) {
         {/* Desktop floating rail */}
         <aside className="sticky top-5 z-40 hidden self-start lg:block">
           <nav className="adv-rail" aria-label="Primary">
-            <div className="adv-rail-inner flex min-h-[calc(100dvh-3.5rem)] flex-col p-4">
-              <div className="mb-3 border-b border-[rgba(28,25,23,0.06)] px-2 pb-4">
+            <div className="adv-rail-inner flex h-[calc(100dvh-2.5rem)] flex-col p-4">
+              <div className="mb-3 shrink-0 border-b border-[rgba(28,25,23,0.06)] px-2 pb-4">
                 <Link href="/dashboard" className="flex items-center gap-2">
                   <Image
                     src="/logo.png"
@@ -125,11 +125,11 @@ export function PortalShell({ profile, children }: PortalShellProps) {
                 </p>
               </div>
 
-              <div className="flex flex-1 flex-col gap-0.5">
+              <div className="scrollbar-thin flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto">
                 <NavLinks />
               </div>
 
-              <div className="mt-auto border-t border-[rgba(28,25,23,0.06)] pt-4">
+              <div className="mt-auto shrink-0 border-t border-[rgba(28,25,23,0.06)] pt-4">
                 <div className="mb-3 flex items-center gap-2.5 px-2">
                   <div className="grid h-9 w-9 shrink-0 place-items-center rounded-[0.85rem] bg-gradient-to-br from-[var(--adv-teal-soft)] to-[var(--adv-teal)] text-xs font-bold text-white">
                     {initials}
@@ -209,7 +209,7 @@ export function PortalShell({ profile, children }: PortalShellProps) {
           <div className="absolute inset-y-0 left-0 w-[min(18rem,88vw)] p-3">
             <nav className="adv-rail h-full">
               <div className="adv-rail-inner flex h-full flex-col p-4">
-                <div className="mb-3 flex items-center justify-between border-b border-[rgba(28,25,23,0.06)] pb-3">
+                <div className="mb-3 flex shrink-0 items-center justify-between border-b border-[rgba(28,25,23,0.06)] pb-3">
                   <div>
                     <p className="text-sm font-bold text-[var(--adv-ink)]">Double Helix</p>
                     <p className="text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-[var(--adv-teal)]">
@@ -225,10 +225,10 @@ export function PortalShell({ profile, children }: PortalShellProps) {
                     <X weight="light" className="h-5 w-5" />
                   </button>
                 </div>
-                <div className="flex flex-col gap-0.5">
+                <div className="scrollbar-thin flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto">
                   <NavLinks mobile />
                 </div>
-                <div className="mt-auto border-t border-[rgba(28,25,23,0.06)] pt-4">
+                <div className="mt-auto shrink-0 border-t border-[rgba(28,25,23,0.06)] pt-4">
                   <div className="mb-3 flex items-center gap-2.5 px-2">
                     <div className="grid h-9 w-9 place-items-center rounded-[0.85rem] bg-gradient-to-br from-[var(--adv-teal-soft)] to-[var(--adv-teal)] text-xs font-bold text-white">
                       {initials}

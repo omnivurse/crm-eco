@@ -475,7 +475,7 @@ export default function ConversationDetailPage() {
   const statusConfig = STATUS_CONFIG[conversation.status];
 
   return (
-    <div className="h-[calc(100vh-10rem)] flex flex-col">
+    <div className="h-[var(--crm-page-h)] flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
         <div className="flex items-center gap-4">
@@ -608,8 +608,8 @@ export default function ConversationDetailPage() {
       {/* Quick Actions */}
       <QuickActionsPanel conversation={conversation} onAction={handleQuickAction} />
       
-      {/* Reply Composer */}
-      <div className="p-4 border-t border-slate-200 dark:border-slate-700">
+      {/* Reply Composer — shrink-0 so a long thread can never crush it */}
+      <div className="p-4 border-t border-slate-200 dark:border-slate-700 shrink-0">
         <div className="flex items-end gap-3">
           <div className="flex-1">
             <textarea

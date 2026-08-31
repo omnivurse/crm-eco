@@ -119,7 +119,7 @@ export const InlineSelectField = memo(function InlineSelectField({
         {serverLabel ? (
           <Badge
             variant="secondary"
-            className="min-w-0 max-w-full truncate font-normal"
+            className="min-w-0 max-w-full truncate font-medium"
           >
             {serverLabel}
           </Badge>

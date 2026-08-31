@@ -340,7 +340,12 @@ export const InlineFieldEditor = memo(function InlineFieldEditor({
           className,
         )}
         data-field={field}
-        title={externalError ?? undefined}
+        title={
+          externalError ??
+          (displayValue != null && String(displayValue).trim() !== ''
+            ? String(displayValue)
+            : undefined)
+        }
       >
         <span ref={measureDisplay} className="min-w-0 flex-1 truncate" data-inline-value>
           {display ? display(displayValue) : <DisplayValue value={displayValue} placeholder={placeholder} />}
@@ -487,7 +492,11 @@ function DisplayValue({
       </span>
     );
   }
-  return <span title={s}>{s}</span>;
+  return (
+    <span title={s} className="font-medium text-slate-900 dark:text-slate-100">
+      {s}
+    </span>
+  );
 }
 
 function stringify(v: unknown): string {

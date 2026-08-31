@@ -2,19 +2,23 @@
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { PushPin, PushPinSlash, X } from '@phosphor-icons/react';
+import { Eye, EyeSlash, PushPin, PushPinSlash, X } from '@phosphor-icons/react';
 import {
   classifyPayer,
+  discardedStorageKey,
   describeFacilityLine,
   describePayer,
   describePlan,
   facilitySpread,
   familyForCode,
   filterByRadius,
+  flagHighExtremes,
   flagRateOutliers,
+  highestRate,
   listDiscount,
   mapsUrl,
   medianListDiscount,
+  mergeHidden,
   milesFromOrigin,
   mixEntries,
   npiUrl,
@@ -22,10 +26,14 @@ import {
   partitionRates,
   payerClassLabel,
   payerMix,
+  persistDiscardedIds,
   planNegotiation,
   qualityLookupUrl,
+  RADIUS_MILES,
+  readDiscardedIds,
   searchProcedureFamilies,
   tickIdentity,
+  toggleHiddenId,
   uniquePayers,
   websiteHref,
   type PayerClass,
@@ -82,6 +90,33 @@ function groupByFacility(rows: HclRate[]): Array<{
   }));
 }
 
+function HideTickButton({
+  discarded,
+  autoJunk,
+  onToggle,
+  className,
+}: {
+  discarded: boolean;
+  autoJunk: boolean;
+  onToggle: () => void;
+  className: string;
+}) {
+  if (autoJunk && !discarded) return null;
+  return (
+    <button
+      type="button"
+      className={className}
+      data-on={discarded || undefined}
+      aria-pressed={discarded}
+      aria-label={discarded ? 'Restore to tape' : 'Hide from tape'}
+      title={discarded ? 'Put this rate back on the tape' : 'Hide from tape — drops this rate from the coach and high'}
+      onClick={onToggle}
+    >
+      {discarded ? <Eye weight="light" /> : <EyeSlash weight="light" />}
+    </button>
+  );
+}
+
 export function RateInstrument() {
   const router = useRouter();
   const pathname = usePathname();
@@ -101,12 +136,13 @@ export function RateInstrument() {
   const [sortBy, setSortBy] = useState<SortBy>('price_asc');
   const [scope, setScope] = useState<Scope>((searchParams.get('scope') as Scope) || 'metro');
   const [radius, setRadius] = useState<RadiusMiles>(
-    searchParams.get('radius') === '10' || searchParams.get('radius') === '25' || searchParams.get('radius') === '50'
+    RADIUS_MILES.some((miles) => String(miles) === searchParams.get('radius'))
       ? Number(searchParams.get('radius')) as RadiusMiles
       : 'metro',
   );
   const [payerFilter, setPayerFilter] = useState<'all' | PayerClass>('all');
   const [showOutliers, setShowOutliers] = useState(false);
+  const [discarded, setDiscarded] = useState<Set<string>>(() => new Set());
   const [bid, setBid] = useState('');
 
   const [rates, setRates] = useState<HclRate[]>([]);
@@ -171,7 +207,7 @@ export function RateInstrument() {
         setStateName((prev) => prev || data.preferredState || '');
       }
     } catch {
-      setError('Could not load HCL markets. Try again shortly.');
+      setError('Could not load states / regions. Try again shortly.');
     } finally {
       setMetaLoading(false);
     }
@@ -251,7 +287,7 @@ export function RateInstrument() {
         setSlice({ ...nextSlice, fileSize, sliceCount: list.length });
         setHasMore(scope === 'metro' && results.some((r) => r.res.ok && r.data.hasMore));
         if (list.length === 0) {
-          setNotice('No ticks in this slice. Try another CPT or metro.');
+          setNotice('No results on this page. Try another procedure or region.');
         }
       } catch {
         setError('Network error. Please try again.');
@@ -274,7 +310,22 @@ export function RateInstrument() {
     void search(Number(searchParams.get('page') || '1') || 1);
   }, [allMsas.length, metaLoading, msaName, search, searchParams, stateName]);
 
-  const hidden = useMemo(() => flagRateOutliers(rates), [rates]);
+  const discardKey = discardedStorageKey(procedureCode, msaName);
+
+  useEffect(() => {
+    setDiscarded(readDiscardedIds(window.localStorage.getItem(discardKey)));
+  }, [discardKey]);
+
+  const commitDiscarded = useCallback(
+    (next: Set<string>) => {
+      setDiscarded(next);
+      persistDiscardedIds(window.localStorage, discardKey, next);
+    },
+    [discardKey],
+  );
+
+  const autoHidden = useMemo(() => flagRateOutliers(rates), [rates]);
+  const hidden = useMemo(() => mergeHidden(autoHidden, discarded), [autoHidden, discarded]);
   const { kept, outliers } = useMemo(() => partitionRates(rates, hidden), [hidden, rates]);
   const origin = useMemo(() => originFromSlice(kept, zipCode), [kept, zipCode]);
   const nearby = useMemo(() => filterByRadius(kept, origin, radius), [kept, origin, radius]);
@@ -298,11 +349,35 @@ export function RateInstrument() {
   const namedPayers = useMemo(() => uniquePayers(nearby), [nearby]);
   const mix = useMemo(() => mixEntries(payerMix(nearby)), [nearby]);
   const offList = useMemo(() => medianListDiscount(nearby), [nearby]);
+  const highKept = useMemo(() => highestRate(nearby), [nearby]);
+  const extremeIds = useMemo(() => flagHighExtremes(nearby), [nearby]);
+  const highLooksExtreme =
+    coach.medianKept != null && highKept != null && highKept > coach.medianKept * 2.5;
   const bidNumber = Number(bid.replace(/[^0-9.]/g, ''));
   const bidVsMedicare =
     Number.isFinite(bidNumber) && bidNumber > 0 && coach.medicare
       ? bidNumber - coach.medicare
       : null;
+
+  const toggleDiscard = (row: HclRate) => {
+    commitDiscarded(toggleHiddenId(discarded, tickIdentity(row)));
+  };
+
+  const discardMany = (rows: HclRate[]) => {
+    const next = new Set(discarded);
+    for (const row of rows) next.add(tickIdentity(row));
+    commitDiscarded(next);
+  };
+
+  const hideExtremes = () => {
+    if (extremeIds.size === 0) return;
+    commitDiscarded(mergeHidden(discarded, extremeIds));
+    setShowOutliers(false);
+  };
+
+  const restoreDiscarded = () => {
+    commitDiscarded(new Set());
+  };
 
   const togglePin = (row: HclRate) => {
     setPins((prev) => {
@@ -475,7 +550,7 @@ export function RateInstrument() {
               {zipHint ? <span className={styles.error}>{zipHint}</span> : null}
             </label>
             <label className={styles.field}>
-              <span className={styles.label}>HCL Market</span>
+              <span className={styles.label}>State / Region</span>
               <select
                 className={styles.control}
                 value={stateName}
@@ -485,7 +560,7 @@ export function RateInstrument() {
                   setMsaName('');
                 }}
               >
-                <option value="">Select market</option>
+                <option value="">Select state / region</option>
                 {states.map((s) => (
                   <option key={s} value={s}>
                     {s}
@@ -494,14 +569,14 @@ export function RateInstrument() {
               </select>
             </label>
             <label className={styles.field}>
-              <span className={styles.label}>Metro</span>
+              <span className={styles.label}>Nearest Region</span>
               <select
                 className={styles.control}
                 value={msaName}
                 disabled={!stateName || msas.length === 0}
                 onChange={(e) => setMsaName(e.target.value)}
               >
-                <option value="">Select metro</option>
+                <option value="">Select region</option>
                 {msas.map((m) => (
                   <option key={`${m.stateName}-${m.msaName}`} value={m.msaName}>
                     {m.msaName}
@@ -510,14 +585,14 @@ export function RateInstrument() {
               </select>
             </label>
             <label className={styles.field}>
-              <span className={styles.label}>Look in</span>
+              <span className={styles.label}>Search Area</span>
               <select
                 className={styles.control}
                 value={scope}
                 onChange={(e) => setScope(e.target.value as Scope)}
               >
-                <option value="metro">This metro</option>
-                <option value="market">Every metro in this market</option>
+                <option value="metro">This region</option>
+                <option value="market">Every region in this state</option>
               </select>
             </label>
             <label className={styles.field}>
@@ -529,10 +604,12 @@ export function RateInstrument() {
                   setRadius(e.target.value === 'metro' ? 'metro' : (Number(e.target.value) as RadiusMiles))
                 }
               >
-                <option value="metro">Whole metro</option>
-                <option value="10">10 miles</option>
-                <option value="25">25 miles</option>
-                <option value="50">50 miles</option>
+                <option value="metro">Entire Region</option>
+                {RADIUS_MILES.map((miles) => (
+                  <option key={miles} value={miles}>
+                    {miles} miles
+                  </option>
+                ))}
               </select>
             </label>
             {specialties.length > 1 ? (
@@ -561,7 +638,7 @@ export function RateInstrument() {
               <input
                 className={styles.control}
                 value={category}
-                placeholder="Optional"
+                placeholder="Optional — e.g. Inpatient, Outpatient"
                 onChange={(e) => setCategory(e.target.value)}
               />
             </label>
@@ -575,12 +652,12 @@ export function RateInstrument() {
                 <option value="price_asc">Price: low to high</option>
                 <option value="price_desc">Price: high to low</option>
                 <option value="cms_asc">Closest to Medicare</option>
-                <option value="off_list">Biggest cut off list</option>
+                <option value="off_list">Biggest discount off list price</option>
                 <option value="payer">Payer name</option>
               </select>
             </label>
             <button className={styles.readBtn} type="submit" disabled={loading || !stateName || !msaName}>
-              {loading ? 'Reading…' : 'Read the tape'}
+              {loading ? 'Searching…' : 'Search'}
             </button>
           </form>
         </aside>
@@ -608,7 +685,12 @@ export function RateInstrument() {
                   <span className={styles.statValue} data-signal="true">
                     {coach.lowestKept != null ? formatCash(coach.lowestKept) : 'n/a'}
                     {coach.medianKept != null ? ` · ${formatCash(coach.medianKept)}` : ''}
-                    {nearby.length ? ` · ${formatCash(Math.max(...nearby.map((r) => r.rate)))}` : ''}
+                    {highKept != null ? (
+                      <>
+                        {' · '}
+                        <span data-extreme={highLooksExtreme || undefined}>{formatCash(highKept)}</span>
+                      </>
+                    ) : null}
                   </span>
                 </div>
                 <div className={styles.stat}>
@@ -663,7 +745,10 @@ export function RateInstrument() {
                     <strong>{coach.cashOffer != null ? formatCash(coach.cashOffer) : 'n/a'}</strong>
                     {' '}
                     (20% above the lowest kept rate) as cash, paid now
-                    {offList != null ? `, against a median ${formatPct(offList)} cut off list` : ''}.
+                    {offList != null ? `, against a median ${formatPct(offList)} discount off list price` : ''}.
+                    {discarded.size > 0
+                      ? ` You hid ${discarded.size} tick${discarded.size === 1 ? '' : 's'} — they are out of these numbers.`
+                      : ''}
                   </p>
                 </div>
                 <label className={styles.field}>
@@ -718,8 +803,18 @@ export function RateInstrument() {
                   className={showOutliers ? styles.chipOn : styles.chip}
                   onClick={() => setShowOutliers((v) => !v)}
                 >
-                  {showOutliers ? 'Hiding junk off' : `Show ${outliers.length} hidden`}
+                  {showOutliers ? 'Hidden ticks on' : `Show ${outliers.length} hidden`}
                 </button>
+                {extremeIds.size > 0 ? (
+                  <button type="button" className={styles.chip} onClick={hideExtremes}>
+                    Hide {extremeIds.size} extreme{extremeIds.size === 1 ? '' : 's'}
+                  </button>
+                ) : null}
+                {discarded.size > 0 ? (
+                  <button type="button" className={styles.chip} onClick={restoreDiscarded}>
+                    Restore discarded
+                  </button>
+                ) : null}
               </div>
               {namedPayers.length > 0 ? (
                 <p className={styles.note}>
@@ -730,8 +825,8 @@ export function RateInstrument() {
             </>
           ) : (
             <p className={styles.note}>
-              Type a procedure or CPT, pick a metro, then read the tape. Stats describe this page,
-              not the market.
+              Type a procedure or CPT, pick a region, then search. Stats describe this page,
+              not the whole market.
             </p>
           )}
 
@@ -784,13 +879,27 @@ export function RateInstrument() {
                                 if (spread.low == null || spread.high == null) return '';
                                 return ` · ${spread.payerCount} payers · ${formatCash(spread.low)}–${formatCash(spread.high)}`;
                               })()}
+                              {group.ticks.some((r) => !discarded.has(tickIdentity(r))) ? (
+                                <>
+                                  {' · '}
+                                  <button
+                                    type="button"
+                                    className={styles.textBtn}
+                                    onClick={() => discardMany(group.ticks)}
+                                  >
+                                    Hide facility
+                                  </button>
+                                </>
+                              ) : null}
                             </div>
                           </td>
                         </tr>
                         {group.ticks.map((r) => {
                           const key = tickKey(r);
+                          const id = tickIdentity(r);
                           const pinned = pins.some((p) => tickKey(p) === key);
-                          const junk = hidden.has(tickIdentity(r));
+                          const junk = hidden.has(id);
+                          const userDiscarded = discarded.has(id);
                           return (
                             <tr key={key} data-outlier={junk ? 'true' : undefined}>
                               <td />
@@ -813,16 +922,24 @@ export function RateInstrument() {
                               <td className={styles.needle}>{formatNeedle(r.cmsRelativity)}</td>
                               <td className={styles.rate}>{formatCash(r.rate)}</td>
                               <td>
-                                <button
-                                  type="button"
-                                  className={styles.pinBtn}
-                                  data-on={pinned}
-                                  aria-pressed={pinned}
-                                  aria-label={pinned ? 'Unpin from compare' : 'Pin to compare'}
-                                  onClick={() => togglePin(r)}
-                                >
-                                  {pinned ? <PushPinSlash weight="light" /> : <PushPin weight="light" />}
-                                </button>
+                                <div className={styles.tickActions}>
+                                  <button
+                                    type="button"
+                                    className={styles.pinBtn}
+                                    data-on={pinned}
+                                    aria-pressed={pinned}
+                                    aria-label={pinned ? 'Unpin from compare' : 'Pin to compare'}
+                                    onClick={() => togglePin(r)}
+                                  >
+                                    {pinned ? <PushPinSlash weight="light" /> : <PushPin weight="light" />}
+                                  </button>
+                                  <HideTickButton
+                                    discarded={userDiscarded}
+                                    autoJunk={autoHidden.has(id)}
+                                    onToggle={() => toggleDiscard(r)}
+                                    className={styles.pinBtn}
+                                  />
+                                </div>
                               </td>
                             </tr>
                           );
@@ -846,12 +963,25 @@ export function RateInstrument() {
                     </div>
                     <p className={styles.groupMeta}>
                       {describeFacilityLine(group.ticks[0], { includeMetro: scope === 'market' })}
+                      {group.ticks.some((r) => !discarded.has(tickIdentity(r))) ? (
+                        <>
+                          {' · '}
+                          <button
+                            type="button"
+                            className={styles.textBtn}
+                            onClick={() => discardMany(group.ticks)}
+                          >
+                            Hide facility
+                          </button>
+                        </>
+                      ) : null}
                     </p>
                     {group.ticks.map((r) => {
                       const key = tickKey(r);
+                      const id = tickIdentity(r);
                       const pinned = pins.some((p) => tickKey(p) === key);
                       return (
-                        <div key={key} className={styles.cardTick} data-outlier={hidden.has(tickIdentity(r)) ? 'true' : undefined}>
+                        <div key={key} className={styles.cardTick} data-outlier={hidden.has(id) ? 'true' : undefined}>
                           <div>
                             <div className={styles.payer}>{describePayer(r)}</div>
                             <div className={styles.groupMeta}>
@@ -863,16 +993,24 @@ export function RateInstrument() {
                           </div>
                           <div className={styles.cardRate}>
                             <div className={styles.rate}>{formatCash(r.rate)}</div>
-                            <button
-                              type="button"
-                              className={styles.pinBtn}
-                              data-on={pinned}
-                              aria-pressed={pinned}
-                              aria-label={pinned ? 'Unpin from compare' : 'Pin to compare'}
-                              onClick={() => togglePin(r)}
-                            >
-                              {pinned ? <PushPinSlash weight="light" /> : <PushPin weight="light" />}
-                            </button>
+                            <div className={styles.tickActions}>
+                              <button
+                                type="button"
+                                className={styles.pinBtn}
+                                data-on={pinned}
+                                aria-pressed={pinned}
+                                aria-label={pinned ? 'Unpin from compare' : 'Pin to compare'}
+                                onClick={() => togglePin(r)}
+                              >
+                                {pinned ? <PushPinSlash weight="light" /> : <PushPin weight="light" />}
+                              </button>
+                              <HideTickButton
+                                discarded={discarded.has(id)}
+                                autoJunk={autoHidden.has(id)}
+                                onToggle={() => toggleDiscard(r)}
+                                className={styles.pinBtn}
+                              />
+                            </div>
                           </div>
                         </div>
                       );
@@ -884,7 +1022,11 @@ export function RateInstrument() {
           ) : null}
 
           {searched && !loading && sortedRates.length === 0 && !error ? (
-            <p className={styles.note}>No ticks in this slice. Add a CPT or pick another metro.</p>
+            <p className={styles.note}>
+              {discarded.size > 0
+                ? 'Every tick on this page is hidden. Restore discarded or show hidden ticks.'
+                : 'No ticks in this slice. Add a CPT or pick another metro.'}
+            </p>
           ) : null}
 
           {searched && (page > 1 || hasMore) ? (
@@ -1007,11 +1149,13 @@ export function RateInstrument() {
           {!drawerLoading && drawerRates.length === 0 ? (
             <p className={styles.note}>No more ticks for this facility in the current query.</p>
           ) : null}
-          {drawerRates.map((r) => (
+          {drawerRates.map((r) => {
+            const id = tickIdentity(r);
+            return (
             <div
               key={tickKey(r)}
               className={styles.drawerTick}
-              data-outlier={hidden.has(tickIdentity(r)) ? 'true' : undefined}
+              data-outlier={hidden.has(id) ? 'true' : undefined}
             >
               <div>
                 <div className={styles.payer}>
@@ -1034,9 +1178,16 @@ export function RateInstrument() {
                 {listDiscount(r) != null ? (
                   <div className={styles.groupMeta}>{formatPct(listDiscount(r))} off list</div>
                 ) : null}
+                <HideTickButton
+                  discarded={discarded.has(id)}
+                  autoJunk={autoHidden.has(id)}
+                  onToggle={() => toggleDiscard(r)}
+                  className={styles.pinBtn}
+                />
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       </dialog>
     </div>

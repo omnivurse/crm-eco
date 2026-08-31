@@ -72,7 +72,7 @@ export function AgentSidebar({ agent, mobileMenuOpen = false, onMobileClose }: A
   };
 
   const sidebarContent = (
-    <div className="relative z-10 flex h-full flex-col">
+    <div className="relative z-10 flex h-full min-h-0 flex-col">
       <div className="relative">
         <div className="h-1 bg-gradient-to-r from-[var(--mp-teal)] via-[var(--mp-teal-soft)] to-[#12a065]" />
 
@@ -109,7 +109,7 @@ export function AgentSidebar({ agent, mobileMenuOpen = false, onMobileClose }: A
         </div>
       </div>
 
-      <nav className="scrollbar-thin flex-1 space-y-1 overflow-y-auto px-3 py-4">
+      <nav className="scrollbar-thin min-h-0 flex-1 space-y-1 overflow-y-auto px-3 py-4">
         {navItems.map((item) => {
           const isActive =
             pathname === item.href ||
@@ -215,7 +215,7 @@ export function AgentSidebar({ agent, mobileMenuOpen = false, onMobileClose }: A
 
   return (
     <>
-      <aside className="relative m-3 hidden min-h-[calc(100vh-1.5rem)] w-64 flex-col overflow-hidden rounded-[1.75rem] border border-[rgba(11,109,133,0.08)] bg-white/85 text-[var(--mp-ink)] shadow-[var(--mp-shadow-soft)] backdrop-blur-xl lg:flex">
+      <aside className="sticky top-3 m-3 hidden h-[calc(100vh-1.5rem)] w-64 flex-col overflow-hidden rounded-[1.75rem] border border-[rgba(11,109,133,0.08)] bg-white/85 text-[var(--mp-ink)] shadow-[var(--mp-shadow-soft)] backdrop-blur-xl lg:flex">
         {sidebarContent}
       </aside>
 

@@ -1,8 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
+  COVERAGE_SNAPSHOT_GLANCE_COLUMNS,
+  COVERAGE_SNAPSHOT_WIDE_FIELD_KEYS,
+  COVERAGE_SNAPSHOT_WIDE_GRID_CLASS,
+  COVERAGE_SNAPSHOT_WRAP_CELL_CLASS,
   FULL_ROW_SPAN_CLASS,
   INLINE_EDIT_GRID_CLASS,
   fieldSpansFullRow,
+  isCoverageSnapshotWideField,
   shouldUseDenseFieldRow,
 } from './field-layout';
 
@@ -56,5 +61,24 @@ describe('fieldSpansFullRow', () => {
 
   it('spans every column of whichever grid it lands in', () => {
     expect(FULL_ROW_SPAN_CLASS).toBe('md:col-span-full');
+  });
+});
+
+describe('coverage snapshot wide fields', () => {
+  it('treats referring member and referral source as too long for the glance grid', () => {
+    expect(COVERAGE_SNAPSHOT_WIDE_FIELD_KEYS).toEqual([
+      'referring_member',
+      'referral_source',
+    ]);
+    expect(isCoverageSnapshotWideField('referring_member')).toBe(true);
+    expect(isCoverageSnapshotWideField('referral_source')).toBe(true);
+    expect(isCoverageSnapshotWideField('enrolled_by')).toBe(false);
+    expect(isCoverageSnapshotWideField('member_number')).toBe(false);
+  });
+
+  it('keeps the RP-6 glance minmax and a wrapping 2-column name row', () => {
+    expect(COVERAGE_SNAPSHOT_GLANCE_COLUMNS).toContain('8.75rem');
+    expect(COVERAGE_SNAPSHOT_WIDE_GRID_CLASS).toContain('min-[22rem]:grid-cols-2');
+    expect(COVERAGE_SNAPSHOT_WRAP_CELL_CLASS).toBe('crm-snapshot-cell-wrap');
   });
 });

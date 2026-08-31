@@ -271,7 +271,7 @@ export function groupPaletteResults(results: PaletteSearchResult[]): PaletteResu
   }
 
   return groups.map((g) => {
-    const primary = g.results[0];
+    const primary = pickPersonPrimary(g.results);
     return {
       key: primary.id,
       primary,
@@ -285,4 +285,28 @@ export function groupPaletteResults(results: PaletteSearchResult[]): PaletteResu
       isMerged: g.results.length > 1,
     };
   });
+}
+
+/**
+ * When search ranks the imported Members twin first, opening the group still
+ * lands on the Contact — that is where Zoho notes and the fuller profile live.
+ */
+const PERSON_PRIMARY_RANK: Record<string, number> = {
+  contacts: 0,
+  members: 1,
+  history: 2,
+  leads: 3,
+};
+
+function pickPersonPrimary(results: PaletteSearchResult[]): PaletteSearchResult {
+  let best = results[0];
+  let bestRank = PERSON_PRIMARY_RANK[best.moduleKey] ?? 50;
+  for (let i = 1; i < results.length; i++) {
+    const rank = PERSON_PRIMARY_RANK[results[i].moduleKey] ?? 50;
+    if (rank < bestRank) {
+      best = results[i];
+      bestRank = rank;
+    }
+  }
+  return best;
 }

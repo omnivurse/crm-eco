@@ -24,6 +24,7 @@ function createChainMock(result: { data: unknown; error: unknown }) {
   chain.is = vi.fn(self);
   chain.in = vi.fn(self);
   chain.or = vi.fn(self);
+  chain.limit = vi.fn(self);
   // Terminal — last call resolves
   chain.then = undefined;
   // Make the chain thenable so `await query` works
@@ -224,6 +225,54 @@ describe('resolveNoteSourceRecordIdsWithClient', () => {
       'data->>member_number',
       '676898454',
     );
+  });
+
+  it('members module also picks the richer Contact twin by email on the row', async () => {
+    const linksChain = createChainMock({ data: [], error: null });
+    const emptySiblings = createChainMock({ data: [], error: null });
+    const twinChain = createChainMock({
+      data: [
+        {
+          id: CONTACT_B,
+          email: 'jraker44@gmail.com',
+          data: {
+            email: 'jraker44@gmail.com',
+            first_name: 'John',
+            last_name: 'Raker',
+            member_number: '677565220',
+            city: 'Gainesville',
+            plan: 'Premium Care',
+          },
+        },
+      ],
+      error: null,
+    });
+    let recordsCalls = 0;
+    const from = vi.fn((table: string) => {
+      if (table === 'crm_record_links') return linksChain;
+      if (table === 'crm_records') {
+        recordsCalls += 1;
+        // Sibling joins miss; richer-twin lookup (no module embed) hits.
+        return recordsCalls <= 2 ? emptySiblings : twinChain;
+      }
+      throw new Error(`Unexpected table: ${table}`);
+    });
+    const supabase = { from } as unknown as SupabaseClient;
+    const record: NoteAggregateRecord = {
+      id: CONTACT_A,
+      org_id: ORG_A,
+      email: 'jraker44@gmail.com',
+      data: { member_number: '677565220' },
+    };
+
+    const ids = await resolveNoteSourceRecordIdsWithClient(
+      supabase,
+      record,
+      'members',
+    );
+
+    expect(ids).toContain(CONTACT_A);
+    expect(ids).toContain(CONTACT_B);
   });
 
   it('addSameMemberNumberContactSiblings skips empty member numbers', async () => {

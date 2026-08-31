@@ -5,6 +5,7 @@ import {
   getFieldsForModule,
   getDefaultLayout,
   getNotesForRecordAggregated,
+  getRicherTwinRecord,
   getTwinDataForRecord,
   getTimelineForRecordAggregated,
   getRecordLinks,
@@ -147,6 +148,16 @@ async function RecordDetailContent({ params }: PageProps) {
 
   const { record, module } = activeResult;
 
+  // Imported Members twins are a thin copy of the Contact (John Raker and
+  // ~1,060 others). Notes from Zoho live on the Contact — open that record
+  // so add-note and the 7-year history hit the same row.
+  if (module.key === 'members') {
+    const twin = await getRicherTwinRecord(record, module.key);
+    if (twin?.id && twin.id !== record.id) {
+      redirect(`/crm/r/${twin.id}?from_twin=${record.id}`);
+    }
+  }
+
   // Step 2: Fetch overview-critical data in parallel with safe error handling.
   const [
     fieldsResult,
@@ -245,7 +256,7 @@ async function RecordDetailContent({ params }: PageProps) {
       notes={notes}
       orgId={profile.organization_id}
       insights={insightsWithLegacy}
-      className="h-[calc(100dvh-7.25rem)]"
+      className="h-[var(--crm-page-h)]"
     >
       {{
         overview: (
@@ -341,7 +352,7 @@ function RecordDetailSkeleton() {
   const soft = 'bg-slate-100 dark:bg-slate-800/40 rounded';
   return (
     <div
-      className="flex h-[calc(100dvh-7.25rem)] flex-col overflow-hidden"
+      className="flex h-[var(--crm-page-h)] flex-col overflow-hidden"
       role="status"
       aria-label="Loading record"
       aria-busy="true"

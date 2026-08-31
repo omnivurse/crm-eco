@@ -1,6 +1,6 @@
 import type { CashRateRow } from './types';
 
-export const RADIUS_MILES = [10, 25, 50] as const;
+export const RADIUS_MILES = [10, 25, 50, 100, 250] as const;
 export type RadiusMiles = (typeof RADIUS_MILES)[number] | 'metro';
 
 export interface GeoPoint {

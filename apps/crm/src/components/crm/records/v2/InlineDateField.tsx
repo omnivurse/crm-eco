@@ -194,7 +194,7 @@ export const InlineDateField = memo(function InlineDateField({
         }
       >
         {display ? (
-          <span className="text-sm text-slate-700 dark:text-slate-200">{display}</span>
+          <span className="text-sm font-medium text-slate-900 dark:text-slate-100">{display}</span>
         ) : (
           <span className="text-sm text-slate-400 italic">{placeholder}</span>
         )}

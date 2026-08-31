@@ -506,6 +506,14 @@ describe('mergedInto() — CLOSE-1: one voice for a merged-away record URL', () 
     expect(toastCopy.mergedInto('X', { navigating: true }).description).toContain('…');
   });
 
+  it('names the Contact when an imported Member twin is opened', () => {
+    expect(toastCopy.openedContactTwin('John Raker')).toEqual({
+      title: 'Opened the Contact record for John Raker',
+      description: 'Notes and history live here, not on the imported Member copy.',
+    });
+    expect(toastCopy.openedContactTwin(null).title).toBe('Opened the Contact record');
+  });
+
   it('both callers share one title — only the follow-up sentence differs', () => {
     expect(toastCopy.mergedInto('Jane Doe', { navigating: true }).title).toBe(
       toastCopy.mergedInto('Jane Doe').title,
