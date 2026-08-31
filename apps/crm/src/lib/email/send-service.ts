@@ -282,6 +282,9 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
   // failed — an exception between markOutboxSubmitting and the provider
   // response otherwise wedges the row in 'provider_submitting' forever.
   let outboxRow: OutboxRow | null = null;
+  // Once the provider has accepted the message, later audit/activity failures
+  // must never downgrade the durable command and make it eligible to resend.
+  let providerAccepted = false;
   const references = (params.references ?? [])
     .map((id) => normalizeRfc822Id(id))
     .filter((id): id is string => Boolean(id));
@@ -434,9 +437,10 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
       };
     }
 
+    providerAccepted = Boolean(result.success && result.message_id);
     if (outboxRow) {
       const outboxAdmin = createOutboxAdminClient();
-      if (result.success && result.message_id) {
+      if (providerAccepted && result.message_id) {
         await markOutboxAccepted(
           outboxAdmin,
           outboxRow.id,
@@ -499,24 +503,30 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
 
     if (sentEmailError) {
       console.error('Failed to log sent_email:', sentEmailError);
-      return { success: false, error: 'Email sent but failed to log to sent_emails', provider };
     }
 
     // Log to integration logs
     if (emailConnection) {
-      await createLog({
-        connection_id: emailConnection.id,
-        event_type: 'api_call',
-        provider: provider,
-        direction: 'outbound',
-        method: 'POST',
-        endpoint: '/send',
-        status: result.success ? 'success' : 'error',
-        error_message: result.error,
-        duration_ms: Date.now() - startTime,
-        entity_type: params.linked_contact_id ? 'contact' : params.linked_lead_id ? 'lead' : undefined,
-        entity_id: params.linked_contact_id || params.linked_lead_id,
-      });
+      try {
+        await createLog({
+          connection_id: emailConnection.id,
+          event_type: 'api_call',
+          provider: provider,
+          direction: 'outbound',
+          method: 'POST',
+          endpoint: '/send',
+          status: result.success ? 'success' : 'error',
+          error_message: result.error,
+          duration_ms: Date.now() - startTime,
+          entity_type: params.linked_contact_id ? 'contact' : params.linked_lead_id ? 'lead' : undefined,
+          entity_id: params.linked_contact_id || params.linked_lead_id,
+        });
+      } catch (logError) {
+        // Provider acceptance is authoritative. Audit logging is best-effort
+        // here so a logging outage cannot turn a delivered message into a
+        // retryable failure.
+        console.error('Failed to create integration log after email send:', logError);
+      }
     }
 
     // Create CRM activity.
@@ -582,7 +592,7 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
   } catch (error) {
     console.error('Error sending email:', error);
     const message = error instanceof Error ? error.message : 'Unknown error';
-    if (outboxRow) {
+    if (outboxRow && !providerAccepted) {
       try {
         await markOutboxFailed(
           createOutboxAdminClient(),
