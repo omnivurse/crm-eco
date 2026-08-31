@@ -274,11 +274,13 @@ async function evaluateCondition(
         conditionMet = false;
         break;
       }
+      // Webhooks normalize to past-tense ('opened'); the singular form is kept
+      // for any historical rows written before the maps were unified.
       const { data: openEvent } = await supabase
         .from('email_events')
         .select('id')
         .in('sent_email_id', sentEmailIds)
-        .eq('event_type', 'open')
+        .in('event_type', ['opened', 'open'])
         .limit(1)
         .maybeSingle();
       conditionMet = !!openEvent;
@@ -295,7 +297,7 @@ async function evaluateCondition(
         .from('email_events')
         .select('id')
         .in('sent_email_id', sentEmailIds)
-        .eq('event_type', 'click')
+        .in('event_type', ['clicked', 'click'])
         .limit(1)
         .maybeSingle();
       conditionMet = !!clickEvent;
@@ -418,7 +420,7 @@ async function checkExitConditions(
       .from('email_events')
       .select('id')
       .in('sent_email_id', sentEmailIdsForExit)
-      .eq('event_type', 'bounce')
+      .in('event_type', ['bounced', 'bounce'])
       .limit(1)
       .maybeSingle();
 

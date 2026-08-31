@@ -185,9 +185,11 @@ export function SignatureBuilder({
           logo_url: next.logo_url,
           photo_url: next.photo_url,
         }));
-      } else if (!selectedLayoutId) {
-        applyLayout('pifh-horizontal', next);
       } else {
+        // selectedLayoutId null = an existing signature's stored HTML (or the
+        // full-image variant). Never regenerate from a layout here — that
+        // silently destroys the stored markup. A layout is only applied when
+        // the user explicitly picks one from the layout gallery.
         setFormData((current) => ({
           ...current,
           logo_url: next.logo_url,
@@ -224,20 +226,26 @@ export function SignatureBuilder({
     if (uploadTarget === 'photo') {
       const next = { ...fields, photo_url: url };
       setFields(next);
-      if (!selectedLayoutId || selectedLayoutId === 'full-image') {
+      if (selectedLayoutId === 'full-image') {
         applyLayout('professional', next);
-      } else {
+      } else if (selectedLayoutId) {
         applyLayout(selectedLayoutId, next);
+      } else {
+        // Editing stored HTML: record the new photo without regenerating.
+        setFormData((current) => ({ ...current, photo_url: url }));
       }
       return;
     }
 
     const next = { ...fields, logo_url: url };
     setFields(next);
-    if (!selectedLayoutId || selectedLayoutId === 'full-image') {
+    if (selectedLayoutId === 'full-image') {
       applyLayout('pifh-horizontal', next);
-    } else {
+    } else if (selectedLayoutId) {
       applyLayout(selectedLayoutId, next);
+    } else {
+      // Editing stored HTML: record the new logo without regenerating.
+      setFormData((current) => ({ ...current, logo_url: url }));
     }
   };
 
