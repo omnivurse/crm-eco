@@ -40,7 +40,7 @@ export default async function ServicesPage() {
             href="/pricing"
             className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[var(--mp-teal)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--mp-teal-soft)]"
           >
-            Read the tape
+            Search rates
           </a>
         </div>
       </div>

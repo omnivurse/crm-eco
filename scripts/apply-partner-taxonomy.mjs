@@ -102,6 +102,13 @@ const partnerFields = (moduleId) => [
   },
 ];
 
+// --- 20260831120000_product_coverage_end_date.sql ---------------------------
+const PRODUCT_SOURCE = 'product_dates_20260831';
+const END_LABEL = 'Coverage End Date';
+const END_TIP =
+  'The day coverage ends. Setting this schedules the record to move to Cancelled ' +
+  'on the 1st of that month — leave it blank while coverage is active.';
+
 const ROBIN_CONTACT_ID = 'd4e6fcca-4cda-47b4-b911-60e4cbc68d5f';
 const ROBIN_PATCH = {
   relationship_type: 'Referring Partner',
@@ -220,6 +227,47 @@ const keyOf = Object.fromEntries(modules.map((m) => [m.id, m.key]));
   }
 }
 
+// --- 5. Product card: give cancellation_date its label back ------------------
+// Only contacts + members. leads keep it in `system` as the back-office stamp.
+{
+  const target = modules.filter((m) => m.key === 'contacts' || m.key === 'members');
+  const { data: existing, error } = await sb
+    .from('crm_fields').select('id,module_id,label,tooltip,section,display_order,metadata')
+    .in('module_id', target.map((m) => m.id)).eq('key', 'cancellation_date');
+  if (error) die(error.message);
+  const byModule = new Map((existing ?? []).map((f) => [f.module_id, f]));
+
+  for (const m of target) {
+    const f = byModule.get(m.id);
+    if (!f) {
+      step(`  cancellation_date [${m.key}] missing — adding as "${END_LABEL}" in Product`);
+      if (APPLY) {
+        const { error: e } = await sb.from('crm_fields').insert({
+          org_id: ORG, organization_id: ORG, module_id: m.id,
+          key: 'cancellation_date', label: END_LABEL, type: 'date',
+          options: [], validation: {}, section: 'insurance',
+          display_order: 15, width: 'half', required: false,
+          tooltip: END_TIP, metadata: { source: PRODUCT_SOURCE },
+        }).select('id');
+        if (e) die(`cancellation_date insert [${m.key}]: ${e.message}`);
+      }
+      continue;
+    }
+    if (f.label === END_LABEL && f.tooltip === END_TIP && f.section === 'insurance') {
+      step(`  cancellation_date [${m.key}] already current — skipped`);
+      continue;
+    }
+    step(`  cancellation_date [${m.key}] "${f.label}" -> "${END_LABEL}", section ${f.section} -> insurance`);
+    if (APPLY) {
+      const { error: e } = await sb.from('crm_fields').update({
+        label: END_LABEL, tooltip: END_TIP, section: 'insurance', display_order: 15,
+        metadata: { ...(f.metadata ?? {}), source: PRODUCT_SOURCE },
+      }).eq('id', f.id).select('id');
+      if (e) die(`cancellation_date update [${m.key}]: ${e.message}`);
+    }
+  }
+}
+
 // --- verify ------------------------------------------------------------------
 if (APPLY) {
   console.log('\n--- verify ---');
@@ -253,6 +301,11 @@ if (APPLY) {
 
   const { data: r2 } = await sb.from('crm_records').select('title,data').eq('id', ROBIN_CONTACT_ID).maybeSingle();
   console.log(`  ${r2?.title}: relationship_type="${r2?.data?.relationship_type}" partner_industry="${r2?.data?.partner_industry}"`);
+
+  const { data: cd } = await sb.from('crm_fields').select('module_id,label,section,tooltip').eq('key', 'cancellation_date');
+  for (const f of cd ?? []) {
+    console.log(`  ${keyOf[f.module_id] ?? 'other-module'}.cancellation_date: "${f.label}" [${f.section}]${f.tooltip ? ' · tooltip set' : ''}`);
+  }
 }
 
 console.log(APPLY ? '\nApplied.' : '\nDry run complete — re-run with --apply to perform these writes.');

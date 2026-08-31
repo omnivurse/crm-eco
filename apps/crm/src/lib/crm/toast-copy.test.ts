@@ -19,6 +19,7 @@ describe('toast-copy success templates', () => {
     expect(added('Note')).toBe('Note added');
     expect(updated('note')).toBe('Note updated');
     expect(deleted('Task')).toBe('Task deleted');
+    expect(toastCopy.applied('Template')).toBe('Template applied');
   });
 
   it('strip trailing punctuation from the noun', () => {

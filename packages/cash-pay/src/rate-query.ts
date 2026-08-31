@@ -142,7 +142,7 @@ export function resolveRateQuery(input: RateQueryInput): RateQueryResult {
     return {
       ok: false,
       code: 'invalid_input',
-      message: 'HCL Market and metro are required.',
+      message: 'State / region and nearest region are required.',
     };
   }
 

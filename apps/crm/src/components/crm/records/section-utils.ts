@@ -14,6 +14,7 @@ import type {
 import { shouldShowAddressFieldInForm } from '@/lib/crm/address-field-dedupe';
 import { shouldShowEndDateFieldInSection } from '@/lib/crm/coverage-end-date-fields';
 import { shouldShowOwnershipFieldInForm } from '@/lib/crm/ownership-field-dedupe';
+import { shouldShowStartDateFieldInForm } from '@/lib/crm/product-start-date-fields';
 import {
   PARTNER_SECTION_KEY,
   PARTNER_TYPE_LABEL,
@@ -634,6 +635,9 @@ export function getSectionMeta(
       continue;
     }
     if (!shouldShowPartnerFieldInForm({ fieldKey: field.key, values: recordData })) {
+      continue;
+    }
+    if (!shouldShowStartDateFieldInForm({ fieldKey: field.key, values: recordData })) {
       continue;
     }
     if (!grouped[section]) grouped[section] = [];

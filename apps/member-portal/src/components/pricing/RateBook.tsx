@@ -176,7 +176,7 @@ export function RateBook({ memberName, postalCode }: RateBookProps) {
       <div className={styles.tape} style={{ paddingBottom: '1.5rem' }}>
         <p className={styles.note}>
           Dated snapshots of published hospital cash. Not a quote. Not insurance.{' '}
-          <Link href="/pricing">Read the tape</Link> to clip another tick.
+          <Link href="/pricing">Search rates</Link> to clip another tick.
         </p>
 
         <div className={styles.bookBar}>
@@ -270,8 +270,8 @@ export function RateBook({ memberName, postalCode }: RateBookProps) {
 
         {!loading && clips.length === 0 ? (
           <p className={styles.note}>
-            Nothing clipped yet. Open the tape, then clip a facility.{' '}
-            <Link href="/pricing">Read the tape</Link>
+            Nothing clipped yet. Search rates, then clip a facility.{' '}
+            <Link href="/pricing">Search rates</Link>
           </p>
         ) : null}
 

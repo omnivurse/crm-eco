@@ -156,7 +156,7 @@ export const InlineSelectField = memo(function InlineSelectField({
       {pickLabel ? (
         <Badge
           variant="secondary"
-          className="min-w-0 flex-1 truncate font-normal pointer-events-none"
+          className="min-w-0 flex-1 truncate font-medium pointer-events-none"
         >
           {pickLabel}
         </Badge>

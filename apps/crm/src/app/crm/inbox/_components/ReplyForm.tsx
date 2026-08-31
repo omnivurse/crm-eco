@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import {
   Send,
   Loader2,
@@ -25,6 +25,14 @@ import {
 } from '@/lib/email/outbound-attachments';
 
 type ReplyMode = 'reply' | 'reply_all' | 'forward';
+
+/**
+ * In-memory per-conversation reply drafts. Switching conversations used to
+ * discard the reply text and attachments outright — while the dock label said
+ * "Draft saved in this thread". Session-scoped on purpose: real persisted
+ * drafts (inbox_drafts) need a Drafts UI first (see email audit findings).
+ */
+const replyDraftCache = new Map<string, { html: string; attachments: EmailAttachment[] }>();
 
 interface ReplyFormProps {
   selectedConversation: InboxConversation;
@@ -60,11 +68,33 @@ export function ReplyForm({
   const hasDraft =
     (replyHtml.trim() !== '' && replyHtml !== '<p></p>') || attachments.length > 0;
 
+  // Which conversation the current editor state belongs to. Updated only by
+  // the restore effect below, so the stash effect (declared first — effects
+  // run in declaration order) always writes under the id the text was typed
+  // in, never the id we are switching to.
+  const draftOwnerIdRef = useRef(selectedConversation.id);
+
+  // Keep the cache in sync while typing so a conversation switch or an
+  // unmount (Escape, back-to-list, route change) can never lose work.
   useEffect(() => {
+    const owner = draftOwnerIdRef.current;
+    if (hasDraft) {
+      replyDraftCache.set(owner, { html: replyHtml, attachments });
+    } else {
+      replyDraftCache.delete(owner);
+    }
+  }, [selectedConversation.id, replyHtml, attachments, hasDraft]);
+
+  // On conversation switch: restore that conversation's in-progress draft
+  // instead of discarding it (the old behaviour wiped it while the dock
+  // label claimed "Draft saved in this thread").
+  useEffect(() => {
+    draftOwnerIdRef.current = selectedConversation.id;
+    const cached = replyDraftCache.get(selectedConversation.id);
     setComposerOpen(false);
     setComposerExpanded(false);
-    setReplyHtml('');
-    setAttachments([]);
+    setReplyHtml(cached?.html ?? '');
+    setAttachments(cached?.attachments ?? []);
     setReplyMode('reply');
     setShowModeMenu(false);
   }, [selectedConversation.id]);
@@ -151,7 +181,11 @@ export function ReplyForm({
 
     setSending(true);
     try {
-      const toAddress = lastInbound?.from_address
+      // Honour Reply-To: send-on-behalf systems (HR platforms, ticketing,
+      // no-reply gateways) set it precisely because from_address is a black
+      // hole. Falls back to the visible sender, then the contact.
+      const toAddress = lastInbound?.reply_to_address
+        || lastInbound?.from_address
         || selectedConversation.contact_email
         || selectedConversation.contact_phone;
 
@@ -212,6 +246,7 @@ export function ReplyForm({
       if (!res.ok) throw new Error(result.error || 'Failed to send reply');
 
       toast.success('Reply sent');
+      replyDraftCache.delete(selectedConversation.id);
       setReplyHtml('');
       setAttachments([]);
       setComposerOpen(false);

@@ -745,7 +745,7 @@ export function PricingSearch({ memberZip, memberState, procedures }: PricingSea
                 <option value="price_asc">Price: low to high</option>
                 <option value="price_desc">Price: high to low</option>
                 <option value="cms_asc">Closest to Medicare</option>
-                <option value="off_list">Biggest cut off list</option>
+                <option value="off_list">Biggest discount off list price</option>
                 <option value="payer">Payer name</option>
               </select>
             </label>

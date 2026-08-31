@@ -1,5 +1,6 @@
 'use client';
 
+import DOMPurify from 'dompurify';
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@crm-eco/ui/components/button';
 import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
@@ -301,7 +302,8 @@ export default function SignaturesSettingsPage() {
                   >
                     <div
                       className="text-sm transform scale-90 origin-top-left"
-                      dangerouslySetInnerHTML={{ __html: signature.content_html }}
+                      // Stored HTML is user-writable via the API; sanitize like the builder does
+                      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(signature.content_html) }}
                     />
                   </div>
 

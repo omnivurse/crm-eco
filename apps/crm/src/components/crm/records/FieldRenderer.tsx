@@ -127,7 +127,7 @@ function CarrierName({ carrierType, value }: { carrierType: string; value: strin
     name ?? (UUID_RE.test(value) ? (loaded ? value : '…') : value);
 
   return (
-    <Badge variant="secondary" className="font-normal">
+    <Badge variant="secondary" className="font-medium">
       {display}
     </Badge>
   );
@@ -220,7 +220,11 @@ export const FieldRenderer = memo(function FieldRenderer({
           </Badge>
         );
       }
-      return <span className={className}>{str}</span>;
+      return (
+        <span className={cn('font-medium text-slate-900 dark:text-slate-100', className)}>
+          {str}
+        </span>
+      );
     }
 
     case 'email':

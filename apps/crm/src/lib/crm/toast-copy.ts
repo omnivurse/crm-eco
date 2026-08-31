@@ -58,6 +58,11 @@ export function deleted(noun: string): string {
   return `${cap(unpunct(noun))} deleted`;
 }
 
+/** "Template applied" — successful apply of an existing thing. */
+export function applied(noun: string): string {
+  return `${cap(unpunct(noun))} applied`;
+}
+
 /**
  * Error copy that names the action, the reason (if known) and a next step.
  *
@@ -630,6 +635,7 @@ export const toastCopy = {
   added,
   updated,
   deleted,
+  applied,
   restored,
   failed,
   sessionExpired,

@@ -4,6 +4,7 @@ import { useCallback, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase-client';
 import { FileText } from 'lucide-react';
 import { toast } from 'sonner';
+import { toastCopy } from '@/lib/crm/toast-copy';
 import {
   Dialog,
   DialogContent,
@@ -76,9 +77,10 @@ export function ComposeModal({
 
     // Create inbox conversation + message records
     const now = new Date().toISOString();
-    const messageId = result.message_id
-      ? `<${result.message_id}>`
-      : `<${crypto.randomUUID()}@payitforwardhealth.com>`;
+    const messageId = result.rfc822_message_id
+      || (result.message_id
+        ? `<${result.message_id}>`
+        : `<${crypto.randomUUID()}@payitforwardhealth.com>`);
 
     const plainPreview = (data.body_text || data.body_html || '')
       .replace(/<[^>]*>/g, '')
@@ -111,8 +113,11 @@ export function ComposeModal({
 
     if (convError) {
       console.error('Failed to create conversation:', convError);
+      toast.error(
+        'Email was sent, but saving it to the inbox failed — this thread will not appear in conversations.',
+      );
     } else if (conv) {
-      await supabase.from('inbox_messages').insert({
+      const { error: msgError } = await supabase.from('inbox_messages').insert({
         org_id: authProfile.organization_id,
         conversation_id: conv.id,
         channel: 'email',
@@ -139,6 +144,16 @@ export function ComposeModal({
         external_provider: result.provider || null,
         metadata: {},
       });
+      if (msgError) {
+        console.error('Failed to persist sent message:', msgError);
+        toast.error(
+          toastCopy.failed(
+            'save the sent email to the conversation',
+            msgError,
+            'The recipient still has the message',
+          ),
+        );
+      }
     }
 
     // Delete draft if we had one saved
@@ -212,20 +227,26 @@ export function ComposeModal({
     };
 
     if (draftIdRef.current) {
-      await fetch(`/api/inbox/drafts/${draftIdRef.current}`, {
+      const res = await fetch(`/api/inbox/drafts/${draftIdRef.current}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
+      if (!res.ok) {
+        const result = await res.json().catch(() => ({}));
+        // Throw so EmailComposer shows the failure — closing with a success
+        // toast while nothing is scheduled silently drops the email.
+        throw new Error(result.error || 'Failed to schedule email');
+      }
     } else {
       const res = await fetch('/api/inbox/drafts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      const result = await res.json();
-      if (result.draft?.id) {
-        draftIdRef.current = result.draft.id;
+      const result = await res.json().catch(() => ({}));
+      if (!res.ok || !result.draft?.id) {
+        throw new Error(result.error || 'Failed to schedule email');
       }
     }
 
@@ -236,7 +257,7 @@ export function ComposeModal({
   const handleTemplateSelect = useCallback((template: { subject: string; body_html: string }) => {
     setTemplateSubject(template.subject);
     setTemplateBody(template.body_html);
-    toast.success('Template applied');
+    toast.success(toastCopy.applied('Template'));
   }, []);
 
   // Reset state when dialog closes

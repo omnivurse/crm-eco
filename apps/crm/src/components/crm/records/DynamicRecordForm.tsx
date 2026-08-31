@@ -110,6 +110,7 @@ import {
   shouldShowEndDateFieldInSection,
 } from '@/lib/crm/coverage-end-date-fields';
 import { shouldShowPartnerFieldInForm } from '@/lib/crm/partner-fields';
+import { shouldShowStartDateFieldInForm } from '@/lib/crm/product-start-date-fields';
 import { CalendarClock, ChevronDown, ChevronRight, Loader2, ShieldCheck, Heart, Shield } from 'lucide-react';
 
 // Section accent palette — see section-accent-tokens.ts (shared with SectionNav).
@@ -942,6 +943,12 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
       // carries an empty card. Reads the SAVED relationship_type, so the card
       // appears as soon as the inline Partner Type edit persists.
       if (!shouldShowPartnerFieldInForm({ fieldKey: field.key, values: defaultValues })) {
+        continue;
+      }
+      // Product card start dates: the legacy start_date /
+      // insurance_effective_date mirrors drop out where they agree with
+      // original_start_date, and stay put on the 13 records where they don't.
+      if (!shouldShowStartDateFieldInForm({ fieldKey: field.key, values: defaultValues })) {
         continue;
       }
       const section = field.section || 'main';

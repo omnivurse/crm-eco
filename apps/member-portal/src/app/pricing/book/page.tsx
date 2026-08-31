@@ -15,13 +15,13 @@ export default async function RateBookPage() {
         description="Clipped hospital cash, compiled from the ticks you saved. A book is a snapshot, not a live file."
         kicker="Pricing"
         backHref="/pricing"
-        backLabel="Back to the tape"
+        backLabel="Back to search"
         actions={
           <Link
             href="/pricing"
             className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[var(--mp-teal)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--mp-teal-soft)]"
           >
-            Read the tape
+            Search rates
           </Link>
         }
       />
