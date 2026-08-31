@@ -45,6 +45,7 @@ import {
   Heading2,
   Heading3,
   Pilcrow,
+  RemoveFormatting,
   Sparkles,
 } from 'lucide-react';
 import { useState, useCallback } from 'react';
@@ -53,6 +54,8 @@ import {
   MERGE_FIELD_CATEGORIES,
   MergeFieldCategory,
   COLOR_PRESETS,
+  FONT_FAMILIES,
+  FONT_SIZES,
 } from './types';
 
 interface EmailToolbarProps {
@@ -196,6 +199,72 @@ export function EmailToolbar({ editor, onImageUpload }: EmailToolbarProps) {
         </DropdownMenuContent>
       </DropdownMenu>
 
+      {/* Font Family */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-8 px-2 gap-1 min-w-[6.5rem] justify-between"
+            title="Font Family"
+          >
+            <span className="text-xs truncate">
+              {FONT_FAMILIES.find((f) => editor.isActive('textStyle', { fontFamily: f.value }))?.label || 'Font'}
+            </span>
+            <ChevronDown className="w-3 h-3 flex-shrink-0" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="w-48">
+          <DropdownMenuItem onClick={() => editor.chain().focus().unsetFontFamily().run()}>
+            Default
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          {FONT_FAMILIES.map((font) => (
+            <DropdownMenuItem
+              key={font.label}
+              style={{ fontFamily: font.value }}
+              onClick={() => editor.chain().focus().setFontFamily(font.value).run()}
+              className={cn(
+                editor.isActive('textStyle', { fontFamily: font.value }) && 'bg-slate-100 dark:bg-slate-800'
+              )}
+            >
+              {font.label}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      {/* Font Size */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button type="button" variant="ghost" size="sm" className="h-8 px-2 gap-1" title="Font Size">
+            <span className="text-xs tabular-nums">
+              {FONT_SIZES.find((s) => editor.isActive('textStyle', { fontSize: s.value }))?.label || 'Size'}
+            </span>
+            <ChevronDown className="w-3 h-3" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="w-28">
+          <DropdownMenuItem onClick={() => editor.chain().focus().unsetFontSize().run()}>
+            Default
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          {FONT_SIZES.map((size) => (
+            <DropdownMenuItem
+              key={size.value}
+              onClick={() => editor.chain().focus().setFontSize(size.value).run()}
+              className={cn(
+                'tabular-nums',
+                editor.isActive('textStyle', { fontSize: size.value }) && 'bg-slate-100 dark:bg-slate-800'
+              )}
+            >
+              {size.label} px
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+
       <ToolbarDivider />
 
       {/* Basic Formatting */}
@@ -306,6 +375,15 @@ export function EmailToolbar({ editor, onImageUpload }: EmailToolbarProps) {
               />
             ))}
           </div>
+          <label className="flex items-center gap-2 mt-2 cursor-pointer">
+            <input
+              type="color"
+              className="h-6 w-6 cursor-pointer rounded border border-slate-200 dark:border-slate-700 bg-transparent p-0"
+              defaultValue={editor.getAttributes('textStyle').color || '#000000'}
+              onChange={(e) => editor.chain().focus().setColor(e.target.value).run()}
+            />
+            <span className="text-xs text-slate-500">Custom color</span>
+          </label>
           <Button
             type="button"
             variant="ghost"
@@ -493,6 +571,12 @@ export function EmailToolbar({ editor, onImageUpload }: EmailToolbarProps) {
         title="Code Block"
       >
         <Code className="w-4 h-4" />
+      </ToolbarButton>
+      <ToolbarButton
+        onClick={() => editor.chain().focus().unsetAllMarks().clearNodes().run()}
+        title="Clear Formatting (Ctrl+\)"
+      >
+        <RemoveFormatting className="w-4 h-4" />
       </ToolbarButton>
 
       <ToolbarDivider />

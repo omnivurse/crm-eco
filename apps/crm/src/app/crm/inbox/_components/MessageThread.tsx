@@ -1,12 +1,14 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
+import dynamic from 'next/dynamic';
 import {
   MessageSquare,
   Clock,
   Check,
   CheckCheck,
   Loader2,
+  CalendarPlus,
   ChevronLeft,
   ChevronDown,
   ChevronUp,
@@ -33,7 +35,14 @@ import {
   formatInboxFileSize,
   measureEmailDocument,
   readingPaneFloor,
+  sanitizeEmailForReading,
 } from './inbox-reading';
+import { participantsFromThread } from '@/lib/calendar/thread-participants';
+
+const MeetingComposer = dynamic(
+  () => import('@/components/calendar/MeetingComposer').then((mod) => mod.MeetingComposer),
+  { ssr: false },
+);
 
 const CHANNEL_ICONS: Record<InboxChannel, React.ReactNode> = {
   email: <span className="w-4 h-4 inline-flex items-center justify-center">✉</span>,
@@ -198,6 +207,10 @@ function HtmlEmailBody({ html }: { html: string }) {
     };
   }, [html, dark]);
 
+  // Sanitize synchronously in the srcDoc build (never in a later effect) so
+  // the iframe never gets even one frame of unsanitized markup.
+  const safeHtml = useMemo(() => sanitizeEmailForReading(html), [html]);
+
   const srcDoc = `<!DOCTYPE html>
 <html>
 <head>
@@ -226,7 +239,7 @@ function HtmlEmailBody({ html }: { html: string }) {
     pre { overflow-x: auto; background: ${dark ? '#0f172a' : '#f8fafc'}; padding: 8px; border-radius: 4px; }
   </style>
 </head>
-<body>${html}</body>
+<body>${safeHtml}</body>
 </html>`;
 
   return (
@@ -342,6 +355,19 @@ function EmailMessage({ msg }: { msg: InboxMessage }) {
             )}
           </div>
 
+          {/* Meeting invite marker (messages sent with an iTIP part) */}
+          {typeof msg.metadata?.calendar_event_id === 'string' && (
+            <div className="px-3 lg:px-4 pt-3">
+              <a
+                href="/crm/calendar"
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-teal-200 dark:border-teal-500/30 bg-teal-50 dark:bg-teal-500/10 text-xs font-medium text-teal-700 dark:text-teal-300 hover:bg-teal-100 dark:hover:bg-teal-500/20 transition-colors"
+              >
+                <CalendarPlus className="w-3.5 h-3.5" />
+                Meeting invitation — view in calendar
+              </a>
+            </div>
+          )}
+
           {/* Email body */}
           <div className="px-3 lg:px-4 py-3">
             {hasHtml ? (
@@ -405,6 +431,31 @@ export const MessageThread = React.memo(function MessageThread({
   onStatusChange,
   onBackToList,
 }: MessageThreadProps) {
+  const [meetingOpen, setMeetingOpen] = useState(false);
+
+  const meetingDefaults = useMemo(
+    () => ({
+      title: conversation.subject ? `Meeting: ${conversation.subject}` : undefined,
+      attendees: participantsFromThread({
+        conversation: {
+          contact_email: conversation.contact_email,
+          contact_name: conversation.contact_name,
+        },
+        messages: messages.map((msg) => ({
+          direction: msg.direction,
+          from_address: msg.from_address,
+          from_name: msg.from_name,
+          to_address: msg.to_address,
+          cc_addresses: (msg.cc_addresses ?? []) as Array<{ email: string; name?: string }>,
+        })),
+        excludeEmails: [],
+      }),
+      recordId: conversation.contact_id ?? undefined,
+      conversationId: conversation.id,
+    }),
+    [conversation, messages],
+  );
+
   return (
     <div className="flex-1 min-h-0 flex flex-col">
       {/* Header */}
@@ -446,6 +497,15 @@ export const MessageThread = React.memo(function MessageThread({
                 <SelectItem value="archived">Archived</SelectItem>
               </SelectContent>
             </Select>
+            <button
+              type="button"
+              onClick={() => setMeetingOpen(true)}
+              className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+              title="Schedule meeting"
+              aria-label="Schedule meeting"
+            >
+              <CalendarPlus className="w-5 h-5 text-slate-500 dark:text-slate-400" />
+            </button>
             <button
               type="button"
               onClick={(e) => {
@@ -501,6 +561,12 @@ export const MessageThread = React.memo(function MessageThread({
           ))
         )}
       </div>
+
+      <MeetingComposer
+        open={meetingOpen}
+        onOpenChange={setMeetingOpen}
+        defaults={meetingDefaults}
+      />
     </div>
   );
 });

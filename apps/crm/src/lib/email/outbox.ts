@@ -18,6 +18,9 @@ export type OutboxPayload = {
   in_reply_to?: string | null;
   references?: string[];
   attachments?: Array<{ filename: string; content_type: string; size: number }>;
+  /** iTIP part for meeting invites — full ICS text so worker retries rebuild it byte-identically. */
+  calendar?: { method: 'REQUEST' | 'CANCEL'; ics: string; filename?: string } | null;
+  calendar_event_id?: string | null;
   unsubscribe_url?: string | null;
   conversation_id?: string | null;
   persist_inbox?: boolean;

@@ -21,12 +21,35 @@ export type PersistOutboundInboxInput = {
   references?: string[];
   provider?: string | null;
   providerMessageId?: string | null;
+  /** When set, the thread renders a meeting card for this message. */
+  calendarEventId?: string | null;
 };
 
 export async function persistOutboundInboxMessage(
   supabase: LooseClient,
   input: PersistOutboundInboxInput,
 ): Promise<{ id: string } | null> {
+  // Tenant guard: conversation_id arrives from the request body and this
+  // insert runs with the service-role client, whose AFTER INSERT trigger then
+  // updates the referenced inbox_conversations row (counters, preview) with
+  // no org check of its own. Never write to a conversation outside the
+  // sender's organization.
+  const { data: conversation, error: conversationError } = await supabase
+    .from('inbox_conversations')
+    .select('id')
+    .eq('id', input.conversationId)
+    .eq('org_id', input.organizationId)
+    .maybeSingle();
+
+  if (conversationError || !conversation) {
+    console.error('[email] refusing outbound persist: conversation not found in org', {
+      organizationId: input.organizationId,
+      conversationId: input.conversationId,
+      error: conversationError?.message ?? null,
+    });
+    return null;
+  }
+
   const now = new Date().toISOString();
   const { data, error } = await supabase
     .from('inbox_messages')
@@ -52,7 +75,7 @@ export async function persistOutboundInboxMessage(
       sent_at: now,
       external_id: input.providerMessageId ?? null,
       external_provider: input.provider ?? null,
-      metadata: {},
+      metadata: input.calendarEventId ? { calendar_event_id: input.calendarEventId } : {},
     })
     .select('id')
     .single();
@@ -61,6 +84,9 @@ export async function persistOutboundInboxMessage(
     console.error('[email] persist outbound inbox message failed', {
       organizationId: input.organizationId,
       conversationId: input.conversationId,
+      error: error.message ?? String(error),
+      code: error.code ?? null,
+      details: error.details ?? null,
     });
     return null;
   }
@@ -104,5 +130,6 @@ export function persistInputFromOutboxPayload(
     references: row.payload.references ?? [],
     provider: row.provider ?? null,
     providerMessageId: row.provider_message_id ?? null,
+    calendarEventId: row.payload.calendar_event_id ?? null,
   };
 }

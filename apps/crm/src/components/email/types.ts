@@ -77,13 +77,27 @@ export const replaceMergeFields = (
   return result;
 };
 
-// Font sizes for the editor
+// Font sizes for the editor (px steps; also whitelisted by the outbound HTML policy)
 export const FONT_SIZES = [
-  { label: 'Small', value: '12px' },
-  { label: 'Normal', value: '14px' },
-  { label: 'Medium', value: '16px' },
-  { label: 'Large', value: '18px' },
-  { label: 'Extra Large', value: '24px' },
+  { label: '10', value: '10px' },
+  { label: '12', value: '12px' },
+  { label: '13', value: '13px' },
+  { label: '14', value: '14px' },
+  { label: '16', value: '16px' },
+  { label: '18', value: '18px' },
+  { label: '24', value: '24px' },
+  { label: '32', value: '32px' },
+];
+
+// Email-client-safe font stacks (no webfonts — these render everywhere)
+export const FONT_FAMILIES = [
+  { label: 'Arial', value: 'Arial, Helvetica, sans-serif' },
+  { label: 'Georgia', value: 'Georgia, "Times New Roman", serif' },
+  { label: 'Times New Roman', value: '"Times New Roman", Times, serif' },
+  { label: 'Verdana', value: 'Verdana, Geneva, sans-serif' },
+  { label: 'Tahoma', value: 'Tahoma, Geneva, sans-serif' },
+  { label: 'Trebuchet MS', value: '"Trebuchet MS", Helvetica, sans-serif' },
+  { label: 'Courier New', value: '"Courier New", Courier, monospace' },
 ];
 
 // Color presets for the editor

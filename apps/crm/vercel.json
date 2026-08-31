@@ -70,6 +70,10 @@
     {
       "path": "/api/cron/habits-ai-tips",
       "schedule": "30 5 * * *"
+    },
+    {
+      "path": "/api/cron/meeting-reminders",
+      "schedule": "*/5 * * * *"
     }
   ]
 }

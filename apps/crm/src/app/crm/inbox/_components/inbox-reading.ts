@@ -4,6 +4,9 @@
  * can be tested without mounting the thread.
  */
 
+import createDOMPurify from 'dompurify';
+import { INBOUND_BLOCKED_TAGS } from '@/lib/email/email-html-policy';
+
 export function attachmentByteSize(att: {
   size?: unknown;
   file_size?: unknown;
@@ -24,6 +27,34 @@ export function formatInboxFileSize(bytes: unknown): string | null {
 /** srcDoc preview: parent can measure this document. Never include allow-scripts. */
 export const EMAIL_IFRAME_SANDBOX =
   'allow-popups allow-popups-to-escape-sandbox allow-same-origin';
+
+let readingPurifier: ReturnType<typeof createDOMPurify> | null = null;
+
+/**
+ * Defense-in-depth in front of the sandboxed iframe: strip scripting vectors
+ * from stored email HTML before it enters srcDoc. Uses a dedicated DOMPurify
+ * instance so the hook forcing target=_blank + rel=noopener on links (which
+ * neutralizes window.opener through the allow-popups-to-escape-sandbox path)
+ * never leaks into other DOMPurify users (signature previews, notes).
+ */
+export function sanitizeEmailForReading(html: string): string {
+  if (typeof window === 'undefined') return html;
+  if (!readingPurifier) {
+    readingPurifier = createDOMPurify(window);
+    readingPurifier.addHook('afterSanitizeAttributes', (node) => {
+      if (node.tagName === 'A') {
+        node.setAttribute('target', '_blank');
+        node.setAttribute('rel', 'noopener noreferrer');
+      }
+    });
+  }
+  return readingPurifier.sanitize(html, {
+    FORBID_TAGS: [...INBOUND_BLOCKED_TAGS],
+    // DOMPurify's default scheme list plus cid: and data: for inline images.
+    ALLOWED_URI_REGEXP:
+      /^(?:(?:https?|mailto|tel|callto|sms|cid|data):|[^a-z]|[a-z+.-]+(?:[^a-z+.\-:]|$))/i,
+  });
+}
 
 export function measureEmailDocument(doc: {
   body?: { scrollHeight?: number; offsetHeight?: number } | null;

@@ -27,6 +27,7 @@ import {
   type OutboxRow,
 } from '@/lib/email/outbox';
 import { persistOutboundInboxMessage } from '@/lib/email/persist-inbox-reply';
+import { sanitizeOutboundEmailHtml } from '@/lib/email/email-sanitize';
 import { inboundReplyTo } from '@crm-eco/lib/email';
 
 // ============================================================================
@@ -83,6 +84,10 @@ export interface SendEmailParams {
   references?: string[];
   persist_inbox?: boolean;
   idempotency_key?: string;
+  /** iTIP calendar part (meeting invites) — rides as a text/calendar attachment. */
+  calendar?: { method: 'REQUEST' | 'CANCEL'; ics: string; filename?: string };
+  /** Stamped into the persisted inbox message metadata so the thread renders a meeting card. */
+  calendar_event_id?: string;
 }
 
 export interface SendEmailResult {
@@ -175,8 +180,13 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
       'support@payitforwardhealth.com',
   );
 
+  // Server-owned sanitization: every producer (composer, reply dock, record
+  // sends, automations) passes through sendEmail, so raw editor/Source-mode
+  // HTML never reaches providers, the outbox, sent_emails, or inbox_messages.
+  const bodyHtml = params.body_html ? sanitizeOutboundEmailHtml(params.body_html) : params.body_html;
+
   // Auto-generate plain text from HTML if not provided (improves deliverability)
-  const bodyText = params.body_text || (params.body_html ? htmlToPlainText(params.body_html) : undefined);
+  const bodyText = params.body_text || (bodyHtml ? htmlToPlainText(bodyHtml) : undefined);
 
   let outboundAttachments: ResolvedOutboundAttachment[] = [];
   try {
@@ -208,6 +218,19 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
       success: false,
       error: error instanceof Error ? error.message : 'Failed to attach files',
     };
+  }
+
+  if (params.calendar) {
+    // The iTIP part travels as an attachment whose content type carries the
+    // method parameter — Gmail/Outlook parse it and render native RSVP chips.
+    outboundAttachments.push({
+      filename:
+        params.calendar.filename ??
+        (params.calendar.method === 'CANCEL' ? 'cancel.ics' : 'invite.ics'),
+      contentType: `text/calendar; method=${params.calendar.method}; charset=UTF-8`,
+      content: Buffer.from(params.calendar.ics, 'utf8').toString('base64'),
+      size: Buffer.byteLength(params.calendar.ics, 'utf8'),
+    });
   }
 
   // Determine provider and send
@@ -263,7 +286,7 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
         ccAddresses: params.cc,
         bccAddresses: params.bcc,
         subject: params.subject,
-        bodyHtml: params.body_html,
+        bodyHtml,
         bodyText,
         conversationId: params.conversation_id ?? null,
         linkedContactId: params.linked_contact_id ?? null,
@@ -278,6 +301,8 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
           to_name: params.to_name ?? null,
           unsubscribe_url: unsubscribeUrl ?? null,
           source: 'communications.send',
+          calendar: params.calendar ?? null,
+          calendar_event_id: params.calendar_event_id ?? null,
           attachments: outboundAttachments.map((attachment) => ({
             filename: attachment.filename,
             content_type: attachment.contentType,
@@ -312,10 +337,11 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
         cc: params.cc,
         bcc: params.bcc,
         subject: params.subject,
-        html: params.body_html,
+        html: bodyHtml,
         text: bodyText,
         replyTo: replyTo,
         attachments: outboundAttachments,
+        calendar: params.calendar,
         timeoutMs: sendTimeoutMs,
         ...threadHeaders,
       });
@@ -327,7 +353,7 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
         cc: params.cc,
         bcc: params.bcc,
         subject: params.subject,
-        html: params.body_html,
+        html: bodyHtml,
         text: bodyText,
         reply_to: replyTo,
         unsubscribe_url: unsubscribeUrl,
@@ -344,7 +370,7 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
         cc: params.cc,
         bcc: params.bcc,
         subject: params.subject,
-        html: params.body_html,
+        html: bodyHtml,
         text: bodyText,
         reply_to: replyTo,
         unsubscribe_url: unsubscribeUrl,
@@ -398,7 +424,7 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
       cc_emails: params.cc || [],
       bcc_emails: params.bcc || [],
       subject: params.subject,
-      body_html: params.body_html,
+      body_html: bodyHtml,
       body_text: params.body_text,
       from_email: fromEmail,
       from_name: fromName,
@@ -493,9 +519,10 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
         ccAddresses: (params.cc ?? []).map((email) => ({ email })),
         bccAddresses: (params.bcc ?? []).map((email) => ({ email })),
         subject: params.subject,
-        bodyHtml: params.body_html,
+        bodyHtml,
         bodyText,
         rfc822MessageId,
+        calendarEventId: params.calendar_event_id ?? null,
         inReplyTo,
         references,
         provider: result.provider || provider,
@@ -624,6 +651,7 @@ export async function sendViaSendGrid(
     text?: string;
     replyTo?: string;
     attachments?: ResolvedOutboundAttachment[];
+    calendar?: { method: 'REQUEST' | 'CANCEL'; ics: string };
     timeoutMs?: number;
     message_id?: string;
     in_reply_to?: string | null;
@@ -655,6 +683,11 @@ export async function sendViaSendGrid(
       content: [
         params.text ? { type: 'text/plain', value: params.text } : null,
         params.html ? { type: 'text/html', value: params.html } : null,
+        // SendGrid builds multipart/alternative from content[] — the
+        // text/calendar part is what makes Gmail/Outlook show RSVP chips.
+        params.calendar
+          ? { type: `text/calendar; method=${params.calendar.method}`, value: params.calendar.ics }
+          : null,
       ].filter(Boolean),
       attachments: params.attachments?.length
         ? toSendGridAttachments(params.attachments)

@@ -52,6 +52,19 @@ async function submitOutboxRow(
   const fromName = row.from_name || 'Pay It Forward Health';
   const fromEmail = row.sender_address || process.env.RESEND_FROM_EMAIL || 'noreply@payitforwardhealth.com';
 
+  // Rebuild the iTIP calendar part byte-identically from the stored payload so
+  // worker retries send the same invite the first attempt did.
+  const calendarAttachment = payload.calendar
+    ? [{
+        filename:
+          payload.calendar.filename ??
+          (payload.calendar.method === 'CANCEL' ? 'cancel.ics' : 'invite.ics'),
+        contentType: `text/calendar; method=${payload.calendar.method}; charset=UTF-8`,
+        content: Buffer.from(payload.calendar.ics, 'utf8').toString('base64'),
+        size: Buffer.byteLength(payload.calendar.ics, 'utf8'),
+      }]
+    : undefined;
+
   if (resolved.provider === 'sendgrid') {
     return sendViaSendGrid(resolved.apiKey, {
       from: { email: fromEmail, name: fromName },
@@ -62,6 +75,8 @@ async function submitOutboxRow(
       html: row.body_html ?? undefined,
       text: row.body_text ?? undefined,
       replyTo: row.reply_to ?? undefined,
+      attachments: calendarAttachment,
+      calendar: payload.calendar ?? undefined,
       message_id: payload.rfc822_message_id,
       in_reply_to: payload.in_reply_to,
       references: payload.references,
@@ -78,6 +93,7 @@ async function submitOutboxRow(
     text: row.body_text ?? undefined,
     reply_to: row.reply_to ?? undefined,
     unsubscribe_url: payload.unsubscribe_url ?? undefined,
+    attachments: calendarAttachment,
     idempotencyKey: row.idempotency_key,
     message_id: payload.rfc822_message_id,
     in_reply_to: payload.in_reply_to,
