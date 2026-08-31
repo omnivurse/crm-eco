@@ -180,6 +180,41 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
       'support@payitforwardhealth.com',
   );
 
+  // Server-side sender enforcement. The inbox UI carefully resolves a
+  // verified "Replying as" address, but the server otherwise accepts ANY
+  // from_email — any authenticated user could send as any mailbox. An
+  // explicitly requested address must be a registered org sender or on a
+  // verified org domain; the integration/env fallbacks above are
+  // system-configured and stay exempt.
+  if (params.from_email) {
+    const requested = params.from_email.trim().toLowerCase();
+    const requestedDomain = domainFromEmail(requested);
+    const [{ data: registeredSender }, { data: verifiedDomain }] = await Promise.all([
+      supabase
+        .from('email_sender_addresses')
+        .select('email, email_domains!inner (status)')
+        .eq('org_id', profile.organization_id)
+        .eq('email_domains.status', 'verified')
+        .ilike('email', requested)
+        .maybeSingle(),
+      requestedDomain
+        ? supabase
+            .from('email_domains')
+            .select('id')
+            .eq('org_id', profile.organization_id)
+            .eq('status', 'verified')
+            .ilike('domain', requestedDomain)
+            .maybeSingle()
+        : Promise.resolve({ data: null }),
+    ]);
+    if (!registeredSender && !verifiedDomain) {
+      return {
+        success: false,
+        error: `"${params.from_email}" is not a verified sending address for this organization. Add it in Settings > Email Domains.`,
+      };
+    }
+  }
+
   // Server-owned sanitization: every producer (composer, reply dock, record
   // sends, automations) passes through sendEmail, so raw editor/Source-mode
   // HTML never reaches providers, the outbox, sent_emails, or inbox_messages.
@@ -242,6 +277,10 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
     normalizeRfc822Id(params.rfc822_message_id) ||
     generateRfc822MessageId(domainFromEmail(fromEmail));
   const inReplyTo = normalizeRfc822Id(params.in_reply_to);
+  // Declared outside the try so the catch below can mark the outbox row
+  // failed — an exception between markOutboxSubmitting and the provider
+  // response otherwise wedges the row in 'provider_submitting' forever.
+  let outboxRow: OutboxRow | null = null;
   const references = (params.references ?? [])
     .map((id) => normalizeRfc822Id(id))
     .filter((id): id is string => Boolean(id));
@@ -268,7 +307,6 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
       false,
     );
 
-    let outboxRow: OutboxRow | null = null;
     if (useOutbox) {
       const idempotencyKey =
         params.idempotency_key ||
@@ -534,9 +572,24 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
     return result;
   } catch (error) {
     console.error('Error sending email:', error);
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    if (outboxRow) {
+      try {
+        await markOutboxFailed(
+          createOutboxAdminClient(),
+          outboxRow.id,
+          profile.organization_id,
+          message,
+          classifyProviderError(null, message),
+          (outboxRow.attempt_count ?? 0) + 1,
+        );
+      } catch (markError) {
+        console.error('Failed to mark outbox row failed after send exception:', markError);
+      }
+    }
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: message,
     };
   }
 }
