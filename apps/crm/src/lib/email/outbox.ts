@@ -78,6 +78,7 @@ export type OutboxRow = {
   linked_contact_id: string | null;
   linked_lead_id: string | null;
   linked_deal_id: string | null;
+  updated_at: string;
 };
 
 type LooseClient = {
