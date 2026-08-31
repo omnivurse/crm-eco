@@ -85,6 +85,8 @@ interface ConversationListProps {
   onBulkAction?: () => void;
   /** Desktop: narrower list so the reading pane can take the leftover width. */
   readingMode?: boolean;
+  emptyTitle?: string;
+  emptyDescription?: string;
 }
 
 export const ConversationList = React.memo(function ConversationList({
@@ -96,6 +98,8 @@ export const ConversationList = React.memo(function ConversationList({
   mobileView,
   onBulkAction,
   readingMode = false,
+  emptyTitle = 'No conversations',
+  emptyDescription = 'Conversations will appear here when you receive messages',
 }: ConversationListProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkMode, setBulkMode] = useState(false);
@@ -219,9 +223,9 @@ export const ConversationList = React.memo(function ConversationList({
         {conversations.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-slate-500 p-6">
             <InboxIcon className="w-12 h-12 mb-3 opacity-50" />
-            <p className="text-sm font-medium">No conversations</p>
+            <p className="text-sm font-medium">{emptyTitle}</p>
             <p className="text-xs text-center mt-1">
-              Conversations will appear here when you receive messages
+              {emptyDescription}
             </p>
           </div>
         ) : (

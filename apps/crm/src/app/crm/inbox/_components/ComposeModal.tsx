@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase-client';
 import { FileText } from 'lucide-react';
 import { toast } from 'sonner';
@@ -14,6 +14,7 @@ import {
 import { EmailComposer, type EmailComposerData } from '@/components/email/EmailComposer';
 import { TemplatePicker } from './TemplatePicker';
 import { composerDataToCommunicationsSendBody } from '@/lib/email/outbound-attachments';
+import { mailboxAddressForOutbound } from '@/lib/inbox/compose-mailbox';
 import type { ConversationStatus, ConversationPriority } from '@/lib/inbox/types';
 
 interface EmailRecipient {
@@ -30,6 +31,10 @@ interface ComposeModalProps {
   initialTo?: EmailRecipient[];
   initialSubject?: string;
   initialBody?: string;
+  /** Bump on every open so EmailComposer remounts instead of keeping the last To/subject. */
+  composerKey: string;
+  /** Resume a saved draft (updates this row on save). */
+  initialDraftId?: string | null;
 }
 
 export function ComposeModal({
@@ -41,11 +46,17 @@ export function ComposeModal({
   initialTo,
   initialSubject,
   initialBody,
+  composerKey,
+  initialDraftId,
 }: ComposeModalProps) {
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
   const [templateSubject, setTemplateSubject] = useState<string | undefined>(undefined);
   const [templateBody, setTemplateBody] = useState<string | undefined>(undefined);
-  const draftIdRef = useRef<string | null>(null);
+  const draftIdRef = useRef<string | null>(initialDraftId ?? null);
+
+  useEffect(() => {
+    draftIdRef.current = initialDraftId ?? null;
+  }, [composerKey, initialDraftId]);
 
   const handleSend = useCallback(async (data: EmailComposerData) => {
     if (data.to.length === 0) {
@@ -98,6 +109,7 @@ export function ComposeModal({
         contact_name: data.to[0].name || null,
         status: 'open' as ConversationStatus,
         priority: 'normal' as ConversationPriority,
+        mailbox_address: mailboxAddressForOutbound(fromEmail),
         assigned_to: authProfile.id,
         assigned_at: now,
         unread_count: 0,
@@ -294,7 +306,7 @@ export function ComposeModal({
           </DialogHeader>
           <div className="px-2 pb-2">
             <EmailComposer
-              key={`${effectiveSubject}-${effectiveBody?.slice(0, 50)}`}
+              key={composerKey}
               initialTo={initialTo}
               initialSubject={effectiveSubject}
               initialBody={effectiveBody}

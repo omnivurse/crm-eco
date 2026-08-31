@@ -26,7 +26,7 @@ import { cn } from '@crm-eco/ui/lib/utils';
 import type { InboxChannel, InboxStats, ConversationStatus } from '@/lib/inbox/types';
 import type { SharedMailbox } from '@/lib/inbox/shared-mailboxes';
 
-type FilterType = 'all' | 'unread' | 'assigned_to_me' | 'unassigned';
+export type FilterType = 'all' | 'unread' | 'assigned_to_me' | 'unassigned' | 'sent' | 'drafts';
 
 const CHANNEL_ICONS: Record<string, React.ReactNode> = {
   email: <Mail className="w-4 h-4" />,
@@ -233,8 +233,10 @@ const FilterItems = React.memo(function FilterItems({
       key: 'sent',
       label: 'Sent',
       icon: <Send className="w-4 h-4" />,
-      active: false, // Will be wired to outbound filter
+      active: filter === 'sent',
       onClick: () => {
+        onFilterChange('sent');
+        onStatusFilterChange?.('active');
         onItemClick?.();
       },
     },
@@ -243,8 +245,10 @@ const FilterItems = React.memo(function FilterItems({
       label: 'Drafts',
       icon: <FileText className="w-4 h-4" />,
       count: draftsCount,
-      active: false,
+      active: filter === 'drafts',
       onClick: () => {
+        onFilterChange('drafts');
+        onStatusFilterChange?.('active');
         onItemClick?.();
       },
     },
@@ -309,6 +313,7 @@ const FilterItems = React.memo(function FilterItems({
             <button
               key={item.key}
               onClick={item.onClick}
+              aria-current={item.active ? 'true' : undefined}
               className={cn(
                 'w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-sm transition-colors',
                 item.active

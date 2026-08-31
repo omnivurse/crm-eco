@@ -35,6 +35,7 @@ import {
   assertComposerAttachmentsReady,
   composerAttachmentsToRefs,
 } from '@/lib/email/outbound-attachments';
+import { mailboxAddressForOutbound } from '@/lib/inbox/compose-mailbox';
 
 // ============================================================================
 // Types
@@ -749,6 +750,7 @@ function ComposePageContent() {
             message_count: 1,
             last_message_at: now,
             first_message_at: now,
+            mailbox_address: mailboxAddressForOutbound(authProfile.email),
             tags: [],
             labels: [],
             metadata: {},

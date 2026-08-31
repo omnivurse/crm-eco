@@ -17,6 +17,7 @@ import { cn } from '@crm-eco/ui/lib/utils';
 import { toast } from 'sonner';
 import type {
   InboxConversation,
+  InboxDraft,
   InboxMessage,
   InboxStats,
   InboxChannel,
@@ -24,14 +25,13 @@ import type {
 } from '@/lib/inbox/types';
 import type { SharedMailbox } from '@/lib/inbox/shared-mailboxes';
 
-import { InboxFilters } from './_components/InboxFilters';
+import { InboxFilters, type FilterType } from './_components/InboxFilters';
 import { ConversationList } from './_components/ConversationList';
+import { DraftsList } from './_components/DraftsList';
 import { MessageThread } from './_components/MessageThread';
 import { ReplyForm } from './_components/ReplyForm';
 import { ComposeModal } from './_components/ComposeModal';
 import { NotificationSettings } from './_components/NotificationSettings';
-
-type FilterType = 'all' | 'unread' | 'assigned_to_me' | 'unassigned';
 
 export default function InboxPage() {
   return (
@@ -58,16 +58,33 @@ function InboxPageContent() {
   const [verifiedDomains, setVerifiedDomains] = useState<string[]>([]);
   const [mailboxesLoading, setMailboxesLoading] = useState(true);
   const [showComposeModal, setShowComposeModal] = useState(false);
-  const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const [composeSessionId, setComposeSessionId] = useState(0);
   const [composeInitialSubject, setComposeInitialSubject] = useState<string | undefined>();
   const [composeInitialBody, setComposeInitialBody] = useState<string | undefined>();
+  const [composeInitialTo, setComposeInitialTo] = useState<Array<{ email: string; name?: string }> | undefined>();
+  const [composeDraftId, setComposeDraftId] = useState<string | null>(null);
+  const [drafts, setDrafts] = useState<InboxDraft[]>([]);
+
+  const openCompose = useCallback((opts?: {
+    subject?: string;
+    body?: string;
+    to?: Array<{ email: string; name?: string }>;
+    draftId?: string | null;
+  }) => {
+    setComposeSessionId((n) => n + 1);
+    setComposeInitialSubject(opts?.subject);
+    setComposeInitialBody(opts?.body);
+    setComposeInitialTo(opts?.to);
+    setComposeDraftId(opts?.draftId ?? null);
+    setShowComposeModal(true);
+  }, []);
 
   // Auto-open compose when ?compose=true
   useEffect(() => {
     if (searchParams?.get('compose') === 'true') {
-      setShowComposeModal(true);
+      openCompose();
     }
-  }, [searchParams]);
+  }, [searchParams, openCompose]);
 
   const { query: searchQuery, setQuery: setSearchQuery, debouncedQuery } = useDebouncedSearch({ delay: 300 });
   const [loadingMessages, setLoadingMessages] = useState(false);
@@ -115,24 +132,51 @@ function InboxPageContent() {
         query = query.gt('unread_count', 0);
       }
 
-      if (debouncedQuery) {
+      let skipListQuery = filter === 'drafts';
+      if (filter === 'sent') {
+        const { data: outbound, error: outboundError } = await supabase
+          .from('inbox_messages')
+          .select('conversation_id')
+          .eq('org_id', profile.organization_id)
+          .eq('direction', 'outbound')
+          .order('sent_at', { ascending: false })
+          .limit(200);
+        if (outboundError) throw outboundError;
+        const sentIds = [
+          ...new Set(
+            (outbound ?? []).map((row: { conversation_id: string }) => row.conversation_id).filter(Boolean),
+          ),
+        ];
+        if (sentIds.length === 0) {
+          setConversations([]);
+          skipListQuery = true;
+        } else {
+          query = query.in('id', sentIds);
+        }
+      }
+
+      if (debouncedQuery && !skipListQuery) {
         query = query.or(
           `subject.ilike.%${debouncedQuery}%,preview.ilike.%${debouncedQuery}%,contact_name.ilike.%${debouncedQuery}%,contact_email.ilike.%${debouncedQuery}%`
         );
       }
 
-      const { data, error } = await query.limit(50);
+      if (!skipListQuery) {
+        const { data, error } = await query.limit(50);
 
-      if (error) {
-        console.error('Error loading conversations:', error);
-        if (error.code === '42P01') {
-          setConversations([]);
-          return;
+        if (error) {
+          console.error('Error loading conversations:', error);
+          if (error.code === '42P01') {
+            setConversations([]);
+            return;
+          }
+          throw error;
         }
-        throw error;
-      }
 
-      setConversations(data || []);
+        setConversations(data || []);
+      } else if (filter === 'drafts') {
+        setConversations([]);
+      }
 
       const [openCount, pendingCount, unreadCount, assignedCount, unassignedCount] = await Promise.all([
         supabase
@@ -181,6 +225,27 @@ function InboxPageContent() {
   useEffect(() => {
     loadConversations();
   }, [loadConversations]);
+
+  const loadDrafts = useCallback(async () => {
+    if (!authProfile) return;
+    try {
+      const res = await fetch('/api/inbox/drafts');
+      if (!res.ok) throw new Error(`drafts request failed: ${res.status}`);
+      const json = await res.json();
+      setDrafts(json.drafts || []);
+    } catch (error) {
+      console.error('Failed to load drafts:', error);
+      setDrafts([]);
+    }
+  }, [authProfile]);
+
+  useEffect(() => {
+    loadDrafts();
+  }, [loadDrafts]);
+
+  useEffect(() => {
+    if (!showComposeModal) loadDrafts();
+  }, [showComposeModal, loadDrafts]);
 
   // Shared mailbox list + unread badges. Kept separate from loadConversations
   // so switching queues does not refetch the sidebar on every click.
@@ -341,10 +406,8 @@ function InboxPageContent() {
 
   // Forward handler: open compose modal with forwarded content
   const handleForward = useCallback((subject: string, body: string) => {
-    setComposeInitialSubject(subject);
-    setComposeInitialBody(body);
-    setShowComposeModal(true);
-  }, []);
+    openCompose({ subject, body });
+  }, [openCompose]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -364,7 +427,7 @@ function InboxPageContent() {
       switch (e.key) {
         case 'c': // Compose
           e.preventDefault();
-          setShowComposeModal(true);
+          openCompose();
           break;
         case 'e': // Archive
           if (selectedConversation) {
@@ -402,11 +465,16 @@ function InboxPageContent() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedConversation, conversations, handleSelectConversation, handleBackToList, updateStatus]);
+  }, [selectedConversation, conversations, handleSelectConversation, handleBackToList, updateStatus, openCompose]);
 
   // Filter change handlers
   const handleFilterChange = useCallback((f: FilterType) => {
     setFilter(f);
+    if (f === 'sent' || f === 'drafts') {
+      setSelectedConversation(null);
+      setFoldersOpenWhileReading(false);
+      setMobileView('list');
+    }
   }, []);
 
   const handleChannelFilterChange = useCallback((c: InboxChannel | 'all') => {
@@ -475,7 +543,7 @@ function InboxPageContent() {
             <RefreshCw className="w-5 h-5 text-slate-500" />
           </button>
           <button
-            onClick={() => setShowComposeModal(true)}
+            onClick={() => openCompose()}
             className="inline-flex items-center gap-2 px-3 lg:px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors text-sm lg:text-base"
           >
             <Plus className="w-4 h-4" />
@@ -499,7 +567,10 @@ function InboxPageContent() {
           mailboxes={mailboxes}
           mailboxesLoading={mailboxesLoading}
           stats={stats}
-          conversationCount={conversations.length}
+          conversationCount={
+            stats ? stats.total_open + stats.total_pending : conversations.length
+          }
+          draftsCount={drafts.length}
           isMobileOpen={showMobileSidebar}
           onMobileClose={handleMobileFiltersClose}
           collapsed={foldersCollapsed}
@@ -510,17 +581,37 @@ function InboxPageContent() {
           }
         />
 
-        {/* Conversation List */}
-        <ConversationList
-          conversations={conversations}
-          selectedConversationId={selectedConversation?.id || null}
-          onSelectConversation={handleSelectConversation}
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          mobileView={mobileView}
-          onBulkAction={loadConversations}
-          readingMode={readingMode}
-        />
+        {filter === 'drafts' ? (
+          <DraftsList
+            drafts={drafts}
+            mobileView={mobileView}
+            onSelectDraft={(draft) =>
+              openCompose({
+                subject: draft.subject ?? undefined,
+                body: draft.body_html ?? draft.body_text ?? undefined,
+                to: draft.to_addresses,
+                draftId: draft.id,
+              })
+            }
+          />
+        ) : (
+          <ConversationList
+            conversations={conversations}
+            selectedConversationId={selectedConversation?.id || null}
+            onSelectConversation={handleSelectConversation}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            mobileView={mobileView}
+            onBulkAction={loadConversations}
+            readingMode={readingMode}
+            emptyTitle={filter === 'sent' ? 'No sent mail' : undefined}
+            emptyDescription={
+              filter === 'sent'
+                ? 'Messages you send will show up here'
+                : undefined
+            }
+          />
+        )}
 
         {/* Conversation Detail */}
         <div className={cn(
@@ -561,18 +652,26 @@ function InboxPageContent() {
       {authProfile && authUser && (
         <ComposeModal
           open={showComposeModal}
+          composerKey={`compose-${composeSessionId}`}
           onOpenChange={(open) => {
             setShowComposeModal(open);
             if (!open) {
               setComposeInitialSubject(undefined);
               setComposeInitialBody(undefined);
+              setComposeInitialTo(undefined);
+              setComposeDraftId(null);
             }
           }}
           authProfile={authProfile}
           authUserEmail={authUser.email || ''}
-          onMessageSent={loadConversations}
+          onMessageSent={() => {
+            loadConversations();
+            loadDrafts();
+          }}
+          initialTo={composeInitialTo}
           initialSubject={composeInitialSubject}
           initialBody={composeInitialBody}
+          initialDraftId={composeDraftId}
         />
       )}
     </div>

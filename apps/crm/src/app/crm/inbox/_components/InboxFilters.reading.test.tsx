@@ -38,6 +38,47 @@ describe('InboxFilters reading rail', () => {
     expect(screen.queryByRole('button', { name: /folders/i })).toBeNull();
   });
 
+  it('calls onFilterChange when Sent is clicked and marks it active', () => {
+    const onFilterChange = vi.fn();
+    const { rerender } = render(
+      <InboxFilters {...baseProps} onFilterChange={onFilterChange} />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /^sent$/i }));
+    expect(onFilterChange).toHaveBeenCalledWith('sent');
+
+    rerender(<InboxFilters {...baseProps} filter="sent" onFilterChange={onFilterChange} />);
+    expect(screen.getByRole('button', { name: /^sent$/i }).getAttribute('aria-current')).toBe(
+      'true',
+    );
+  });
+
+  it('calls onFilterChange when Drafts is clicked and marks it active', () => {
+    const onFilterChange = vi.fn();
+    const { rerender } = render(
+      <InboxFilters
+        {...baseProps}
+        draftsCount={4}
+        onFilterChange={onFilterChange}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /drafts/i }));
+    expect(onFilterChange).toHaveBeenCalledWith('drafts');
+
+    rerender(
+      <InboxFilters
+        {...baseProps}
+        filter="drafts"
+        draftsCount={4}
+        onFilterChange={onFilterChange}
+      />,
+    );
+    expect(screen.getByRole('button', { name: /drafts/i }).getAttribute('aria-current')).toBe(
+      'true',
+    );
+  });
+
   it('makes collapsed folders inert and blurs a focused folder', () => {
     const { rerender } = render(
       <InboxFilters {...baseProps} collapsed={false} onCollapsedChange={vi.fn()} />,
