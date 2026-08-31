@@ -105,6 +105,7 @@ import {
 import {
   shouldShowEndDateFieldInSection,
 } from '@/lib/crm/coverage-end-date-fields';
+import { shouldShowPartnerFieldInForm } from '@/lib/crm/partner-fields';
 import { CalendarClock, ChevronDown, ChevronRight, Loader2, ShieldCheck, Heart, Shield } from 'lucide-react';
 
 // Section accent palette — see section-accent-tokens.ts (shared with SectionNav).
@@ -930,6 +931,13 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
           values: defaultValues,
         })
       ) {
+        continue;
+      }
+      // Partner Details only exists for a Partner / Referring Partner (or a
+      // record that already holds partner data) — otherwise every contact
+      // carries an empty card. Reads the SAVED relationship_type, so the card
+      // appears as soon as the inline Partner Type edit persists.
+      if (!shouldShowPartnerFieldInForm({ fieldKey: field.key, values: defaultValues })) {
         continue;
       }
       const section = field.section || 'main';

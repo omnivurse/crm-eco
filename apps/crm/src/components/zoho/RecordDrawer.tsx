@@ -42,6 +42,8 @@ import {
 // Readable labels for section keys
 const SECTION_LABELS: Record<string, string> = {
   core: 'Contact Information',
+  main: 'Main',
+  partner: 'Partner Details',
   management: 'Contact Management',
   address: 'Address',
   family_spouse: 'Spouse Information',
@@ -69,7 +71,7 @@ const SECTION_LABELS: Record<string, string> = {
 
 // Section display order
 const SECTION_ORDER = [
-  'core', 'management', 'address', 'health_sharing', 'health_insurance', 'insurance', 'business',
+  'core', 'main', 'partner', 'management', 'address', 'health_sharing', 'health_insurance', 'insurance', 'business',
   'family_spouse', 'family', 'family_children', 'product',
   'dental_coverage', 'vision_coverage', 'other_coverage', 'life_coverage',
   'commissions', 'payment', 'identifiers', 'portal',

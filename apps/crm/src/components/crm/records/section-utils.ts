@@ -15,6 +15,11 @@ import { shouldShowAddressFieldInForm } from '@/lib/crm/address-field-dedupe';
 import { shouldShowEndDateFieldInSection } from '@/lib/crm/coverage-end-date-fields';
 import { shouldShowOwnershipFieldInForm } from '@/lib/crm/ownership-field-dedupe';
 import {
+  PARTNER_SECTION_KEY,
+  PARTNER_TYPE_LABEL,
+  shouldShowPartnerFieldInForm,
+} from '@/lib/crm/partner-fields';
+import {
   PERSON_MODULE_KEYS,
   isPersonModuleKey,
 } from '@/lib/crm/person-module-keys';
@@ -84,6 +89,10 @@ export const CRM_SECTION_NAV_EVENT = 'crm-record-section-navigate' as const;
 export const PERSON_SECTION_DISPLAY_ORDER: readonly string[] = [
   'core',
   'main',
+  // Partner Details sits directly under Main: for a Partner / Referring Partner
+  // it IS identity ("who are they and what do they do"). It stays hidden on the
+  // ~99% of records that are not partners — see shouldShowPartnerFieldInForm.
+  'partner',
   'personal',
   'contact',
   'notes_history',
@@ -213,7 +222,7 @@ export function getSectionDisplayOrder(moduleKey?: string | null): readonly stri
 }
 
 export function getSectionNavGroup(sectionKey: string): SectionNavGroup {
-  if (['core', 'main', 'personal', 'contact', 'start_date'].includes(sectionKey)) {
+  if (['core', 'main', 'partner', 'personal', 'contact', 'start_date'].includes(sectionKey)) {
     return 'identity';
   }
   if (['notes_history', 'notes'].includes(sectionKey)) return 'notes';
@@ -286,6 +295,7 @@ export function getSectionNavGroupLabel(group: SectionNavGroup): string {
 export const SECTION_ACCENT_BY_KEY: Partial<Record<string, LayoutSectionAccent>> = {
   core: 'blue',
   main: 'blue',
+  partner: 'indigo',
   personal: 'blue',
   contact: 'blue',
   notes_history: 'sky',
@@ -461,6 +471,11 @@ export function shouldIncludeSectionInNav(
  * Leaves custom titles alone (anything that doesn't start with "Insurance", case-insensitive).
  */
 export function normalizeLegacySectionHeading(key: string, label: string): string {
+  if (key === 'relationships') {
+    const t = label.trim();
+    if (t === '' || /^relationships?$/i.test(t)) return PARTNER_TYPE_LABEL;
+    return label;
+  }
   if (key !== 'insurance') return label;
   const t = label.trim();
   if (t === '') return 'HealthShare';
@@ -521,6 +536,10 @@ export function fallbackSectionHeadingFromFieldSection(sectionKey: string): stri
   // Legacy Zoho `insurance` holds product / premium / date rows — not the same as `health_sharing`.
   if (sectionKey === 'insurance') return 'Insurance';
   if (sectionKey === 'health_sharing') return 'HealthShare';
+  // Bare "Partner" reads like a yes/no flag; the card holds industry, services
+  // and the start date.
+  if (sectionKey === PARTNER_SECTION_KEY) return 'Partner Details';
+  if (sectionKey === 'relationships') return PARTNER_TYPE_LABEL;
   return titleCaseSectionKey(sectionKey);
 }
 
@@ -612,6 +631,9 @@ export function getSectionMeta(
         values: recordData,
       })
     ) {
+      continue;
+    }
+    if (!shouldShowPartnerFieldInForm({ fieldKey: field.key, values: recordData })) {
       continue;
     }
     if (!grouped[section]) grouped[section] = [];

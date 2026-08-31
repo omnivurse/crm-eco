@@ -69,6 +69,9 @@ describe('section-utils person coverage visibility', () => {
       'Product',
     );
     expect(normalizeLegacySectionHeading('insurance', 'Insurance')).toBe('HealthShare');
+    expect(normalizeLegacySectionHeading('relationships', 'Relationships')).toBe('Partner Type');
+    expect(normalizeLegacySectionHeading('relationships', 'Relationship')).toBe('Partner Type');
+    expect(fallbackSectionHeadingFromFieldSection('relationships')).toBe('Partner Type');
   });
 
   it('does not count matching ownership aliases toward the Ownership badge', () => {
@@ -557,5 +560,74 @@ describe('groupSectionsForNav', () => {
     const bands = groupSectionsForNav([meta('core', 1, 1), meta('address', 1, 1)]);
     expect(findSectionNavGroupForKey(bands, 'address')).toBe('address');
     expect(findSectionNavGroupForKey(bands, 'nope')).toBeNull();
+  });
+});
+
+describe('Partner Details section — visible only for partners', () => {
+  const partnerFields = [
+    field('relationship_type', 'main'),
+    field('partner_industry', 'partner'),
+    field('partner_services', 'partner'),
+    field('partner_since', 'partner'),
+  ];
+  const layout = {
+    id: 'l',
+    config: {
+      sections: [
+        { key: 'main', label: 'Main', columns: 2 as const },
+        { key: 'partner', label: 'Partner Details', columns: 2 as const },
+      ],
+    },
+  } as never;
+
+  const partnerSection = (data: Record<string, unknown>, inlineEditable: boolean) =>
+    getSectionMeta(partnerFields, layout, data, 'contacts', { inlineEditable }).find(
+      (s) => s.key === 'partner',
+    );
+
+  it('is absent on an untagged contact, even while inline-editing', () => {
+    // The 15,627 blank-relationship contacts must not grow an empty card —
+    // inlineEditable normally forces every section to stay visible.
+    expect(partnerSection({ relationship_type: '' }, false)).toBeUndefined();
+    expect(partnerSection({ relationship_type: '' }, true)).toBeUndefined();
+  });
+
+  it('is absent for the neighbouring relationship values', () => {
+    for (const v of ['Member', 'Advisor', 'Agency', 'DPC Provider', 'Provider']) {
+      expect(partnerSection({ relationship_type: v }, true)).toBeUndefined();
+    }
+  });
+
+  it('appears for a Referring Partner (Robin Anderson)', () => {
+    const robin = partnerSection(
+      { relationship_type: 'Referring Partner', partner_industry: 'Financial Advisor / Wealth Management' },
+      false,
+    );
+    expect(robin?.label).toBe('Partner Details');
+    expect(robin?.fieldCount).toBe(3);
+    expect(robin?.filledCount).toBe(1);
+  });
+
+  it('appears for a service Partner', () => {
+    expect(partnerSection({ relationship_type: 'Partner' }, true)?.fieldCount).toBe(3);
+  });
+
+  it('still shows a stranded partner value on a re-tagged record', () => {
+    const s = partnerSection(
+      { relationship_type: 'Member', partner_industry: 'Chiropractic' },
+      false,
+    );
+    expect(s?.fieldCount).toBe(1);
+    expect(s?.filledCount).toBe(1);
+  });
+
+  it('sits under Main and inside the Profile nav band', () => {
+    expect(getSectionNavGroup('partner')).toBe('identity');
+    expect(compareSectionOrder('main', 'partner', 'contacts')).toBeLessThan(0);
+    expect(compareSectionOrder('partner', 'personal', 'contacts')).toBeLessThan(0);
+  });
+
+  it('falls back to "Partner Details" when no layout names the section', () => {
+    expect(fallbackSectionHeadingFromFieldSection('partner')).toBe('Partner Details');
   });
 });
