@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState, useEffect, useCallback, useMemo } from 'react';
+import { Suspense, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
 import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase-client';
@@ -32,6 +32,11 @@ import { MessageThread } from './_components/MessageThread';
 import { ReplyForm } from './_components/ReplyForm';
 import { ComposeModal } from './_components/ComposeModal';
 import { NotificationSettings } from './_components/NotificationSettings';
+import {
+  inboxDraftToComposerSeed,
+  shouldStartComposeSession,
+} from '@/lib/inbox/draft-compose';
+import type { EmailAttachment } from '@/components/email/EmailAttachments';
 
 export default function InboxPage() {
   return (
@@ -58,10 +63,14 @@ function InboxPageContent() {
   const [verifiedDomains, setVerifiedDomains] = useState<string[]>([]);
   const [mailboxesLoading, setMailboxesLoading] = useState(true);
   const [showComposeModal, setShowComposeModal] = useState(false);
+  const composeOpenRef = useRef(false);
   const [composeSessionId, setComposeSessionId] = useState(0);
   const [composeInitialSubject, setComposeInitialSubject] = useState<string | undefined>();
   const [composeInitialBody, setComposeInitialBody] = useState<string | undefined>();
   const [composeInitialTo, setComposeInitialTo] = useState<Array<{ email: string; name?: string }> | undefined>();
+  const [composeInitialCc, setComposeInitialCc] = useState<Array<{ email: string; name?: string }> | undefined>();
+  const [composeInitialBcc, setComposeInitialBcc] = useState<Array<{ email: string; name?: string }> | undefined>();
+  const [composeInitialAttachments, setComposeInitialAttachments] = useState<EmailAttachment[] | undefined>();
   const [composeDraftId, setComposeDraftId] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<InboxDraft[]>([]);
 
@@ -69,12 +78,21 @@ function InboxPageContent() {
     subject?: string;
     body?: string;
     to?: Array<{ email: string; name?: string }>;
+    cc?: Array<{ email: string; name?: string }>;
+    bcc?: Array<{ email: string; name?: string }>;
+    attachments?: EmailAttachment[];
     draftId?: string | null;
   }) => {
+    if (!shouldStartComposeSession(composeOpenRef.current, opts !== undefined)) return;
+
+    composeOpenRef.current = true;
     setComposeSessionId((n) => n + 1);
     setComposeInitialSubject(opts?.subject);
     setComposeInitialBody(opts?.body);
     setComposeInitialTo(opts?.to);
+    setComposeInitialCc(opts?.cc);
+    setComposeInitialBcc(opts?.bcc);
+    setComposeInitialAttachments(opts?.attachments);
     setComposeDraftId(opts?.draftId ?? null);
     setShowComposeModal(true);
   }, []);
@@ -585,14 +603,10 @@ function InboxPageContent() {
           <DraftsList
             drafts={drafts}
             mobileView={mobileView}
-            onSelectDraft={(draft) =>
-              openCompose({
-                subject: draft.subject ?? undefined,
-                body: draft.body_html ?? draft.body_text ?? undefined,
-                to: draft.to_addresses,
-                draftId: draft.id,
-              })
-            }
+            onSelectDraft={(draft) => {
+              const seed = inboxDraftToComposerSeed(draft);
+              openCompose({ ...seed, draftId: draft.id });
+            }}
           />
         ) : (
           <ConversationList
@@ -654,11 +668,15 @@ function InboxPageContent() {
           open={showComposeModal}
           composerKey={`compose-${composeSessionId}`}
           onOpenChange={(open) => {
+            composeOpenRef.current = open;
             setShowComposeModal(open);
             if (!open) {
               setComposeInitialSubject(undefined);
               setComposeInitialBody(undefined);
               setComposeInitialTo(undefined);
+              setComposeInitialCc(undefined);
+              setComposeInitialBcc(undefined);
+              setComposeInitialAttachments(undefined);
               setComposeDraftId(null);
             }
           }}
@@ -669,8 +687,11 @@ function InboxPageContent() {
             loadDrafts();
           }}
           initialTo={composeInitialTo}
+          initialCc={composeInitialCc}
+          initialBcc={composeInitialBcc}
           initialSubject={composeInitialSubject}
           initialBody={composeInitialBody}
+          initialAttachments={composeInitialAttachments}
           initialDraftId={composeDraftId}
         />
       )}
