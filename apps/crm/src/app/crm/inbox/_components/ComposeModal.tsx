@@ -60,6 +60,7 @@ export function ComposeModal({
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
   const [templateSubject, setTemplateSubject] = useState<string | undefined>(undefined);
   const [templateBody, setTemplateBody] = useState<string | undefined>(undefined);
+  const [templateRevision, setTemplateRevision] = useState(0);
   const draftIdRef = useRef<string | null>(initialDraftId ?? null);
 
   useEffect(() => {
@@ -277,6 +278,7 @@ export function ComposeModal({
   const handleTemplateSelect = useCallback((template: { subject: string; body_html: string }) => {
     setTemplateSubject(template.subject);
     setTemplateBody(template.body_html);
+    setTemplateRevision((revision) => revision + 1);
     toast.success(toastCopy.applied('Template'));
   }, []);
 
@@ -286,6 +288,7 @@ export function ComposeModal({
       draftIdRef.current = null;
       setTemplateSubject(undefined);
       setTemplateBody(undefined);
+      setTemplateRevision(0);
     }
     onOpenChange(o);
   }, [onOpenChange]);
@@ -314,7 +317,7 @@ export function ComposeModal({
           </DialogHeader>
           <div className="px-2 pb-2">
             <EmailComposer
-              key={composerKey}
+              key={`${composerKey}-template-${templateRevision}`}
               initialTo={initialTo}
               initialCc={initialCc}
               initialBcc={initialBcc}

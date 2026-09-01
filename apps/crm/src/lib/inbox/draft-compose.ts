@@ -11,6 +11,17 @@ export interface DraftComposerSeed {
 }
 
 /**
+ * Starting another blank compose session while the modal is already open
+ * would remount the editor and erase unsaved work.
+ */
+export function shouldStartComposeSession(
+  isOpen: boolean,
+  hasExplicitSeed: boolean,
+): boolean {
+  return !isOpen || hasExplicitSeed;
+}
+
+/**
  * Hydrate every delivery-relevant draft field when the composer is reopened.
  * Omitting a field here causes the next save or send to silently replace it
  * with the composer's empty default.

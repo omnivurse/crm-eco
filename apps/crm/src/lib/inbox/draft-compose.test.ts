@@ -3,6 +3,7 @@ import type { InboxDraft } from './types';
 import {
   composerAttachmentsToDraft,
   inboxDraftToComposerSeed,
+  shouldStartComposeSession,
 } from './draft-compose';
 
 const draft: InboxDraft = {
@@ -61,5 +62,16 @@ describe('draft composer hydration', () => {
     expect(composerAttachmentsToDraft(attachment ? [attachment] : [])).toEqual(
       draft.attachments,
     );
+  });
+});
+
+describe('compose session remount guard', () => {
+  it('preserves an already-open blank compose session', () => {
+    expect(shouldStartComposeSession(true, false)).toBe(false);
+  });
+
+  it('allows first opens and intentional seeded replacements', () => {
+    expect(shouldStartComposeSession(false, false)).toBe(true);
+    expect(shouldStartComposeSession(true, true)).toBe(true);
   });
 });

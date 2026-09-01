@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { EmailComposerData } from '@/components/email/EmailComposer';
 import type { EmailAttachment } from '@/components/email/EmailAttachments';
@@ -9,15 +9,33 @@ const { composerSpy } = vi.hoisted(() => ({
   composerSpy: vi.fn(),
 }));
 
-vi.mock('@/components/email/EmailComposer', () => ({
-  EmailComposer: (props: Record<string, unknown>) => {
-    composerSpy(props);
-    return <div data-testid="email-composer" />;
-  },
-}));
+vi.mock('@/components/email/EmailComposer', async () => {
+  const React = await import('react');
+  return {
+    EmailComposer: (props: Record<string, unknown>) => {
+      const [mountedSubject] = React.useState(() => String(props.initialSubject ?? ''));
+      composerSpy(props);
+      return <div data-testid="email-composer">{mountedSubject}</div>;
+    },
+  };
+});
 
 vi.mock('./TemplatePicker', () => ({
-  TemplatePicker: () => null,
+  TemplatePicker: ({
+    onSelect,
+  }: {
+    onSelect: (template: { subject: string; body_html: string }) => void;
+  }) => (
+    <button
+      type="button"
+      onClick={() => onSelect({
+        subject: 'Template subject',
+        body_html: '<p>Template body</p>',
+      })}
+    >
+      Apply test template
+    </button>
+  ),
 }));
 
 vi.mock('sonner', () => ({
@@ -123,5 +141,16 @@ describe('ComposeModal resumed drafts', () => {
         attachments: [attachment],
       }),
     ).rejects.toThrow('write failed');
+  });
+
+  it('remounts the editor with the selected template content', () => {
+    renderResumedDraft();
+    expect(screen.getByTestId('email-composer').textContent).toBe('Benefits');
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Apply test template', hidden: true }),
+    );
+
+    expect(screen.getByTestId('email-composer').textContent).toBe('Template subject');
   });
 });

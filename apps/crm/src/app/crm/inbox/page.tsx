@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState, useEffect, useCallback, useMemo } from 'react';
+import { Suspense, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
 import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase-client';
@@ -32,7 +32,10 @@ import { MessageThread } from './_components/MessageThread';
 import { ReplyForm } from './_components/ReplyForm';
 import { ComposeModal } from './_components/ComposeModal';
 import { NotificationSettings } from './_components/NotificationSettings';
-import { inboxDraftToComposerSeed } from '@/lib/inbox/draft-compose';
+import {
+  inboxDraftToComposerSeed,
+  shouldStartComposeSession,
+} from '@/lib/inbox/draft-compose';
 import type { EmailAttachment } from '@/components/email/EmailAttachments';
 
 export default function InboxPage() {
@@ -60,6 +63,7 @@ function InboxPageContent() {
   const [verifiedDomains, setVerifiedDomains] = useState<string[]>([]);
   const [mailboxesLoading, setMailboxesLoading] = useState(true);
   const [showComposeModal, setShowComposeModal] = useState(false);
+  const composeOpenRef = useRef(false);
   const [composeSessionId, setComposeSessionId] = useState(0);
   const [composeInitialSubject, setComposeInitialSubject] = useState<string | undefined>();
   const [composeInitialBody, setComposeInitialBody] = useState<string | undefined>();
@@ -79,6 +83,9 @@ function InboxPageContent() {
     attachments?: EmailAttachment[];
     draftId?: string | null;
   }) => {
+    if (!shouldStartComposeSession(composeOpenRef.current, opts !== undefined)) return;
+
+    composeOpenRef.current = true;
     setComposeSessionId((n) => n + 1);
     setComposeInitialSubject(opts?.subject);
     setComposeInitialBody(opts?.body);
@@ -661,6 +668,7 @@ function InboxPageContent() {
           open={showComposeModal}
           composerKey={`compose-${composeSessionId}`}
           onOpenChange={(open) => {
+            composeOpenRef.current = open;
             setShowComposeModal(open);
             if (!open) {
               setComposeInitialSubject(undefined);
