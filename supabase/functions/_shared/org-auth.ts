@@ -22,6 +22,7 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { authorizeInternalEdgeRequest } from './cron-auth.ts';
+import { decideProfileAccess, membershipAllowsAccess } from './org-auth-policy.ts';
 
 type ServiceClient = ReturnType<typeof createClient>;
 
@@ -37,7 +38,7 @@ export async function callerMayAccessOrg(
   service: ServiceClient,
   req: Request,
   organizationId: string,
-  opts: OrgAccessOptions = {},
+  opts: OrgAccessOptions = {}
 ): Promise<boolean> {
   if (!organizationId) return false;
 
@@ -60,34 +61,33 @@ export async function callerMayAccessOrg(
 
   const roles = opts.requiredRoles;
 
-  const { data: profile } = await service
+  const { data: profile, error: profileError } = await service
     .from('profiles')
-    .select('id, organization_id, role')
+    .select('organization_id, role, is_active')
     .eq('user_id', user.id)
     .maybeSingle();
 
-  if (profile?.organization_id === organizationId) {
-    if (!roles) return true;
-    if (typeof profile.role === 'string' && roles.includes(profile.role)) return true;
-    // Fall through: the membership row may carry a higher role than the profile.
-  }
+  // A profile deactivation is global and must override any stale active tenant
+  // membership. Session revocation is best-effort, so the live profile state is
+  // the durable backstop for already-issued JWTs.
+  if (profileError) return false;
+  const profileDecision = decideProfileAccess(profile, organizationId, roles);
+  if (profileDecision === 'deny') return false;
+  if (profileDecision === 'allow') return true;
 
-  if (profile?.id) {
-    const { data: membership } = await service
-      .from('organization_members')
-      .select('id, role, is_active')
-      .eq('organization_id', organizationId)
-      .or(`user_id.eq.${user.id},profile_id.eq.${profile.id}`)
-      .limit(1)
-      .maybeSingle();
+  // organization_members is keyed by auth user_id; it has no profile_id column.
+  // Querying that nonexistent column made every secondary-tenant check error and
+  // silently denied valid admins after they switched away from their home org.
+  const { data: membership, error: membershipError } = await service
+    .from('organization_members')
+    .select('role, is_active')
+    .eq('organization_id', organizationId)
+    .eq('user_id', user.id)
+    .eq('is_active', true)
+    .limit(1)
+    .maybeSingle();
 
-    if (membership && membership.is_active !== false) {
-      if (!roles) return true;
-      if (typeof membership.role === 'string' && roles.includes(membership.role)) return true;
-    }
-  }
-
-  return false;
+  return !membershipError && membershipAllowsAccess(membership, roles);
 }
 
 /**
