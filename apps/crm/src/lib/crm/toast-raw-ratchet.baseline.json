@@ -1,5 +1,5 @@
 {
-  "total": 534,
+  "total": 533,
   "byDir": {
     "src/app/crm/activities": 1,
     "src/app/crm/analytics": 1,
@@ -23,7 +23,7 @@
     "src/app/crm/imports": 15,
     "src/app/crm/imports/update": 8,
     "src/app/crm/inbox": 2,
-    "src/app/crm/inbox/_components": 9,
+    "src/app/crm/inbox/_components": 8,
     "src/app/crm/inbox/[conversationId]": 5,
     "src/app/crm/integrations/_components": 11,
     "src/app/crm/integrations/logs": 2,
