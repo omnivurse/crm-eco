@@ -5,7 +5,7 @@
  * Never sends PHI. Skips users without recent activity / already refreshed today.
  * Soft org daily token ceiling via HABITS_AI_ORG_DAILY_TOKEN_BUDGET.
  *
- * Auth: x-vercel-cron or Bearer CRON_SECRET
+ * Auth: Authorization: Bearer CRON_SECRET
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -24,7 +24,6 @@ export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
 function authorised(request: NextRequest): boolean {
-  if (request.headers.get('x-vercel-cron')) return true;
   const secret = process.env.CRON_SECRET;
   if (!secret) return false;
   return request.headers.get('authorization') === `Bearer ${secret}`;
