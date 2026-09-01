@@ -160,6 +160,24 @@ describe('POST /api/team/invite', () => {
     expect(body.error).toBe('Cannot invite admin role');
   });
 
+  it('returns 403 when a CRM admin without owner privileges invites an org admin', async () => {
+    mockGetAuthProfile.mockResolvedValue({
+      ...buildProfile({ crm_role: 'crm_admin' }),
+      role: 'staff',
+      crm_role: 'crm_admin',
+    });
+    mockCreateClient.mockResolvedValue({ from: vi.fn() });
+    const req = buildRequest('http://localhost:3000/api/team/invite', {
+      method: 'POST',
+      body: { email: 'new@example.com', role: 'admin' },
+    });
+
+    const res = await POST(req);
+
+    expect(res.status).toBe(403);
+    await expect(res.json()).resolves.toEqual({ error: 'Cannot invite admin role' });
+  });
+
   it('returns 400 when user already exists in org', async () => {
     mockGetAuthProfile.mockResolvedValue({ ...buildProfile({ crm_role: 'admin' }), role: 'admin' });
     const sb = buildMockClient({ existingProfile: { id: 'existing-1' } });
