@@ -387,16 +387,16 @@ export async function staffEndPlan(
   const memCheck = await getMembershipForMember(ctx, input.membership_id, input.member_id);
   if (!memCheck.success) return { success: false, error: memCheck.error };
 
-  // A scheduled plan change would resurrect coverage on its effective date
-  // (and its pending row would hijack the recalc once this row terminates) —
-  // require it to be cancelled first.
+  // Any still-pending scheduled change would resurrect coverage when the cron
+  // activates it (and can hijack the recalc once this row terminates). This
+  // includes a change due today while the cron is delayed or still running.
+  // Require it to be cancelled or activated before ending the current plan.
   const { data: scheduledPending } = await ctx.supabase
     .from('memberships')
     .select('id, effective_date, custom_fields')
     .eq('member_id', input.member_id)
     .eq('organization_id', ctx.organizationId)
     .eq('status', 'pending')
-    .gt('effective_date', todayIso())
     .limit(1)
     .maybeSingle();
   if (
