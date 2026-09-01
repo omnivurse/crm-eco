@@ -29,3 +29,39 @@ export function crmRoleForTenantRole(tenantRole: string): string | null {
       return null;
   }
 }
+
+export interface ActiveTenantScope {
+  organizationId: string;
+  role: string;
+}
+
+/**
+ * Scope a primary profile to the active tenant without carrying home-org
+ * privileges into a secondary organization.
+ *
+ * Keep every profile helper on this one transformation. A previous partial fix
+ * updated `getAuthProfile` only, while routes using the parallel
+ * `getCurrentProfile` helper retained the home `crm_role`.
+ */
+export function scopeProfileToActiveTenant<
+  T extends {
+    organization_id: string;
+    role: string | null;
+    crm_role: string | null;
+  },
+>(
+  profile: T,
+  tenant: ActiveTenantScope | null,
+): T & { active_tenant_role: string | null } {
+  if (!tenant || tenant.organizationId === profile.organization_id) {
+    return { ...profile, active_tenant_role: null };
+  }
+
+  return {
+    ...profile,
+    organization_id: tenant.organizationId,
+    role: tenant.role,
+    crm_role: crmRoleForTenantRole(tenant.role),
+    active_tenant_role: tenant.role,
+  };
+}
