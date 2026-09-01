@@ -20,7 +20,13 @@ vi.mock('../membershipBillingRecalc', async (importOriginal) => {
   };
 });
 
-import { staffSchedulePlanChange, staffCancelScheduledPlanChange } from '../memberPlan';
+import {
+  staffAssignPlan,
+  staffCancelScheduledPlanChange,
+  staffChangePlan,
+  staffEndPlan,
+  staffSchedulePlanChange,
+} from '../memberPlan';
 import type { StaffCoverageContext } from '../staffDependentCoverage';
 
 type Op = {
@@ -90,6 +96,129 @@ const CURRENT_ACTIVE = { data: { id: 'mem-old', plan_id: 'plan-care', end_date: 
 
 beforeEach(() => {
   vi.clearAllMocks();
+});
+
+describe('immediate plan date guards', () => {
+  it('still assigns a plan effective today', async () => {
+    const today = new Date().toISOString().slice(0, 10);
+    const { supabase, ops } = makeSupabase({
+      members: [MEMBER],
+      plans: [PLAN],
+      memberships: [
+        { data: null, error: null }, // no existing active membership
+        { data: { id: 'mem-new' }, error: null }, // insert result
+      ],
+    });
+
+    const result = await staffAssignPlan(ctx(supabase), {
+      member_id: 'member-1',
+      plan_id: 'plan-premium',
+      effective_date: today,
+    });
+
+    expect(result.success).toBe(true);
+    expect(ops.find((op) => op.kind === 'insert')?.values).toMatchObject({
+      status: 'active',
+      effective_date: today,
+    });
+  });
+
+  it('rejects a future assignment before creating an active membership', async () => {
+    const { supabase, ops } = makeSupabase({});
+
+    const result = await staffAssignPlan(ctx(supabase), {
+      member_id: 'member-1',
+      plan_id: 'plan-premium',
+      effective_date: FUTURE,
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/cannot be assigned before its effective date/i);
+    expect(ops).toHaveLength(0);
+  });
+
+  it('rejects a future end date before terminating an active membership', async () => {
+    const { supabase, ops } = makeSupabase({});
+
+    const result = await staffEndPlan(ctx(supabase), {
+      member_id: 'member-1',
+      membership_id: 'mem-old',
+      end_date: FUTURE,
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/cannot be ended before its end date/i);
+    expect(ops).toHaveLength(0);
+  });
+
+  it('still terminates a plan ending today', async () => {
+    const today = new Date().toISOString().slice(0, 10);
+    const { supabase, ops } = makeSupabase({
+      memberships: [
+        { data: { id: 'mem-old' }, error: null }, // ownership check
+        { data: null, error: null }, // no scheduled pending membership
+        { data: null, error: null }, // termination update
+      ],
+    });
+
+    const result = await staffEndPlan(ctx(supabase), {
+      member_id: 'member-1',
+      membership_id: 'mem-old',
+      end_date: today,
+    });
+
+    expect(result.success).toBe(true);
+    expect(ops.find((op) => op.kind === 'update')?.values).toMatchObject({
+      status: 'terminated',
+      end_date: today,
+    });
+  });
+
+  it('rejects an immediate change while another plan is pending', async () => {
+    const { supabase, ops } = makeSupabase({
+      memberships: [
+        { data: { id: 'mem-old' }, error: null }, // ownership check
+        {
+          data: { id: 'mem-pending', effective_date: FUTURE },
+          error: null,
+        },
+      ],
+    });
+
+    const result = await staffChangePlan(ctx(supabase), {
+      member_id: 'member-1',
+      membership_id: 'mem-old',
+      plan_id: 'plan-premium',
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/already has a pending plan/i);
+    expect(ops.some((op) => op.kind === 'update')).toBe(false);
+  });
+
+  it('still changes the active plan when nothing is pending', async () => {
+    const { supabase, ops } = makeSupabase({
+      memberships: [
+        { data: { id: 'mem-old' }, error: null }, // ownership check
+        { data: null, error: null }, // no pending membership
+        { data: null, error: null }, // plan update
+      ],
+      plans: [PLAN],
+    });
+
+    const result = await staffChangePlan(ctx(supabase), {
+      member_id: 'member-1',
+      membership_id: 'mem-old',
+      plan_id: 'plan-premium',
+    });
+
+    expect(result.success).toBe(true);
+    expect(ops.find((op) => op.kind === 'update')?.values).toMatchObject({
+      plan_id: 'plan-premium',
+      status: 'active',
+      end_date: null,
+    });
+  });
 });
 
 describe('staffSchedulePlanChange', () => {

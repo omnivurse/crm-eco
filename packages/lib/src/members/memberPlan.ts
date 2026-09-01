@@ -89,6 +89,13 @@ export async function staffAssignPlan(
 ): Promise<StaffActionResult<{ membershipId: string }>> {
   if (!input.plan_id) return { success: false, error: 'A plan is required' };
   if (!input.effective_date) return { success: false, error: 'An effective date is required' };
+  if (input.effective_date > todayIso()) {
+    return {
+      success: false,
+      error:
+        'A plan cannot be assigned before its effective date. Use today or an earlier date.',
+    };
+  }
 
   const memberCheck = await assertMemberInOrg(ctx, input.member_id);
   if (!memberCheck.success) return { success: false, error: memberCheck.error };
@@ -142,6 +149,25 @@ export async function staffChangePlan(
 
   const memCheck = await getMembershipForMember(ctx, input.membership_id, input.member_id);
   if (!memCheck.success) return { success: false, error: memCheck.error };
+
+  // An immediate change must not leave a future membership queued behind it:
+  // the activation cron would later replace this change with the stale pending
+  // plan. The UI disables this path, but the server action must enforce it too.
+  const { data: existingPending, error: pendingError } = await ctx.supabase
+    .from('memberships')
+    .select('id, effective_date')
+    .eq('member_id', input.member_id)
+    .eq('organization_id', ctx.organizationId)
+    .eq('status', 'pending')
+    .limit(1)
+    .maybeSingle();
+  if (pendingError) return { success: false, error: pendingError.message };
+  if (existingPending?.id) {
+    return {
+      success: false,
+      error: `This member already has a pending plan (effective ${existingPending.effective_date}). Resolve it before changing the active plan.`,
+    };
+  }
 
   const planCheck = await getPlanInOrg(ctx, input.plan_id);
   if (!planCheck.success) return { success: false, error: planCheck.error };
@@ -383,6 +409,13 @@ export async function staffEndPlan(
   input: { member_id: string; membership_id: string; end_date: string; reason?: string },
 ): Promise<StaffActionResult> {
   if (!input.end_date) return { success: false, error: 'An end date is required' };
+  if (input.end_date > todayIso()) {
+    return {
+      success: false,
+      error:
+        'A plan cannot be ended before its end date. Use today or an earlier date.',
+    };
+  }
 
   const memCheck = await getMembershipForMember(ctx, input.membership_id, input.member_id);
   if (!memCheck.success) return { success: false, error: memCheck.error };

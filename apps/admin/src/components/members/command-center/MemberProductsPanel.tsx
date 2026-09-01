@@ -378,7 +378,12 @@ export function MemberProductsPanel({ memberId, memberships, availablePlans }: P
             {mode === 'assign' && (
               <div className="space-y-1.5">
                 <label className="text-sm font-medium">Effective date</label>
-                <Input type="date" value={effectiveDate} onChange={(e) => setEffectiveDate(e.target.value)} />
+                <Input
+                  type="date"
+                  max={todayIso()}
+                  value={effectiveDate}
+                  onChange={(e) => setEffectiveDate(e.target.value)}
+                />
               </div>
             )}
             {mode === 'change' && (
@@ -443,7 +448,12 @@ export function MemberProductsPanel({ memberId, memberships, availablePlans }: P
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
               <label className="text-sm font-medium">End date</label>
-              <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+              <Input
+                type="date"
+                max={todayIso()}
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+              />
             </div>
             <div className="space-y-1.5">
               <label className="text-sm font-medium">Reason (optional)</label>
