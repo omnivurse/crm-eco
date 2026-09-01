@@ -3,9 +3,12 @@ import {
   EMAIL_IFRAME_SANDBOX,
   attachmentByteSize,
   emailIframeHeight,
+  extractEmailBodyFragment,
   formatInboxFileSize,
   measureEmailDocument,
   shouldFollowNewMessages,
+  stripExecutableMarkup,
+  unconstrainedIframeMeasureHeight,
 } from './inbox-reading';
 
 describe('formatInboxFileSize', () => {
@@ -55,6 +58,37 @@ describe('EMAIL_IFRAME_SANDBOX', () => {
   it('allows same-origin measure and never allows scripts', () => {
     expect(EMAIL_IFRAME_SANDBOX).toContain('allow-same-origin');
     expect(EMAIL_IFRAME_SANDBOX).not.toContain('allow-scripts');
+  });
+});
+
+describe('extractEmailBodyFragment', () => {
+  it('unwraps a full HTML document so srcDoc is not nested', () => {
+    const doc = `<!DOCTYPE html><html><head><script>alert(1)</script></head><body><p>Line one</p><p>Line two</p></body></html>`;
+    expect(extractEmailBodyFragment(doc)).toBe('<p>Line one</p><p>Line two</p>');
+  });
+
+  it('leaves a fragment unchanged', () => {
+    expect(extractEmailBodyFragment('<p>Thanks</p>')).toBe('<p>Thanks</p>');
+  });
+});
+
+describe('stripExecutableMarkup', () => {
+  it('removes script tags so Chrome has nothing to execute in srcDoc', () => {
+    expect(stripExecutableMarkup('<p>Hi</p><script>alert(1)</script>')).toBe('<p>Hi</p>');
+  });
+});
+
+describe('unconstrainedIframeMeasureHeight', () => {
+  it('shrinks the frame before measuring so an 80px viewport is not the result', () => {
+    const iframe = {
+      style: { height: '80px' },
+      contentDocument: {
+        body: { scrollHeight: 640, offsetHeight: 80 },
+        documentElement: { scrollHeight: 640, offsetHeight: 80 },
+      },
+    };
+    expect(unconstrainedIframeMeasureHeight(iframe)).toBe(656);
+    expect(iframe.style.height).toBe('1px');
   });
 });
 

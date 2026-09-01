@@ -31,14 +31,40 @@ export const EMAIL_IFRAME_SANDBOX =
 let readingPurifier: ReturnType<typeof createDOMPurify> | null = null;
 
 /**
- * Defense-in-depth in front of the sandboxed iframe: strip scripting vectors
- * from stored email HTML before it enters srcDoc. Uses a dedicated DOMPurify
- * instance so the hook forcing target=_blank + rel=noopener on links (which
- * neutralizes window.opener through the allow-popups-to-escape-sandbox path)
- * never leaks into other DOMPurify users (signature previews, notes).
+ * Inbound rows are often a full HTML document (`<!DOCTYPE>…<body>…`). Putting
+ * that inside our srcDoc wrapper nests `<html>` and leaves `<script>` in
+ * `<head>` — Chrome then logs "Blocked script execution in about:srcdoc"
+ * and the inner document collapses to a one-line iframe.
+ */
+export function extractEmailBodyFragment(html: string): string {
+  if (!html) return '';
+  const trimmed = html.trim();
+  const body = trimmed.match(/<body\b[^>]*>([\s\S]*?)<\/body>/i);
+  if (body?.[1] != null) return body[1].trim();
+  return trimmed
+    .replace(/^<!DOCTYPE[^>]*>/i, '')
+    .replace(/^<html\b[^>]*>/i, '')
+    .replace(/<\/html>\s*$/i, '')
+    .replace(/<head\b[^>]*>[\s\S]*?<\/head>/i, '')
+    .trim();
+}
+
+/** Belt-and-suspenders before DOMPurify so srcDoc never contains a `<script>`. */
+export function stripExecutableMarkup(html: string): string {
+  return html
+    .replace(/<script\b[\s\S]*?<\/script>/gi, '')
+    .replace(/<script\b[^>]*\/?>/gi, '');
+}
+
+/**
+ * Defense-in-depth in front of the sandboxed iframe: unwrap the document,
+ * strip scripts, then DOMPurify. Never add allow-scripts to the sandbox —
+ * Chrome's "Blocked script execution" warning is the success case for
+ * leftover vectors, not a reason to loosen the frame.
  */
 export function sanitizeEmailForReading(html: string): string {
-  if (typeof window === 'undefined') return html;
+  const fragment = stripExecutableMarkup(extractEmailBodyFragment(html));
+  if (typeof window === 'undefined') return fragment;
   if (!readingPurifier) {
     readingPurifier = createDOMPurify(window);
     readingPurifier.addHook('afterSanitizeAttributes', (node) => {
@@ -48,7 +74,7 @@ export function sanitizeEmailForReading(html: string): string {
       }
     });
   }
-  return readingPurifier.sanitize(html, {
+  return readingPurifier.sanitize(fragment, {
     FORBID_TAGS: [...INBOUND_BLOCKED_TAGS],
     // DOMPurify's default scheme list plus cid: and data: for inline images.
     ALLOWED_URI_REGEXP:
@@ -80,6 +106,24 @@ export function measureEmailDocument(doc: {
 export function emailIframeHeight(measuredPx: number): number {
   const measured = Number.isFinite(measuredPx) ? measuredPx : 80;
   return Math.max(80, Math.ceil(measured));
+}
+
+/**
+ * An iframe whose CSS height is already 80px reports an 80px document —
+ * the viewport, not the email. Shrink to 1px first so scrollHeight is
+ * content height, then the caller sets the real height.
+ */
+export function unconstrainedIframeMeasureHeight(iframe: {
+  style: { height: string };
+  contentDocument: Parameters<typeof measureEmailDocument>[0] | null;
+}): number {
+  iframe.style.height = '1px';
+  try {
+    const doc = iframe.contentDocument;
+    return emailIframeHeight(doc ? measureEmailDocument(doc) : 80);
+  } catch {
+    return emailIframeHeight(80);
+  }
 }
 
 /**

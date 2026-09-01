@@ -24,8 +24,15 @@ import {
   assertComposerAttachmentsReady,
   composerAttachmentsToRefs,
 } from '@/lib/email/outbound-attachments';
+import {
+  buildForwardedBody,
+  forwardSubject,
+  forwardableAttachments,
+  pickForwardSource,
+  unforwardableAttachmentCount,
+} from './inbox-forward';
 
-type ReplyMode = 'reply' | 'reply_all' | 'forward';
+type ReplyMode = 'reply' | 'reply_all';
 
 /**
  * In-memory per-conversation reply drafts. Switching conversations used to
@@ -45,6 +52,8 @@ interface ReplyFormProps {
   verifiedDomains?: string[];
   onReplySent: (conversationId: string) => void;
   onForward?: (subject: string, body: string, attachments?: EmailAttachment[]) => void;
+  /** Increment to force the dock open (e.g. Reply on a message card). */
+  expandToken?: number;
 }
 
 export function ReplyForm({
@@ -56,6 +65,7 @@ export function ReplyForm({
   verifiedDomains = [],
   onReplySent,
   onForward,
+  expandToken = 0,
 }: ReplyFormProps) {
   const [replyHtml, setReplyHtml] = useState('');
   const [sending, setSending] = useState(false);
@@ -111,6 +121,10 @@ export function ReplyForm({
     setShowModeMenu(false);
   }, []);
 
+  useEffect(() => {
+    if (expandToken > 0) openComposer();
+  }, [expandToken, openComposer]);
+
   // Find the last inbound message for threading
   const lastInbound = useMemo(() => {
     const inbound = messages.filter(m => m.direction === 'inbound');
@@ -155,56 +169,32 @@ export function ReplyForm({
     });
   }, [lastInbound, authUserEmail, monitoredFrom]);
 
-  const handleSendReply = useCallback(async () => {
-    // Forward mode: open compose modal with quoted content. Runs BEFORE the
-    // empty-body check — the quoted message is the content, a covering note
-    // is optional.
-    if (replyMode === 'forward' && onForward) {
-      const fwdSubject = `Fwd: ${selectedConversation.subject || '(no subject)'}`;
-      const note = !replyHtml.trim() || replyHtml === '<p></p>' ? '' : replyHtml;
-
-      // Forward the message that actually carries files (typically the
-      // inbound application email), not whatever was said last — otherwise
-      // replying once would silently strip the attachments from a forward.
-      const forwardSource =
-        [...messages].reverse().find((m) =>
-          (m.attachments ?? []).some((a) => a.file_path || a.resend_id),
-        ) ?? lastInbound ?? lastMessage;
-      const quotedBody = buildQuotedBody(forwardSource, note);
-
-      // Carry the forwarded message's stored files, plus anything freshly
-      // attached in the dock (both resolve by file_path at send time).
-      const sourceFiles: EmailAttachment[] = (forwardSource?.attachments ?? [])
-        .filter((att) => att.file_path)
-        .map((att, i) => ({
-          id: `fwd-${forwardSource?.id ?? 'msg'}-${i}`,
-          file_name: att.filename,
-          file_size: att.size ?? 0,
-          mime_type: att.content_type || 'application/octet-stream',
-          file_path: att.file_path as string,
-        }));
-      const readyDock = attachments.filter((a) => !a.is_uploading && !a.error);
-      const unforwardable =
-        (forwardSource?.attachments ?? []).length - sourceFiles.length
-        + (attachments.length - readyDock.length);
-      if (unforwardable > 0) {
-        toast.warning(
-          toastCopy.failed(
-            `include ${unforwardable} ${toastCopy.pluralize('attachment', unforwardable)}`,
-            undefined,
-            `download and re-attach ${unforwardable > 1 ? 'them' : 'it'}`,
-          ),
-        );
-      }
-
-      onForward(fwdSubject, quotedBody, [...sourceFiles, ...readyDock]);
-      setReplyHtml('');
-      setAttachments([]);
-      setComposerOpen(false);
-      setComposerExpanded(false);
-      return;
+  const beginForward = useCallback((source?: InboxMessage | null) => {
+    if (!onForward) return;
+    const forwardSource = source ?? pickForwardSource(messages);
+    const note = !replyHtml.trim() || replyHtml === '<p></p>' ? '' : replyHtml;
+    const skipped = unforwardableAttachmentCount(forwardSource, attachments);
+    if (skipped > 0) {
+      toast.warning(
+        toastCopy.failed(
+          `include ${skipped} ${toastCopy.pluralize('attachment', skipped)}`,
+          undefined,
+          `download and re-attach ${skipped > 1 ? 'them' : 'it'}`,
+        ),
+      );
     }
+    onForward(
+      forwardSubject(selectedConversation.subject || forwardSource?.subject),
+      buildForwardedBody(forwardSource, note),
+      forwardableAttachments(forwardSource, attachments),
+    );
+    setReplyHtml('');
+    setAttachments([]);
+    setComposerOpen(false);
+    setComposerExpanded(false);
+  }, [attachments, messages, onForward, replyHtml, selectedConversation.subject]);
 
+  const handleSendReply = useCallback(async () => {
     if (!replyHtml.trim() || replyHtml === '<p></p>') {
       toast.error('Please type a reply');
       return;
@@ -309,14 +299,12 @@ export function ReplyForm({
     fromName,
     replyAllCc,
     onReplySent,
-    onForward,
     attachments,
   ]);
 
   const modeOptions: { mode: ReplyMode; label: string; icon: React.ReactNode }[] = [
     { mode: 'reply', label: 'Reply', icon: <Reply className="w-4 h-4" /> },
     { mode: 'reply_all', label: 'Reply All', icon: <ReplyAll className="w-4 h-4" /> },
-    { mode: 'forward', label: 'Forward', icon: <Forward className="w-4 h-4" /> },
   ];
 
   const currentMode = modeOptions.find(m => m.mode === replyMode)!;
@@ -324,12 +312,10 @@ export function ReplyForm({
   return (
     <div
       className={cn(
-        'border-t border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-900/80 flex flex-col min-h-0',
-        composerOpen
-          ? composerExpanded
-            ? 'flex-[2.2] min-h-[18rem] sm:min-h-[22rem]'
-            : 'flex-1 min-h-[14rem] sm:min-h-[18rem]'
-          : 'shrink-0',
+        'border-t border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-900/80 flex flex-col min-h-0 shrink-0',
+        composerOpen && (composerExpanded
+          ? 'h-[min(56vh,36rem)] min-h-[22rem]'
+          : 'h-[min(42vh,28rem)] min-h-[20rem]'),
       )}
     >
       <div className="flex items-stretch shrink-0">
@@ -436,6 +422,17 @@ export function ReplyForm({
             </span>
           </div>
         )}
+
+        {onForward && (
+          <button
+            type="button"
+            onClick={() => beginForward()}
+            className="ml-auto inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors"
+          >
+            <Forward className="w-4 h-4" />
+            Forward
+          </button>
+        )}
       </div>
 
       {/* Rich text editor — fills the dock so composing has real height */}
@@ -446,7 +443,7 @@ export function ReplyForm({
               content={replyHtml}
               onChange={setReplyHtml}
               placeholder="Type your reply..."
-              minHeight={140}
+              minHeight={240}
               showSourceToggle={false}
               className="border-0 rounded-none h-full min-h-0"
             />
@@ -464,45 +461,19 @@ export function ReplyForm({
         <button
           type="button"
           onClick={handleSendReply}
-          disabled={(replyMode !== 'forward' && (!replyHtml.trim() || replyHtml === '<p></p>')) || sending || attachments.some((a) => a.is_uploading)}
+          disabled={(!replyHtml.trim() || replyHtml === '<p></p>') || sending || attachments.some((a) => a.is_uploading)}
           className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium rounded-lg transition-colors"
         >
           {sending ? (
             <Loader2 className="w-4 h-4 animate-spin" />
-          ) : replyMode === 'forward' ? (
-            <Forward className="w-4 h-4" />
           ) : (
             <Send className="w-4 h-4" />
           )}
-          {sending
-            ? 'Sending...'
-            : replyMode === 'forward'
-            ? 'Forward'
-            : 'Send'}
+          {sending ? 'Sending...' : 'Send'}
         </button>
       </div>
       </div>
       )}
     </div>
   );
-}
-
-/** Build a quoted body for forwarding */
-function buildQuotedBody(msg: InboxMessage | null, userContent: string): string {
-  if (!msg) return userContent;
-
-  const fromLine = msg.from_name ? `${msg.from_name} &lt;${msg.from_address}&gt;` : msg.from_address;
-  const date = new Date(msg.sent_at).toLocaleString();
-
-  return `${userContent}
-<br/><br/>
-<div style="border-left: 2px solid #ccc; padding-left: 12px; margin-left: 0; color: #555;">
-  <p style="margin: 0 0 8px 0; font-size: 12px; color: #888;">
-    ---------- Forwarded message ----------<br/>
-    From: ${fromLine}<br/>
-    Date: ${date}<br/>
-    Subject: ${msg.subject || '(no subject)'}
-  </p>
-  ${msg.body_html || `<p>${msg.body_text || ''}</p>`}
-</div>`;
 }

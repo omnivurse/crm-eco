@@ -33,6 +33,11 @@ import { MessageThread } from './_components/MessageThread';
 import { ReplyForm } from './_components/ReplyForm';
 import { ComposeModal } from './_components/ComposeModal';
 import { NotificationSettings } from './_components/NotificationSettings';
+import {
+  buildForwardedBody,
+  forwardSubject,
+  forwardableAttachments,
+} from './_components/inbox-forward';
 
 export default function InboxPage() {
   return (
@@ -65,6 +70,7 @@ function InboxPageContent() {
   const [composeInitialTo, setComposeInitialTo] = useState<Array<{ email: string; name?: string }> | undefined>();
   const [composeInitialAttachments, setComposeInitialAttachments] = useState<EmailAttachment[] | undefined>();
   const [composeDraftId, setComposeDraftId] = useState<string | null>(null);
+  const [replyExpandToken, setReplyExpandToken] = useState(0);
   const [drafts, setDrafts] = useState<InboxDraft[]>([]);
 
   const openCompose = useCallback((opts?: {
@@ -413,6 +419,18 @@ function InboxPageContent() {
     openCompose({ subject, body, attachments });
   }, [openCompose]);
 
+  const handleForwardMessage = useCallback((msg: InboxMessage) => {
+    openCompose({
+      subject: forwardSubject(selectedConversation?.subject || msg.subject),
+      body: buildForwardedBody(msg, ''),
+      attachments: forwardableAttachments(msg),
+    });
+  }, [openCompose, selectedConversation?.subject]);
+
+  const handleStartReply = useCallback(() => {
+    setReplyExpandToken((n) => n + 1);
+  }, []);
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -641,6 +659,8 @@ function InboxPageContent() {
                 loadingMessages={loadingMessages}
                 onStatusChange={updateStatus}
                 onBackToList={handleBackToList}
+                onReply={handleStartReply}
+                onForward={handleForwardMessage}
               />
               <ReplyForm
                 selectedConversation={selectedConversation}
@@ -651,6 +671,7 @@ function InboxPageContent() {
                 verifiedDomains={verifiedDomains}
                 onReplySent={handleReplySent}
                 onForward={handleForward}
+                expandToken={replyExpandToken}
               />
             </>
           ) : (

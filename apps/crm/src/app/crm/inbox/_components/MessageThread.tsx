@@ -16,6 +16,8 @@ import {
   Paperclip,
   Download,
   Users,
+  Reply,
+  Forward,
 } from 'lucide-react';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { Avatar, AvatarFallback } from '@crm-eco/ui/components/avatar';
@@ -26,17 +28,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@crm-eco/ui/components/select';
-import { toast } from 'sonner';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@crm-eco/ui/components/dropdown-menu';
 import type { InboxConversation, InboxMessage, InboxChannel, ConversationStatus } from '@/lib/inbox/types';
 import {
   EMAIL_IFRAME_SANDBOX,
   attachmentByteSize,
-  emailIframeHeight,
   formatInboxFileSize,
-  measureEmailDocument,
   sanitizeEmailForReading,
   shouldFollowNewMessages,
+  unconstrainedIframeMeasureHeight,
 } from './inbox-reading';
+import { pickForwardSource } from './inbox-forward';
 import { participantsFromThread } from '@/lib/calendar/thread-participants';
 
 const MeetingComposer = dynamic(
@@ -111,12 +118,14 @@ interface MessageThreadProps {
   loadingMessages: boolean;
   onStatusChange: (conversationId: string, status: ConversationStatus) => void;
   onBackToList: () => void;
+  onReply?: () => void;
+  onForward?: (msg: InboxMessage) => void;
 }
 
 /** Renders HTML email body in a sandboxed iframe that sizes to its content */
 function HtmlEmailBody({ html }: { html: string }) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const [height, setHeight] = useState(80);
+  const [height, setHeight] = useState(160);
   const [dark, setDark] = useState(false);
 
   useEffect(() => {
@@ -136,13 +145,9 @@ function HtmlEmailBody({ html }: { html: string }) {
     const resizeObserver = new ResizeObserver(() => applyMeasure());
 
     const applyMeasure = () => {
-      try {
-        const doc = iframe.contentDocument;
-        const measured = doc ? measureEmailDocument(doc) : 80;
-        setHeight(emailIframeHeight(measured));
-      } catch {
-        setHeight(emailIframeHeight(80));
-      }
+      const next = unconstrainedIframeMeasureHeight(iframe);
+      iframe.style.height = `${next}px`;
+      setHeight(next);
     };
 
     const watchImages = (doc: Document) => {
@@ -196,12 +201,14 @@ function HtmlEmailBody({ html }: { html: string }) {
     html, body {
       margin: 0;
       padding: 0;
-      overflow: visible;
+      height: auto !important;
+      min-height: 0 !important;
+      overflow: visible !important;
       background: ${dark ? '#1e293b' : '#ffffff'};
       color: ${dark ? '#e2e8f0' : '#1e293b'};
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       font-size: 14px;
-      line-height: 1.5;
+      line-height: 1.55;
       word-wrap: break-word;
       overflow-wrap: break-word;
     }
@@ -225,7 +232,7 @@ function HtmlEmailBody({ html }: { html: string }) {
       srcDoc={srcDoc}
       sandbox={EMAIL_IFRAME_SANDBOX}
       className="w-full border-0"
-      style={{ height: `${height}px`, minHeight: height, overflow: 'hidden' }}
+      style={{ height: `${height}px`, minHeight: Math.max(height, 120), overflow: 'hidden' }}
       title="Email content"
     />
   );
@@ -236,7 +243,17 @@ function HtmlEmailBody({ html }: { html: string }) {
  * expanded and sized to its content; older ones start as one-line headers
  * (sender + preview + time) and expand on click.
  */
-function EmailMessage({ msg, defaultExpanded }: { msg: InboxMessage; defaultExpanded: boolean }) {
+function EmailMessage({
+  msg,
+  defaultExpanded,
+  onReply,
+  onForward,
+}: {
+  msg: InboxMessage;
+  defaultExpanded: boolean;
+  onReply?: () => void;
+  onForward?: (msg: InboxMessage) => void;
+}) {
   const [expanded, setExpanded] = useState(defaultExpanded);
   const isOutbound = msg.direction === 'outbound';
   const hasHtml = !!msg.body_html;
@@ -410,6 +427,31 @@ function EmailMessage({ msg, defaultExpanded }: { msg: InboxMessage; defaultExpa
               </div>
             </div>
           )}
+
+          {(onReply || onForward) && (
+            <div className="px-3 lg:px-4 pb-3 flex flex-wrap items-center gap-2">
+              {onReply && (
+                <button
+                  type="button"
+                  onClick={onReply}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                >
+                  <Reply className="w-3.5 h-3.5" />
+                  Reply
+                </button>
+              )}
+              {onForward && (
+                <button
+                  type="button"
+                  onClick={() => onForward(msg)}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                >
+                  <Forward className="w-3.5 h-3.5" />
+                  Forward
+                </button>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -422,6 +464,8 @@ export const MessageThread = React.memo(function MessageThread({
   loadingMessages,
   onStatusChange,
   onBackToList,
+  onReply,
+  onForward,
 }: MessageThreadProps) {
   const [meetingOpen, setMeetingOpen] = useState(false);
   const paneRef = useRef<HTMLDivElement>(null);
@@ -523,18 +567,42 @@ export const MessageThread = React.memo(function MessageThread({
             >
               <CalendarPlus className="w-5 h-5 text-slate-500 dark:text-slate-400" />
             </button>
-            <button
-              type="button"
-              onClick={(e) => {
-                toast.info('More actions coming soon');
-                e.currentTarget.blur();
-              }}
-              className="hidden sm:inline-flex p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-              title="More actions"
-              aria-label="More actions"
-            >
-              <MoreVertical className="w-5 h-5 text-slate-400" />
-            </button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="inline-flex p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                  title="More actions"
+                  aria-label="More actions"
+                >
+                  <MoreVertical className="w-5 h-5 text-slate-400" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="min-w-[180px]">
+                {onReply && (
+                  <DropdownMenuItem onClick={onReply}>
+                    <Reply className="w-4 h-4 mr-2" />
+                    Reply
+                  </DropdownMenuItem>
+                )}
+                {onForward && (
+                  <DropdownMenuItem
+                    onClick={() => {
+                      const source = pickForwardSource(messages);
+                      if (source) onForward(source);
+                    }}
+                    disabled={messages.length === 0}
+                  >
+                    <Forward className="w-4 h-4 mr-2" />
+                    Forward
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem onClick={() => setMeetingOpen(true)}>
+                  <CalendarPlus className="w-4 h-4 mr-2" />
+                  Schedule meeting
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>
@@ -577,7 +645,9 @@ export const MessageThread = React.memo(function MessageThread({
             <EmailMessage
               key={msg.id}
               msg={msg}
-              defaultExpanded={index === messages.length - 1}
+              defaultExpanded={index === messages.length - 1 || messages.length <= 2}
+              onReply={onReply}
+              onForward={onForward}
             />
           ))
         )}
