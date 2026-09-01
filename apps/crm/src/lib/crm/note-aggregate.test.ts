@@ -13,6 +13,7 @@ const ORG_B = 'b17e7228-2ea0-4582-8464-562c3e8ac56e';
 const CONTACT_A = '02a35029-5ebe-4160-b09f-99982d3bccfd';
 const CONTACT_B = 'a587ff28-694b-4ebb-b5ab-d9753861d0d4';
 const CONTACT_OTHER_ORG = '4aa89f45-04b8-454b-aac0-ecedc4b5a4a4';
+const JANE = { first_name: 'Jane', last_name: 'Pulliam' };
 
 function createChainMock(result: { data: unknown; error: unknown }) {
   const chain: Record<string, unknown> = {};
@@ -53,7 +54,13 @@ describe('normalizeEmailForNoteAggregate', () => {
 describe('addSameEmailContactSiblings', () => {
   it('adds same-email contact siblings in the same org', async () => {
     const chain = createChainMock({
-      data: [{ id: CONTACT_B, crm_modules: { key: 'contacts' } }],
+      data: [
+        {
+          id: CONTACT_B,
+          data: { first_name: ' jane ', last_name: 'PULLIAM' },
+          crm_modules: { key: 'contacts' },
+        },
+      ],
       error: null,
     });
     const from = vi.fn(() => chain);
@@ -64,6 +71,7 @@ describe('addSameEmailContactSiblings', () => {
       supabase,
       ORG_A,
       'janebaby311@gmail.com',
+      JANE,
       CONTACT_A,
       into,
     );
@@ -80,7 +88,14 @@ describe('addSameEmailContactSiblings', () => {
     const supabase = { from } as unknown as SupabaseClient;
     const into = new Set<string>([CONTACT_A]);
 
-    await addSameEmailContactSiblings(supabase, ORG_A, '  ', CONTACT_A, into);
+    await addSameEmailContactSiblings(
+      supabase,
+      ORG_A,
+      '  ',
+      JANE,
+      CONTACT_A,
+      into,
+    );
 
     expect(from).not.toHaveBeenCalled();
     expect([...into]).toEqual([CONTACT_A]);
@@ -95,6 +110,7 @@ describe('addSameEmailContactSiblings', () => {
       supabase,
       null,
       'janebaby311@gmail.com',
+      JANE,
       CONTACT_A,
       into,
     );
@@ -105,8 +121,8 @@ describe('addSameEmailContactSiblings', () => {
   it('ignores rows whose joined module is not contacts', async () => {
     const chain = createChainMock({
       data: [
-        { id: CONTACT_B, crm_modules: { key: 'members' } },
-        { id: CONTACT_OTHER_ORG, crm_modules: { key: 'contacts' } },
+        { id: CONTACT_B, data: JANE, crm_modules: { key: 'members' } },
+        { id: CONTACT_OTHER_ORG, data: JANE, crm_modules: { key: 'contacts' } },
       ],
       error: null,
     });
@@ -117,12 +133,59 @@ describe('addSameEmailContactSiblings', () => {
       supabase,
       ORG_A,
       'janebaby311@gmail.com',
+      JANE,
       CONTACT_A,
       into,
     );
 
     expect(into.has(CONTACT_B)).toBe(false);
     expect(into.has(CONTACT_OTHER_ORG)).toBe(true);
+  });
+
+  it('does not merge notes for different people who share a family email', async () => {
+    const chain = createChainMock({
+      data: [
+        {
+          id: CONTACT_B,
+          data: { first_name: 'John', last_name: 'Pulliam' },
+          crm_modules: { key: 'contacts' },
+        },
+      ],
+      error: null,
+    });
+    const supabase = {
+      from: vi.fn(() => chain),
+    } as unknown as SupabaseClient;
+    const into = new Set<string>([CONTACT_A]);
+
+    await addSameEmailContactSiblings(
+      supabase,
+      ORG_A,
+      'family@example.com',
+      JANE,
+      CONTACT_A,
+      into,
+    );
+
+    expect(into.has(CONTACT_B)).toBe(false);
+    expect([...into]).toEqual([CONTACT_A]);
+  });
+
+  it('skips lookup when the current contact has no complete name', async () => {
+    const from = vi.fn();
+    const supabase = { from } as unknown as SupabaseClient;
+    const into = new Set<string>([CONTACT_A]);
+
+    await addSameEmailContactSiblings(
+      supabase,
+      ORG_A,
+      'family@example.com',
+      { first_name: 'Jane' },
+      CONTACT_A,
+      into,
+    );
+
+    expect(from).not.toHaveBeenCalled();
   });
 });
 
@@ -155,7 +218,7 @@ describe('resolveNoteSourceRecordIdsWithClient', () => {
   it('includes same-email contact siblings for contacts module', async () => {
     const linksChain = createChainMock({ data: [], error: null });
     const recordsChain = createChainMock({
-      data: [{ id: CONTACT_B, crm_modules: { key: 'contacts' } }],
+      data: [{ id: CONTACT_B, data: JANE, crm_modules: { key: 'contacts' } }],
       error: null,
     });
     const from = vi.fn((table: string) => {
@@ -168,7 +231,7 @@ describe('resolveNoteSourceRecordIdsWithClient', () => {
       id: CONTACT_A,
       org_id: ORG_A,
       email: 'JaneBaby311@gmail.com',
-      data: {},
+      data: JANE,
     };
 
     const ids = await resolveNoteSourceRecordIdsWithClient(
@@ -299,7 +362,7 @@ describe('resolveNoteSourceRecordIdsWithClient', () => {
       id: CONTACT_A,
       org_id: ORG_B,
       email: 'janebaby311@gmail.com',
-      data: {},
+      data: JANE,
     };
 
     const ids = await resolveNoteSourceRecordIdsWithClient(

@@ -69,6 +69,28 @@ export function normalizeEmailForNoteAggregate(
   return t.length > 0 ? t : null;
 }
 
+interface ContactNameIdentity {
+  firstName: string;
+  lastName: string;
+}
+
+/**
+ * Return a strict contact identity for duplicate matching.
+ *
+ * Email addresses are commonly shared by family members, so both name parts
+ * must be present before notes can be aggregated across contact records.
+ */
+function contactNameIdentity(
+  data: Record<string, unknown> | null | undefined,
+): ContactNameIdentity | null {
+  const firstName =
+    typeof data?.first_name === 'string' ? data.first_name.trim().toLowerCase() : '';
+  const lastName =
+    typeof data?.last_name === 'string' ? data.last_name.trim().toLowerCase() : '';
+
+  return firstName && lastName ? { firstName, lastName } : null;
+}
+
 /**
  * For `recordId`, returns the ids on the *other* end of undirected links
  * whose `link_type` is in `linkTypes`.
@@ -215,25 +237,29 @@ async function addLeadContactNeighborhood(
 }
 
 /**
- * Adds other **contacts** in the same org that share a normalized email.
- * Guards: contacts module only, non-empty email, org-scoped, exclude soft-deleted
- * and the current record. Does not cross tenants.
+ * Adds other **contacts** in the same org that share a normalized email and
+ * exact normalized first + last name.
+ *
+ * The name guard distinguishes duplicate imports of one person from family
+ * members who legitimately share an email address.
  */
 export async function addSameEmailContactSiblings(
   supabase: SupabaseClient,
   orgId: string | null | undefined,
   email: string | null | undefined,
+  contactData: Record<string, unknown> | null | undefined,
   excludeId: string,
   into: Set<string>,
 ): Promise<void> {
   const normalized = normalizeEmailForNoteAggregate(email);
+  const identity = contactNameIdentity(contactData);
   const org = parseUuidLoose(orgId);
   const exclude = parseUuidLoose(excludeId);
-  if (!normalized || !org || !exclude) return;
+  if (!normalized || !identity || !org || !exclude) return;
 
   const { data: siblings, error } = await supabase
     .from('crm_records')
-    .select('id, crm_modules!inner(key)')
+    .select('id, data, crm_modules!inner(key)')
     .eq('org_id', org)
     .ilike('email', normalized)
     .eq('crm_modules.key', 'contacts')
@@ -246,6 +272,16 @@ export async function addSameEmailContactSiblings(
     // Defense in depth: only accept rows whose joined module is contacts.
     const joined = (row as { crm_modules?: unknown }).crm_modules;
     if (normalizeModuleKey(moduleKeyFromJoinedRelation(joined)) !== 'contacts') {
+      continue;
+    }
+    const siblingIdentity = contactNameIdentity(
+      (row as { data?: Record<string, unknown> | null }).data,
+    );
+    if (
+      !siblingIdentity ||
+      siblingIdentity.firstName !== identity.firstName ||
+      siblingIdentity.lastName !== identity.lastName
+    ) {
       continue;
     }
     const id = parseUuidLoose(row.id);
@@ -273,6 +309,7 @@ async function resolvePersonNoteSources(
       supabase,
       record.org_id,
       record.email,
+      record.data,
       root,
       ids,
     );
