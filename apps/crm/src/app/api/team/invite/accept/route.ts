@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, getAuthUser } from '@/lib/supabase-server';
 import { createServerClient } from '@supabase/ssr';
-import { crmRoleForTenantRole } from '@/lib/crm/tenant-role-mapping';
+import { crmRoleForInvitedOrgRole } from '@/lib/team/invite-access';
 
 /**
  * GET /api/team/invite/accept?token=xxx
@@ -115,8 +115,9 @@ export async function POST(request: NextRequest) {
     }
 
     // accept_team_invitation writes org `role` only. Without crm_role the
-    // new user lands in "No CRM Access" even when invited as Admin.
-    const crmRole = invitation?.role ? crmRoleForTenantRole(invitation.role) : null;
+    // new user lands in "No CRM Access". Invite roles need their own mapping:
+    // advisor is valid here but intentionally denied by the tenant-switch map.
+    const crmRole = invitation?.role ? crmRoleForInvitedOrgRole(invitation.role) : null;
     if (crmRole && profileId) {
       const { error: crmRoleError } = await serviceClient
         .from('profiles')
