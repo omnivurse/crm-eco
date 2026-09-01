@@ -178,6 +178,16 @@ export interface InboxView {
   updated_at: string;
 }
 
+export interface InboxDraftAttachment {
+  id?: string;
+  filename: string;
+  content_type: string;
+  size: number;
+  file_path?: string;
+  bucket_path?: string;
+  url?: string;
+}
+
 export interface InboxDraft {
   id: string;
   org_id: string;
@@ -190,12 +200,7 @@ export interface InboxDraft {
   body_html: string | null;
   body_text: string | null;
   signature_id: string | null;
-  attachments: Array<{
-    filename: string;
-    content_type: string;
-    size: number;
-    url?: string;
-  }>;
+  attachments: InboxDraftAttachment[];
   scheduled_at: string | null;
   is_reply: boolean;
   reply_mode: 'reply' | 'reply_all' | 'forward' | null;

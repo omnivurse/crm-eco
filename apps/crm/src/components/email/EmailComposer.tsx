@@ -77,6 +77,8 @@ interface EmailComposerProps {
   // Fallback sender info when no sender addresses configured
   fallbackEmail?: string;
   fallbackName?: string;
+  /** Fresh messages may pick the default; resumed draft HTML already contains its saved signature. */
+  autoSelectDefaultSignature?: boolean;
 }
 
 export interface EmailComposerData {
@@ -117,6 +119,7 @@ export const EmailComposer = memo(function EmailComposer({
   templateId,
   fallbackEmail,
   fallbackName,
+  autoSelectDefaultSignature = true,
 }: EmailComposerProps) {
   // Form state
   const [senderAddressId, setSenderAddressId] = useState<string>('');
@@ -159,7 +162,7 @@ export const EmailComposer = memo(function EmailComposer({
 
           // Auto-select default signature
           const defaultSig = data.signatures?.find((s: EmailSignature) => s.is_default);
-          if (defaultSig) {
+          if (autoSelectDefaultSignature && defaultSig) {
             setSignatureId(defaultSig.id);
           }
         }
@@ -175,7 +178,7 @@ export const EmailComposer = memo(function EmailComposer({
     } else {
       setLoadingSignatures(false);
     }
-  }, [showSignatures]);
+  }, [autoSelectDefaultSignature, showSignatures]);
 
   // Build full body with signature
   const getFullBody = useCallback(() => {
@@ -285,6 +288,13 @@ export const EmailComposer = memo(function EmailComposer({
   const handleSave = async () => {
     if (!onSave) return;
 
+    try {
+      assertComposerAttachmentsReady(attachments);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Attachments are not ready');
+      return;
+    }
+
     setIsSaving(true);
     try {
       await onSave(getComposerData());
@@ -320,6 +330,13 @@ export const EmailComposer = memo(function EmailComposer({
     }
 
     if (!onSchedule) return;
+
+    try {
+      assertComposerAttachmentsReady(attachments);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Attachments are not ready');
+      return;
+    }
 
     setIsScheduling(true);
     try {

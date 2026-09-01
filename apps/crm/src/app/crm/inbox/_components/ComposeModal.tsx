@@ -12,9 +12,11 @@ import {
   DialogTitle,
 } from '@crm-eco/ui/components/dialog';
 import { EmailComposer, type EmailComposerData } from '@/components/email/EmailComposer';
+import type { EmailAttachment } from '@/components/email/EmailAttachments';
 import { TemplatePicker } from './TemplatePicker';
 import { composerDataToCommunicationsSendBody } from '@/lib/email/outbound-attachments';
 import { mailboxAddressForOutbound } from '@/lib/inbox/compose-mailbox';
+import { composerAttachmentsToDraft } from '@/lib/inbox/draft-compose';
 import type { ConversationStatus, ConversationPriority } from '@/lib/inbox/types';
 
 interface EmailRecipient {
@@ -29,8 +31,11 @@ interface ComposeModalProps {
   authUserEmail: string;
   onMessageSent: () => void;
   initialTo?: EmailRecipient[];
+  initialCc?: EmailRecipient[];
+  initialBcc?: EmailRecipient[];
   initialSubject?: string;
   initialBody?: string;
+  initialAttachments?: EmailAttachment[];
   /** Bump on every open so EmailComposer remounts instead of keeping the last To/subject. */
   composerKey: string;
   /** Resume a saved draft (updates this row on save). */
@@ -44,8 +49,11 @@ export function ComposeModal({
   authUserEmail,
   onMessageSent,
   initialTo,
+  initialCc,
+  initialBcc,
   initialSubject,
   initialBody,
+  initialAttachments,
   composerKey,
   initialDraftId,
 }: ComposeModalProps) {
@@ -187,21 +195,20 @@ export function ComposeModal({
       body_html: data.body_html,
       body_text: data.body_text,
       signature_id: data.signature_id || null,
-      attachments: data.attachments.map(a => ({
-        filename: a.file_name,
-        content_type: a.mime_type,
-        size: a.file_size,
-        url: a.public_url,
-      })),
+      attachments: composerAttachmentsToDraft(data.attachments),
     };
 
     if (draftIdRef.current) {
       // Update existing draft
-      await fetch(`/api/inbox/drafts/${draftIdRef.current}`, {
+      const res = await fetch(`/api/inbox/drafts/${draftIdRef.current}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
+      const result = await res.json().catch(() => ({}));
+      if (!res.ok || !result.draft?.id) {
+        throw new Error(result.error || 'Failed to update draft');
+      }
     } else {
       // Create new draft
       const res = await fetch('/api/inbox/drafts', {
@@ -209,16 +216,22 @@ export function ComposeModal({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      const result = await res.json();
-      if (result.draft?.id) {
-        draftIdRef.current = result.draft.id;
+      const result = await res.json().catch(() => ({}));
+      if (!res.ok || !result.draft?.id) {
+        throw new Error(result.error || 'Failed to save draft');
       }
+      draftIdRef.current = result.draft.id;
     }
   }, []);
 
   const handleSchedule = useCallback(async (data: EmailComposerData, scheduledAt: Date) => {
     if (data.to.length === 0) {
       throw new Error('At least one recipient is required');
+    }
+    if (data.attachments.length > 0) {
+      // The current scheduled-mail worker does not reconstruct stored files.
+      // Fail closed instead of claiming success and sending without them.
+      throw new Error('Scheduled emails do not support attachments yet. Send this message now instead.');
     }
 
     const payload = {
@@ -229,12 +242,7 @@ export function ComposeModal({
       body_html: data.body_html,
       body_text: data.body_text,
       signature_id: data.signature_id || null,
-      attachments: data.attachments.map(a => ({
-        filename: a.file_name,
-        content_type: a.mime_type,
-        size: a.file_size,
-        url: a.public_url,
-      })),
+      attachments: composerAttachmentsToDraft(data.attachments),
       scheduled_at: scheduledAt.toISOString(),
     };
 
@@ -308,8 +316,11 @@ export function ComposeModal({
             <EmailComposer
               key={composerKey}
               initialTo={initialTo}
+              initialCc={initialCc}
+              initialBcc={initialBcc}
               initialSubject={effectiveSubject}
               initialBody={effectiveBody}
+              initialAttachments={initialAttachments}
               onSend={handleSend}
               onSave={handleSave}
               onSchedule={handleSchedule}
@@ -318,6 +329,7 @@ export function ComposeModal({
               showSave={true}
               showAttachments={true}
               showSignatures={true}
+              autoSelectDefaultSignature={!initialDraftId}
               fallbackEmail="noreply@payitforwardhealth.com"
               fallbackName="Pay It Forward Health"
               className="border-0 shadow-none"
