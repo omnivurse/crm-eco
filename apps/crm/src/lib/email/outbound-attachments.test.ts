@@ -10,6 +10,7 @@ import {
   composerAttachmentsToRefs,
   composerDataToCommunicationsSendBody,
   emailAttachmentInsertRow,
+  requireOutboxAttachmentRefs,
   resolveOutboundAttachments,
   splitRecipientField,
 } from './outbound-attachments';
@@ -145,6 +146,33 @@ describe('parseCommsSendAttachments', () => {
         file_size: 2048,
       },
     ]);
+  });
+
+  it('keeps durable attachment locators for outbox retries', () => {
+    const meta = attachmentMetaFromRefs([uploaded]);
+
+    expect(requireOutboxAttachmentRefs(meta)).toEqual([
+      {
+        id: uploaded.id,
+        file_name: uploaded.file_name,
+        mime_type: uploaded.mime_type,
+        file_path: uploaded.file_path,
+        bucket_path: uploaded.bucket_path,
+        file_size: uploaded.file_size,
+      },
+    ]);
+  });
+
+  it('refuses legacy display-only metadata instead of retrying without documents', () => {
+    expect(() =>
+      requireOutboxAttachmentRefs([
+        {
+          filename: 'benefits.pdf',
+          content_type: 'application/pdf',
+          size: 2048,
+        },
+      ]),
+    ).toThrow(/refusing an incomplete retry/i);
   });
 });
 

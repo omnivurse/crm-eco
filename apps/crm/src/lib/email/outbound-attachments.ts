@@ -33,6 +33,16 @@ export type OutboundAttachmentRef = {
   file_size?: number;
 };
 
+/** Durable attachment locator stored with an outbox command for worker retries. */
+export type OutboxAttachmentMeta = {
+  filename: string;
+  content_type: string;
+  size: number;
+  id?: string;
+  file_path?: string;
+  bucket_path?: string;
+};
+
 export type InlineOutboundFile = {
   filename: string;
   mimeType: string;
@@ -196,14 +206,7 @@ export function parseCommsSendAttachments(
 
 export function attachmentMetaFromRefs(
   refs: OutboundAttachmentRef[],
-): Array<{
-  filename: string;
-  content_type: string;
-  size: number;
-  id?: string;
-  file_path?: string;
-  bucket_path?: string;
-}> {
+): OutboxAttachmentMeta[] {
   return refs.map((ref) => ({
     filename: ref.file_name,
     content_type: ref.mime_type || 'application/octet-stream',
@@ -215,16 +218,7 @@ export function attachmentMetaFromRefs(
 }
 
 export function attachmentRefsFromMeta(
-  attachments:
-    | Array<{
-        filename: string;
-        content_type: string;
-        size: number;
-        id?: string;
-        file_path?: string;
-        bucket_path?: string;
-      }>
-    | undefined,
+  attachments: OutboxAttachmentMeta[] | undefined,
 ): OutboundAttachmentRef[] {
   if (!attachments?.length) return [];
   return attachments
@@ -237,6 +231,23 @@ export function attachmentRefsFromMeta(
       bucket_path: attachment.bucket_path,
       file_size: attachment.size,
     }));
+}
+
+/**
+ * Recover attachment locators for an outbox retry, failing closed if an old
+ * row contains display-only metadata. Sending that row would silently omit
+ * documents while still marking the email sent.
+ */
+export function requireOutboxAttachmentRefs(
+  attachments: OutboxAttachmentMeta[] | undefined,
+): OutboundAttachmentRef[] {
+  const refs = attachmentRefsFromMeta(attachments);
+  if ((attachments?.length ?? 0) !== refs.length) {
+    throw new Error(
+      'Queued email contains an attachment that was not durably stored; refusing an incomplete retry.',
+    );
+  }
+  return refs;
 }
 
 export function collectJsonAttachmentRefs(value: unknown): OutboundAttachmentRef[] {
