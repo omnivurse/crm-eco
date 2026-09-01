@@ -10,6 +10,7 @@ import type {
   ResourceDescriptor,
   ResourceListState,
 } from './types';
+import { loadAllRows } from './load-all-rows';
 
 const DEFAULT_PAGE_SIZE = 25;
 
@@ -28,6 +29,7 @@ export function useResourceList<Row>(
   const [rows, setRows] = useState<Row[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
@@ -143,15 +145,37 @@ export function useResourceList<Row>(
     setSelectedIds(new Set(rows.map((r) => descriptor.getRowId(r))));
   }, [descriptor, rows]);
 
-  const exportCsv = useCallback(() => {
-    const csv = buildCsv(rows, descriptor.columns);
-    const cfg = descriptor.export;
-    const filename =
-      typeof cfg === 'object' && cfg.filename
-        ? cfg.filename
-        : `${descriptor.resource}-${todayStamp()}.csv`;
-    downloadCsv(filename, csv);
-  }, [descriptor.columns, descriptor.export, descriptor.resource, rows]);
+  const exportCsv = useCallback(async () => {
+    setExporting(true);
+    setError(null);
+    try {
+      const exportRows = await loadAllRows(descriptor.dataSource, {
+        search: search || undefined,
+        filters,
+        sort,
+      });
+      const csv = buildCsv(exportRows, descriptor.columns);
+      const cfg = descriptor.export;
+      const filename =
+        typeof cfg === 'object' && cfg.filename
+          ? cfg.filename
+          : `${descriptor.resource}-${todayStamp()}.csv`;
+      downloadCsv(filename, csv);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to export';
+      setError(`Export failed: ${message}`);
+    } finally {
+      setExporting(false);
+    }
+  }, [
+    descriptor.columns,
+    descriptor.dataSource,
+    descriptor.export,
+    descriptor.resource,
+    filters,
+    search,
+    sort,
+  ]);
 
   const ctx = useMemo(() => ({ refresh }), [refresh]);
 
@@ -159,6 +183,7 @@ export function useResourceList<Row>(
     rows,
     total,
     loading,
+    exporting,
     error,
     search: searchInput,
     setSearch: setSearchInput,
