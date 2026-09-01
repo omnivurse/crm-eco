@@ -9,11 +9,13 @@
  */
 import { describe, expect, it, vi } from 'vitest';
 import {
+  fetchReceivedAttachment,
   fetchReceivedEmail,
   mergeHydratedEmail,
   normaliseResendHeaders,
   preferredRecipient,
   routeInboundRecipients,
+  sanitizeAttachmentFilename,
   type HydratableEmail,
 } from '../../../../../supabase/functions/_shared/resend-inbound';
 
@@ -86,21 +88,44 @@ describe('mergeHydratedEmail', () => {
     ).toEqual(['wendy@payitforwardhealth.com']);
   });
 
-  it('records attachment metadata without downloading content', () => {
+  it('records attachment metadata + resend id without downloading content', () => {
     const merged = mergeHydratedEmail(base, {
-      attachments: [{ filename: 'eob.pdf', content_type: 'application/pdf', size: 1024 }],
+      attachments: [
+        { id: 'att_1', filename: 'eob.pdf', content_type: 'application/pdf', size: 1024 },
+      ],
     });
     expect(merged.attachments).toEqual([
-      { filename: 'eob.pdf', content_type: 'application/pdf', size: 1024 },
+      { filename: 'eob.pdf', content_type: 'application/pdf', size: 1024, resend_id: 'att_1' },
     ]);
     // No base64 content is carried, so a large attachment cannot blow memory.
     expect(merged.attachments?.[0]).not.toHaveProperty('content');
   });
 
+  it('grafts resend ids onto webhook-supplied attachment metadata by position', () => {
+    const withAtts: HydratableEmail = {
+      ...base,
+      attachments: [
+        { filename: 'app.pdf', content_type: 'application/pdf', size: 9, url: 'https://x/y' },
+      ],
+    };
+    const merged = mergeHydratedEmail(withAtts, {
+      attachments: [{ id: 'att_9', filename: 'app.pdf' }],
+    });
+    expect(merged.attachments).toEqual([
+      {
+        filename: 'app.pdf',
+        content_type: 'application/pdf',
+        size: 9,
+        url: 'https://x/y',
+        resend_id: 'att_9',
+      },
+    ]);
+  });
+
   it('defaults malformed attachment metadata instead of throwing', () => {
     const merged = mergeHydratedEmail(base, { attachments: [{}] });
     expect(merged.attachments).toEqual([
-      { filename: 'attachment', content_type: 'application/octet-stream', size: 0 },
+      { filename: 'attachment', content_type: 'application/octet-stream', size: 0, resend_id: null },
     ]);
   });
 });
@@ -196,5 +221,92 @@ describe('fetchReceivedEmail', () => {
       await fetchReceivedEmail('abc', 'key', { fetchImpl, sleep: noSleep, attempts: 3 }),
     ).toBeNull();
     expect(fetchImpl).toHaveBeenCalledTimes(3);
+  });
+});
+
+describe('fetchReceivedAttachment', () => {
+  const noSleep = () => Promise.resolve();
+
+  it('returns the download handle and hits the per-attachment endpoint', async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValue(jsonResponse({ download_url: 'https://cdn.resend.com/f', size: 5 }));
+    const result = await fetchReceivedAttachment('em-1', 'att-1', 'secret', {
+      fetchImpl,
+      sleep: noSleep,
+    });
+    expect(result?.download_url).toBe('https://cdn.resend.com/f');
+    const [url, init] = fetchImpl.mock.calls[0];
+    expect(url).toBe('https://api.resend.com/emails/receiving/em-1/attachments/att-1');
+    expect((init as RequestInit).headers).toMatchObject({ Authorization: 'Bearer secret' });
+  });
+
+  it('treats a response without a download_url as a failure, not a crash', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(jsonResponse({ filename: 'x.pdf' }));
+    expect(
+      await fetchReceivedAttachment('em', 'att', 'key', { fetchImpl, sleep: noSleep }),
+    ).toBeNull();
+  });
+
+  it('does not retry an auth refusal', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(jsonResponse({}, 403));
+    expect(
+      await fetchReceivedAttachment('em', 'att', 'key', { fetchImpl, sleep: noSleep }),
+    ).toBeNull();
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+
+  it('retries a 5xx within the bounded budget', async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse({}, 500))
+      .mockResolvedValueOnce(jsonResponse({ download_url: 'https://cdn/x' }));
+    const result = await fetchReceivedAttachment('em', 'att', 'key', {
+      fetchImpl,
+      sleep: noSleep,
+    });
+    expect(result?.download_url).toBe('https://cdn/x');
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
+
+  it('returns null instead of throwing when the network fails', async () => {
+    const fetchImpl = vi.fn().mockRejectedValue(new Error('boom'));
+    expect(
+      await fetchReceivedAttachment('em', 'att', 'key', { fetchImpl, sleep: noSleep }),
+    ).toBeNull();
+  });
+
+  it('short-circuits when any handle is missing', async () => {
+    const fetchImpl = vi.fn();
+    expect(await fetchReceivedAttachment('', 'att', 'key', { fetchImpl })).toBeNull();
+    expect(await fetchReceivedAttachment('em', '', 'key', { fetchImpl })).toBeNull();
+    expect(await fetchReceivedAttachment('em', 'att', '', { fetchImpl })).toBeNull();
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+});
+
+describe('sanitizeAttachmentFilename', () => {
+  it('keeps ordinary names and extensions readable', () => {
+    expect(sanitizeAttachmentFilename('New Business Checklist.pdf')).toBe(
+      'New_Business_Checklist.pdf',
+    );
+  });
+
+  it('never yields an empty key segment', () => {
+    expect(sanitizeAttachmentFilename('')).toBe('attachment');
+    expect(sanitizeAttachmentFilename(null)).toBe('attachment');
+    expect(sanitizeAttachmentFilename('///')).toBe('attachment');
+  });
+
+  it('refuses pure dot-segment names', () => {
+    expect(sanitizeAttachmentFilename('.')).toBe('attachment');
+    expect(sanitizeAttachmentFilename('..')).toBe('attachment');
+    expect(sanitizeAttachmentFilename('...')).toBe('attachment');
+  });
+
+  it('strips path separators so a name cannot escape its folder', () => {
+    const safe = sanitizeAttachmentFilename('../../etc/passwd');
+    expect(safe).toBe('.._.._etc_passwd');
+    expect(safe).not.toContain('/');
   });
 });

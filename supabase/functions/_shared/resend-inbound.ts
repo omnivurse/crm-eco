@@ -53,6 +53,10 @@ export interface HydratableEmail {
     size: number;
     url?: string;
     content?: string;
+    /** Resend's attachment id — the handle for fetching the actual bytes later. */
+    resend_id?: string | null;
+    /** Set once the bytes are persisted into the email-attachments bucket. */
+    file_path?: string | null;
   }>;
 }
 
@@ -114,12 +118,24 @@ export function mergeHydratedEmail<T extends HydratableEmail>(
 
   // Attachment metadata only — content is deliberately not downloaded here, so
   // a large attachment can never blow the function's memory or timeout budget.
-  if (Array.isArray(fetched.attachments) && fetched.attachments.length > 0 && !base.attachments?.length) {
-    merged.attachments = fetched.attachments.map((a) => ({
-      filename: a.filename || "attachment",
-      content_type: a.content_type || "application/octet-stream",
-      size: typeof a.size === "number" ? a.size : 0,
-    }));
+  // The Resend attachment id IS kept: it is the only handle that lets the
+  // bytes be fetched afterwards (at intake, or lazily from the download route).
+  if (Array.isArray(fetched.attachments) && fetched.attachments.length > 0) {
+    if (!base.attachments?.length) {
+      merged.attachments = fetched.attachments.map((a) => ({
+        filename: a.filename || "attachment",
+        content_type: a.content_type || "application/octet-stream",
+        size: typeof a.size === "number" ? a.size : 0,
+        resend_id: a.id ?? null,
+      }));
+    } else {
+      // Webhook already carried attachment metadata (older payload shapes) —
+      // graft the hydrated ids onto it by position so the bytes stay fetchable.
+      merged.attachments = base.attachments.map((a, i) => ({
+        ...a,
+        resend_id: a.resend_id ?? fetched.attachments?.[i]?.id ?? null,
+      }));
+    }
   }
 
   return merged;
@@ -222,4 +238,91 @@ export async function fetchReceivedEmail(
   }
 
   return null;
+}
+
+/** Shape of GET /emails/receiving/:email_id/attachments/:id. */
+export interface ResendAttachmentContent {
+  download_url?: string | null;
+  filename?: string | null;
+  content_type?: string | null;
+  size?: number | null;
+  expires_at?: string | null;
+}
+
+/**
+ * Fetch the download handle for one received attachment.
+ *
+ * Resend does not inline attachment bytes anywhere — this endpoint returns a
+ * pre-signed CDN `download_url` for them. Same failure bias as the email
+ * fetch: null on any failure, never throw, strictly bounded.
+ */
+export async function fetchReceivedAttachment(
+  emailId: string,
+  attachmentId: string,
+  apiKey: string,
+  opts?: {
+    fetchImpl?: typeof fetch;
+    timeoutMs?: number;
+    attempts?: number;
+    sleep?: (ms: number) => Promise<void>;
+  },
+): Promise<ResendAttachmentContent | null> {
+  if (!emailId || !attachmentId || !apiKey) return null;
+
+  const doFetch = opts?.fetchImpl ?? fetch;
+  const timeoutMs = opts?.timeoutMs ?? 5000;
+  const attempts = Math.max(1, opts?.attempts ?? 2);
+  const sleep = opts?.sleep ?? ((ms: number) => new Promise((r) => setTimeout(r, ms)));
+
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const res = await doFetch(
+        `${RESEND_API_BASE}/emails/receiving/${encodeURIComponent(emailId)}/attachments/${encodeURIComponent(attachmentId)}`,
+        {
+          method: "GET",
+          headers: { Authorization: `Bearer ${apiKey}` },
+          signal: controller.signal,
+        },
+      );
+
+      if (res.ok) {
+        const body = (await res.json()) as ResendAttachmentContent;
+        return typeof body?.download_url === "string" && body.download_url ? body : null;
+      }
+
+      if (res.status !== 404 && res.status < 500) {
+        console.error(
+          `Resend attachment fetch refused (${res.status}) for ${emailId}/${attachmentId}`,
+        );
+        return null;
+      }
+      console.warn(
+        `Resend attachment fetch attempt ${attempt}/${attempts} got ${res.status} for ${emailId}/${attachmentId}`,
+      );
+    } catch (err) {
+      console.warn(
+        `Resend attachment fetch attempt ${attempt}/${attempts} failed for ${emailId}/${attachmentId}:`,
+        err instanceof Error ? err.message : err,
+      );
+    } finally {
+      clearTimeout(timer);
+    }
+
+    if (attempt < attempts) await sleep(250 * attempt);
+  }
+
+  return null;
+}
+
+/**
+ * Make a filename safe as a storage object key segment. Keeps the extension
+ * readable; never returns an empty string so a nameless inline image still
+ * gets a valid key.
+ */
+export function sanitizeAttachmentFilename(name: string | null | undefined): string {
+  const cleaned = (name || "").replace(/[^a-zA-Z0-9._-]/g, "_").replace(/^_+|_+$/g, "");
+  // Refuse all-dot results: "." and ".." are path navigation, not filenames.
+  return cleaned && !/^\.+$/.test(cleaned) ? cleaned : "attachment";
 }

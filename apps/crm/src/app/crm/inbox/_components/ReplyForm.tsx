@@ -13,6 +13,7 @@ import {
   Minimize2,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { toastCopy } from '@/lib/crm/toast-copy';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { LazyEmailEditor } from '@/components/email/LazyEmailEditor';
 import { EmailAttachments, type EmailAttachment } from '@/components/email/EmailAttachments';
@@ -43,7 +44,7 @@ interface ReplyFormProps {
   mailboxes?: SharedMailbox[];
   verifiedDomains?: string[];
   onReplySent: (conversationId: string) => void;
-  onForward?: (subject: string, body: string) => void;
+  onForward?: (subject: string, body: string, attachments?: EmailAttachment[]) => void;
 }
 
 export function ReplyForm({
@@ -155,20 +156,57 @@ export function ReplyForm({
   }, [lastInbound, authUserEmail, monitoredFrom]);
 
   const handleSendReply = useCallback(async () => {
-    if (!replyHtml.trim() || replyHtml === '<p></p>') {
-      toast.error('Please type a reply');
-      return;
-    }
-
-    // Forward mode: open compose modal with quoted content
+    // Forward mode: open compose modal with quoted content. Runs BEFORE the
+    // empty-body check — the quoted message is the content, a covering note
+    // is optional.
     if (replyMode === 'forward' && onForward) {
       const fwdSubject = `Fwd: ${selectedConversation.subject || '(no subject)'}`;
-      const quotedBody = buildQuotedBody(lastMessage, replyHtml);
-      onForward(fwdSubject, quotedBody);
+      const note = !replyHtml.trim() || replyHtml === '<p></p>' ? '' : replyHtml;
+
+      // Forward the message that actually carries files (typically the
+      // inbound application email), not whatever was said last — otherwise
+      // replying once would silently strip the attachments from a forward.
+      const forwardSource =
+        [...messages].reverse().find((m) =>
+          (m.attachments ?? []).some((a) => a.file_path || a.resend_id),
+        ) ?? lastInbound ?? lastMessage;
+      const quotedBody = buildQuotedBody(forwardSource, note);
+
+      // Carry the forwarded message's stored files, plus anything freshly
+      // attached in the dock (both resolve by file_path at send time).
+      const sourceFiles: EmailAttachment[] = (forwardSource?.attachments ?? [])
+        .filter((att) => att.file_path)
+        .map((att, i) => ({
+          id: `fwd-${forwardSource?.id ?? 'msg'}-${i}`,
+          file_name: att.filename,
+          file_size: att.size ?? 0,
+          mime_type: att.content_type || 'application/octet-stream',
+          file_path: att.file_path as string,
+        }));
+      const readyDock = attachments.filter((a) => !a.is_uploading && !a.error);
+      const unforwardable =
+        (forwardSource?.attachments ?? []).length - sourceFiles.length
+        + (attachments.length - readyDock.length);
+      if (unforwardable > 0) {
+        toast.warning(
+          toastCopy.failed(
+            `include ${unforwardable} ${toastCopy.pluralize('attachment', unforwardable)}`,
+            undefined,
+            `download and re-attach ${unforwardable > 1 ? 'them' : 'it'}`,
+          ),
+        );
+      }
+
+      onForward(fwdSubject, quotedBody, [...sourceFiles, ...readyDock]);
       setReplyHtml('');
       setAttachments([]);
       setComposerOpen(false);
       setComposerExpanded(false);
+      return;
+    }
+
+    if (!replyHtml.trim() || replyHtml === '<p></p>') {
+      toast.error('Please type a reply');
       return;
     }
 
@@ -262,6 +300,7 @@ export function ReplyForm({
     replyHtml,
     replyMode,
     selectedConversation,
+    messages,
     lastInbound,
     lastMessage,
     authProfile,
@@ -425,7 +464,7 @@ export function ReplyForm({
         <button
           type="button"
           onClick={handleSendReply}
-          disabled={(!replyHtml.trim() || replyHtml === '<p></p>') || sending || attachments.some((a) => a.is_uploading)}
+          disabled={(replyMode !== 'forward' && (!replyHtml.trim() || replyHtml === '<p></p>')) || sending || attachments.some((a) => a.is_uploading)}
           className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium rounded-lg transition-colors"
         >
           {sending ? (

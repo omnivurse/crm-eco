@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from '@crm-eco/ui/components/dialog';
 import { EmailComposer, type EmailComposerData } from '@/components/email/EmailComposer';
+import type { EmailAttachment } from '@/components/email/EmailAttachments';
 import { TemplatePicker } from './TemplatePicker';
 import { composerDataToCommunicationsSendBody } from '@/lib/email/outbound-attachments';
 import { mailboxAddressForOutbound } from '@/lib/inbox/compose-mailbox';
@@ -31,6 +32,8 @@ interface ComposeModalProps {
   initialTo?: EmailRecipient[];
   initialSubject?: string;
   initialBody?: string;
+  /** Pre-loaded files (e.g. a forwarded message's stored attachments). */
+  initialAttachments?: EmailAttachment[];
   /** Bump on every open so EmailComposer remounts instead of keeping the last To/subject. */
   composerKey: string;
   /** Resume a saved draft (updates this row on save). */
@@ -46,6 +49,7 @@ export function ComposeModal({
   initialTo,
   initialSubject,
   initialBody,
+  initialAttachments,
   composerKey,
   initialDraftId,
 }: ComposeModalProps) {
@@ -144,11 +148,15 @@ export function ComposeModal({
         cc_addresses: data.cc,
         bcc_addresses: data.bcc,
         message_id: messageId,
+        // file_path is what the download route serves from; public_url on
+        // this private bucket was always a dead link and is kept only as a
+        // legacy field.
         attachments: data.attachments.map(a => ({
           filename: a.file_name,
           content_type: a.mime_type,
           size: a.file_size,
-          url: a.public_url,
+          url: a.public_url || null,
+          file_path: a.file_path || a.bucket_path || null,
         })),
         status: 'sent',
         sent_at: now,
@@ -191,7 +199,8 @@ export function ComposeModal({
         filename: a.file_name,
         content_type: a.mime_type,
         size: a.file_size,
-        url: a.public_url,
+        url: a.public_url || null,
+        file_path: a.file_path || a.bucket_path || null,
       })),
     };
 
@@ -233,7 +242,8 @@ export function ComposeModal({
         filename: a.file_name,
         content_type: a.mime_type,
         size: a.file_size,
-        url: a.public_url,
+        url: a.public_url || null,
+        file_path: a.file_path || a.bucket_path || null,
       })),
       scheduled_at: scheduledAt.toISOString(),
     };
@@ -310,6 +320,7 @@ export function ComposeModal({
               initialTo={initialTo}
               initialSubject={effectiveSubject}
               initialBody={effectiveBody}
+              initialAttachments={initialAttachments}
               onSend={handleSend}
               onSave={handleSave}
               onSchedule={handleSchedule}

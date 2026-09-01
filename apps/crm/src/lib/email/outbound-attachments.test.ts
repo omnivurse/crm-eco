@@ -85,7 +85,9 @@ describe('composerDataToCommunicationsSendBody', () => {
     expect(body.from_email).toBe('wendy@payitforwardhealth.com');
     expect(body.attachments).toEqual([
       {
-        id: 'att-1',
+        // Synthetic composer ids are stripped: the ref resolves by file_path,
+        // and only a real email_attachments uuid may trigger the DB lookup.
+        id: undefined,
         file_name: 'benefits.pdf',
         mime_type: 'application/pdf',
         file_path: uploaded.file_path,
@@ -270,5 +272,45 @@ describe('resolveOutboundAttachments', () => {
     });
     expect(resolved).toHaveLength(1);
     expect(resolved[0].filename).toBe('benefits.pdf');
+  });
+});
+
+describe('composerAttachmentsToRefs synthetic ids', () => {
+  it('strips forward/draft synthetic ids so path-backed files resolve by path', () => {
+    const refs = composerAttachmentsToRefs([
+      {
+        id: 'fwd-95457589-b57a-439b-ad9d-41793f4a7d32-0',
+        file_name: 'application.pdf',
+        file_size: 100,
+        mime_type: 'application/pdf',
+        file_path: '11111111-1111-1111-1111-111111111111/inbound/x/application.pdf',
+      },
+    ]);
+    expect(refs).toHaveLength(1);
+    expect(refs[0].id).toBeUndefined();
+    expect(refs[0].file_path).toBe(
+      '11111111-1111-1111-1111-111111111111/inbound/x/application.pdf',
+    );
+  });
+
+  it('keeps a genuine persisted email_attachments uuid', () => {
+    const refs = composerAttachmentsToRefs([
+      {
+        id: '3f8b7b30-1234-4abc-8def-1234567890ab',
+        file_name: 'x.pdf',
+        file_size: 1,
+        mime_type: 'application/pdf',
+      },
+    ]);
+    expect(refs).toHaveLength(1);
+    expect(refs[0].id).toBe('3f8b7b30-1234-4abc-8def-1234567890ab');
+  });
+
+  it('drops a ref that has neither a stored path nor a persisted id', () => {
+    expect(
+      composerAttachmentsToRefs([
+        { id: 'fwd-msg-1', file_name: 'ghost.pdf', file_size: 1, mime_type: 'application/pdf' },
+      ]),
+    ).toHaveLength(0);
   });
 });

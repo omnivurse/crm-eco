@@ -24,6 +24,7 @@ import type {
   ConversationStatus,
 } from '@/lib/inbox/types';
 import type { SharedMailbox } from '@/lib/inbox/shared-mailboxes';
+import type { EmailAttachment } from '@/components/email/EmailAttachments';
 
 import { InboxFilters, type FilterType } from './_components/InboxFilters';
 import { ConversationList } from './_components/ConversationList';
@@ -62,6 +63,7 @@ function InboxPageContent() {
   const [composeInitialSubject, setComposeInitialSubject] = useState<string | undefined>();
   const [composeInitialBody, setComposeInitialBody] = useState<string | undefined>();
   const [composeInitialTo, setComposeInitialTo] = useState<Array<{ email: string; name?: string }> | undefined>();
+  const [composeInitialAttachments, setComposeInitialAttachments] = useState<EmailAttachment[] | undefined>();
   const [composeDraftId, setComposeDraftId] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<InboxDraft[]>([]);
 
@@ -69,12 +71,14 @@ function InboxPageContent() {
     subject?: string;
     body?: string;
     to?: Array<{ email: string; name?: string }>;
+    attachments?: EmailAttachment[];
     draftId?: string | null;
   }) => {
     setComposeSessionId((n) => n + 1);
     setComposeInitialSubject(opts?.subject);
     setComposeInitialBody(opts?.body);
     setComposeInitialTo(opts?.to);
+    setComposeInitialAttachments(opts?.attachments);
     setComposeDraftId(opts?.draftId ?? null);
     setShowComposeModal(true);
   }, []);
@@ -405,8 +409,8 @@ function InboxPageContent() {
   }, [loadMessages, loadConversations]);
 
   // Forward handler: open compose modal with forwarded content
-  const handleForward = useCallback((subject: string, body: string) => {
-    openCompose({ subject, body });
+  const handleForward = useCallback((subject: string, body: string, attachments?: EmailAttachment[]) => {
+    openCompose({ subject, body, attachments });
   }, [openCompose]);
 
   // Keyboard shortcuts
@@ -590,6 +594,17 @@ function InboxPageContent() {
                 subject: draft.subject ?? undefined,
                 body: draft.body_html ?? draft.body_text ?? undefined,
                 to: draft.to_addresses,
+                // Only files with a stored object can be re-sent; metadata-only
+                // rows would fail resolution at send time.
+                attachments: (draft.attachments ?? [])
+                  .filter((att) => att.file_path)
+                  .map((att, i) => ({
+                    id: `draft-${draft.id}-${i}`,
+                    file_name: att.filename,
+                    file_size: att.size ?? 0,
+                    mime_type: att.content_type || 'application/octet-stream',
+                    file_path: att.file_path as string,
+                  })),
                 draftId: draft.id,
               })
             }
@@ -659,6 +674,7 @@ function InboxPageContent() {
               setComposeInitialSubject(undefined);
               setComposeInitialBody(undefined);
               setComposeInitialTo(undefined);
+              setComposeInitialAttachments(undefined);
               setComposeDraftId(null);
             }
           }}
@@ -671,6 +687,7 @@ function InboxPageContent() {
           initialTo={composeInitialTo}
           initialSubject={composeInitialSubject}
           initialBody={composeInitialBody}
+          initialAttachments={composeInitialAttachments}
           initialDraftId={composeDraftId}
         />
       )}

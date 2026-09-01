@@ -121,6 +121,10 @@ export interface InboxMessage {
     content_type: string;
     size: number;
     url?: string;
+    /** Object key in the email-attachments bucket (set by intake or self-heal). */
+    file_path?: string | null;
+    /** Resend attachment id — lets the download route fetch bytes on demand. */
+    resend_id?: string | null;
   }>;
   external_id: string | null;
   external_provider: string | null;
@@ -195,6 +199,7 @@ export interface InboxDraft {
     content_type: string;
     size: number;
     url?: string;
+    file_path?: string | null;
   }>;
   scheduled_at: string | null;
   is_reply: boolean;

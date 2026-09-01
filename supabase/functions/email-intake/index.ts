@@ -1,9 +1,11 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { resolveMailboxAddress } from "../_shared/mailbox-address.ts";
 import {
+  fetchReceivedAttachment,
   fetchReceivedEmail,
   mergeHydratedEmail,
   routeInboundRecipients,
+  sanitizeAttachmentFilename,
 } from "../_shared/resend-inbound.ts";
 import {
   inboundEventHash,
@@ -48,7 +50,11 @@ interface EmailPayload {
     size: number;
     url?: string;
     content?: string; // base64 for Resend inbound
+    resend_id?: string | null;
+    file_path?: string | null;
   }>;
+  /** Resend's received-email id — the handle for fetching bodies/attachments later. */
+  resend_email_id?: string;
 }
 
 // Resend inbound webhook wraps email data inside { type, data }
@@ -358,6 +364,170 @@ async function resolveContactId(
   return null;
 }
 
+// ---------------------------------------------------------------------------
+// Inbound attachment storage
+// ---------------------------------------------------------------------------
+
+const ATTACHMENT_BUCKET = "email-attachments";
+/** The bucket's own file_size_limit — larger uploads would be refused anyway. */
+const MAX_STORED_ATTACHMENT_BYTES = 10 * 1024 * 1024;
+const MAX_TOTAL_STORED_BYTES = 35 * 1024 * 1024;
+/** Wall-clock budget for the whole storage pass; leftovers self-heal later. */
+const ATTACHMENT_STORAGE_DEADLINE_MS = 30_000;
+
+interface StoredAttachmentRow {
+  filename: string;
+  content_type: string;
+  size: number;
+  url: string | null;
+  resend_id: string | null;
+  file_path: string | null;
+}
+
+/**
+ * Persist inbound attachment bytes into the email-attachments bucket and
+ * patch the already-filed message with their storage paths.
+ *
+ * Runs AFTER the message insert, in the background where the runtime allows
+ * it, so a slow or failing download can never delay or lose the mail itself.
+ * Anything not stored keeps its resend_id, which the app's download route
+ * uses to fetch (and cache) the bytes on demand.
+ */
+function scheduleAttachmentStorage(
+  messageId: string | undefined,
+  attachments: StoredAttachmentRow[],
+  resendEmailId: string | null,
+  orgId: string,
+  supabaseUrl: string,
+  headers: SupaHeaders,
+): void {
+  if (!messageId || attachments.length === 0) return;
+  const work = storeInboundAttachments(
+    messageId, attachments, resendEmailId, orgId, supabaseUrl, headers,
+  ).catch((e) =>
+    console.error(
+      "inbound attachment storage failed (message is filed; downloads will self-heal):",
+      e instanceof Error ? e.message : e,
+    ),
+  );
+  const runtime = (globalThis as { EdgeRuntime?: { waitUntil?: (p: Promise<unknown>) => void } })
+    .EdgeRuntime;
+  if (runtime?.waitUntil) runtime.waitUntil(work);
+}
+
+async function storeInboundAttachments(
+  messageId: string,
+  attachments: StoredAttachmentRow[],
+  resendEmailId: string | null,
+  orgId: string,
+  supabaseUrl: string,
+  headers: SupaHeaders,
+): Promise<void> {
+  const apiKey = Deno.env.get("RESEND_API_KEY");
+  if (!apiKey || !resendEmailId) return;
+
+  const deadline = Date.now() + ATTACHMENT_STORAGE_DEADLINE_MS;
+  let totalStored = 0;
+  let changed = false;
+
+  for (const att of attachments) {
+    if (att.file_path || !att.resend_id) continue;
+    if (Date.now() > deadline) break;
+    // Reserve against the declared size so the total cap is a real cap, not
+    // just a starting-line check.
+    const expected = Math.min(att.size || MAX_STORED_ATTACHMENT_BYTES, MAX_STORED_ATTACHMENT_BYTES);
+    if (totalStored + expected > MAX_TOTAL_STORED_BYTES) continue;
+
+    try {
+      const content = await fetchReceivedAttachment(resendEmailId, att.resend_id, apiKey);
+      if (!content?.download_url) continue;
+
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 15_000);
+      let bytes: ArrayBuffer;
+      try {
+        const res = await fetch(content.download_url, { signal: controller.signal });
+        if (!res.ok) {
+          console.warn(`attachment download got ${res.status} for ${att.filename}`);
+          continue;
+        }
+        const declared = Number(res.headers.get("content-length") || "0");
+        if (declared > MAX_STORED_ATTACHMENT_BYTES) {
+          console.warn(`attachment ${att.filename} too large to store (${declared} bytes); kept as on-demand`);
+          continue;
+        }
+        bytes = await res.arrayBuffer();
+      } finally {
+        clearTimeout(timer);
+      }
+      if (bytes.byteLength === 0 || bytes.byteLength > MAX_STORED_ATTACHMENT_BYTES) continue;
+      if (totalStored + bytes.byteLength > MAX_TOTAL_STORED_BYTES) continue;
+
+      const uploadBudget = Math.min(15_000, deadline - Date.now());
+      if (uploadBudget <= 0) break;
+      const uploadController = new AbortController();
+      const uploadTimer = setTimeout(() => uploadController.abort(), uploadBudget);
+      const path = `${orgId}/inbound/${crypto.randomUUID()}/${sanitizeAttachmentFilename(att.filename)}`;
+      let upload: Response;
+      try {
+        upload = await fetch(
+          `${supabaseUrl}/storage/v1/object/${ATTACHMENT_BUCKET}/${path}`,
+          {
+            method: "POST",
+            headers: {
+              apikey: headers.apikey,
+              Authorization: headers.Authorization,
+              "Content-Type": att.content_type || "application/octet-stream",
+              "x-upsert": "true",
+            },
+            body: bytes,
+            signal: uploadController.signal,
+          },
+        );
+      } finally {
+        clearTimeout(uploadTimer);
+      }
+      if (!upload.ok) {
+        console.error(`attachment upload failed (${upload.status}): ${await upload.text()}`);
+        continue;
+      }
+
+      att.file_path = path;
+      if (!att.size) att.size = bytes.byteLength;
+      totalStored += bytes.byteLength;
+      changed = true;
+    } catch (err) {
+      console.warn(
+        `storing attachment ${att.filename} failed (kept as on-demand):`,
+        err instanceof Error ? err.message : err,
+      );
+    }
+  }
+
+  if (!changed) return;
+  try {
+    // Merge into a fresh read so a concurrent writer (the app's self-heal
+    // download route) is never clobbered by this stale in-memory array.
+    const rows = await supaFetch(
+      supabaseUrl,
+      `/rest/v1/inbox_messages?id=eq.${messageId}&select=attachments`,
+      headers,
+    );
+    const current: StoredAttachmentRow[] = Array.isArray(rows?.[0]?.attachments)
+      ? rows[0].attachments
+      : [];
+    const merged = attachments.map((att, i) =>
+      current[i]?.file_path ? { ...att, ...current[i] } : att,
+    );
+    await supaFetch(supabaseUrl, `/rest/v1/inbox_messages?id=eq.${messageId}`, headers, {
+      method: "PATCH",
+      body: { attachments: merged },
+    });
+  } catch (e) {
+    console.error("attachment file_path patch failed (downloads will self-heal):", e);
+  }
+}
+
 async function handleInboxMessage(
   emailData: EmailPayload,
   supabaseUrl: string,
@@ -412,7 +582,12 @@ async function handleInboxMessage(
     content_type: a.content_type,
     size: a.size,
     url: a.url || null,
+    resend_id: a.resend_id || null,
+    file_path: a.file_path || null,
   }));
+  const messageMetadata = emailData.resend_email_id
+    ? { resend_email_id: emailData.resend_email_id }
+    : {};
 
   const contactId = await resolveContactId(from.email, orgId, supabaseUrl, headers);
   const preview = generatePreview(emailData.body_text, emailData.body_html);
@@ -447,8 +622,18 @@ async function handleInboxMessage(
         external_provider: "resend",
         status: "delivered",
         sent_at: now,
+        metadata: messageMetadata,
       },
     });
+
+    scheduleAttachmentStorage(
+      msgs?.[0]?.id,
+      attachments,
+      emailData.resend_email_id || null,
+      orgId,
+      supabaseUrl,
+      headers,
+    );
 
     // File pre-existing threads that predate shared-mailbox tagging. The
     // is.null filter makes this a no-op once a thread already has a mailbox,
@@ -542,8 +727,18 @@ async function handleInboxMessage(
       external_provider: "resend",
       status: "delivered",
       sent_at: now,
+      metadata: messageMetadata,
     },
   });
+
+  scheduleAttachmentStorage(
+    msgs?.[0]?.id,
+    attachments,
+    emailData.resend_email_id || null,
+    orgId,
+    supabaseUrl,
+    headers,
+  );
 
   // Optional: send Slack notification
   const slackWebhookUrl = Deno.env.get("SLACK_WEBHOOK_URL");
@@ -845,6 +1040,9 @@ Deno.serve(async (req: Request) => {
     const resendEmailId = parsed?.data?.email_id;
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
     if (resendEmailId) {
+      // Persist the handle regardless of hydration outcome: it is what lets a
+      // backfill or the download route recover content after the fact.
+      emailData.resend_email_id = resendEmailId;
       if (resendApiKey) {
         const hydrated = await fetchReceivedEmail(resendEmailId, resendApiKey);
         if (hydrated) {

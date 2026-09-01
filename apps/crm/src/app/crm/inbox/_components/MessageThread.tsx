@@ -389,17 +389,28 @@ function EmailMessage({ msg }: { msg: InboxMessage }) {
               <div className="flex flex-wrap gap-2">
                 {msg.attachments.map((att, i) => {
                   const sizeLabel = formatInboxFileSize(attachmentByteSize(att));
+                  // Stored (file_path) and on-demand (resend_id) files go
+                  // through the authenticated download route; a bare url is a
+                  // legacy provider link. Nothing at all = the file predates
+                  // attachment storage and truly cannot be recovered.
+                  const downloadable = Boolean(att.file_path || att.resend_id || att.url);
+                  const href = att.file_path || att.resend_id
+                    ? `/api/inbox/attachments?message_id=${msg.id}&index=${i}`
+                    : att.url || '#';
                   return (
                   <a
                     key={i}
-                    href={att.url || '#'}
+                    href={href}
                     target="_blank"
                     rel="noopener noreferrer"
+                    title={downloadable
+                      ? `Download ${att.filename}`
+                      : 'Unavailable — received before attachment storage was enabled'}
                     className={cn(
                       'inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-colors',
                       'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800',
                       'hover:bg-slate-100 dark:hover:bg-slate-700',
-                      !att.url && 'opacity-50 pointer-events-none'
+                      !downloadable && 'opacity-50 pointer-events-none'
                     )}
                   >
                     <Paperclip className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
@@ -411,7 +422,7 @@ function EmailMessage({ msg }: { msg: InboxMessage }) {
                       {sizeLabel}
                     </span>
                     )}
-                    {att.url && <Download className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />}
+                    {downloadable && <Download className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />}
                   </a>
                   );
                 })}

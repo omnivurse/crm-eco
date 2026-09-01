@@ -112,7 +112,11 @@ export function composerAttachmentsToRefs(
   return attachments
     .filter((attachment) => !attachment.is_uploading && !attachment.error)
     .map((attachment) => ({
-      id: attachment.id,
+      // Synthetic client-side ids (fwd-*, draft-*, upload temp ids) must not
+      // reach the send body: the resolver treats any id as an
+      // email_attachments row to look up, and an unknown id fails the send.
+      // Such files resolve by their file_path instead.
+      id: isPersistedAttachmentId(attachment.id) ? attachment.id : undefined,
       file_name: attachment.file_name,
       mime_type: attachment.mime_type,
       file_path: attachment.file_path,
