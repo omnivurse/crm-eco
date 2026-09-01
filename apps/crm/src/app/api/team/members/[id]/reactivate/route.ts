@@ -5,7 +5,11 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, getAuthProfile } from '@/lib/supabase-server';
-import { canManageTeamMembers } from '@/lib/team/invite-access';
+import {
+  canManageTeamMembers,
+  effectiveOrgRole,
+  orgRoleLevel,
+} from '@/lib/team/invite-access';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,6 +41,16 @@ export async function POST(
 
     if (targetMember.organization_id !== currentProfile.organization_id) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+    }
+
+    const actorRole = effectiveOrgRole(currentProfile);
+    const currentRoleLevel = orgRoleLevel(actorRole);
+    const targetRoleLevel = orgRoleLevel(targetMember.role);
+
+    // Reactivation restores every permission attached to the target's org role.
+    // Apply the same hierarchy used by deactivate and role-change operations.
+    if (actorRole !== 'owner' && targetRoleLevel >= currentRoleLevel) {
+      return NextResponse.json({ error: 'Cannot reactivate user with equal or higher role' }, { status: 403 });
     }
 
     const { error: updateError } = await supabase
