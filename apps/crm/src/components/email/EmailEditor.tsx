@@ -103,6 +103,9 @@ export function EmailEditor({
     ],
     content,
     editable,
+    // TipTap v3 throws outright if an SSR pass reaches useEditor without this
+    // set — client-only rendering is the contract here (LazyEmailEditor).
+    immediatelyRender: false,
     onUpdate: ({ editor }) => {
       const html = editor.getHTML();
       onChange?.(html);

@@ -72,21 +72,27 @@ export function measureEmailDocument(doc: {
 }
 
 /**
- * Tall reading-pane floor: most of the leftover thread pane, capped at 70vh.
- * Short mail still fills the pane; taller mail grows past this.
+ * Message cards size to their CONTENT, like Gmail. A per-message pane floor
+ * used to inflate every card to ~92% of the pane, so a one-line reply became
+ * a screen-tall white void and a four-message thread was unreadable — the
+ * only guard left is a small floor that keeps a failed measure readable.
  */
-export function readingPaneFloor(
-  paneHeightPx: number,
-  viewportHeightPx: number,
-): number {
-  const vh70 = Math.max(0, viewportHeightPx) * 0.7;
-  const pane =
-    Number.isFinite(paneHeightPx) && paneHeightPx > 0 ? paneHeightPx : vh70;
-  return Math.max(240, Math.round(Math.min(vh70, pane * 0.92)));
+export function emailIframeHeight(measuredPx: number): number {
+  const measured = Number.isFinite(measuredPx) ? measuredPx : 80;
+  return Math.max(80, Math.ceil(measured));
 }
 
-export function emailIframeHeight(measuredPx: number, paneFloorPx: number): number {
-  const measured = Number.isFinite(measuredPx) ? measuredPx : 80;
-  const floor = Number.isFinite(paneFloorPx) ? paneFloorPx : 240;
-  return Math.max(80, measured, floor);
+/**
+ * Whether the thread pane should follow new messages to the bottom.
+ * True when the reader is already near the end (or the pane doesn't
+ * scroll); false when they've scrolled up to read history — yanking
+ * them down mid-read would lose their place.
+ */
+export function shouldFollowNewMessages(pane: {
+  scrollTop: number;
+  scrollHeight: number;
+  clientHeight: number;
+}): boolean {
+  const distanceFromBottom = pane.scrollHeight - pane.scrollTop - pane.clientHeight;
+  return distanceFromBottom < 200;
 }

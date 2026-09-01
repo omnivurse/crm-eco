@@ -5,7 +5,7 @@ import {
   emailIframeHeight,
   formatInboxFileSize,
   measureEmailDocument,
-  readingPaneFloor,
+  shouldFollowNewMessages,
 } from './inbox-reading';
 
 describe('formatInboxFileSize', () => {
@@ -58,17 +58,35 @@ describe('EMAIL_IFRAME_SANDBOX', () => {
   });
 });
 
-describe('readingPaneFloor', () => {
-  it('uses most of the leftover pane, capped at 70vh', () => {
-    expect(readingPaneFloor(400, 900)).toBe(368);
-    expect(readingPaneFloor(800, 900)).toBe(630);
-    expect(readingPaneFloor(0, 800)).toBe(515);
+describe('emailIframeHeight', () => {
+  it('sizes to content — a short reply must NOT balloon into a screen-tall card', () => {
+    expect(emailIframeHeight(96)).toBe(96);
+    expect(emailIframeHeight(1200)).toBe(1200);
+  });
+
+  it('keeps a small readable floor when the measure fails', () => {
+    expect(emailIframeHeight(0)).toBe(80);
+    expect(emailIframeHeight(Number.NaN)).toBe(80);
   });
 });
 
-describe('emailIframeHeight', () => {
-  it('grows past the pane floor when the mail is taller', () => {
-    expect(emailIframeHeight(200, 500)).toBe(500);
-    expect(emailIframeHeight(1200, 500)).toBe(1200);
+describe('shouldFollowNewMessages', () => {
+  it('follows when the reader is at or near the bottom', () => {
+    expect(
+      shouldFollowNewMessages({ scrollTop: 1000, scrollHeight: 1600, clientHeight: 600 }),
+    ).toBe(true);
+    expect(
+      shouldFollowNewMessages({ scrollTop: 900, scrollHeight: 1600, clientHeight: 600 }),
+    ).toBe(true);
+    // Pane that doesn't scroll at all.
+    expect(
+      shouldFollowNewMessages({ scrollTop: 0, scrollHeight: 400, clientHeight: 600 }),
+    ).toBe(true);
+  });
+
+  it('never yanks a reader out of thread history', () => {
+    expect(
+      shouldFollowNewMessages({ scrollTop: 0, scrollHeight: 1600, clientHeight: 600 }),
+    ).toBe(false);
   });
 });

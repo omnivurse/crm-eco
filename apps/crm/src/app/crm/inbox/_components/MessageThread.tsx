@@ -34,8 +34,8 @@ import {
   emailIframeHeight,
   formatInboxFileSize,
   measureEmailDocument,
-  readingPaneFloor,
   sanitizeEmailForReading,
+  shouldFollowNewMessages,
 } from './inbox-reading';
 import { participantsFromThread } from '@/lib/calendar/thread-participants';
 
@@ -113,22 +113,10 @@ interface MessageThreadProps {
   onBackToList: () => void;
 }
 
-function findScrollParent(el: HTMLElement | null): HTMLElement | null {
-  let node = el?.parentElement ?? null;
-  while (node) {
-    const style = getComputedStyle(node);
-    if (style.overflowY === 'auto' || style.overflowY === 'scroll') return node;
-    node = node.parentElement;
-  }
-  return null;
-}
-
-/** Renders HTML email body in a sandboxed iframe that auto-sizes to content */
+/** Renders HTML email body in a sandboxed iframe that sizes to its content */
 function HtmlEmailBody({ html }: { html: string }) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const [height, setHeight] = useState(() =>
-    readingPaneFloor(0, typeof window !== 'undefined' ? window.innerHeight : 800),
-  );
+  const [height, setHeight] = useState(80);
   const [dark, setDark] = useState(false);
 
   useEffect(() => {
@@ -147,21 +135,13 @@ function HtmlEmailBody({ html }: { html: string }) {
     const imageCleanups: Array<() => void> = [];
     const resizeObserver = new ResizeObserver(() => applyMeasure());
 
-    const paneFloorNow = () => {
-      const pane = findScrollParent(iframe);
-      return readingPaneFloor(
-        pane?.clientHeight ?? 0,
-        window.innerHeight,
-      );
-    };
-
     const applyMeasure = () => {
       try {
         const doc = iframe.contentDocument;
         const measured = doc ? measureEmailDocument(doc) : 80;
-        setHeight(emailIframeHeight(measured, paneFloorNow()));
+        setHeight(emailIframeHeight(measured));
       } catch {
-        setHeight(emailIframeHeight(80, paneFloorNow()));
+        setHeight(emailIframeHeight(80));
       }
     };
 
@@ -196,9 +176,6 @@ function HtmlEmailBody({ html }: { html: string }) {
     iframe.addEventListener('load', watchDocument);
     // srcDoc often finishes before addEventListener — measure now too.
     watchDocument();
-
-    const pane = findScrollParent(iframe);
-    if (pane) resizeObserver.observe(pane);
 
     return () => {
       iframe.removeEventListener('load', watchDocument);
@@ -254,9 +231,13 @@ function HtmlEmailBody({ html }: { html: string }) {
   );
 }
 
-/** Single email message in the thread */
-function EmailMessage({ msg }: { msg: InboxMessage }) {
-  const [expanded, setExpanded] = useState(true);
+/**
+ * Single email message in the thread. Gmail model: the latest message opens
+ * expanded and sized to its content; older ones start as one-line headers
+ * (sender + preview + time) and expand on click.
+ */
+function EmailMessage({ msg, defaultExpanded }: { msg: InboxMessage; defaultExpanded: boolean }) {
+  const [expanded, setExpanded] = useState(defaultExpanded);
   const isOutbound = msg.direction === 'outbound';
   const hasHtml = !!msg.body_html;
   const hasCc = msg.cc_addresses && msg.cc_addresses.length > 0;
@@ -299,8 +280,8 @@ function EmailMessage({ msg }: { msg: InboxMessage }) {
               )}
             </div>
             {!expanded && (
-              <p className="text-xs text-slate-500 truncate max-w-[300px]">
-                {msg.body_text?.slice(0, 100) || msg.body_html?.replace(/<[^>]*>/g, '').slice(0, 100)}
+              <p className="text-xs text-slate-500 truncate max-w-[46rem]">
+                {msg.body_text?.slice(0, 160) || msg.body_html?.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 160)}
               </p>
             )}
           </div>
@@ -443,6 +424,31 @@ export const MessageThread = React.memo(function MessageThread({
   onBackToList,
 }: MessageThreadProps) {
   const [meetingOpen, setMeetingOpen] = useState(false);
+  const paneRef = useRef<HTMLDivElement>(null);
+  const lastConversationRef = useRef<string | null>(null);
+
+  // Land on the newest message (Gmail behavior). On a conversation switch we
+  // always jump to the bottom; when new messages stream in we follow only if
+  // the reader is already near the bottom — never yank them out of history.
+  // The delayed passes re-anchor after iframes finish measuring their content.
+  useEffect(() => {
+    if (loadingMessages || messages.length === 0) return;
+    const pane = paneRef.current;
+    if (!pane) return;
+    const switched = lastConversationRef.current !== conversation.id;
+    lastConversationRef.current = conversation.id;
+    if (!switched && !shouldFollowNewMessages(pane)) return;
+    const toBottom = () => {
+      pane.scrollTop = pane.scrollHeight;
+    };
+    toBottom();
+    const t1 = setTimeout(toBottom, 120);
+    const t2 = setTimeout(toBottom, 400);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, [conversation.id, loadingMessages, messages.length]);
 
   const meetingDefaults = useMemo(
     () => ({
@@ -556,7 +562,7 @@ export const MessageThread = React.memo(function MessageThread({
       </div>
 
       {/* Messages */}
-      <div className="flex-1 p-3 lg:p-4 overflow-y-auto space-y-3">
+      <div ref={paneRef} className="flex-1 p-3 lg:p-4 overflow-y-auto space-y-2">
         {loadingMessages ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-6 h-6 animate-spin text-teal-500" />
@@ -567,8 +573,12 @@ export const MessageThread = React.memo(function MessageThread({
             <p>No messages yet</p>
           </div>
         ) : (
-          messages.map((msg) => (
-            <EmailMessage key={msg.id} msg={msg} />
+          messages.map((msg, index) => (
+            <EmailMessage
+              key={msg.id}
+              msg={msg}
+              defaultExpanded={index === messages.length - 1}
+            />
           ))
         )}
       </div>
