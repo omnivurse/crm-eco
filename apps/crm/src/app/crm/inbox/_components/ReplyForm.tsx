@@ -45,6 +45,8 @@ const replyDraftCache = new Map<string, { html: string; attachments: EmailAttach
 interface ReplyFormProps {
   selectedConversation: InboxConversation;
   messages: InboxMessage[];
+  /** Message whose Reply action opened the dock; null means reply to the latest message. */
+  replyTargetMessage?: InboxMessage | null;
   authProfile: { id: string; organization_id: string; full_name: string | null };
   authUserEmail: string;
   /** Verified sender registry, used to pick the From address. */
@@ -59,6 +61,7 @@ interface ReplyFormProps {
 export function ReplyForm({
   selectedConversation,
   messages,
+  replyTargetMessage = null,
   authProfile,
   authUserEmail,
   mailboxes = [],
@@ -135,6 +138,15 @@ export function ReplyForm({
     return messages.length > 0 ? messages[messages.length - 1] : null;
   }, [messages]);
 
+  // A message-scoped Reply must use that message for both the recipient and
+  // RFC 822 headers. Ignore a stale target after switching conversations.
+  const replyTarget =
+    replyTargetMessage?.conversation_id === selectedConversation.id
+      ? replyTargetMessage
+      : null;
+  const replyRecipientSource = replyTarget ?? lastInbound;
+  const threadingTarget = replyTarget ?? lastMessage;
+
   /**
    * Shared mailbox this reply goes out as (support@, billing@, …).
    * Driven by the thread's mailbox plus the verified sender registry, so it
@@ -160,14 +172,14 @@ export function ReplyForm({
 
   // Build CC list for Reply All
   const replyAllCc = useMemo(() => {
-    if (!lastInbound) return [];
-    const ccList = lastInbound.cc_addresses || [];
+    if (!replyRecipientSource) return [];
+    const ccList = replyRecipientSource.cc_addresses || [];
     // Filter out our own monitored mailbox + agent email from CC
     return ccList.filter((addr: { email: string }) => {
       const email = addr.email.toLowerCase();
       return email !== authUserEmail.toLowerCase() && email !== monitoredFrom;
     });
-  }, [lastInbound, authUserEmail, monitoredFrom]);
+  }, [replyRecipientSource, authUserEmail, monitoredFrom]);
 
   const beginForward = useCallback((source?: InboxMessage | null) => {
     if (!onForward) return;
@@ -212,8 +224,11 @@ export function ReplyForm({
       // Honour Reply-To: send-on-behalf systems (HR platforms, ticketing,
       // no-reply gateways) set it precisely because from_address is a black
       // hole. Falls back to the visible sender, then the contact.
-      const toAddress = lastInbound?.reply_to_address
-        || lastInbound?.from_address
+      const targetToAddress = replyRecipientSource?.direction === 'outbound'
+        ? replyRecipientSource.to_address
+        : replyRecipientSource?.reply_to_address
+          || replyRecipientSource?.from_address;
+      const toAddress = targetToAddress
         || selectedConversation.contact_email
         || selectedConversation.contact_phone;
 
@@ -240,8 +255,8 @@ export function ReplyForm({
 
       const attachmentRefs = composerAttachmentsToRefs(attachments);
 
-      const inReplyTo = lastMessage?.message_id || null;
-      const existingRefs = lastMessage?.references_ids || [];
+      const inReplyTo = threadingTarget?.message_id || null;
+      const existingRefs = threadingTarget?.references_ids || [];
       const referencesIds = inReplyTo
         ? [...existingRefs.filter((r: string) => r !== inReplyTo), inReplyTo]
         : existingRefs;
@@ -254,7 +269,9 @@ export function ReplyForm({
         body: JSON.stringify({
           channel: 'email',
           to: toAddress,
-          to_name: lastInbound?.from_name || selectedConversation.contact_name,
+          to_name: replyRecipientSource?.direction === 'outbound'
+            ? replyRecipientSource.to_name || selectedConversation.contact_name
+            : replyRecipientSource?.from_name || selectedConversation.contact_name,
           subject: replySubject,
           body_html: replyHtml,
           body_text: bodyText,
@@ -293,6 +310,8 @@ export function ReplyForm({
     messages,
     lastInbound,
     lastMessage,
+    replyRecipientSource,
+    threadingTarget,
     authProfile,
     authUserEmail,
     monitoredFrom,

@@ -71,6 +71,7 @@ function InboxPageContent() {
   const [composeInitialAttachments, setComposeInitialAttachments] = useState<EmailAttachment[] | undefined>();
   const [composeDraftId, setComposeDraftId] = useState<string | null>(null);
   const [replyExpandToken, setReplyExpandToken] = useState(0);
+  const [replyTargetMessage, setReplyTargetMessage] = useState<InboxMessage | null>(null);
   const [drafts, setDrafts] = useState<InboxDraft[]>([]);
 
   const openCompose = useCallback((opts?: {
@@ -427,7 +428,8 @@ function InboxPageContent() {
     });
   }, [openCompose, selectedConversation?.subject]);
 
-  const handleStartReply = useCallback(() => {
+  const handleStartReply = useCallback((msg?: InboxMessage) => {
+    setReplyTargetMessage(msg ?? null);
     setReplyExpandToken((n) => n + 1);
   }, []);
 
@@ -665,6 +667,7 @@ function InboxPageContent() {
               <ReplyForm
                 selectedConversation={selectedConversation}
                 messages={messages}
+                replyTargetMessage={replyTargetMessage}
                 authProfile={authProfile!}
                 authUserEmail={authUser?.email || ''}
                 mailboxes={mailboxes}
