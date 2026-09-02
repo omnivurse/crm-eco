@@ -118,7 +118,7 @@ interface MessageThreadProps {
   loadingMessages: boolean;
   onStatusChange: (conversationId: string, status: ConversationStatus) => void;
   onBackToList: () => void;
-  onReply?: () => void;
+  onReply?: (msg?: InboxMessage) => void;
   onForward?: (msg: InboxMessage) => void;
 }
 
@@ -251,7 +251,7 @@ function EmailMessage({
 }: {
   msg: InboxMessage;
   defaultExpanded: boolean;
-  onReply?: () => void;
+  onReply?: (msg?: InboxMessage) => void;
   onForward?: (msg: InboxMessage) => void;
 }) {
   const [expanded, setExpanded] = useState(defaultExpanded);
@@ -433,7 +433,7 @@ function EmailMessage({
               {onReply && (
                 <button
                   type="button"
-                  onClick={onReply}
+                  onClick={() => onReply(msg)}
                   className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                 >
                   <Reply className="w-3.5 h-3.5" />
@@ -580,7 +580,7 @@ export const MessageThread = React.memo(function MessageThread({
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="min-w-[180px]">
                 {onReply && (
-                  <DropdownMenuItem onClick={onReply}>
+                  <DropdownMenuItem onClick={() => onReply()}>
                     <Reply className="w-4 h-4 mr-2" />
                     Reply
                   </DropdownMenuItem>
