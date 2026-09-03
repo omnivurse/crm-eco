@@ -140,3 +140,93 @@ export function shouldFollowNewMessages(pane: {
   const distanceFromBottom = pane.scrollHeight - pane.scrollTop - pane.clientHeight;
   return distanceFromBottom < 200;
 }
+
+/** Human sender when intake stored an empty from_name (Outlook often does). */
+export function displaySenderName(
+  fromName: string | null | undefined,
+  fromAddress: string | null | undefined,
+): string {
+  const name = fromName?.trim();
+  if (name) return name;
+  const email = fromAddress?.trim();
+  if (!email) return 'Unknown';
+  const local = email.split('@')[0] ?? '';
+  const titled = local.replace(/[._+]+/g, ' ').replace(/\s+/g, ' ').trim();
+  if (!titled) return email;
+  return titled.replace(/\b([a-zA-Z])/g, (c) => c.toUpperCase());
+}
+
+/**
+ * Outlook / Word HTML is tens or hundreds of KB of VML + spacer tables.
+ * Putting it in the iframe as the default reading view hides the real
+ * letter (and the attachment chips below it) inside a tiny pane.
+ */
+export function isHeavyEmailHtml(html: string | null | undefined): boolean {
+  if (!html) return false;
+  if (html.length > 40_000) return true;
+  return /schemas-microsoft-com|WordSection|xmlns:v=/i.test(html);
+}
+
+export function shouldReadAsPlainText(
+  html: string | null | undefined,
+  text: string | null | undefined,
+): boolean {
+  const plain = text?.trim() ?? '';
+  if (plain.length < 40) return false;
+  return isHeavyEmailHtml(html);
+}
+
+export type ThreadFace = {
+  name: string;
+  email: string | null;
+  others: Array<{ name: string; email: string }>;
+};
+
+/** Latest inbound sender is the face of the thread — not the first person who wrote. */
+export function threadFaceFromMessages(
+  messages: Array<{
+    direction: string;
+    from_name?: string | null;
+    from_address?: string | null;
+  }>,
+  fallback: { contact_name?: string | null; contact_email?: string | null },
+): ThreadFace {
+  const inbound = messages.filter((m) => m.direction === 'inbound' && m.from_address?.trim());
+  const latest = inbound[inbound.length - 1];
+  const email = latest?.from_address?.trim() || fallback.contact_email?.trim() || null;
+  const name = latest
+    ? displaySenderName(latest.from_name, latest.from_address)
+    : fallback.contact_name?.trim() || (email ? displaySenderName(null, email) : 'Unknown Contact');
+
+  const latestKey = email?.toLowerCase() ?? '';
+  const seen = new Set<string>(latestKey ? [latestKey] : []);
+  const others: Array<{ name: string; email: string }> = [];
+  for (const m of inbound) {
+    const addr = m.from_address!.trim();
+    const key = addr.toLowerCase();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    others.push({ name: displaySenderName(m.from_name, addr), email: addr });
+  }
+
+  return { name, email, others };
+}
+
+export function isLatestInbound(
+  messages: Array<{ id: string; direction: string }>,
+  messageId: string,
+): boolean {
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    if (messages[i].direction === 'inbound') return messages[i].id === messageId;
+  }
+  return false;
+}
+
+export function defaultMessageExpanded(
+  index: number,
+  total: number,
+  latestInbound: boolean,
+): boolean {
+  if (total <= 2) return true;
+  return index === total - 1 || latestInbound;
+}

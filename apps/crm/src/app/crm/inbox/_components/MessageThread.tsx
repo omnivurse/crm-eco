@@ -38,9 +38,14 @@ import type { InboxConversation, InboxMessage, InboxChannel, ConversationStatus 
 import {
   EMAIL_IFRAME_SANDBOX,
   attachmentByteSize,
+  defaultMessageExpanded,
+  displaySenderName,
   formatInboxFileSize,
+  isLatestInbound,
   sanitizeEmailForReading,
   shouldFollowNewMessages,
+  shouldReadAsPlainText,
+  threadFaceFromMessages,
   unconstrainedIframeMeasureHeight,
 } from './inbox-reading';
 import { pickForwardSource } from './inbox-forward';
@@ -232,9 +237,71 @@ function HtmlEmailBody({ html }: { html: string }) {
       srcDoc={srcDoc}
       sandbox={EMAIL_IFRAME_SANDBOX}
       className="w-full border-0"
-      style={{ height: `${height}px`, minHeight: Math.max(height, 120), overflow: 'hidden' }}
+      style={{
+        height: `${Math.min(height, 720)}px`,
+        minHeight: Math.min(Math.max(height, 80), 720),
+        maxHeight: 720,
+        overflow: height > 720 ? 'auto' : 'hidden',
+      }}
       title="Email content"
     />
+  );
+}
+
+function attachmentHref(msg: InboxMessage, att: InboxMessage['attachments'][number], index: number): string {
+  if (att.file_path || att.resend_id) {
+    return `/api/inbox/attachments?message_id=${msg.id}&index=${index}`;
+  }
+  return att.url || '#';
+}
+
+function isDownloadable(att: InboxMessage['attachments'][number]): boolean {
+  return Boolean(att.file_path || att.resend_id || att.url);
+}
+
+function AttachmentChips({
+  msg,
+  compact,
+}: {
+  msg: InboxMessage;
+  compact?: boolean;
+}) {
+  if (!msg.attachments?.length) return null;
+  return (
+    <div className={cn('flex flex-wrap gap-2', compact && 'mt-1')}>
+      {msg.attachments.map((att, i) => {
+        const sizeLabel = formatInboxFileSize(attachmentByteSize(att));
+        const downloadable = isDownloadable(att);
+        return (
+          <a
+            key={`${att.filename}-${i}`}
+            href={attachmentHref(msg, att, i)}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(event) => event.stopPropagation()}
+            title={downloadable
+              ? `Download ${att.filename}`
+              : 'Unavailable — received before attachment storage was enabled'}
+            className={cn(
+              'inline-flex items-center gap-2 rounded-lg border text-sm transition-colors',
+              compact ? 'px-2 py-1' : 'px-3 py-2',
+              'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800',
+              'hover:bg-slate-100 dark:hover:bg-slate-700',
+              !downloadable && 'opacity-50 pointer-events-none',
+            )}
+          >
+            <Paperclip className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+            <span className="truncate max-w-[12rem] text-slate-700 dark:text-slate-300">
+              {att.filename || `Attachment ${i + 1}`}
+            </span>
+            {sizeLabel && (
+              <span className="text-xs text-slate-400 flex-shrink-0">{sizeLabel}</span>
+            )}
+            {downloadable && <Download className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />}
+          </a>
+        );
+      })}
+    </div>
   );
 }
 
@@ -255,8 +322,12 @@ function EmailMessage({
   onForward?: (msg: InboxMessage) => void;
 }) {
   const [expanded, setExpanded] = useState(defaultExpanded);
+  const [showOriginalHtml, setShowOriginalHtml] = useState(false);
   const isOutbound = msg.direction === 'outbound';
   const hasHtml = !!msg.body_html;
+  const preferText = shouldReadAsPlainText(msg.body_html, msg.body_text);
+  const showHtml = hasHtml && (!preferText || showOriginalHtml);
+  const senderName = isOutbound ? 'You' : displaySenderName(msg.from_name, msg.from_address);
   const hasCc = msg.cc_addresses && msg.cc_addresses.length > 0;
   const hasBcc = msg.bcc_addresses && msg.bcc_addresses.length > 0;
   const hasAttachments = msg.attachments && msg.attachments.length > 0;
@@ -282,15 +353,15 @@ function EmailMessage({
                 ? 'bg-teal-100 text-teal-700 dark:bg-teal-500/20 dark:text-teal-400'
                 : 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300'
             )}>
-              {getInitials(isOutbound ? 'You' : msg.from_name)}
+              {getInitials(senderName)}
             </AvatarFallback>
           </Avatar>
           <div className="min-w-0 text-left">
             <div className="flex items-center gap-2">
               <span className="text-sm font-semibold text-slate-900 dark:text-white truncate">
-                {isOutbound ? 'You' : (msg.from_name || msg.from_address || 'Unknown')}
+                {senderName}
               </span>
-              {!isOutbound && msg.from_address && msg.from_name && (
+              {!isOutbound && msg.from_address && (
                 <span className="text-xs text-slate-400 truncate hidden sm:inline">
                   &lt;{msg.from_address}&gt;
                 </span>
@@ -305,7 +376,10 @@ function EmailMessage({
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           {hasAttachments && (
-            <Paperclip className="w-3.5 h-3.5 text-slate-400" />
+            <span className="inline-flex items-center gap-1 text-xs text-slate-500" title={`${msg.attachments.length} attachments`}>
+              <Paperclip className="w-3.5 h-3.5" />
+              {msg.attachments.length}
+            </span>
           )}
           <span className="text-xs text-slate-500" title={formatFullDate(msg.sent_at)}>
             {formatTime(msg.sent_at)}
@@ -353,6 +427,17 @@ function EmailMessage({
             )}
           </div>
 
+          {/* Downloads first — Outlook HTML used to bury these under 600KB of VML. */}
+          {hasAttachments && (
+            <div className="px-3 lg:px-4 pt-3">
+              <div className="flex items-center gap-1.5 mb-2 text-xs font-medium text-slate-500">
+                <Paperclip className="w-3.5 h-3.5" />
+                {msg.attachments.length} attachment{msg.attachments.length > 1 ? 's' : ''}
+              </div>
+              <AttachmentChips msg={msg} />
+            </div>
+          )}
+
           {/* Meeting invite marker (messages sent with an iTIP part) */}
           {typeof msg.metadata?.calendar_event_id === 'string' && (
             <div className="px-3 lg:px-4 pt-3">
@@ -368,65 +453,38 @@ function EmailMessage({
 
           {/* Email body */}
           <div className="px-3 lg:px-4 py-3">
-            {hasHtml ? (
-              <HtmlEmailBody html={msg.body_html!} />
-            ) : (
+            {preferText && (
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <p className="text-[11px] uppercase tracking-wide text-slate-400">
+                  Readable text
+                </p>
+                {hasHtml && (
+                  <button
+                    type="button"
+                    onClick={() => setShowOriginalHtml((open) => !open)}
+                    className="text-xs font-medium text-teal-700 dark:text-teal-400 hover:underline"
+                  >
+                    {showOriginalHtml ? 'Hide original formatting' : 'Show original formatting'}
+                  </button>
+                )}
+              </div>
+            )}
+            {preferText && (
+              <p className="whitespace-pre-wrap break-words text-sm text-slate-900 dark:text-white">
+                {msg.body_text}
+              </p>
+            )}
+            {showHtml && (
+              <div className={cn(preferText && 'mt-3 border-t border-slate-100 dark:border-slate-700/50 pt-3')}>
+                <HtmlEmailBody html={msg.body_html!} />
+              </div>
+            )}
+            {!preferText && !showHtml && (
               <p className="whitespace-pre-wrap break-words text-sm text-slate-900 dark:text-white">
                 {msg.body_text || ''}
               </p>
             )}
           </div>
-
-          {/* Attachments */}
-          {hasAttachments && (
-            <div className="px-3 lg:px-4 pb-3">
-              <div className="flex items-center gap-1.5 mb-2 text-xs font-medium text-slate-500">
-                <Paperclip className="w-3.5 h-3.5" />
-                {msg.attachments.length} attachment{msg.attachments.length > 1 ? 's' : ''}
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {msg.attachments.map((att, i) => {
-                  const sizeLabel = formatInboxFileSize(attachmentByteSize(att));
-                  // Stored (file_path) and on-demand (resend_id) files go
-                  // through the authenticated download route; a bare url is a
-                  // legacy provider link. Nothing at all = the file predates
-                  // attachment storage and truly cannot be recovered.
-                  const downloadable = Boolean(att.file_path || att.resend_id || att.url);
-                  const href = att.file_path || att.resend_id
-                    ? `/api/inbox/attachments?message_id=${msg.id}&index=${i}`
-                    : att.url || '#';
-                  return (
-                  <a
-                    key={i}
-                    href={href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    title={downloadable
-                      ? `Download ${att.filename}`
-                      : 'Unavailable — received before attachment storage was enabled'}
-                    className={cn(
-                      'inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-colors',
-                      'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800',
-                      'hover:bg-slate-100 dark:hover:bg-slate-700',
-                      !downloadable && 'opacity-50 pointer-events-none'
-                    )}
-                  >
-                    <Paperclip className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
-                    <span className="truncate max-w-[150px] text-slate-700 dark:text-slate-300">
-                      {att.filename}
-                    </span>
-                    {sizeLabel && (
-                    <span className="text-xs text-slate-400 flex-shrink-0">
-                      {sizeLabel}
-                    </span>
-                    )}
-                    {downloadable && <Download className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />}
-                  </a>
-                  );
-                })}
-              </div>
-            </div>
-          )}
 
           {(onReply || onForward) && (
             <div className="px-3 lg:px-4 pb-3 flex flex-wrap items-center gap-2">
@@ -494,6 +552,15 @@ export const MessageThread = React.memo(function MessageThread({
     };
   }, [conversation.id, loadingMessages, messages.length]);
 
+  const threadFace = useMemo(
+    () =>
+      threadFaceFromMessages(messages, {
+        contact_name: conversation.contact_name,
+        contact_email: conversation.contact_email,
+      }),
+    [messages, conversation.contact_name, conversation.contact_email],
+  );
+
   const meetingDefaults = useMemo(
     () => ({
       title: conversation.subject ? `Meeting: ${conversation.subject}` : undefined,
@@ -531,16 +598,21 @@ export const MessageThread = React.memo(function MessageThread({
             </button>
             <Avatar className="w-10 h-10 lg:w-12 lg:h-12 shrink-0">
               <AvatarFallback className={cn('text-xs lg:text-sm font-medium', CHANNEL_COLORS[conversation.channel])}>
-                {getInitials(conversation.contact_name)}
+                {getInitials(threadFace.name)}
               </AvatarFallback>
             </Avatar>
             <div className="min-w-0 flex-1">
               <h3 className="font-semibold text-slate-900 dark:text-white truncate text-sm lg:text-base">
-                {conversation.contact_name || 'Unknown Contact'}
+                {threadFace.name}
               </h3>
               <p className="text-xs lg:text-sm text-slate-500 truncate whitespace-nowrap">
-                {conversation.contact_email || conversation.contact_phone}
+                {threadFace.email || conversation.contact_phone}
               </p>
+              {threadFace.others.length > 0 && (
+                <p className="text-[11px] text-slate-400 truncate">
+                  Also {threadFace.others.map((p) => p.name).join(', ')}
+                </p>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-1 lg:gap-2 shrink-0 w-full sm:w-auto sm:justify-end">
@@ -645,7 +717,11 @@ export const MessageThread = React.memo(function MessageThread({
             <EmailMessage
               key={msg.id}
               msg={msg}
-              defaultExpanded={index === messages.length - 1 || messages.length <= 2}
+              defaultExpanded={defaultMessageExpanded(
+                index,
+                messages.length,
+                isLatestInbound(messages, msg.id),
+              )}
               onReply={onReply}
               onForward={onForward}
             />

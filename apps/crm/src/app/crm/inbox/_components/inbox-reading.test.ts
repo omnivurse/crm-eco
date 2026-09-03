@@ -2,12 +2,18 @@ import { describe, expect, it } from 'vitest';
 import {
   EMAIL_IFRAME_SANDBOX,
   attachmentByteSize,
+  defaultMessageExpanded,
+  displaySenderName,
   emailIframeHeight,
   extractEmailBodyFragment,
   formatInboxFileSize,
+  isHeavyEmailHtml,
+  isLatestInbound,
   measureEmailDocument,
   shouldFollowNewMessages,
+  shouldReadAsPlainText,
   stripExecutableMarkup,
+  threadFaceFromMessages,
   unconstrainedIframeMeasureHeight,
 } from './inbox-reading';
 
@@ -122,5 +128,59 @@ describe('shouldFollowNewMessages', () => {
     expect(
       shouldFollowNewMessages({ scrollTop: 0, scrollHeight: 1600, clientHeight: 600 }),
     ).toBe(false);
+  });
+});
+
+describe('displaySenderName', () => {
+  it('uses the stored name when intake actually has one', () => {
+    expect(displaySenderName('Dawn Marsh', 'dawn.marsh@bankofcolorado.com')).toBe('Dawn Marsh');
+  });
+
+  it('title-cases the local part when from_name is empty', () => {
+    expect(displaySenderName('', 'frank.burnham@bankofcolorado.com')).toBe('Frank Burnham');
+    expect(displaySenderName(null, 'dawn.marsh@bankofcolorado.com')).toBe('Dawn Marsh');
+  });
+});
+
+describe('shouldReadAsPlainText', () => {
+  it('switches Outlook Word HTML to the stored text body', () => {
+    const html = `<html xmlns:v="urn:schemas-microsoft-com:vml">${'x'.repeat(50_000)}</html>`;
+    expect(isHeavyEmailHtml(html)).toBe(true);
+    expect(shouldReadAsPlainText(html, 'Good morning, Wendy,\n\nI hope you have been well.')).toBe(true);
+  });
+
+  it('keeps a short HTML reply in the iframe', () => {
+    expect(shouldReadAsPlainText('<p>Thanks</p>', 'Thanks')).toBe(false);
+  });
+});
+
+describe('threadFaceFromMessages', () => {
+  it('faces the latest inbound sender, not the first person on the thread', () => {
+    const face = threadFaceFromMessages(
+      [
+        { direction: 'inbound', from_name: '', from_address: 'dawn.marsh@bankofcolorado.com' },
+        { direction: 'outbound', from_name: 'Wendy', from_address: 'wendy@payitforwardhealth.com' },
+        { direction: 'inbound', from_name: '', from_address: 'frank.burnham@bankofcolorado.com' },
+      ],
+      { contact_name: null, contact_email: 'dawn.marsh@bankofcolorado.com' },
+    );
+    expect(face.email).toBe('frank.burnham@bankofcolorado.com');
+    expect(face.name).toBe('Frank Burnham');
+    expect(face.others.map((o) => o.email)).toEqual(['dawn.marsh@bankofcolorado.com']);
+  });
+});
+
+describe('defaultMessageExpanded', () => {
+  it('opens the latest inbound as well as the newest message', () => {
+    const msgs = [
+      { id: 'dawn', direction: 'inbound' },
+      { id: 'wendy', direction: 'outbound' },
+      { id: 'frank', direction: 'inbound' },
+      { id: 'reply', direction: 'outbound' },
+    ];
+    expect(isLatestInbound(msgs, 'frank')).toBe(true);
+    expect(defaultMessageExpanded(2, 4, true)).toBe(true);
+    expect(defaultMessageExpanded(3, 4, false)).toBe(true);
+    expect(defaultMessageExpanded(0, 4, false)).toBe(false);
   });
 });
