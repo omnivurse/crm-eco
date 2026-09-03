@@ -22,6 +22,11 @@ import {
   ArrowLeft,
 } from 'lucide-react';
 import { SignatureBuilder, type SignatureDefaults } from '@/components/email/SignatureBuilder';
+import {
+  DEFAULT_PIFH_LOGO_PATH,
+  buildPifhSignatureFromProfile,
+  signatureNeedsBrandingRefresh,
+} from '@/lib/email/signature-html';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { toastCopy } from '@/lib/crm/toast-copy';
@@ -49,6 +54,7 @@ export default function SignaturesSettingsPage() {
   const [isCreating, setIsCreating] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [settingDefault, setSettingDefault] = useState<string | null>(null);
+  const [applyingBrandingId, setApplyingBrandingId] = useState<string | null>(null);
   const [defaults, setDefaults] = useState<SignatureDefaults>({});
 
   const fetchSignatures = useCallback(async () => {
@@ -131,6 +137,38 @@ export default function SignaturesSettingsPage() {
       toast.error(toastCopy.failed('delete the signature', err, 'Try again'));
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const handleApplyPifhBranding = async (signature: EmailSignature) => {
+    setApplyingBrandingId(signature.id);
+    try {
+      const content_html = buildPifhSignatureFromProfile({
+        full_name: defaults.full_name || signature.name,
+        title: defaults.title,
+        email: defaults.email,
+        phone: defaults.phone,
+        company_name: defaults.company_name || 'Pay it Forward Health',
+        website: defaults.website || 'payitforwardhealth.com',
+        logo_url: defaults.logo_url || DEFAULT_PIFH_LOGO_PATH,
+      });
+      const response = await fetch(`/api/email/signatures/${signature.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content_html,
+          logo_url: defaults.logo_url || DEFAULT_PIFH_LOGO_PATH,
+        }),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to apply PIFH branding');
+      }
+      await fetchSignatures();
+      toast.success(toastCopy.applied('PIFH branding'));
+    } catch (err) {
+      toast.error(toastCopy.failed('apply PIFH branding', err, 'Try again'));
+    } finally {
+      setApplyingBrandingId(null);
     }
   };
 
@@ -294,6 +332,24 @@ export default function SignaturesSettingsPage() {
                       </Button>
                     </div>
                   </div>
+
+                  {signatureNeedsBrandingRefresh(signature.content_html) && (
+                    <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
+                      This signature still has placeholder text or an old logo.
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="ml-2 h-7 text-xs"
+                        disabled={applyingBrandingId === signature.id}
+                        onClick={() => handleApplyPifhBranding(signature)}
+                      >
+                        {applyingBrandingId === signature.id ? (
+                          <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                        ) : null}
+                        Apply PIFH logo and my profile name
+                      </Button>
+                    </div>
+                  )}
 
                   {/* Preview */}
                   <div

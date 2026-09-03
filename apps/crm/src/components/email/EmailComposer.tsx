@@ -31,6 +31,7 @@ import { EmailAttachments, EmailAttachment } from './EmailAttachments';
 import { SenderSelector } from './SenderSelector';
 import { toast } from 'sonner';
 import { assertComposerAttachmentsReady } from '@/lib/email/outbound-attachments';
+import { appendSignatureHtml, pickSignatureForCompose } from '@/app/crm/inbox/_components/inbox-reply';
 
 interface EmailRecipient {
   email: string;
@@ -42,6 +43,8 @@ interface EmailSignature {
   name: string;
   content_html: string;
   is_default: boolean;
+  include_in_replies?: boolean;
+  include_in_new?: boolean;
 }
 
 interface EmailComposerProps {
@@ -155,12 +158,11 @@ export const EmailComposer = memo(function EmailComposer({
         const response = await fetch('/api/email/signatures');
         if (response.ok) {
           const data = await response.json();
-          setSignatures(data.signatures || []);
-
-          // Auto-select default signature
-          const defaultSig = data.signatures?.find((s: EmailSignature) => s.is_default);
-          if (defaultSig) {
-            setSignatureId(defaultSig.id);
+          const rows = (data.signatures || []) as EmailSignature[];
+          setSignatures(rows);
+          const picked = pickSignatureForCompose(rows, 'new');
+          if (picked) {
+            setSignatureId(picked.id);
           }
         }
       } catch (error) {
@@ -180,11 +182,9 @@ export const EmailComposer = memo(function EmailComposer({
   // Build full body with signature
   const getFullBody = useCallback(() => {
     if (!signatureId) return body;
-
     const signature = signatures.find(s => s.id === signatureId);
-    if (!signature) return body;
-
-    return `${body}<br/><br/>--<br/>${signature.content_html}`;
+    if (!signature || signature.include_in_new === false) return body;
+    return appendSignatureHtml(body, signature.content_html);
   }, [body, signatureId, signatures]);
 
   // Get composer data
@@ -334,7 +334,8 @@ export const EmailComposer = memo(function EmailComposer({
     }
   };
 
-  const selectedSignature = signatures.find(s => s.id === signatureId);
+  const composeSignatures = signatures.filter((s) => s.include_in_new !== false);
+  const selectedSignature = composeSignatures.find(s => s.id === signatureId);
   const uploadingCount = attachments.filter(a => a.is_uploading).length;
   const attachmentCount = attachments.filter(a => !a.error).length;
 
@@ -612,7 +613,7 @@ export const EmailComposer = memo(function EmailComposer({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__none__">No signature</SelectItem>
-                  {signatures.map((sig) => (
+                  {composeSignatures.map((sig) => (
                     <SelectItem key={sig.id} value={sig.id}>
                       <span className="flex items-center gap-1">
                         {sig.name}

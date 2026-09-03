@@ -227,6 +227,32 @@ export function absolutizeSignatureHtml(html: string, origin: string): string {
   return html.replace(/(\s(?:src|href))=(["'])\/(?!\/)/gi, `$1=$2${base}/`);
 }
 
+export function signatureNeedsBrandingRefresh(html: string | null | undefined): boolean {
+  const source = html || '';
+  return /Your Name/i.test(source) || /EmailSignature-02\.jpg/i.test(source) || /Double Helix Hub/i.test(source);
+}
+
+export function buildPifhSignatureFromProfile(opts: {
+  full_name: string;
+  title?: string;
+  email?: string;
+  phone?: string;
+  company_name?: string;
+  website?: string;
+  logo_url?: string;
+}): string {
+  return renderLayoutHtml('pifh-horizontal', {
+    full_name: opts.full_name,
+    title: opts.title || '',
+    email: opts.email || '',
+    phone: opts.phone || '',
+    company_name: opts.company_name || 'Pay it Forward Health',
+    website: opts.website || 'payitforwardhealth.com',
+    logo_url: opts.logo_url || DEFAULT_PIFH_LOGO_PATH,
+    photo_url: '',
+  }) ?? '';
+}
+
 export function getSignatureOrigin(): string {
   if (typeof window !== 'undefined' && window.location?.origin) {
     return window.location.origin;

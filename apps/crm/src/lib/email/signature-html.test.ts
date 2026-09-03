@@ -3,10 +3,12 @@ import {
   DEFAULT_PIFH_LOGO_PATH,
   SIGNATURE_LAYOUTS,
   absolutizeSignatureHtml,
+  buildPifhSignatureFromProfile,
   escapeHtml,
   renderFullImageSignature,
   renderLayoutHtml,
   renderSignatureHtml,
+  signatureNeedsBrandingRefresh,
   websiteHref,
 } from './signature-html';
 
@@ -87,6 +89,12 @@ describe('signature-html', () => {
       expect(layout.template).not.toMatch(/HealthShare/i);
       expect(layout.template).not.toContain('Your Name');
     }
+  });
+
+  it('flags placeholder and old Double Helix logos', () => {
+    expect(signatureNeedsBrandingRefresh('<p>Your Name</p>')).toBe(true);
+    expect(signatureNeedsBrandingRefresh('<img src="/signatures/EmailSignature-02.jpg" />')).toBe(true);
+    expect(signatureNeedsBrandingRefresh(buildPifhSignatureFromProfile({ full_name: 'Wendy Scipione' }))).toBe(false);
   });
 
   it('prefixes bare websites with https', () => {
