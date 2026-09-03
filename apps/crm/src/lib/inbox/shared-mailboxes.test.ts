@@ -49,9 +49,16 @@ describe('compareMailboxes', () => {
     ]);
   });
 
-  it('sorts unknown addresses after all known ones, alphabetically', () => {
-    const sorted = ['zeta@pifh.com', 'wendy@pifh.com', 'noreply@pifh.com'].sort(compareMailboxes);
-    expect(sorted).toEqual(['noreply@pifh.com', 'wendy@pifh.com', 'zeta@pifh.com']);
+  it('puts person mailboxes ahead of purpose and automated queues', () => {
+    const sorted = ['zeta@pifh.com', 'wendy@pifh.com', 'noreply@pifh.com', 'support@pifh.com'].sort(
+      compareMailboxes,
+    );
+    expect(sorted).toEqual([
+      'wendy@pifh.com',
+      'zeta@pifh.com',
+      'support@pifh.com',
+      'noreply@pifh.com',
+    ]);
   });
 });
 
@@ -68,9 +75,9 @@ describe('buildSharedMailboxes', () => {
     });
 
     expect(boxes.map((b) => [b.email, b.unreadCount])).toEqual([
+      ['wendy@payitforwardhealth.com', 0],
       ['support@payitforwardhealth.com', 4],
       ['noreply@payitforwardhealth.com', 0],
-      ['wendy@payitforwardhealth.com', 0],
     ]);
   });
 

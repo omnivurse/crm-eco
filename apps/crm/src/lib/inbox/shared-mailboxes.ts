@@ -29,9 +29,10 @@ export const MAILBOX_PURPOSE: Record<string, string> = {
 };
 
 /**
- * Display order for the sidebar. Queues a human actually works come first;
- * automated/no-reply queues sink to the bottom so they never push real member
- * mail below the fold. Anything unlisted sorts after these, alphabetically.
+ * Display order for listed purpose queues. Person mailboxes (unlisted local
+ * parts like wendy@) sort BEFORE this list — they are the queues a human
+ * actually works. Automated/no-reply addresses stay at the bottom so they
+ * never push real member mail below the fold.
  */
 const MAILBOX_ORDER = [
   'support',
@@ -82,10 +83,13 @@ export function mailboxLabel(email: string, registryName?: string | null): strin
 export function compareMailboxes(a: string, b: string): number {
   const ia = MAILBOX_ORDER.indexOf(mailboxLocalPart(a));
   const ib = MAILBOX_ORDER.indexOf(mailboxLocalPart(b));
-  // Unlisted addresses sort after every known one, then alphabetically.
+  // Person mailboxes (wendy@) are unlisted — they are the queues a human
+  // actually works. They come FIRST. Purpose addresses follow MAILBOX_ORDER
+  // (support … noreply). Burying unlisted names after the purpose list hid
+  // Wendy's 18-thread mailbox behind "Show all".
   if (ia === -1 && ib === -1) return a.localeCompare(b);
-  if (ia === -1) return 1;
-  if (ib === -1) return -1;
+  if (ia === -1) return -1;
+  if (ib === -1) return 1;
   return ia - ib;
 }
 

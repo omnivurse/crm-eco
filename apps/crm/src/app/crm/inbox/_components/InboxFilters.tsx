@@ -83,14 +83,21 @@ const SharedMailboxSection = React.memo(function SharedMailboxSection({
 }) {
   const [expanded, setExpanded] = React.useState(false);
 
-  // A selected mailbox must stay visible even when it sits past the cutoff,
-  // otherwise the active filter appears to vanish from the sidebar.
-  const activeIsHidden =
-    activeMailbox !== 'all' &&
-    mailboxes.findIndex((m) => m.email === activeMailbox) >= MAILBOX_COLLAPSED_COUNT;
-
-  const showAll = expanded || activeIsHidden;
-  const visible = showAll ? mailboxes : mailboxes.slice(0, MAILBOX_COLLAPSED_COUNT);
+  // Keep the active queue and any unread queue on-screen. Person mailboxes
+  // (wendy@) used to sort last and vanish behind "Show all" even with mail.
+  const pinnedEmails = new Set(
+    mailboxes
+      .filter(
+        (m, i) =>
+          i < MAILBOX_COLLAPSED_COUNT ||
+          m.unreadCount > 0 ||
+          m.email === activeMailbox,
+      )
+      .map((m) => m.email),
+  );
+  const collapsedVisible = mailboxes.filter((m) => pinnedEmails.has(m.email));
+  const showAll = expanded;
+  const visible = showAll ? mailboxes : collapsedVisible;
   const hiddenCount = mailboxes.length - visible.length;
 
   return (
@@ -173,7 +180,7 @@ const SharedMailboxSection = React.memo(function SharedMailboxSection({
             </button>
           )}
 
-          {showAll && !activeIsHidden && mailboxes.length > MAILBOX_COLLAPSED_COUNT && (
+          {showAll && mailboxes.length > MAILBOX_COLLAPSED_COUNT && (
             <button
               onClick={() => setExpanded(false)}
               className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
