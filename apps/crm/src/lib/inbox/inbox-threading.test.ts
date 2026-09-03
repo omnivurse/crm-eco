@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { shouldJoinThreadedConversation } from '../../../../../supabase/functions/_shared/inbox-threading';
+import {
+  pickSenderOwnedConversation,
+  shouldJoinThreadedConversation,
+} from '../../../../../supabase/functions/_shared/inbox-threading';
 
 describe('shouldJoinThreadedConversation', () => {
   it('joins when the sender already owns the thread', () => {
@@ -40,5 +43,44 @@ describe('shouldJoinThreadedConversation', () => {
         priorInboundFrom: [],
       }),
     ).toBe(false);
+  });
+});
+
+describe('pickSenderOwnedConversation', () => {
+  it('after rejecting Dawn\'s thread, joins Frank\'s existing row', () => {
+    const dawnId = 'dawn-thread';
+    const frankId = 'frank-thread';
+    expect(
+      shouldJoinThreadedConversation({
+        fromEmail: 'frank.burnham@bankofcolorado.com',
+        conversationContactEmail: 'dawn.marsh@bankofcolorado.com',
+        priorInboundFrom: ['dawn.marsh@bankofcolorado.com'],
+      }),
+    ).toBe(false);
+
+    expect(
+      pickSenderOwnedConversation({
+        fromEmail: 'frank.burnham@bankofcolorado.com',
+        mailboxAddress: 'wendy@payitforwardhealth.com',
+        candidates: [
+          {
+            id: dawnId,
+            contact_email: 'dawn.marsh@bankofcolorado.com',
+            mailbox_address: 'wendy@payitforwardhealth.com',
+            last_message_at: '2026-09-02T18:50:46.000Z',
+          },
+          {
+            id: frankId,
+            contact_email: 'frank.burnham@bankofcolorado.com',
+            mailbox_address: 'wendy@payitforwardhealth.com',
+            last_message_at: '2026-09-03T15:49:59.000Z',
+          },
+        ],
+        inboundByConversation: {
+          [dawnId]: ['dawn.marsh@bankofcolorado.com'],
+          [frankId]: ['frank.burnham@bankofcolorado.com'],
+        },
+      }),
+    ).toBe(frankId);
   });
 });

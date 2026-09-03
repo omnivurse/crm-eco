@@ -29,3 +29,38 @@ export function shouldJoinThreadedConversation(opts: {
   }
   return known.has(from);
 }
+
+export function pickSenderOwnedConversation(opts: {
+  fromEmail: string;
+  mailboxAddress?: string | null;
+  candidates: Array<{
+    id: string;
+    contact_email?: string | null;
+    mailbox_address?: string | null;
+    last_message_at?: string | null;
+  }>;
+  inboundByConversation: Record<string, Array<string | null | undefined>>;
+}): string | null {
+  const from = normalizeThreadEmail(opts.fromEmail);
+  if (!from) return null;
+  const mailbox = normalizeThreadEmail(opts.mailboxAddress);
+
+  const matches = opts.candidates.filter((candidate) => {
+    if (
+      mailbox
+      && candidate.mailbox_address
+      && normalizeThreadEmail(candidate.mailbox_address) !== mailbox
+    ) {
+      return false;
+    }
+    if (normalizeThreadEmail(candidate.contact_email) === from) return true;
+    return (opts.inboundByConversation[candidate.id] ?? []).some(
+      (addr) => normalizeThreadEmail(addr) === from,
+    );
+  });
+
+  if (matches.length === 0) return null;
+  return [...matches].sort((a, b) =>
+    (b.last_message_at || '').localeCompare(a.last_message_at || ''),
+  )[0].id;
+}
