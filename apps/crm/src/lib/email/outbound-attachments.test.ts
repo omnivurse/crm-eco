@@ -11,6 +11,7 @@ import {
   composerDataToCommunicationsSendBody,
   emailAttachmentInsertRow,
   resolveOutboundAttachments,
+  resolveOutboxPayloadAttachments,
   splitRecipientField,
 } from './outbound-attachments';
 
@@ -145,6 +146,13 @@ describe('parseCommsSendAttachments', () => {
         file_size: 2048,
       },
     ]);
+  });
+
+  it('keeps file_path on the outbox payload shape the worker retry reads', () => {
+    const meta = attachmentMetaFromRefs(parseCommsSendAttachments('email', [uploaded]));
+    const outboxAttachments = attachmentMetaFromRefs(attachmentRefsFromMeta(meta));
+    expect(outboxAttachments[0]?.file_path).toBe(uploaded.file_path);
+    expect(outboxAttachments[0]?.id).toBe('att-1');
   });
 });
 
@@ -312,5 +320,70 @@ describe('composerAttachmentsToRefs synthetic ids', () => {
         { id: 'fwd-msg-1', file_name: 'ghost.pdf', file_size: 1, mime_type: 'application/pdf' },
       ]),
     ).toHaveLength(0);
+  });
+});
+
+describe('resolveOutboxPayloadAttachments', () => {
+  it('rehydrates file bytes from payload file_path on worker retry', async () => {
+    const pdfBytes = new Uint8Array([0x25, 0x50, 0x44, 0x46]);
+    const attachments = await resolveOutboxPayloadAttachments({
+      attachments: [
+        {
+          filename: 'benefits.pdf',
+          content_type: 'application/pdf',
+          size: pdfBytes.byteLength,
+          file_path: uploaded.file_path,
+        },
+      ],
+      organizationId: ORG,
+      lookup: async () => null,
+      download: async (path) => {
+        expect(path).toBe(uploaded.file_path);
+        return pdfBytes;
+      },
+    });
+
+    expect(attachments).toHaveLength(1);
+    expect(attachments[0].filename).toBe('benefits.pdf');
+    expect(attachments[0].content).toBe(Buffer.from(pdfBytes).toString('base64'));
+  });
+
+  it('appends calendar ICS after stored file attachments', async () => {
+    const ics = 'BEGIN:VCALENDAR\nEND:VCALENDAR';
+    const attachments = await resolveOutboxPayloadAttachments({
+      attachments: [
+        {
+          filename: 'doc.pdf',
+          content_type: 'application/pdf',
+          size: 3,
+          file_path: uploaded.file_path,
+        },
+      ],
+      calendar: { method: 'REQUEST', ics, filename: 'invite.ics' },
+      organizationId: ORG,
+      lookup: async () => null,
+      download: async () => new Uint8Array([1, 2, 3]),
+    });
+
+    expect(attachments).toHaveLength(2);
+    expect(attachments[1].filename).toBe('invite.ics');
+    expect(Buffer.from(attachments[1].content, 'base64').toString('utf8')).toBe(ics);
+  });
+
+  it('fails closed when metadata-only attachments have no file_path or id', async () => {
+    await expect(
+      resolveOutboxPayloadAttachments({
+        attachments: [
+          {
+            filename: 'benefits.pdf',
+            content_type: 'application/pdf',
+            size: 10,
+          },
+        ],
+        organizationId: ORG,
+        lookup: async () => null,
+        download: async () => new Uint8Array([1]),
+      }),
+    ).rejects.toThrow(/missing stored file paths/i);
   });
 });

@@ -552,11 +552,9 @@ export async function sendMessageNow(
         persist_inbox: false,
         email_type: 'crm_message',
         source: 'dispatcher',
-        attachments: (message.meta?.attachments ?? []).map((attachment) => ({
-          filename: attachment.filename,
-          content_type: attachment.content_type,
-          size: attachment.size,
-        })),
+        attachments: message.meta?.attachments?.length
+          ? attachmentMetaFromRefs(attachmentRefsFromMeta(message.meta.attachments))
+          : undefined,
       },
     });
     outboxId = enqueued.row.id;

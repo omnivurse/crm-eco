@@ -435,3 +435,52 @@ export async function resolveOutboundAttachments(opts: {
 
   return resolved;
 }
+
+/** Rehydrate file parts (and calendar ICS) stored on an outbox payload for worker retry. */
+export async function resolveOutboxPayloadAttachments(opts: {
+  attachments?:
+    | Array<{
+        filename: string;
+        content_type: string;
+        size: number;
+        id?: string;
+        file_path?: string;
+        bucket_path?: string;
+      }>
+    | undefined;
+  calendar?: { method: 'REQUEST' | 'CANCEL'; ics: string; filename?: string } | null;
+  organizationId: string;
+  lookup: (id: string) => Promise<{
+    file_path: string;
+    file_name: string;
+    mime_type: string;
+    org_id: string;
+  } | null>;
+  download: (path: string) => Promise<Uint8Array>;
+}): Promise<ResolvedOutboundAttachment[]> {
+  const refs = attachmentRefsFromMeta(opts.attachments);
+  if (opts.attachments?.length && refs.length === 0) {
+    throw new Error('Outbox attachments are missing stored file paths.');
+  }
+
+  const files = await resolveOutboundAttachments({
+    refs,
+    inline: [],
+    organizationId: opts.organizationId,
+    lookup: opts.lookup,
+    download: opts.download,
+  });
+
+  if (opts.calendar) {
+    files.push({
+      filename:
+        opts.calendar.filename ??
+        (opts.calendar.method === 'CANCEL' ? 'cancel.ics' : 'invite.ics'),
+      contentType: `text/calendar; method=${opts.calendar.method}; charset=UTF-8`,
+      content: Buffer.from(opts.calendar.ics, 'utf8').toString('base64'),
+      size: Buffer.byteLength(opts.calendar.ics, 'utf8'),
+    });
+  }
+
+  return files;
+}

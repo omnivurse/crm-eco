@@ -12,8 +12,7 @@ import { persistInputFromOutboxPayload, persistOutboundInboxMessage } from '@/li
 import { sendViaResend, sendViaSendGrid } from '@/lib/email/send-service';
 import {
   EMAIL_ATTACHMENT_BUCKET,
-  attachmentRefsFromMeta,
-  resolveOutboundAttachments,
+  resolveOutboxPayloadAttachments,
   type ResolvedOutboundAttachment,
 } from '@/lib/email/outbound-attachments';
 
@@ -65,7 +64,29 @@ async function submitOutboxRow(
 
   let retryAttachments: ResolvedOutboundAttachment[] = [];
   try {
-    retryAttachments = await resolveRetryAttachments(supabase, row);
+    retryAttachments = await resolveOutboxPayloadAttachments({
+      attachments: payload.attachments,
+      calendar: payload.calendar,
+      organizationId: row.organization_id,
+      lookup: async (id) => {
+        const { data } = await supabase
+          .from('email_attachments')
+          .select('file_path, file_name, mime_type, org_id')
+          .eq('id', id)
+          .eq('org_id', row.organization_id)
+          .maybeSingle();
+        return data ?? null;
+      },
+      download: async (path) => {
+        const { data, error } = await supabase.storage
+          .from(EMAIL_ATTACHMENT_BUCKET)
+          .download(path);
+        if (error || !data) {
+          throw new Error('Could not read the attached file.');
+        }
+        return new Uint8Array(await data.arrayBuffer());
+      },
+    });
   } catch (error) {
     return {
       success: false,
@@ -107,49 +128,6 @@ async function submitOutboxRow(
     in_reply_to: payload.in_reply_to,
     references: payload.references,
   });
-}
-
-async function resolveRetryAttachments(
-  supabase: LooseClient,
-  row: OutboxRow,
-): Promise<ResolvedOutboundAttachment[]> {
-  const payload = row.payload ?? {};
-  const files = await resolveOutboundAttachments({
-    refs: attachmentRefsFromMeta(payload.attachments),
-    inline: [],
-    organizationId: row.organization_id,
-    lookup: async (id) => {
-      const { data } = await supabase
-        .from('email_attachments')
-        .select('file_path, file_name, mime_type, org_id')
-        .eq('id', id)
-        .eq('org_id', row.organization_id)
-        .maybeSingle();
-      return data ?? null;
-    },
-    download: async (path) => {
-      const { data, error } = await supabase.storage
-        .from(EMAIL_ATTACHMENT_BUCKET)
-        .download(path);
-      if (error || !data) {
-        throw new Error('Could not read the attached file.');
-      }
-      return new Uint8Array(await data.arrayBuffer());
-    },
-  });
-
-  if (payload.calendar) {
-    files.push({
-      filename:
-        payload.calendar.filename ??
-        (payload.calendar.method === 'CANCEL' ? 'cancel.ics' : 'invite.ics'),
-      contentType: `text/calendar; method=${payload.calendar.method}; charset=UTF-8`,
-      content: Buffer.from(payload.calendar.ics, 'utf8').toString('base64'),
-      size: Buffer.byteLength(payload.calendar.ics, 'utf8'),
-    });
-  }
-
-  return files;
 }
 
 async function logSentEmail(supabase: LooseClient, row: OutboxRow, result: {
