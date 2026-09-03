@@ -1,58 +1,33 @@
--- Strict assert: healthshare contacts must not look blank in canonical HS keys
--- while legacy Zoho keys still hold the values.
+-- Strict assert: no contacts/members row may still carry a Health Share value
+-- under a legacy Zoho / E123 key while the canonical form key sits blank.
 --
--- Known major-medical carriers on market_type=healthshare are excluded from the
--- sharing_entity check (they map to health_insurance_carrier, not ministry).
+-- The counts come from public.crm_healthshare_canonical_drift(), which is built
+-- on the same projector as the write-path trigger
+-- (crm_2_healthshare_canonical_trg) and the backfill — so this assertion cannot
+-- disagree with either. Insurer-vs-ministry classification lives only in
+-- public._crm_carrier_is_insurance (mirrors coverage-carriers.ts); known
+-- major-medical carriers route to health_insurance_carrier, never sharing_entity.
 --
--- Expected after backfill_healthshare_canonical_keys: all zero.
+-- Expected: all zero. Repair with
+--   SELECT * FROM public.backfill_healthshare_canonical_keys();
 
 DO $$
 DECLARE
-  e123_drift bigint;
-  start_drift bigint;
-  contrib_drift bigint;
-  ministry_entity_drift bigint;
+  d record;
+  total bigint := 0;
 BEGIN
-  SELECT
-    count(*) FILTER (
-      WHERE public._crm_jsonb_value_is_blank(c.data -> 'sharing_member_id')
-        AND NOT public._crm_jsonb_value_is_blank(
-          COALESCE(c.data -> 'e123_member_id', c.data -> 'member_number')
-        )
-    ),
-    count(*) FILTER (
-      WHERE public._crm_jsonb_value_is_blank(c.data -> 'sharing_effective_date')
-        AND NOT public._crm_jsonb_value_is_blank(c.data -> 'start_date')
-    ),
-    count(*) FILTER (
-      WHERE public._crm_jsonb_value_is_blank(c.data -> 'monthly_contribution')
-        AND public._crm_jsonb_value_is_blank(c.data -> 'monthly_share')
-        AND public._crm_jsonb_value_is_blank(c.data -> 'share_amount')
-        AND NOT public._crm_jsonb_value_is_blank(c.data -> 'monthly_premium')
-        AND public._crm_jsonb_value_is_blank(c.data -> 'health_insurance_premium')
-        AND public._crm_jsonb_value_is_blank(c.data -> 'insurance_premium')
-    ),
-    count(*) FILTER (
-      WHERE public._crm_jsonb_value_is_blank(c.data -> 'sharing_entity')
-        AND NOT public._crm_jsonb_value_is_blank(c.data -> 'carrier')
-        AND lower(trim(c.data->>'carrier')) NOT IN (
-          'anthem','cigna','kaiser','unitedhealthcare','united healthcare','aetna','humana',
-          'blue cross','oscar','molina','centene/ambetter','florida blue','select health','rmhp'
-        )
-    )
-  INTO e123_drift, start_drift, contrib_drift, ministry_entity_drift
-  FROM public.crm_records c
-  JOIN public.crm_modules m ON m.id = c.module_id
-  WHERE m.key = 'contacts'
-    AND c.deleted_at IS NULL
-    AND c.market_type = 'healthshare';
+  FOR d IN SELECT * FROM public.crm_healthshare_canonical_drift() LOOP
+    RAISE NOTICE 'hs_canonical_drift[%]: member_id=% effective=% contribution=% status=% sharing_entity=% insurance_carrier=% rows=%',
+      d.module_key, d.member_id_drift, d.effective_drift, d.contribution_drift,
+      d.status_drift, d.sharing_entity_drift, d.insurance_carrier_drift, d.rows_needing_patch;
+    total := total + d.rows_needing_patch;
+  END LOOP;
 
-  RAISE NOTICE 'hs_canonical_drift: member_id=% effective=% contribution=% ministry_entity=%',
-    e123_drift, start_drift, contrib_drift, ministry_entity_drift;
-
-  IF e123_drift > 0 OR start_drift > 0 OR contrib_drift > 0 OR ministry_entity_drift > 0 THEN
+  IF total > 0 THEN
     RAISE EXCEPTION
-      'hs_canonical_drift: non-zero drift (member_id=%, effective=%, contribution=%, ministry_entity=%)',
-      e123_drift, start_drift, contrib_drift, ministry_entity_drift;
+      'hs_canonical_drift: % row(s) still need canonical projection — run SELECT * FROM public.backfill_healthshare_canonical_keys(); and verify crm_2_healthshare_canonical_trg is enabled',
+      total;
   END IF;
+
+  RAISE NOTICE 'hs_canonical_drift: clean';
 END $$;

@@ -14,6 +14,7 @@ DECLARE
   hs_effective_drift bigint;
   hs_contribution_drift bigint;
   hs_ministry_entity_drift bigint;
+  hs_other_drift bigint;
 BEGIN
   SELECT COUNT(*) INTO orphan_mod
   FROM public.crm_records r
@@ -79,48 +80,37 @@ BEGIN
     RAISE EXCEPTION 'crm_audit_strict: % crm_tasks have record_id set but no crm_records row (broken merge trail)', task_bad_fk;
   END IF;
 
-  -- Health Share canonical-key drift (Zoho legacy vs form keys). After
-  -- backfill_healthshare_canonical_keys these must stay at zero, excluding
-  -- known major-medical carriers that intentionally do NOT map into
-  -- sharing_entity (they belong on health_insurance_carrier).
+  -- Health Share canonical-key drift (Zoho legacy vs form keys), across the
+  -- contacts AND members person modules.
+  --
+  -- Sourced from public.crm_healthshare_canonical_drift(), which is defined in
+  -- terms of the SAME projector the write-path trigger and the backfill use
+  -- (public.crm_healthshare_canonical_patch — see
+  -- 20260903190000_healthshare_canonical_projection_guard.sql). That is
+  -- deliberate: the assertion cannot drift away from the projector, and the
+  -- insurer-vs-ministry rule lives in exactly one place
+  -- (public._crm_carrier_is_insurance) instead of being copy-pasted here.
+  --
+  -- Non-zero means a write path persisted legacy keys without canonical ones —
+  -- i.e. the trigger is disabled or a new leak exists. Remedy:
+  --   SELECT * FROM public.crm_healthshare_canonical_drift();   -- what/where
+  --   SELECT * FROM public.backfill_healthshare_canonical_keys(); -- repair
   SELECT
-    count(*) FILTER (
-      WHERE public._crm_jsonb_value_is_blank(c.data -> 'sharing_member_id')
-        AND NOT public._crm_jsonb_value_is_blank(
-          COALESCE(c.data -> 'e123_member_id', c.data -> 'member_number')
-        )
-    ),
-    count(*) FILTER (
-      WHERE public._crm_jsonb_value_is_blank(c.data -> 'sharing_effective_date')
-        AND NOT public._crm_jsonb_value_is_blank(c.data -> 'start_date')
-    ),
-    count(*) FILTER (
-      WHERE public._crm_jsonb_value_is_blank(c.data -> 'monthly_contribution')
-        AND public._crm_jsonb_value_is_blank(c.data -> 'monthly_share')
-        AND public._crm_jsonb_value_is_blank(c.data -> 'share_amount')
-        AND NOT public._crm_jsonb_value_is_blank(c.data -> 'monthly_premium')
-        AND public._crm_jsonb_value_is_blank(c.data -> 'health_insurance_premium')
-        AND public._crm_jsonb_value_is_blank(c.data -> 'insurance_premium')
-    ),
-    count(*) FILTER (
-      WHERE public._crm_jsonb_value_is_blank(c.data -> 'sharing_entity')
-        AND NOT public._crm_jsonb_value_is_blank(c.data -> 'carrier')
-        AND lower(trim(c.data->>'carrier')) NOT IN (
-          'anthem','cigna','kaiser','unitedhealthcare','united healthcare','aetna','humana',
-          'blue cross','oscar','molina','centene/ambetter','florida blue','select health','rmhp'
-        )
-    )
-  INTO hs_member_id_drift, hs_effective_drift, hs_contribution_drift, hs_ministry_entity_drift
-  FROM public.crm_records c
-  JOIN public.crm_modules m ON m.id = c.module_id
-  WHERE m.key = 'contacts'
-    AND c.deleted_at IS NULL
-    AND c.market_type = 'healthshare';
+    COALESCE(SUM(d.member_id_drift), 0),
+    COALESCE(SUM(d.effective_drift), 0),
+    COALESCE(SUM(d.contribution_drift), 0),
+    COALESCE(SUM(d.sharing_entity_drift), 0),
+    COALESCE(SUM(d.status_drift + d.insurance_carrier_drift), 0)
+  INTO hs_member_id_drift, hs_effective_drift, hs_contribution_drift,
+       hs_ministry_entity_drift, hs_other_drift
+  FROM public.crm_healthshare_canonical_drift() d;
 
-  IF hs_member_id_drift > 0 OR hs_effective_drift > 0 OR hs_contribution_drift > 0 OR hs_ministry_entity_drift > 0 THEN
+  IF hs_member_id_drift > 0 OR hs_effective_drift > 0 OR hs_contribution_drift > 0
+     OR hs_ministry_entity_drift > 0 OR hs_other_drift > 0 THEN
     RAISE EXCEPTION
-      'crm_audit_strict: healthshare canonical drift (member_id=%, effective=%, contribution=%, ministry_entity=%) — re-run backfill / check projector',
-      hs_member_id_drift, hs_effective_drift, hs_contribution_drift, hs_ministry_entity_drift;
+      'crm_audit_strict: healthshare canonical drift (member_id=%, effective=%, contribution=%, ministry_entity=%, status+carrier=%) — run SELECT * FROM public.backfill_healthshare_canonical_keys(); / check crm_2_healthshare_canonical_trg',
+      hs_member_id_drift, hs_effective_drift, hs_contribution_drift,
+      hs_ministry_entity_drift, hs_other_drift;
   END IF;
 
   RAISE NOTICE 'crm_audit_strict: all assertions passed';
