@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { resolveMailboxAddress } from "../_shared/mailbox-address.ts";
+import { authenticateEmailIntakeRequest } from "../_shared/email-intake-auth.ts";
 import {
   fetchReceivedAttachment,
   fetchReceivedEmail,
@@ -92,15 +93,6 @@ interface ParsedAddress {
 // Utilities
 // ---------------------------------------------------------------------------
 
-function constantTimeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  let result = 0;
-  for (let i = 0; i < a.length; i++) {
-    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  }
-  return result === 0;
-}
-
 /** Parse "Display Name <email@example.com>" or plain "email@example.com" */
 function parseEmailAddress(raw: string): ParsedAddress {
   const match = raw.match(/^(.+?)\s*<([^>]+)>$/);
@@ -135,70 +127,6 @@ function normaliseHeaders(
   const obj: Record<string, string> = {};
   for (const [k, v] of Object.entries(headers)) obj[k.toLowerCase()] = v;
   return obj;
-}
-
-// ---------------------------------------------------------------------------
-// Svix webhook signature verification
-// ---------------------------------------------------------------------------
-
-async function verifySvixSignature(
-  rawBody: string,
-  svixId: string,
-  svixTimestamp: string,
-  svixSignature: string,
-  secret: string
-): Promise<boolean> {
-  const timestampSec = parseInt(svixTimestamp, 10);
-  if (isNaN(timestampSec)) return false;
-  const now = Math.floor(Date.now() / 1000);
-  if (Math.abs(now - timestampSec) > 300) return false;
-
-  const secretBytes = Uint8Array.from(
-    atob(secret.startsWith("whsec_") ? secret.slice(6) : secret),
-    (c) => c.charCodeAt(0)
-  );
-
-  const signedContent = `${svixId}.${svixTimestamp}.${rawBody}`;
-  const encoder = new TextEncoder();
-
-  const key = await crypto.subtle.importKey(
-    "raw", secretBytes, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
-  );
-  const signatureBytes = await crypto.subtle.sign("HMAC", key, encoder.encode(signedContent));
-  const expectedSig = btoa(String.fromCharCode(...new Uint8Array(signatureBytes)));
-
-  const signatures = svixSignature.split(" ");
-  for (const sig of signatures) {
-    const parts = sig.split(",");
-    if (parts.length !== 2 || parts[0] !== "v1") continue;
-    if (constantTimeEqual(parts[1], expectedSig)) return true;
-  }
-  return false;
-}
-
-let cachedRawBody: string | null = null;
-
-async function verifyAuth(req: Request): Promise<boolean> {
-  const secret = Deno.env.get("EDGE_FUNCTION_SECRET") || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  const authHeader = req.headers.get("Authorization") || "";
-  if (constantTimeEqual(authHeader, `Bearer ${secret}`)) return true;
-
-  const svixId = req.headers.get("svix-id");
-  const svixTimestamp = req.headers.get("svix-timestamp");
-  const svixSignature = req.headers.get("svix-signature");
-  if (svixId && svixTimestamp && svixSignature) {
-    cachedRawBody = await req.text();
-    const inboundSecret = Deno.env.get("RESEND_INBOUND_WEBHOOK_SECRET");
-    const legacySecret = Deno.env.get("RESEND_WEBHOOK_SECRET");
-    for (const webhookSecret of [inboundSecret, legacySecret]) {
-      if (!webhookSecret) continue;
-      if (await verifySvixSignature(cachedRawBody, svixId, svixTimestamp, svixSignature, webhookSecret)) {
-        return true;
-      }
-    }
-  }
-
-  return false;
 }
 
 // ---------------------------------------------------------------------------
@@ -1002,7 +930,15 @@ Deno.serve(async (req: Request) => {
     return new Response(null, { status: 200, headers: corsHeaders });
   }
 
-  if (!(await verifyAuth(req))) {
+  const auth = await authenticateEmailIntakeRequest(req, {
+    bearerSecret:
+      Deno.env.get("EDGE_FUNCTION_SECRET") || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"),
+    webhookSecrets: [
+      Deno.env.get("RESEND_INBOUND_WEBHOOK_SECRET"),
+      Deno.env.get("RESEND_WEBHOOK_SECRET"),
+    ],
+  });
+  if (!auth.authorized) {
     return new Response(
       JSON.stringify({ success: false, error: "Unauthorized" }),
       { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -1018,9 +954,7 @@ Deno.serve(async (req: Request) => {
       Authorization: `Bearer ${supabaseKey}`,
     };
 
-    const rawBody = cachedRawBody ?? await req.text();
-    cachedRawBody = null;
-    const parsed = JSON.parse(rawBody);
+    const parsed = JSON.parse(auth.rawBody);
 
     // Normalise: Resend inbound wraps data in { type: "email.received", data: { ... } }
     let emailData: EmailPayload;
