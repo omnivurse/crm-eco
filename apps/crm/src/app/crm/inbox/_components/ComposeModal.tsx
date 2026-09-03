@@ -40,6 +40,18 @@ interface ComposeModalProps {
   initialDraftId?: string | null;
 }
 
+async function requireDraftResponse<T>(response: Response, fallbackMessage: string): Promise<T> {
+  const result = await response.json().catch(() => null);
+  if (!response.ok) {
+    const apiMessage =
+      result && typeof result === 'object' && 'error' in result
+        ? String(result.error)
+        : fallbackMessage;
+    throw new Error(apiMessage);
+  }
+  return result as T;
+}
+
 export function ComposeModal({
   open,
   onOpenChange,
@@ -206,21 +218,27 @@ export function ComposeModal({
 
     if (draftIdRef.current) {
       // Update existing draft
-      await fetch(`/api/inbox/drafts/${draftIdRef.current}`, {
+      const response = await fetch(`/api/inbox/drafts/${draftIdRef.current}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
+      await requireDraftResponse(response, 'Failed to update draft');
     } else {
       // Create new draft
-      const res = await fetch('/api/inbox/drafts', {
+      const response = await fetch('/api/inbox/drafts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      const result = await res.json();
+      const result = await requireDraftResponse<{ draft?: { id?: string } }>(
+        response,
+        'Failed to save draft',
+      );
       if (result.draft?.id) {
         draftIdRef.current = result.draft.id;
+      } else {
+        throw new Error('Draft save did not return an identifier');
       }
     }
   }, []);
