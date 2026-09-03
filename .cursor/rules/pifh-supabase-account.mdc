@@ -1,0 +1,16 @@
+---
+description: Live PIFH Supabase is connected — use PIF-ECO-V2, never Omnivurse, for this repo.
+alwaysApply: true
+---
+
+# PIFH Supabase account (verified 2026-09-01)
+
+This repo's Supabase CLI is logged into **PIF Ecosystem** and linked to production **PIF-ECO-V2**. Do not ask the user to reconnect. Do not treat Omnivurse as this project.
+
+- Org: `PIF Ecosystem` (`khhfyzojnmmjplgeroug`)
+- Project: `PIF-ECO-V2` (`sffisarikcreyyjzdjvb`) — ● LINKED
+- Host: `sffisarikcreyyjzdjvb.supabase.co`
+- Workspace MCP `project-0-crm-eco-supabase-client` is this same project
+- User-level MCP `user-supabase` may still show Omnivurse — ignore it here
+
+Do not `supabase logout`, re-link another ref, apply migrations, or write prod unless the owner explicitly asks.
