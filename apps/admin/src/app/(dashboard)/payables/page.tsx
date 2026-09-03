@@ -36,6 +36,7 @@ import {
   ResourceList,
   Textarea,
   type ResourceDescriptor,
+  useCan,
 } from '@crm-eco/ui';
 
 interface Payable {
@@ -141,6 +142,8 @@ function PayeeIcon({ type }: { type: string }) {
 }
 
 export default function PayablesPage() {
+  const canApprove = useCan(Permissions.PayablesApprove);
+  const canPay = useCan(Permissions.PayablesPay);
   const supabase = createClient();
   const [organizationId, setOrganizationId] = useState<string | null>(null);
   const [profileId, setProfileId] = useState<string | null>(null);
@@ -801,7 +804,7 @@ export default function PayablesPage() {
             <Button variant="outline" onClick={() => setShowDetailModal(false)}>
               Close
             </Button>
-            {selectedPayable?.status === 'pending' && (
+            {selectedPayable?.status === 'pending' && canApprove && (
               <Button
                 onClick={() => {
                   void handleApprove(selectedPayable);
@@ -812,7 +815,7 @@ export default function PayablesPage() {
                 Approve
               </Button>
             )}
-            {selectedPayable?.status === 'approved' && (
+            {selectedPayable?.status === 'approved' && canPay && (
               <Button
                 onClick={() => {
                   void handleMarkPaid(selectedPayable);

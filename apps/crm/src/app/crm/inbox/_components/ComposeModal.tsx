@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { supabase } from '@/lib/supabase-client';
 import { FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { toastCopy } from '@/lib/crm/toast-copy';
@@ -15,8 +14,6 @@ import { EmailComposer, type EmailComposerData } from '@/components/email/EmailC
 import type { EmailAttachment } from '@/components/email/EmailAttachments';
 import { TemplatePicker } from './TemplatePicker';
 import { composerDataToCommunicationsSendBody } from '@/lib/email/outbound-attachments';
-import { mailboxAddressForOutbound } from '@/lib/inbox/compose-mailbox';
-import type { ConversationStatus, ConversationPriority } from '@/lib/inbox/types';
 
 interface EmailRecipient {
   email: string;
@@ -77,103 +74,28 @@ export function ComposeModal({
     const res = await fetch('/api/communications/send', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(
-        composerDataToCommunicationsSendBody({
+      body: JSON.stringify({
+        ...composerDataToCommunicationsSendBody({
           ...data,
           from_email: fromEmail,
           from_name: fromName,
           reply_to: replyTo,
         }),
-      ),
+        persist_inbox: true,
+        to_name: data.to[0].name,
+      }),
     });
 
     const result = await res.json();
     if (!res.ok) throw new Error(result.error || 'Failed to send email');
 
-    // Create inbox conversation + message records
-    const now = new Date().toISOString();
-    const messageId = result.rfc822_message_id
-      || (result.message_id
-        ? `<${result.message_id}>`
-        : `<${crypto.randomUUID()}@payitforwardhealth.com>`);
-
-    const plainPreview = (data.body_text || data.body_html || '')
-      .replace(/<[^>]*>/g, '')
-      .slice(0, 200);
-
-    const { data: conv, error: convError } = await supabase
-      .from('inbox_conversations')
-      .insert({
-        org_id: authProfile.organization_id,
-        channel: 'email',
-        thread_id: messageId,
-        subject: data.subject || null,
-        preview: plainPreview,
-        contact_email: data.to[0].email,
-        contact_name: data.to[0].name || null,
-        status: 'open' as ConversationStatus,
-        priority: 'normal' as ConversationPriority,
-        mailbox_address: mailboxAddressForOutbound(fromEmail),
-        assigned_to: authProfile.id,
-        assigned_at: now,
-        unread_count: 0,
-        message_count: 1,
-        last_message_at: now,
-        first_message_at: now,
-        tags: [],
-        labels: [],
-        metadata: {},
-      })
-      .select()
-      .single();
-
-    if (convError) {
-      console.error('Failed to create conversation:', convError);
+    if (!result.inbox_conversation_id) {
       toast.error(
-        'Email was sent, but saving it to the inbox failed — this thread will not appear in conversations.',
+        toastCopy.failed(
+          'save this email to the inbox',
+          'it was sent, but the conversation was not created',
+        ),
       );
-    } else if (conv) {
-      const { error: msgError } = await supabase.from('inbox_messages').insert({
-        org_id: authProfile.organization_id,
-        conversation_id: conv.id,
-        channel: 'email',
-        direction: 'outbound',
-        from_name: fromName,
-        from_address: fromEmail,
-        to_address: data.to[0].email,
-        to_name: data.to[0].name || null,
-        subject: data.subject || null,
-        body_html: data.body_html,
-        body_text: data.body_text || data.body_html?.replace(/<[^>]*>/g, '') || null,
-        cc_addresses: data.cc,
-        bcc_addresses: data.bcc,
-        message_id: messageId,
-        // file_path is what the download route serves from; public_url on
-        // this private bucket was always a dead link and is kept only as a
-        // legacy field.
-        attachments: data.attachments.map(a => ({
-          filename: a.file_name,
-          content_type: a.mime_type,
-          size: a.file_size,
-          url: a.public_url || null,
-          file_path: a.file_path || a.bucket_path || null,
-        })),
-        status: 'sent',
-        sent_at: now,
-        external_id: result.message_id || null,
-        external_provider: result.provider || null,
-        metadata: {},
-      });
-      if (msgError) {
-        console.error('Failed to persist sent message:', msgError);
-        toast.error(
-          toastCopy.failed(
-            'save the sent email to the conversation',
-            msgError,
-            'The recipient still has the message',
-          ),
-        );
-      }
     }
 
     // Delete draft if we had one saved

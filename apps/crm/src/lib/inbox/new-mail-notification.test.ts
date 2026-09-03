@@ -71,6 +71,17 @@ describe('decideNotify', () => {
     ).toEqual({ notify: true });
   });
 
+  it('stays quiet about the thread selected via ?c=', () => {
+    expect(
+      decideNotify({
+        message: message(),
+        pathname: '/crm/inbox',
+        search: 'c=conv-1',
+        seenMessageIds: noneSeen,
+      }),
+    ).toEqual({ notify: false, reason: 'already-viewing' });
+  });
+
   it('announces a different thread while one is open', () => {
     expect(
       decideNotify({
@@ -134,7 +145,7 @@ describe('buildNewMailToast', () => {
     const toast = buildNewMailToast(message());
     expect(toast.title).toBe('New email from Jane Pietruszka');
     expect(toast.description).toBe('Question about my plan — Can you confirm my September coverage?');
-    expect(toast.href).toBe('/crm/inbox/conv-1');
+    expect(toast.href).toBe('/crm/inbox?c=conv-1');
     expect(toast.mailbox).toBe('enrollment@payitforwardhealth.com');
   });
 

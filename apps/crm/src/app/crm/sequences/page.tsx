@@ -131,7 +131,7 @@ function SequenceCard({
               <Eye className="w-4 h-4 mr-2" />
               View Details
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => router.push(`/crm/sequences/${sequence.id}?edit=true`)}>
+            <DropdownMenuItem onClick={() => router.push(`/crm/sequences/${sequence.id}`)}>
               <Pencil className="w-4 h-4 mr-2" />
               Edit
             </DropdownMenuItem>

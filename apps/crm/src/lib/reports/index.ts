@@ -308,12 +308,44 @@ export interface ExportOptions {
   columns?: string[];
 }
 
+function escapeXml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function toSpreadsheetMl(data: Record<string, unknown>[], headers: string[]): string {
+  const headerRow = headers
+    .map((h) => `<Cell><Data ss:Type="String">${escapeXml(h)}</Data></Cell>`)
+    .join('');
+  const rows = data
+    .map((row) => {
+      const cells = headers
+        .map((h) => {
+          const raw = row[h];
+          const value = raw == null ? '' : typeof raw === 'object' ? JSON.stringify(raw) : String(raw);
+          return `<Cell><Data ss:Type="String">${escapeXml(value)}</Data></Cell>`;
+        })
+        .join('');
+      return `<Row>${cells}</Row>`;
+    })
+    .join('');
+  return `<?xml version="1.0"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+<Worksheet ss:Name="Report"><Table><Row>${headerRow}</Row>${rows}</Table></Worksheet>
+</Workbook>`;
+}
+
 export function exportData(options: ExportOptions): Blob {
   const { format, data, columns } = options;
+  const headers = columns || Object.keys(data[0] || {});
 
   switch (format) {
     case 'csv': {
-      const headers = columns || Object.keys(data[0] || {});
       const csvContent = [
         headers.join(','),
         ...data.map((row) => headers.map((h) => JSON.stringify(row[h] ?? '')).join(',')),
@@ -323,9 +355,25 @@ export function exportData(options: ExportOptions): Blob {
     case 'json': {
       return new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     }
+    case 'xlsx': {
+      return new Blob([toSpreadsheetMl(data, headers)], {
+        type: 'application/vnd.ms-excel',
+      });
+    }
     default:
       throw new Error(`Export format ${format} not yet implemented`);
   }
+}
+
+export function downloadReportRows(
+  data: Record<string, unknown>[],
+  filename: string,
+  format: 'csv' | 'xlsx' | 'json' = 'csv',
+): void {
+  if (data.length === 0) return;
+  const blob = exportData({ format, data, filename });
+  const ext = format === 'xlsx' ? 'xls' : format;
+  downloadExport(blob, `${filename}.${ext}`);
 }
 
 export function downloadExport(blob: Blob, filename: string): void {

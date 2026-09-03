@@ -8,10 +8,8 @@ import {
   Users,
   CurrencyDollar,
   Calendar,
-  Download,
 } from '@phosphor-icons/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@crm-eco/ui/components/card';
-import { Button } from '@crm-eco/ui/components/button';
 import {
   Select,
   SelectContent,
@@ -163,10 +161,6 @@ export default function AgentReportsPage() {
               <SelectItem value="all">All Time</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" className="gap-2">
-            <Download weight="light" className="h-4 w-4" />
-            Export
-          </Button>
         </div>
       </div>
 

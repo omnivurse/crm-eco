@@ -1,6 +1,6 @@
 'use client';
 
-import { Calendar, CheckCircle, CircleNotch, Clock, CreditCard, CurrencyDollar, Plus, XCircle } from '@phosphor-icons/react';
+import { Calendar, CheckCircle, CircleNotch, Clock, CreditCard, CurrencyDollar, XCircle } from '@phosphor-icons/react';
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, Button, Badge } from '@crm-eco/ui';
 import { createClient } from '@crm-eco/lib/supabase/client';
@@ -222,10 +222,6 @@ export function MemberBillingTab({ memberId }: MemberBillingTabProps) {
             <CreditCard weight="light" className="h-5 w-5" />
             Payment Methods
           </CardTitle>
-          <Button size="sm" disabled>
-            <Plus weight="light" className="h-4 w-4 mr-2" />
-            Add Payment Method
-          </Button>
         </CardHeader>
         <CardContent>
           {paymentProfiles.length > 0 ? (

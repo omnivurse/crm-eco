@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import { cn } from '@crm-eco/ui/lib/utils';
+import { downloadReportRows } from '@/lib/reports';
 
 // ============================================================================
 // Type Definitions
@@ -318,7 +319,23 @@ export function LeadsReportClient({
           </div>
         </div>
 
-        <Button variant="outline" className="w-full sm:w-auto">
+        <Button
+          variant="outline"
+          className="w-full sm:w-auto"
+          onClick={() =>
+            downloadReportRows(
+              leads.map((lead) => ({
+                id: lead.id,
+                title: lead.title,
+                status: lead.status,
+                source: lead.data?.source ?? '',
+                email: lead.data?.email ?? '',
+                created_at: lead.created_at,
+              })),
+              'lead-analytics',
+            )
+          }
+        >
           <Download className="w-4 h-4 mr-2" />
           <span>Export Report</span>
         </Button>

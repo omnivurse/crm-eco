@@ -255,6 +255,7 @@ export default function ReportsPage() {
     reportsThisMonth: 0,
     totalExports: 0,
   });
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // Get filtered templates
   const filteredTemplates = getTemplatesByCategory(activeCategory).filter(
@@ -294,7 +295,7 @@ export default function ReportsPage() {
       }
     }
     fetchReports();
-  }, []);
+  }, [refreshKey]);
 
   const handleRunReport = async (reportId: string) => {
     router.push(`/crm/reports/saved/${reportId}?run=true`);
@@ -348,6 +349,11 @@ export default function ReportsPage() {
           <Button
             variant="outline"
             className="border-slate-300 dark:border-white/10"
+            onClick={() => {
+              setRefreshKey((n) => n + 1);
+              router.refresh();
+            }}
+            aria-label="Refresh reports"
           >
             <RefreshCw className="w-4 h-4" />
           </Button>

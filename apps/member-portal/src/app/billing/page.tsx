@@ -427,9 +427,6 @@ export default function BillingPage() {
                         {profile.is_default && (
                           <Badge variant="outline">Default</Badge>
                         )}
-                        <Button variant="ghost" size="sm">
-                          Edit
-                        </Button>
                       </div>
                     </div>
                   ))}
@@ -458,9 +455,6 @@ export default function BillingPage() {
                       </p>
                     </div>
                   </div>
-                  <Button variant="outline" size="sm">
-                    Manage
-                  </Button>
                 </div>
               ) : (
                 <div className="flex items-center justify-between p-4 bg-amber-50 border border-amber-100 rounded-lg">

@@ -1,5 +1,5 @@
 {
-  "total": 533,
+  "total": 525,
   "byDir": {
     "src/app/crm/activities": 1,
     "src/app/crm/analytics": 1,
@@ -12,7 +12,7 @@
     "src/app/crm/campaigns": 2,
     "src/app/crm/campaigns/[id]": 6,
     "src/app/crm/commissions": 5,
-    "src/app/crm/communications": 2,
+    "src/app/crm/communications": 1,
     "src/app/crm/communications/compose": 11,
     "src/app/crm/communications/new": 1,
     "src/app/crm/deals/[id]/war-room": 4,
@@ -23,8 +23,7 @@
     "src/app/crm/imports": 15,
     "src/app/crm/imports/update": 8,
     "src/app/crm/inbox": 2,
-    "src/app/crm/inbox/_components": 8,
-    "src/app/crm/inbox/[conversationId]": 5,
+    "src/app/crm/inbox/_components": 7,
     "src/app/crm/integrations/_components": 11,
     "src/app/crm/integrations/logs": 2,
     "src/app/crm/integrations/webhooks": 5,
@@ -71,7 +70,6 @@
     "src/app/crm/settings/modules/new": 3,
     "src/app/crm/settings/my-carriers": 7,
     "src/app/crm/settings/pipelines": 4,
-    "src/app/crm/settings/scorecards": 1,
     "src/app/crm/settings/security": 15,
     "src/app/crm/settings/team": 10,
     "src/app/crm/settings/templates": 6,

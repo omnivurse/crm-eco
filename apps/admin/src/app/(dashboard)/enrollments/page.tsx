@@ -7,18 +7,19 @@ import { format } from 'date-fns';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { getActiveTenant } from '@/lib/tenant';
 
-async function getEnrollments() {
+async function getEnrollments(status?: string) {
   const supabase = await createServerSupabaseClient();
 
   const tenant = await getActiveTenant();
   if (!tenant) return [];
-  const { data: enrollments } = await (supabase
+  let query = supabase
     .from('enrollments')
     .select(`
       id,
       enrollment_number,
       status,
       effective_date,
+      start_date,
       created_at,
       primary_member:members!enrollments_primary_member_id_fkey(
         id, first_name, last_name, email
@@ -26,7 +27,15 @@ async function getEnrollments() {
       plan:plans(id, name, code),
       advisor:advisors(id, first_name, last_name)
     `)
-    .eq('organization_id', tenant.organizationId)
+    .eq('organization_id', tenant.organizationId);
+
+  if (status === 'future_active') {
+    query = query.eq('status', 'approved').gt('start_date', new Date().toISOString());
+  } else if (status) {
+    query = query.eq('status', status);
+  }
+
+  const { data: enrollments } = await (query
     .order('created_at', { ascending: false })
     .limit(100) as any);
 
@@ -52,15 +61,25 @@ function getStatusLabel(status: string): string {
   }
 }
 
-export default async function EnrollmentsPage() {
-  const enrollments = await getEnrollments();
+export default async function EnrollmentsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ status?: string }>;
+}) {
+  const params = await searchParams;
+  const enrollments = await getEnrollments(params.status);
+  const futureActive = params.status === 'future_active';
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <PageHeader
-        title="Enrollments"
-        description="Manage enrollment applications"
+        title={futureActive ? 'Future Enrollments' : 'Enrollments'}
+        description={
+          futureActive
+            ? 'Approved enrollments whose coverage has not started yet'
+            : 'Manage enrollment applications'
+        }
         icon={<FileText weight="light" className="w-6 h-6" />}
         actions={
           <Link href="/enrollments/queue" prefetch={false}>
@@ -75,7 +94,7 @@ export default async function EnrollmentsPage() {
       {/* Enrollments Table */}
       <Card>
         <CardHeader>
-          <CardTitle>All Enrollments</CardTitle>
+          <CardTitle>{futureActive ? 'Upcoming approved enrollments' : 'All Enrollments'}</CardTitle>
           <CardDescription>{enrollments.length} enrollments found</CardDescription>
         </CardHeader>
         <CardContent>

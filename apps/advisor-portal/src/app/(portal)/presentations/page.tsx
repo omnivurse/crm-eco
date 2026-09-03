@@ -1,5 +1,5 @@
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
-import { MonitorPlay, Plus, ArrowSquareOut, Eye } from '@phosphor-icons/react/dist/ssr';
+import { MonitorPlay, ArrowSquareOut, Eye } from '@phosphor-icons/react/dist/ssr';
 import { PageHeader } from '@/components/PageHeader';
 import { Bezel } from '@/components/ui/Bezel';
 
@@ -73,15 +73,7 @@ export default async function PresentationsPage() {
                 kicker="Share"
                 title="Presentations"
                 description="Create and share presentations with your contacts"
-                actions={
-                    <button
-                        type="button"
-                        className="inline-flex items-center gap-2 rounded-full bg-[var(--adv-ink)] px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-                    >
-                        <Plus weight="light" className="h-4 w-4" aria-hidden />
-                        New Presentation
-                    </button>
-                }
+                actions={undefined}
             />
 
             {templates.length > 0 && (
@@ -92,7 +84,7 @@ export default async function PresentationsPage() {
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                         {templates.map((template) => (
                             <Bezel key={template.id}>
-                                <div className="group cursor-pointer p-4">
+                                <div className="p-4">
                                     <div className="mb-3 flex aspect-video items-center justify-center rounded-[0.85rem] bg-[var(--adv-sage-soft)]">
                                         {template.thumbnail_url ? (
                                             // eslint-disable-next-line @next/next/no-img-element -- dynamic external thumbnail URL
@@ -140,16 +132,9 @@ export default async function PresentationsPage() {
                             <h3 className="adv-display mb-2 text-lg font-semibold tracking-[-0.02em] text-[var(--adv-ink)]">
                                 No presentations yet
                             </h3>
-                            <p className="mx-auto mb-6 max-w-sm text-[var(--adv-slate)]">
+                            <p className="mx-auto max-w-sm text-[var(--adv-slate)]">
                                 Create your first presentation from a template to share with contacts.
                             </p>
-                            <button
-                                type="button"
-                                className="inline-flex items-center gap-2 rounded-full bg-[var(--adv-teal)] px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-                            >
-                                <Plus weight="light" className="h-4 w-4" aria-hidden />
-                                Create Presentation
-                            </button>
                         </div>
                     </Bezel>
                 ) : (

@@ -89,6 +89,7 @@ export function NewMailNotifier({ organizationId }: NewMailNotifierProps) {
       const decision = decideNotify({
         message,
         pathname: pathnameRef.current || '',
+        search: typeof window === 'undefined' ? '' : window.location.search,
         seenMessageIds: seenIdsRef.current,
         documentVisible,
       });

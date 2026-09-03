@@ -3,6 +3,7 @@ import { createLog } from '@/lib/integrations';
 import { decrypt } from '@/lib/integrations/adapters/credentials';
 import {
   EMAIL_ATTACHMENT_BUCKET,
+  attachmentMetaFromRefs,
   buildResendSendPayload,
   resolveOutboundAttachments,
   toSendGridAttachments,
@@ -10,6 +11,11 @@ import {
   type OutboundAttachmentRef,
   type ResolvedOutboundAttachment,
 } from '@/lib/email/outbound-attachments';
+import {
+  inboxAttachmentsFromOutboundRefs,
+  persistNewOutboundThread,
+  persistOutboundInboxMessage,
+} from '@/lib/email/persist-inbox-reply';
 import { COMMS_FLAGS, isCommsFlagEnabled } from '@/lib/email/comms-flags';
 import {
   domainFromEmail,
@@ -26,7 +32,6 @@ import {
   createOutboxAdminClient,
   type OutboxRow,
 } from '@/lib/email/outbox';
-import { persistOutboundInboxMessage } from '@/lib/email/persist-inbox-reply';
 import { sanitizeOutboundEmailHtml } from '@/lib/email/email-sanitize';
 import { inboundReplyTo } from '@crm-eco/lib/email';
 
@@ -98,6 +103,7 @@ export interface SendEmailResult {
   rfc822_message_id?: string;
   outbox_id?: string;
   inbox_message_id?: string;
+  inbox_conversation_id?: string;
 }
 
 export interface SendSmsParams {
@@ -341,11 +347,7 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
           source: 'communications.send',
           calendar: params.calendar ?? null,
           calendar_event_id: params.calendar_event_id ?? null,
-          attachments: outboundAttachments.map((attachment) => ({
-            filename: attachment.filename,
-            content_type: attachment.contentType,
-            size: attachment.size,
-          })),
+          attachments: attachmentMetaFromRefs(params.attachments ?? []),
         },
       });
       outboxRow = enqueued.row;
@@ -546,10 +548,9 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
       }
     }
 
-    if (result.success && params.conversation_id && params.persist_inbox !== false) {
-      const inbox = await persistOutboundInboxMessage(createOutboxAdminClient(), {
+    if (result.success && params.persist_inbox !== false) {
+      const persistBase = {
         organizationId: profile.organization_id,
-        conversationId: params.conversation_id,
         fromAddress: fromEmail,
         fromName,
         toAddress: toEmails[0],
@@ -565,8 +566,31 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
         references,
         provider: result.provider || provider,
         providerMessageId: result.message_id ?? null,
-      });
-      result = { ...result, inbox_message_id: inbox?.id };
+        attachments: inboxAttachmentsFromOutboundRefs(params.attachments, profile.organization_id),
+      };
+      if (params.conversation_id) {
+        const inbox = await persistOutboundInboxMessage(createOutboxAdminClient(), {
+          ...persistBase,
+          conversationId: params.conversation_id,
+        });
+        result = {
+          ...result,
+          inbox_message_id: inbox?.id,
+          inbox_conversation_id: params.conversation_id,
+        };
+      } else {
+        const created = await persistNewOutboundThread(createOutboxAdminClient(), {
+          ...persistBase,
+          assignedTo: profile.id,
+        });
+        if (created) {
+          result = {
+            ...result,
+            inbox_message_id: created.messageId,
+            inbox_conversation_id: created.conversationId,
+          };
+        }
+      }
     }
 
     return result;

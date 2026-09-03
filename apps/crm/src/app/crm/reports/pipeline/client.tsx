@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import { cn } from '@crm-eco/ui/lib/utils';
+import { downloadReportRows } from '@/lib/reports';
 
 // ============================================================================
 // Type Definitions
@@ -364,7 +365,21 @@ export function PipelineReportClient({
           </div>
         </div>
 
-        <Button variant="outline">
+        <Button
+          variant="outline"
+          onClick={() =>
+            downloadReportRows(
+              stageData.map((stage) => ({
+                stage: stage.stage,
+                count: stage.count,
+                value: stage.value,
+                avg_days: stage.avgDaysInStage,
+                conversion_rate: stage.conversionRate,
+              })),
+              'pipeline-health',
+            )
+          }
+        >
           <Download className="w-4 h-4 mr-2" />
           Export Report
         </Button>

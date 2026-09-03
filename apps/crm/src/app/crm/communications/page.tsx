@@ -20,7 +20,6 @@ import {
   AlertCircle,
   Plus,
   Search,
-  Filter,
   Users,
   TrendingUp,
 } from 'lucide-react';
@@ -396,10 +395,6 @@ function CommunicationsPageContent() {
         </div>
 
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" onClick={() => toast.info('Filters coming soon')}>
-            <Filter className="w-4 h-4 mr-2" />
-            Filters
-          </Button>
           <Button className="bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-400 hover:to-purple-400" asChild>
             <Link href="/crm/communications/new">
               <Plus className="w-4 h-4 mr-2" />

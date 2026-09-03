@@ -9,10 +9,8 @@ import {
   CheckCircle,
   Calendar,
   Funnel,
-  Download,
 } from '@phosphor-icons/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@crm-eco/ui/components/card';
-import { Button } from '@crm-eco/ui/components/button';
 import { Badge } from '@crm-eco/ui/components/badge';
 import {
   Select,
@@ -175,10 +173,6 @@ export default function AgentCommissionsPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
         <h1 className="text-2xl font-bold text-slate-900 min-w-0 flex-1">My Commissions</h1>
-        <Button variant="outline" className="gap-2 shrink-0 w-full sm:w-auto">
-          <Download weight="light" className="h-4 w-4" />
-          Export
-        </Button>
       </div>
 
       {/* Stats */}

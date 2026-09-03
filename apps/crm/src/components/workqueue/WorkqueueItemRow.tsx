@@ -92,7 +92,7 @@ function getItemHref(item: WorkqueueItem): string {
     case 'at_risk_deal':
       return item.recordId ? `/crm/r/${item.recordId}` : '/crm/pipeline';
     case 'unread_message':
-      return `/crm/inbox/${item.id}`;
+      return `/crm/inbox?c=${encodeURIComponent(item.id)}`;
     case 'new_lead':
       return item.recordId ? `/crm/r/${item.recordId}` : '/crm/modules/leads';
     default:

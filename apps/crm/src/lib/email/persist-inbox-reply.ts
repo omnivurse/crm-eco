@@ -1,7 +1,17 @@
 import type { OutboxPayload } from './outbox';
+import { mailboxAddressForOutbound } from '@/lib/inbox/compose-mailbox';
+import type { OutboundAttachmentRef } from './outbound-attachments';
 
 type LooseClient = {
   from: (table: string) => any;
+};
+
+/** Inbox-shaped attachment chip — MessageThread signs via file_path. */
+export type InboxPersistedAttachment = {
+  filename: string;
+  content_type: string;
+  size: number;
+  file_path: string;
 };
 
 export type PersistOutboundInboxInput = {
@@ -23,7 +33,53 @@ export type PersistOutboundInboxInput = {
   providerMessageId?: string | null;
   /** When set, the thread renders a meeting card for this message. */
   calendarEventId?: string | null;
+  attachments?: InboxPersistedAttachment[];
 };
+
+function orgScopedPath(path: string | undefined, organizationId: string): string | null {
+  if (!path) return null;
+  return path.startsWith(`${organizationId}/`) ? path : null;
+}
+
+/**
+ * Keep only attachments that can be signed later. Metadata-only rows render
+ * as "Unavailable" chips — skip them rather than persist a dead handle.
+ */
+export function inboxAttachmentsFromRefs(
+  refs: Array<{
+    filename?: string;
+    file_name?: string;
+    content_type?: string;
+    mime_type?: string;
+    size?: number;
+    file_size?: number;
+    file_path?: string;
+    bucket_path?: string;
+  }> | undefined,
+  organizationId: string,
+): InboxPersistedAttachment[] {
+  if (!refs?.length) return [];
+  const out: InboxPersistedAttachment[] = [];
+  for (const ref of refs) {
+    const file_path = orgScopedPath(ref.file_path || ref.bucket_path, organizationId);
+    if (!file_path) continue;
+    const filename = (ref.filename || ref.file_name || 'attachment').trim() || 'attachment';
+    out.push({
+      filename,
+      content_type: ref.content_type || ref.mime_type || 'application/octet-stream',
+      size: typeof ref.size === 'number' ? ref.size : typeof ref.file_size === 'number' ? ref.file_size : 0,
+      file_path,
+    });
+  }
+  return out;
+}
+
+export function inboxAttachmentsFromOutboundRefs(
+  refs: OutboundAttachmentRef[] | undefined,
+  organizationId: string,
+): InboxPersistedAttachment[] {
+  return inboxAttachmentsFromRefs(refs, organizationId);
+}
 
 export async function persistOutboundInboxMessage(
   supabase: LooseClient,
@@ -75,6 +131,7 @@ export async function persistOutboundInboxMessage(
       sent_at: now,
       external_id: input.providerMessageId ?? null,
       external_provider: input.provider ?? null,
+      attachments: input.attachments ?? [],
       metadata: input.calendarEventId ? { calendar_event_id: input.calendarEventId } : {},
     })
     .select('id')
@@ -92,6 +149,62 @@ export async function persistOutboundInboxMessage(
   }
 
   return data as { id: string };
+}
+
+export type PersistNewOutboundThreadInput = Omit<PersistOutboundInboxInput, 'conversationId'> & {
+  assignedTo?: string | null;
+};
+
+export async function persistNewOutboundThread(
+  supabase: LooseClient,
+  input: PersistNewOutboundThreadInput,
+): Promise<{ conversationId: string; messageId: string } | null> {
+  const now = new Date().toISOString();
+  const plainPreview = (input.bodyText || input.bodyHtml || '')
+    .replace(/<[^>]*>/g, '')
+    .slice(0, 200);
+
+  const { data: conv, error: convError } = await supabase
+    .from('inbox_conversations')
+    .insert({
+      org_id: input.organizationId,
+      organization_id: input.organizationId,
+      channel: 'email',
+      thread_id: input.rfc822MessageId,
+      subject: input.subject || null,
+      preview: plainPreview,
+      contact_email: input.toAddress,
+      contact_name: input.toName ?? null,
+      status: 'open',
+      priority: 'normal',
+      mailbox_address: mailboxAddressForOutbound(input.fromAddress),
+      assigned_to: input.assignedTo ?? null,
+      assigned_at: input.assignedTo ? now : null,
+      unread_count: 0,
+      message_count: 1,
+      last_message_at: now,
+      first_message_at: now,
+      tags: [],
+      labels: [],
+      metadata: {},
+    })
+    .select('id')
+    .single();
+
+  if (convError || !conv) {
+    console.error('[email] refusing new outbound thread: conversation insert failed', {
+      organizationId: input.organizationId,
+      error: convError?.message ?? null,
+    });
+    return null;
+  }
+
+  const message = await persistOutboundInboxMessage(supabase, {
+    ...input,
+    conversationId: conv.id,
+  });
+  if (!message) return null;
+  return { conversationId: conv.id, messageId: message.id };
 }
 
 export function persistInputFromOutboxPayload(
@@ -131,5 +244,6 @@ export function persistInputFromOutboxPayload(
     provider: row.provider ?? null,
     providerMessageId: row.provider_message_id ?? null,
     calendarEventId: row.payload.calendar_event_id ?? null,
+    attachments: inboxAttachmentsFromRefs(row.payload.attachments, organizationId),
   };
 }

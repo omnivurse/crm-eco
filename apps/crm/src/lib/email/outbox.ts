@@ -17,7 +17,15 @@ export type OutboxPayload = {
   rfc822_message_id?: string;
   in_reply_to?: string | null;
   references?: string[];
-  attachments?: Array<{ filename: string; content_type: string; size: number }>;
+  attachments?: Array<{
+    filename: string;
+    content_type: string;
+    size: number;
+    /** Storage key in email-attachments — required for worker retry. */
+    file_path?: string;
+    id?: string;
+    bucket_path?: string;
+  }>;
   /** iTIP part for meeting invites — full ICS text so worker retries rebuild it byte-identically. */
   calendar?: { method: 'REQUEST' | 'CANCEL'; ics: string; filename?: string } | null;
   calendar_event_id?: string | null;

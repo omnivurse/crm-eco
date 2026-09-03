@@ -73,7 +73,7 @@ export default async function TrainingPage() {
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                     {playbooks.map((playbook) => (
                         <Bezel key={playbook.id}>
-                            <div className="group cursor-pointer p-5">
+                            <div className="p-5">
                                 <div className="flex items-start gap-4">
                                     <div className="grid h-12 w-12 shrink-0 place-items-center rounded-[0.85rem] bg-[var(--adv-sage-soft)]">
                                         <BookOpen

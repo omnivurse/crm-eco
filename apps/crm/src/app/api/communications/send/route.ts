@@ -199,6 +199,7 @@ export async function POST(request: NextRequest) {
         rfc822_message_id: result.rfc822_message_id,
         outbox_id: result.outbox_id,
         inbox_message_id: result.inbox_message_id,
+        inbox_conversation_id: result.inbox_conversation_id,
       });
     }
     

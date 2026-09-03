@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
+import { toastCopy } from '@/lib/crm/toast-copy';
 import { supabase } from '@/lib/supabase-client';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { Button } from '@crm-eco/ui/components/button';
@@ -35,7 +36,6 @@ import {
   assertComposerAttachmentsReady,
   composerAttachmentsToRefs,
 } from '@/lib/email/outbound-attachments';
-import { mailboxAddressForOutbound } from '@/lib/inbox/compose-mailbox';
 
 // ============================================================================
 // Types
@@ -710,6 +710,8 @@ function ComposePageContent() {
           linked_contact_id: linkedContactId,
           linked_lead_id: linkedLeadId,
           attachments: attachmentRefs,
+          persist_inbox: true,
+          to_name: recipients[0]?.name,
         }),
       });
 
@@ -719,73 +721,13 @@ function ComposePageContent() {
         throw new Error(result.error || 'Failed to send email');
       }
 
-      // Create inbox conversation + message for tracking
-      if (authProfile) {
-        const now = new Date().toISOString();
-        const messageId = result.message_id
-          ? `<${result.message_id}>`
-          : `<${crypto.randomUUID()}@mail.doublehelixhub.com>`;
-
-        const plainPreview = resolvedBody
-          .replace(/<[^>]*>/g, '')
-          .slice(0, 200);
-
-        const { data: conv } = await supabase
-          .from('inbox_conversations')
-          .insert({
-            org_id: authProfile.organization_id,
-            channel: 'email',
-            thread_id: messageId,
-            subject: resolvedSubject || null,
-            preview: plainPreview,
-            contact_email: recipients[0].email,
-            contact_name: recipients[0].name || null,
-            contact_id: linkedContactId || null,
-            linked_lead_id: linkedLeadId || null,
-            status: 'open',
-            priority: 'normal',
-            assigned_to: authProfile.id,
-            assigned_at: now,
-            unread_count: 0,
-            message_count: 1,
-            last_message_at: now,
-            first_message_at: now,
-            mailbox_address: mailboxAddressForOutbound(authProfile.email),
-            tags: [],
-            labels: [],
-            metadata: {},
-          })
-          .select()
-          .single();
-
-        if (conv) {
-          await supabase.from('inbox_messages').insert({
-            org_id: authProfile.organization_id,
-            conversation_id: conv.id,
-            channel: 'email',
-            direction: 'outbound',
-            from_name: authProfile.full_name || authProfile.email,
-            from_address: authProfile.email,
-            to_address: recipients[0].email,
-            to_name: recipients[0].name || null,
-            subject: resolvedSubject || null,
-            body_html: resolvedBody,
-            body_text: resolvedBody.replace(/<[^>]*>/g, '') || null,
-            cc_addresses: ccRecipients.map(r => ({ email: r.email, name: r.name })),
-            bcc_addresses: bccRecipients.map(r => ({ email: r.email, name: r.name })),
-            message_id: messageId,
-            attachments: attachmentRefs.map((attachment) => ({
-              filename: attachment.file_name,
-              content_type: attachment.mime_type,
-              size: attachment.file_size,
-            })),
-            status: 'sent',
-            sent_at: now,
-            external_id: result.message_id || null,
-            external_provider: result.provider || null,
-            metadata: {},
-          });
-        }
+      if (!result.inbox_conversation_id) {
+        toast.error(
+          toastCopy.failed(
+            'save this email to the inbox',
+            'it was sent, but the conversation was not created',
+          ),
+        );
       }
 
       setSent(true);

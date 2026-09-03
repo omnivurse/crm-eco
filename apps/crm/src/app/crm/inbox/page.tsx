@@ -2,7 +2,7 @@
 
 import { Suspense, useState, useEffect, useCallback, useMemo } from 'react';
 import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
-import { useSearchParams } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase-client';
 import { useClientAuth } from '@/hooks/useClientAuth';
 import {
@@ -50,6 +50,8 @@ export default function InboxPage() {
 function InboxPageContent() {
   const { user: authUser, profile: authProfile, loading: authLoading } = useClientAuth();
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
 
   const [loading, setLoading] = useState(true);
   const [conversations, setConversations] = useState<InboxConversation[]>([]);
@@ -356,6 +358,9 @@ function InboxPageContent() {
   const handleSelectConversation = useCallback(async (conv: InboxConversation) => {
     setSelectedConversation(conv);
     setMobileView('detail');
+    const next = new URLSearchParams(searchParams?.toString() ?? '');
+    next.set('c', conv.id);
+    router.replace(`${pathname}?${next.toString()}`, { scroll: false });
     await loadMessages(conv.id);
 
     if (conv.unread_count > 0) {
@@ -372,14 +377,52 @@ function InboxPageContent() {
         prev.map(c => c.id === conv.id ? { ...c, unread_count: 0 } : c)
       );
     }
-  }, [loadMessages, currentUserId]);
+  }, [loadMessages, currentUserId, pathname, router, searchParams]);
+
+  const conversationFromUrl = searchParams?.get('c');
+
+  useEffect(() => {
+    if (!authProfile || !conversationFromUrl) return;
+    if (selectedConversation?.id === conversationFromUrl) return;
+
+    const listed = conversations.find((c) => c.id === conversationFromUrl);
+    if (listed) {
+      void handleSelectConversation(listed);
+      return;
+    }
+
+    let cancelled = false;
+    void (async () => {
+      const { data } = await supabase
+        .from('inbox_conversations')
+        .select('*')
+        .eq('id', conversationFromUrl)
+        .eq('org_id', authProfile.organization_id)
+        .maybeSingle();
+      if (cancelled || !data) return;
+      void handleSelectConversation(data as InboxConversation);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    authProfile,
+    conversationFromUrl,
+    conversations,
+    selectedConversation?.id,
+    handleSelectConversation,
+  ]);
 
   // Handle back to list on mobile
   const handleBackToList = useCallback(() => {
     setMobileView('list');
     setSelectedConversation(null);
     setFoldersOpenWhileReading(false);
-  }, []);
+    const next = new URLSearchParams(searchParams?.toString() ?? '');
+    next.delete('c');
+    const qs = next.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  }, [pathname, router, searchParams]);
 
   // Update conversation status
   const updateStatus = useCallback(async (conversationId: string, status: ConversationStatus) => {

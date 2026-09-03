@@ -375,7 +375,7 @@ export default function CustomReportsPage() {
   const runReport = async (reportId: string) => {
     // In a real implementation, this would execute the report
     // and navigate to a results view
-    window.location.href = `/crm/reports/${reportId}`;
+    window.location.href = `/crm/reports/saved/${reportId}`;
   };
 
   const getReportTypeIcon = (type: string) => {

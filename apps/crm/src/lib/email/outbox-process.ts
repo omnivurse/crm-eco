@@ -10,9 +10,20 @@ import {
 } from '@/lib/email/outbox';
 import { persistInputFromOutboxPayload, persistOutboundInboxMessage } from '@/lib/email/persist-inbox-reply';
 import { sendViaResend, sendViaSendGrid } from '@/lib/email/send-service';
+import {
+  EMAIL_ATTACHMENT_BUCKET,
+  attachmentRefsFromMeta,
+  resolveOutboundAttachments,
+  type ResolvedOutboundAttachment,
+} from '@/lib/email/outbound-attachments';
 
 type LooseClient = {
   from: (table: string) => any;
+  storage: {
+    from: (bucket: string) => {
+      download: (path: string) => Promise<{ data: Blob | null; error: { message?: string } | null }>;
+    };
+  };
 };
 
 async function resolveProvider(
@@ -52,18 +63,15 @@ async function submitOutboxRow(
   const fromName = row.from_name || 'Pay It Forward Health';
   const fromEmail = row.sender_address || process.env.RESEND_FROM_EMAIL || 'noreply@payitforwardhealth.com';
 
-  // Rebuild the iTIP calendar part byte-identically from the stored payload so
-  // worker retries send the same invite the first attempt did.
-  const calendarAttachment = payload.calendar
-    ? [{
-        filename:
-          payload.calendar.filename ??
-          (payload.calendar.method === 'CANCEL' ? 'cancel.ics' : 'invite.ics'),
-        contentType: `text/calendar; method=${payload.calendar.method}; charset=UTF-8`,
-        content: Buffer.from(payload.calendar.ics, 'utf8').toString('base64'),
-        size: Buffer.byteLength(payload.calendar.ics, 'utf8'),
-      }]
-    : undefined;
+  let retryAttachments: ResolvedOutboundAttachment[] = [];
+  try {
+    retryAttachments = await resolveRetryAttachments(supabase, row);
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to attach files',
+    };
+  }
 
   if (resolved.provider === 'sendgrid') {
     return sendViaSendGrid(resolved.apiKey, {
@@ -75,7 +83,7 @@ async function submitOutboxRow(
       html: row.body_html ?? undefined,
       text: row.body_text ?? undefined,
       replyTo: row.reply_to ?? undefined,
-      attachments: calendarAttachment,
+      attachments: retryAttachments.length ? retryAttachments : undefined,
       calendar: payload.calendar ?? undefined,
       message_id: payload.rfc822_message_id,
       in_reply_to: payload.in_reply_to,
@@ -93,12 +101,55 @@ async function submitOutboxRow(
     text: row.body_text ?? undefined,
     reply_to: row.reply_to ?? undefined,
     unsubscribe_url: payload.unsubscribe_url ?? undefined,
-    attachments: calendarAttachment,
+    attachments: retryAttachments.length ? retryAttachments : undefined,
     idempotencyKey: row.idempotency_key,
     message_id: payload.rfc822_message_id,
     in_reply_to: payload.in_reply_to,
     references: payload.references,
   });
+}
+
+async function resolveRetryAttachments(
+  supabase: LooseClient,
+  row: OutboxRow,
+): Promise<ResolvedOutboundAttachment[]> {
+  const payload = row.payload ?? {};
+  const files = await resolveOutboundAttachments({
+    refs: attachmentRefsFromMeta(payload.attachments),
+    inline: [],
+    organizationId: row.organization_id,
+    lookup: async (id) => {
+      const { data } = await supabase
+        .from('email_attachments')
+        .select('file_path, file_name, mime_type, org_id')
+        .eq('id', id)
+        .eq('org_id', row.organization_id)
+        .maybeSingle();
+      return data ?? null;
+    },
+    download: async (path) => {
+      const { data, error } = await supabase.storage
+        .from(EMAIL_ATTACHMENT_BUCKET)
+        .download(path);
+      if (error || !data) {
+        throw new Error('Could not read the attached file.');
+      }
+      return new Uint8Array(await data.arrayBuffer());
+    },
+  });
+
+  if (payload.calendar) {
+    files.push({
+      filename:
+        payload.calendar.filename ??
+        (payload.calendar.method === 'CANCEL' ? 'cancel.ics' : 'invite.ics'),
+      contentType: `text/calendar; method=${payload.calendar.method}; charset=UTF-8`,
+      content: Buffer.from(payload.calendar.ics, 'utf8').toString('base64'),
+      size: Buffer.byteLength(payload.calendar.ics, 'utf8'),
+    });
+  }
+
+  return files;
 }
 
 async function logSentEmail(supabase: LooseClient, row: OutboxRow, result: {

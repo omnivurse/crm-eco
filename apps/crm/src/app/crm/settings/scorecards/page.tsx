@@ -1,6 +1,5 @@
 'use client';
 
-import { toast } from 'sonner';
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase-client';
@@ -37,7 +36,6 @@ import {
   Target,
   Award,
   Loader2,
-  RefreshCw,
   ChevronUp,
   ChevronDown,
   Minus,
@@ -84,7 +82,6 @@ export default function ScorecardsPage() {
   const [scorecards, setScorecards] = useState<AdvisorScorecard[]>([]);
   const [advisors, setAdvisors] = useState<Advisor[]>([]);
   const [loading, setLoading] = useState(true);
-  const [generating, setGenerating] = useState(false);
   const [orgId, setOrgId] = useState('');
 
   // Filters
@@ -148,17 +145,6 @@ export default function ScorecardsPage() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
-
-  const generateScorecards = async () => {
-    setGenerating(true);
-    try {
-      // In production, this would call an API to calculate scorecards
-      // For now, we show a message
-      toast.info('Scorecard generation would be triggered via a server-side job');
-    } finally {
-      setGenerating(false);
-    }
-  };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -232,14 +218,6 @@ export default function ScorecardsPage() {
             </div>
           </div>
         </div>
-        <Button onClick={generateScorecards} disabled={generating}>
-          {generating ? (
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-          ) : (
-            <RefreshCw className="w-4 h-4 mr-2" />
-          )}
-          Refresh Scorecards
-        </Button>
       </div>
 
       {/* Filters */}
@@ -347,10 +325,6 @@ export default function ScorecardsPage() {
             <p className="text-slate-500 dark:text-slate-400 mb-4">
               Scorecards are generated periodically based on activity
             </p>
-            <Button onClick={generateScorecards}>
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Generate Now
-            </Button>
           </div>
         ) : (
           <Table>

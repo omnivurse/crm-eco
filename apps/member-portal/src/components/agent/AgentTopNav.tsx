@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import {
-  Bell,
   MagnifyingGlass,
   User,
   SignOut,
@@ -125,14 +124,6 @@ export function AgentTopNav({ agent, mobileMenuOpen, onMobileMenuToggle }: Agent
           </Link>
         )}
 
-        <Button
-          variant="ghost"
-          size="icon"
-          className="relative rounded-full text-slate-600 hover:bg-[rgba(11,109,133,0.06)] hover:text-[var(--mp-teal)]"
-        >
-          <Bell weight="light" className="h-5 w-5" />
-          <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-red-500" />
-        </Button>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

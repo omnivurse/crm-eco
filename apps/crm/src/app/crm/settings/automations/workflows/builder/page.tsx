@@ -15,6 +15,7 @@ import {
 } from '@crm-eco/ui/components/dialog';
 import { ArrowLeft, Save, Play, Pause, Settings, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { toastCopy } from '@/lib/crm/toast-copy';
 import { WorkflowCanvas } from '@/components/workflows/WorkflowCanvas';
 import { WorkflowSidebar } from '@/components/workflows/WorkflowSidebar';
 import type { WorkflowNode, WorkflowEdge, NodeType, WorkflowStatus } from '@/lib/workflows/types';
@@ -151,8 +152,30 @@ function WorkflowBuilderContent() {
       return;
     }
 
+    if (!workflowId) {
+      toast.error(toastCopy.failed('activate the workflow', 'save it first'));
+      return;
+    }
+
+    const previous = workflowStatus;
     setWorkflowStatus(newStatus);
-    toast.success(`Workflow ${newStatus === 'active' ? 'activated' : 'paused'}`);
+    try {
+      const response = await fetch(`/api/workflows/${workflowId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: workflowName,
+          nodes,
+          edges,
+          status: newStatus,
+        }),
+      });
+      if (!response.ok) throw new Error('Failed to update workflow status');
+      toast.success(`Workflow ${newStatus === 'active' ? 'activated' : 'paused'}`);
+    } catch {
+      setWorkflowStatus(previous);
+      toast.error(toastCopy.failed('update the workflow status'));
+    }
   };
 
   return (

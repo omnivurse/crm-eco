@@ -5,7 +5,6 @@ import {
   Envelope,
   Calendar,
   FileText,
-  Plus,
 } from '@phosphor-icons/react/dist/ssr';
 import { PageHeader } from '@/components/PageHeader';
 import { Bezel } from '@/components/ui/Bezel';
@@ -74,15 +73,7 @@ export default async function EngagementPage() {
                 kicker="Outreach"
                 title="Engagement"
                 description="Track your outreach and follow-ups"
-                actions={
-                    <button
-                        type="button"
-                        className="inline-flex items-center gap-2 rounded-full bg-[var(--adv-ink)] px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-                    >
-                        <Plus weight="light" className="h-4 w-4" aria-hidden />
-                        Log Activity
-                    </button>
-                }
+                actions={undefined}
             />
 
             <Bezel>
@@ -97,16 +88,9 @@ export default async function EngagementPage() {
                             <h3 className="adv-display mb-2 text-lg font-semibold tracking-[-0.02em] text-[var(--adv-ink)]">
                                 No engagement activity
                             </h3>
-                            <p className="mx-auto mb-6 max-w-sm text-[var(--adv-slate)]">
+                            <p className="mx-auto max-w-sm text-[var(--adv-slate)]">
                                 Start logging calls, emails, and meetings to track your outreach.
                             </p>
-                            <button
-                                type="button"
-                                className="inline-flex items-center gap-2 rounded-full bg-[var(--adv-teal)] px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-                            >
-                                <Plus weight="light" className="h-4 w-4" aria-hidden />
-                                Log Your First Activity
-                            </button>
                         </div>
                     ) : (
                         <div className="p-4 md:p-5">

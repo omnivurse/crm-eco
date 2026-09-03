@@ -21,10 +21,28 @@ export interface IncomingMessage {
   to_address?: string | null;
 }
 
+export function inboxConversationHref(conversationId: string): string {
+  return `/crm/inbox?c=${encodeURIComponent(conversationId)}`;
+}
+
+export function isViewingInboxConversation(
+  conversationId: string,
+  pathname: string,
+  search = '',
+): boolean {
+  if (!conversationId) return false;
+  if (pathname === `/crm/inbox/${conversationId}`) return true;
+  if (pathname !== '/crm/inbox' && !pathname.startsWith('/crm/inbox/')) return false;
+  const qs = search.startsWith('?') ? search.slice(1) : search;
+  return new URLSearchParams(qs).get('c') === conversationId;
+}
+
 export interface NotifyDecisionInput {
   message: IncomingMessage;
-  /** Current route, e.g. "/crm/inbox/<uuid>". */
+  /** Current route, e.g. "/crm/inbox" or legacy "/crm/inbox/<uuid>". */
   pathname: string;
+  /** Query string without or with a leading `?` — used for `?c=`. */
+  search?: string;
   /** Message ids already announced this session. */
   seenMessageIds: ReadonlySet<string>;
   /** False while the tab is hidden — used to decide desktop vs in-app only. */
@@ -58,7 +76,8 @@ export function decideNotify(input: NotifyDecisionInput): NotifyDecision {
   // notify, because "already viewing" is not true when the tab is in the
   // background.
   const viewingThisThread =
-    pathname.includes(message.conversation_id) && input.documentVisible !== false;
+    isViewingInboxConversation(message.conversation_id, pathname, input.search) &&
+    input.documentVisible !== false;
   if (viewingThisThread) return { notify: false, reason: 'already-viewing' };
 
   return { notify: true };
@@ -116,7 +135,7 @@ export function buildNewMailToast(message: IncomingMessage): NewMailToast {
   return {
     title: `New email from ${senderLabel(message)}`,
     description: snippet ? `${subject} — ${snippet}` : subject,
-    href: `/crm/inbox/${message.conversation_id}`,
+    href: inboxConversationHref(message.conversation_id),
     mailbox: message.to_address?.trim().toLowerCase() || null,
   };
 }

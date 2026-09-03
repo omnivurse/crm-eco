@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import { cn } from '@crm-eco/ui/lib/utils';
+import { downloadReportRows } from '@/lib/reports';
 
 // ============================================================================
 // Type Definitions
@@ -211,7 +212,21 @@ export function SalesReportClient({ deals, stats, monthlyData }: SalesReportClie
           </div>
         </div>
 
-        <Button variant="outline">
+        <Button
+          variant="outline"
+          onClick={() =>
+            downloadReportRows(
+              deals.map((deal) => ({
+                id: deal.id,
+                title: deal.title,
+                stage: deal.stage,
+                amount: deal.data?.amount ?? 0,
+                created_at: deal.created_at,
+              })),
+              'sales-performance',
+            )
+          }
+        >
           <Download className="w-4 h-4 mr-2" />
           Export Report
         </Button>
