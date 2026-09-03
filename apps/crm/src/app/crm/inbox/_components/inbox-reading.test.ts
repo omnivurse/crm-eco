@@ -15,6 +15,8 @@ import {
   stripExecutableMarkup,
   threadFaceFromMessages,
   unconstrainedIframeMeasureHeight,
+  inboxAttachmentHref,
+  inboxAttachmentIsDownloadable,
 } from './inbox-reading';
 
 describe('formatInboxFileSize', () => {
@@ -182,5 +184,23 @@ describe('defaultMessageExpanded', () => {
     expect(defaultMessageExpanded(2, 4, true)).toBe(true);
     expect(defaultMessageExpanded(3, 4, false)).toBe(true);
     expect(defaultMessageExpanded(0, 4, false)).toBe(false);
+  });
+});
+
+describe('inbox attachment chips', () => {
+  it('routes stored or Resend-backed files through the download API', () => {
+    expect(inboxAttachmentIsDownloadable({ file_path: 'org/a.pdf' })).toBe(true);
+    expect(inboxAttachmentIsDownloadable({ resend_id: 'att_1' })).toBe(true);
+    expect(inboxAttachmentHref('msg-1', { file_path: 'org/a.pdf' }, 0)).toBe(
+      '/api/inbox/attachments?message_id=msg-1&index=0',
+    );
+    expect(inboxAttachmentHref('msg-1', { resend_id: 'att_1' }, 2)).toBe(
+      '/api/inbox/attachments?message_id=msg-1&index=2',
+    );
+  });
+
+  it('does not invent a download URL for metadata-only rows', () => {
+    expect(inboxAttachmentIsDownloadable({})).toBe(false);
+    expect(inboxAttachmentHref('msg-1', {}, 0)).toBe('#');
   });
 });

@@ -39,7 +39,7 @@ export function DraftsList({ drafts, onSelectDraft, mobileView }: DraftsListProp
   return (
     <div
       className={cn(
-        'flex-1 lg:flex-none flex-shrink-0 glass-card border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden flex flex-col lg:w-80 xl:w-96',
+        'flex min-h-0 flex-1 flex-shrink-0 flex-col overflow-hidden border-r border-slate-200/80 bg-[#f7f8fa] dark:border-white/10 dark:bg-[#0a1118] lg:w-[22rem] lg:flex-none xl:w-96',
         mobileView === 'detail' ? 'hidden lg:flex' : 'flex',
       )}
     >

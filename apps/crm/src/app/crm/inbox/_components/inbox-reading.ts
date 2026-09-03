@@ -230,3 +230,23 @@ export function defaultMessageExpanded(
   if (total <= 2) return true;
   return index === total - 1 || latestInbound;
 }
+
+export function inboxAttachmentIsDownloadable(att: {
+  file_path?: string | null;
+  resend_id?: string | null;
+  url?: string | null;
+}): boolean {
+  return Boolean(att.file_path || att.resend_id || att.url);
+}
+
+/** Stored path or Resend id goes through the self-heal download route. */
+export function inboxAttachmentHref(
+  messageId: string,
+  att: { file_path?: string | null; resend_id?: string | null; url?: string | null },
+  index: number,
+): string {
+  if (att.file_path || att.resend_id) {
+    return `/api/inbox/attachments?message_id=${encodeURIComponent(messageId)}&index=${index}`;
+  }
+  return att.url || '#';
+}

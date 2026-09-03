@@ -553,6 +553,11 @@ export function restored(noun: string): string {
   return `${cap(unpunct(noun))} restored`;
 }
 
+/** "Marked unread" — the inbox pushing a thread back into the unread lane. */
+export function markedUnread(): string {
+  return 'Marked unread';
+}
+
 export interface AddedWithActionToast {
   /** "Member added" */
   title: string;
@@ -650,6 +655,7 @@ export const toastCopy = {
   cappedSelection,
   exportedAll,
   movedToTrash,
+  markedUnread,
   addedWithAction,
   mergedInto,
   openedContactTwin,

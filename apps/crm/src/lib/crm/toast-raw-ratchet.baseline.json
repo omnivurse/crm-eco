@@ -1,5 +1,5 @@
 {
-  "total": 525,
+  "total": 522,
   "byDir": {
     "src/app/crm/activities": 1,
     "src/app/crm/analytics": 1,
@@ -22,8 +22,7 @@
     "src/app/crm/forecasting": 1,
     "src/app/crm/imports": 15,
     "src/app/crm/imports/update": 8,
-    "src/app/crm/inbox": 2,
-    "src/app/crm/inbox/_components": 7,
+    "src/app/crm/inbox/_components": 6,
     "src/app/crm/integrations/_components": 11,
     "src/app/crm/integrations/logs": 2,
     "src/app/crm/integrations/webhooks": 5,

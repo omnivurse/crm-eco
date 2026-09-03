@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { toast } from 'sonner';
+import { toastCopy } from '@/lib/crm/toast-copy';
 import type {
   InboxConversation,
   InboxDraft,
@@ -38,6 +39,7 @@ import {
   forwardSubject,
   forwardableAttachments,
 } from './_components/inbox-forward';
+import { attachUnreadForUser } from '@/lib/inbox/inbox-reads';
 
 export default function InboxPage() {
   return (
@@ -101,8 +103,6 @@ function InboxPageContent() {
   const { query: searchQuery, setQuery: setSearchQuery, debouncedQuery } = useDebouncedSearch({ delay: 300 });
   const [loadingMessages, setLoadingMessages] = useState(false);
 
-  const currentUserId = authProfile?.id || null;
-
   // Mobile responsive state
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
   const [mobileView, setMobileView] = useState<'list' | 'detail'>('list');
@@ -122,7 +122,15 @@ function InboxPageContent() {
         .eq('org_id', profile.organization_id)
         .order('last_message_at', { ascending: false });
 
-      if (statusFilter === 'active') {
+      const { data: unreadRows } = await supabase.rpc('inbox_unread_conversation_ids', {
+        p_org_id: profile.organization_id,
+        p_limit: 200,
+      });
+      const unreadIds = (unreadRows ?? []).map((row: { conversation_id: string }) => row.conversation_id);
+
+      if (filter === 'sent') {
+        query = query.not('status', 'in', '(trash,spam)');
+      } else if (statusFilter === 'active') {
         query = query.in('status', ['open', 'pending']);
       } else {
         query = query.eq('status', statusFilter);
@@ -136,15 +144,19 @@ function InboxPageContent() {
         query = query.eq('mailbox_address', mailboxFilter);
       }
 
+      let skipListQuery = filter === 'drafts';
       if (filter === 'assigned_to_me') {
         query = query.eq('assigned_to', profile.id);
       } else if (filter === 'unassigned') {
         query = query.is('assigned_to', null);
       } else if (filter === 'unread') {
-        query = query.gt('unread_count', 0);
+        if (unreadIds.length === 0) {
+          setConversations([]);
+          skipListQuery = true;
+        } else {
+          query = query.in('id', unreadIds);
+        }
       }
-
-      let skipListQuery = filter === 'drafts';
       if (filter === 'sent') {
         const { data: outbound, error: outboundError } = await supabase
           .from('inbox_messages')
@@ -185,7 +197,7 @@ function InboxPageContent() {
           throw error;
         }
 
-        setConversations(data || []);
+        setConversations(attachUnreadForUser(data || [], unreadIds));
       } else if (filter === 'drafts') {
         setConversations([]);
       }
@@ -201,12 +213,7 @@ function InboxPageContent() {
           .select('*', { count: 'exact', head: true })
           .eq('org_id', profile.organization_id)
           .eq('status', 'pending'),
-        supabase
-          .from('inbox_conversations')
-          .select('*', { count: 'exact', head: true })
-          .eq('org_id', profile.organization_id)
-          .in('status', ['open', 'pending'])
-          .gt('unread_count', 0),
+        supabase.rpc('inbox_unread_count_for_user', { p_org_id: profile.organization_id }),
         supabase
           .from('inbox_conversations')
           .select('*', { count: 'exact', head: true })
@@ -223,7 +230,7 @@ function InboxPageContent() {
       setStats({
         total_open: openCount.count || 0,
         total_pending: pendingCount.count || 0,
-        total_unread: unreadCount.count || 0,
+        total_unread: typeof unreadCount.data === 'number' ? unreadCount.data : 0,
         assigned_to_me: assignedCount.count || 0,
         unassigned: unassignedCount.count || 0,
       });
@@ -362,22 +369,7 @@ function InboxPageContent() {
     next.set('c', conv.id);
     router.replace(`${pathname}?${next.toString()}`, { scroll: false });
     await loadMessages(conv.id);
-
-    if (conv.unread_count > 0) {
-      await supabase
-        .from('inbox_conversations')
-        .update({
-          unread_count: 0,
-          last_read_at: new Date().toISOString(),
-          last_read_by: currentUserId,
-        })
-        .eq('id', conv.id);
-
-      setConversations(prev =>
-        prev.map(c => c.id === conv.id ? { ...c, unread_count: 0 } : c)
-      );
-    }
-  }, [loadMessages, currentUserId, pathname, router, searchParams]);
+  }, [loadMessages, pathname, router, searchParams]);
 
   const conversationFromUrl = searchParams?.get('c');
 
@@ -445,9 +437,9 @@ function InboxPageContent() {
         prev?.id === conversationId ? { ...prev, status } : prev
       );
 
-      toast.success(`Marked as ${status}`);
+      toast.success(status === 'trash' ? toastCopy.movedToTrash() : toastCopy.updated('Status'));
     } catch (error) {
-      toast.error('Failed to update status');
+      toast.error(toastCopy.failed('update the status', error, 'Try again'));
     }
   }, []);
 
@@ -473,6 +465,45 @@ function InboxPageContent() {
   const handleStartReply = useCallback(() => {
     setReplyExpandToken((n) => n + 1);
   }, []);
+
+  const handleLatestInboundVisible = useCallback(async (message: InboxMessage) => {
+    if (!authProfile) return;
+    const res = await fetch('/api/inbox/reads', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        conversation_id: message.conversation_id,
+        last_seen_message_id: message.id,
+        last_read_at: new Date().toISOString(),
+      }),
+    });
+    if (!res.ok) return;
+    setConversations((prev) =>
+      prev.map((c) => (c.id === message.conversation_id ? { ...c, is_unread_for_user: false } : c)),
+    );
+    setSelectedConversation((prev) =>
+      prev?.id === message.conversation_id ? { ...prev, is_unread_for_user: false } : prev,
+    );
+  }, [authProfile]);
+
+  const handleMarkUnread = useCallback(async () => {
+    if (!selectedConversation) return;
+    const res = await fetch(
+      `/api/inbox/reads?conversation_id=${encodeURIComponent(selectedConversation.id)}`,
+      { method: 'DELETE' },
+    );
+    if (!res.ok) {
+      toast.error(toastCopy.failed('mark the thread unread', undefined, 'Try again'));
+      return;
+    }
+    setConversations((prev) =>
+      prev.map((c) => (c.id === selectedConversation.id ? { ...c, is_unread_for_user: true } : c)),
+    );
+    setSelectedConversation((prev) =>
+      prev ? { ...prev, is_unread_for_user: true } : prev,
+    );
+    toast.success(toastCopy.markedUnread());
+  }, [selectedConversation]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -556,69 +587,68 @@ function InboxPageContent() {
   );
 
   const readingMode = Boolean(selectedConversation);
-  const foldersCollapsed = readingMode && !foldersOpenWhileReading;
+  const foldersCollapsed = false;
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="w-8 h-8 animate-spin text-teal-500" />
+      <div className="flex h-full min-h-0 items-center justify-center bg-background">
+        <Loader2 className="w-6 h-6 animate-spin text-teal-500" />
       </div>
     );
   }
 
   return (
-    <div className="h-[var(--crm-page-h)] flex flex-col min-h-0">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-3 shrink-0">
-        <div className="flex items-center gap-3">
+    <div className="flex h-full min-h-0 w-full flex-col bg-background">
+      <div className="flex h-12 shrink-0 items-center justify-between gap-3 border-b border-slate-200/80 px-3 dark:border-white/10">
+        <div className="flex min-w-0 items-center gap-3">
           <button
             onClick={() => setShowMobileSidebar(true)}
-            className="lg:hidden p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+            className="rounded-md p-1.5 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 dark:hover:bg-white/5 dark:hover:text-white lg:hidden"
           >
-            <Menu className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+            <Menu className="h-5 w-5" />
           </button>
           <div className="min-w-0">
-            <h1 className="text-xl lg:text-2xl font-bold text-slate-900 dark:text-white truncate">
-              {activeMailbox ? activeMailbox.label : 'Inbox'}
+            <h1 className="truncate text-[15px] font-semibold tracking-tight text-slate-900 dark:text-white">
+              {activeMailbox ? activeMailbox.label : 'Incoming'}
             </h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400 hidden sm:block truncate">
+            <p className="hidden truncate text-[11px] tabular-nums text-slate-500 dark:text-slate-400 sm:block">
               {activeMailbox
                 ? activeMailbox.email
                 : stats
                 ? `${stats.total_unread} unread, ${stats.total_open + stats.total_pending} active`
-                : 'Unified communications inbox'}
+                : 'Mail and messages'}
             </p>
           </div>
           {activeMailbox && (
             <button
               onClick={() => setMailboxFilter('all')}
-              className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-teal-50 dark:bg-teal-500/10 text-teal-700 dark:text-teal-400 hover:bg-teal-100 dark:hover:bg-teal-500/20 transition-colors"
+              className="hidden items-center gap-1.5 rounded-full bg-teal-50 px-2 py-0.5 text-[11px] font-medium text-teal-700 transition-colors hover:bg-teal-100 dark:bg-teal-500/10 dark:text-teal-400 dark:hover:bg-teal-500/20 sm:inline-flex"
             >
-              Filtered to this mailbox
-              <X className="w-3 h-3" />
+              This mailbox
+              <X className="h-3 w-3" />
             </button>
           )}
         </div>
-        <div className="flex items-center gap-2 lg:gap-3">
+        <div className="flex items-center gap-1.5">
           <NotificationSettings />
           <button
             onClick={loadConversations}
-            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+            className="rounded-md p-1.5 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 dark:hover:bg-white/5 dark:hover:text-white"
+            aria-label="Refresh inbox"
           >
-            <RefreshCw className="w-5 h-5 text-slate-500" />
+            <RefreshCw className="h-4 w-4" />
           </button>
           <button
             onClick={() => openCompose()}
-            className="inline-flex items-center gap-2 px-3 lg:px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors text-sm lg:text-base"
+            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 active:scale-[0.98]"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="h-4 w-4" />
             <span className="hidden sm:inline">Compose</span>
           </button>
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 flex gap-4 lg:gap-6 min-h-0 overflow-hidden">
+      <div className="flex min-h-0 flex-1 overflow-hidden">
         {/* Filters Sidebar */}
         <InboxFilters
           filter={filter}
@@ -689,9 +719,8 @@ function InboxPageContent() {
           />
         )}
 
-        {/* Conversation Detail */}
         <div className={cn(
-          "flex-1 glass-card border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden flex flex-col",
+          'flex min-w-0 flex-1 flex-col overflow-hidden bg-white dark:bg-[#071018]',
           mobileView === 'list' ? 'hidden lg:flex' : 'flex'
         )}>
           {selectedConversation ? (
@@ -704,6 +733,8 @@ function InboxPageContent() {
                 onBackToList={handleBackToList}
                 onReply={handleStartReply}
                 onForward={handleForwardMessage}
+                onLatestInboundVisible={handleLatestInboundVisible}
+                onMarkUnread={handleMarkUnread}
               />
               <ReplyForm
                 selectedConversation={selectedConversation}
@@ -718,10 +749,12 @@ function InboxPageContent() {
               />
             </>
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-slate-500 p-4">
-              <Mail className="w-12 lg:w-16 h-12 lg:h-16 mb-4 opacity-30" />
-              <p className="text-base lg:text-lg font-medium text-center">No conversation selected</p>
-              <p className="text-sm text-center">Select a conversation to view messages</p>
+            <div className="flex flex-1 flex-col items-center justify-center px-6 text-center">
+              <Mail className="mb-3 h-10 w-10 text-slate-300 dark:text-slate-600" />
+              <p className="text-sm font-medium text-slate-700 dark:text-slate-200">Select a conversation</p>
+              <p className="mt-1 max-w-sm text-xs text-slate-500 dark:text-slate-400">
+                Choose a thread on the left to read and reply.
+              </p>
             </div>
           )}
         </div>

@@ -12,6 +12,8 @@ import {
   FileText,
   Clock,
   Archive,
+  Trash2,
+  Ban,
   Star,
   User,
   UserPlus,
@@ -214,7 +216,7 @@ const FilterItems = React.memo(function FilterItems({
   const folders: FolderItem[] = [
     {
       key: 'inbox',
-      label: 'Inbox',
+      label: 'Incoming',
       icon: <InboxIcon className="w-4 h-4" />,
       count: conversationCount,
       active: filter === 'all' && statusFilter === 'active',
@@ -243,7 +245,6 @@ const FilterItems = React.memo(function FilterItems({
       active: filter === 'sent',
       onClick: () => {
         onFilterChange('sent');
-        onStatusFilterChange?.('active');
         onItemClick?.();
       },
     },
@@ -278,6 +279,28 @@ const FilterItems = React.memo(function FilterItems({
       onClick: () => {
         onFilterChange('all');
         onStatusFilterChange?.('archived');
+        onItemClick?.();
+      },
+    },
+    {
+      key: 'trash',
+      label: 'Trash',
+      icon: <Trash2 className="w-4 h-4" />,
+      active: statusFilter === 'trash',
+      onClick: () => {
+        onFilterChange('all');
+        onStatusFilterChange?.('trash');
+        onItemClick?.();
+      },
+    },
+    {
+      key: 'spam',
+      label: 'Spam',
+      icon: <Ban className="w-4 h-4" />,
+      active: statusFilter === 'spam',
+      onClick: () => {
+        onFilterChange('all');
+        onStatusFilterChange?.('spam');
         onItemClick?.();
       },
     },
@@ -457,15 +480,15 @@ export const InboxFilters = React.memo(function InboxFilters(props: InboxFilters
       {/* Desktop Sidebar — hidden with CSS when reading so filter state is not remounted */}
       <div
         className={cn(
-          'hidden lg:flex flex-col flex-shrink-0 min-h-0',
-          collapsed ? 'w-10' : 'w-52',
+          'hidden min-h-0 flex-shrink-0 flex-col border-r border-slate-200/80 bg-[#f4f6f8] transition-[width] duration-200 ease-out dark:border-white/10 dark:bg-[#080e14] lg:flex',
+          collapsed ? 'w-10' : 'w-56',
         )}
       >
         {onCollapsedChange && (
           <button
             type="button"
             onClick={() => onCollapsedChange(!collapsed)}
-            className="hidden lg:inline-flex items-center justify-center h-9 w-full shrink-0 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
+            className="hidden h-10 w-full shrink-0 items-center justify-center text-slate-500 transition-colors hover:bg-white/70 hover:text-slate-800 dark:hover:bg-white/5 dark:hover:text-white lg:inline-flex"
             aria-expanded={!collapsed}
             aria-label={collapsed ? 'Show folders' : 'Hide folders'}
             title={collapsed ? 'Show folders' : 'Hide folders'}
@@ -480,7 +503,7 @@ export const InboxFilters = React.memo(function InboxFilters(props: InboxFilters
         <div
           ref={foldersRef}
           className={cn(
-            'flex-1 min-h-0 overflow-y-auto',
+            'min-h-0 flex-1 overflow-y-auto px-2 pb-3',
             collapsed && 'hidden',
           )}
           inert={collapsed}

@@ -17,7 +17,9 @@ export type ConversationStatus =
   | 'pending' 
   | 'snoozed' 
   | 'resolved' 
-  | 'archived';
+  | 'archived'
+  | 'trash'
+  | 'spam';
 
 export type ConversationPriority = 
   | 'low' 
@@ -85,6 +87,8 @@ export interface InboxConversation {
   unread_count: number;
   last_read_at: string | null;
   last_read_by: string | null;
+  /** Client-only: latest inbound is newer than this user's read cursor. */
+  is_unread_for_user?: boolean;
   message_count: number;
   last_message_at: string;
   first_message_at: string;
@@ -317,4 +321,6 @@ export const STATUS_CONFIG: Record<ConversationStatus, {
   snoozed: { name: 'Snoozed', color: 'purple' },
   resolved: { name: 'Resolved', color: 'green' },
   archived: { name: 'Archived', color: 'slate' },
+  trash: { name: 'Trash', color: 'slate' },
+  spam: { name: 'Spam', color: 'red' },
 };

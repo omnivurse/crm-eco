@@ -26,6 +26,7 @@ const CommandPalette = dynamic(
 import type { CrmModule, CrmProfile } from '@/lib/crm/types';
 import type { NavModule, NavProfile } from '@/lib/crm/nav-profile';
 import { CRM_OPEN_COMMAND_PALETTE_EVENT } from '@/lib/crm/command-palette-bus';
+import { crmShellMainClass, crmShellMainInnerClass, isCrmFullBleedPath } from '@/lib/crm/full-bleed-main';
 
 interface CrmShellProps {
   children: React.ReactNode;
@@ -111,6 +112,8 @@ export function CrmShell({
     setSidebarOpen((prev) => !prev);
   }, []);
 
+  const fullBleedMain = isCrmFullBleedPath(pathname);
+
   return (
     <ModuleProvider>
       <ModulePathSync />
@@ -191,11 +194,11 @@ export function CrmShell({
               <main
                 id="crm-main-content"
                 tabIndex={-1}
-                className="flex-1 min-w-0 min-h-0 overflow-auto [scrollbar-gutter:stable] px-2 py-1.5 sm:px-3 sm:py-1.5 lg:px-4 lg:py-2 scrollbar-thin focus:outline-none"
+                className={crmShellMainClass(fullBleedMain)}
               >
-                {/* Full-bleed within the shell — no ultrawide max-width cap.
-                    Page-level max-w is reserved for reading/forms only. */}
-                <div className="w-full pb-10">
+                {/* Inbox is a workspace: flush to the sidebar and the right
+                    edge. Other pages keep the padded reading gutter. */}
+                <div className={crmShellMainInnerClass(fullBleedMain)}>
                   {children}
                 </div>
               </main>

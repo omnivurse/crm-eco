@@ -34,8 +34,10 @@ describe('InboxFilters reading rail', () => {
   });
 
   it('does not offer a collapse control when nothing is reading', () => {
-    render(<InboxFilters {...baseProps} />);
+    const { container } = render(<InboxFilters {...baseProps} />);
     expect(screen.queryByRole('button', { name: /folders/i })).toBeNull();
+    expect(container.innerHTML).not.toContain('glass-card');
+    expect(container.innerHTML).toContain('border-r');
   });
 
   it('calls onFilterChange when Sent is clicked and marks it active', () => {
@@ -79,12 +81,34 @@ describe('InboxFilters reading rail', () => {
     );
   });
 
+  it('exposes Incoming, Trash, and Spam as first-class folders', () => {
+    const onFilterChange = vi.fn();
+    const onStatusFilterChange = vi.fn();
+    render(
+      <InboxFilters
+        {...baseProps}
+        onFilterChange={onFilterChange}
+        onStatusFilterChange={onStatusFilterChange}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /incoming/i }));
+    expect(onFilterChange).toHaveBeenCalledWith('all');
+    expect(onStatusFilterChange).toHaveBeenCalledWith('active');
+
+    fireEvent.click(screen.getByRole('button', { name: /^trash$/i }));
+    expect(onStatusFilterChange).toHaveBeenCalledWith('trash');
+
+    fireEvent.click(screen.getByRole('button', { name: /^spam$/i }));
+    expect(onStatusFilterChange).toHaveBeenCalledWith('spam');
+  });
+
   it('makes collapsed folders inert and blurs a focused folder', () => {
     const { rerender } = render(
       <InboxFilters {...baseProps} collapsed={false} onCollapsedChange={vi.fn()} />,
     );
 
-    const inbox = screen.getByRole('button', { name: /inbox/i });
+    const inbox = screen.getByRole('button', { name: /incoming/i });
     inbox.focus();
     expect(document.activeElement).toBe(inbox);
 

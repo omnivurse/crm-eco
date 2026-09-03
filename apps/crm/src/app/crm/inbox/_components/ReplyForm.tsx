@@ -11,7 +11,16 @@ import {
   ChevronUp,
   Maximize2,
   Minimize2,
+  FileSignature,
+  Star,
 } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@crm-eco/ui/components/select';
 import { toast } from 'sonner';
 import { toastCopy } from '@/lib/crm/toast-copy';
 import { cn } from '@crm-eco/ui/lib/utils';
@@ -31,6 +40,12 @@ import {
   pickForwardSource,
   unforwardableAttachmentCount,
 } from './inbox-forward';
+import {
+  appendSignatureHtml,
+  buildReplyQuotedHtml,
+  replyHasUserContent,
+} from './inbox-reply';
+import { useEmailSignatures } from '@/hooks/useEmailSignatures';
 
 type ReplyMode = 'reply' | 'reply_all';
 
@@ -75,9 +90,10 @@ export function ReplyForm({
   const [composerOpen, setComposerOpen] = useState(false);
   const [composerExpanded, setComposerExpanded] = useState(false);
   const [editorMounted, setEditorMounted] = useState(false);
+  const { signatures, signatureId, setSignatureId, selectedSignature, loadingSignatures } =
+    useEmailSignatures('reply');
 
-  const hasDraft =
-    (replyHtml.trim() !== '' && replyHtml !== '<p></p>') || attachments.length > 0;
+  const hasDraft = replyHasUserContent(replyHtml) || attachments.length > 0;
 
   // Which conversation the current editor state belongs to. Updated only by
   // the restore effect below, so the stash effect (declared first — effects
@@ -110,10 +126,23 @@ export function ReplyForm({
     setShowModeMenu(false);
   }, [selectedConversation.id]);
 
+  const lastInbound = useMemo(() => {
+    const inbound = messages.filter(m => m.direction === 'inbound');
+    return inbound.length > 0 ? inbound[inbound.length - 1] : null;
+  }, [messages]);
+
   const openComposer = useCallback(() => {
     setEditorMounted(true);
     setComposerOpen(true);
-  }, []);
+    setReplyHtml((current) => {
+      if (replyHasUserContent(current) || current.includes('data-crm-quote')) return current;
+      const cached = replyDraftCache.get(selectedConversation.id);
+      if (cached && (replyHasUserContent(cached.html) || cached.html.includes('data-crm-quote'))) {
+        return cached.html;
+      }
+      return buildReplyQuotedHtml(lastInbound) || current;
+    });
+  }, [lastInbound, selectedConversation.id]);
 
   const closeComposer = useCallback(() => {
     setComposerOpen(false);
@@ -124,12 +153,6 @@ export function ReplyForm({
   useEffect(() => {
     if (expandToken > 0) openComposer();
   }, [expandToken, openComposer]);
-
-  // Find the last inbound message for threading
-  const lastInbound = useMemo(() => {
-    const inbound = messages.filter(m => m.direction === 'inbound');
-    return inbound.length > 0 ? inbound[inbound.length - 1] : null;
-  }, [messages]);
 
   const lastMessage = useMemo(() => {
     return messages.length > 0 ? messages[messages.length - 1] : null;
@@ -195,7 +218,7 @@ export function ReplyForm({
   }, [attachments, messages, onForward, replyHtml, selectedConversation.subject]);
 
   const handleSendReply = useCallback(async () => {
-    if (!replyHtml.trim() || replyHtml === '<p></p>') {
+    if (!replyHasUserContent(replyHtml)) {
       toast.error('Please type a reply');
       return;
     }
@@ -233,7 +256,8 @@ export function ReplyForm({
         );
       }
 
-      const bodyText = replyHtml.replace(/<[^>]*>/g, '');
+      const bodyHtml = appendSignatureHtml(replyHtml, selectedSignature?.content_html);
+      const bodyText = bodyHtml.replace(/<[^>]*>/g, '');
 
       // Build CC list for Reply All
       const ccEmails = replyMode === 'reply_all' ? replyAllCc.map(r => r.email) : [];
@@ -256,7 +280,7 @@ export function ReplyForm({
           to: toAddress,
           to_name: lastInbound?.from_name || selectedConversation.contact_name,
           subject: replySubject,
-          body_html: replyHtml,
+          body_html: bodyHtml,
           body_text: bodyText,
           cc: ccEmails,
           from_email: monitoredFrom,
@@ -300,6 +324,7 @@ export function ReplyForm({
     replyAllCc,
     onReplySent,
     attachments,
+    selectedSignature,
   ]);
 
   const modeOptions: { mode: ReplyMode; label: string; icon: React.ReactNode }[] = [
@@ -314,8 +339,8 @@ export function ReplyForm({
       className={cn(
         'border-t border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-900/80 flex flex-col min-h-0 shrink-0',
         composerOpen && (composerExpanded
-          ? 'h-[min(56vh,36rem)] min-h-[22rem]'
-          : 'h-[min(42vh,28rem)] min-h-[20rem]'),
+          ? 'h-[min(40vh,28rem)] min-h-[16rem]'
+          : 'h-[min(28vh,18rem)] min-h-[12rem]'),
       )}
     >
       <div className="flex items-stretch shrink-0">
@@ -443,7 +468,7 @@ export function ReplyForm({
               content={replyHtml}
               onChange={setReplyHtml}
               placeholder="Type your reply..."
-              minHeight={240}
+              minHeight={120}
               showSourceToggle={false}
               className="border-0 rounded-none h-full min-h-0"
             />
@@ -452,16 +477,43 @@ export function ReplyForm({
       </div>
 
       <div className="px-3 lg:px-4 pb-3 flex items-center justify-between gap-2 shrink-0">
-        <EmailAttachments
-          attachments={attachments}
-          onAttachmentsChange={setAttachments}
-          disabled={sending}
-          compact
-        />
+        <div className="flex items-center gap-2 min-w-0">
+          <EmailAttachments
+            attachments={attachments}
+            onAttachmentsChange={setAttachments}
+            disabled={sending}
+            compact
+          />
+          <div className="flex items-center gap-1.5 min-w-0">
+            <FileSignature className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+            <Select
+              value={signatureId || '__none__'}
+              onValueChange={(v) => setSignatureId(v === '__none__' ? '' : v)}
+              disabled={sending || loadingSignatures}
+            >
+              <SelectTrigger className="w-[160px] h-8 text-xs">
+                <SelectValue placeholder="No signature">
+                  {loadingSignatures ? 'Loading…' : selectedSignature ? selectedSignature.name : 'No signature'}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">No signature</SelectItem>
+                {signatures.map((sig) => (
+                  <SelectItem key={sig.id} value={sig.id}>
+                    <span className="flex items-center gap-1">
+                      {sig.name}
+                      {sig.is_default && <Star className="w-3 h-3 text-amber-500 fill-current" />}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
         <button
           type="button"
           onClick={handleSendReply}
-          disabled={(!replyHtml.trim() || replyHtml === '<p></p>') || sending || attachments.some((a) => a.is_uploading)}
+          disabled={!replyHasUserContent(replyHtml) || sending || attachments.some((a) => a.is_uploading)}
           className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium rounded-lg transition-colors"
         >
           {sending ? (

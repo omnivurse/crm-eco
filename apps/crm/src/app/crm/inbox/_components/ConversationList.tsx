@@ -16,7 +16,10 @@ import { cn } from '@crm-eco/ui/lib/utils';
 import { Avatar, AvatarFallback } from '@crm-eco/ui/components/avatar';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase-client';
+import { toastCopy, type CountNoun } from '@/lib/crm/toast-copy';
 import type { InboxConversation, InboxChannel, ConversationStatus } from '@/lib/inbox/types';
+
+const CONVERSATION_NOUN: CountNoun = { one: 'conversation', other: 'conversations' };
 
 const CHANNEL_ICONS: Record<InboxChannel, React.ReactNode> = {
   email: <span className="w-3.5 h-3.5 inline-flex items-center justify-center text-[10px]">✉</span>,
@@ -46,7 +49,13 @@ const STATUS_COLORS: Record<ConversationStatus, string> = {
   snoozed: 'bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-400',
   resolved: 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400',
   archived: 'bg-slate-100 text-slate-600 dark:bg-slate-500/20 dark:text-slate-400',
+  trash: 'bg-slate-200 text-slate-700 dark:bg-slate-500/30 dark:text-slate-300',
+  spam: 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400',
 };
+
+function conversationLooksUnread(conv: InboxConversation): boolean {
+  return conv.is_unread_for_user === true;
+}
 
 function formatTime(dateStr: string) {
   const date = new Date(dateStr);
@@ -148,7 +157,22 @@ export const ConversationList = React.memo(function ConversationList({
 
     setSelectedIds(new Set());
     setBulkMode(false);
-    toast.success(`${ids.length} conversation${ids.length > 1 ? 's' : ''} archived`);
+    toast.success(toastCopy.bulkTitle('Archived', ids.length, CONVERSATION_NOUN));
+    onBulkAction?.();
+  }, [selectedIds, onBulkAction]);
+
+  const handleBulkTrash = useCallback(async () => {
+    if (selectedIds.size === 0) return;
+    const ids = Array.from(selectedIds);
+
+    await supabase
+      .from('inbox_conversations')
+      .update({ status: 'trash' })
+      .in('id', ids);
+
+    setSelectedIds(new Set());
+    setBulkMode(false);
+    toast.success(toastCopy.movedToTrash(ids.length, CONVERSATION_NOUN));
     onBulkAction?.();
   }, [selectedIds, onBulkAction]);
 
@@ -163,12 +187,12 @@ export const ConversationList = React.memo(function ConversationList({
 
   return (
     <div className={cn(
-      "flex-1 lg:flex-none flex-shrink-0 glass-card border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden flex flex-col",
-      readingMode ? 'lg:w-64' : 'lg:w-80 xl:w-96',
+      'flex min-h-0 flex-1 flex-shrink-0 flex-col overflow-hidden border-r border-slate-200/80 bg-[#f7f8fa] dark:border-white/10 dark:bg-[#0a1118] lg:flex-none',
+      readingMode ? 'lg:w-80' : 'lg:w-[22rem] xl:w-96',
       mobileView === 'detail' ? 'hidden lg:flex' : 'flex'
     )}>
       {/* Search + bulk actions bar */}
-      <div className="p-3 border-b border-slate-200 dark:border-slate-700">
+      <div className="border-b border-slate-200/80 p-2.5 dark:border-white/10">
         {bulkMode ? (
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
@@ -196,6 +220,13 @@ export const ConversationList = React.memo(function ConversationList({
                 <Archive className="w-4 h-4" />
               </button>
               <button
+                onClick={handleBulkTrash}
+                className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-500 hover:text-red-600"
+                title="Move selected to trash"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+              <button
                 onClick={() => { setSelectedIds(new Set()); setBulkMode(false); }}
                 className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-500 hover:text-slate-700"
                 title="Cancel"
@@ -212,7 +243,7 @@ export const ConversationList = React.memo(function ConversationList({
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
               placeholder="Search conversations..."
-              className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+              className="w-full rounded-md border border-slate-200/80 bg-white py-1.5 pl-9 pr-3 text-sm text-slate-900 placeholder:text-slate-400 transition-shadow focus:border-teal-500/60 focus:outline-none focus:ring-2 focus:ring-teal-500/20 dark:border-white/10 dark:bg-[#0d1620] dark:text-white"
             />
           </div>
         )}
@@ -235,23 +266,40 @@ export const ConversationList = React.memo(function ConversationList({
             const hasAttachments = conv.metadata && (conv.metadata as Record<string, unknown>).has_attachments;
 
             return (
-              <button
+              <div
                 key={conv.id}
-                onClick={() => !bulkMode ? onSelectConversation(conv) : toggleSelect(conv.id, { stopPropagation: () => {} } as React.MouseEvent)}
                 className={cn(
-                  'w-full text-left p-3 lg:p-4 border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group',
-                  selectedConversationId === conv.id && 'bg-teal-50 dark:bg-teal-900/20',
-                  conv.unread_count > 0 && selectedConversationId !== conv.id && 'bg-blue-50/50 dark:bg-blue-900/10',
+                  'group relative border-b border-slate-200/60 transition-colors duration-150 dark:border-white/5',
+                  selectedConversationId === conv.id
+                    ? 'bg-white before:absolute before:inset-y-0 before:left-0 before:w-0.5 before:bg-teal-500 dark:bg-[#101820]'
+                    : 'hover:bg-white/80 dark:hover:bg-white/[0.04]',
+                  conversationLooksUnread(conv) && selectedConversationId !== conv.id && 'bg-teal-50/40 dark:bg-teal-500/[0.06]',
                   isSelected && 'bg-teal-50/80 dark:bg-teal-900/30'
                 )}
               >
-                <div className="flex items-start gap-3">
+                {/* The row's click target is an overlay rather than a wrapper so
+                    the star and bulk checkbox stay real buttons — a <button>
+                    inside a <button> is invalid and breaks hydration. */}
+                <button
+                  type="button"
+                  onClick={() => !bulkMode ? onSelectConversation(conv) : toggleSelect(conv.id, { stopPropagation: () => {} } as React.MouseEvent)}
+                  aria-current={selectedConversationId === conv.id ? 'true' : undefined}
+                  className="absolute inset-0 z-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-teal-500"
+                >
+                  <span className="sr-only">
+                    {conv.contact_name || conv.contact_email || conv.contact_phone || 'Unknown'}
+                    {conv.subject ? ` — ${conv.subject}` : ''}
+                  </span>
+                </button>
+                <div className="pointer-events-none relative z-10 flex items-start gap-3 px-3 py-2.5 text-left">
                   {/* Checkbox / Avatar */}
                   <div className="relative flex-shrink-0">
                     {bulkMode ? (
                       <button
+                        type="button"
                         onClick={(e) => toggleSelect(conv.id, e)}
-                        className="w-10 h-10 flex items-center justify-center"
+                        aria-label={isSelected ? 'Deselect conversation' : 'Select conversation'}
+                        className="pointer-events-auto w-10 h-10 flex items-center justify-center"
                       >
                         {isSelected ? (
                           <CheckSquare className="w-5 h-5 text-teal-600" />
@@ -272,7 +320,7 @@ export const ConversationList = React.memo(function ConversationList({
                     <div className="flex items-center justify-between gap-2">
                       <span className={cn(
                         'text-sm truncate',
-                        conv.unread_count > 0 ? 'font-semibold text-slate-900 dark:text-white' : 'font-medium text-slate-700 dark:text-slate-300'
+                        conversationLooksUnread(conv) ? 'font-semibold text-slate-900 dark:text-white' : 'font-medium text-slate-700 dark:text-slate-300'
                       )}>
                         {conv.contact_name || conv.contact_email || conv.contact_phone || 'Unknown'}
                       </span>
@@ -282,7 +330,7 @@ export const ConversationList = React.memo(function ConversationList({
                     </div>
                     <p className={cn(
                       'text-sm truncate',
-                      conv.unread_count > 0 ? 'font-medium text-slate-800 dark:text-slate-200' : 'text-slate-600 dark:text-slate-400'
+                      conversationLooksUnread(conv) ? 'font-medium text-slate-800 dark:text-slate-200' : 'text-slate-600 dark:text-slate-400'
                     )}>
                       {conv.subject || 'No subject'}
                     </p>
@@ -294,19 +342,22 @@ export const ConversationList = React.memo(function ConversationList({
                       <span className={cn('text-[10px] px-1.5 py-0.5 rounded-full font-medium', STATUS_COLORS[conv.status])}>
                         {conv.status}
                       </span>
-                      {conv.unread_count > 0 && (
+                      {conversationLooksUnread(conv) && (
                         <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-teal-500 text-white font-medium">
-                          {conv.unread_count}
+                          New
                         </span>
                       )}
                       {/* Star toggle */}
                       <button
+                        type="button"
                         onClick={(e) => toggleStar(conv, e)}
+                        aria-label={isStarred ? 'Remove star' : 'Star conversation'}
+                        aria-pressed={isStarred}
                         className={cn(
-                          'ml-auto p-0.5 rounded transition-colors',
+                          'pointer-events-auto ml-auto p-0.5 rounded transition-colors',
                           isStarred
                             ? 'text-amber-500'
-                            : 'text-slate-300 opacity-0 group-hover:opacity-100 hover:text-amber-400'
+                            : 'text-slate-300 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:text-amber-400'
                         )}
                       >
                         <Star className={cn('w-3.5 h-3.5', isStarred && 'fill-current')} />
@@ -331,7 +382,7 @@ export const ConversationList = React.memo(function ConversationList({
                     )}
                   </div>
                 </div>
-              </button>
+              </div>
             );
           })
         )}

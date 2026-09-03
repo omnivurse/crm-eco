@@ -53,7 +53,7 @@ export async function getConversations(
   const auth = await getAuthContext();
   if (!auth) return { conversations: [], total: 0, hasMore: false };
 
-  const { supabase } = auth;
+  const { supabase, profile } = auth;
   let query = supabase
     .from('inbox_conversations')
     .select('*', { count: 'exact' })
@@ -69,8 +69,7 @@ export async function getConversations(
   if (filters?.status) {
     query = query.eq('status', filters.status);
   } else {
-    // Default: exclude archived
-    query = query.neq('status', 'archived');
+    query = query.not('status', 'in', '(archived,trash,spam)');
   }
   if (filters?.priority) {
     query = query.eq('priority', filters.priority);
@@ -83,7 +82,15 @@ export async function getConversations(
     }
   }
   if (filters?.unread_only) {
-    query = query.gt('unread_count', 0);
+    const { data: unreadRows } = await supabase.rpc('inbox_unread_conversation_ids', {
+      p_org_id: profile.organization_id,
+      p_limit: 200,
+    });
+    const unreadIds = (unreadRows ?? []).map((row: { conversation_id: string }) => row.conversation_id);
+    if (unreadIds.length === 0) {
+      return { conversations: [], total: 0, hasMore: false };
+    }
+    query = query.in('id', unreadIds);
   }
   if (filters?.tags && filters.tags.length > 0) {
     query = query.overlaps('tags', filters.tags);
@@ -245,23 +252,35 @@ export async function markAsRead(id: string): Promise<InboxConversation> {
   
   const { supabase, profile } = auth;
   
-  const { data, error } = await supabase
+  const { data: conversation, error: convError } = await supabase
     .from('inbox_conversations')
-    .update({
-      unread_count: 0,
-      last_read_at: new Date().toISOString(),
-      last_read_by: profile?.id,
-    })
+    .select('*')
     .eq('id', id)
-    .select()
+    .eq('org_id', profile.organization_id)
     .single();
-  
+
+  if (convError || !conversation) {
+    console.error('Error marking as read:', convError);
+    throw new Error('Failed to mark as read');
+  }
+
+  const { error } = await supabase.from('inbox_conversation_reads').upsert(
+    {
+      org_id: profile.organization_id,
+      conversation_id: id,
+      user_id: profile.id,
+      last_read_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'conversation_id,user_id' },
+  );
+
   if (error) {
     console.error('Error marking as read:', error);
     throw new Error('Failed to mark as read');
   }
-  
-  return data as InboxConversation;
+
+  return { ...conversation, is_unread_for_user: false } as InboxConversation;
 }
 
 // ============================================================================
@@ -394,12 +413,7 @@ export async function getInboxStats(): Promise<InboxStats> {
       .select('*', { count: 'exact', head: true })
       .eq('org_id', profile.organization_id)
       .eq('status', 'pending'),
-    supabase
-      .from('inbox_conversations')
-      .select('*', { count: 'exact', head: true })
-      .eq('org_id', profile.organization_id)
-      .in('status', ['open', 'pending'])
-      .gt('unread_count', 0),
+    supabase.rpc('inbox_unread_count_for_user', { p_org_id: profile.organization_id }),
     supabase
       .from('inbox_conversations')
       .select('*', { count: 'exact', head: true })
@@ -416,7 +430,7 @@ export async function getInboxStats(): Promise<InboxStats> {
   return {
     total_open: openResult.count || 0,
     total_pending: pendingResult.count || 0,
-    total_unread: unreadResult.count || 0,
+    total_unread: typeof unreadResult.data === 'number' ? unreadResult.data : 0,
     assigned_to_me: assignedResult.count || 0,
     unassigned: unassignedResult.count || 0,
   };
@@ -488,7 +502,7 @@ export async function getUnifiedMessages(
     .from('inbox_conversations')
     .select('*', { count: 'exact' })
     .eq('org_id', profile.organization_id)
-    .neq('status', 'archived')
+    .not('status', 'in', '(archived,trash,spam)')
     .order('last_message_at', { ascending: false })
     .range((page - 1) * limit, page * limit - 1);
   

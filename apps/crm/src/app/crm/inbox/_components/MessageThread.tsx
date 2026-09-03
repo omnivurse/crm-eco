@@ -18,6 +18,7 @@ import {
   Users,
   Reply,
   Forward,
+  Mail,
 } from 'lucide-react';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { Avatar, AvatarFallback } from '@crm-eco/ui/components/avatar';
@@ -47,9 +48,12 @@ import {
   shouldReadAsPlainText,
   threadFaceFromMessages,
   unconstrainedIframeMeasureHeight,
+  inboxAttachmentHref,
+  inboxAttachmentIsDownloadable,
 } from './inbox-reading';
 import { pickForwardSource } from './inbox-forward';
 import { participantsFromThread } from '@/lib/calendar/thread-participants';
+import { latestInboundId } from '@/lib/inbox/inbox-reads';
 
 const MeetingComposer = dynamic(
   () => import('@/components/calendar/MeetingComposer').then((mod) => mod.MeetingComposer),
@@ -125,6 +129,8 @@ interface MessageThreadProps {
   onBackToList: () => void;
   onReply?: () => void;
   onForward?: (msg: InboxMessage) => void;
+  onLatestInboundVisible?: (message: InboxMessage) => void;
+  onMarkUnread?: () => void;
 }
 
 /** Renders HTML email body in a sandboxed iframe that sizes to its content */
@@ -249,14 +255,11 @@ function HtmlEmailBody({ html }: { html: string }) {
 }
 
 function attachmentHref(msg: InboxMessage, att: InboxMessage['attachments'][number], index: number): string {
-  if (att.file_path || att.resend_id) {
-    return `/api/inbox/attachments?message_id=${msg.id}&index=${index}`;
-  }
-  return att.url || '#';
+  return inboxAttachmentHref(msg.id, att, index);
 }
 
 function isDownloadable(att: InboxMessage['attachments'][number]): boolean {
-  return Boolean(att.file_path || att.resend_id || att.url);
+  return inboxAttachmentIsDownloadable(att);
 }
 
 function AttachmentChips({
@@ -315,11 +318,13 @@ function EmailMessage({
   defaultExpanded,
   onReply,
   onForward,
+  cardRef,
 }: {
   msg: InboxMessage;
   defaultExpanded: boolean;
   onReply?: () => void;
   onForward?: (msg: InboxMessage) => void;
+  cardRef?: React.Ref<HTMLDivElement>;
 }) {
   const [expanded, setExpanded] = useState(defaultExpanded);
   const [showOriginalHtml, setShowOriginalHtml] = useState(false);
@@ -333,7 +338,9 @@ function EmailMessage({
   const hasAttachments = msg.attachments && msg.attachments.length > 0;
 
   return (
-    <div className={cn(
+    <div
+      ref={cardRef}
+      className={cn(
       'rounded-xl border',
       isOutbound
         ? 'border-teal-200 dark:border-teal-500/30 bg-teal-50/50 dark:bg-teal-500/5'
@@ -524,10 +531,14 @@ export const MessageThread = React.memo(function MessageThread({
   onBackToList,
   onReply,
   onForward,
+  onLatestInboundVisible,
+  onMarkUnread,
 }: MessageThreadProps) {
   const [meetingOpen, setMeetingOpen] = useState(false);
   const paneRef = useRef<HTMLDivElement>(null);
+  const latestInboundRef = useRef<HTMLDivElement>(null);
   const lastConversationRef = useRef<string | null>(null);
+  const latestInboundMessageId = latestInboundId(messages);
 
   // Land on the newest message (Gmail behavior). On a conversation switch we
   // always jump to the bottom; when new messages stream in we follow only if
@@ -551,6 +562,25 @@ export const MessageThread = React.memo(function MessageThread({
       clearTimeout(t2);
     };
   }, [conversation.id, loadingMessages, messages.length]);
+
+  useEffect(() => {
+    const target = latestInboundRef.current;
+    const root = paneRef.current;
+    if (!target || !root || !onLatestInboundVisible || !latestInboundMessageId) return;
+    const inbound = messages.find((msg) => msg.id === latestInboundMessageId);
+    if (!inbound) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          onLatestInboundVisible(inbound);
+        }
+      },
+      { root, threshold: 0.35 },
+    );
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [conversation.id, latestInboundMessageId, loadingMessages, messages, onLatestInboundVisible]);
 
   const threadFace = useMemo(
     () =>
@@ -587,7 +617,7 @@ export const MessageThread = React.memo(function MessageThread({
   return (
     <div className="flex-1 min-h-0 flex flex-col">
       {/* Header */}
-      <div className="p-3 lg:p-4 border-b border-slate-200 dark:border-slate-700">
+      <div className="border-b border-slate-200/80 px-4 py-2.5 dark:border-white/10">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
           <div className="flex items-center gap-2 lg:gap-3 min-w-0 flex-1">
             <button
@@ -624,10 +654,16 @@ export const MessageThread = React.memo(function MessageThread({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="open">Open</SelectItem>
+                <SelectItem value="open">
+                  {conversation.status === 'trash' || conversation.status === 'spam'
+                    ? 'Restore to Incoming'
+                    : 'Open'}
+                </SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
                 <SelectItem value="resolved">Resolved</SelectItem>
                 <SelectItem value="archived">Archived</SelectItem>
+                <SelectItem value="trash">Trash</SelectItem>
+                <SelectItem value="spam">Spam</SelectItem>
               </SelectContent>
             </Select>
             <button
@@ -673,6 +709,12 @@ export const MessageThread = React.memo(function MessageThread({
                   <CalendarPlus className="w-4 h-4 mr-2" />
                   Schedule meeting
                 </DropdownMenuItem>
+                {onMarkUnread && (
+                  <DropdownMenuItem onClick={onMarkUnread}>
+                    <Mail className="w-4 h-4 mr-2" />
+                    Mark unread
+                  </DropdownMenuItem>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -702,7 +744,7 @@ export const MessageThread = React.memo(function MessageThread({
       </div>
 
       {/* Messages */}
-      <div ref={paneRef} className="flex-1 p-3 lg:p-4 overflow-y-auto space-y-2">
+      <div ref={paneRef} className="flex-1 min-h-[40vh] p-3 lg:p-4 overflow-y-auto space-y-2">
         {loadingMessages ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-6 h-6 animate-spin text-teal-500" />
@@ -724,6 +766,7 @@ export const MessageThread = React.memo(function MessageThread({
               )}
               onReply={onReply}
               onForward={onForward}
+              cardRef={msg.id === latestInboundMessageId ? latestInboundRef : undefined}
             />
           ))
         )}

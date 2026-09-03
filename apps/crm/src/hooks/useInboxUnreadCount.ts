@@ -14,9 +14,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase-client';
 
-/** Conversations in these states are actionable; the rest are history. */
-const ACTIVE_STATUSES = ['open', 'pending'];
-
 export function useInboxUnreadCount(organizationId: string | null): number | null {
   // null means "not loaded yet" so the badge can stay hidden rather than
   // flashing a 0 on every page load.
@@ -26,19 +23,16 @@ export function useInboxUnreadCount(organizationId: string | null): number | nul
   const refresh = useCallback(async () => {
     if (!organizationId) return;
 
-    const { count: rows, error } = await supabase
-      .from('inbox_conversations')
-      .select('id', { count: 'exact', head: true })
-      .eq('org_id', organizationId)
-      .gt('unread_count', 0)
-      .in('status', ACTIVE_STATUSES);
+    const { data, error } = await supabase.rpc('inbox_unread_count_for_user', {
+      p_org_id: organizationId,
+    });
 
     if (error) {
       // A failed count must not blank an already-good badge.
       console.warn('Inbox unread count unavailable:', error.message);
       return;
     }
-    setCount(rows ?? 0);
+    setCount(typeof data === 'number' ? data : 0);
   }, [organizationId]);
 
   useEffect(() => {
@@ -66,6 +60,16 @@ export function useInboxUnreadCount(organizationId: string | null): number | nul
             event: '*',
             schema: 'public',
             table: 'inbox_conversations',
+            filter: `org_id=eq.${organizationId}`,
+          },
+          scheduleRefresh,
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'inbox_conversation_reads',
             filter: `org_id=eq.${organizationId}`,
           },
           scheduleRefresh,

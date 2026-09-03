@@ -6,6 +6,11 @@ import { ReplyForm } from './ReplyForm';
 
 vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn(), warning: vi.fn() } }));
 
+vi.stubGlobal('fetch', vi.fn(async () => ({
+  ok: true,
+  json: async () => ({ signatures: [] }),
+})));
+
 vi.mock('@/components/email/LazyEmailEditor', () => ({
   LazyEmailEditor: () => <textarea aria-label="Type your reply..." />,
 }));
