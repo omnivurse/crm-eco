@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { resolveMailboxAddress } from "../_shared/mailbox-address.ts";
+import { shouldJoinThreadedConversation } from "../_shared/inbox-threading.ts";
 import {
   fetchReceivedAttachment,
   fetchReceivedEmail,
@@ -335,6 +336,41 @@ async function findConversationByThreading(
   return null;
 }
 
+/**
+ * Header match is not enough: a new sender who Reply-All'd an Outlook
+ * thread must land as their own inbox row, not vanish under the first
+ * person's name.
+ */
+async function conversationIdIfSameSender(
+  conversationId: string | null,
+  fromEmail: string,
+  orgId: string,
+  supabaseUrl: string,
+  headers: SupaHeaders,
+): Promise<string | null> {
+  if (!conversationId) return null;
+  try {
+    const convs = await supaFetch(
+      supabaseUrl,
+      `/rest/v1/inbox_conversations?id=eq.${conversationId}&org_id=eq.${orgId}&select=id,contact_email&limit=1`,
+      headers,
+    );
+    const prior = await supaFetch(
+      supabaseUrl,
+      `/rest/v1/inbox_messages?conversation_id=eq.${conversationId}&org_id=eq.${orgId}&direction=eq.inbound&select=from_address`,
+      headers,
+    );
+    const join = shouldJoinThreadedConversation({
+      fromEmail,
+      conversationContactEmail: convs?.[0]?.contact_email,
+      priorInboundFrom: (prior ?? []).map((row: { from_address?: string }) => row.from_address),
+    });
+    return join ? conversationId : null;
+  } catch {
+    return null;
+  }
+}
+
 async function resolveContactId(
   email: string,
   orgId: string,
@@ -572,8 +608,16 @@ async function handleInboxMessage(
   const inReplyTo = hdrs["in-reply-to"] || null;
   const references = (hdrs["references"] || "").split(/\s+/).filter(Boolean);
 
-  // Try to find existing conversation by threading headers
+  // Try to find existing conversation by threading headers, then refuse
+  // to join when this sender is not already a party on that thread.
   let conversationId = await findConversationByThreading(inReplyTo, references, orgId, supabaseUrl, headers);
+  conversationId = await conversationIdIfSameSender(
+    conversationId,
+    from.email,
+    orgId,
+    supabaseUrl,
+    headers,
+  );
 
   const ccParsed = (emailData.cc || []).map(parseEmailAddress).map(a => ({ email: a.email, name: a.name }));
   const bccParsed = (emailData.bcc || []).map(parseEmailAddress).map(a => ({ email: a.email, name: a.name }));
