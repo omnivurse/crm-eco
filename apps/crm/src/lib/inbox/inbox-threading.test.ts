@@ -62,6 +62,7 @@ describe('pickSenderOwnedConversation', () => {
       pickSenderOwnedConversation({
         fromEmail: 'frank.burnham@bankofcolorado.com',
         mailboxAddress: 'wendy@payitforwardhealth.com',
+        threadedConversationIds: [dawnId, frankId],
         candidates: [
           {
             id: dawnId,
@@ -82,5 +83,54 @@ describe('pickSenderOwnedConversation', () => {
         },
       }),
     ).toBe(frankId);
+  });
+
+  it('does not merge a top-level email into the sender’s unrelated prior thread', () => {
+    expect(
+      pickSenderOwnedConversation({
+        fromEmail: 'claims@provider.example',
+        mailboxAddress: 'advocacy@payitforwardhealth.com',
+        // No In-Reply-To/References match means this is a new conversation,
+        // even though this shared provider address has written before.
+        threadedConversationIds: [],
+        candidates: [
+          {
+            id: 'prior-member-thread',
+            contact_email: 'claims@provider.example',
+            mailbox_address: 'advocacy@payitforwardhealth.com',
+            last_message_at: '2026-09-03T15:49:59.000Z',
+          },
+        ],
+        inboundByConversation: {
+          'prior-member-thread': ['claims@provider.example'],
+        },
+      }),
+    ).toBeNull();
+  });
+
+  it('ignores sender-owned conversations not referenced by the current headers', () => {
+    expect(
+      pickSenderOwnedConversation({
+        fromEmail: 'frank.burnham@bankofcolorado.com',
+        mailboxAddress: 'wendy@payitforwardhealth.com',
+        threadedConversationIds: ['dawn-thread'],
+        candidates: [
+          {
+            id: 'dawn-thread',
+            contact_email: 'dawn.marsh@bankofcolorado.com',
+            mailbox_address: 'wendy@payitforwardhealth.com',
+          },
+          {
+            id: 'unrelated-frank-thread',
+            contact_email: 'frank.burnham@bankofcolorado.com',
+            mailbox_address: 'wendy@payitforwardhealth.com',
+          },
+        ],
+        inboundByConversation: {
+          'dawn-thread': ['dawn.marsh@bankofcolorado.com'],
+          'unrelated-frank-thread': ['frank.burnham@bankofcolorado.com'],
+        },
+      }),
+    ).toBeNull();
   });
 });

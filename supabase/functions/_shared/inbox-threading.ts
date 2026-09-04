@@ -33,6 +33,8 @@ export function shouldJoinThreadedConversation(opts: {
 export function pickSenderOwnedConversation(opts: {
   fromEmail: string;
   mailboxAddress?: string | null;
+  /** Conversation ids reached through this message's RFC 822 headers. */
+  threadedConversationIds: Iterable<string>;
   candidates: Array<{
     id: string;
     contact_email?: string | null;
@@ -44,8 +46,13 @@ export function pickSenderOwnedConversation(opts: {
   const from = normalizeThreadEmail(opts.fromEmail);
   if (!from) return null;
   const mailbox = normalizeThreadEmail(opts.mailboxAddress);
+  const threadedConversationIds = new Set(opts.threadedConversationIds);
 
   const matches = opts.candidates.filter((candidate) => {
+    // Sender identity alone is never a threading key. Restrict the fallback
+    // to conversations explicitly reached through In-Reply-To/References so
+    // a new top-level email cannot inherit an unrelated record association.
+    if (!threadedConversationIds.has(candidate.id)) return false;
     if (
       mailbox
       && candidate.mailbox_address

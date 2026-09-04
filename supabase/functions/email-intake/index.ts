@@ -1,6 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { resolveMailboxAddress } from "../_shared/mailbox-address.ts";
-import { pickSenderOwnedConversation, shouldJoinThreadedConversation } from "../_shared/inbox-threading.ts";
+import { pickSenderOwnedConversation } from "../_shared/inbox-threading.ts";
 import {
   fetchReceivedAttachment,
   fetchReceivedEmail,
@@ -313,107 +313,69 @@ async function resolveOrgContext(
   return { orgId: fallbackOrgId, ownedDomains, registeredAddresses };
 }
 
-async function findConversationByThreading(
+async function findConversationsByThreading(
   inReplyTo: string | null,
   _references: string[],
   orgId: string,
   supabaseUrl: string,
   headers: SupaHeaders
-): Promise<string | null> {
-  const candidates = [inReplyTo, ..._references].filter((id): id is string => Boolean(id));
+): Promise<string[]> {
+  const messageIds = [
+    ...new Set([inReplyTo, ..._references].filter((id): id is string => Boolean(id))),
+  ];
+  const conversationIds: string[] = [];
 
-  for (const messageId of candidates) {
+  for (const messageId of messageIds) {
     try {
       const msgs = await supaFetch(
         supabaseUrl,
-        `/rest/v1/inbox_messages?message_id=eq.${encodeURIComponent(messageId)}&org_id=eq.${orgId}&select=conversation_id&limit=1`,
+        `/rest/v1/inbox_messages?message_id=eq.${encodeURIComponent(messageId)}&org_id=eq.${orgId}&select=conversation_id&limit=20`,
         headers
       );
-      if (msgs && msgs.length > 0) return msgs[0].conversation_id;
+      for (const row of msgs ?? []) {
+        if (row.conversation_id && !conversationIds.includes(row.conversation_id)) {
+          conversationIds.push(row.conversation_id);
+        }
+      }
     } catch { /* continue */ }
   }
 
-  return null;
-}
-
-/**
- * Header match is not enough: a new sender who Reply-All'd an Outlook
- * thread must land as their own inbox row, not vanish under the first
- * person's name.
- */
-async function conversationIdIfSameSender(
-  conversationId: string | null,
-  fromEmail: string,
-  orgId: string,
-  supabaseUrl: string,
-  headers: SupaHeaders,
-): Promise<string | null> {
-  if (!conversationId) return null;
-  try {
-    const convs = await supaFetch(
-      supabaseUrl,
-      `/rest/v1/inbox_conversations?id=eq.${conversationId}&org_id=eq.${orgId}&select=id,contact_email&limit=1`,
-      headers,
-    );
-    const prior = await supaFetch(
-      supabaseUrl,
-      `/rest/v1/inbox_messages?conversation_id=eq.${conversationId}&org_id=eq.${orgId}&direction=eq.inbound&select=from_address`,
-      headers,
-    );
-    const join = shouldJoinThreadedConversation({
-      fromEmail,
-      conversationContactEmail: convs?.[0]?.contact_email,
-      priorInboundFrom: (prior ?? []).map((row: { from_address?: string }) => row.from_address),
-    });
-    return join ? conversationId : null;
-  } catch {
-    return null;
-  }
+  return conversationIds;
 }
 
 async function findSenderOwnedConversation(
   fromEmail: string,
   mailboxAddress: string | null,
+  threadedConversationIds: string[],
   orgId: string,
   supabaseUrl: string,
   headers: SupaHeaders,
 ): Promise<string | null> {
+  if (threadedConversationIds.length === 0) return null;
+
   try {
-    const mailboxFilter = mailboxAddress
-      ? `&or=(mailbox_address.eq.${encodeURIComponent(mailboxAddress)},mailbox_address.is.null)`
-      : "";
+    const ids = threadedConversationIds.map(encodeURIComponent).join(",");
     const convs = await supaFetch(
       supabaseUrl,
-      `/rest/v1/inbox_conversations?org_id=eq.${orgId}&contact_email=eq.${encodeURIComponent(fromEmail)}${mailboxFilter}&select=id,contact_email,mailbox_address,last_message_at&order=last_message_at.desc&limit=20`,
+      `/rest/v1/inbox_conversations?id=in.(${ids})&org_id=eq.${orgId}&select=id,contact_email,mailbox_address,last_message_at`,
       headers,
     );
     const prior = await supaFetch(
       supabaseUrl,
-      `/rest/v1/inbox_messages?org_id=eq.${orgId}&direction=eq.inbound&from_address=eq.${encodeURIComponent(fromEmail)}&select=conversation_id,from_address&limit=50`,
+      `/rest/v1/inbox_messages?conversation_id=in.(${ids})&org_id=eq.${orgId}&direction=eq.inbound&select=conversation_id,from_address`,
       headers,
     );
-    const extraIds = [...new Set((prior ?? []).map((row: { conversation_id?: string }) => row.conversation_id).filter(Boolean))];
-    const extraConvs = extraIds.length > 0
-      ? await supaFetch(
-        supabaseUrl,
-        `/rest/v1/inbox_conversations?id=in.(${extraIds.join(",")})&org_id=eq.${orgId}&select=id,contact_email,mailbox_address,last_message_at`,
-        headers,
-      )
-      : [];
     const inboundByConversation: Record<string, Array<string | null | undefined>> = {};
     for (const row of prior ?? []) {
       const id = row.conversation_id as string;
       if (!id) continue;
       inboundByConversation[id] = [...(inboundByConversation[id] ?? []), row.from_address];
     }
-    const byId = new Map<string, { id: string; contact_email?: string | null; mailbox_address?: string | null; last_message_at?: string | null }>();
-    for (const row of [...(convs ?? []), ...(extraConvs ?? [])]) {
-      byId.set(row.id, row);
-    }
     return pickSenderOwnedConversation({
       fromEmail,
       mailboxAddress,
-      candidates: [...byId.values()],
+      threadedConversationIds,
+      candidates: convs ?? [],
       inboundByConversation,
     });
   } catch {
@@ -658,25 +620,24 @@ async function handleInboxMessage(
   const inReplyTo = hdrs["in-reply-to"] || null;
   const references = (hdrs["references"] || "").split(/\s+/).filter(Boolean);
 
-  // Try to find existing conversation by threading headers, then refuse
-  // to join when this sender is not already a party on that thread.
-  let conversationId = await findConversationByThreading(inReplyTo, references, orgId, supabaseUrl, headers);
-  conversationId = await conversationIdIfSameSender(
-    conversationId,
-    from.email,
+  // RFC 822 headers define the complete candidate set. Sender identity only
+  // selects among those candidates; it must never merge a top-level message
+  // into the sender's most recent unrelated conversation.
+  const threadedConversationIds = await findConversationsByThreading(
+    inReplyTo,
+    references,
     orgId,
     supabaseUrl,
-    headers,
+    headers
   );
-  if (!conversationId) {
-    conversationId = await findSenderOwnedConversation(
-      from.email,
-      mailboxAddress,
-      orgId,
-      supabaseUrl,
-      headers,
-    );
-  }
+  let conversationId = await findSenderOwnedConversation(
+    from.email,
+    mailboxAddress,
+    threadedConversationIds,
+    orgId,
+    supabaseUrl,
+    headers
+  );
 
   const ccParsed = (emailData.cc || []).map(parseEmailAddress).map(a => ({ email: a.email, name: a.name }));
   const bccParsed = (emailData.bcc || []).map(parseEmailAddress).map(a => ({ email: a.email, name: a.name }));
@@ -754,8 +715,10 @@ async function handleInboxMessage(
     // update_conversation_on_message trigger, which already fired on the insert
     // above. Incrementing them here as well is what made message_count read 2
     // for a single message. Only the re-open is ours to do: the trigger has no
-    // opinion about a resolved thread coming back to life.
-    await supaFetch(supabaseUrl, `/rest/v1/inbox_conversations?id=eq.${conversationId}`, headers, {
+    // opinion about a resolved thread coming back to life. Trash and Spam are
+    // deliberate routing decisions, though, so preserve them atomically even
+    // if a message arrives while an agent is moving the thread.
+    await supaFetch(supabaseUrl, `/rest/v1/inbox_conversations?id=eq.${conversationId}&status=not.in.(trash,spam)`, headers, {
       method: "PATCH",
       body: { status: "open" },
     }).catch((e) => console.error("re-open on reply failed (non-blocking):", e));
