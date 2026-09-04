@@ -15,12 +15,43 @@ describe('shouldJoinThreadedConversation', () => {
     ).toBe(true);
   });
 
-  it('starts a new conversation when a different person hits Reply-All', () => {
+  it('starts a new conversation for a sender who was never on the thread', () => {
     expect(
       shouldJoinThreadedConversation({
         fromEmail: 'frank.burnham@bankofcolorado.com',
         conversationContactEmail: 'dawn.marsh@bankofcolorado.com',
         priorInboundFrom: ['dawn.marsh@bankofcolorado.com'],
+      }),
+    ).toBe(false);
+  });
+
+  it('keeps a CC\'d colleague on the thread they were already part of', () => {
+    // Dawn mailed us and CC'd Frank; Frank replies. One chain, one row.
+    expect(
+      shouldJoinThreadedConversation({
+        fromEmail: 'frank.burnham@bankofcolorado.com',
+        conversationContactEmail: 'dawn.marsh@bankofcolorado.com',
+        priorInboundFrom: ['dawn.marsh@bankofcolorado.com'],
+        threadParticipants: [
+          'dawn.marsh@bankofcolorado.com',
+          'wendy@mail.payitforwardhealth.com',
+          'ryan.caldwell@bankofcolorado.com',
+          'Frank.Burnham@bankofcolorado.com',
+        ],
+      }),
+    ).toBe(true);
+  });
+
+  it('still refuses a stranger who guesses a Message-ID on a CC thread', () => {
+    expect(
+      shouldJoinThreadedConversation({
+        fromEmail: 'attacker@elsewhere.example',
+        conversationContactEmail: 'dawn.marsh@bankofcolorado.com',
+        priorInboundFrom: ['dawn.marsh@bankofcolorado.com'],
+        threadParticipants: [
+          'dawn.marsh@bankofcolorado.com',
+          'ryan.caldwell@bankofcolorado.com',
+        ],
       }),
     ).toBe(false);
   });

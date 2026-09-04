@@ -41,6 +41,13 @@ import {
 } from './_components/inbox-forward';
 import { attachUnreadForUser } from '@/lib/inbox/inbox-reads';
 
+/**
+ * How many messages of a thread to hold in memory. Deep enough that a normal
+ * business thread is never clipped, bounded so a runaway auto-responder loop
+ * cannot stall the pane. The window is anchored to the newest message.
+ */
+const MESSAGE_WINDOW = 200;
+
 export default function InboxPage() {
   return (
     <Suspense fallback={<div className="p-8 text-center text-slate-400">Loading…</div>}>
@@ -320,15 +327,19 @@ function InboxPageContent() {
   const loadMessages = useCallback(async (conversationId: string) => {
     setLoadingMessages(true);
     try {
+      // Newest-first with the cap applied, then reversed for display. Reading
+      // oldest-first meant a long thread was truncated at its *newest* end, so
+      // the composer replied to a stale message — wrong recipient, wrong
+      // In-Reply-To — while the reader saw history that stopped mid-thread.
       const { data, error } = await supabase
         .from('inbox_messages')
         .select('*')
         .eq('conversation_id', conversationId)
-        .order('sent_at', { ascending: true })
-        .limit(50);
+        .order('sent_at', { ascending: false })
+        .limit(MESSAGE_WINDOW);
 
       if (error) throw error;
-      setMessages(data || []);
+      setMessages((data ?? []).slice().reverse());
     } catch (error) {
       console.error('Failed to load messages:', error);
     } finally {

@@ -2,6 +2,15 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { inboundLookupDomains, resolveMailboxAddress } from "../_shared/mailbox-address.ts";
 import { pickSenderOwnedConversation, shouldJoinThreadedConversation } from "../_shared/inbox-threading.ts";
 import {
+  inboundSentAt,
+  parseMessageIdHeader,
+  parseReferencesHeader,
+} from "../_shared/rfc822-headers.ts";
+import {
+  MESSAGE_UPSERT_PATH,
+  MESSAGE_UPSERT_PREFER,
+} from "../_shared/inbox-message-identity.ts";
+import {
   fetchReceivedAttachment,
   fetchReceivedEmail,
   mergeHydratedEmail,
@@ -73,6 +82,12 @@ interface ResendInboundEvent {
     html?: string;
     reply_to?: string[];
     received_for?: string[];
+    /**
+     * RFC-822 Message-ID, carried on the webhook itself rather than in `headers`.
+     * The webhook is metadata-only, so this is the only copy available until
+     * hydration succeeds — and hydration is best-effort.
+     */
+    message_id?: string;
     headers?: Record<string, string> | Array<{ name: string; value: string }>;
     attachments?: Array<{
       filename: string;
@@ -227,6 +242,56 @@ async function supaFetch(
   return null;
 }
 
+/**
+ * File an inbound message, tolerating a provider that delivers the same event
+ * twice.
+ *
+ * The upsert skips the write when this provider message is already filed, which
+ * returns no representation, so the existing row is looked up to keep answering
+ * with a usable message id. `alreadyFiled` lets the caller skip work that must
+ * not run twice — re-uploading attachments over a message that already has them.
+ */
+async function fileInboxMessage(
+  supabaseUrl: string,
+  headers: SupaHeaders,
+  row: Record<string, unknown>,
+): Promise<{ id: string | undefined; alreadyFiled: boolean }> {
+  const inserted = await supaFetch(supabaseUrl, MESSAGE_UPSERT_PATH, headers, {
+    method: "POST",
+    prefer: MESSAGE_UPSERT_PREFER,
+    body: row,
+  });
+  const insertedId = inserted?.[0]?.id;
+  if (insertedId) return { id: insertedId, alreadyFiled: false };
+
+  // Nulls are distinct in the index, so a row without a provider identity can
+  // never have been skipped as a duplicate — there is nothing to recover.
+  if (!row.external_id || !row.external_provider) {
+    return { id: undefined, alreadyFiled: false };
+  }
+
+  const query = [
+    `org_id=eq.${encodeURIComponent(String(row.org_id))}`,
+    `direction=eq.${encodeURIComponent(String(row.direction))}`,
+    `external_provider=eq.${encodeURIComponent(String(row.external_provider))}`,
+    `external_id=eq.${encodeURIComponent(String(row.external_id))}`,
+    "select=id",
+    "limit=1",
+  ].join("&");
+
+  try {
+    const existing = await supaFetch(
+      supabaseUrl,
+      `/rest/v1/inbox_messages?${query}`,
+      headers,
+    );
+    return { id: existing?.[0]?.id, alreadyFiled: true };
+  } catch (e) {
+    console.error("duplicate inbound filed already, id lookup failed:", e);
+    return { id: undefined, alreadyFiled: true };
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Inbox routing
 // ---------------------------------------------------------------------------
@@ -334,8 +399,28 @@ async function findConversationByThreading(
 /**
  * Header match is not enough: a new sender who Reply-All'd an Outlook
  * thread must land as their own inbox row, not vanish under the first
- * person's name.
+ * person's name — but a colleague who was already CC'd on that thread is a
+ * participant continuing it, so their reply stays put.
  */
+interface ThreadPartyRow {
+  from_address?: string | null;
+  to_address?: string | null;
+  cc_addresses?: Array<{ email?: string | null }> | null;
+}
+
+/** Every address that has appeared on a thread, in either direction. */
+function threadPartyAddresses(rows: ThreadPartyRow[]): string[] {
+  const addresses: string[] = [];
+  for (const row of rows) {
+    if (row.from_address) addresses.push(row.from_address);
+    if (row.to_address) addresses.push(row.to_address);
+    for (const cc of row.cc_addresses ?? []) {
+      if (cc?.email) addresses.push(cc.email);
+    }
+  }
+  return addresses;
+}
+
 async function conversationIdIfSameSender(
   conversationId: string | null,
   fromEmail: string,
@@ -350,15 +435,19 @@ async function conversationIdIfSameSender(
       `/rest/v1/inbox_conversations?id=eq.${conversationId}&org_id=eq.${orgId}&select=id,contact_email&limit=1`,
       headers,
     );
-    const prior = await supaFetch(
+    // Both directions: being addressed by us counts as being on the thread.
+    const prior: ThreadPartyRow[] = await supaFetch(
       supabaseUrl,
-      `/rest/v1/inbox_messages?conversation_id=eq.${conversationId}&org_id=eq.${orgId}&direction=eq.inbound&select=from_address`,
+      `/rest/v1/inbox_messages?conversation_id=eq.${conversationId}&org_id=eq.${orgId}&select=direction,from_address,to_address,cc_addresses`,
       headers,
-    );
+    ) ?? [];
     const join = shouldJoinThreadedConversation({
       fromEmail,
       conversationContactEmail: convs?.[0]?.contact_email,
-      priorInboundFrom: (prior ?? []).map((row: { from_address?: string }) => row.from_address),
+      priorInboundFrom: prior
+        .filter((row) => (row as { direction?: string }).direction === "inbound")
+        .map((row) => row.from_address),
+      threadParticipants: threadPartyAddresses(prior),
     });
     return join ? conversationId : null;
   } catch {
@@ -649,12 +738,12 @@ async function handleInboxMessage(
   );
 
   const hdrs = normaliseHeaders(emailData.headers);
-  const messageId = hdrs["message-id"] || null;
-  const inReplyTo = hdrs["in-reply-to"] || null;
-  const references = (hdrs["references"] || "").split(/\s+/).filter(Boolean);
+  const messageId = parseMessageIdHeader(hdrs["message-id"]);
+  const inReplyTo = parseMessageIdHeader(hdrs["in-reply-to"]);
+  const references = parseReferencesHeader(hdrs["references"]);
 
-  // Try to find existing conversation by threading headers, then refuse
-  // to join when this sender is not already a party on that thread.
+  // Try to find existing conversation by threading headers, then confirm this
+  // sender is already a party on that thread.
   let conversationId = await findConversationByThreading(inReplyTo, references, orgId, supabaseUrl, headers);
   conversationId = await conversationIdIfSameSender(
     conversationId,
@@ -690,48 +779,51 @@ async function handleInboxMessage(
   const contactId = await resolveContactId(from.email, orgId, supabaseUrl, headers);
   const preview = generatePreview(emailData.body_text, emailData.body_html);
   const now = new Date().toISOString();
+  // Order the thread by when the mail was sent, not when the webhook reached
+  // us: a delayed or retried delivery otherwise sorts to the end of the thread.
+  const sentAt = inboundSentAt(hdrs["date"], now);
 
   if (conversationId) {
     // ---- Reply to existing conversation ----
     // Insert message
-    const msgs = await supaFetch(supabaseUrl, "/rest/v1/inbox_messages", headers, {
-      method: "POST",
-      prefer: "return=representation",
-      body: {
-        org_id: orgId,
-        conversation_id: conversationId,
-        channel: "email",
-        direction: "inbound",
-        from_address: from.email,
-        from_name: from.name,
-        to_address: toFirst.email,
-        to_name: toFirst.name,
-        subject: emailData.subject || null,
-        body_text: emailData.body_text || null,
-        body_html: emailData.body_html || null,
-        cc_addresses: ccParsed,
-        bcc_addresses: bccParsed,
-        reply_to_address: emailData.reply_to?.[0] || null,
-        message_id: messageId,
-        in_reply_to: inReplyTo,
-        references_ids: references.length > 0 ? references : null,
-        attachments,
-        external_id: messageId,
-        external_provider: "resend",
-        status: "delivered",
-        sent_at: now,
-        metadata: messageMetadata,
-      },
+    const filed = await fileInboxMessage(supabaseUrl, headers, {
+      org_id: orgId,
+      conversation_id: conversationId,
+      channel: "email",
+      direction: "inbound",
+      from_address: from.email,
+      from_name: from.name,
+      to_address: toFirst.email,
+      to_name: toFirst.name,
+      subject: emailData.subject || null,
+      body_text: emailData.body_text || null,
+      body_html: emailData.body_html || null,
+      cc_addresses: ccParsed,
+      bcc_addresses: bccParsed,
+      reply_to_address: emailData.reply_to?.[0] || null,
+      message_id: messageId,
+      in_reply_to: inReplyTo,
+      references_ids: references.length > 0 ? references : null,
+      attachments,
+      external_id: messageId,
+      external_provider: "resend",
+      status: "delivered",
+      sent_at: sentAt,
+      metadata: messageMetadata,
     });
 
-    scheduleAttachmentStorage(
-      msgs?.[0]?.id,
-      attachments,
-      emailData.resend_email_id || null,
-      orgId,
-      supabaseUrl,
-      headers,
-    );
+    // A redelivery already has its attachments stored; re-uploading them would
+    // rewrite the same objects for nothing.
+    if (!filed.alreadyFiled) {
+      scheduleAttachmentStorage(
+        filed.id,
+        attachments,
+        emailData.resend_email_id || null,
+        orgId,
+        supabaseUrl,
+        headers,
+      );
+    }
 
     // File pre-existing threads that predate shared-mailbox tagging. The
     // is.null filter makes this a no-op once a thread already has a mailbox,
@@ -756,7 +848,12 @@ async function handleInboxMessage(
     }).catch((e) => console.error("re-open on reply failed (non-blocking):", e));
 
     return new Response(
-      JSON.stringify({ success: true, action: "reply_added", conversation_id: conversationId, message_id: msgs?.[0]?.id }),
+      JSON.stringify({
+        success: true,
+        action: filed.alreadyFiled ? "ignored_duplicate" : "reply_added",
+        conversation_id: conversationId,
+        message_id: filed.id,
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
@@ -785,8 +882,8 @@ async function handleInboxMessage(
       // 1 double-counted every first message.
       unread_count: 0,
       message_count: 0,
-      last_message_at: now,
-      first_message_at: now,
+      last_message_at: sentAt,
+      first_message_at: sentAt,
       tags: [],
       labels: [],
       metadata: {
@@ -799,44 +896,42 @@ async function handleInboxMessage(
   conversationId = convs[0].id;
 
   // Insert the message
-  const msgs = await supaFetch(supabaseUrl, "/rest/v1/inbox_messages", headers, {
-    method: "POST",
-    prefer: "return=representation",
-    body: {
-      org_id: orgId,
-      conversation_id: conversationId,
-      channel: "email",
-      direction: "inbound",
-      from_address: from.email,
-      from_name: from.name,
-      to_address: toFirst.email,
-      to_name: toFirst.name,
-      subject: emailData.subject || null,
-      body_text: emailData.body_text || null,
-      body_html: emailData.body_html || null,
-      cc_addresses: ccParsed,
-      bcc_addresses: bccParsed,
-      reply_to_address: emailData.reply_to?.[0] || null,
-      message_id: messageId,
-      in_reply_to: inReplyTo,
-      references_ids: references.length > 0 ? references : null,
-      attachments,
-      external_id: messageId,
-      external_provider: "resend",
-      status: "delivered",
-      sent_at: now,
-      metadata: messageMetadata,
-    },
+  const filed = await fileInboxMessage(supabaseUrl, headers, {
+    org_id: orgId,
+    conversation_id: conversationId,
+    channel: "email",
+    direction: "inbound",
+    from_address: from.email,
+    from_name: from.name,
+    to_address: toFirst.email,
+    to_name: toFirst.name,
+    subject: emailData.subject || null,
+    body_text: emailData.body_text || null,
+    body_html: emailData.body_html || null,
+    cc_addresses: ccParsed,
+    bcc_addresses: bccParsed,
+    reply_to_address: emailData.reply_to?.[0] || null,
+    message_id: messageId,
+    in_reply_to: inReplyTo,
+    references_ids: references.length > 0 ? references : null,
+    attachments,
+    external_id: messageId,
+    external_provider: "resend",
+    status: "delivered",
+    sent_at: sentAt,
+    metadata: messageMetadata,
   });
 
-  scheduleAttachmentStorage(
-    msgs?.[0]?.id,
-    attachments,
-    emailData.resend_email_id || null,
-    orgId,
-    supabaseUrl,
-    headers,
-  );
+  if (!filed.alreadyFiled) {
+    scheduleAttachmentStorage(
+      filed.id,
+      attachments,
+      emailData.resend_email_id || null,
+      orgId,
+      supabaseUrl,
+      headers,
+    );
+  }
 
   // Optional: send Slack notification
   const slackWebhookUrl = Deno.env.get("SLACK_WEBHOOK_URL");
@@ -866,9 +961,9 @@ async function handleInboxMessage(
   return new Response(
     JSON.stringify({
       success: true,
-      action: "conversation_created",
+      action: filed.alreadyFiled ? "ignored_duplicate" : "conversation_created",
       conversation_id: conversationId,
-      message_id: msgs?.[0]?.id,
+      message_id: filed.id,
     }),
     { headers: { ...corsHeaders, "Content-Type": "application/json" } }
   );
@@ -1070,6 +1165,17 @@ function determinePriority(subject: string, body: string): string {
 function normaliseResendInbound(event: ResendInboundEvent): EmailPayload {
   const d = event.data;
   const hdrs = normaliseHeaders(d.headers);
+
+  // The message identity has to survive a failed hydration. `external_id` is
+  // taken from this header, and it is what the unique index dedupes a
+  // redelivery on — so if it is missing the same email can be filed twice, and a
+  // retry is most likely precisely when hydration just failed. The webhook
+  // always carries the Message-ID at the top level, so fall back to it. Only
+  // fills a gap: a hydrated header always wins.
+  if (!hdrs["message-id"] && d.message_id) {
+    hdrs["message-id"] = d.message_id;
+  }
+
   return {
     from: d.from,
     to: d.to || [],

@@ -46,6 +46,10 @@ import {
   replyHasUserContent,
 } from './inbox-reply';
 import { useEmailSignatures } from '@/hooks/useEmailSignatures';
+import {
+  buildReferencesChain,
+  parseMessageIdHeader,
+} from '../../../../../../../supabase/functions/_shared/rfc822-headers';
 
 type ReplyMode = 'reply' | 'reply_all';
 
@@ -192,6 +196,22 @@ export function ReplyForm({
     });
   }, [lastInbound, authUserEmail, monitoredFrom]);
 
+  /**
+   * Multi-party threads default to Reply All.
+   *
+   * A plain Reply silently drops everyone who was CC'd, so the colleagues who
+   * are following the thread never see the answer and keep re-asking. Defaulted
+   * once per conversation, after its messages load, so an explicit switch to
+   * Reply is never overridden while composing.
+   */
+  const modeDefaultedFor = useRef<string | null>(null);
+  useEffect(() => {
+    if (!lastInbound) return;
+    if (modeDefaultedFor.current === selectedConversation.id) return;
+    modeDefaultedFor.current = selectedConversation.id;
+    setReplyMode(replyAllCc.length > 0 ? 'reply_all' : 'reply');
+  }, [selectedConversation.id, lastInbound, replyAllCc]);
+
   const beginForward = useCallback((source?: InboxMessage | null) => {
     if (!onForward) return;
     const forwardSource = source ?? pickForwardSource(messages);
@@ -264,11 +284,11 @@ export function ReplyForm({
 
       const attachmentRefs = composerAttachmentsToRefs(attachments);
 
-      const inReplyTo = lastMessage?.message_id || null;
-      const existingRefs = lastMessage?.references_ids || [];
-      const referencesIds = inReplyTo
-        ? [...existingRefs.filter((r: string) => r !== inReplyTo), inReplyTo]
-        : existingRefs;
+      // Rebuilt from the whole thread rather than the last row alone: one
+      // malformed stored value used to truncate the chain, and a reply with a
+      // broken References header makes the recipient's client fork the thread.
+      const inReplyTo = parseMessageIdHeader(lastMessage?.message_id);
+      const referencesIds = buildReferencesChain(messages, inReplyTo);
 
       // Send via Resend. The server persists the outbound inbox row and
       // conversation counters (trigger) so the client does not double-write.
