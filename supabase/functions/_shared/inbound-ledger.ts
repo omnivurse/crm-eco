@@ -147,6 +147,7 @@ export async function deadLetterInbound(
         correlation_id: input.correlationId ?? null,
       },
     });
+    await notifyDeadLetter(supabaseUrl, headers, input);
     return true;
   } catch (error) {
     console.error(
@@ -154,6 +155,61 @@ export async function deadLetterInbound(
       error instanceof Error ? error.message : error,
     );
     return false;
+  }
+}
+
+/**
+ * Tell someone a message was parked, instead of waiting for a human to think to
+ * go looking.
+ *
+ * Targets `profiles.is_super_admin` rather than a role list. An unroutable
+ * message has no organization, so there is no tenant audience to notify — and
+ * the role-based precedent elsewhere in the codebase filters on
+ * role IN ('admin','super_admin'), which matches no account in this deployment
+ * and would silently notify nobody.
+ *
+ * organization_id is left null on purpose: the alert is platform-level, because
+ * the failure is that we could not determine the tenant.
+ *
+ * Best-effort. A notification that cannot be delivered must never turn a parked
+ * message into a lost one, so failures are logged and swallowed.
+ */
+async function notifyDeadLetter(
+  supabaseUrl: string,
+  headers: SupaHeaders,
+  input: { source: string; errorCategory: string; error: string },
+): Promise<void> {
+  try {
+    const admins = await rest<Array<{ user_id: string }>>(
+      supabaseUrl,
+      "/rest/v1/profiles?is_super_admin=is.true&select=user_id",
+      headers,
+    );
+    if (!admins?.length) {
+      console.error(
+        "dead-letter recorded but no super-admin exists to notify:",
+        input.errorCategory,
+      );
+      return;
+    }
+
+    await rest(supabaseUrl, "/rest/v1/admin_notifications", headers, {
+      method: "POST",
+      body: admins.map((admin) => ({
+        user_id: admin.user_id,
+        organization_id: null,
+        type: "comms_dead_letter",
+        title: "Inbound message could not be delivered",
+        message:
+          `${input.source} parked a message (${input.errorCategory}). ${input.error}`,
+        meta: { source: input.source, error_category: input.errorCategory },
+      })),
+    });
+  } catch (error) {
+    console.error(
+      "dead-letter notification failed (message is still parked):",
+      error instanceof Error ? error.message : error,
+    );
   }
 }
 

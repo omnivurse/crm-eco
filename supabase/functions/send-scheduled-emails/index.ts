@@ -21,6 +21,7 @@ import {
   authorizeInternalEdgeRequest,
   unauthorizedResponse,
 } from '../_shared/cron-auth.ts';
+import { MESSAGE_IDENTITY_CONFLICT_TARGET } from '../_shared/inbox-message-identity.ts';
 
 async function getOrgEmailConfig(supabaseClient: any, organizationId: string) {
   const { data: settings } = await supabaseClient
@@ -156,7 +157,7 @@ serve(async (req) => {
 
         // If this is a reply to an existing conversation, add to that thread
         if (draft.conversation_id) {
-          await supabase.from('inbox_messages').insert({
+          await supabase.from('inbox_messages').upsert({
             org_id: draft.org_id,
             conversation_id: draft.conversation_id,
             channel: 'email',
@@ -176,7 +177,7 @@ serve(async (req) => {
             external_id: resendData.id || null,
             external_provider: 'resend',
             metadata: { scheduled: true },
-          });
+          }, { onConflict: MESSAGE_IDENTITY_CONFLICT_TARGET });
 
           // Update conversation
           await supabase
@@ -214,7 +215,7 @@ serve(async (req) => {
             .single();
 
           if (conv) {
-            await supabase.from('inbox_messages').insert({
+            await supabase.from('inbox_messages').upsert({
               org_id: draft.org_id,
               conversation_id: conv.id,
               channel: 'email',
@@ -234,7 +235,7 @@ serve(async (req) => {
               external_id: resendData.id || null,
               external_provider: 'resend',
               metadata: { scheduled: true },
-            });
+            }, { onConflict: MESSAGE_IDENTITY_CONFLICT_TARGET });
           }
         }
 

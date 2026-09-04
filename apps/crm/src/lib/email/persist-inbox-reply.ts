@@ -1,5 +1,6 @@
 import type { OutboxPayload } from './outbox';
 import { mailboxAddressForOutbound } from '@/lib/inbox/compose-mailbox';
+import { INBOX_MESSAGE_IDENTITY_CONFLICT_TARGET } from '@/lib/inbox/message-identity';
 import type { OutboundAttachmentRef } from './outbound-attachments';
 
 type LooseClient = {
@@ -107,9 +108,13 @@ export async function persistOutboundInboxMessage(
   }
 
   const now = new Date().toISOString();
+  // Upsert, not insert: a send is persisted inline by the send service and can
+  // be persisted again by the outbox worker when a row is reclaimed as stale.
+  // Both carry the same provider message id, so the second write must resolve to
+  // the first row rather than filing the email twice.
   const { data, error } = await supabase
     .from('inbox_messages')
-    .insert({
+    .upsert({
       org_id: input.organizationId,
       organization_id: input.organizationId,
       conversation_id: input.conversationId,
@@ -133,7 +138,7 @@ export async function persistOutboundInboxMessage(
       external_provider: input.provider ?? null,
       attachments: input.attachments ?? [],
       metadata: input.calendarEventId ? { calendar_event_id: input.calendarEventId } : {},
-    })
+    }, { onConflict: INBOX_MESSAGE_IDENTITY_CONFLICT_TARGET })
     .select('id')
     .single();
 

@@ -22,6 +22,7 @@ import {
   HardDrive,
   RefreshCw,
   Gauge,
+  Mail,
 } from 'lucide-react';
 import { getCurrentProfile } from '@/lib/crm/queries';
 import { createCrmClient } from '@/lib/crm/queries';
@@ -459,6 +460,50 @@ async function getHealthChecks(): Promise<HealthCheck[]> {
       message: 'Unable to verify email configuration',
       icon: <RefreshCw className="w-5 h-5" />,
       category: 'configuration',
+    });
+  }
+
+  // 17. Undelivered inbound mail. A parked message is mail a real person sent us
+  // that never reached an inbox, so it reads as a failure rather than a warning.
+  // RLS decides the scope: an org's admins see their own org's, and a platform
+  // super-admin also sees the ones we could not attribute to any tenant at all.
+  try {
+    const { count, error: dlError } = await supabase
+      .from('comms_dead_letters')
+      .select('id', { count: 'exact', head: true })
+      .is('resolved_at', null);
+
+    if (dlError) {
+      checks.push({
+        name: 'Undelivered Inbound Mail',
+        description: 'Inbound messages parked instead of filed',
+        status: 'warning',
+        message: `Unable to read dead-letter queue: ${dlError.message}`,
+        icon: <Mail className="w-5 h-5" />,
+        category: 'infrastructure',
+      });
+    } else {
+      const open = count ?? 0;
+      checks.push({
+        name: 'Undelivered Inbound Mail',
+        description: 'Inbound messages parked instead of filed',
+        status: open > 0 ? 'fail' : 'pass',
+        message:
+          open > 0
+            ? `${open} inbound message${open === 1 ? '' : 's'} could not be delivered and ${open === 1 ? 'is' : 'are'} awaiting review`
+            : 'No undelivered inbound messages',
+        icon: <Mail className="w-5 h-5" />,
+        category: 'infrastructure',
+      });
+    }
+  } catch (e) {
+    checks.push({
+      name: 'Undelivered Inbound Mail',
+      description: 'Inbound messages parked instead of filed',
+      status: 'warning',
+      message: 'Unable to verify dead-letter queue',
+      icon: <Mail className="w-5 h-5" />,
+      category: 'infrastructure',
     });
   }
 

@@ -10,6 +10,7 @@ import type {
   InboxChannel,
   MessageDirection,
 } from './types';
+import { INBOX_MESSAGE_IDENTITY_CONFLICT_TARGET } from './message-identity';
 
 // ============================================================================
 // Unified Inbox Service
@@ -366,9 +367,11 @@ export async function addMessage(params: {
     sent_at: new Date().toISOString(),
   };
   
+  // Upsert so a caller that retries with the same provider id resolves to the
+  // message it already filed instead of hitting a unique violation.
   const { data, error } = await supabase
     .from('inbox_messages')
-    .insert(messageData)
+    .upsert(messageData, { onConflict: INBOX_MESSAGE_IDENTITY_CONFLICT_TARGET })
     .select()
     .single();
   
