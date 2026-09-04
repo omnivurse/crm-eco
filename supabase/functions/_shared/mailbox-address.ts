@@ -25,6 +25,28 @@ export function mailboxDomain(address: string): string {
 }
 
 /**
+ * Domains to try, in order, when resolving which org owns an inbound message.
+ *
+ * Recipient case is sender-controlled: DocuSign addresses envelopes in block
+ * capitals, so `WENDY@PAYITFORWARDHEALTH.COM` arrives for a domain stored
+ * lowercase. The org lookup is an exact text match, so an unnormalized domain
+ * finds nothing and the mail is refused as unroutable. Normalizing here keeps
+ * that decision on one code path instead of at each call site.
+ */
+export function inboundLookupDomains(
+  addresses: Array<string | null | undefined>,
+): string[] {
+  const domains: string[] = [];
+  for (const raw of addresses) {
+    const normalized = normalizeMailboxAddress(raw);
+    if (!normalized) continue;
+    const domain = mailboxDomain(normalized);
+    if (domain && !domains.includes(domain)) domains.push(domain);
+  }
+  return domains;
+}
+
+/**
  * Collapse a forwarded address onto the registered mailbox it belongs to.
  *
  * Mail forwarded from an apex role address into the CRM's receiving subdomain

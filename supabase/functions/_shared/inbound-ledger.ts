@@ -110,6 +110,53 @@ export async function ledgerInboundEvent(
   return { id: existing[0].id, duplicate: true };
 }
 
+/**
+ * Park an inbound message that could not be attributed to an org.
+ *
+ * The ledger is keyed by org and gated on a per-org flag, so a message we
+ * cannot attribute skips it entirely and leaves no trace at all — which is how
+ * two signature requests went missing for two days. The Resend email id is
+ * recorded because it is the only handle that makes the message replayable
+ * once the routing cause is fixed.
+ *
+ * Never throws: failing to record a failure must not also fail the response.
+ */
+export async function deadLetterInbound(
+  supabaseUrl: string,
+  headers: SupaHeaders,
+  input: {
+    source: string;
+    errorCategory: string;
+    error: string;
+    payload: Record<string, unknown>;
+    /** Both tenant columns are written together; a CHECK requires they match. */
+    organizationId?: string | null;
+    correlationId?: string | null;
+  },
+): Promise<boolean> {
+  try {
+    await rest(supabaseUrl, "/rest/v1/comms_dead_letters", headers, {
+      method: "POST",
+      body: {
+        source: input.source,
+        error_category: input.errorCategory,
+        error: input.error,
+        payload: input.payload,
+        organization_id: input.organizationId ?? null,
+        org_id: input.organizationId ?? null,
+        correlation_id: input.correlationId ?? null,
+      },
+    });
+    return true;
+  } catch (error) {
+    console.error(
+      "dead-letter insert failed:",
+      error instanceof Error ? error.message : error,
+    );
+    return false;
+  }
+}
+
 export async function markInboundEvent(
   supabaseUrl: string,
   headers: SupaHeaders,

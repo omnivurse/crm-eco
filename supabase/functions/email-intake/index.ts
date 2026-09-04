@@ -1,5 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { resolveMailboxAddress } from "../_shared/mailbox-address.ts";
+import { inboundLookupDomains, resolveMailboxAddress } from "../_shared/mailbox-address.ts";
 import { pickSenderOwnedConversation, shouldJoinThreadedConversation } from "../_shared/inbox-threading.ts";
 import {
   fetchReceivedAttachment,
@@ -9,6 +9,7 @@ import {
   sanitizeAttachmentFilename,
 } from "../_shared/resend-inbound.ts";
 import {
+  deadLetterInbound,
   inboundEventHash,
   isClosedLoopEnabled,
   ledgerInboundEvent,
@@ -109,11 +110,6 @@ function parseEmailAddress(raw: string): ParsedAddress {
     return { name: match[1].trim().replace(/^["']|["']$/g, ""), email: match[2].trim().toLowerCase() };
   }
   return { name: "", email: raw.trim().toLowerCase() };
-}
-
-/** Extract domain from an email address */
-function extractDomain(email: string): string {
-  return email.split("@")[1] || "";
 }
 
 /** Generate a preview from text/html, truncated */
@@ -282,10 +278,9 @@ async function resolveOrgContext(
   supabaseUrl: string,
   headers: SupaHeaders
 ): Promise<OrgContext | null> {
-  // Try to match a verified email domain
-  for (const addr of toAddresses) {
-    const domain = extractDomain(addr);
-    if (!domain) continue;
+  // Try to match a verified email domain. Recipient case is sender-controlled,
+  // so the domain is normalized before this exact-match lookup.
+  for (const domain of inboundLookupDomains(toAddresses)) {
     try {
       const rows = await supaFetch(
         supabaseUrl,
@@ -1165,6 +1160,38 @@ Deno.serve(async (req: Request) => {
     const toAddresses = Array.isArray(emailData.to) ? emailData.to : [emailData.to];
     const orgLookup = [...toAddresses, ...(emailData.received_for || [])];
     const orgContext = await resolveOrgContext(orgLookup, supabaseUrl, supabaseHeaders);
+
+    // An unroutable recipient has no mailbox to file under, but answering 4xx
+    // loses the mail: the provider retries a few times and then discards it.
+    // Park it durably and acknowledge, so it stays visible and replayable.
+    if (!orgContext) {
+      await deadLetterInbound(supabaseUrl, supabaseHeaders, {
+        source: "email_intake",
+        errorCategory: "unroutable_recipient",
+        error: `No verified email_domains match for recipients: ${
+          orgLookup.filter(Boolean).join(", ") || "(none)"
+        }`,
+        payload: {
+          resend_email_id: emailData.resend_email_id ?? null,
+          from: emailData.from ?? null,
+          to: toAddresses,
+          received_for: emailData.received_for ?? null,
+          subject: emailData.subject ?? null,
+          message_id: emailData.headers?.["message-id"] ?? null,
+        },
+        correlationId: emailData.resend_email_id ?? null,
+      });
+      console.error("inbound dead-lettered (unroutable recipient):", toAddresses);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          action: "dead_lettered",
+          reason: "unroutable_recipient",
+        }),
+        { status: 202, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     const closedLoop = await isClosedLoopEnabled(
       supabaseUrl,
       supabaseHeaders,

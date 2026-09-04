@@ -7,6 +7,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   canonicalizeMailbox,
+  inboundLookupDomains,
   mailboxDomain,
   normalizeMailboxAddress,
   resolveMailboxAddress,
@@ -51,6 +52,58 @@ describe('mailboxDomain', () => {
 
   it('returns empty for a malformed address', () => {
     expect(mailboxDomain('nope')).toBe('');
+  });
+});
+
+describe('inboundLookupDomains', () => {
+  it('lowercases a domain a sender addressed in capitals', () => {
+    // Regression: DocuSign sent to WENDY@PAYITFORWARDHEALTH.COM. The org
+    // lookup is an exact match against a lowercase row, so the unnormalized
+    // domain resolved no org and two signature requests were refused.
+    expect(inboundLookupDomains(['WENDY@PAYITFORWARDHEALTH.COM'])).toEqual([
+      'payitforwardhealth.com',
+    ]);
+  });
+
+  it('normalizes mixed case and display-name forms', () => {
+    expect(
+      inboundLookupDomains(['Wendy Scipione <Wendy@PayItForwardHealth.COM>']),
+    ).toEqual(['payitforwardhealth.com']);
+  });
+
+  it('keeps recipient order so the addressed domain is tried first', () => {
+    expect(
+      inboundLookupDomains([
+        'member@gmail.com',
+        'intake@MAIL.payitforwardhealth.com',
+      ]),
+    ).toEqual(['gmail.com', 'mail.payitforwardhealth.com']);
+  });
+
+  it('collapses duplicates that differ only by case', () => {
+    expect(
+      inboundLookupDomains([
+        'billing@payitforwardhealth.com',
+        'BILLING@PAYITFORWARDHEALTH.COM',
+      ]),
+    ).toEqual(['payitforwardhealth.com']);
+  });
+
+  it('skips values that are not addresses instead of yielding empty domains', () => {
+    expect(
+      inboundLookupDomains([
+        'undisclosed-recipients',
+        '',
+        null,
+        undefined,
+        'real@payitforwardhealth.com',
+      ]),
+    ).toEqual(['payitforwardhealth.com']);
+  });
+
+  it('returns nothing when there is no usable recipient', () => {
+    expect(inboundLookupDomains([])).toEqual([]);
+    expect(inboundLookupDomains([null, 'nope'])).toEqual([]);
   });
 });
 
