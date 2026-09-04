@@ -715,8 +715,10 @@ async function handleInboxMessage(
     // update_conversation_on_message trigger, which already fired on the insert
     // above. Incrementing them here as well is what made message_count read 2
     // for a single message. Only the re-open is ours to do: the trigger has no
-    // opinion about a resolved thread coming back to life.
-    await supaFetch(supabaseUrl, `/rest/v1/inbox_conversations?id=eq.${conversationId}`, headers, {
+    // opinion about a resolved thread coming back to life. Trash and Spam are
+    // deliberate routing decisions, though, so preserve them atomically even
+    // if a message arrives while an agent is moving the thread.
+    await supaFetch(supabaseUrl, `/rest/v1/inbox_conversations?id=eq.${conversationId}&status=not.in.(trash,spam)`, headers, {
       method: "PATCH",
       body: { status: "open" },
     }).catch((e) => console.error("re-open on reply failed (non-blocking):", e));
