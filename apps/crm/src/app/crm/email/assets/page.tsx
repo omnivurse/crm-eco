@@ -1,7 +1,7 @@
 'use client';
 
 import { toast } from 'sonner';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Button } from '@crm-eco/ui/components/button';
 import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import { Input } from '@crm-eco/ui/components/input';
@@ -38,11 +38,17 @@ import {
   RefreshCw,
   Loader2,
   Check,
-  X,
-  Download,
+  Lock,
   ExternalLink,
 } from 'lucide-react';
 import { ImageUploader } from '@/components/email/ImageUploader';
+import { useClientAuth } from '@/hooks/useClientAuth';
+import { useDebouncedValue } from '@/hooks/useDebouncedSearch';
+import {
+  canDeleteEmailAssets,
+  canUploadEmailAssets,
+} from '@/lib/email/asset-permissions';
+import { toastCopy } from '@/lib/crm/toast-copy';
 
 interface EmailAsset {
   id: string;
@@ -97,36 +103,74 @@ export default function AssetLibraryPage() {
   const [deleting, setDeleting] = useState<string | null>(null);
   const [showUploader, setShowUploader] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+
+  const { profile, loading: authLoading } = useClientAuth();
+  const canUpload = canUploadEmailAssets(profile?.crm_role);
+  const canDelete = canDeleteEmailAssets(profile?.crm_role);
+
+  // Typing used to refire the request on every keystroke: `search` was a
+  // dependency of the fetch callback, which was itself the effect's only
+  // dependency.
+  const debouncedSearch = useDebouncedValue(search, 300);
+
+  // Cancels the in-flight request so a slow earlier response cannot land
+  // after a newer one and show the wrong results.
+  const inFlight = useRef<AbortController | null>(null);
 
   const fetchAssets = useCallback(async () => {
+    inFlight.current?.abort();
+    const controller = new AbortController();
+    inFlight.current = controller;
+
     setLoading(true);
     setError(null);
 
     try {
       const params = new URLSearchParams();
       if (folder !== 'all') params.append('folder', folder);
-      if (search) params.append('search', search);
+      if (debouncedSearch) params.append('search', debouncedSearch);
       params.append('limit', '100');
 
-      const response = await fetch(`/api/email/assets?${params.toString()}`);
+      const response = await fetch(`/api/email/assets?${params.toString()}`, {
+        signal: controller.signal,
+      });
       if (!response.ok) {
-        throw new Error('Failed to fetch assets');
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.error || 'Failed to load assets');
       }
 
       const data = await response.json();
       setAssets(data.assets || []);
       setTotal(data.total || 0);
     } catch (err) {
+      // An aborted request was replaced by a newer one; it is not a failure.
+      if (err instanceof DOMException && err.name === 'AbortError') return;
       setError(err instanceof Error ? err.message : 'Failed to load assets');
     } finally {
-      setLoading(false);
+      if (inFlight.current === controller) {
+        inFlight.current = null;
+        setLoading(false);
+      }
     }
-  }, [folder, search]);
+  }, [folder, debouncedSearch]);
 
   useEffect(() => {
     fetchAssets();
   }, [fetchAssets]);
+
+  // Drop any pending request when leaving the page.
+  useEffect(() => () => inFlight.current?.abort(), []);
+
+  const allSelected = assets.length > 0 && selectedAssets.size === assets.length;
+  const isFiltered = useMemo(
+    () => folder !== 'all' || debouncedSearch.trim().length > 0,
+    [folder, debouncedSearch],
+  );
+
+  const clearFilters = () => {
+    setSearch('');
+    setFolder('all');
+  };
 
   const handleDelete = async (assetId: string) => {
     if (!(await confirmDialog({ title: 'Delete this asset?', confirmLabel: 'Delete', destructive: true }))) return;
@@ -140,7 +184,8 @@ export default function AssetLibraryPage() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to delete asset');
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.error || 'Failed to delete asset');
       }
 
       setAssets((prev) => prev.filter((a) => a.id !== assetId));
@@ -149,9 +194,12 @@ export default function AssetLibraryPage() {
         newSet.delete(assetId);
         return newSet;
       });
-      setTotal((prev) => prev - 1);
+      setTotal((prev) => Math.max(0, prev - 1));
+      toast.success(toastCopy.deleted('asset'));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to delete asset');
+      toast.error(
+        err instanceof Error ? err.message : toastCopy.failed('delete that asset'),
+      );
     } finally {
       setDeleting(null);
     }
@@ -169,21 +217,32 @@ export default function AssetLibraryPage() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to delete assets');
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.error || 'Failed to delete assets');
       }
 
+      const removed = selectedAssets.size;
       setAssets((prev) => prev.filter((a) => !selectedAssets.has(a.id)));
-      setTotal((prev) => prev - selectedAssets.size);
+      setTotal((prev) => Math.max(0, prev - removed));
       setSelectedAssets(new Set());
+      toast.success(toastCopy.counted('asset', removed, 'Deleted'));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to delete assets');
+      toast.error(
+        err instanceof Error ? err.message : toastCopy.failed('delete those assets'),
+      );
     }
   };
 
-  const handleCopyUrl = (url: string, id: string) => {
-    navigator.clipboard.writeText(url);
-    setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 2000);
+  const handleCopyUrl = async (url: string, id: string) => {
+    try {
+      // Unavailable outside a secure context, and can still be refused by
+      // permissions policy — either way the click must not fail silently.
+      await navigator.clipboard.writeText(url);
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch {
+      toast.error(toastCopy.failed('copy that link', undefined, 'Copy it from the address bar after opening the image'));
+    }
   };
 
   const toggleSelect = (assetId: string) => {
@@ -199,7 +258,7 @@ export default function AssetLibraryPage() {
   };
 
   const selectAll = () => {
-    if (selectedAssets.size === assets.length) {
+    if (allSelected) {
       setSelectedAssets(new Set());
     } else {
       setSelectedAssets(new Set(assets.map((a) => a.id)));
@@ -223,10 +282,21 @@ export default function AssetLibraryPage() {
             Manage images and files for your email campaigns
           </p>
         </div>
-        <Button onClick={() => setShowUploader(true)} className="gap-2">
-          <Upload className="w-4 h-4" />
-          Upload Image
-        </Button>
+        {!authLoading && !canUpload ? (
+          <div className="flex items-center gap-2 text-sm text-slate-500">
+            <Lock className="w-4 h-4" />
+            View only — ask an admin for upload access
+          </div>
+        ) : (
+          <Button
+            onClick={() => setShowUploader(true)}
+            className="gap-2"
+            disabled={authLoading}
+          >
+            <Upload className="w-4 h-4" />
+            Upload Image
+          </Button>
+        )}
       </div>
 
       {/* Filters */}
@@ -263,7 +333,7 @@ export default function AssetLibraryPage() {
             >
               <RefreshCw className={cn('w-4 h-4', loading && 'animate-spin')} />
             </Button>
-            {selectedAssets.size > 0 && (
+            {selectedAssets.size > 0 && canDelete && (
               <Button
                 variant="destructive"
                 size="sm"
@@ -281,19 +351,27 @@ export default function AssetLibraryPage() {
       {/* Stats */}
       <div className="flex items-center justify-between text-sm text-slate-500">
         <div className="flex items-center gap-4">
-          <span>{total} total assets</span>
+          {/* The API caps a page at 100, so say so rather than implying the
+              grid holds everything. */}
+          <span>
+            {assets.length < total
+              ? `Showing ${assets.length} of ${total} assets`
+              : `${total} total ${total === 1 ? 'asset' : 'assets'}`}
+          </span>
           {selectedAssets.size > 0 && (
             <span className="text-teal-600">{selectedAssets.size} selected</span>
           )}
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={selectAll}
-          className="text-xs"
-        >
-          {selectedAssets.size === assets.length ? 'Deselect All' : 'Select All'}
-        </Button>
+        {assets.length > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={selectAll}
+            className="text-xs"
+          >
+            {allSelected ? 'Deselect All' : 'Select All'}
+          </Button>
+        )}
       </div>
 
       {/* Content */}
@@ -316,16 +394,40 @@ export default function AssetLibraryPage() {
             <div className="p-4 rounded-full bg-slate-100 dark:bg-slate-800 mb-4">
               <ImageIcon className="w-10 h-10 text-slate-400" />
             </div>
-            <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-2">
-              No Assets Yet
-            </h3>
-            <p className="text-sm text-slate-500 mb-4 text-center max-w-sm">
-              Upload images to use in your email campaigns. Supported formats: JPEG, PNG, GIF, WebP.
-            </p>
-            <Button onClick={() => setShowUploader(true)} className="gap-2">
-              <Upload className="w-4 h-4" />
-              Upload Your First Image
-            </Button>
+            {isFiltered ? (
+              <>
+                <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-2">
+                  No matching assets
+                </h3>
+                <p className="text-sm text-slate-500 mb-4 text-center max-w-sm">
+                  Nothing matches {debouncedSearch ? `“${debouncedSearch}”` : 'this folder'}.
+                  Try a different search or folder.
+                </p>
+                <Button variant="outline" onClick={clearFilters}>
+                  Clear filters
+                </Button>
+              </>
+            ) : (
+              <>
+                <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-2">
+                  No Assets Yet
+                </h3>
+                <p className="text-sm text-slate-500 mb-4 text-center max-w-sm">
+                  Upload images to use in your email campaigns. Supported formats:
+                  JPEG, PNG, GIF, WebP.
+                </p>
+                {canUpload ? (
+                  <Button onClick={() => setShowUploader(true)} className="gap-2">
+                    <Upload className="w-4 h-4" />
+                    Upload Your First Image
+                  </Button>
+                ) : (
+                  <p className="text-xs text-slate-400">
+                    You do not have permission to upload assets.
+                  </p>
+                )}
+              </>
+            )}
           </CardContent>
         </Card>
       ) : (
@@ -387,21 +489,23 @@ export default function AssetLibraryPage() {
                           Open in New Tab
                         </a>
                       </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDelete(asset.id);
-                        }}
-                        className="text-red-600"
-                        disabled={deleting === asset.id}
-                      >
-                        {deleting === asset.id ? (
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        ) : (
-                          <Trash2 className="w-4 h-4 mr-2" />
-                        )}
-                        Delete
-                      </DropdownMenuItem>
+                      {canDelete && (
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(asset.id);
+                          }}
+                          className="text-red-600"
+                          disabled={deleting === asset.id}
+                        >
+                          {deleting === asset.id ? (
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-4 h-4 mr-2" />
+                          )}
+                          Delete
+                        </DropdownMenuItem>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>

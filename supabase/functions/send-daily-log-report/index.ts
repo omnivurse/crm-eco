@@ -1,4 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { FALLBACK_FROM_EMAIL } from '../_shared/email-sender.ts';
 import {
   authorizeInternalEdgeRequest,
   unauthorizedResponse,
@@ -36,7 +37,7 @@ async function getOrgEmailConfig(supabaseUrl: string, supabaseServiceKey: string
   }
 
   return {
-    fromEmail: config.email_from_address || Deno.env.get('FROM_EMAIL') || 'reports@mail.doublehelixhub.com',
+    fromEmail: config.email_from_address || Deno.env.get('FROM_EMAIL') || FALLBACK_FROM_EMAIL,
     fromName: config.email_from_name || Deno.env.get('RESEND_FROM_NAME') || 'Double Helix Hub',
   };
 }
@@ -159,7 +160,7 @@ Deno.serve(async (req: Request) => {
     const orgId = payloadOrgId || await getOrgIdForUser(supabaseUrl, supabaseServiceKey, userId);
     const orgConfig = orgId
       ? await getOrgEmailConfig(supabaseUrl, supabaseServiceKey, orgId)
-      : { fromEmail: Deno.env.get('FROM_EMAIL') || 'reports@mail.doublehelixhub.com', fromName: Deno.env.get('RESEND_FROM_NAME') || 'Double Helix Hub' };
+      : { fromEmail: Deno.env.get('FROM_EMAIL') || FALLBACK_FROM_EMAIL, fromName: Deno.env.get('RESEND_FROM_NAME') || 'Double Helix Hub' };
 
     const workDuration = calculateWorkDuration(startedAt, endedAt);
     const entryStats = calculateEntryStats(entries);

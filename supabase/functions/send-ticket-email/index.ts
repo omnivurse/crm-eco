@@ -1,4 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { FALLBACK_FROM_EMAIL } from '../_shared/email-sender.ts';
 import {
   authorizeInternalEdgeRequest,
   unauthorizedResponse,
@@ -34,7 +35,7 @@ async function getOrgEmailConfig(supabaseUrl: string, supabaseServiceKey: string
   }
 
   return {
-    fromEmail: config.email_from_address || Deno.env.get('FROM_EMAIL') || 'noreply@mail.doublehelixhub.com',
+    fromEmail: config.email_from_address || Deno.env.get('FROM_EMAIL') || FALLBACK_FROM_EMAIL,
     fromName: config.email_from_name || Deno.env.get('RESEND_FROM_NAME') || 'Double Helix Hub',
   };
 }
@@ -91,7 +92,7 @@ Deno.serve(async (req: Request) => {
     } = payload;
 
     // Look up the ticket's organization_id for per-org email config
-    let orgEmailConfig = { fromEmail: Deno.env.get('FROM_EMAIL') || 'noreply@mail.doublehelixhub.com', fromName: 'Double Helix Hub' };
+    let orgEmailConfig = { fromEmail: Deno.env.get('FROM_EMAIL') || FALLBACK_FROM_EMAIL, fromName: 'Double Helix Hub' };
     if (ticketId) {
       const ticketRes = await fetch(
         `${supabaseUrl}/rest/v1/tickets?id=eq.${ticketId}&select=organization_id`,

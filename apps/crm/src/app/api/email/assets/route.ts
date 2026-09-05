@@ -5,6 +5,7 @@ import {
   publicAssetOriginFromRequest,
   sanitizeEmailAssetFolder,
 } from '@/lib/email/public-email-asset';
+import { canDeleteEmailAssets, canUploadEmailAssets } from '@/lib/email/asset-permissions';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -81,8 +82,11 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createClient() as any;
 
-    if (!['crm_admin', 'crm_manager', 'crm_agent'].includes(profile.crm_role || '')) {
-      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
+    if (!canUploadEmailAssets(profile.crm_role)) {
+      return NextResponse.json(
+        { error: 'You do not have permission to upload assets' },
+        { status: 403 },
+      );
     }
 
     // Parse form data
@@ -196,8 +200,11 @@ export async function DELETE(request: NextRequest) {
 
     const supabase = await createClient() as any;
 
-    if (!['crm_admin', 'crm_manager'].includes(profile.crm_role || '')) {
-      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
+    if (!canDeleteEmailAssets(profile.crm_role)) {
+      return NextResponse.json(
+        { error: 'You do not have permission to delete assets' },
+        { status: 403 },
+      );
     }
 
     const { ids } = await request.json();

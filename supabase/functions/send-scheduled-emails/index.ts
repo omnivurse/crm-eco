@@ -21,6 +21,7 @@ import {
   authorizeInternalEdgeRequest,
   unauthorizedResponse,
 } from '../_shared/cron-auth.ts';
+import { FALLBACK_FROM_EMAIL } from '../_shared/email-sender.ts';
 import { MESSAGE_IDENTITY_CONFLICT_TARGET } from '../_shared/inbox-message-identity.ts';
 
 async function getOrgEmailConfig(supabaseClient: any, organizationId: string) {
@@ -35,7 +36,7 @@ async function getOrgEmailConfig(supabaseClient: any, organizationId: string) {
   (settings || []).forEach((s: any) => { config[s.setting_key] = s.setting_value; });
 
   return {
-    fromEmail: config.email_from_address || Deno.env.get('FROM_EMAIL') || 'noreply@mail.doublehelixhub.com',
+    fromEmail: config.email_from_address || Deno.env.get('FROM_EMAIL') || FALLBACK_FROM_EMAIL,
     fromName: config.email_from_name || Deno.env.get('RESEND_FROM_NAME') || 'Double Helix Hub',
   };
 }
@@ -106,7 +107,7 @@ serve(async (req) => {
         // Get per-org email config
         const orgConfig = draft.org_id
           ? await getOrgEmailConfig(supabase, draft.org_id)
-          : { fromEmail: Deno.env.get('FROM_EMAIL') || 'noreply@mail.doublehelixhub.com', fromName: Deno.env.get('RESEND_FROM_NAME') || 'Double Helix Hub' };
+          : { fromEmail: Deno.env.get('FROM_EMAIL') || FALLBACK_FROM_EMAIL, fromName: Deno.env.get('RESEND_FROM_NAME') || 'Double Helix Hub' };
 
         // Get author info
         const { data: author } = await supabase

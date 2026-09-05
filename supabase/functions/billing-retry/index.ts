@@ -9,6 +9,7 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { FALLBACK_FROM_EMAIL } from '../_shared/email-sender.ts';
 import {
   authorizeInternalEdgeRequest,
   unauthorizedResponse,
@@ -321,7 +322,7 @@ async function sendDunningEmail(supabase: any, failure: any, template: string) {
     const subject = tmpl?.subject ?? defaultSubject(template);
     const html = tmpl?.html_body ?? defaultBody(template, member);
 
-    const fromEmail = Deno.env.get('RESEND_FROM_EMAIL') || 'noreply@example.com';
+    const fromEmail = Deno.env.get('RESEND_FROM_EMAIL') || FALLBACK_FROM_EMAIL;
     const fromName = Deno.env.get('RESEND_FROM_NAME') || 'Billing';
 
     await fetch('https://api.resend.com/emails', {

@@ -1,4 +1,5 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
+import { FALLBACK_FROM_EMAIL } from '../_shared/email-sender.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -35,7 +36,7 @@ async function getOrgEmailConfig(organizationId: string) {
   }
 
   return {
-    fromEmail: config.email_from_address || Deno.env.get('FROM_EMAIL') || 'noreply@mail.doublehelixhub.com',
+    fromEmail: config.email_from_address || Deno.env.get('FROM_EMAIL') || FALLBACK_FROM_EMAIL,
     fromName: config.email_from_name || Deno.env.get('RESEND_FROM_NAME') || 'Double Helix Hub',
   };
 }
@@ -343,7 +344,7 @@ Deno.serve(async (req) => {
     // Get per-org email config
     const orgConfig = adminProfile.organization_id
       ? await getOrgEmailConfig(adminProfile.organization_id)
-      : { fromEmail: Deno.env.get('FROM_EMAIL') || 'noreply@mail.doublehelixhub.com', fromName: 'Double Helix Hub' };
+      : { fromEmail: Deno.env.get('FROM_EMAIL') || FALLBACK_FROM_EMAIL, fromName: 'Double Helix Hub' };
 
     // Generate invite link
     const inviteUrl = await generateInviteLink(body.email);
