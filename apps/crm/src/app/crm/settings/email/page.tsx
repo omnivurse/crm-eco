@@ -39,6 +39,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import { toastCopy } from '@/lib/crm/toast-copy';
 
 interface SenderAddress {
   id: string;
@@ -100,6 +101,7 @@ export default function UserEmailSettingsPage() {
   const [signatures, setSignatures] = useState<EmailSignature[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savingDefaultSignature, setSavingDefaultSignature] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Temporary input states for CC/BCC
@@ -149,10 +151,15 @@ export default function UserEmailSettingsPage() {
     setSaving(true);
 
     try {
+      // The default signature lives on email_signatures.is_default, which is what
+      // the composer reads. Saving it here too would write a column nobody reads.
+      const payload: Partial<UserEmailSettings> = { ...settings };
+      delete payload.default_signature_id;
+
       const response = await fetch('/api/email/settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(settings),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
@@ -164,6 +171,34 @@ export default function UserEmailSettingsPage() {
       toast.error(err instanceof Error ? err.message : 'Failed to save settings');
     } finally {
       setSaving(false);
+    }
+  };
+
+  // Writes through to email_signatures.is_default so this control and the one on
+  // /crm/settings/signatures can never disagree. Saves immediately rather than
+  // waiting for the page's Save button, matching the signatures page.
+  const handleDefaultSignatureChange = async (value: string) => {
+    const nextId = value === '__none__' ? '' : value;
+    const previous = signatures;
+    const target = nextId ? nextId : previous.find((s) => s.is_default)?.id;
+    if (!target) return;
+
+    setSavingDefaultSignature(true);
+    setSignatures((prev) => prev.map((s) => ({ ...s, is_default: s.id === nextId })));
+
+    try {
+      const response = await fetch(`/api/email/signatures/${target}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_default: Boolean(nextId) }),
+      });
+      if (!response.ok) throw new Error('Failed to set default signature');
+      toast.success(toastCopy.updated('Default signature'));
+    } catch (err) {
+      setSignatures(previous);
+      toast.error(toastCopy.failed('set the default signature', err, 'Try again'));
+    } finally {
+      setSavingDefaultSignature(false);
     }
   };
 
@@ -447,15 +482,13 @@ export default function UserEmailSettingsPage() {
           <div className="space-y-2">
             <Label>Default Signature</Label>
             <Select
-              value={settings.default_signature_id || '__none__'}
-              onValueChange={(value) =>
-                setSettings((prev) => ({ ...prev, default_signature_id: value === '__none__' ? '' : value }))
-              }
+              value={signatures.find((s) => s.is_default)?.id || '__none__'}
+              onValueChange={handleDefaultSignatureChange}
+              disabled={savingDefaultSignature || signatures.length === 0}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select a signature">
-                  {signatures.find((s) => s.id === settings.default_signature_id)?.name ||
-                    'Select a signature'}
+                  {signatures.find((s) => s.is_default)?.name || 'No signature'}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
@@ -473,9 +506,18 @@ export default function UserEmailSettingsPage() {
               </SelectContent>
             </Select>
             <p className="text-xs text-slate-500">
-              <Link href="/crm/settings/signatures" className="text-teal-600 hover:underline">
-                Manage your signatures
-              </Link>
+              {signatures.length === 0 ? (
+                <>
+                  You have no signatures yet.{' '}
+                  <Link href="/crm/settings/signatures" className="text-teal-600 hover:underline">
+                    Create one
+                  </Link>
+                </>
+              ) : (
+                <Link href="/crm/settings/signatures" className="text-teal-600 hover:underline">
+                  Manage your signatures
+                </Link>
+              )}
             </p>
           </div>
         </CardContent>
