@@ -48,6 +48,7 @@ import {
 import { cn } from '@crm-eco/ui/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
+import { toastCopy } from '@/lib/crm/toast-copy';
 import type { EmailCampaign } from '@crm-eco/lib/types';
 
 // ============================================================================
@@ -55,7 +56,7 @@ import type { EmailCampaign } from '@crm-eco/lib/types';
 // ============================================================================
 
 type Campaign = Pick<EmailCampaign, 'id' | 'name' | 'subject' | 'scheduled_at' | 'started_at' | 'completed_at' | 'total_recipients' | 'sent_count' | 'created_at' | 'created_by'> & {
-  status: 'draft' | 'scheduled' | 'sending' | 'sent' | 'paused' | 'cancelled';
+  status: 'draft' | 'scheduled' | 'sending' | 'sent' | 'paused' | 'cancelled' | 'failed';
 };
 
 interface CampaignStats {
@@ -114,9 +115,15 @@ function StatusBadge({ status }: { status: Campaign['status'] }) {
     sent: { label: 'Sent', className: 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400' },
     paused: { label: 'Paused', className: 'bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-400' },
     cancelled: { label: 'Cancelled', className: 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400' },
+    failed: { label: 'Failed', className: 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400' },
   };
 
-  const config = statusConfig[status];
+  // Fall back rather than crash: an unmapped status used to throw on
+  // `config.className` and take the whole list down with it.
+  const config = statusConfig[status] ?? {
+    label: String(status),
+    className: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400',
+  };
 
   return (
     <Badge variant="secondary" className={cn('font-medium', config.className)}>
@@ -275,7 +282,9 @@ export default function CampaignsPage() {
         .eq('org_id', profile.organization_id)
         .order('created_at', { ascending: false });
 
-      if (error) return;
+      // Returning quietly here rendered "No campaigns yet" on a failed query,
+      // which is indistinguishable from genuinely having none.
+      if (error) throw error;
 
       const campaignList = (data || []) as Campaign[];
       setCampaigns(campaignList);
@@ -341,7 +350,10 @@ export default function CampaignsPage() {
             .single();
           if (fetchError || !original) throw fetchError || new Error('Campaign not found');
 
-          // Create duplicate
+          // A copy starts genuinely empty. Spreading the original used to carry
+          // over the recipient count and every engagement counter, producing a
+          // draft that claimed recipients it did not have and then refused to
+          // send because none actually existed.
           const { error: insertError } = await supabase
             .from('email_campaigns')
             .insert({
@@ -352,34 +364,58 @@ export default function CampaignsPage() {
               scheduled_at: null,
               started_at: null,
               completed_at: null,
+              total_recipients: 0,
               sent_count: 0,
+              delivered_count: 0,
+              opened_count: 0,
+              clicked_count: 0,
+              bounced_count: 0,
+              unsubscribed_count: 0,
+              failed_count: 0,
+              error_message: null,
               created_at: new Date().toISOString(),
             });
           if (insertError) throw insertError;
           break;
         }
         case 'delete': {
+          // Only drafts are deletable — the RLS policy enforces it. Without this
+          // the menu offered Delete on sent campaigns, affected zero rows, and
+          // reported nothing at all.
+          const target = campaigns.find((c) => c.id === campaignId);
+          if (target && target.status !== 'draft') {
+            toast.error(
+              toastCopy.failed('delete this campaign', undefined, 'Only drafts can be deleted'),
+            );
+            setActionLoading(null);
+            return;
+          }
           if (!(await confirmDialog({ title: 'Delete campaign?', confirmLabel: 'Delete', destructive: true }))) {
             setActionLoading(null);
             return;
           }
-          const { error } = await supabase
+          const { error, count } = await supabase
             .from('email_campaigns')
-            .delete()
+            .delete({ count: 'exact' })
             .eq('id', campaignId);
           if (error) throw error;
+          if (!count) throw new Error('Campaign could not be deleted');
           break;
         }
       }
       // Refresh campaigns list
-      loadCampaigns();
+      await loadCampaigns();
     } catch (error) {
       console.error('Campaign action failed:', error);
       toast.error('Failed to perform action');
     } finally {
       setActionLoading(null);
     }
-  }, [supabase]);
+    // `supabase` is a module singleton, so the old dep array never changed and
+    // this closed over the first loadCampaigns — the one created while the
+    // profile was still null, which returns immediately. The list therefore
+    // never refreshed after an action.
+  }, [campaigns, loadCampaigns]);
 
   const filteredCampaigns = useMemo(() => {
     const searchLower = debouncedQuery.toLowerCase();
@@ -481,6 +517,7 @@ export default function CampaignsPage() {
               <option value="sending">Sending</option>
               <option value="sent">Sent</option>
               <option value="paused">Paused</option>
+              <option value="failed">Failed</option>
             </select>
           </div>
         </div>

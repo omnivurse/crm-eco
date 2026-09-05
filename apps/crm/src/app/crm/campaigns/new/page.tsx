@@ -224,7 +224,10 @@ export default function NewCampaignPage() {
           from_name: fromName || null,
           from_email: fromEmail,
           reply_to: replyTo || null,
-          status: send ? (scheduledAt ? 'scheduled' : 'sending') : 'draft',
+          // Always born a draft. Writing 'sending' straight to the row is what
+          // stranded campaigns: it looked sent while nothing ever enqueued the
+          // mail. Every transition after this belongs to the send API.
+          status: 'draft',
           scheduled_at: scheduledAt,
           total_recipients: recipients.length,
           created_by: authProfile.id,
@@ -253,13 +256,35 @@ export default function NewCampaignPage() {
         if (recipientsError) throw recipientsError;
       }
 
-      toast.success(
-        send
-          ? scheduledAt
-            ? 'Campaign scheduled successfully!'
-            : 'Campaign started sending!'
-          : 'Campaign saved as draft!'
-      );
+      // Recipients are inserted first on purpose: the send API refuses a
+      // campaign with an empty list.
+      if (send) {
+        const response = await fetch(`/api/campaigns/${campaign.id}/send`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(scheduledAt ? { scheduled_at: scheduledAt } : {}),
+        });
+        const payload = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          // The draft is already saved, so nothing is lost. Say why it did not go out.
+          const detail =
+            typeof payload?.detail === 'string'
+              ? payload.detail
+              : typeof payload?.error === 'string'
+                ? payload.error
+                : 'It is saved as a draft';
+          toast.error(toastCopy.failed('start this campaign', undefined, detail));
+          router.push(`/crm/campaigns/${campaign.id}`);
+          return;
+        }
+
+        toast.success(
+          scheduledAt ? 'Campaign scheduled successfully!' : 'Campaign started sending!'
+        );
+      } else {
+        toast.success(toastCopy.saved('campaign'));
+      }
 
       router.push(`/crm/campaigns/${campaign.id}`);
     } catch (error) {

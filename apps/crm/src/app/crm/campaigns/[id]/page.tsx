@@ -45,7 +45,7 @@ import type { EmailCampaign } from '@crm-eco/lib/types';
 // ============================================================================
 
 type Campaign = Pick<EmailCampaign, 'id' | 'name' | 'subject' | 'body_html' | 'from_name' | 'from_email' | 'reply_to' | 'scheduled_at' | 'started_at' | 'completed_at' | 'total_recipients' | 'sent_count' | 'created_at'> & {
-  status: 'draft' | 'scheduled' | 'sending' | 'sent' | 'paused' | 'cancelled';
+  status: 'draft' | 'scheduled' | 'sending' | 'sent' | 'paused' | 'cancelled' | 'failed';
 };
 
 interface CampaignStats {
@@ -125,9 +125,14 @@ function StatusBadge({ status }: { status: Campaign['status'] }) {
     sent: { label: 'Sent', className: 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400' },
     paused: { label: 'Paused', className: 'bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-400' },
     cancelled: { label: 'Cancelled', className: 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400' },
+    failed: { label: 'Failed', className: 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400' },
   };
 
-  const config = statusConfig[status];
+  // Fall back rather than crash on an unmapped status.
+  const config = statusConfig[status] ?? {
+    label: String(status),
+    className: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400',
+  };
 
   return (
     <Badge variant="secondary" className={cn('font-medium', config.className)}>

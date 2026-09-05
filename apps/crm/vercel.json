@@ -28,6 +28,10 @@
       "schedule": "* * * * *"
     },
     {
+      "path": "/api/cron/send-scheduled-campaigns",
+      "schedule": "*/5 * * * *"
+    },
+    {
       "path": "/api/cron/idempotency-gc",
       "schedule": "*/15 * * * *"
     },

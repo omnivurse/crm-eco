@@ -4,6 +4,12 @@ export const COMMS_FLAGS = {
   closedLoop: 'crm.comms.closed_loop',
   killSwitch: 'crm.comms.kill_switch',
   mailboxOauth: 'crm.comms.mailbox_oauth',
+  /**
+   * Gates bulk campaign delivery specifically. Separate from `killSwitch` so
+   * campaigns can stay closed while ordinary replies and transactional mail
+   * keep flowing. Defaults closed; a single test send bypasses it.
+   */
+  campaignSend: 'crm.comms.campaign_send',
 } as const;
 
 export type CommsFlagKey = (typeof COMMS_FLAGS)[keyof typeof COMMS_FLAGS];
