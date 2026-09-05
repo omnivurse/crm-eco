@@ -3,6 +3,7 @@ import type { SequenceStep, EnrollmentStatus } from './types';
 import { enqueueOutbox } from '@/lib/email/outbox';
 import { generateRfc822MessageId, domainFromEmail } from '@/lib/email/rfc822';
 import { isEmailSuppressed } from '@/lib/email/suppression';
+import { COMMS_FLAGS, isCommsFlagEnabled } from '@/lib/email/comms-flags';
 
 // Create admin client for background processing
 function createAdminClient() {
@@ -81,9 +82,30 @@ export async function processEnrollments() {
 
   let processed = 0;
   let errors = 0;
+  let skipped = 0;
+
+  // One flag read per org per run rather than per enrollment.
+  const sendAllowedByOrg = new Map<string, boolean>();
+  const sendAllowed = async (orgId: string): Promise<boolean> => {
+    const cached = sendAllowedByOrg.get(orgId);
+    if (cached !== undefined) return cached;
+    const allowed = await isCommsFlagEnabled(supabase, COMMS_FLAGS.sequenceSend, orgId, false);
+    sendAllowedByOrg.set(orgId, allowed);
+    return allowed;
+  };
 
   for (const enrollment of dueEnrollments) {
     try {
+      const orgId = enrollment.sequence?.org_id;
+
+      // Fails closed. A sequence fires unattended, so the gate is checked
+      // before the step runs — leaving the enrollment due rather than
+      // consuming it, so enabling the flag resumes exactly where it stopped.
+      if (!orgId || !(await sendAllowed(orgId))) {
+        skipped++;
+        continue;
+      }
+
       await processEnrollmentStep(supabase, enrollment);
       processed++;
     } catch (err) {
@@ -92,7 +114,7 @@ export async function processEnrollments() {
     }
   }
 
-  return { processed, errors };
+  return { processed, errors, skipped };
 }
 
 /**

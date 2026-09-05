@@ -48,6 +48,8 @@ import {
 import { toast } from 'sonner';
 import type { EmailSequence, SequenceStep, SequenceStatus, StepType } from '@/lib/sequences/types';
 import { SequenceStepEditor } from '@/components/sequences/SequenceStepEditor';
+import { EnrollContactsDialog } from '@/components/sequences/EnrollContactsDialog';
+import { toastCopy } from '@/lib/crm/toast-copy';
 
 interface SequenceWithDetails extends EmailSequence {
   steps: SequenceStep[];
@@ -61,6 +63,24 @@ interface EnrollmentStats {
   exited: number;
   paused: number;
 }
+
+interface EnrollmentRow {
+  id: string;
+  email: string;
+  status: string;
+  enrolled_at: string;
+  next_step_at: string | null;
+  exit_reason: string | null;
+  record?: { id: string; title?: string | null; data?: Record<string, unknown> | null } | null;
+  current_step?: { id: string; name: string; step_order: number } | null;
+}
+
+const ENROLLMENT_STATUS_STYLES: Record<string, string> = {
+  active: 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400',
+  paused: 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400',
+  completed: 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400',
+  exited: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400',
+};
 
 function StatusBadge({ status }: { status: SequenceStatus }) {
   const config = {
@@ -232,10 +252,62 @@ function SequenceDetailPageContent() {
   const [editingStep, setEditingStep] = useState<SequenceStep | null>(null);
   const [deleteStepId, setDeleteStepId] = useState<string | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [enrollOpen, setEnrollOpen] = useState(false);
+  const [enrollments, setEnrollments] = useState<EnrollmentRow[]>([]);
+  const [enrollmentsLoading, setEnrollmentsLoading] = useState(true);
+  const [enrollmentAction, setEnrollmentAction] = useState<string | null>(null);
 
   useEffect(() => {
     loadSequence();
   }, [id]);
+
+  useEffect(() => {
+    loadEnrollments();
+  }, [id]);
+
+  async function loadEnrollments() {
+    setEnrollmentsLoading(true);
+    try {
+      const response = await fetch(`/api/sequences/${id}/enrollments?limit=100`);
+      if (!response.ok) throw new Error('Failed to load enrollments');
+      const data = await response.json();
+      setEnrollments((data.enrollments || []) as EnrollmentRow[]);
+    } catch (error) {
+      console.error('Error loading enrollments:', error);
+      // Surfaced in the tab rather than as a toast: this loads alongside the
+      // page and a toast on every visit would be noise.
+      setEnrollments([]);
+    } finally {
+      setEnrollmentsLoading(false);
+    }
+  }
+
+  async function handleEnrollmentAction(
+    enrollmentId: string,
+    action: 'pause' | 'resume' | 'exit',
+  ) {
+    setEnrollmentAction(enrollmentId);
+    try {
+      const response = await fetch(`/api/sequences/${id}/enrollments`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enrollment_ids: [enrollmentId], action }),
+      });
+      if (!response.ok) throw new Error('Failed to update enrollment');
+      await loadEnrollments();
+      await loadSequence();
+    } catch (error) {
+      toast.error(
+        toastCopy.failed(
+          `${action} that enrollment`,
+          undefined,
+          error instanceof Error ? error.message : undefined,
+        ),
+      );
+    } finally {
+      setEnrollmentAction(null);
+    }
+  }
 
   async function loadSequence() {
     try {
@@ -387,6 +459,12 @@ function SequenceDetailPageContent() {
         </div>
 
         <div className="flex items-center gap-2">
+          {sequence.status === 'active' && (
+            <Button variant="outline" onClick={() => setEnrollOpen(true)}>
+              <Users className="w-4 h-4 mr-2" />
+              Enroll contacts
+            </Button>
+          )}
           {sequence.status === 'active' ? (
             <Button
               variant="outline"
@@ -533,16 +611,126 @@ function SequenceDetailPageContent() {
         </TabsContent>
 
         <TabsContent value="enrollments">
-          <div className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl p-6">
-            <div className="text-center py-12">
-              <Users className="w-12 h-12 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
-              <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-2">
-                Enrollments
-              </h3>
-              <p className="text-slate-500 dark:text-slate-400">
-                View and manage contacts enrolled in this sequence
-              </p>
+          <div className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl">
+            <div className="flex items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-700 p-4">
+              <div>
+                <h3 className="font-medium text-slate-900 dark:text-white">Enrollments</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  Everyone currently moving through this sequence.
+                </p>
+              </div>
+              <Button size="sm" onClick={() => setEnrollOpen(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Enroll contacts
+              </Button>
             </div>
+
+            {enrollmentsLoading ? (
+              <div className="flex items-center justify-center gap-2 py-14 text-sm text-slate-500">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Loading enrollments…
+              </div>
+            ) : enrollments.length === 0 ? (
+              <div className="text-center py-14 px-6">
+                <Users className="w-12 h-12 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
+                <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-2">
+                  Nobody is enrolled yet
+                </h3>
+                <p className="text-slate-500 dark:text-slate-400 mb-6 max-w-md mx-auto">
+                  A sequence does nothing until you enroll someone. Add contacts and each one
+                  starts at step one on their own schedule.
+                </p>
+                <Button onClick={() => setEnrollOpen(true)}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Enroll contacts
+                </Button>
+              </div>
+            ) : (
+              <ul className="divide-y divide-slate-100 dark:divide-slate-800">
+                {enrollments.map((enrollment) => {
+                  const label =
+                    enrollment.record?.title ||
+                    (enrollment.record?.data as { first_name?: string; last_name?: string } | null
+                      ? [
+                          (enrollment.record?.data as { first_name?: string })?.first_name,
+                          (enrollment.record?.data as { last_name?: string })?.last_name,
+                        ]
+                          .filter(Boolean)
+                          .join(' ')
+                          .trim()
+                      : '') ||
+                    enrollment.email;
+                  const busy = enrollmentAction === enrollment.id;
+
+                  return (
+                    <li
+                      key={enrollment.id}
+                      className="flex flex-wrap items-center gap-3 px-4 py-3"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="truncate font-medium text-slate-900 dark:text-white">
+                            {label}
+                          </span>
+                          <Badge
+                            variant="secondary"
+                            className={cn(
+                              'font-medium',
+                              ENROLLMENT_STATUS_STYLES[enrollment.status] ??
+                                'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400',
+                            )}
+                          >
+                            {enrollment.status}
+                          </Badge>
+                        </div>
+                        <div className="truncate text-sm text-slate-500 dark:text-slate-400">
+                          {enrollment.email}
+                          {enrollment.current_step
+                            ? ` · on “${enrollment.current_step.name}”`
+                            : ''}
+                          {enrollment.exit_reason ? ` · ${enrollment.exit_reason}` : ''}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        {enrollment.status === 'active' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={busy}
+                            onClick={() => handleEnrollmentAction(enrollment.id, 'pause')}
+                          >
+                            <Pause className="w-3.5 h-3.5 mr-1.5" />
+                            Pause
+                          </Button>
+                        )}
+                        {enrollment.status === 'paused' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={busy}
+                            onClick={() => handleEnrollmentAction(enrollment.id, 'resume')}
+                          >
+                            <Play className="w-3.5 h-3.5 mr-1.5" />
+                            Resume
+                          </Button>
+                        )}
+                        {(enrollment.status === 'active' || enrollment.status === 'paused') && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            disabled={busy}
+                            onClick={() => handleEnrollmentAction(enrollment.id, 'exit')}
+                          >
+                            Remove
+                          </Button>
+                        )}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </div>
         </TabsContent>
 
@@ -560,6 +748,17 @@ function SequenceDetailPageContent() {
           </div>
         </TabsContent>
       </Tabs>
+
+      <EnrollContactsDialog
+        open={enrollOpen}
+        onClose={() => setEnrollOpen(false)}
+        sequenceId={id}
+        sequenceStatus={sequence.status}
+        onEnrolled={() => {
+          loadEnrollments();
+          loadSequence();
+        }}
+      />
 
       {/* Add/Edit Step Dialog */}
       <SequenceStepEditor

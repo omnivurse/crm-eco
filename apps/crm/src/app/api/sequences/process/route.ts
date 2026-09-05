@@ -18,6 +18,9 @@ export async function POST(request: NextRequest) {
       success: true,
       processed: result.processed,
       errors: result.errors,
+      // Non-zero means the sequence-send flag is closed for those orgs; the
+      // enrollments stay due and resume when it is opened.
+      skipped: result.skipped,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {

@@ -40,6 +40,7 @@ import {
   Loader2,
   Zap,
   Archive,
+  BookOpen,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { EmailSequence, SequenceStatus } from '@/lib/sequences/types';
@@ -357,13 +358,21 @@ export default function SequencesPage() {
           </p>
         </div>
 
-        <Button
-          onClick={() => router.push('/crm/sequences/new')}
-          className="gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          New Sequence
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" asChild className="gap-2">
+            <Link href="/crm/learn/sequences">
+              <BookOpen className="w-4 h-4" />
+              How sequences work
+            </Link>
+          </Button>
+          <Button
+            onClick={() => router.push('/crm/sequences/new')}
+            className="gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            New Sequence
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -401,13 +410,72 @@ export default function SequencesPage() {
               ? 'No sequences match your filters'
               : 'No sequences yet'}
           </h3>
-          <p className="text-slate-500 dark:text-slate-400 mb-6">
-            Create automated email sequences to nurture leads
-          </p>
-          <Button onClick={() => router.push('/crm/sequences/new')}>
-            <Plus className="w-4 h-4 mr-2" />
-            Create Your First Sequence
-          </Button>
+
+          {searchQuery || statusFilter !== 'all' ? (
+            <p className="text-slate-500 dark:text-slate-400 mb-6">
+              Try adjusting your search or filter criteria
+            </p>
+          ) : (
+            <>
+              <p className="text-slate-500 dark:text-slate-400 mb-8 max-w-xl mx-auto">
+                A sequence is a series of emails that sends itself on a schedule — a follow-up
+                on day one, a nudge three days later, and so on. You build it once, enroll
+                contacts, and each person moves through it at their own pace.
+              </p>
+
+              {/* First-run orientation. The concepts here are the ones people
+                  most often get stuck on: nothing sends until you both activate
+                  the sequence and enroll someone. */}
+              <ol className="mx-auto mb-8 grid max-w-3xl gap-4 text-left sm:grid-cols-2 lg:grid-cols-4">
+                {[
+                  {
+                    title: 'Build the steps',
+                    body: 'Add emails and the wait time between them. Merge fields like {{contact.first_name}} personalise each send.',
+                  },
+                  {
+                    title: 'Activate it',
+                    body: 'A draft never sends. Activating opens the sequence so contacts can be enrolled.',
+                  },
+                  {
+                    title: 'Enroll contacts',
+                    body: 'Nothing happens until someone is in it. Each contact starts at step one on their own clock.',
+                  },
+                  {
+                    title: 'Let it run',
+                    body: 'Steps fire automatically. People leave on reply, bounce or unsubscribe, per your exit rules.',
+                  },
+                ].map((tip, index) => (
+                  <li
+                    key={tip.title}
+                    className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/40"
+                  >
+                    <div className="mb-1.5 flex items-center gap-2">
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-violet-100 text-xs font-semibold text-violet-700 dark:bg-violet-500/20 dark:text-violet-300">
+                        {index + 1}
+                      </span>
+                      <span className="text-sm font-medium text-slate-900 dark:text-white">
+                        {tip.title}
+                      </span>
+                    </div>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">{tip.body}</p>
+                  </li>
+                ))}
+              </ol>
+            </>
+          )}
+
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <Button onClick={() => router.push('/crm/sequences/new')}>
+              <Plus className="w-4 h-4 mr-2" />
+              Create Your First Sequence
+            </Button>
+            <Button variant="outline" asChild>
+              <Link href="/crm/learn/sequences">
+                <BookOpen className="w-4 h-4 mr-2" />
+                Read the guide
+              </Link>
+            </Button>
+          </div>
         </div>
       ) : (
         <div className="grid gap-4">

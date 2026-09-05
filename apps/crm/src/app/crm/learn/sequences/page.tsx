@@ -59,7 +59,18 @@ const DEMO_STEPS = [
   },
 ];
 
+// Every entry must point at a page that exists. This list previously offered
+// six guides, four of which 404'd (email-steps, timing, conditions,
+// exit-conditions) while three real guides — overview, building, analytics —
+// were not linked from anywhere.
 const ARTICLES = [
+  {
+    title: 'Sequences Overview',
+    description: 'What sequences are and when to reach for one',
+    time: '3 min',
+    href: '/crm/learn/sequences/overview',
+    icon: <Workflow className="w-5 h-5" />,
+  },
   {
     title: 'Creating Sequences',
     description: 'Build multi-step automated email sequences',
@@ -68,38 +79,24 @@ const ARTICLES = [
     icon: <Workflow className="w-5 h-5" />,
   },
   {
-    title: 'Email Steps',
-    description: 'Configure emails with templates and merge fields',
+    title: 'Building Steps',
+    description: 'Configure emails, wait periods and timing between sends',
     time: '4 min',
-    href: '/crm/learn/sequences/email-steps',
-    icon: <Mail className="w-5 h-5" />,
-  },
-  {
-    title: 'Wait Steps & Timing',
-    description: 'Set optimal delays between sequence emails',
-    time: '3 min',
-    href: '/crm/learn/sequences/timing',
+    href: '/crm/learn/sequences/building',
     icon: <Timer className="w-5 h-5" />,
   },
   {
-    title: 'Conditional Logic',
-    description: 'Add if/then branches based on recipient behavior',
-    time: '5 min',
-    href: '/crm/learn/sequences/conditions',
-    icon: <GitBranch className="w-5 h-5" />,
-  },
-  {
     title: 'Enrolling Contacts',
-    description: 'Add contacts manually or automatically via triggers',
+    description: 'Add contacts to a sequence and manage who is in it',
     time: '4 min',
     href: '/crm/learn/sequences/enrolling',
     icon: <Users className="w-5 h-5" />,
   },
   {
-    title: 'Exit Conditions',
-    description: 'Configure when contacts should leave the sequence',
+    title: 'Sequence Analytics',
+    description: 'Read open, click and completion performance',
     time: '4 min',
-    href: '/crm/learn/sequences/exit-conditions',
+    href: '/crm/learn/sequences/analytics',
     icon: <Settings className="w-5 h-5" />,
   },
 ];

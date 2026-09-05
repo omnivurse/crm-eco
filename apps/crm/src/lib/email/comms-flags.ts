@@ -10,6 +10,12 @@ export const COMMS_FLAGS = {
    * keep flowing. Defaults closed; a single test send bypasses it.
    */
   campaignSend: 'crm.comms.campaign_send',
+  /**
+   * Gates automated sequence delivery. A sequence fires on a timer with nobody
+   * watching, so it gets its own closed-by-default switch rather than riding on
+   * the campaign flag.
+   */
+  sequenceSend: 'crm.comms.sequence_send',
 } as const;
 
 export type CommsFlagKey = (typeof COMMS_FLAGS)[keyof typeof COMMS_FLAGS];
