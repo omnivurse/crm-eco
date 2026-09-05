@@ -386,6 +386,7 @@ export function ComposeDock({
 
       <TemplatePicker
         open={showTemplatePicker}
+        nonModal
         onClose={() => setShowTemplatePicker(false)}
         onSelect={handleTemplateSelect}
       />

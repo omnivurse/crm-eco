@@ -19,9 +19,11 @@ interface TemplatePickerProps {
   open: boolean;
   onClose: () => void;
   onSelect: (template: { subject: string; body_html: string }) => void;
+  /** Skip the dimming backdrop when the surface behind stays live, like the compose dock. */
+  nonModal?: boolean;
 }
 
-export function TemplatePicker({ open, onClose, onSelect }: TemplatePickerProps) {
+export function TemplatePicker({ open, onClose, onSelect, nonModal = false }: TemplatePickerProps) {
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -73,7 +75,10 @@ export function TemplatePicker({ open, onClose, onSelect }: TemplatePickerProps)
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/30 z-40" onClick={onClose} />
+      <div
+        className={cn('fixed inset-0 z-50', !nonModal && 'bg-black/30')}
+        onClick={onClose}
+      />
       <div className="fixed inset-y-4 right-4 w-[380px] max-w-[calc(100vw-2rem)] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl z-50 flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-slate-700">
