@@ -85,3 +85,9 @@ content_path = "./supabase/templates/email_change.html"
 # rejected by the function instead.
 [functions.email-intake]
 verify_jwt = false
+
+# Callers hold a `sb_secret_...` key, which the gateway cannot parse as a JWT
+# and rejects before the handler runs. The function fails closed on its own
+# shared secret instead — see _shared/cron-auth.ts.
+[functions.send-scheduled-emails]
+verify_jwt = false

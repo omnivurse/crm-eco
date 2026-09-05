@@ -13,10 +13,23 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const edgeSecret = process.env.EDGE_CRON_SECRET;
+    if (!edgeSecret) {
+      console.error('EDGE_CRON_SECRET is unset; refusing to call the edge function');
+      return NextResponse.json(
+        { message: 'Scheduled emails cron misconfigured', status: 'error' },
+        { status: 500 }
+      );
+    }
+
     const supabase = createServiceRoleClient();
 
-    // Invoke the send-scheduled-emails edge function (runs for all orgs)
-    const { data, error } = await supabase.functions.invoke('send-scheduled-emails');
+    // Invoke the send-scheduled-emails edge function (runs for all orgs).
+    // The client's own key is a `sb_secret_...` value the edge function cannot
+    // match, so authorize with the shared secret it does recognise.
+    const { data, error } = await supabase.functions.invoke('send-scheduled-emails', {
+      headers: { 'x-cron-secret': edgeSecret },
+    });
 
     if (error) {
       console.error('Failed to send scheduled emails:', error);
