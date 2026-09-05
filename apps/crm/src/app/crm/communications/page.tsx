@@ -52,6 +52,21 @@ interface RecentActivity {
   contact: string;
   time: string;
   status: 'sent' | 'received' | 'missed' | 'scheduled';
+  /** Sort key for merging the mailbox and the task log into one feed. Not rendered. */
+  at: number;
+  href?: string;
+}
+
+interface InboxMessageRow {
+  id: string;
+  conversation_id: string;
+  subject: string | null;
+  from_name: string | null;
+  from_address: string | null;
+  to_name: string | null;
+  to_address: string | null;
+  direction: string;
+  sent_at: string;
 }
 
 interface ActivityData {
@@ -164,8 +179,8 @@ function ActivityRow({ activity }: { activity: RecentActivity }) {
     scheduled: 'text-amber-600 dark:text-amber-400',
   };
 
-  return (
-    <div className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+  const body = (
+    <>
       <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-lg">
         <ActivityIcon type={activity.type} />
       </div>
@@ -173,15 +188,30 @@ function ActivityRow({ activity }: { activity: RecentActivity }) {
         <div className="text-sm font-medium text-slate-900 dark:text-white truncate">
           {activity.subject}
         </div>
-        <div className="text-xs text-slate-500 dark:text-slate-400">
+        <div className="text-xs text-slate-500 dark:text-slate-400 truncate">
           {activity.contact} &bull; {activity.time}
         </div>
       </div>
-      <span className={`text-xs font-medium capitalize ${statusColors[activity.status]}`}>
+      <span className={`text-xs font-medium capitalize shrink-0 ${statusColors[activity.status]}`}>
         {activity.status}
       </span>
-    </div>
+    </>
   );
+
+  const className =
+    'flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors';
+
+  // Email rows deep-link back to their thread; a listed message you cannot open
+  // is a dead end.
+  if (activity.href) {
+    return (
+      <Link href={activity.href} className={className}>
+        {body}
+      </Link>
+    );
+  }
+
+  return <div className={className}>{body}</div>;
 }
 
 // ============================================================================
@@ -236,20 +266,104 @@ function CommunicationsPageContent() {
         // Get date 7 days ago
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        const since = sevenDaysAgo.toISOString();
+        const orgId = authProfile.organization_id;
 
-        // Fetch activity counts by type (last 7 days)
-        const { data: activitiesData } = await supabase
-          .from('crm_tasks')
-          .select('activity_type, status, call_type')
-          .eq('org_id', authProfile.organization_id)
-          .in('activity_type', ['email', 'call', 'meeting'])
-          .is('deleted_at' as never, null)
-          .gte('created_at', sevenDaysAgo.toISOString());
+        // Email comes from the mailbox itself. It used to be read from crm_tasks,
+        // but neither inbound mail nor the inbox composer writes a task row, so
+        // every email figure on this page rendered zero while the mailbox filled up.
+        const [
+          sentRes,
+          receivedRes,
+          openThreadsRes,
+          windowRes,
+          recentEmailRes,
+          taskStatsRes,
+          recentTaskRes,
+        ] = await Promise.all([
+          supabase
+            .from('inbox_messages')
+            .select('*', { count: 'exact', head: true })
+            .eq('org_id', orgId)
+            .eq('channel', 'email')
+            .eq('direction', 'outbound')
+            .gte('sent_at', since),
+          supabase
+            .from('inbox_messages')
+            .select('*', { count: 'exact', head: true })
+            .eq('org_id', orgId)
+            .eq('channel', 'email')
+            .eq('direction', 'inbound')
+            .gte('sent_at', since),
+          supabase
+            .from('inbox_conversations')
+            .select('*', { count: 'exact', head: true })
+            .eq('org_id', orgId)
+            .eq('status', 'open'),
+          // Response rate needs only the thread/direction pairs. Capped so this
+          // stays cheap as the mailbox grows.
+          supabase
+            .from('inbox_messages')
+            .select('conversation_id, direction')
+            .eq('org_id', orgId)
+            .eq('channel', 'email')
+            .gte('sent_at', since)
+            .limit(1000),
+          supabase
+            .from('inbox_messages')
+            .select('id, conversation_id, subject, from_name, from_address, to_name, to_address, direction, sent_at')
+            .eq('org_id', orgId)
+            .eq('channel', 'email')
+            .order('sent_at', { ascending: false })
+            .limit(10),
+          supabase
+            .from('crm_tasks')
+            .select('activity_type, status, call_type')
+            .eq('org_id', orgId)
+            .in('activity_type', ['call', 'meeting'])
+            .is('deleted_at' as never, null)
+            .gte('created_at', since),
+          supabase
+            .from('crm_tasks')
+            .select('id, title, activity_type, status, call_type, created_at, record:crm_records(title)')
+            .eq('org_id', orgId)
+            .in('activity_type', ['call', 'meeting'])
+            .is('deleted_at' as never, null)
+            .order('created_at', { ascending: false })
+            .limit(10),
+        ]);
 
-        const activities = (activitiesData || []) as { activity_type: string; status: string; call_type: string | null }[];
+        const firstError = [
+          sentRes.error,
+          receivedRes.error,
+          openThreadsRes.error,
+          windowRes.error,
+          recentEmailRes.error,
+          taskStatsRes.error,
+          recentTaskRes.error,
+        ].find(Boolean);
+        if (firstError) throw firstError;
 
-        // Calculate stats by type
-        const emailActivities = activities.filter(a => a.activity_type === 'email');
+        const emailSent = sentRes.count ?? 0;
+        const emailReceived = receivedRes.count ?? 0;
+        const emailPending = openThreadsRes.count ?? 0;
+
+        // opened_at/replied_at are never written, so a rate built on them would
+        // always read 0%. Count a thread as answered when we sent into it after
+        // mail arrived.
+        const threads = new Map<string, { inbound: boolean; outbound: boolean }>();
+        for (const row of (windowRes.data || []) as { conversation_id: string; direction: string }[]) {
+          const entry = threads.get(row.conversation_id) || { inbound: false, outbound: false };
+          if (row.direction === 'inbound') entry.inbound = true;
+          else entry.outbound = true;
+          threads.set(row.conversation_id, entry);
+        }
+        const awaitingThreads = [...threads.values()].filter((t) => t.inbound);
+        const responseRate = awaitingThreads.length
+          ? Math.round((awaitingThreads.filter((t) => t.outbound).length / awaitingThreads.length) * 100)
+          : 0;
+
+        const activities = (taskStatsRes.data || []) as { activity_type: string; status: string; call_type: string | null }[];
         const callActivities = activities.filter(a => a.activity_type === 'call');
         const meetingActivities = activities.filter(a => a.activity_type === 'meeting');
 
@@ -259,12 +373,12 @@ function CommunicationsPageContent() {
             name: 'Email',
             description: 'Send and track emails to contacts',
             icon: <Mail className="w-5 h-5" />,
-            href: '/crm/integrations/email',
+            href: '/crm/inbox',
             color: 'blue',
             stats: {
-              sent: emailActivities.filter(e => e.status === 'completed').length,
-              received: emailActivities.filter(e => e.status === 'open').length,
-              pending: emailActivities.filter(e => e.status === 'in_progress').length,
+              sent: emailSent,
+              received: emailReceived,
+              pending: emailPending,
             },
             status: 'connected',
           },
@@ -314,31 +428,25 @@ function CommunicationsPageContent() {
         const totalSent = channelData.reduce((sum, c) => sum + c.stats.sent, 0);
         const totalReceived = channelData.reduce((sum, c) => sum + c.stats.received, 0);
         const totalPending = channelData.reduce((sum, c) => sum + c.stats.pending, 0);
-        const responseRate = activities.length > 0
-          ? Math.round((activities.filter(a => a.status === 'completed').length / activities.length) * 100)
-          : 0;
 
         setStats({ sent: totalSent, received: totalReceived, pending: totalPending, responseRate });
 
-        // Fetch recent activities
-        const { data: recentData } = await supabase
-          .from('crm_tasks')
-          .select(`
-            id,
-            title,
-            activity_type,
-            status,
-            call_type,
-            created_at,
-            record:crm_records(title)
-          `)
-          .eq('org_id', authProfile.organization_id)
-          .in('activity_type', ['email', 'call', 'meeting'])
-          .is('deleted_at' as never, null)
-          .order('created_at', { ascending: false })
-          .limit(10);
+        const emailFeed: RecentActivity[] = ((recentEmailRes.data || []) as unknown as InboxMessageRow[]).map((m) => {
+          const inbound = m.direction === 'inbound';
+          const who = inbound ? m.from_name || m.from_address : m.to_name || m.to_address;
+          return {
+            id: `msg-${m.id}`,
+            type: 'email',
+            subject: m.subject?.trim() || '(no subject)',
+            contact: who || 'Unknown contact',
+            time: getTimeAgo(m.sent_at),
+            status: inbound ? 'received' : 'sent',
+            at: new Date(m.sent_at).getTime(),
+            href: `/crm/inbox?c=${m.conversation_id}`,
+          };
+        });
 
-        const recentList: RecentActivity[] = ((recentData || []) as unknown as ActivityData[]).map(activity => {
+        const taskFeed: RecentActivity[] = ((recentTaskRes.data || []) as unknown as ActivityData[]).map(activity => {
           const activityStatus = activity.status === 'completed'
             ? (activity.call_type === 'inbound' ? 'received' : 'sent')
             : activity.status === 'open'
@@ -346,16 +454,20 @@ function CommunicationsPageContent() {
               : 'sent';
 
           return {
-            id: activity.id,
-            type: activity.activity_type as 'email' | 'call' | 'meeting',
+            id: `task-${activity.id}`,
+            type: activity.activity_type as 'call' | 'meeting',
             subject: activity.title,
             contact: activity.record?.[0]?.title || 'Unknown Contact',
             time: getTimeAgo(activity.created_at),
             status: activityStatus as 'sent' | 'received' | 'missed' | 'scheduled',
+            at: new Date(activity.created_at).getTime(),
+            href: '/crm/activities',
           };
         });
 
-        setRecentActivities(recentList);
+        setRecentActivities(
+          [...emailFeed, ...taskFeed].sort((a, b) => b.at - a.at).slice(0, 10),
+        );
       } catch (error) {
         console.error('Error loading communications data:', error);
         toast.error('Failed to load communications data');
