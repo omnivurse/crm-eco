@@ -26,6 +26,8 @@ export interface ResendReceivedEmail {
   text?: string | null;
   html?: string | null;
   headers?: Record<string, string> | Array<{ name: string; value: string }> | null;
+  /** When Resend itself took delivery. Closer to send time than our webhook run. */
+  received_at?: string | null;
   reply_to?: string[] | null;
   /** Original recipients from the `for` clause of Received headers. */
   received_for?: string[] | null;
@@ -47,6 +49,8 @@ export interface HydratableEmail {
   reply_to?: string[];
   received_for?: string[];
   headers?: Record<string, string>;
+  /** Resend's own receipt time, carried through hydration for thread ordering. */
+  provider_received_at?: string;
   attachments?: Array<{
     filename: string;
     content_type: string;
@@ -102,6 +106,14 @@ export function mergeHydratedEmail<T extends HydratableEmail>(
   // webhook is the signed artifact, so it is the more trustworthy source.
   if (Object.keys(headers).length > 0) {
     merged.headers = { ...headers, ...(base.headers || {}) };
+  }
+
+  // Resend exposes no MIME headers here, so there is no Date to read. Its own
+  // receipt time is the closest stand-in, and unlike our clock it does not move
+  // when the webhook is retried or runs late.
+  if (typeof fetched.received_at === "string") {
+    const ms = new Date(fetched.received_at).getTime();
+    if (!Number.isNaN(ms)) merged.provider_received_at = new Date(ms).toISOString();
   }
 
   if (Array.isArray(fetched.reply_to) && fetched.reply_to.length > 0 && !base.reply_to?.length) {

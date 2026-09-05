@@ -310,3 +310,46 @@ describe('sanitizeAttachmentFilename', () => {
     expect(safe).not.toContain('/');
   });
 });
+
+/**
+ * Regression guard for the bug that shipped silently: `inboundSentAt` was
+ * proven correct in isolation, but production never reached its Date-header
+ * branch because Resend's received-email API returns no MIME headers at all.
+ * Every inbound message therefore fell back to our own clock, which drifts
+ * whenever the webhook runs late or is retried — exactly the case the fix
+ * existed to prevent.
+ */
+describe('mergeHydratedEmail — provider receipt time', () => {
+  const base: HydratableEmail = { subject: 'Re: Account', body_text: '' };
+
+  it('carries Resend receipt time across, since no Date header is available', () => {
+    const merged = mergeHydratedEmail(base, {
+      text: 'body',
+      received_at: '2026-09-05T02:40:23.746Z',
+    });
+    expect(merged.provider_received_at).toBe('2026-09-05T02:40:23.746Z');
+  });
+
+  it('leaves it unset when Resend omits the field, so callers fall back', () => {
+    expect(mergeHydratedEmail(base, { text: 'body' }).provider_received_at).toBeUndefined();
+  });
+
+  it('ignores an unparseable receipt time rather than poisoning thread order', () => {
+    const merged = mergeHydratedEmail(base, { text: 'body', received_at: 'not-a-date' });
+    expect(merged.provider_received_at).toBeUndefined();
+  });
+
+  it('survives hydration failing entirely', () => {
+    expect(mergeHydratedEmail(base, null).provider_received_at).toBeUndefined();
+  });
+
+  it('reproduces the real payload shape: content but no headers', () => {
+    const merged = mergeHydratedEmail(base, {
+      text: 'Automated end-to-end test.',
+      received_at: '2026-09-05T02:40:23.746Z',
+    });
+    // No `date` to read, so ordering must lean on the provider timestamp.
+    expect(merged.headers?.date).toBeUndefined();
+    expect(merged.provider_received_at).toBe('2026-09-05T02:40:23.746Z');
+  });
+});

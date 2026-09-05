@@ -55,6 +55,8 @@ interface EmailPayload {
   reply_to?: string[];
   received_for?: string[];
   headers?: Record<string, string>;
+  /** Resend's own receipt time, filled in by hydration. */
+  provider_received_at?: string;
   attachments?: Array<{
     filename: string;
     content_type: string;
@@ -781,7 +783,9 @@ async function handleInboxMessage(
   const now = new Date().toISOString();
   // Order the thread by when the mail was sent, not when the webhook reached
   // us: a delayed or retried delivery otherwise sorts to the end of the thread.
-  const sentAt = inboundSentAt(hdrs["date"], now);
+  // Resend's inbound API returns no MIME headers, so `date` is usually absent
+  // and the provider's own receipt time is the best basis we can get.
+  const sentAt = inboundSentAt(hdrs["date"], emailData.provider_received_at ?? now);
 
   if (conversationId) {
     // ---- Reply to existing conversation ----
