@@ -38,6 +38,8 @@ import {
 } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
 import { toast } from 'sonner';
+import { promptDialog } from '@crm-eco/ui/components/prompt-dialog';
+import { toastCopy } from '@/lib/crm/toast-copy';
 import type { EmailCampaign } from '@crm-eco/lib/types';
 
 // ============================================================================
@@ -185,13 +187,58 @@ export default function CampaignDetailPage() {
       });
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || 'Failed to send campaign');
+        // `detail` carries the actionable half when bulk sending is gated off.
+        throw new Error(error.detail || error.error || 'Failed to send campaign');
       }
       toast.success('Campaign sending started');
       loadData(true);
     } catch (error) {
       console.error('Error sending campaign:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to send campaign');
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  /**
+   * One message to one address, through the same code path a real send uses.
+   * Deliberately available before bulk delivery is unlocked.
+   */
+  async function handleTestSend() {
+    if (!campaign) return;
+
+    const address = await promptDialog({
+      title: 'Send a test',
+      description: 'Delivers one copy of this campaign. Recipients are not touched.',
+      label: 'Send to',
+      inputType: 'email',
+      placeholder: 'you@example.com',
+      confirmLabel: 'Send test',
+      validate: (value) => (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value.trim()) ? null : 'Enter a valid email address'),
+    });
+    if (!address) return;
+
+    setActionLoading(true);
+    try {
+      const response = await fetch(`/api/campaigns/${id}/send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ test_email: address.trim() }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload.detail || payload.error || 'Failed to send the test');
+      }
+      toast.success(toastCopy.saved('test send'));
+    } catch (error) {
+      console.error('Error sending test:', error);
+      toast.error(
+        toastCopy.failed(
+          'send the test',
+          undefined,
+          error instanceof Error ? error.message : undefined,
+        ),
+      );
     } finally {
       setActionLoading(false);
     }
@@ -314,6 +361,17 @@ export default function CampaignDetailPage() {
             <RefreshCw className={cn('w-4 h-4 mr-2', refreshing && 'animate-spin')} />
             Refresh
           </Button>
+          {(campaign.status === 'draft' || campaign.status === 'failed') && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleTestSend}
+              disabled={actionLoading}
+            >
+              <Send className="w-4 h-4 mr-2" />
+              Send test
+            </Button>
+          )}
           {campaign.status === 'draft' && (
             <Button
               size="sm"
