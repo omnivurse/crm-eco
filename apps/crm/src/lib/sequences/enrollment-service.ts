@@ -4,6 +4,19 @@ import { enqueueOutbox } from '@/lib/email/outbox';
 import { generateRfc822MessageId, domainFromEmail } from '@/lib/email/rfc822';
 import { isEmailSuppressed } from '@/lib/email/suppression';
 import { COMMS_FLAGS, isCommsFlagEnabled } from '@/lib/email/comms-flags';
+import {
+  type BranchOutcome,
+  MAX_STEP_EXECUTIONS,
+  STEP_LIMIT_EXIT_REASON,
+  engagementDeadline,
+  engagementProbe,
+  evaluateFieldCondition,
+  isLoopingJump,
+  resolveBranch,
+  withinWindow,
+} from './branching';
+import type { ConditionConfig } from './types';
+import { calculateNextStepTime } from './scheduling';
 
 // Create admin client for background processing
 function createAdminClient() {
@@ -147,6 +160,8 @@ async function processEnrollmentStep(
   }
 
   // Execute the step based on type
+  let branch: BranchOutcome = { kind: 'next' };
+
   switch (currentStep.step_type) {
     case 'email':
       await executeEmailStep(supabase, enrollment, currentStep);
@@ -154,13 +169,23 @@ async function processEnrollmentStep(
     case 'wait':
       // Wait steps just advance to next step
       break;
-    case 'condition':
-      await evaluateCondition(supabase, enrollment, currentStep);
+    case 'condition': {
+      const conditionMet = await evaluateCondition(supabase, enrollment, currentStep);
+      branch = resolveBranch(currentStep.condition_config as ConditionConfig | null, conditionMet);
       break;
+    }
   }
 
-  // Advance to next step
-  await advanceToNextStep(supabase, enrollment);
+  if (branch.kind === 'exit') {
+    await exitEnrollment(supabase, enrollment.id, branch.reason);
+    return;
+  }
+
+  await advanceToNextStep(
+    supabase,
+    enrollment,
+    branch.kind === 'step' ? branch.stepId : null,
+  );
 }
 
 /**
@@ -260,18 +285,20 @@ async function evaluateCondition(
   supabase: ReturnType<typeof createAdminClient>,
   enrollment: Enrollment,
   step: SequenceStep
-) {
-  const config = step.condition_config as {
-    type: string;
-    field?: string;
-    operator?: string;
-    value?: unknown;
-    then_step_id?: string;
-    else_step_id?: string;
-  } | null;
+): Promise<boolean> {
+  const config = (step.condition_config ?? null) as ConditionConfig | null;
 
   if (!config) {
-    return;
+    // An unconfigured condition must not silently route anyone. Record it and
+    // let the caller fall through to the next step in order.
+    await supabase.from('email_sequence_step_executions').insert({
+      enrollment_id: enrollment.id,
+      step_id: step.id,
+      executed_at: new Date().toISOString(),
+      status: 'skipped',
+      metadata: { reason: 'condition_not_configured' },
+    });
+    return false;
   }
 
   let conditionMet = false;
@@ -279,66 +306,57 @@ async function evaluateCondition(
   // The tracking model for sequence sends is:
   //   sent_emails (has enrollment_id)  →  email_events (has sent_email_id, event_type)
   // The legacy code queried `email_tracking_events.enrollment_id` directly
-  // but neither column existed. Resolve sent_email ids for this enrollment
-  // first, then check email_events for the relevant event type.
-  const fetchSentEmailIds = async (): Promise<string[]> => {
-    const { data: rows } = await supabase
+  // but neither column existed. Resolve this enrollment's sends first, then
+  // look for the relevant event against them.
+  const probe = engagementProbe(config.type);
+
+  if (probe) {
+    // The most recent send is "the email" the condition refers to, which is
+    // also what anchors the window.
+    const { data: sends } = await supabase
       .from('sent_emails')
-      .select('id')
-      .eq('enrollment_id', enrollment.id);
-    return ((rows as { id: string }[] | null) ?? []).map((r) => r.id);
-  };
+      .select('id, sent_at')
+      .eq('sequence_enrollment_id', enrollment.id)
+      .order('sent_at', { ascending: false, nullsFirst: false });
 
-  switch (config.type) {
-    case 'email_opened': {
-      const sentEmailIds = await fetchSentEmailIds();
-      if (sentEmailIds.length === 0) {
-        conditionMet = false;
-        break;
-      }
-      // Webhooks normalize to past-tense ('opened'); the singular form is kept
-      // for any historical rows written before the maps were unified.
-      const { data: openEvent } = await supabase
+    const sentRows = (sends as { id: string; sent_at: string | null }[] | null) ?? [];
+
+    if (sentRows.length === 0) {
+      // Nothing has gone out, so no engagement is possible. "Did not open"
+      // is therefore true, and "did open" is false.
+      conditionMet = !probe.expectPresent;
+    } else {
+      const deadline = engagementDeadline(sentRows[0].sent_at, config.window_hours);
+
+      const { data: events } = await supabase
         .from('email_events')
-        .select('id')
-        .in('sent_email_id', sentEmailIds)
-        .in('event_type', ['opened', 'open'])
-        .limit(1)
-        .maybeSingle();
-      conditionMet = !!openEvent;
-      break;
+        .select('sent_email_id, occurred_at')
+        .in(
+          'sent_email_id',
+          sentRows.map((r) => r.id),
+        )
+        .in('event_type', probe.eventTypes);
+
+      const rows = (events as { sent_email_id: string; occurred_at: string }[] | null) ?? [];
+      const engaged = rows.some((row) => withinWindow(row.occurred_at, deadline));
+
+      conditionMet = probe.expectPresent ? engaged : !engaged;
     }
+  } else if (config.type === 'field_value') {
+    const { data: record } = await supabase
+      .from('crm_records')
+      .select('data')
+      .eq('id', enrollment.record_id)
+      .single();
 
-    case 'link_clicked': {
-      const sentEmailIds = await fetchSentEmailIds();
-      if (sentEmailIds.length === 0) {
-        conditionMet = false;
-        break;
-      }
-      const { data: clickEvent } = await supabase
-        .from('email_events')
-        .select('id')
-        .in('sent_email_id', sentEmailIds)
-        .in('event_type', ['clicked', 'click'])
-        .limit(1)
-        .maybeSingle();
-      conditionMet = !!clickEvent;
-      break;
+    if (record && config.field) {
+      const fieldValue = (record.data as Record<string, unknown> | null)?.[config.field];
+      conditionMet = evaluateFieldCondition(
+        fieldValue,
+        config.operator || 'equals',
+        config.value,
+      );
     }
-
-    case 'field_value':
-      // Check record field value
-      const { data: record } = await supabase
-        .from('crm_records')
-        .select('data')
-        .eq('id', enrollment.record_id)
-        .single();
-
-      if (record && config.field) {
-        const fieldValue = record.data?.[config.field];
-        conditionMet = evaluateFieldCondition(fieldValue, config.operator || 'equals', config.value);
-      }
-      break;
   }
 
   // Store the condition result for routing. The table has no `result`
@@ -350,8 +368,10 @@ async function evaluateCondition(
       step_id: step.id,
       executed_at: new Date().toISOString(),
       status: 'executed',
-      metadata: { condition_met: conditionMet },
+      metadata: { condition_met: conditionMet, condition_type: config.type },
     });
+
+  return conditionMet;
 }
 
 /**
@@ -359,17 +379,54 @@ async function evaluateCondition(
  */
 async function advanceToNextStep(
   supabase: ReturnType<typeof createAdminClient>,
-  enrollment: Enrollment
+  enrollment: Enrollment,
+  branchTargetId: string | null = null,
 ) {
-  // Get next step
-  const { data: nextStep } = await supabase
-    .from('email_sequence_steps')
-    .select('*')
-    .eq('sequence_id', enrollment.sequence_id)
-    .gt('step_order', enrollment.current_step_order)
-    .order('step_order', { ascending: true })
-    .limit(1)
-    .single();
+  let nextStep: SequenceStep | null = null;
+
+  if (branchTargetId) {
+    // Scoped to the sequence so a config carrying another sequence's step id
+    // cannot pull someone across sequences.
+    const { data: target } = await supabase
+      .from('email_sequence_steps')
+      .select('*')
+      .eq('id', branchTargetId)
+      .eq('sequence_id', enrollment.sequence_id)
+      .maybeSingle();
+
+    if (target) {
+      const targetStep = target as SequenceStep;
+
+      if (isLoopingJump(targetStep.step_order, enrollment.current_step_order)) {
+        const { count } = await supabase
+          .from('email_sequence_step_executions')
+          .select('id', { count: 'exact', head: true })
+          .eq('enrollment_id', enrollment.id);
+
+        if ((count ?? 0) >= MAX_STEP_EXECUTIONS) {
+          await exitEnrollment(supabase, enrollment.id, STEP_LIMIT_EXIT_REASON);
+          return;
+        }
+      }
+
+      nextStep = targetStep;
+    }
+    // A dangling target (step deleted) falls through to next-by-order below
+    // rather than stranding the enrollment.
+  }
+
+  if (!nextStep) {
+    const { data: sequential } = await supabase
+      .from('email_sequence_steps')
+      .select('*')
+      .eq('sequence_id', enrollment.sequence_id)
+      .gt('step_order', enrollment.current_step_order)
+      .order('step_order', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    nextStep = (sequential as SequenceStep | null) ?? null;
+  }
 
   if (!nextStep) {
     // No more steps, mark as completed
@@ -378,13 +435,13 @@ async function advanceToNextStep(
   }
 
   // Calculate next step time
-  const nextStepAt = calculateNextStepTime(
-    nextStep.delay_days || 0,
-    nextStep.delay_hours || 0,
-    nextStep.delay_minutes || 0,
-    nextStep.send_time,
-    nextStep.send_days
-  );
+  const nextStepAt = calculateNextStepTime({
+    delayDays: nextStep.delay_days,
+    delayHours: nextStep.delay_hours,
+    delayMinutes: nextStep.delay_minutes,
+    sendTime: nextStep.send_time,
+    sendDays: nextStep.send_days,
+  });
 
   // Update enrollment
   await supabase
@@ -419,7 +476,7 @@ async function checkExitConditions(
     const { data: rows } = await supabase
       .from('sent_emails')
       .select('id')
-      .eq('enrollment_id', enrollment.id);
+      .eq('sequence_enrollment_id', enrollment.id);
     return ((rows as { id: string }[] | null) ?? []).map((r) => r.id);
   })();
 
@@ -496,41 +553,6 @@ async function checkExitConditions(
  * Helper functions
  */
 
-function calculateNextStepTime(
-  delayDays: number,
-  delayHours: number,
-  delayMinutes: number,
-  sendTime?: string | null,
-  sendDays?: number[] | null
-): string {
-  let nextTime = new Date();
-
-  // Add delay
-  nextTime.setDate(nextTime.getDate() + delayDays);
-  nextTime.setHours(nextTime.getHours() + delayHours);
-  nextTime.setMinutes(nextTime.getMinutes() + delayMinutes);
-
-  // Set specific send time if configured
-  if (sendTime) {
-    const [hours, minutes] = sendTime.split(':').map(Number);
-    nextTime.setHours(hours, minutes, 0, 0);
-
-    // If time has passed today, move to tomorrow
-    if (nextTime < new Date()) {
-      nextTime.setDate(nextTime.getDate() + 1);
-    }
-  }
-
-  // Adjust for send days if configured
-  if (sendDays && sendDays.length > 0) {
-    while (!sendDays.includes(nextTime.getDay())) {
-      nextTime.setDate(nextTime.getDate() + 1);
-    }
-  }
-
-  return nextTime.toISOString();
-}
-
 function processMergeFields(text: string, data: Record<string, unknown>): string {
   return text.replace(/\{\{([^}]+)\}\}/g, (match, path) => {
     const keys = path.trim().split('.');
@@ -546,23 +568,6 @@ function processMergeFields(text: string, data: Record<string, unknown>): string
 
     return String(value || '');
   });
-}
-
-function evaluateFieldCondition(fieldValue: unknown, operator: string, targetValue: unknown): boolean {
-  switch (operator) {
-    case 'equals':
-      return fieldValue === targetValue;
-    case 'not_equals':
-      return fieldValue !== targetValue;
-    case 'contains':
-      return String(fieldValue).includes(String(targetValue));
-    case 'is_empty':
-      return !fieldValue;
-    case 'is_not_empty':
-      return !!fieldValue;
-    default:
-      return false;
-  }
 }
 
 async function completeEnrollment(
@@ -644,13 +649,13 @@ export async function enrollRecord(
     throw new Error('Sequence has no steps');
   }
 
-  const nextStepAt = calculateNextStepTime(
-    firstStep.delay_days || 0,
-    firstStep.delay_hours || 0,
-    firstStep.delay_minutes || 0,
-    firstStep.send_time,
-    firstStep.send_days
-  );
+  const nextStepAt = calculateNextStepTime({
+    delayDays: firstStep.delay_days,
+    delayHours: firstStep.delay_hours,
+    delayMinutes: firstStep.delay_minutes,
+    sendTime: firstStep.send_time,
+    sendDays: firstStep.send_days,
+  });
 
   const { data: enrollment, error } = await supabase
     .from('email_sequence_enrollments')

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, getAuthProfile } from '@/lib/supabase-server';
 import type { EnrollRequest } from '@/lib/sequences/types';
+import { calculateNextStepTime } from '@/lib/sequences/scheduling';
 
 // GET /api/sequences/[id]/enrollments - List enrollments
 export async function GET(
@@ -107,7 +108,7 @@ export async function POST(
     // Get the first step
     const { data: firstStep } = await supabase
       .from('email_sequence_steps')
-      .select('id, step_order, delay_days, delay_hours, delay_minutes')
+      .select('id, step_order, delay_days, delay_hours, delay_minutes, send_time, send_days')
       .eq('sequence_id', id)
       .order('step_order', { ascending: true })
       .limit(1)
@@ -129,15 +130,6 @@ export async function POST(
     if (!records || records.length === 0) {
       return NextResponse.json({ error: 'No valid records found' }, { status: 400 });
     }
-
-    // Calculate first step time
-    const calculateNextStepTime = (delayDays: number, delayHours: number, delayMinutes: number) => {
-      const now = new Date();
-      now.setDate(now.getDate() + delayDays);
-      now.setHours(now.getHours() + delayHours);
-      now.setMinutes(now.getMinutes() + delayMinutes);
-      return now.toISOString();
-    };
 
     // ============================================================================
     // OPTIMIZED: Batch check existing enrollments instead of N+1 queries
@@ -193,12 +185,16 @@ export async function POST(
       }, { status: 201 });
     }
 
-    // Step 4: Calculate next step time once (same for all)
-    const nextStepAt = calculateNextStepTime(
-      firstStep.delay_days,
-      firstStep.delay_hours,
-      firstStep.delay_minutes
-    );
+    // Step 4: Calculate next step time once (same for all). Shares the engine's
+    // helper so the first step honours send time and send days exactly as
+    // later steps do — the local copy here ignored both.
+    const nextStepAt = calculateNextStepTime({
+      delayDays: firstStep.delay_days,
+      delayHours: firstStep.delay_hours,
+      delayMinutes: firstStep.delay_minutes,
+      sendTime: firstStep.send_time,
+      sendDays: firstStep.send_days,
+    });
 
     // Step 5: Batch insert all new enrollments in ONE query
     const enrollmentInserts = recordsToEnroll.map(record => ({

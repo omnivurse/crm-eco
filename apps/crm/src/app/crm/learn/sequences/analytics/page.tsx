@@ -9,7 +9,6 @@ import {
   Mail,
   Eye,
   MousePointer,
-  Reply,
   UserMinus,
   TrendingUp,
 } from 'lucide-react';
@@ -38,15 +37,15 @@ const DEMO_STEPS = [
     duration: 3500,
   },
   {
-    title: 'View Reply Funnel',
-    description: 'See how many contacts replied at each step.',
+    title: 'See Where People Left',
+    description: 'Exit reasons show why contacts stopped early.',
     highlight: { x: 15, y: 75, width: 35, height: 18 },
     cursor: { x: 32, y: 84 },
     duration: 2500,
   },
   {
-    title: 'Filter by Status',
-    description: 'Click to see contacts at specific statuses.',
+    title: 'Check the Enrollment Mix',
+    description: 'Active, paused, completed and exited counts at a glance.',
     highlight: { x: 55, y: 75, width: 30, height: 18 },
     cursor: { x: 70, y: 84 },
     action: 'click' as const,
@@ -58,7 +57,7 @@ const METRICS = [
   { icon: <Mail className="w-5 h-5" />, name: 'Emails Sent', value: '2,450', color: 'blue' },
   { icon: <Eye className="w-5 h-5" />, name: 'Open Rate', value: '58%', color: 'emerald' },
   { icon: <MousePointer className="w-5 h-5" />, name: 'Click Rate', value: '12%', color: 'violet' },
-  { icon: <Reply className="w-5 h-5" />, name: 'Reply Rate', value: '8%', color: 'amber' },
+  { icon: <UserMinus className="w-5 h-5" />, name: 'Bounce Rate', value: '2%', color: 'amber' },
 ];
 
 export default function SequenceAnalyticsPage() {
@@ -151,20 +150,20 @@ export default function SequenceAnalyticsPage() {
               <div className="text-xs sm:text-sm font-medium text-slate-500">Sent</div>
               <div className="text-xs sm:text-sm font-medium text-slate-500">Opens</div>
               <div className="text-xs sm:text-sm font-medium text-slate-500">Clicks</div>
-              <div className="text-xs sm:text-sm font-medium text-slate-500">Replies</div>
+              <div className="text-xs sm:text-sm font-medium text-slate-500">Bounced</div>
             </div>
             {[
-              { step: 'Email 1: Introduction', sent: 500, opens: '62%', clicks: '15%', replies: '5%' },
-              { step: 'Email 2: Value Add', sent: 450, opens: '58%', clicks: '12%', replies: '4%' },
-              { step: 'Email 3: Case Study', sent: 400, opens: '55%', clicks: '18%', replies: '6%' },
-              { step: 'Email 4: Final Touch', sent: 320, opens: '45%', clicks: '8%', replies: '10%' },
+              { step: 'Email 1: Introduction', sent: 500, opens: '62%', clicks: '15%', bounced: '2%' },
+              { step: 'Email 2: Value Add', sent: 450, opens: '58%', clicks: '12%', bounced: '1%' },
+              { step: 'Email 3: Case Study', sent: 400, opens: '55%', clicks: '18%', bounced: '1%' },
+              { step: 'Email 4: Final Touch', sent: 320, opens: '45%', clicks: '8%', bounced: '3%' },
             ].map((row) => (
               <div key={row.step} className="grid grid-cols-5 gap-2 sm:gap-4 p-3 sm:p-4 border-b last:border-b-0 border-slate-200 dark:border-slate-700">
                 <div className="text-xs sm:text-sm font-medium text-slate-900 dark:text-white truncate">{row.step}</div>
                 <div className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">{row.sent}</div>
                 <div className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">{row.opens}</div>
                 <div className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">{row.clicks}</div>
-                <div className="text-xs sm:text-sm text-emerald-600 dark:text-emerald-400">{row.replies}</div>
+                <div className="text-xs sm:text-sm text-amber-600 dark:text-amber-400">{row.bounced}</div>
               </div>
             ))}
           </div>
@@ -179,8 +178,9 @@ export default function SequenceAnalyticsPage() {
         <StepList
           steps={[
             {
-              title: 'Check Overall Reply Rate',
-              description: 'A good B2B sequence gets 5-15% reply rate. Compare to this benchmark.',
+              title: 'Check How Many Finish',
+              description:
+                'Compare completed against exited. A high exit count means people are leaving before the sequence makes its point.',
             },
             {
               title: 'Compare Per-Step Performance',
@@ -191,12 +191,14 @@ export default function SequenceAnalyticsPage() {
               description: 'Where do most people stop engaging? That step may need work.',
             },
             {
-              title: 'Review Reply Content',
-              description: 'Are replies positive or negative? Adjust messaging accordingly.',
+              title: 'Read the Exit Reasons',
+              description:
+                'Unsubscribes and bounces mean something different from replies. The exit list tells you which.',
             },
             {
-              title: 'A/B Test Variations',
-              description: 'Clone the sequence, change one element, compare results.',
+              title: 'Watch the Bounce Rate',
+              description:
+                'Anything above a couple of percent suggests list quality problems that will hurt deliverability.',
             },
           ]}
         />
@@ -212,9 +214,10 @@ export default function SequenceAnalyticsPage() {
             Wait until at least 100 contacts have completed the sequence before
             drawing conclusions. Small samples can be misleading.
           </QuickTip>
-          <QuickTip title="Focus on Replies" type="info">
-            Replies are the most important metric for sales sequences. Opens and
-            clicks matter less if no one responds.
+          <QuickTip title="Opens Need Tracking Enabled" type="info">
+            Open and click figures come from your email provider. If tracking is
+            switched off for your sending domain, those columns stay at zero even
+            though the emails were delivered normally.
           </QuickTip>
           <QuickTip title="Iterate Based on Data" type="warning">
             Don't change everything at once. Test one variable at a time (subject line,

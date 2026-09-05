@@ -86,11 +86,46 @@ export interface SequenceStep {
   created_at: string;
 }
 
+/**
+ * What a condition step asks. The engine switches on `type`; the previous
+ * shape declared `field`/`operator` at the top level with no discriminator,
+ * which did not match what the engine read.
+ */
+export type ConditionType =
+  | 'email_opened'
+  | 'email_not_opened'
+  | 'link_clicked'
+  | 'link_not_clicked'
+  | 'replied'
+  | 'not_replied'
+  | 'field_value';
+
+/** Where a branch sends the contact. */
+export type BranchAction = 'next' | 'step' | 'exit';
+
+export type ConditionOperator =
+  | 'equals'
+  | 'not_equals'
+  | 'contains'
+  | 'not_contains'
+  | 'is_set'
+  | 'is_not_set';
+
 export interface ConditionConfig {
-  field: string;
-  operator: 'equals' | 'not_equals' | 'contains' | 'not_contains' | 'is_set' | 'is_not_set';
+  type: ConditionType;
+  /**
+   * How long after the email was sent the engagement still counts. Applies to
+   * the engagement types only; `field_value` reads current state.
+   */
+  window_hours?: number;
+  // field_value only
+  field?: string;
+  operator?: ConditionOperator;
   value?: unknown;
+  // Branch targets. `step` requires the matching *_step_id.
+  then_action?: BranchAction;
   then_step_id?: string;
+  else_action?: BranchAction;
   else_step_id?: string;
 }
 

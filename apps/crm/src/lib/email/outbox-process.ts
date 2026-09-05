@@ -136,7 +136,7 @@ async function logSentEmail(supabase: LooseClient, row: OutboxRow, result: {
   provider?: string;
   error?: string;
 }): Promise<void> {
-  await supabase.from('sent_emails').insert({
+  const { error } = await supabase.from('sent_emails').insert({
     organization_id: row.organization_id,
     email_type: row.payload.email_type || row.payload.source || 'outbox',
     recipient_email: row.to_addresses[0],
@@ -154,7 +154,10 @@ async function logSentEmail(supabase: LooseClient, row: OutboxRow, result: {
     status: result.success ? 'sent' : 'failed',
     error_message: result.error ?? null,
     sent_at: result.success ? new Date().toISOString() : null,
-    enrollment_id: row.payload.enrollment_id ?? null,
+    // Sequence enrollments have their own column. The similarly-named
+    // enrollment_id is FK'd to health-plan enrollments and writing a sequence
+    // id there failed the constraint on every send.
+    sequence_enrollment_id: row.payload.enrollment_id ?? null,
     metadata: {
       outbox_id: row.id,
       campaign_id: row.payload.campaign_id,
@@ -163,6 +166,16 @@ async function logSentEmail(supabase: LooseClient, row: OutboxRow, result: {
       step_id: row.payload.step_id,
     },
   });
+
+  // The mail has already gone out by this point, so a failure here is an
+  // audit gap rather than a delivery problem — but it must not stay silent.
+  if (error) {
+    console.error('Failed to log sent email', {
+      outbox_id: row.id,
+      organization_id: row.organization_id,
+      error: error.message,
+    });
+  }
 }
 
 export async function processEmailOutbox(

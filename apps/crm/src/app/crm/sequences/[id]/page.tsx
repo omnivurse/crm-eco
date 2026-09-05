@@ -49,6 +49,10 @@ import { toast } from 'sonner';
 import type { EmailSequence, SequenceStep, SequenceStatus, StepType } from '@/lib/sequences/types';
 import { SequenceStepEditor } from '@/components/sequences/SequenceStepEditor';
 import { EnrollContactsDialog } from '@/components/sequences/EnrollContactsDialog';
+import {
+  SequenceAnalyticsPanel,
+  type SequenceAnalytics,
+} from '@/components/sequences/SequenceAnalyticsPanel';
 import { toastCopy } from '@/lib/crm/toast-copy';
 
 interface SequenceWithDetails extends EmailSequence {
@@ -256,6 +260,9 @@ function SequenceDetailPageContent() {
   const [enrollments, setEnrollments] = useState<EnrollmentRow[]>([]);
   const [enrollmentsLoading, setEnrollmentsLoading] = useState(true);
   const [enrollmentAction, setEnrollmentAction] = useState<string | null>(null);
+  const [analytics, setAnalytics] = useState<SequenceAnalytics | null>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(true);
+  const [analyticsError, setAnalyticsError] = useState<string | null>(null);
 
   useEffect(() => {
     loadSequence();
@@ -264,6 +271,30 @@ function SequenceDetailPageContent() {
   useEffect(() => {
     loadEnrollments();
   }, [id]);
+
+  useEffect(() => {
+    loadAnalytics();
+  }, [id]);
+
+  async function loadAnalytics() {
+    setAnalyticsLoading(true);
+    setAnalyticsError(null);
+    try {
+      const response = await fetch(`/api/sequences/${id}/analytics`);
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.error || 'Failed to load analytics');
+      }
+      const data = await response.json();
+      setAnalytics(data.analytics as SequenceAnalytics);
+    } catch (error) {
+      setAnalyticsError(
+        error instanceof Error ? error.message : 'Failed to load analytics',
+      );
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  }
 
   async function loadEnrollments() {
     setEnrollmentsLoading(true);
@@ -735,17 +766,12 @@ function SequenceDetailPageContent() {
         </TabsContent>
 
         <TabsContent value="analytics">
-          <div className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl p-6">
-            <div className="text-center py-12">
-              <BarChart3 className="w-12 h-12 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
-              <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-2">
-                Analytics
-              </h3>
-              <p className="text-slate-500 dark:text-slate-400">
-                Performance metrics for this sequence will appear here
-              </p>
-            </div>
-          </div>
+          <SequenceAnalyticsPanel
+            analytics={analytics}
+            loading={analyticsLoading}
+            error={analyticsError}
+            onRetry={loadAnalytics}
+          />
         </TabsContent>
       </Tabs>
 
@@ -769,6 +795,7 @@ function SequenceDetailPageContent() {
         }}
         onSave={handleStepSave}
         step={editingStep}
+        steps={sequence.steps || []}
       />
 
       {/* Delete Confirmation */}

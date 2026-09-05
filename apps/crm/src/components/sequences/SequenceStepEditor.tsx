@@ -22,16 +22,56 @@ import {
 } from '@crm-eco/ui/components/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@crm-eco/ui/components/tabs';
 import { cn } from '@crm-eco/ui/lib/utils';
-import { Mail, Clock, GitBranch, Loader2 } from 'lucide-react';
+import { Mail, Clock, GitBranch, Loader2, CornerDownRight } from 'lucide-react';
 import { toast } from 'sonner';
-import type { SequenceStep, StepType } from '@/lib/sequences/types';
+import type {
+  BranchAction,
+  ConditionConfig,
+  ConditionOperator,
+  ConditionType,
+  SequenceStep,
+  StepType,
+} from '@/lib/sequences/types';
+import { branchTargets, stepLabel } from '@/lib/sequences/branching';
+import { toastCopy } from '@/lib/crm/toast-copy';
 
 interface SequenceStepEditorProps {
   open: boolean;
   onClose: () => void;
   onSave: (step: Partial<SequenceStep>) => Promise<void>;
   step?: SequenceStep | null;
+  /** Siblings, so a condition can name the step it jumps to. */
+  steps?: SequenceStep[];
 }
+
+/** Only conditions the engine can actually evaluate are offered. */
+const CONDITION_TYPES: { value: ConditionType; label: string }[] = [
+  { value: 'email_opened', label: 'Opened a previous email' },
+  { value: 'email_not_opened', label: 'Did NOT open a previous email' },
+  { value: 'link_clicked', label: 'Clicked a link' },
+  { value: 'link_not_clicked', label: 'Did NOT click a link' },
+  { value: 'replied', label: 'Replied' },
+  { value: 'not_replied', label: 'Did NOT reply' },
+  { value: 'field_value', label: 'Contact field value' },
+];
+
+const CONDITION_OPERATORS: { value: ConditionOperator; label: string }[] = [
+  { value: 'equals', label: 'equals' },
+  { value: 'not_equals', label: 'does not equal' },
+  { value: 'contains', label: 'contains' },
+  { value: 'not_contains', label: 'does not contain' },
+  { value: 'is_set', label: 'is set' },
+  { value: 'is_not_set', label: 'is empty' },
+];
+
+const WINDOW_OPTIONS = [
+  { value: '0', label: 'Any time' },
+  { value: '12', label: 'Within 12 hours' },
+  { value: '24', label: 'Within 24 hours' },
+  { value: '48', label: 'Within 48 hours' },
+  { value: '72', label: 'Within 72 hours' },
+  { value: '168', label: 'Within 7 days' },
+];
 
 const STEP_TYPES: { value: StepType; label: string; icon: React.ReactNode; description: string }[] = [
   {
@@ -64,7 +104,49 @@ const DAYS_OF_WEEK = [
   { value: 6, label: 'Sat' },
 ];
 
-export function SequenceStepEditor({ open, onClose, onSave, step }: SequenceStepEditorProps) {
+/** Blank condition state for a new step. */
+function emptyCondition() {
+  return {
+    condition_type: 'email_opened' as ConditionType,
+    condition_window: '24',
+    condition_field: '',
+    condition_operator: 'equals' as ConditionOperator,
+    condition_value: '',
+    then_action: 'next' as BranchAction,
+    then_step_id: '',
+    else_action: 'next' as BranchAction,
+    else_step_id: '',
+  };
+}
+
+/** Read an existing step's condition_config back into form state. */
+function conditionFromStep(step: SequenceStep) {
+  const config = (step.condition_config ?? null) as ConditionConfig | null;
+  const blank = emptyCondition();
+  if (!config) return blank;
+
+  return {
+    condition_type: config.type ?? blank.condition_type,
+    condition_window:
+      typeof config.window_hours === 'number' ? String(config.window_hours) : blank.condition_window,
+    condition_field: config.field ?? '',
+    condition_operator: config.operator ?? blank.condition_operator,
+    condition_value: config.value === undefined || config.value === null ? '' : String(config.value),
+    // A bare step id with no action is how earlier configs expressed a jump.
+    then_action: config.then_action ?? (config.then_step_id ? 'step' : 'next'),
+    then_step_id: config.then_step_id ?? '',
+    else_action: config.else_action ?? (config.else_step_id ? 'step' : 'next'),
+    else_step_id: config.else_step_id ?? '',
+  };
+}
+
+export function SequenceStepEditor({
+  open,
+  onClose,
+  onSave,
+  step,
+  steps = [],
+}: SequenceStepEditorProps) {
   const [saving, setSaving] = useState(false);
   const [stepType, setStepType] = useState<StepType>('email');
   const [formData, setFormData] = useState({
@@ -79,8 +161,7 @@ export function SequenceStepEditor({ open, onClose, onSave, step }: SequenceStep
     from_email: '',
     send_time: '',
     send_days: [] as string[],
-    condition_type: 'email_opened',
-    condition_window: '24',
+    ...emptyCondition(),
   });
 
   useEffect(() => {
@@ -98,8 +179,7 @@ export function SequenceStepEditor({ open, onClose, onSave, step }: SequenceStep
         from_email: step.from_email || '',
         send_time: step.send_time || '',
         send_days: step.send_days || [],
-        condition_type: (step as unknown as Record<string, unknown>).condition_type as string || 'email_opened',
-        condition_window: (step as unknown as Record<string, unknown>).condition_window as string || '24',
+        ...conditionFromStep(step),
       });
     } else {
       // Reset form for new step
@@ -116,8 +196,7 @@ export function SequenceStepEditor({ open, onClose, onSave, step }: SequenceStep
         from_email: '',
         send_time: '',
         send_days: [] as string[],
-        condition_type: 'email_opened',
-        condition_window: '24',
+        ...emptyCondition(),
       });
     }
   }, [step, open]);
@@ -134,17 +213,80 @@ export function SequenceStepEditor({ open, onClose, onSave, step }: SequenceStep
       return;
     }
 
-    if (stepType === 'condition' && !formData.name.trim()) {
-      toast.error('Please enter a condition name');
-      return;
+    if (stepType === 'condition') {
+      if (!formData.name.trim()) {
+        toast.error('Please enter a condition name');
+        return;
+      }
+      if (formData.condition_type === 'field_value' && !formData.condition_field.trim()) {
+        toast.error(toastCopy.chooseFirst('a field to check'));
+        return;
+      }
+      if (formData.then_action === 'step' && !formData.then_step_id) {
+        toast.error(toastCopy.chooseFirst('the step to jump to when the condition is met'));
+        return;
+      }
+      if (formData.else_action === 'step' && !formData.else_step_id) {
+        toast.error(
+          toastCopy.chooseFirst('the step to jump to when the condition is not met'),
+        );
+        return;
+      }
     }
 
     setSaving(true);
     try {
-      await onSave({
+      // Built explicitly rather than spreading form state: the condition
+      // fields are not columns, they belong inside condition_config, and the
+      // API silently drops anything it does not recognise.
+      const payload: Partial<SequenceStep> = {
         step_type: stepType,
-        ...formData,
-      });
+        name: formData.name,
+        delay_days: formData.delay_days,
+        delay_hours: formData.delay_hours,
+        delay_minutes: formData.delay_minutes,
+        subject: formData.subject,
+        body_html: formData.body_html,
+        body_text: formData.body_text,
+        from_name: formData.from_name,
+        from_email: formData.from_email,
+        send_time: formData.send_time,
+        send_days: formData.send_days,
+      };
+
+      if (stepType === 'condition') {
+        const isFieldCheck = formData.condition_type === 'field_value';
+        const windowHours = Number(formData.condition_window);
+
+        const config: ConditionConfig = {
+          type: formData.condition_type,
+          then_action: formData.then_action,
+          else_action: formData.else_action,
+        };
+
+        if (!isFieldCheck && Number.isFinite(windowHours) && windowHours > 0) {
+          config.window_hours = windowHours;
+        }
+
+        if (isFieldCheck) {
+          config.field = formData.condition_field.trim();
+          config.operator = formData.condition_operator;
+          // "is set" / "is empty" take no comparison value.
+          if (
+            formData.condition_operator !== 'is_set' &&
+            formData.condition_operator !== 'is_not_set'
+          ) {
+            config.value = formData.condition_value;
+          }
+        }
+
+        if (formData.then_action === 'step') config.then_step_id = formData.then_step_id;
+        if (formData.else_action === 'step') config.else_step_id = formData.else_step_id;
+
+        payload.condition_config = config;
+      }
+
+      await onSave(payload);
     } catch (error) {
       console.error('Error saving step:', error);
       toast.error('Failed to save step');
@@ -398,35 +540,159 @@ export function SequenceStepEditor({ open, onClose, onSave, step }: SequenceStep
                 <div className="space-y-2">
                   <Label>Condition Type</Label>
                   <select
-                    value={formData.condition_type || 'email_opened'}
-                    onChange={(e) => setFormData({ ...formData, condition_type: e.target.value })}
+                    value={formData.condition_type}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        condition_type: e.target.value as ConditionType,
+                      })
+                    }
                     className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white"
                   >
-                    <option value="email_opened">Email was opened</option>
-                    <option value="email_not_opened">Email was NOT opened</option>
-                    <option value="link_clicked">Link was clicked</option>
-                    <option value="link_not_clicked">Link was NOT clicked</option>
-                    <option value="reply_received">Reply received</option>
-                    <option value="no_reply">No reply received</option>
+                    {CONDITION_TYPES.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
                   </select>
                 </div>
-                <div className="space-y-2">
-                  <Label>Evaluation Window</Label>
-                  <select
-                    value={formData.condition_window || '24'}
-                    onChange={(e) => setFormData({ ...formData, condition_window: e.target.value })}
-                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white"
-                  >
-                    <option value="12">Within 12 hours</option>
-                    <option value="24">Within 24 hours</option>
-                    <option value="48">Within 48 hours</option>
-                    <option value="72">Within 72 hours</option>
-                    <option value="168">Within 7 days</option>
-                  </select>
+
+                {formData.condition_type === 'field_value' ? (
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="condition_field">Field</Label>
+                      <Input
+                        id="condition_field"
+                        placeholder="e.g., status"
+                        value={formData.condition_field}
+                        onChange={(e) =>
+                          setFormData({ ...formData, condition_field: e.target.value })
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Comparison</Label>
+                      <select
+                        value={formData.condition_operator}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            condition_operator: e.target.value as ConditionOperator,
+                          })
+                        }
+                        className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white"
+                      >
+                        {CONDITION_OPERATORS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="condition_value">Value</Label>
+                      <Input
+                        id="condition_value"
+                        placeholder="e.g., active"
+                        disabled={
+                          formData.condition_operator === 'is_set' ||
+                          formData.condition_operator === 'is_not_set'
+                        }
+                        value={formData.condition_value}
+                        onChange={(e) =>
+                          setFormData({ ...formData, condition_value: e.target.value })
+                        }
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Label>Evaluation Window</Label>
+                    <select
+                      value={formData.condition_window}
+                      onChange={(e) =>
+                        setFormData({ ...formData, condition_window: e.target.value })
+                      }
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white"
+                    >
+                      {WINDOW_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-slate-500">
+                      Measured from when the most recent email in this sequence was sent.
+                    </p>
+                  </div>
+                )}
+
+                {/* Where each answer sends the contact. */}
+                <div className="space-y-3 rounded-lg border border-slate-200 p-3 dark:border-slate-700">
+                  <div className="flex items-center gap-2 text-sm font-medium text-slate-900 dark:text-white">
+                    <CornerDownRight className="h-4 w-4" />
+                    Branching
+                  </div>
+
+                  {(
+                    [
+                      { key: 'then', label: 'If yes' },
+                      { key: 'else', label: 'If no' },
+                    ] as const
+                  ).map(({ key, label }) => {
+                    const actionKey = `${key}_action` as 'then_action' | 'else_action';
+                    const stepKey = `${key}_step_id` as 'then_step_id' | 'else_step_id';
+                    const action = formData[actionKey];
+
+                    return (
+                      <div key={key} className="grid gap-2 sm:grid-cols-[5rem_1fr_1fr] sm:items-center">
+                        <Label className="text-sm text-slate-600 dark:text-slate-400">
+                          {label}
+                        </Label>
+                        <select
+                          value={action}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              [actionKey]: e.target.value as BranchAction,
+                              ...(e.target.value === 'step' ? {} : { [stepKey]: '' }),
+                            })
+                          }
+                          className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white"
+                        >
+                          <option value="next">Continue to next step</option>
+                          <option value="step">Jump to a step…</option>
+                          <option value="exit">Exit the sequence</option>
+                        </select>
+
+                        {action === 'step' ? (
+                          <select
+                            value={formData[stepKey]}
+                            onChange={(e) =>
+                              setFormData({ ...formData, [stepKey]: e.target.value })
+                            }
+                            className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white"
+                          >
+                            <option value="">Select a step…</option>
+                            {branchTargets(steps, step?.id).map((target) => (
+                              <option key={target.id} value={target.id}>
+                                {stepLabel(target)}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <span className="hidden sm:block" />
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {steps.length <= 1 && (
+                    <p className="text-xs text-slate-500">
+                      Add more steps first if you want this condition to jump to a specific one.
+                    </p>
+                  )}
                 </div>
-                <p className="text-xs text-slate-500">
-                  The sequence will branch based on whether this condition is met within the evaluation window.
-                </p>
               </div>
             </div>
           )}
