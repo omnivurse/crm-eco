@@ -141,6 +141,29 @@ export function shouldFollowNewMessages(pane: {
   return distanceFromBottom < 200;
 }
 
+/**
+ * Same question, but aware of which end the newest message is on.
+ *
+ * Reading newest-first, "the newest message" is at the top, so following it
+ * means staying at scrollTop 0 — applying the bottom rule there would drag
+ * the reader to the oldest email in the thread every time mail arrives.
+ */
+export function shouldFollowThread(
+  pane: { scrollTop: number; scrollHeight: number; clientHeight: number },
+  order: 'newest_first' | 'oldest_first',
+): boolean {
+  if (order === 'newest_first') return pane.scrollTop < 200;
+  return shouldFollowNewMessages(pane);
+}
+
+/** Where the newest message lives, in scrollTop terms. */
+export function threadScrollAnchor(
+  pane: { scrollHeight: number },
+  order: 'newest_first' | 'oldest_first',
+): number {
+  return order === 'newest_first' ? 0 : pane.scrollHeight;
+}
+
 /** Human sender when intake stored an empty from_name (Outlook often does). */
 export function displaySenderName(
   fromName: string | null | undefined,

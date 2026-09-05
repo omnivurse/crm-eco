@@ -44,13 +44,16 @@ import {
   formatInboxFileSize,
   isLatestInbound,
   sanitizeEmailForReading,
-  shouldFollowNewMessages,
+  shouldFollowThread,
   shouldReadAsPlainText,
   threadFaceFromMessages,
+  threadScrollAnchor,
   unconstrainedIframeMeasureHeight,
   inboxAttachmentHref,
   inboxAttachmentIsDownloadable,
 } from './inbox-reading';
+import { isExternalSender, orderThreadForDisplay } from '@/lib/inbox/inbox-view-model';
+import type { ThreadOrder } from '@/lib/inbox/inbox-prefs';
 import { pickForwardSource } from './inbox-forward';
 import { participantsFromThread } from '@/lib/calendar/thread-participants';
 import { latestInboundId } from '@/lib/inbox/inbox-reads';
@@ -131,6 +134,14 @@ interface MessageThreadProps {
   onForward?: (msg: InboxMessage) => void;
   onLatestInboundVisible?: (message: InboxMessage) => void;
   onMarkUnread?: () => void;
+  /** Newest message on top (Outlook) or chronological transcript (Gmail). */
+  threadOrder?: ThreadOrder;
+  /** Verified sending domains — anything else earns an "External" badge. */
+  verifiedDomains?: readonly string[];
+  /** Registered sender addresses, exempt from the External badge. */
+  senderAddresses?: readonly string[];
+  /** Persistent action ribbon rendered above the thread. */
+  ribbon?: React.ReactNode;
 }
 
 /** Renders HTML email body in a sandboxed iframe that sizes to its content */
@@ -243,12 +254,10 @@ function HtmlEmailBody({ html }: { html: string }) {
       srcDoc={srcDoc}
       sandbox={EMAIL_IFRAME_SANDBOX}
       className="w-full border-0"
-      style={{
-        height: `${Math.min(height, 720)}px`,
-        minHeight: Math.min(Math.max(height, 80), 720),
-        maxHeight: 720,
-        overflow: height > 720 ? 'auto' : 'hidden',
-      }}
+      // Sized to the whole email, with no cap. A capped frame put a second
+      // scrollbar inside the scrolling thread pane, so a long letter scrolled
+      // in a 720px window and the reader lost track of which one they were in.
+      style={{ height: `${height}px`, minHeight: Math.max(height, 80), overflow: 'hidden' }}
       title="Email content"
     />
   );
@@ -316,12 +325,14 @@ function AttachmentChips({
 function EmailMessage({
   msg,
   defaultExpanded,
+  external,
   onReply,
   onForward,
   cardRef,
 }: {
   msg: InboxMessage;
   defaultExpanded: boolean;
+  external?: boolean;
   onReply?: () => void;
   onForward?: (msg: InboxMessage) => void;
   cardRef?: React.Ref<HTMLDivElement>;
@@ -340,6 +351,8 @@ function EmailMessage({
   return (
     <div
       ref={cardRef}
+      data-message-id={msg.id}
+      data-message-sent-at={msg.sent_at}
       className={cn(
       'rounded-xl border',
       isOutbound
@@ -371,6 +384,14 @@ function EmailMessage({
               {!isOutbound && msg.from_address && (
                 <span className="text-xs text-slate-400 truncate hidden sm:inline">
                   &lt;{msg.from_address}&gt;
+                </span>
+              )}
+              {external && (
+                <span
+                  title="This sender is outside your organization"
+                  className="shrink-0 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800 dark:bg-amber-500/15 dark:text-amber-400"
+                >
+                  External
                 </span>
               )}
             </div>
@@ -533,6 +554,10 @@ export const MessageThread = React.memo(function MessageThread({
   onForward,
   onLatestInboundVisible,
   onMarkUnread,
+  threadOrder = 'newest_first',
+  verifiedDomains = [],
+  senderAddresses = [],
+  ribbon,
 }: MessageThreadProps) {
   const [meetingOpen, setMeetingOpen] = useState(false);
   const paneRef = useRef<HTMLDivElement>(null);
@@ -540,9 +565,19 @@ export const MessageThread = React.memo(function MessageThread({
   const lastConversationRef = useRef<string | null>(null);
   const latestInboundMessageId = latestInboundId(messages);
 
-  // Land on the newest message (Gmail behavior). On a conversation switch we
-  // always jump to the bottom; when new messages stream in we follow only if
-  // the reader is already near the bottom — never yank them out of history.
+  /**
+   * Display order only. `messages` stays chronological for the caller, whose
+   * reply targeting reads the last element — reversing that array would
+   * answer the oldest email in the thread.
+   */
+  const ordered = useMemo(
+    () => orderThreadForDisplay(messages, threadOrder),
+    [messages, threadOrder],
+  );
+
+  // Land on the newest message, whichever end it is on. A conversation switch
+  // always jumps there; streaming messages only follow when the reader is
+  // already at that end, so scrolling back through history is never yanked.
   // The delayed passes re-anchor after iframes finish measuring their content.
   useEffect(() => {
     if (loadingMessages || messages.length === 0) return;
@@ -550,18 +585,18 @@ export const MessageThread = React.memo(function MessageThread({
     if (!pane) return;
     const switched = lastConversationRef.current !== conversation.id;
     lastConversationRef.current = conversation.id;
-    if (!switched && !shouldFollowNewMessages(pane)) return;
-    const toBottom = () => {
-      pane.scrollTop = pane.scrollHeight;
+    if (!switched && !shouldFollowThread(pane, threadOrder)) return;
+    const toNewest = () => {
+      pane.scrollTop = threadScrollAnchor(pane, threadOrder);
     };
-    toBottom();
-    const t1 = setTimeout(toBottom, 120);
-    const t2 = setTimeout(toBottom, 400);
+    toNewest();
+    const t1 = setTimeout(toNewest, 120);
+    const t2 = setTimeout(toNewest, 400);
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);
     };
-  }, [conversation.id, loadingMessages, messages.length]);
+  }, [conversation.id, loadingMessages, messages.length, threadOrder]);
 
   useEffect(() => {
     const target = latestInboundRef.current;
@@ -743,8 +778,12 @@ export const MessageThread = React.memo(function MessageThread({
         </div>
       </div>
 
-      {/* Messages */}
-      <div ref={paneRef} className="flex-1 min-h-[40vh] p-3 lg:p-4 overflow-y-auto space-y-2">
+      {ribbon}
+
+      {/* Messages. No min-height: the pane is the flex remainder of a
+          min-h-0 column, and a viewport-relative floor pushed the end of the
+          newest email underneath the reply dock. */}
+      <div ref={paneRef} className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3 lg:p-4">
         {loadingMessages ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-6 h-6 animate-spin text-teal-500" />
@@ -755,15 +794,22 @@ export const MessageThread = React.memo(function MessageThread({
             <p>No messages yet</p>
           </div>
         ) : (
-          messages.map((msg, index) => (
+          ordered.map((msg, index) => (
             <EmailMessage
               key={msg.id}
               msg={msg}
+              // defaultMessageExpanded reasons in chronological position
+              // ("the last one is open"), so translate the display index
+              // rather than teaching it about display order.
               defaultExpanded={defaultMessageExpanded(
-                index,
-                messages.length,
+                threadOrder === 'newest_first' ? ordered.length - 1 - index : index,
+                ordered.length,
                 isLatestInbound(messages, msg.id),
               )}
+              external={
+                msg.direction === 'inbound' &&
+                isExternalSender(msg.from_address, verifiedDomains, senderAddresses)
+              }
               onReply={onReply}
               onForward={onForward}
               cardRef={msg.id === latestInboundMessageId ? latestInboundRef : undefined}

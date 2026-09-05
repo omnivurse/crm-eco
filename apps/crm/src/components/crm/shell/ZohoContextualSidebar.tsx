@@ -525,7 +525,11 @@ export function ZohoContextualSidebar({
                     onClick={onToggle}
                     aria-label={isOpen ? 'Collapse sidebar' : 'Expand sidebar'}
                     aria-expanded={isOpen}
-                    className="absolute -right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-white shadow-sm z-10 opacity-0 hover:opacity-100 group-hover/sidebar:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/60 transition-opacity"
+                    title={isOpen ? 'Collapse sidebar' : 'Expand sidebar'}
+                    // Always visible, not hover-only: on the inbox the rail
+                    // starts collapsed, and a control that appears only under
+                    // the pointer is one the user has to already know about.
+                    className="absolute -right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-white shadow-sm z-10 opacity-60 hover:opacity-100 group-hover/sidebar:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/60 transition-opacity"
                 >
                     {isOpen ? (
                         <ChevronLeft className="w-3 h-3" />

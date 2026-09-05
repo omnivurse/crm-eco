@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, memo } from 'react';
+import { useState, useEffect, useCallback, useRef, memo } from 'react';
 import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
 import { Label } from '@crm-eco/ui/components/label';
@@ -32,6 +32,7 @@ import { SenderSelector } from './SenderSelector';
 import { toast } from 'sonner';
 import { assertComposerAttachmentsReady } from '@/lib/email/outbound-attachments';
 import { appendSignatureHtml, pickSignatureForCompose } from '@/app/crm/inbox/_components/inbox-reply';
+import { composeIsDirty } from '@/app/crm/inbox/_components/compose-dock';
 
 interface EmailRecipient {
   email: string;
@@ -61,6 +62,18 @@ interface EmailComposerProps {
   onSave?: (data: EmailComposerData) => Promise<void>;
   onSchedule?: (data: EmailComposerData, scheduledAt: Date) => Promise<void>;
   onCancel?: () => void;
+  /**
+   * Fired when the message goes from empty to worth keeping (and back). The
+   * composer owns its form state, so a host that needs to guard a dismissal —
+   * the inbox compose dock — can only learn this by being told.
+   */
+  onDirtyChange?: (dirty: boolean) => void;
+  /**
+   * Save silently this many ms after the last edit. Off by default: the
+   * campaign and record surfaces have no draft row to write to. The inbox
+   * turns it on so a closed tab cannot take an email with it.
+   */
+  autosaveMs?: number;
 
   // Configuration
   showSchedule?: boolean;
@@ -109,6 +122,8 @@ export const EmailComposer = memo(function EmailComposer({
   onSave,
   onSchedule,
   onCancel,
+  onDirtyChange,
+  autosaveMs = 0,
   showSchedule = true,
   showSave = true,
   showAttachments = true,
@@ -213,6 +228,40 @@ export const EmailComposer = memo(function EmailComposer({
     signatureId,
     attachments,
   ]);
+
+  const dirty = composeIsDirty({ to, cc, bcc, subject, bodyHtml: body, attachments });
+
+  useEffect(() => {
+    onDirtyChange?.(dirty);
+  }, [dirty, onDirtyChange]);
+
+  /**
+   * Autosave keeps the newest getComposerData in a ref rather than in the
+   * effect's dependency list: that closure changes on every keystroke, and
+   * depending on it would reset the timer forever and never fire.
+   */
+  const composerDataRef = useRef(getComposerData);
+  composerDataRef.current = getComposerData;
+  const savingRef = useRef(false);
+
+  useEffect(() => {
+    if (!autosaveMs || !onSave || !dirty) return;
+    const timer = setTimeout(async () => {
+      if (savingRef.current) return;
+      savingRef.current = true;
+      try {
+        await onSave(composerDataRef.current());
+      } catch (error) {
+        // Autosave is a safety net, not an action the user asked for. A failed
+        // one must never interrupt typing with a toast; the explicit Save
+        // Draft button still reports its own failures.
+        console.warn('[compose] autosave failed:', error);
+      } finally {
+        savingRef.current = false;
+      }
+    }, autosaveMs);
+    return () => clearTimeout(timer);
+  }, [autosaveMs, onSave, dirty, to, cc, bcc, subject, body, attachments, signatureId]);
 
   // Add recipient helper
   const addRecipient = (

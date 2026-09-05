@@ -558,6 +558,21 @@ export function markedUnread(): string {
   return 'Marked unread';
 }
 
+/**
+ * "Snoozed until Tue 9:00 AM" — naming the return time, because a thread that
+ * silently disappears from Incoming is indistinguishable from one that was
+ * deleted by mistake.
+ */
+export function snoozedUntil(until: string | Date): string {
+  const when = typeof until === 'string' ? new Date(until) : until;
+  if (Number.isNaN(when.getTime())) return 'Snoozed';
+  return `Snoozed until ${when.toLocaleString([], {
+    weekday: 'short',
+    hour: 'numeric',
+    minute: '2-digit',
+  })}`;
+}
+
 export interface AddedWithActionToast {
   /** "Member added" */
   title: string;
@@ -656,6 +671,7 @@ export const toastCopy = {
   exportedAll,
   movedToTrash,
   markedUnread,
+  snoozedUntil,
   addedWithAction,
   mergedInto,
   openedContactTwin,

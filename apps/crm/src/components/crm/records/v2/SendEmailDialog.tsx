@@ -16,7 +16,7 @@
  *   4. `onSent` fires after both finish; the V2 shell uses it to refresh
  *      insights + navigate to the Emails pane.
  *
- * This is intentionally lighter than the inbox ComposeModal — no inbox
+ * This is intentionally lighter than the inbox ComposeDock — no inbox
  * conversation is created because record-scoped sends shouldn't litter the
  * shared inbox. The email shows up in the record timeline only.
  */

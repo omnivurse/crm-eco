@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { usePathname } from 'next/navigation';
 import { CrmTopBar } from './CrmTopBar';
 import { CrmModuleTabBar } from './CrmModuleTabBar';
@@ -27,6 +27,13 @@ import type { CrmModule, CrmProfile } from '@/lib/crm/types';
 import type { NavModule, NavProfile } from '@/lib/crm/nav-profile';
 import { CRM_OPEN_COMMAND_PALETTE_EVENT } from '@/lib/crm/command-palette-bus';
 import { crmShellMainClass, crmShellMainInnerClass, isCrmFullBleedPath } from '@/lib/crm/full-bleed-main';
+import {
+  initialSidebarNavState,
+  resolveSidebarNav,
+  sidebarNavForRoute,
+  sidebarNavForToggle,
+} from '@/lib/crm/sidebar-nav-state';
+import { useInboxPrefs } from '@/hooks/useInboxPrefs';
 
 interface CrmShellProps {
   children: React.ReactNode;
@@ -46,7 +53,29 @@ export function CrmShell({
   navModules,
 }: CrmShellProps) {
   const pathname = usePathname();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  /**
+   * The rail collapses itself on workspace routes (the inbox) and comes back
+   * exactly as the user left it everywhere else. Only the user's choices are
+   * stored; whether the rail is open right now is derived from them plus the
+   * route, so a navigation or a late-arriving preference changes the rendered
+   * rail without a state write.
+   */
+  const [navState, setNavState] = useState(initialSidebarNavState);
+  const { prefs: inboxPrefs } = useInboxPrefs();
+  const navOptions = useMemo(
+    () => ({ autoCollapse: inboxPrefs.collapse_nav_on_inbox }),
+    [inboxPrefs.collapse_nav_on_inbox],
+  );
+  const { open: sidebarOpen } = resolveSidebarNav(navState, pathname, navOptions);
+
+  // Leaving the workspace drops any override made inside it, so the next visit
+  // auto-collapses again rather than one manual expand disabling the behaviour
+  // for the rest of the session. Deferred, like the mobile-menu reset below:
+  // the override is not read on any non-workspace route, so clearing it after
+  // paint is unobservable until the user navigates back.
+  useEffect(() => {
+    queueMicrotask(() => setNavState((prev) => sidebarNavForRoute(prev, pathname)));
+  }, [pathname]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [commandPaletteMounted, setCommandPaletteMounted] = useState(false);
@@ -109,8 +138,8 @@ export function CrmShell({
     setMobileMenuOpen(false);
   }, []);
   const handleSidebarToggle = useCallback(() => {
-    setSidebarOpen((prev) => !prev);
-  }, []);
+    setNavState((prev) => sidebarNavForToggle(prev, pathname, navOptions));
+  }, [pathname, navOptions]);
 
   const fullBleedMain = isCrmFullBleedPath(pathname);
 
@@ -119,8 +148,17 @@ export function CrmShell({
       <ModulePathSync />
       <GizmoProvider profileId={profile.id}>
         {/* Canvas binds to the shared --background token instead of raw
-            slate-50/slate-950, so both consoles sit on one ground. */}
-        <div className="relative flex flex-col h-screen overflow-hidden bg-background [scrollbar-gutter:stable]">
+            slate-50/slate-950, so both consoles sit on one ground.
+
+            dvh, not vh: on iOS Safari the last ~90px of a 100vh shell sit
+            under the browser toolbar, which is exactly where the reply Send
+            button lives. The bottom-bar token is zeroed on routes that do not
+            render one, so anything measuring against it (the compose dock,
+            --crm-page-h) does not reserve 41px of empty floor. */}
+        <div
+          className="relative flex flex-col h-screen h-[100dvh] overflow-hidden bg-background [scrollbar-gutter:stable]"
+          style={fullBleedMain ? ({ '--crm-bottombar-h': '0px' } as React.CSSProperties) : undefined}
+        >
           {/* Content Container */}
           <div className="relative flex flex-col w-full h-full min-h-0">
             {/* A11Y-1: the first Tab stop of every CRM page. Without it a
@@ -207,8 +245,10 @@ export function CrmShell({
             {/* Gizmo Tutorial Widget */}
             <GizmoWidget />
 
-            {/* Bottom Action Bar - Zoho-style */}
-            <BottomBar modules={modules} profile={profile} />
+            {/* Bottom Action Bar - Zoho-style. Hidden in the mail workspace:
+                chat, notes and contact panels are a second inbox competing
+                with the real one for the height an email needs to be read. */}
+            {!fullBleedMain && <BottomBar modules={modules} profile={profile} />}
           </div>
 
           {commandPaletteMounted && (
