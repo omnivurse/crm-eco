@@ -325,7 +325,7 @@ describe('mergeHydratedEmail — provider receipt time', () => {
   it('carries Resend receipt time across, since no Date header is available', () => {
     const merged = mergeHydratedEmail(base, {
       text: 'body',
-      received_at: '2026-09-05T02:40:23.746Z',
+      created_at: '2026-09-05T02:40:23.746Z',
     });
     expect(merged.provider_received_at).toBe('2026-09-05T02:40:23.746Z');
   });
@@ -335,7 +335,7 @@ describe('mergeHydratedEmail — provider receipt time', () => {
   });
 
   it('ignores an unparseable receipt time rather than poisoning thread order', () => {
-    const merged = mergeHydratedEmail(base, { text: 'body', received_at: 'not-a-date' });
+    const merged = mergeHydratedEmail(base, { text: 'body', created_at: 'not-a-date' });
     expect(merged.provider_received_at).toBeUndefined();
   });
 
@@ -346,7 +346,7 @@ describe('mergeHydratedEmail — provider receipt time', () => {
   it('reproduces the real payload shape: content but no headers', () => {
     const merged = mergeHydratedEmail(base, {
       text: 'Automated end-to-end test.',
-      received_at: '2026-09-05T02:40:23.746Z',
+      created_at: '2026-09-05T02:40:23.746Z',
     });
     // No `date` to read, so ordering must lean on the provider timestamp.
     expect(merged.headers?.date).toBeUndefined();

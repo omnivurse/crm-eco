@@ -26,8 +26,11 @@ export interface ResendReceivedEmail {
   text?: string | null;
   html?: string | null;
   headers?: Record<string, string> | Array<{ name: string; value: string }> | null;
-  /** When Resend itself took delivery. Closer to send time than our webhook run. */
-  received_at?: string | null;
+  /**
+   * When Resend itself took delivery. Closer to send time than our webhook run.
+   * Named `created_at` on the wire; `received_at` is not a field Resend returns.
+   */
+  created_at?: string | null;
   reply_to?: string[] | null;
   /** Original recipients from the `for` clause of Received headers. */
   received_for?: string[] | null;
@@ -108,11 +111,11 @@ export function mergeHydratedEmail<T extends HydratableEmail>(
     merged.headers = { ...headers, ...(base.headers || {}) };
   }
 
-  // Resend exposes no MIME headers here, so there is no Date to read. Its own
-  // receipt time is the closest stand-in, and unlike our clock it does not move
-  // when the webhook is retried or runs late.
-  if (typeof fetched.received_at === "string") {
-    const ms = new Date(fetched.received_at).getTime();
+  // Resend's header map routinely omits `date`, so the Date branch cannot be
+  // relied on. Its own receipt time is the closest stand-in, and unlike our
+  // clock it does not move when the webhook is retried or runs late.
+  if (typeof fetched.created_at === "string") {
+    const ms = new Date(fetched.created_at).getTime();
     if (!Number.isNaN(ms)) merged.provider_received_at = new Date(ms).toISOString();
   }
 
