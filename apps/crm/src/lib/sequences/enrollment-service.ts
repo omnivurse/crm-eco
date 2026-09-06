@@ -17,6 +17,9 @@ import {
 } from './branching';
 import type { ConditionConfig } from './types';
 import { calculateNextStepTime } from './scheduling';
+import { hasValidEnrollmentScope } from './enrollment-scope';
+
+const INVALID_SCOPE_EXIT_REASON = 'Invalid sequence enrollment scope';
 
 // Create admin client for background processing
 function createAdminClient() {
@@ -37,6 +40,12 @@ interface Enrollment {
   status: EnrollmentStatus;
   enrolled_at: string;
   next_step_at: string | null;
+}
+
+interface ProcessingEnrollment extends Enrollment {
+  sequence: EmailSequence;
+  current_step: SequenceStep | null;
+  record: { id: string; org_id: string } | null;
 }
 
 interface EmailSequence {
@@ -78,7 +87,8 @@ export async function processEnrollments() {
     .select(`
       *,
       sequence:email_sequences(*),
-      current_step:email_sequence_steps(*)
+      current_step:email_sequence_steps(*),
+      record:crm_records(id, org_id)
     `)
     .eq('status', 'active')
     .lte('next_step_at', now)
@@ -111,6 +121,27 @@ export async function processEnrollments() {
     try {
       const orgId = enrollment.sequence?.org_id;
 
+      // Enrollment RLS proves only that sequence_id belongs to the caller's
+      // organization. record_id and current_step_id are user-writable FKs and
+      // can point across tenants/sequences. Re-establish those relationships
+      // before this service-role worker reads merge fields or executes a step.
+      if (
+        !hasValidEnrollmentScope({
+          sequenceId: enrollment.sequence_id,
+          sequenceOrganizationId: orgId,
+          recordOrganizationId: enrollment.record?.org_id,
+          currentStepSequenceId: enrollment.current_step?.sequence_id,
+        })
+      ) {
+        console.error('Refusing to process an enrollment with invalid tenant scope', {
+          enrollment_id: enrollment.id,
+          sequence_id: enrollment.sequence_id,
+        });
+        await exitEnrollment(supabase, enrollment.id, INVALID_SCOPE_EXIT_REASON);
+        skipped++;
+        continue;
+      }
+
       // Fails closed. A sequence fires unattended, so the gate is checked
       // before the step runs — leaving the enrollment due rather than
       // consuming it, so enabling the flag resumes exactly where it stopped.
@@ -135,10 +166,7 @@ export async function processEnrollments() {
  */
 async function processEnrollmentStep(
   supabase: ReturnType<typeof createAdminClient>,
-  enrollment: Enrollment & {
-    sequence: EmailSequence;
-    current_step: SequenceStep | null;
-  }
+  enrollment: ProcessingEnrollment
 ) {
   // Check if sequence is still active
   if (enrollment.sequence.status !== 'active') {
@@ -201,6 +229,7 @@ async function executeEmailStep(
     .from('crm_records')
     .select('*')
     .eq('id', enrollment.record_id)
+    .eq('org_id', enrollment.sequence.org_id)
     .single();
 
   if (!record) {
