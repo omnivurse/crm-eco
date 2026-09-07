@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { after, NextRequest, NextResponse } from 'next/server';
 import { createClient, getAuthProfile } from '@/lib/supabase-server';
 import { z } from 'zod';
 import { COMMS_FLAGS, isCommsFlagEnabled } from '@/lib/email/comms-flags';
@@ -8,6 +8,11 @@ import {
   enqueueCampaignEmail,
   createOutboxProcessorClient,
 } from '@/lib/email/campaign-send';
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+/** Campaign fan-out continues after the response and remains bounded by the function limit. */
+export const maxDuration = 300;
 
 const sendCampaignSchema = z.object({
   scheduled_at: z.string().datetime().optional(),
@@ -180,8 +185,20 @@ export async function POST(
       return NextResponse.json({ error: 'Failed to start campaign' }, { status: 500 });
     }
 
-    processCampaignEmails(supabase, campaign, profile.organization_id).catch((err) => {
-      console.error('Error processing campaign emails:', err);
+    // A detached promise is not part of a serverless invocation's lifecycle:
+    // Vercel may freeze it as soon as this response is sent, leaving the
+    // campaign half-enqueued and permanently marked `sending`. `after` maps to
+    // waitUntil on Vercel, so the invocation remains alive for this work. Use a
+    // server-owned client because request cookies are no longer needed after
+    // the campaign and tenant have been authorized above.
+    const orgId = profile.organization_id;
+    after(async () => {
+      try {
+        await processCampaignEmails(createOutboxProcessorClient(), campaign, orgId);
+      } catch (err) {
+        // processCampaignEmails records the campaign failure before rethrowing.
+        console.error('Error processing campaign emails:', err);
+      }
     });
 
     return NextResponse.json({

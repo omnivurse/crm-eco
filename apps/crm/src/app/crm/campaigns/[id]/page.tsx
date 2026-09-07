@@ -270,16 +270,17 @@ export default function CampaignDetailPage() {
     if (!campaign) return;
     setActionLoading(true);
     try {
-      const response = await fetch(`/api/campaigns/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'sending' }),
+      // Changing the label alone does not restart fan-out. The send endpoint
+      // performs the guarded transition and registers the worker.
+      const response = await fetch(`/api/campaigns/${id}/send`, {
+        method: 'POST',
       });
       if (!response.ok) {
-        throw new Error('Failed to resume campaign');
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(payload.detail || payload.error || 'Failed to resume campaign');
       }
       toast.success('Campaign resumed');
-      loadData(true);
+      await loadData(true);
     } catch (error) {
       console.error('Error resuming campaign:', error);
       toast.error('Failed to resume campaign');

@@ -11,6 +11,11 @@ export const maxDuration = 300;
 
 /** Campaigns promoted per tick, so one huge backlog cannot monopolise a run. */
 const MAX_CAMPAIGNS_PER_RUN = 3;
+/**
+ * Longer than this route's five-minute max duration. A `sending` campaign
+ * older than the threshold cannot still belong to a healthy invocation.
+ */
+const STALE_SENDING_MS = 10 * 60_000;
 
 /**
  * POST /api/cron/send-scheduled-campaigns
@@ -36,16 +41,36 @@ export async function POST(request: NextRequest) {
 
   try {
     const nowIso = new Date().toISOString();
+    const staleBeforeIso = new Date(Date.now() - STALE_SENDING_MS).toISOString();
 
-    const { data: due, error } = await supabase
-      .from('email_campaigns')
-      .select('*')
-      .eq('status', 'scheduled')
-      .lte('scheduled_at', nowIso)
-      .order('scheduled_at', { ascending: true })
-      .limit(MAX_CAMPAIGNS_PER_RUN);
+    const [
+      { data: scheduled, error: scheduledError },
+      { data: staleSending, error: staleError },
+    ] = await Promise.all([
+      supabase
+        .from('email_campaigns')
+        .select('*')
+        .eq('status', 'scheduled')
+        .lte('scheduled_at', nowIso)
+        .order('scheduled_at', { ascending: true })
+        .limit(MAX_CAMPAIGNS_PER_RUN),
+      // Recover a send whose request/after callback timed out or crashed.
+      // Recipient/outbox idempotency means processing can safely continue from
+      // the rows that are still pending.
+      supabase
+        .from('email_campaigns')
+        .select('*')
+        .eq('status', 'sending')
+        .lt('updated_at', staleBeforeIso)
+        .order('updated_at', { ascending: true })
+        .limit(MAX_CAMPAIGNS_PER_RUN),
+    ]);
 
-    if (error) throw error;
+    if (scheduledError) throw scheduledError;
+    if (staleError) throw staleError;
+
+    const due = [...(staleSending ?? []), ...(scheduled ?? [])]
+      .slice(0, MAX_CAMPAIGNS_PER_RUN);
     if (!due || due.length === 0) {
       return NextResponse.json({ success: true, processed: 0, timestamp: nowIso });
     }
@@ -67,9 +92,9 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      // Claim it before doing any work. The status filter makes this atomic
-      // enough that two overlapping ticks cannot both take the same campaign.
-      const { data: claimed, error: claimError } = await supabase
+      // Claim it before doing any work. For recovery, compare updated_at too:
+      // another invocation that made progress after our read wins the race.
+      let claim = supabase
         .from('email_campaigns')
         .update({
           status: 'sending',
@@ -77,7 +102,13 @@ export async function POST(request: NextRequest) {
           updated_at: new Date().toISOString(),
         })
         .eq('id', campaign.id)
-        .eq('status', 'scheduled')
+        .eq('status', campaign.status);
+
+      if (campaign.status === 'sending') {
+        claim = claim.eq('updated_at', campaign.updated_at);
+      }
+
+      const { data: claimed, error: claimError } = await claim
         .select('id')
         .maybeSingle();
 
