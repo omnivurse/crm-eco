@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { StickyNote, Plus, Pin, Pencil, Trash2, Loader2, User, CalendarDays, ArrowUpDown } from 'lucide-react';
@@ -30,6 +30,7 @@ import {
 } from '@/lib/crm/note-filter';
 import { dedupeNotesForDisplay } from '@/lib/crm/note-dedupe';
 import { openNoteComposer } from '@/lib/crm/note-composer';
+import { isBlankNoteHtml, NOTE_AUTOSAVE_MS, noteNeedsAutosave } from '@/lib/crm/note-autosave';
 import { toast } from 'sonner';
 import { toastItemDeletedWithUndo } from '@/lib/crm/undo-delete';
 import { toastCopy } from '@/lib/crm/toast-copy';
@@ -115,6 +116,13 @@ function NoteCard({
             )}
           </div>
           <div>
+            <p
+              className="text-sm font-semibold text-slate-900 dark:text-white"
+              suppressHydrationWarning
+              title={formatNoteRelative(note.created_at)}
+            >
+              {formatNoteTimestamp(note.created_at)}
+            </p>
             <p className="text-sm font-medium text-slate-900 dark:text-white flex items-center gap-1.5">
               {(() => {
                 const display = getNoteAuthorDisplay(note, { showHistorical: true });
@@ -140,8 +148,7 @@ function NoteCard({
                 </p>
               )}
               <p title={formatNoteRelative(note.created_at)}>
-                Created {formatNoteTimestamp(note.created_at)}
-                <span className="text-slate-400 dark:text-slate-500"> · {formatNoteRelative(note.created_at)}</span>
+                {formatNoteRelative(note.created_at)}
               </p>
               {isNoteEdited(note.created_at, note.updated_at) && (
                 <p
@@ -190,10 +197,7 @@ function NoteCard({
   );
 }
 
-/** True when the rich-area draft has no visible text (empty, `<p><br></p>`, whitespace). */
-export function isBlankNoteHtml(html: string): boolean {
-  return html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim() === '';
-}
+export { isBlankNoteHtml } from '@/lib/crm/note-autosave';
 
 export function NotesPanel({ recordId, notes, orgId, hasLegacyNotes = false }: NotesPanelProps) {
   const router = useRouter();
@@ -212,6 +216,19 @@ export function NotesPanel({ recordId, notes, orgId, hasLegacyNotes = false }: N
   const [newNoteDate, setNewNoteDate] = useState<string>(() => localDateInputValue());
   const [editNoteDate, setEditNoteDate] = useState<string>('');
   const [optimisticNotes, setOptimisticNotes] = useState<CrmNoteWithAuthor[]>([]);
+  const [autosavedNoteId, setAutosavedNoteId] = useState<string | null>(null);
+  const [saveState, setSaveState] = useState<'idle' | 'dirty' | 'saving' | 'saved' | 'error'>('idle');
+  const [composeStamp, setComposeStamp] = useState(() => new Date());
+  const newNoteRef = useRef(newNote);
+  const newNoteDateRef = useRef(newNoteDate);
+  const lastSavedBodyRef = useRef('');
+  const autosavedNoteIdRef = useRef<string | null>(null);
+  const savingRef = useRef(false);
+  const pendingCloseRef = useRef(false);
+  const discardOnCloseRef = useRef(false);
+  newNoteRef.current = newNote;
+  newNoteDateRef.current = newNoteDate;
+  autosavedNoteIdRef.current = autosavedNoteId;
 
   // One rule for every entry point (pane button, header button, `n`, deep
   // link): never wipe a draft — a repeat compose while already composing only
@@ -240,6 +257,14 @@ export function NotesPanel({ recordId, notes, orgId, hasLegacyNotes = false }: N
     setComposeEpoch(next.epoch);
     setComposeFocusSignal(next.focusSignal);
     setIsAdding(next.isAdding);
+    if (!isAdding || seeding) {
+      lastSavedBodyRef.current = '';
+      autosavedNoteIdRef.current = null;
+      setAutosavedNoteId(null);
+      setSaveState(seeding ? 'dirty' : 'idle');
+      setComposeStamp(new Date());
+      discardOnCloseRef.current = false;
+    }
   };
 
   useEffect(() => {
@@ -250,83 +275,219 @@ export function NotesPanel({ recordId, notes, orgId, hasLegacyNotes = false }: N
     // The prefill travels with its nonce (set in the same requestCompose call).
   }, [compose?.composeNonce]);
 
-  const handleEditSubmit = async () => {
-    if (!editingNote) return;
-    const textContent = editNoteBody.replace(/<[^>]*>/g, '').trim();
-    if (!textContent) return;
+  const lastEditSavedRef = useRef('');
+  const editNoteBodyRef = useRef(editNoteBody);
+  const editNoteDateRef = useRef(editNoteDate);
+  const editingNoteRef = useRef(editingNote);
+  editNoteBodyRef.current = editNoteBody;
+  editNoteDateRef.current = editNoteDate;
+  editingNoteRef.current = editingNote;
+
+  const persistEdit = useCallback(async (closeAfter: boolean) => {
+    const current = editingNoteRef.current;
+    const body = editNoteBodyRef.current;
+    const date = editNoteDateRef.current;
+    if (!current) return;
+    if (isBlankNoteHtml(body)) return;
+    if (!noteNeedsAutosave(body, lastEditSavedRef.current)) {
+      if (closeAfter) {
+        setEditingNote(null);
+        setEditNoteBody('');
+        setEditNoteDate('');
+      }
+      return;
+    }
 
     setIsEditSubmitting(true);
     try {
-      const sanitizedBody = sanitizeNoteHtml(editNoteBody.trim());
-      const response = await fetch(`/api/crm/notes/${editingNote.id}`, {
+      const sanitizedBody = sanitizeNoteHtml(body.trim());
+      const response = await fetch(`/api/crm/notes/${current.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ body: sanitizedBody, note_date: backdatedNoteDateOrNull(editNoteDate, localDateInputValue(editingNote.created_at)) }),
+        body: JSON.stringify({
+          body: sanitizedBody,
+          note_date: backdatedNoteDateOrNull(date, localDateInputValue(current.created_at)),
+        }),
       });
 
       if (!response.ok) {
         throw new Error('Failed to update note');
       }
 
-      toast.success(toastCopy.updated('Note'));
+      lastEditSavedRef.current = body.trim();
       const edited: CrmNoteWithAuthor = {
-        ...editingNote,
+        ...current,
         body: sanitizedBody,
-        note_date: backdatedNoteDateOrNull(editNoteDate, localDateInputValue(editingNote.created_at)),
+        note_date: backdatedNoteDateOrNull(date, localDateInputValue(current.created_at)),
         updated_at: new Date().toISOString(),
       };
-      setOptimisticNotes((prev) => [edited, ...prev.filter((n) => n.id !== editingNote.id)]);
-      setEditingNote(null);
-      setEditNoteBody('');
-      setEditNoteDate('');
+      setOptimisticNotes((prev) => [edited, ...prev.filter((n) => n.id !== current.id)]);
+      setEditingNote(edited);
+      if (closeAfter) {
+        toast.success(toastCopy.updated('Note'));
+        setEditingNote(null);
+        setEditNoteBody('');
+        setEditNoteDate('');
+      }
     } catch (error) {
       console.error('Failed to update note:', error);
       toast.error(toastCopy.failed('update the note', error, 'Try again'));
     } finally {
       setIsEditSubmitting(false);
     }
+  }, []);
+
+  const handleEditSubmit = () => {
+    void persistEdit(true);
   };
 
-  const handleSubmit = async () => {
-    // Strip tags to check if there's actual content
-    const textContent = newNote.replace(/<[^>]*>/g, '').trim();
-    if (!textContent) return;
+  useEffect(() => {
+    if (!editingNote) return;
+    if (!noteNeedsAutosave(editNoteBody, lastEditSavedRef.current)) return;
+    const timer = window.setTimeout(() => {
+      void persistEdit(false);
+    }, NOTE_AUTOSAVE_MS);
+    return () => window.clearTimeout(timer);
+  }, [editingNote, editNoteBody, editNoteDate, persistEdit]);
 
-    setIsSubmitting(true);
-    try {
-      const sanitizedBody = sanitizeNoteHtml(newNote.trim());
-      const response = await fetch('/api/crm/notes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          record_id: recordId,
-          body: sanitizedBody,
-          note_date: backdatedNoteDateOrNull(newNoteDate, localDateInputValue()),
-        }),
-      });
+  const closeComposer = useCallback(() => {
+    setIsAdding(false);
+    setNewNote('');
+    setAutosavedNoteId(null);
+    autosavedNoteIdRef.current = null;
+    lastSavedBodyRef.current = '';
+    setSaveState('idle');
+    pendingCloseRef.current = false;
+  }, []);
 
-      if (!response.ok) {
-        throw new Error('Failed to create note');
+  const persistDraft = useCallback(
+    async (mode: 'autosave' | 'submit' = 'autosave') => {
+      const draft = newNoteRef.current;
+      const date = newNoteDateRef.current;
+      if (isBlankNoteHtml(draft)) {
+        if (mode === 'submit') closeComposer();
+        return;
+      }
+      if (!noteNeedsAutosave(draft, lastSavedBodyRef.current)) {
+        if (mode === 'submit') closeComposer();
+        return;
+      }
+      if (savingRef.current) {
+        if (mode === 'submit') pendingCloseRef.current = true;
+        return;
       }
 
-      const created = await response.json().catch(() => null);
-      const optimistic = noteFromCreateResponse(created, {
-        recordId,
-        orgId,
-        body: sanitizedBody,
-        noteDate: backdatedNoteDateOrNull(newNoteDate, localDateInputValue()),
-      });
-      setOptimisticNotes((prev) => [optimistic, ...prev.filter((n) => n.id !== optimistic.id)]);
-      toast.success(toastCopy.added('Note'));
-      setNewNote('');
-      setIsAdding(false);
-    } catch (error) {
-      console.error('Failed to create note:', error);
-      toast.error(toastCopy.failed('add the note', error, 'Try again'));
-    } finally {
-      setIsSubmitting(false);
-    }
+      savingRef.current = true;
+      setIsSubmitting(true);
+      setSaveState('saving');
+      const sanitizedBody = sanitizeNoteHtml(draft.trim());
+      const noteDate = backdatedNoteDateOrNull(date, localDateInputValue());
+
+      try {
+        const existingId = autosavedNoteIdRef.current;
+        const response = existingId
+          ? await fetch(`/api/crm/notes/${existingId}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ body: sanitizedBody, note_date: noteDate }),
+            })
+          : await fetch('/api/crm/notes', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                record_id: recordId,
+                body: sanitizedBody,
+                note_date: noteDate,
+              }),
+            });
+
+        if (!response.ok) {
+          throw new Error(existingId ? 'Failed to update note' : 'Failed to create note');
+        }
+
+        const created = existingId ? null : await response.json().catch(() => null);
+        const optimistic = existingId
+          ? {
+              id: existingId,
+              org_id: orgId,
+              record_id: recordId,
+              body: sanitizedBody,
+              is_pinned: false,
+              note_date: noteDate,
+              created_by: null,
+              created_at: composeStamp.toISOString(),
+              updated_at: new Date().toISOString(),
+              author: { id: 'me', full_name: 'You', avatar_url: null },
+            }
+          : noteFromCreateResponse(created, {
+              recordId,
+              orgId,
+              body: sanitizedBody,
+              noteDate,
+            });
+
+        lastSavedBodyRef.current = draft.trim();
+        autosavedNoteIdRef.current = optimistic.id;
+        setAutosavedNoteId(optimistic.id);
+        setOptimisticNotes((prev) => [optimistic, ...prev.filter((n) => n.id !== optimistic.id)]);
+        setSaveState('saved');
+        if (mode === 'submit' || pendingCloseRef.current) {
+          if (mode === 'submit' && !existingId) {
+            toast.success(toastCopy.added('Note'));
+          } else if (mode === 'submit') {
+            toast.success(toastCopy.saved('Note'));
+          }
+          closeComposer();
+        }
+      } catch (error) {
+        console.error('Failed to save note:', error);
+        setSaveState('error');
+        toast.error(toastCopy.failed('save the note', error, 'Try again'));
+      } finally {
+        savingRef.current = false;
+        setIsSubmitting(false);
+        if (pendingCloseRef.current && lastSavedBodyRef.current === draft.trim()) {
+          pendingCloseRef.current = false;
+          closeComposer();
+        } else if (pendingCloseRef.current) {
+          pendingCloseRef.current = false;
+          void persistDraft('submit');
+        }
+      }
+    },
+    [closeComposer, composeStamp, orgId, recordId],
+  );
+
+  const handleSubmit = () => {
+    void persistDraft('submit');
   };
+
+  useEffect(() => {
+    if (!isAdding) return;
+    if (!noteNeedsAutosave(newNote, lastSavedBodyRef.current)) return;
+    setSaveState((s) => (s === 'saving' ? s : 'dirty'));
+    const timer = window.setTimeout(() => {
+      void persistDraft('autosave');
+    }, NOTE_AUTOSAVE_MS);
+    return () => window.clearTimeout(timer);
+  }, [isAdding, newNote, newNoteDate, persistDraft]);
+
+  useEffect(() => {
+    if (!isAdding) return;
+    const flush = () => {
+      if (discardOnCloseRef.current) return;
+      void persistDraft('autosave');
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') flush();
+    };
+    window.addEventListener('pagehide', flush);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      window.removeEventListener('pagehide', flush);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [isAdding, persistDraft]);
 
   // This CRM vs imported (Zoho) vs all. Default All so yesterday's work
   // cannot hide behind the Imported chip. Dedupe first so UTC/local twins
@@ -384,7 +545,7 @@ export function NotesPanel({ recordId, notes, orgId, hasLegacyNotes = false }: N
       ) : (
         <div
           data-testid="crm-notes-composer"
-          className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/40 p-3 space-y-3"
+          className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/40 overflow-hidden"
           onKeyDown={(e) => {
             if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
               e.preventDefault();
@@ -392,55 +553,84 @@ export function NotesPanel({ recordId, notes, orgId, hasLegacyNotes = false }: N
             }
           }}
         >
-          <p className="text-sm font-semibold text-slate-900 dark:text-white">Add Note</p>
-          <NoteRichArea
-            key={`compose-${composeEpoch}`}
-            value={newNote}
-            onChange={setNewNote}
-            autoFocus
-            focusSignal={composeFocusSignal}
-          />
-          <p className="text-xs text-slate-400 dark:text-slate-500">
-            Cmd+Enter to save. Paste from email or Docs keeps formatting when safe.
-          </p>
-          <div className="flex flex-wrap items-center gap-2">
-            <label htmlFor="new-note-date" className="text-xs font-medium text-slate-500 dark:text-slate-400">
-              Note date
-            </label>
-            <input
-              id="new-note-date"
-              type="date"
-              value={newNoteDate}
-              onChange={(e) => setNewNoteDate(e.target.value)}
-              className="h-8 rounded-md border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 px-2 text-sm text-slate-700 dark:text-slate-200"
-            />
+          <div className="sticky top-0 z-10 space-y-3 border-b border-slate-200 dark:border-white/10 bg-white/95 dark:bg-slate-900/95 p-3 backdrop-blur-sm">
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div>
+                <p className="text-sm font-semibold text-slate-900 dark:text-white" suppressHydrationWarning>
+                  {formatNoteTimestamp(composeStamp)}
+                </p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Added to every note automatically</p>
+              </div>
+              <p
+                data-testid="crm-notes-save-status"
+                className="text-xs text-slate-500 dark:text-slate-400"
+                aria-live="polite"
+              >
+                {saveState === 'saving' && 'Saving…'}
+                {saveState === 'saved' && 'Saved'}
+                {saveState === 'dirty' && 'Saving as you type…'}
+                {saveState === 'error' && 'Couldn’t save — try again'}
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <label htmlFor="new-note-date" className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                Note date
+              </label>
+              <input
+                id="new-note-date"
+                type="date"
+                value={newNoteDate}
+                onChange={(e) => setNewNoteDate(e.target.value)}
+                className="h-8 rounded-md border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 px-2 text-sm text-slate-700 dark:text-slate-200"
+              />
+              <div className="ml-auto flex gap-2">
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    discardOnCloseRef.current = !autosavedNoteId;
+                    if (autosavedNoteId) {
+                      closeComposer();
+                    } else {
+                      setIsAdding(false);
+                      setNewNote('');
+                    }
+                  }}
+                  className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                >
+                  {autosavedNoteId ? 'Done' : 'Cancel'}
+                </Button>
+                <Button
+                  data-testid="crm-notes-save"
+                  onClick={handleSubmit}
+                  disabled={isSubmitting || !newNote.replace(/<[^>]*>/g, '').trim()}
+                  className="bg-teal-600 hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-400 text-white"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : autosavedNoteId ? (
+                    'Done'
+                  ) : (
+                    'Add Note'
+                  )}
+                </Button>
+              </div>
+            </div>
           </div>
-          <div className="flex justify-end gap-2">
-            <Button
-              variant="ghost"
-              onClick={() => {
-                setIsAdding(false);
-                setNewNote('');
-              }}
-              className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-            >
-              Cancel
-            </Button>
-            <Button
-              data-testid="crm-notes-save"
-              onClick={handleSubmit}
-              disabled={isSubmitting || !newNote.replace(/<[^>]*>/g, '').trim()}
-              className="bg-teal-600 hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-400 text-white"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                'Add Note'
-              )}
-            </Button>
+          <div className="p-3 space-y-2">
+            <NoteRichArea
+              key={`compose-${composeEpoch}`}
+              value={newNote}
+              onChange={setNewNote}
+              autoFocus
+              focusSignal={composeFocusSignal}
+              editorClassName="min-h-[160px] max-h-[40vh]"
+            />
+            <p className="text-xs text-slate-400 dark:text-slate-500">
+              Autosaves as you type. Cmd+Enter to finish. Paste from email or Docs keeps formatting when safe.
+            </p>
           </div>
         </div>
       )}
@@ -459,6 +649,11 @@ export function NotesPanel({ recordId, notes, orgId, hasLegacyNotes = false }: N
           <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-white/10">
             <DialogTitle className="text-lg font-semibold text-slate-900 dark:text-white">
               Edit Note
+              {editingNote && (
+                <span className="mt-1 block text-sm font-semibold text-slate-700 dark:text-slate-200">
+                  {formatNoteTimestamp(editingNote.created_at)}
+                </span>
+              )}
             </DialogTitle>
           </div>
 
@@ -577,6 +772,7 @@ export function NotesPanel({ recordId, notes, orgId, hasLegacyNotes = false }: N
                 setEditingNote(n);
                 setEditNoteBody(n.body);
                 setEditNoteDate(n.note_date ?? localDateInputValue(n.created_at));
+                lastEditSavedRef.current = n.body;
               }}
             />
           ))}

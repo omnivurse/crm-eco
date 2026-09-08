@@ -116,6 +116,8 @@ export interface NoteRichAreaProps {
    * (keeps the draft, caret and undo stack). 0/undefined = no request.
    */
   focusSignal?: number;
+  /** Extra classes for the contenteditable surface (composer uses a shorter min-height). */
+  editorClassName?: string;
 }
 
 export function NoteRichArea({
@@ -125,6 +127,7 @@ export function NoteRichArea({
   className,
   autoFocus = false,
   focusSignal = 0,
+  editorClassName,
 }: NoteRichAreaProps) {
   const editorRef = useRef<HTMLDivElement>(null);
 
@@ -211,6 +214,7 @@ export function NoteRichArea({
         onPaste={handlePaste}
         className={cn(
           'flex-1 min-h-[280px] max-h-[60vh] overflow-y-auto resize-y whitespace-pre-wrap break-words rounded-b-lg rounded-t-none border border-t-0 border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/50 p-4 text-sm text-slate-900 dark:text-white leading-relaxed outline-none ring-1 ring-transparent focus:ring-teal-500/30 dark:focus:ring-teal-500/40',
+          editorClassName,
           'focus:border-teal-500/50',
           'prose prose-sm max-w-none dark:prose-invert',
           '[&_table]:border-collapse [&_table]:w-full [&_td]:border [&_td]:border-slate-200 dark:[&_td]:border-slate-700 [&_td]:px-2 [&_td]:py-1 [&_td]:text-sm',
