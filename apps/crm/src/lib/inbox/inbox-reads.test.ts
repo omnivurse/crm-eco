@@ -39,8 +39,23 @@ describe('conversationIsUnreadForUser', () => {
 });
 
 describe('shouldWriteReadCursorOnOpen', () => {
-  it('never writes a cursor just because the thread was selected or deep-linked', () => {
-    expect(shouldWriteReadCursorOnOpen()).toBe(false);
+  it('writes a cursor when the thread is opened so unread dots clear', () => {
+    expect(shouldWriteReadCursorOnOpen()).toBe(true);
+  });
+
+  it('clears unread for an inbound thread the user just opened', () => {
+    const wasUnread = conversationIsUnreadForUser({
+      latestInboundAt: '2026-09-03T15:49:59.000Z',
+      lastReadAt: null,
+    });
+    expect(wasUnread).toBe(true);
+    expect(shouldWriteReadCursorOnOpen()).toBe(true);
+    expect(
+      conversationIsUnreadForUser({
+        latestInboundAt: '2026-09-03T15:49:59.000Z',
+        lastReadAt: '2026-09-08T20:00:00.000Z',
+      }),
+    ).toBe(false);
   });
 });
 

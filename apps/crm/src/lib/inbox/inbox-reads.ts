@@ -34,9 +34,9 @@ export function conversationIsUnreadForUser(opts: {
   return new Date(opts.latestInboundAt).getTime() > new Date(opts.lastReadAt).getTime();
 }
 
-/** Opening a thread, including via ?c=, must not write a read cursor. */
+/** Opening a thread (click or ?c=) writes a read cursor so the unread dot clears. */
 export function shouldWriteReadCursorOnOpen(): boolean {
-  return false;
+  return true;
 }
 
 export function attachUnreadForUser<T extends { id: string }>(

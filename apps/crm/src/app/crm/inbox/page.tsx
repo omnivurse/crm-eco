@@ -37,7 +37,8 @@ import {
   forwardSubject,
   forwardableAttachments,
 } from './_components/inbox-forward';
-import { attachUnreadForUser } from '@/lib/inbox/inbox-reads';
+import { attachUnreadForUser, shouldWriteReadCursorOnOpen } from '@/lib/inbox/inbox-reads';
+import { inboxUrlHydrateDecision } from '@/lib/inbox/inbox-selection';
 import { useInboxPrefs } from '@/hooks/useInboxPrefs';
 import {
   togglePinned,
@@ -434,6 +435,8 @@ function InboxPageContent() {
    * thread B's header and the composer would quote the wrong email.
    */
   const selectedIdRef = useRef<string | null>(null);
+  /** Last `?c=` value the hydrate effect has observed. Not selected state. */
+  const lastUrlIdRef = useRef<string | null>(null);
 
   const loadMessages = useCallback(async (conversationId: string) => {
     setLoadingMessages(true);
@@ -487,27 +490,46 @@ function InboxPageContent() {
     };
   }, [selectedConversation, loadMessages]);
 
-  // Select conversation
-  const handleSelectConversation = useCallback(async (conv: InboxConversation) => {
+  const applyConversation = useCallback(async (conv: InboxConversation) => {
     selectedIdRef.current = conv.id;
     setSelectedConversation(conv);
     setMessages([]);
     setMobileView('detail');
-    const next = new URLSearchParams(searchParams?.toString() ?? '');
-    next.set('c', conv.id);
-    router.replace(`${pathname}?${next.toString()}`, { scroll: false });
     await loadMessages(conv.id);
-  }, [loadMessages, pathname, router, searchParams]);
+  }, [loadMessages]);
+
+  // Click / keyboard: update state immediately and let the URL follow.
+  // Do not wait for searchParams — that lag is what used to revert the pane.
+  const handleSelectConversation = useCallback((conv: InboxConversation) => {
+    if (selectedIdRef.current !== conv.id) {
+      void applyConversation(conv);
+    } else {
+      setMobileView('detail');
+    }
+    const next = new URLSearchParams(searchParams?.toString() ?? '');
+    if (next.get('c') !== conv.id) {
+      next.set('c', conv.id);
+      router.replace(`${pathname}?${next.toString()}`, { scroll: false });
+    }
+  }, [applyConversation, pathname, router, searchParams]);
 
   const conversationFromUrl = searchParams?.get('c');
 
+  // Deep link / back-forward only. Must not run when state is ahead of URL.
   useEffect(() => {
-    if (!authProfile || !conversationFromUrl) return;
-    if (selectedConversation?.id === conversationFromUrl) return;
+    if (!authProfile) return;
+
+    const decision = inboxUrlHydrateDecision({
+      conversationFromUrl,
+      lastSeenUrlId: lastUrlIdRef.current,
+      selectedId: selectedIdRef.current,
+    });
+    lastUrlIdRef.current = decision.nextLastSeenUrlId;
+    if (!decision.apply || !conversationFromUrl) return;
 
     const listed = conversations.find((c) => c.id === conversationFromUrl);
     if (listed) {
-      void handleSelectConversation(listed);
+      void applyConversation(listed);
       return;
     }
 
@@ -520,22 +542,18 @@ function InboxPageContent() {
         .eq('org_id', authProfile.organization_id)
         .maybeSingle();
       if (cancelled || !data) return;
-      void handleSelectConversation(data as InboxConversation);
+      if (selectedIdRef.current === data.id) return;
+      void applyConversation(data as InboxConversation);
     })();
     return () => {
       cancelled = true;
     };
-  }, [
-    authProfile,
-    conversationFromUrl,
-    conversations,
-    selectedConversation?.id,
-    handleSelectConversation,
-  ]);
+  }, [authProfile, conversationFromUrl, conversations, applyConversation]);
 
   // Handle back to list on mobile
   const handleBackToList = useCallback(() => {
     selectedIdRef.current = null;
+    lastUrlIdRef.current = null;
     setMobileView('list');
     setSelectedConversation(null);
     const next = new URLSearchParams(searchParams?.toString() ?? '');
@@ -692,6 +710,15 @@ function InboxPageContent() {
     void loadConversations();
   }, [loadConversations]);
 
+  // Opening a thread marks it read. Depend only on the id so a manual
+  // "mark unread" while viewing is not immediately overwritten.
+  useEffect(() => {
+    if (!selectedConversation) return;
+    if (!shouldWriteReadCursorOnOpen()) return;
+    if (selectedConversation.is_unread_for_user !== true) return;
+    void setReadState([selectedConversation.id], true);
+  }, [selectedConversation?.id]);
+
   const handleToggleRead = useCallback((conv: InboxConversation) => {
     void setReadState([conv.id], conv.is_unread_for_user === true);
   }, [setReadState]);
@@ -826,7 +853,8 @@ function InboxPageContent() {
     setSelectedConversation((prev) =>
       prev?.id === message.conversation_id ? { ...prev, is_unread_for_user: false } : prev,
     );
-  }, [authProfile]);
+    void loadConversations();
+  }, [authProfile, loadConversations]);
 
   const handleMarkUnread = useCallback(() => {
     if (!selectedConversation) return;
@@ -1166,6 +1194,7 @@ function InboxPageContent() {
           {selectedConversation ? (
             <>
               <MessageThread
+                key={selectedConversation.id}
                 conversation={selectedConversation}
                 messages={messages}
                 loadingMessages={loadingMessages}
@@ -1203,6 +1232,7 @@ function InboxPageContent() {
                 }
               />
               <ReplyForm
+                key={`${selectedConversation.id}-reply`}
                 selectedConversation={selectedConversation}
                 messages={messages}
                 authProfile={authProfile!}
