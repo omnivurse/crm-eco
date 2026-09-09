@@ -22,13 +22,43 @@ import { isPendingContactStatus } from '@/lib/crm/pending-activation';
 import { maskDateTyping } from '@/lib/crm/date-field-bounds';
 import { isValidCalendarDateParts } from '@/lib/crm/merge-crm-data-json-to-row';
 
-export type QuickCreateModuleKey = 'contacts' | 'leads' | 'accounts';
+export type QuickCreateModuleKey = 'contacts' | 'leads' | 'accounts' | 'partners';
 
 export const QUICK_CREATE_MODULE_KEYS: readonly QuickCreateModuleKey[] = [
   'contacts',
+  'partners',
   'leads',
   'accounts',
 ] as const;
+
+/**
+ * Which `crm_modules.key` a quick-create tab actually writes.
+ *
+ * `partners` is a form, not a module — bank / vendor / support people are
+ * Contacts tagged as Partner or Support, never Leads.
+ */
+export function quickCreatePersistedModuleKey(
+  key: QuickCreateModuleKey,
+): 'contacts' | 'leads' | 'accounts' {
+  return key === 'partners' ? 'contacts' : key;
+}
+
+/** Tabs to show given the org's enabled modules. Partner rides on Contacts. */
+export function visibleQuickCreateTabs(enabledModuleKeys: Iterable<string>): QuickCreateModuleKey[] {
+  const enabled = new Set(
+    [...enabledModuleKeys].map((k) => k.trim().toLowerCase()).filter(Boolean),
+  );
+  const tabs: QuickCreateModuleKey[] = [];
+  if (enabled.has('contacts')) {
+    tabs.push('contacts', 'partners');
+  }
+  if (enabled.has('leads')) tabs.push('leads');
+  if (enabled.has('accounts')) tabs.push('accounts');
+  return tabs;
+}
+
+/** Call notes typed in the partner form — stored as a `crm_notes` row, not JSONB. */
+export const QUICK_CREATE_NOTE_KEY = 'call_note';
 
 /**
  * - `state`    → native <select> of US states + DC (lib/crm/us-states); an
@@ -58,7 +88,8 @@ export type QuickCreateFieldType =
   | 'select'
   | 'state'
   | 'suggest'
-  | 'producer';
+  | 'producer'
+  | 'textarea';
 
 /**
  * JSONB key that carries the picked producer's `public.advisors.id` next to
@@ -98,6 +129,11 @@ export interface QuickCreateField {
   allowOther?: boolean;
   /** Full-width in the two-column grid. */
   span?: 1 | 2;
+  /**
+   * `note` is typed in the drawer then POSTed to /api/crm/notes after the
+   * contact exists. It must not land in `crm_records.data`.
+   */
+  persist?: 'record' | 'note';
 }
 
 export interface QuickCreateModuleConfig {
@@ -120,6 +156,11 @@ export interface QuickCreateModuleConfig {
    * sharing entity / state. Everything else resets to `initialQuickCreateValues`.
    */
   batchStickyKeys?: string[];
+  /**
+   * Values always written on create that the form does not show. Partners
+   * get Active so the member Pending + coverage-date rule never fires.
+   */
+  hiddenDefaults?: Record<string, string>;
   fields: QuickCreateField[];
 }
 
@@ -216,6 +257,61 @@ export const QUICK_CREATE_FIELDS: Record<QuickCreateModuleKey, QuickCreateModule
       { key: 'industry', label: 'Industry', type: 'text' },
     ],
   },
+  partners: {
+    key: 'partners',
+    title: 'Add Partner',
+    noun: 'Partner',
+    description:
+      'Someone you work with who is not a member and not a lead — a banker, vendor, or support contact. Saves as a Contact.',
+    hiddenDefaults: { contact_status: 'Active' },
+    batchStickyKeys: ['company', 'contact_category', 'relationship_type', 'partner_industry'],
+    fields: [
+      { key: 'first_name', label: 'First name', type: 'text', required: true },
+      { key: 'last_name', label: 'Last name', type: 'text', required: true },
+      { key: 'phone', label: 'Phone', type: 'tel', placeholder: '555-555-5555' },
+      { key: 'email', label: 'Email', type: 'email', placeholder: 'Optional' },
+      { key: 'company', label: 'Company', type: 'text', placeholder: 'e.g. Bank of Colorado', span: 2 },
+      { key: 'title', label: 'Job title', type: 'text', placeholder: 'e.g. Relationship manager' },
+      {
+        key: 'contact_category',
+        label: 'Contact type',
+        type: 'select',
+        defaultValue: 'Partner Contact',
+        fallbackOptions: ['Partner Contact', 'Support Contact', 'Vendor', 'Other'],
+      },
+      {
+        key: 'relationship_type',
+        label: 'Partner type',
+        hint: 'How they relate to PIFH',
+        type: 'select',
+        defaultValue: 'Partner',
+        fallbackOptions: ['Partner', 'Referring Partner', 'Agency', 'Vendor', 'Other'],
+      },
+      {
+        key: 'partner_industry',
+        label: 'Industry',
+        type: 'select',
+        fallbackOptions: [
+          'Banking / Credit Union',
+          'Mortgage / Lending',
+          'Insurance - Property & Casualty',
+          'Financial Advisor / Wealth Management',
+          'CPA / Accounting / Bookkeeping',
+          'Attorney / Legal',
+          'Employer / Business Owner',
+          'Other',
+        ],
+      },
+      {
+        key: QUICK_CREATE_NOTE_KEY,
+        label: 'Notes from this call',
+        type: 'textarea',
+        persist: 'note',
+        span: 2,
+        placeholder: 'What you discussed, next step, who else was on the call…',
+      },
+    ],
+  },
 };
 
 export function isQuickCreateModuleKey(key: string | null | undefined): key is QuickCreateModuleKey {
@@ -224,11 +320,16 @@ export function isQuickCreateModuleKey(key: string | null | undefined): key is Q
 
 /** Initial form values for a module: select defaults only, everything else blank. */
 export function initialQuickCreateValues(moduleKey: QuickCreateModuleKey): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (const f of QUICK_CREATE_FIELDS[moduleKey].fields) {
+  const cfg = QUICK_CREATE_FIELDS[moduleKey];
+  const out: Record<string, string> = { ...(cfg.hiddenDefaults ?? {}) };
+  for (const f of cfg.fields) {
     if (f.defaultValue) out[f.key] = f.defaultValue;
   }
   return out;
+}
+
+export function quickCreateNoteBody(values: Record<string, string>): string {
+  return (values[QUICK_CREATE_NOTE_KEY] ?? '').trim();
 }
 
 /**
@@ -501,8 +602,10 @@ export function buildQuickCreatePayload(
   moduleKey: QuickCreateModuleKey,
   values: Record<string, string>,
 ): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (const f of QUICK_CREATE_FIELDS[moduleKey].fields) {
+  const cfg = QUICK_CREATE_FIELDS[moduleKey];
+  const out: Record<string, string> = { ...(cfg.hiddenDefaults ?? {}) };
+  for (const f of cfg.fields) {
+    if (f.persist === 'note') continue;
     const raw = (values[f.key] ?? '').trim();
     if (!raw) continue;
     out[f.key] = f.type === 'date' ? maskDateTyping(raw) : raw;
@@ -563,10 +666,22 @@ export function writeQuickCreateDraft(
   values: Record<string, string>,
 ): boolean {
   if (typeof window === 'undefined') return false;
-  const payload = buildQuickCreateDraft(values);
+  const omitNotes = new Set(
+    isQuickCreateModuleKey(moduleKey)
+      ? QUICK_CREATE_FIELDS[moduleKey].fields.filter((f) => f.persist === 'note').map((f) => f.key)
+      : [],
+  );
+  const recordValues =
+    omitNotes.size === 0
+      ? values
+      : Object.fromEntries(Object.entries(values).filter(([k]) => !omitNotes.has(k)));
+  const payload = buildQuickCreateDraft(recordValues);
   if (Object.keys(payload.values).length === 0) return false;
   try {
-    const key = quickCreateDraftStorageKey(moduleKey, orgId);
+    const persist = isQuickCreateModuleKey(moduleKey)
+      ? quickCreatePersistedModuleKey(moduleKey)
+      : moduleKey;
+    const key = quickCreateDraftStorageKey(persist, orgId);
     // Never clobber an in-progress full-form draft for the same module:
     // merge, drawer values win per key. (RecordDraftAutosave writes the same
     // key while the user types on the full form.)
@@ -600,5 +715,8 @@ export function writeQuickCreateDraft(
 
 /** Route of the full create form for a module. */
 export function fullCreateFormHref(moduleKey: string): string {
-  return `/crm/modules/${moduleKey}/new`;
+  const persist = isQuickCreateModuleKey(moduleKey)
+    ? quickCreatePersistedModuleKey(moduleKey)
+    : moduleKey;
+  return `/crm/modules/${persist}/new`;
 }

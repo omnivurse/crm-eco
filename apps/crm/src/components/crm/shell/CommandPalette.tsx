@@ -600,7 +600,7 @@ export function CommandPalette({ open, onOpenChange, modules, navProfile = 'full
         });
         if (intent.kind === 'blocked') return [];
         const isPerson = module.key === 'contacts' || module.key === 'members';
-        return [
+        const items: CommandItem[] = [
           {
             id: `create-${module.key}`,
             label: isPerson ? 'Add Member' : `Create New ${module.name}`,
@@ -620,6 +620,21 @@ export function CommandPalette({ open, onOpenChange, modules, navProfile = 'full
             keywords: ['add', 'new', module.key],
           },
         ];
+        if (module.key === 'contacts') {
+          items.push({
+            id: 'create-partner',
+            label: 'Add Partner',
+            description: 'Banker, vendor, or support contact — not a lead or member',
+            icon: <Plus className="w-4 h-4" />,
+            action: () => {
+              openCrmQuickCreate('partners');
+              handleOpenChange(false);
+            },
+            category: 'Quick Actions',
+            keywords: ['add', 'new', 'partner', 'bank', 'vendor', 'support', 'contact'],
+          });
+        }
+        return items;
       }),
       // "Import Data" is a page row now (persona set idle, typed otherwise) —
       // no second Quick Actions copy of the same destination.

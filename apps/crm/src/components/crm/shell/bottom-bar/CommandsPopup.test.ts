@@ -7,7 +7,12 @@ import { commandsPopupActionAllowed } from './CommandsPopup';
 
 describe('commandsPopupActionAllowed', () => {
   it('offers create shortcuts only to creating roles', () => {
-    for (const href of ['/crm/modules/leads/new', '/crm/modules/contacts/new', '/crm/tasks/new']) {
+    for (const href of [
+      '/crm/modules/leads/new',
+      '/crm/modules/contacts/new',
+      '/crm/modules/contacts/new?preset=partner',
+      '/crm/tasks/new',
+    ]) {
       expect(commandsPopupActionAllowed(href, 'crm_viewer')).toBe(false);
       expect(commandsPopupActionAllowed(href, null)).toBe(false);
       expect(commandsPopupActionAllowed(href, 'crm_agent')).toBe(true);

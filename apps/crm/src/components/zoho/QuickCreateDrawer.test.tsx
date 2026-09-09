@@ -101,6 +101,9 @@ function installFetch() {
       if (url.endsWith('/api/crm/records') && method === 'POST') {
         return postResponse();
       }
+      if (url.endsWith('/api/crm/notes') && method === 'POST') {
+        return json({ id: 'note-1' }, 201);
+      }
       return json({}, 404);
     }),
   );
@@ -326,7 +329,7 @@ describe('QuickCreateDrawer — dates and field-anchored errors (DE-5)', () => {
 describe('QuickCreateDrawer — Pending lead parity (DE-6)', () => {
   it('a lead at stage Pending saves without any coverage date', async () => {
     await openDrawer();
-    fireEvent.click(screen.getByRole('group', { name: 'Record type' }).querySelector('button:nth-child(2)') as HTMLElement);
+    fireEvent.click(within(screen.getByRole('group', { name: 'Record type' })).getByRole('button', { name: 'Lead' }));
     await waitFor(() => expect(field('leads', 'first_name')).toBeTruthy());
     await typeNames('leads');
     // Drive the status select through its Radix trigger (keyboard open → pick).
@@ -345,5 +348,38 @@ describe('QuickCreateDrawer — Pending lead parity (DE-6)', () => {
     expect(data).not.toHaveProperty('health_insurance_start_date');
     expect(data).not.toHaveProperty('sharing_effective_date');
     expect(toastSuccess).toHaveBeenCalledWith('Lead added', expect.objectContaining({ action: expect.objectContaining({ label: 'View in list' }) }));
+  });
+});
+
+describe('QuickCreateDrawer — Partner (writes to Contacts)', () => {
+  it('saves a Partner Contact plus the first call note', async () => {
+    render(
+      <QuickCreateDrawer
+        open
+        onOpenChange={() => {}}
+        modules={MODULES as never}
+        defaultModule="partners"
+      />,
+    );
+    await waitFor(() => expect(field('partners', 'first_name')).toBeTruthy());
+    fireEvent.change(field('partners', 'first_name'), { target: { value: 'Ava' } });
+    fireEvent.change(field('partners', 'last_name'), { target: { value: 'Lender' } });
+    fireEvent.change(field('partners', 'company'), { target: { value: 'First National' } });
+    fireEvent.change(field('partners', 'call_note'), { target: { value: 'Intro call — interested in wholesale.' } });
+    await submit();
+    await waitFor(() => expect(posts()).toHaveLength(1));
+    const record = posts()[0];
+    expect(record.url).toContain('/api/crm/records');
+    const data = record.body?.data as Record<string, string>;
+    expect(record.body?.module_id).toBe('mod-contacts');
+    expect(data.contact_category).toBe('Partner Contact');
+    expect(data.relationship_type).toBe('Partner');
+    expect(data.contact_status).toBe('Active');
+    expect(data).not.toHaveProperty('call_note');
+    const note = calls.find((c) => c.url.endsWith('/api/crm/notes'));
+    expect(note?.body).toMatchObject({
+      record_id: 'rec-1',
+      body: 'Intro call — interested in wholesale.',
+    });
   });
 });

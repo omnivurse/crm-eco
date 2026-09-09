@@ -63,6 +63,7 @@ import {
   Users,
   UserPlus,
   Building2,
+  HeartHandshake,
   Loader2,
   Plus,
   AlertTriangle,
@@ -86,7 +87,6 @@ import {
   PRODUCER_RECORD_ID_KEY,
   QUICK_CREATE_FIELDS,
   QUICK_CREATE_INVALID_DATE,
-  QUICK_CREATE_MODULE_KEYS,
   QUICK_CREATE_PENDING_NEEDS_DATE,
   buildQuickCreatePayload,
   fullCreateFormHref,
@@ -96,12 +96,15 @@ import {
   isValidQuickCreateDate,
   nextQuickCreateBatchValues,
   normalizePhoneDigits,
+  quickCreateNoteBody,
   quickCreatePendingDateKey,
   quickCreatePendingHint,
+  quickCreatePersistedModuleKey,
   quickCreateProducerField,
   quickCreateSuggestKeys,
   splitQuickCreateDuplicates,
   validateQuickCreate,
+  visibleQuickCreateTabs,
   writeQuickCreateDraft,
   type QuickCreateField,
   type QuickCreateModuleKey,
@@ -147,6 +150,7 @@ type SubmitMode = 'open' | 'another';
 
 const MODULE_ICONS: Record<QuickCreateModuleKey, React.ReactNode> = {
   contacts: <Users className="w-4 h-4" />,
+  partners: <HeartHandshake className="w-4 h-4" />,
   leads: <UserPlus className="w-4 h-4" />,
   accounts: <Building2 className="w-4 h-4" />,
 };
@@ -237,10 +241,11 @@ export function QuickCreateDrawer({
   const originRef = useRef<string | null>(null);
 
   const config = QUICK_CREATE_FIELDS[selectedModule];
+  const persistModuleKey = quickCreatePersistedModuleKey(selectedModule);
   const producerField = quickCreateProducerField(selectedModule);
   const pendingDateKey = quickCreatePendingDateKey(selectedModule);
   const dirty = isQuickCreateDirty(selectedModule, values, baseline);
-  const currentModuleRow = modules?.find((m) => m.key === selectedModule) ?? null;
+  const currentModuleRow = modules?.find((m) => m.key === persistModuleKey) ?? null;
   const orgId = currentModuleRow?.org_id ?? modules?.[0]?.org_id ?? null;
 
   const clearFeedback = useCallback(() => {
@@ -356,7 +361,11 @@ export function QuickCreateDrawer({
     // most-used stored spellings, under the caller's own RLS (DE-2).
     const loadDistinctValues = async (key: string) => {
       try {
-        const qs = new URLSearchParams({ module_key: moduleKey, key, limit: '25' });
+        const qs = new URLSearchParams({
+          module_key: quickCreatePersistedModuleKey(moduleKey),
+          key,
+          limit: '25',
+        });
         const res = await fetch(`/api/crm/records/field-values?${qs}`, { credentials: 'same-origin' });
         if (!res.ok) throw new Error(String(res.status));
         const json = (await res.json()) as Partial<FieldValuesResponse>;
@@ -385,18 +394,26 @@ export function QuickCreateDrawer({
   }, [created, pathname, onOpenChange, resetForm, selectedModule]);
 
   const availableModules = useMemo(() => {
-    const enabled = new Set(
-      (modules ?? []).filter((m) => m.is_enabled !== false).map((m) => m.key),
-    );
     if (!modules) return [selectedModule];
-    const list = QUICK_CREATE_MODULE_KEYS.filter((k) => enabled.has(k));
+    const list = visibleQuickCreateTabs(
+      modules.filter((m) => m.is_enabled !== false).map((m) => m.key),
+    );
     return list.length > 0 ? list : [selectedModule];
   }, [modules, selectedModule]);
 
   const optionsFor = (field: QuickCreateField): FieldOptionChoice[] => {
-    const live = fieldOptions[selectedModule]?.[field.key];
-    if (live && live.length > 0) return live;
-    return choicesFromStrings(field.fallbackOptions);
+    const live = fieldOptions[selectedModule]?.[field.key] ?? [];
+    const extra = choicesFromStrings(field.fallbackOptions);
+    if (live.length === 0) return extra;
+    const seen = new Set(live.map((o) => o.value.toLowerCase()));
+    const merged = [...live];
+    for (const o of extra) {
+      if (!seen.has(o.value.toLowerCase())) {
+        seen.add(o.value.toLowerCase());
+        merged.push(o);
+      }
+    }
+    return merged;
   };
 
   /**
@@ -532,7 +549,10 @@ export function QuickCreateDrawer({
 
   /** Close after a "Save & add another" batch: back to the originating list. */
   const finishBatch = () => {
-    const view = resolveCreateReturnList({ origin: originRef.current, createdModuleKey: selectedModule });
+    const view = resolveCreateReturnList({
+      origin: originRef.current,
+      createdModuleKey: persistModuleKey,
+    });
     resetForm(selectedModule);
     onOpenChange(false);
     goToList(view.href);
@@ -582,7 +602,7 @@ export function QuickCreateDrawer({
       // 20260817180000), so one lookup with the raw typed value is enough.
       const phoneDigitsOnly = normalizePhoneDigits(phone);
       const phoneVariants = phoneDigitsOnly ? [phone.trim()] : [];
-      const base = `/api/crm/records/check-duplicate?module_key=${encodeURIComponent(selectedModule)}`;
+      const base = `/api/crm/records/check-duplicate?module_key=${encodeURIComponent(persistModuleKey)}`;
       const calls: Promise<{ on: 'email' | 'phone'; list: DuplicateCandidate[] }>[] = [];
       const fetchOne = async (qs: string, on: 'email' | 'phone') => {
         const res = await fetch(`${base}&${qs}`);
@@ -610,7 +630,7 @@ export function QuickCreateDrawer({
       if (candidates.length === 0 || !matchedOn) return null;
       return { matchedOn, candidates };
     },
-    [selectedModule],
+    [persistModuleKey],
   );
 
   /**
@@ -672,7 +692,7 @@ export function QuickCreateDrawer({
         mods = (await res.json()) as ModuleLite[];
         setFetchedModules(mods);
       }
-      const mod = mods.find((m) => m.key === selectedModule);
+      const mod = mods.find((m) => m.key === persistModuleKey);
       if (!mod) throw new Error(`The ${config.noun.toLowerCase()} module is not available for your organization`);
 
       const email = values.email ?? '';
@@ -705,11 +725,30 @@ export function QuickCreateDrawer({
         force,
       });
 
+      const callNote = quickCreateNoteBody(values);
+      if (callNote && record.id) {
+        try {
+          const noteRes = await fetch('/api/crm/notes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ record_id: record.id, body: callNote }),
+          });
+          if (!noteRes.ok) {
+            toast.error(toastCopy.failed('save the note', undefined, 'Open the contact and add it on Notes'));
+          }
+        } catch (noteErr) {
+          toast.error(toastCopy.failed('save the note', noteErr, 'Open the contact and add it on Notes'));
+        }
+      }
+
       // D1 / TE-4: "<Noun> added" + "View in list" → the originating list
       // (Contacts by default; Members with the enrollment note). In "open"
       // mode the drawer is closing anyway; mid-batch it stays open and the
       // list simply loads behind it.
-      const view = resolveCreateReturnList({ origin: originRef.current, createdModuleKey: selectedModule });
+      const view = resolveCreateReturnList({
+        origin: originRef.current,
+        createdModuleKey: persistModuleKey,
+      });
       const addedCopy = toastCopy.addedWithAction(config.noun, {
         note: view.membersNote ? MEMBERS_FILLS_FROM_ENROLLMENT : undefined,
       });
@@ -1017,6 +1056,21 @@ export function QuickCreateDrawer({
           className={controlClass}
         />
       );
+    } else if (field.type === 'textarea') {
+      control = (
+        <textarea
+          id={id}
+          value={value}
+          onChange={(e) => setField(field.key, e.target.value)}
+          placeholder={field.placeholder}
+          rows={4}
+          {...a11y}
+          className={cn(
+            controlClass,
+            'min-h-[96px] w-full resize-y rounded-md border px-3 py-2 shadow-sm focus-visible:outline-none',
+          )}
+        />
+      );
     } else {
       const isPhone = field.type === 'tel';
       const isContactKey = field.key === 'email' || isPhone;
@@ -1140,7 +1194,8 @@ export function QuickCreateDrawer({
             // (plain Enter keeps the native submit = save & open record).
             if (e.key !== 'Enter' || !e.shiftKey || busy || created) return;
             const target = e.target as HTMLElement | null;
-            if (target && target.tagName === 'BUTTON') return;
+            // Notes box: Shift+Enter is a newline, not "Save & add another".
+            if (target && (target.tagName === 'BUTTON' || target.tagName === 'TEXTAREA')) return;
             e.preventDefault();
             void submit(false, 'another');
           }}

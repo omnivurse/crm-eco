@@ -15,6 +15,7 @@ import {
   Trash2,
   Edit,
   Plus,
+  HeartHandshake,
 } from 'lucide-react';
 import { AnimatedDemo, StepList, QuickTip } from '@/components/learn/AnimatedDemo';
 
@@ -30,6 +31,19 @@ const ARTICLES = [
       'Fill in contact details',
       'Assign to an account (optional)',
       'Save your contact',
+    ],
+  },
+  {
+    title: 'Partners & Support Contacts',
+    description: 'Log bankers, vendors, and support people — they are not leads',
+    time: '3 min',
+    href: '/crm/learn/contacts/partners',
+    icon: <HeartHandshake className="w-5 h-5" />,
+    steps: [
+      'Click Add Partner (not Add Lead)',
+      'Enter name, company, and role',
+      'Choose Partner Contact or Support Contact',
+      'Save call notes on the record',
     ],
   },
   {

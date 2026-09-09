@@ -3,7 +3,11 @@ import {
   PRODUCER_RECORD_ID_KEY,
   QUICK_CREATE_FIELDS,
   QUICK_CREATE_INVALID_DATE,
+  QUICK_CREATE_NOTE_KEY,
   QUICK_CREATE_PENDING_NEEDS_DATE,
+  quickCreateNoteBody,
+  quickCreatePersistedModuleKey,
+  visibleQuickCreateTabs,
   buildQuickCreateDraft,
   buildQuickCreatePayload,
   invalidQuickCreateDates,
@@ -27,6 +31,7 @@ import {
   quickCreateSuggestKeys,
   quickCreateTypedName,
   splitQuickCreateDuplicates,
+  writeQuickCreateDraft,
 } from './quick-create-config';
 
 describe('QUICK_CREATE_FIELDS', () => {
@@ -453,5 +458,87 @@ describe('draft handoff', () => {
 
   it('points at the full form route', () => {
     expect(fullCreateFormHref('contacts')).toBe('/crm/modules/contacts/new');
+    expect(fullCreateFormHref('partners')).toBe('/crm/modules/contacts/new');
+  });
+});
+
+describe('partners quick create', () => {
+  it('writes to Contacts, never to a partners module', () => {
+    expect(isQuickCreateModuleKey('partners')).toBe(true);
+    expect(quickCreatePersistedModuleKey('partners')).toBe('contacts');
+    expect(visibleQuickCreateTabs(['contacts', 'leads'])).toEqual([
+      'contacts',
+      'partners',
+      'leads',
+    ]);
+    expect(visibleQuickCreateTabs(['leads'])).toEqual(['leads']);
+  });
+
+  it('is a contact form for bank / vendor people, not a member enrollment', () => {
+    const cfg = QUICK_CREATE_FIELDS.partners;
+    expect(cfg.title).toBe('Add Partner');
+    expect(cfg.hiddenDefaults).toEqual({ contact_status: 'Active' });
+    expect(cfg.fields.map((f) => f.key)).toEqual([
+      'first_name',
+      'last_name',
+      'phone',
+      'email',
+      'company',
+      'title',
+      'contact_category',
+      'relationship_type',
+      'partner_industry',
+      QUICK_CREATE_NOTE_KEY,
+    ]);
+    expect(cfg.fields.find((f) => f.key === 'contact_category')?.defaultValue).toBe(
+      'Partner Contact',
+    );
+    expect(validateQuickCreate('partners', { first_name: 'Pat', last_name: 'Lee' })).toEqual([]);
+  });
+
+  it('keeps call notes off the contact JSONB payload', () => {
+    const payload = buildQuickCreatePayload('partners', {
+      first_name: 'Pat',
+      last_name: 'Lee',
+      company: 'Bank of Colorado',
+      [QUICK_CREATE_NOTE_KEY]: 'Discussed ACH setup',
+      contact_category: 'Partner Contact',
+      relationship_type: 'Partner',
+    });
+    expect(payload.call_note).toBeUndefined();
+    expect(payload.contact_status).toBe('Active');
+    expect(payload.company).toBe('Bank of Colorado');
+    expect(quickCreateNoteBody({ [QUICK_CREATE_NOTE_KEY]: '  Discussed ACH setup  ' })).toBe(
+      'Discussed ACH setup',
+    );
+  });
+
+  it('does not carry the call note into the full-form draft', () => {
+    const prev = globalThis.window;
+    const store = new Map<string, string>();
+    (globalThis as { window?: unknown }).window = {
+      sessionStorage: {
+        getItem: (k: string) => store.get(k) ?? null,
+        setItem: (k: string, v: string) => {
+          store.set(k, v);
+        },
+      },
+    };
+    try {
+      expect(
+        writeQuickCreateDraft('partners', 'org-1', {
+          first_name: 'Pat',
+          last_name: 'Lee',
+          [QUICK_CREATE_NOTE_KEY]: 'Do not persist this',
+        }),
+      ).toBe(true);
+      const raw = store.get('crm:newdraft:org-1:contacts');
+      expect(raw).toBeTruthy();
+      const parsed = JSON.parse(raw!) as { values: Record<string, unknown> };
+      expect(parsed.values.first_name).toBe('Pat');
+      expect(parsed.values.call_note).toBeUndefined();
+    } finally {
+      (globalThis as { window?: unknown }).window = prev;
+    }
   });
 });

@@ -17,6 +17,7 @@ import {
     ChevronDown,
     UserPlus,
     Users,
+    HeartHandshake,
     Building,
     Zap,
     CheckSquare,
@@ -59,6 +60,14 @@ const RECORD_OPTIONS: RecordOption[] = [
         moduleKey: 'contacts',
         icon: Zap,
         color: 'text-teal-600 dark:text-teal-400',
+    },
+    {
+        label: 'Partner',
+        description: 'Banker, vendor, or support contact — not a lead',
+        quick: 'partners',
+        moduleKey: 'contacts',
+        icon: HeartHandshake,
+        color: 'text-indigo-600 dark:text-indigo-400',
     },
     {
         label: 'Lead',

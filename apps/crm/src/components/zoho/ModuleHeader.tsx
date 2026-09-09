@@ -24,6 +24,7 @@ import {
   Pencil,
   RefreshCw,
   Trash2,
+  HeartHandshake,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -35,6 +36,7 @@ import {
 import type { CrmModule } from '@/lib/crm/types';
 import { canCreateRecords } from '@/lib/crm/can-create-records';
 import { resolveCreateIntent } from '@/lib/crm/create-intent';
+import type { QuickCreateModuleKey } from '@/lib/crm/quick-create-config';
 import { useClientAuth } from '@/hooks/useClientAuth';
 
 // Contacts/Leads "New …" opens the one-screen quick drawer (with an
@@ -74,6 +76,7 @@ export function ModuleHeader({
   const searchParams = useSearchParams();
   const icon = MODULE_ICONS[module.key] || <Users className="w-5 h-5" />;
   const [quickCreateOpen, setQuickCreateOpen] = useState(false);
+  const [quickCreateModule, setQuickCreateModule] = useState<QuickCreateModuleKey>('contacts');
   // DE-M1: never offer create to crm_viewer (the API 403 stays the backstop).
   // Fails closed while the profile is still loading.
   const { profile } = useClientAuth();
@@ -216,16 +219,37 @@ export function ModuleHeader({
             </Button>
 
             {!canCreate || createIntent.kind === 'blocked' ? null : usesQuickCreate ? (
-              <Button
-                size="sm"
-                className="h-9 shadow-sm"
-                onClick={() => setQuickCreateOpen(true)}
-                title={quickCreateTitle}
-                data-testid="crm-module-create"
-              >
-                <Plus className="w-4 h-4 mr-1.5" />
-                {newLabel}
-              </Button>
+              <>
+                {module.key === 'contacts' && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-9 border-slate-200 dark:border-white/10"
+                    onClick={() => {
+                      setQuickCreateModule('partners');
+                      setQuickCreateOpen(true);
+                    }}
+                    title="Add a banker, vendor, or support contact — not a lead or member"
+                    data-testid="crm-module-create-partner"
+                  >
+                    <HeartHandshake className="w-4 h-4 mr-1.5" />
+                    Add Partner
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  className="h-9 shadow-sm"
+                  onClick={() => {
+                    setQuickCreateModule(quickModuleKey ?? 'contacts');
+                    setQuickCreateOpen(true);
+                  }}
+                  title={quickCreateTitle}
+                  data-testid="crm-module-create"
+                >
+                  <Plus className="w-4 h-4 mr-1.5" />
+                  {newLabel}
+                </Button>
+              </>
             ) : (
               <Button size="sm" className="h-9 shadow-sm" asChild data-testid="crm-module-create">
                 <Link
@@ -323,7 +347,7 @@ export function ModuleHeader({
         <QuickCreateDrawer
           open={quickCreateOpen}
           onOpenChange={setQuickCreateOpen}
-          defaultModule={quickModuleKey}
+          defaultModule={quickCreateModule}
         />
       )}
     </div>

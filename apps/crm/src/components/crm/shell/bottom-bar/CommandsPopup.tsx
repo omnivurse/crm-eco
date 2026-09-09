@@ -13,6 +13,7 @@ import {
   Blocks,
   Building,
   Upload,
+  HeartHandshake,
 } from 'lucide-react';
 import { cn } from '@crm-eco/ui/lib/utils';
 import type { CrmModule } from '@/lib/crm/types';
@@ -44,6 +45,13 @@ const defaultActions: QuickAction[] = [
     icon: <Contact className="w-4 h-4" />,
     color: 'text-teal-500 bg-teal-50 dark:bg-teal-500/10',
     href: '/crm/modules/contacts/new',
+  },
+  {
+    id: 'new-partner',
+    label: 'New Partner',
+    icon: <HeartHandshake className="w-4 h-4" />,
+    color: 'text-indigo-500 bg-indigo-50 dark:bg-indigo-500/10',
+    href: '/crm/modules/contacts/new?preset=partner',
   },
   {
     id: 'new-deal',
@@ -103,7 +111,7 @@ interface CommandsPopupProps {
 
 /** Create shortcuts (`…/new`) need a creating role; Import needs manager/admin (same gates as the palette / nav). */
 export function commandsPopupActionAllowed(href: string, crmRole: string | null | undefined): boolean {
-  if (/^\/crm\/modules\/[^/]+\/new$/.test(href) || href === '/crm/tasks/new') return canCreateRecords(crmRole);
+  if (/^\/crm\/modules\/[^/]+\/new(?:\?|$)/.test(href) || href === '/crm/tasks/new') return canCreateRecords(crmRole);
   if (href.startsWith('/crm/import')) return isCrmManagerOrAdminRole(crmRole);
   return true;
 }
@@ -117,6 +125,11 @@ export function CommandsPopup({ modules, onClose }: CommandsPopupProps) {
 
   const dealsEnabled = modules.some((m) => m.key === 'deals' && m.is_enabled);
   const handleAction = (href: string) => {
+    if (href.includes('preset=partner')) {
+      openCrmQuickCreate('partners');
+      onClose();
+      return;
+    }
     const match = href.match(/^\/crm\/modules\/([^/]+)\/new$/);
     if (match) {
       const intent = resolveCreateIntent({ moduleKey: match[1]!, dealsEnabled });

@@ -106,13 +106,16 @@ describe('ModuleHeader — create affordance by role (DE-M1 / D1)', () => {
     render(<ModuleHeader module={MODULE} totalCount={35} />);
     const btn = screen.getByTestId('crm-module-create');
     expect(btn.textContent).toContain('Add Member');
+    expect(screen.getByTestId('crm-module-create-partner').textContent).toContain('Add Partner');
   });
 
   it('hides every create affordance from crm_viewer', () => {
     authState.crmRole = 'crm_viewer';
     render(<ModuleHeader module={MODULE} totalCount={35} />);
     expect(screen.queryByTestId('crm-module-create')).toBeNull();
+    expect(screen.queryByTestId('crm-module-create-partner')).toBeNull();
     expect(screen.queryByText('Add Member')).toBeNull();
+    expect(screen.queryByText('Add Partner')).toBeNull();
   });
 
   it('fails closed while the profile is still loading', () => {

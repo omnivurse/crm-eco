@@ -25,6 +25,13 @@ describe('resolveCreateIntent', () => {
     });
   });
 
+  it('opens the partner drawer (a Contacts form, not a Leads form)', () => {
+    expect(resolveCreateIntent({ moduleKey: 'partners' })).toEqual({
+      kind: 'quick',
+      moduleKey: 'partners',
+    });
+  });
+
   it('blocks creating a History row — reactivate an existing person instead', () => {
     expect(resolveCreateIntent({ moduleKey: 'history' })).toEqual({
       kind: 'blocked',
