@@ -19,6 +19,9 @@ import {
   Reply,
   Forward,
   Mail,
+  UserPlus,
+  StickyNote,
+  ExternalLink,
 } from 'lucide-react';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { Avatar, AvatarFallback } from '@crm-eco/ui/components/avatar';
@@ -57,6 +60,13 @@ import type { ThreadOrder } from '@/lib/inbox/inbox-prefs';
 import { pickForwardSource } from './inbox-forward';
 import { participantsFromThread } from '@/lib/calendar/thread-participants';
 import { latestInboundId } from '@/lib/inbox/inbox-reads';
+import { useClientAuth } from '@/hooks/useClientAuth';
+import { canCreateRecords } from '@/lib/crm/can-create-records';
+import {
+  CreateContactFromEmailSheet,
+  type InboxContactLinkedPatch,
+  type InboxContactSheetMode,
+} from './CreateContactFromEmailSheet';
 
 const MeetingComposer = dynamic(
   () => import('@/components/calendar/MeetingComposer').then((mod) => mod.MeetingComposer),
@@ -134,6 +144,7 @@ interface MessageThreadProps {
   onForward?: (msg: InboxMessage) => void;
   onLatestInboundVisible?: (message: InboxMessage) => void;
   onMarkUnread?: () => void;
+  onContactLinked?: (patch: InboxContactLinkedPatch) => void;
   /** Newest message on top (Outlook) or chronological transcript (Gmail). */
   threadOrder?: ThreadOrder;
   /** Verified sending domains — anything else earns an "External" badge. */
@@ -554,12 +565,16 @@ export const MessageThread = React.memo(function MessageThread({
   onForward,
   onLatestInboundVisible,
   onMarkUnread,
+  onContactLinked,
   threadOrder = 'newest_first',
   verifiedDomains = [],
   senderAddresses = [],
   ribbon,
 }: MessageThreadProps) {
   const [meetingOpen, setMeetingOpen] = useState(false);
+  const [contactSheet, setContactSheet] = useState<InboxContactSheetMode | null>(null);
+  const { profile } = useClientAuth();
+  const canCreate = canCreateRecords(profile?.crm_role);
   const paneRef = useRef<HTMLDivElement>(null);
   const latestInboundRef = useRef<HTMLDivElement>(null);
   const lastConversationRef = useRef<string | null>(null);
@@ -701,6 +716,41 @@ export const MessageThread = React.memo(function MessageThread({
                 <SelectItem value="spam">Spam</SelectItem>
               </SelectContent>
             </Select>
+            {canCreate && (
+              <button
+                type="button"
+                onClick={() => setContactSheet('create')}
+                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                title="Add contact from this email"
+                aria-label="Add contact from this email"
+                data-testid="crm-inbox-add-contact"
+              >
+                <UserPlus className="w-5 h-5 text-slate-500 dark:text-slate-400" />
+              </button>
+            )}
+            {canCreate && (
+              <button
+                type="button"
+                onClick={() => setContactSheet('note')}
+                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                title="Add a note on this contact"
+                aria-label="Add a note on this contact"
+                data-testid="crm-inbox-add-note"
+              >
+                <StickyNote className="w-5 h-5 text-slate-500 dark:text-slate-400" />
+              </button>
+            )}
+            {conversation.contact_id && (
+              <a
+                href={`/crm/r/${conversation.contact_id}`}
+                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                title="View contact"
+                aria-label="View contact"
+                data-testid="crm-inbox-view-contact"
+              >
+                <ExternalLink className="w-5 h-5 text-slate-500 dark:text-slate-400" />
+              </a>
+            )}
             <button
               type="button"
               onClick={() => setMeetingOpen(true)}
@@ -738,6 +788,18 @@ export const MessageThread = React.memo(function MessageThread({
                   >
                     <Forward className="w-4 h-4 mr-2" />
                     Forward
+                  </DropdownMenuItem>
+                )}
+                {canCreate && (
+                  <DropdownMenuItem onClick={() => setContactSheet('create')}>
+                    <UserPlus className="w-4 h-4 mr-2" />
+                    Add contact
+                  </DropdownMenuItem>
+                )}
+                {canCreate && (
+                  <DropdownMenuItem onClick={() => setContactSheet('note')}>
+                    <StickyNote className="w-4 h-4 mr-2" />
+                    Add note
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuItem onClick={() => setMeetingOpen(true)}>
@@ -823,6 +885,18 @@ export const MessageThread = React.memo(function MessageThread({
         onOpenChange={setMeetingOpen}
         defaults={meetingDefaults}
       />
+      {contactSheet && (
+        <CreateContactFromEmailSheet
+          open
+          mode={contactSheet}
+          conversation={conversation}
+          messages={messages}
+          onOpenChange={(next) => {
+            if (!next) setContactSheet(null);
+          }}
+          onLinked={onContactLinked}
+        />
+      )}
     </div>
   );
 });

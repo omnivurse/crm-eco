@@ -886,6 +886,13 @@ function InboxPageContent() {
     void setReadState([selectedConversation.id], false);
   }, [selectedConversation, setReadState]);
 
+  const handleContactLinked = useCallback((patch: { contact_id: string; contact_email?: string | null; contact_name?: string | null }) => {
+    setSelectedConversation((prev) => (prev ? { ...prev, ...patch } : prev));
+    setConversations((prev) =>
+      prev.map((c) => (c.id === selectedConversation?.id ? { ...c, ...patch } : c)),
+    );
+  }, [selectedConversation?.id]);
+
   const shaped = useMemo(
     () =>
       shapeConversations(conversations, {
@@ -1236,6 +1243,7 @@ function InboxPageContent() {
                 onForward={handleForwardMessage}
                 onLatestInboundVisible={handleLatestInboundVisible}
                 onMarkUnread={handleMarkUnread}
+                onContactLinked={handleContactLinked}
                 threadOrder={prefs.thread_order}
                 verifiedDomains={verifiedDomains}
                 senderAddresses={senderAddresses}
