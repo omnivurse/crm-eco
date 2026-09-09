@@ -93,6 +93,8 @@ interface EmailComposerProps {
   // Fallback sender info when no sender addresses configured
   fallbackEmail?: string;
   fallbackName?: string;
+  /** Reply uses include_in_replies; new mail uses include_in_new. */
+  signaturePurpose?: 'new' | 'reply';
 }
 
 export interface EmailComposerData {
@@ -135,6 +137,7 @@ export const EmailComposer = memo(function EmailComposer({
   templateId,
   fallbackEmail,
   fallbackName,
+  signaturePurpose = 'new',
 }: EmailComposerProps) {
   // Form state
   const [senderAddressId, setSenderAddressId] = useState<string>('');
@@ -175,7 +178,7 @@ export const EmailComposer = memo(function EmailComposer({
           const data = await response.json();
           const rows = (data.signatures || []) as EmailSignature[];
           setSignatures(rows);
-          const picked = pickSignatureForCompose(rows, 'new');
+          const picked = pickSignatureForCompose(rows, signaturePurpose);
           if (picked) {
             setSignatureId(picked.id);
           }
@@ -192,15 +195,18 @@ export const EmailComposer = memo(function EmailComposer({
     } else {
       setLoadingSignatures(false);
     }
-  }, [showSignatures]);
+  }, [showSignatures, signaturePurpose]);
 
   // Build full body with signature
   const getFullBody = useCallback(() => {
     if (!signatureId) return body;
     const signature = signatures.find(s => s.id === signatureId);
-    if (!signature || signature.include_in_new === false) return body;
+    if (!signature) return body;
+    const include =
+      signaturePurpose === 'reply' ? signature.include_in_replies : signature.include_in_new;
+    if (include === false) return body;
     return appendSignatureHtml(body, signature.content_html);
-  }, [body, signatureId, signatures]);
+  }, [body, signatureId, signatures, signaturePurpose]);
 
   // Get composer data
   const getComposerData = useCallback((): EmailComposerData => ({
@@ -383,7 +389,9 @@ export const EmailComposer = memo(function EmailComposer({
     }
   };
 
-  const composeSignatures = signatures.filter((s) => s.include_in_new !== false);
+  const composeSignatures = signatures.filter((s) =>
+    signaturePurpose === 'reply' ? s.include_in_replies !== false : s.include_in_new !== false,
+  );
   const selectedSignature = composeSignatures.find(s => s.id === signatureId);
   const uploadingCount = attachments.filter(a => a.is_uploading).length;
   const attachmentCount = attachments.filter(a => !a.error).length;

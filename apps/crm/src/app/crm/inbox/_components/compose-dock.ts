@@ -61,8 +61,53 @@ export function composeDockTitle(subject?: string | null): string {
   return subject?.trim() || 'New message';
 }
 
-export function composeHeaderTitle(initialSubject?: string | null): string {
-  return initialSubject?.startsWith('Fwd:') ? 'Forward Email' : 'New Email';
+export type ComposeKind = 'new' | 'reply' | 'forward';
+
+export function composeHeaderTitle(
+  initialSubject?: string | null,
+  kind?: ComposeKind | null,
+): string {
+  if (kind === 'reply') return 'Reply';
+  if (kind === 'forward' || initialSubject?.startsWith('Fwd:')) return 'Forward Email';
+  return 'New Email';
+}
+
+/** Threading fields the send API needs so a docked reply stays in the conversation. */
+export function composeSendThreadFields(input: {
+  conversationId?: string | null;
+  inReplyTo?: string | null;
+  references?: string[] | null;
+}): {
+  conversation_id?: string;
+  in_reply_to?: string;
+  references?: string[];
+} {
+  const fields: {
+    conversation_id?: string;
+    in_reply_to?: string;
+    references?: string[];
+  } = {};
+  if (input.conversationId) fields.conversation_id = input.conversationId;
+  if (input.inReplyTo) fields.in_reply_to = input.inReplyTo;
+  if (input.references && input.references.length > 0) fields.references = input.references;
+  return fields;
+}
+
+export function composeDraftMeta(
+  kind?: ComposeKind | null,
+  conversationId?: string | null,
+  ccCount = 0,
+): {
+  conversation_id: string | null;
+  is_reply: boolean;
+  reply_mode: 'reply' | 'reply_all' | 'forward' | null;
+} {
+  return {
+    conversation_id: conversationId ?? null,
+    is_reply: kind === 'reply',
+    reply_mode:
+      kind === 'reply' ? (ccCount > 0 ? 'reply_all' : 'reply') : kind === 'forward' ? 'forward' : null,
+  };
 }
 
 export interface ComposeRecipient {

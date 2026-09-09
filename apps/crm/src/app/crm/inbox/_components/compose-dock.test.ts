@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest';
 import {
   composeDockClass,
   composeDockTitle,
+  composeDraftMeta,
   composeHeaderTitle,
   composeIsDirty,
+  composeSendThreadFields,
   htmlHasContent,
   parseComposeDockSize,
   persistableComposeDockSize,
@@ -76,6 +78,45 @@ describe('composeHeaderTitle', () => {
     expect(composeHeaderTitle('Fwd: Roster')).toBe('Forward Email');
     expect(composeHeaderTitle('Re: Roster')).toBe('New Email');
     expect(composeHeaderTitle(undefined)).toBe('New Email');
+  });
+
+  it('names an explicit reply as a reply even when the subject already has Re:', () => {
+    expect(composeHeaderTitle('Re: Account', 'reply')).toBe('Reply');
+    expect(composeHeaderTitle('Account', 'reply')).toBe('Reply');
+    expect(composeHeaderTitle('Fwd: Roster', 'forward')).toBe('Forward Email');
+  });
+});
+
+describe('composeSendThreadFields', () => {
+  it('omits empty threading fields so a new compose stays a new compose', () => {
+    expect(composeSendThreadFields({})).toEqual({});
+  });
+
+  it('keeps a reply on the same conversation', () => {
+    expect(
+      composeSendThreadFields({
+        conversationId: 'conv-1',
+        inReplyTo: '<frank-1@bankofcolorado.com>',
+        references: ['<frank-1@bankofcolorado.com>'],
+      }),
+    ).toEqual({
+      conversation_id: 'conv-1',
+      in_reply_to: '<frank-1@bankofcolorado.com>',
+      references: ['<frank-1@bankofcolorado.com>'],
+    });
+  });
+});
+
+describe('composeDraftMeta', () => {
+  it('marks a reply draft so Drafts can restore it onto the thread', () => {
+    expect(composeDraftMeta('reply', 'conv-1', 0)).toEqual({
+      conversation_id: 'conv-1',
+      is_reply: true,
+      reply_mode: 'reply',
+    });
+    expect(composeDraftMeta('reply', 'conv-1', 2).reply_mode).toBe('reply_all');
+    expect(composeDraftMeta('forward', 'conv-1').is_reply).toBe(false);
+    expect(composeDraftMeta('new').conversation_id).toBeNull();
   });
 });
 

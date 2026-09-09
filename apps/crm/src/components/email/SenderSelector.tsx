@@ -17,6 +17,7 @@ import {
   Loader2,
   AlertCircle,
 } from 'lucide-react';
+import { pickInitialSender } from './sender-select';
 
 interface SenderAddress {
   id: string;
@@ -61,21 +62,19 @@ export function SenderSelector({
       }
 
       const data = await response.json();
-      setAddresses(data.addresses || []);
+      const rows = (data.addresses || []) as SenderAddress[];
+      setAddresses(rows);
 
-      // Auto-select default if no value set
-      if (!value && data.addresses?.length > 0) {
-        const defaultAddr = data.addresses.find((a: SenderAddress) => a.is_default);
-        if (defaultAddr) {
-          onChange(defaultAddr.id, defaultAddr);
-        }
+      if (!value && rows.length > 0) {
+        const initial = pickInitialSender(rows, fallbackEmail);
+        if (initial) onChange(initial.id, initial);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load addresses');
     } finally {
       setLoading(false);
     }
-  }, [value, onChange]);
+  }, [value, onChange, fallbackEmail]);
 
   useEffect(() => {
     fetchAddresses();

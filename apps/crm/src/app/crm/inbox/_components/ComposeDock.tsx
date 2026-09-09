@@ -24,11 +24,14 @@ import {
   COMPOSE_DOCK_SIZE_KEY,
   composeDockClass,
   composeDockTitle,
+  composeDraftMeta,
   composeHeaderTitle,
+  composeSendThreadFields,
   parseComposeDockSize,
   persistableComposeDockSize,
   shouldDeleteDraftAfterSend,
   type ComposeDockSize,
+  type ComposeKind,
 } from './compose-dock';
 
 /** Quiet enough not to fight the typist, short enough to survive a crash. */
@@ -48,12 +51,17 @@ interface ComposeDockProps {
   /** Draft rows changed (autosave created one, send removed one). */
   onDraftsChanged?: () => void;
   initialTo?: EmailRecipient[];
+  initialCc?: EmailRecipient[];
   initialSubject?: string;
   initialBody?: string;
   initialAttachments?: EmailAttachment[];
   /** Bump on every open so EmailComposer remounts instead of keeping the last message. */
   composerKey: string;
   initialDraftId?: string | null;
+  composeKind?: ComposeKind;
+  conversationId?: string;
+  inReplyTo?: string | null;
+  references?: string[];
   /** Org default sender, used only when no verified address is picked. */
   fallbackEmail: string;
   fallbackName: string;
@@ -61,7 +69,10 @@ interface ComposeDockProps {
   fallbackReplyTo: string;
 }
 
-function draftPayload(data: EmailComposerData) {
+function draftPayload(
+  data: EmailComposerData,
+  extras?: { kind?: ComposeKind; conversationId?: string },
+) {
   return {
     to_addresses: data.to,
     cc_addresses: data.cc,
@@ -77,6 +88,7 @@ function draftPayload(data: EmailComposerData) {
       url: a.public_url || null,
       file_path: a.file_path || a.bucket_path || null,
     })),
+    ...composeDraftMeta(extras?.kind, extras?.conversationId, data.cc.length),
   };
 }
 
@@ -88,11 +100,16 @@ export function ComposeDock({
   onMessageSent,
   onDraftsChanged,
   initialTo,
+  initialCc,
   initialSubject,
   initialBody,
   initialAttachments,
   composerKey,
   initialDraftId,
+  composeKind,
+  conversationId,
+  inReplyTo,
+  references,
   fallbackEmail,
   fallbackName,
   fallbackReplyTo,
@@ -133,7 +150,7 @@ export function ComposeDock({
   }, [open, composerKey, size]);
 
   const saveDraft = useCallback(async (data: EmailComposerData) => {
-    const payload = draftPayload(data);
+    const payload = draftPayload(data, { kind: composeKind, conversationId });
     setSavedSubject(data.subject);
     if (draftIdRef.current) {
       const res = await fetch(`/api/inbox/drafts/${draftIdRef.current}`, {
@@ -153,7 +170,7 @@ export function ComposeDock({
     if (!res.ok || !result.draft?.id) throw new Error(result.error || 'Failed to save draft');
     draftIdRef.current = result.draft.id;
     onDraftsChanged?.();
-  }, [onDraftsChanged]);
+  }, [composeKind, conversationId, onDraftsChanged]);
 
   const close = useCallback(
     async (force = false) => {
@@ -207,6 +224,7 @@ export function ComposeDock({
           }),
           persist_inbox: true,
           to_name: data.to[0].name,
+          ...composeSendThreadFields({ conversationId, inReplyTo, references }),
         }),
       });
 
@@ -234,13 +252,26 @@ export function ComposeDock({
       onMessageSent();
       onDraftsChanged?.();
     },
-    [fallbackEmail, fallbackName, fallbackReplyTo, onDraftsChanged, onMessageSent, onOpenChange],
+    [
+      conversationId,
+      fallbackEmail,
+      fallbackName,
+      fallbackReplyTo,
+      inReplyTo,
+      onDraftsChanged,
+      onMessageSent,
+      onOpenChange,
+      references,
+    ],
   );
 
   const handleSchedule = useCallback(
     async (data: EmailComposerData, scheduledAt: Date) => {
       if (data.to.length === 0) throw new Error('At least one recipient is required');
-      const payload = { ...draftPayload(data), scheduled_at: scheduledAt.toISOString() };
+      const payload = {
+        ...draftPayload(data, { kind: composeKind, conversationId }),
+        scheduled_at: scheduledAt.toISOString(),
+      };
 
       if (draftIdRef.current) {
         const res = await fetch(`/api/inbox/drafts/${draftIdRef.current}`, {
@@ -267,7 +298,7 @@ export function ComposeDock({
       onOpenChange(false);
       onDraftsChanged?.();
     },
-    [onDraftsChanged, onOpenChange],
+    [composeKind, conversationId, onDraftsChanged, onOpenChange],
   );
 
   const handleTemplateSelect = useCallback((template: { subject: string; body_html: string }) => {
@@ -286,7 +317,7 @@ export function ComposeDock({
         ref={paneRef}
         tabIndex={-1}
         role="region"
-        aria-label={composeHeaderTitle(initialSubject)}
+        aria-label={composeHeaderTitle(initialSubject, composeKind)}
         onKeyDown={(event) => {
           // Escape belongs to the composer while it is focused; the page-level
           // handler that closes the reading pane must not also fire.
@@ -309,7 +340,7 @@ export function ComposeDock({
             className="min-w-0 flex-1 truncate text-left text-[13px] font-semibold text-slate-800 dark:text-slate-100"
             title={minimized ? 'Restore message' : 'Minimize message'}
           >
-            {minimized ? composeDockTitle(savedSubject) : composeHeaderTitle(initialSubject)}
+            {minimized ? composeDockTitle(savedSubject) : composeHeaderTitle(initialSubject, composeKind)}
           </button>
 
           {!minimized && (
@@ -364,9 +395,11 @@ export function ComposeDock({
           <EmailComposer
             key={composerKey}
             initialTo={initialTo}
+            initialCc={initialCc}
             initialSubject={templateSubject ?? initialSubject}
             initialBody={templateBody ?? initialBody}
             initialAttachments={initialAttachments}
+            signaturePurpose={composeKind === 'reply' ? 'reply' : 'new'}
             onSend={handleSend}
             onSave={saveDraft}
             onSchedule={handleSchedule}

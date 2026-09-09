@@ -25,8 +25,8 @@ import { InboxFilters, type FilterType } from './_components/InboxFilters';
 import { ConversationList } from './_components/ConversationList';
 import { DraftsList } from './_components/DraftsList';
 import { MessageThread } from './_components/MessageThread';
-import { ReplyForm } from './_components/ReplyForm';
 import { ComposeDock } from './_components/ComposeDock';
+import type { ComposeKind } from './_components/compose-dock';
 import { InboxRibbon } from './_components/InboxRibbon';
 import { NotificationSettings } from './_components/NotificationSettings';
 import { InboxDensityMenu } from './_components/InboxDensityMenu';
@@ -37,6 +37,8 @@ import {
   forwardSubject,
   forwardableAttachments,
 } from './_components/inbox-forward';
+import { buildInboxReplyCompose } from './_components/inbox-reply';
+import { findReplyDraft, restoreReplyDraft } from './_components/reply-draft';
 import { attachUnreadForUser, shouldWriteReadCursorOnOpen } from '@/lib/inbox/inbox-reads';
 import { inboxUrlHydrateDecision } from '@/lib/inbox/inbox-selection';
 import { useInboxPrefs } from '@/hooks/useInboxPrefs';
@@ -99,32 +101,27 @@ function InboxPageContent() {
   const [mailboxesLoading, setMailboxesLoading] = useState(true);
   const [showCompose, setShowCompose] = useState(false);
   const [composeSessionId, setComposeSessionId] = useState(0);
-  const [composeInitialSubject, setComposeInitialSubject] = useState<string | undefined>();
-  const [composeInitialBody, setComposeInitialBody] = useState<string | undefined>();
-  const [composeInitialTo, setComposeInitialTo] = useState<Array<{ email: string; name?: string }> | undefined>();
-  const [composeInitialAttachments, setComposeInitialAttachments] = useState<EmailAttachment[] | undefined>();
-  const [composeDraftId, setComposeDraftId] = useState<string | null>(null);
-  const [replyExpand, setReplyExpand] = useState<{ token: number; mode: 'reply' | 'reply_all' }>({
-    token: 0,
-    mode: 'reply',
-  });
+  const [composeIntent, setComposeIntent] = useState<{
+    subject?: string;
+    body?: string;
+    to?: Array<{ email: string; name?: string }>;
+    cc?: Array<{ email: string; name?: string }>;
+    attachments?: EmailAttachment[];
+    draftId?: string | null;
+    conversationId?: string;
+    inReplyTo?: string | null;
+    references?: string[];
+    kind?: ComposeKind;
+    fromEmail?: string;
+    fromName?: string;
+  }>({});
   const [drafts, setDrafts] = useState<InboxDraft[]>([]);
 
   const { prefs, save: savePrefs } = useInboxPrefs();
 
-  const openCompose = useCallback((opts?: {
-    subject?: string;
-    body?: string;
-    to?: Array<{ email: string; name?: string }>;
-    attachments?: EmailAttachment[];
-    draftId?: string | null;
-  }) => {
+  const openCompose = useCallback((opts?: typeof composeIntent) => {
     setComposeSessionId((n) => n + 1);
-    setComposeInitialSubject(opts?.subject);
-    setComposeInitialBody(opts?.body);
-    setComposeInitialTo(opts?.to);
-    setComposeInitialAttachments(opts?.attachments);
-    setComposeDraftId(opts?.draftId ?? null);
+    setComposeIntent(opts ?? {});
     setShowCompose(true);
   }, []);
 
@@ -809,20 +806,10 @@ function InboxPageContent() {
     }
   }, [messages, selectedConversation]);
 
-  // Callback for ReplyForm after sending
-  const handleReplySent = useCallback((conversationId: string) => {
-    loadMessages(conversationId);
-    loadConversations();
-    loadDrafts();
-  }, [loadMessages, loadConversations, loadDrafts]);
-
   // Forward handler: open compose with forwarded content
-  const handleForward = useCallback((subject: string, body: string, attachments?: EmailAttachment[]) => {
-    openCompose({ subject, body, attachments });
-  }, [openCompose]);
-
   const handleForwardMessage = useCallback((msg: InboxMessage) => {
     openCompose({
+      kind: 'forward',
       subject: forwardSubject(selectedConversation?.subject || msg.subject),
       body: buildForwardedBody(msg, ''),
       attachments: forwardableAttachments(msg),
@@ -830,8 +817,46 @@ function InboxPageContent() {
   }, [openCompose, selectedConversation?.subject]);
 
   const startReply = useCallback((mode: 'reply' | 'reply_all' = 'reply') => {
-    setReplyExpand((prev) => ({ token: prev.token + 1, mode }));
-  }, []);
+    if (!selectedConversation) return;
+    const draft = buildInboxReplyCompose({
+      mode,
+      conversation: selectedConversation,
+      messages,
+      authUserEmail: authUser?.email || '',
+      mailboxes,
+      verifiedDomains,
+    });
+    if (!draft) {
+      toast.error(
+        toastCopy.failed('start the reply', 'no recipient address was found on this thread'),
+      );
+      return;
+    }
+    const saved = findReplyDraft(drafts, selectedConversation.id);
+    const restored = restoreReplyDraft({ cached: null, saved });
+    openCompose({
+      kind: 'reply',
+      subject: draft.subject,
+      body: restored?.html ?? draft.body,
+      to: draft.to,
+      cc: draft.cc,
+      attachments: restored?.attachments,
+      draftId: restored?.draftId,
+      conversationId: draft.conversationId,
+      inReplyTo: draft.inReplyTo,
+      references: draft.references,
+      fromEmail: draft.fromEmail ?? undefined,
+      fromName: draft.fromName,
+    });
+  }, [
+    authUser?.email,
+    drafts,
+    mailboxes,
+    messages,
+    openCompose,
+    selectedConversation,
+    verifiedDomains,
+  ]);
 
   const handleStartReply = useCallback(() => startReply('reply'), [startReply]);
 
@@ -1131,9 +1156,16 @@ function InboxPageContent() {
             mobileView={mobileView}
             onSelectDraft={(draft) =>
               openCompose({
+                kind: draft.is_reply
+                  ? 'reply'
+                  : draft.subject?.startsWith('Fwd:')
+                    ? 'forward'
+                    : 'new',
+                conversationId: draft.conversation_id ?? undefined,
                 subject: draft.subject ?? undefined,
                 body: draft.body_html ?? draft.body_text ?? undefined,
                 to: draft.to_addresses,
+                cc: draft.cc_addresses,
                 // Only files with a stored object can be re-sent; metadata-only
                 // rows would fail resolution at send time.
                 attachments: (draft.attachments ?? [])
@@ -1231,21 +1263,6 @@ function InboxPageContent() {
                   />
                 }
               />
-              <ReplyForm
-                key={`${selectedConversation.id}-reply`}
-                selectedConversation={selectedConversation}
-                messages={messages}
-                authProfile={authProfile!}
-                authUserEmail={authUser?.email || ''}
-                mailboxes={mailboxes}
-                verifiedDomains={verifiedDomains}
-                onReplySent={handleReplySent}
-                onForward={handleForward}
-                expandToken={replyExpand.token}
-                expandMode={replyExpand.mode}
-                drafts={drafts}
-                onDraftsChanged={loadDrafts}
-              />
             </>
           ) : (
             <div className="flex flex-1 flex-col items-center justify-center px-6 text-center">
@@ -1271,28 +1288,28 @@ function InboxPageContent() {
           composerKey={`compose-${composeSessionId}`}
           onOpenChange={(open) => {
             setShowCompose(open);
-            if (!open) {
-              setComposeInitialSubject(undefined);
-              setComposeInitialBody(undefined);
-              setComposeInitialTo(undefined);
-              setComposeInitialAttachments(undefined);
-              setComposeDraftId(null);
-            }
+            if (!open) setComposeIntent({});
           }}
           authProfile={authProfile}
           authUserEmail={authUser.email || ''}
           onMessageSent={() => {
             loadConversations();
             loadDrafts();
+            if (selectedConversation) loadMessages(selectedConversation.id);
           }}
           onDraftsChanged={loadDrafts}
-          initialTo={composeInitialTo}
-          initialSubject={composeInitialSubject}
-          initialBody={composeInitialBody}
-          initialAttachments={composeInitialAttachments}
-          initialDraftId={composeDraftId}
-          fallbackEmail={defaultSender?.email ?? ''}
-          fallbackName={defaultSender?.name ?? ''}
+          initialTo={composeIntent.to}
+          initialCc={composeIntent.cc}
+          initialSubject={composeIntent.subject}
+          initialBody={composeIntent.body}
+          initialAttachments={composeIntent.attachments}
+          initialDraftId={composeIntent.draftId}
+          composeKind={composeIntent.kind}
+          conversationId={composeIntent.conversationId}
+          inReplyTo={composeIntent.inReplyTo}
+          references={composeIntent.references}
+          fallbackEmail={composeIntent.fromEmail ?? defaultSender?.email ?? ''}
+          fallbackName={composeIntent.fromName ?? defaultSender?.name ?? ''}
           fallbackReplyTo={fallbackReplyTo}
         />
       )}

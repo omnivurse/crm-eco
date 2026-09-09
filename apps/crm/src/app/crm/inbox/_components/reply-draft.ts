@@ -13,7 +13,7 @@
  * 20260904210000, which may not be applied yet). The label degrades with it
  * rather than lying.
  *
- * Pure on purpose — ReplyForm owns the effects.
+ * Pure on purpose — the inbox page owns the effects.
  */
 
 import type { EmailAttachment } from '@/components/email/EmailAttachments';
