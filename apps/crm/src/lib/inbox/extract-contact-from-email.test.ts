@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   companyFromEmailDomain,
   displayNameFromEmail,
+  inferPartnerIndustry,
   emailConversationNotePrefix,
   extractPhone,
   extractWebsite,
@@ -50,6 +51,13 @@ describe('displayNameFromEmail / companyFromEmailDomain', () => {
 
   it('does not invent a company from Gmail', () => {
     expect(companyFromEmailDomain('pat@gmail.com')).toBe('');
+  });
+
+  it('guesses Banking / Credit Union from the company or bank domain', () => {
+    expect(inferPartnerIndustry('Bank of Colorado', 'frank.burnham@bankofcolorado.com')).toBe(
+      'Banking / Credit Union',
+    );
+    expect(inferPartnerIndustry('', 'pat@gmail.com')).toBe('');
   });
 });
 

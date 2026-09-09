@@ -30,6 +30,22 @@
  * partner details.
  */
 
+/**
+ * Contact-type values that mean this person is NOT a member / insurance client.
+ * Live `crm_fields.options` on contacts: Member · Prospect · Partner Contact ·
+ * Support Contact · Vendor · Other. Unlabeled (null) rows are the historic
+ * member book — those stay members. Only an explicit operational category
+ * (or a Partner / Referring Partner relationship) opts out of coverage chrome.
+ */
+export const NON_MEMBER_CONTACT_CATEGORIES = [
+  'Partner Contact',
+  'Support Contact',
+  'Vendor',
+  'Other',
+] as const;
+
+const MEMBER_CONTACT_CATEGORIES = new Set(['member', 'prospect']);
+
 /** Values of `relationship_type` that mark the record as a partner of some kind. */
 export const PARTNER_RELATIONSHIP_VALUES = ['Partner', 'Referring Partner'] as const;
 
@@ -68,6 +84,43 @@ const PARTNER_VALUE_SET: ReadonlySet<string> = new Set(
 export function isPartnerRelationshipValue(value: unknown): boolean {
   const key = normalize(value);
   return key !== '' && PARTNER_VALUE_SET.has(key);
+}
+
+const NON_MEMBER_CATEGORY_SET: ReadonlySet<string> = new Set(
+  NON_MEMBER_CONTACT_CATEGORIES.map(normalize),
+);
+
+/** True when `contact_category` is an operational (non-member) type. */
+export function isNonMemberContactCategory(value: unknown): boolean {
+  const key = normalize(value);
+  return key !== '' && NON_MEMBER_CATEGORY_SET.has(key);
+}
+
+/**
+ * True when this person record is a partner / vendor / support contact — not
+ * someone with health-sharing or insurance coverage.
+ *
+ * `contact_category = Member` or `Prospect` always wins (they keep member
+ * fields even if someone also typed Partner on relationship_type).
+ * Blank category + blank relationship → member (the 7,691 unlabeled contacts).
+ */
+export function isNonMemberContact(values?: Record<string, unknown> | null): boolean {
+  const data = values && typeof values === 'object' ? values : {};
+  const category = normalize(data.contact_category);
+  if (MEMBER_CONTACT_CATEGORIES.has(category)) return false;
+  if (isNonMemberContactCategory(data.contact_category)) return true;
+  return isPartnerRelationshipValue(data[RELATIONSHIP_TYPE_KEY]);
+}
+
+/** Label for the record-header chip (Contact type, else Partner Type). */
+export function nonMemberContactLabel(values?: Record<string, unknown> | null): string {
+  const data = values && typeof values === 'object' ? values : {};
+  const category = typeof data.contact_category === 'string' ? data.contact_category.trim() : '';
+  if (isNonMemberContactCategory(category)) return category;
+  const relationship =
+    typeof data[RELATIONSHIP_TYPE_KEY] === 'string' ? String(data[RELATIONSHIP_TYPE_KEY]).trim() : '';
+  if (isPartnerRelationshipValue(relationship)) return relationship;
+  return 'Partner';
 }
 
 /** True when the field key is one of the partner-section fields. */

@@ -24,7 +24,21 @@ describe('presetsForModule', () => {
   it('contacts/members: Active · Pending · Cancelled · Enrolled this month · Mine', () => {
     for (const key of ['contacts', 'members']) {
       expect(presetsForModule(key).map((p) => p.label)).toEqual([
-        'Active', 'Pending', 'Cancelled', 'Enrolled this month', 'My records',
+        'Active', 'Pending', 'Cancelled', 'Partners', 'Enrolled this month', 'My records',
+      ]);
+      expect(presetsForModule(key).find((p) => p.id === 'partners')?.filters).toEqual([
+        {
+          field: 'contact_category',
+          operator: 'in',
+          value: ['Partner Contact', 'Support Contact', 'Vendor', 'Other'],
+        },
+      ]);
+      expect(presetsForModule(key).find((p) => p.id === 'partners')?.filters).toEqual([
+        {
+          field: 'contact_category',
+          operator: 'in',
+          value: ['Partner Contact', 'Support Contact', 'Vendor', 'Other'],
+        },
       ]);
       expect(presetsForModule(key).find((p) => p.id === 'enrolled-this-month')?.filters).toEqual([
         { field: 'created_at', operator: 'this_month', value: null },

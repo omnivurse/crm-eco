@@ -89,6 +89,7 @@ import {
   isPersonModuleKey,
   isRecordFormExcludedField,
   shouldAlwaysShowEmptySection,
+  shouldShowMemberOnlyFieldInForm,
 } from './section-utils';
 import { formatPhoneDisplay } from '@/lib/crm/phone-normalize';
 import {
@@ -109,7 +110,7 @@ import {
 import {
   shouldShowEndDateFieldInSection,
 } from '@/lib/crm/coverage-end-date-fields';
-import { shouldShowPartnerFieldInForm } from '@/lib/crm/partner-fields';
+import { isNonMemberContact, shouldShowPartnerFieldInForm } from '@/lib/crm/partner-fields';
 import { shouldShowStartDateFieldInForm } from '@/lib/crm/product-start-date-fields';
 import { CalendarClock, ChevronDown, ChevronRight, Loader2, ShieldCheck, Heart, Shield } from 'lucide-react';
 
@@ -945,6 +946,15 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
       if (!shouldShowPartnerFieldInForm({ fieldKey: field.key, values: defaultValues })) {
         continue;
       }
+      if (
+        !shouldShowMemberOnlyFieldInForm({
+          fieldKey: field.key,
+          sectionKey: field.section || 'main',
+          values: defaultValues,
+        })
+      ) {
+        continue;
+      }
       // Product card start dates: the legacy start_date /
       // insurance_effective_date mirrors drop out where they agree with
       // original_start_date, and stay put on the 13 records where they don't.
@@ -1502,6 +1512,9 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
     // A brand-new record has nothing on file yet — the summary banner would
     // only say "Not set" above the very fields being filled in. Skip it.
     if (isCreateForm) return null;
+    // Partner / vendor / support contacts are not members — do not open with
+    // an empty HealthShare / Insurance coverage banner.
+    if (isNonMemberContact(defaultValues)) return null;
 
     const accent =
       recordPlanType === 'insurance'
@@ -1732,6 +1745,7 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
           moduleKey,
           section.key,
           inlineEditable,
+          defaultValues,
         );
         // The coverage summary now lives in the top banner, so a hero with no
         // fields of its own has nothing left to show — let it collapse like any
@@ -1751,7 +1765,7 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
           readOnly &&
           !inlineEditable &&
           !isHero &&
-          !shouldAlwaysShowEmptySection(moduleKey, section.key, inlineEditable)
+          !shouldAlwaysShowEmptySection(moduleKey, section.key, inlineEditable, defaultValues)
         ) {
           const hasAnyValue = sectionFields.some(
             (f) =>

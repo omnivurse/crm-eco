@@ -159,6 +159,10 @@ import { RecordLinksEditorDialog } from './v2/RecordLinksEditorDialog';
 import { FollowUpReminderDialog } from './FollowUpReminderDialog';
 import { FollowUpBanner } from './FollowUpBanner';
 import { HistoryRosterBanner, PreviouslyCancelledChip } from './HistoryRosterBanner';
+import {
+  isNonMemberContact,
+  nonMemberContactLabel,
+} from '@/lib/crm/partner-fields';
 import { isHistoricalStatus } from '@/lib/crm/person-module-keys';
 import { useSyncBroadcast } from '@/hooks/useSyncBroadcast';
 import { RecordFieldSaveProvider, useRecordFieldSaveOptional } from '@/hooks/useRecordFieldSave';
@@ -699,12 +703,17 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
   // A contact whose status is already in the ACTIVE lane ("Active HS Member",
   // "Enrolled - 2025", …) is already a member — offering "Convert to Member" on
   // 3,952 of 3,972 active contacts was the single most misleading header action.
+  const recordValues = {
+    ...((record.data && typeof record.data === 'object' ? record.data : {}) as Record<string, unknown>),
+  };
+  const isPartnerStyleContact = isNonMemberContact(recordValues);
   const statusIsActiveLane =
     statusLane(displayStatus) === 'active' || isActiveCoverageStatus(displayStatus);
   const canConvertToMember =
     (isLeads || isContacts) &&
     !isAlreadyConverted &&
     !linkedEnrollmentMemberId &&
+    !isPartnerStyleContact &&
     !(isContacts && statusIsActiveLane);
   const [showEnrollDialog, setShowEnrollDialog] = useState(false);
   const enrollNoun = getMemberNoun(recordMarketTypeForConvert(record));
@@ -1802,6 +1811,14 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                       />
                       {record.phone && <HeaderCopyButton value={record.phone} />}
                     </span>
+                    {isPartnerStyleContact && (
+                      <span
+                        className="inline-flex items-center rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-[11px] font-medium text-indigo-800 dark:border-indigo-500/30 dark:bg-indigo-500/15 dark:text-indigo-200"
+                        data-testid="crm-record-partner-chip"
+                      >
+                        {nonMemberContactLabel(recordValues)}
+                      </span>
+                    )}
                     {displayStatus && (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>

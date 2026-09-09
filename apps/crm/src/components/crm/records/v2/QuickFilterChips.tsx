@@ -36,6 +36,7 @@ import {
   Sparkles,
   RefreshCw,
   ArrowRightCircle,
+  HeartHandshake,
 } from 'lucide-react';
 import type { CrmField, ViewFilter } from '@/lib/crm/types';
 import {
@@ -144,6 +145,19 @@ export function presetsForModule(moduleKey: string | null | undefined): QuickFil
         lanePreset('active', CheckCircle2, 'Every spelling of an active status'),
         lanePreset('pending', Hourglass, 'Approved / pending — waiting on a start date · oldest first', PENDING_LANE_SORT),
         lanePreset('cancelled', XCircle, 'Cancelled, terminated, deceased and cancellations in flight'),
+        {
+          id: 'partners',
+          label: 'Partners',
+          icon: HeartHandshake,
+          filters: [
+            {
+              field: 'contact_category',
+              operator: 'in',
+              value: ['Partner Contact', 'Support Contact', 'Vendor', 'Other'],
+            },
+          ],
+          hint: 'Bankers, vendors, and support contacts — not members',
+        },
         {
           id: 'enrolled-this-month',
           label: 'Enrolled this month',

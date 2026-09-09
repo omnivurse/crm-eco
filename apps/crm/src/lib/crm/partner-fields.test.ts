@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest';
 import {
   PARTNER_FIELD_KEYS,
   PARTNER_RELATIONSHIP_VALUES,
+  isNonMemberContact,
   isPartnerFieldKey,
   isPartnerRelationshipValue,
+  nonMemberContactLabel,
   shouldShowPartnerFieldInForm,
 } from './partner-fields';
 
@@ -32,6 +34,39 @@ describe('isPartnerRelationshipValue', () => {
     expect(isPartnerRelationshipValue(null)).toBe(false);
     expect(isPartnerRelationshipValue(undefined)).toBe(false);
     expect(isPartnerRelationshipValue(42)).toBe(false);
+  });
+});
+
+describe('isNonMemberContact', () => {
+  it('treats Partner Contact / Support / Vendor / Other as non-members', () => {
+    for (const contact_category of ['Partner Contact', 'Support Contact', 'Vendor', 'Other']) {
+      expect(isNonMemberContact({ contact_category })).toBe(true);
+    }
+  });
+
+  it('treats unlabeled contacts as members (historic member book)', () => {
+    expect(isNonMemberContact({ first_name: 'Jane' })).toBe(false);
+    expect(isNonMemberContact({ contact_category: '', relationship_type: '' })).toBe(false);
+    expect(isNonMemberContact(null)).toBe(false);
+  });
+
+  it('keeps Member / Prospect on the member form even if relationship says Partner', () => {
+    expect(
+      isNonMemberContact({ contact_category: 'Member', relationship_type: 'Partner' }),
+    ).toBe(false);
+    expect(isNonMemberContact({ contact_category: 'Prospect' })).toBe(false);
+  });
+
+  it('treats a Partner / Referring Partner relationship as non-member when category is blank', () => {
+    expect(isNonMemberContact({ relationship_type: 'Partner' })).toBe(true);
+    expect(isNonMemberContact({ relationship_type: 'Referring Partner' })).toBe(true);
+  });
+
+  it('labels the header chip from contact type first', () => {
+    expect(nonMemberContactLabel({ contact_category: 'Partner Contact' })).toBe('Partner Contact');
+    expect(nonMemberContactLabel({ relationship_type: 'Referring Partner' })).toBe(
+      'Referring Partner',
+    );
   });
 });
 

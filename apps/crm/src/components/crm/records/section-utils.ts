@@ -18,6 +18,7 @@ import { shouldShowStartDateFieldInForm } from '@/lib/crm/product-start-date-fie
 import {
   PARTNER_SECTION_KEY,
   PARTNER_TYPE_LABEL,
+  isNonMemberContact,
   shouldShowPartnerFieldInForm,
 } from '@/lib/crm/partner-fields';
 import {
@@ -448,8 +449,8 @@ export function shouldIncludeSectionInNav(
   inlineEditable: boolean,
   options?: { noteCount?: number; notesAnchored?: boolean },
 ): boolean {
-  if (section.variant === 'hero') return true;
-  if (shouldAlwaysShowEmptySection(moduleKey, section.key, inlineEditable)) return true;
+  if (section.variant === 'hero' && !isNonMemberContact(recordData)) return true;
+  if (shouldAlwaysShowEmptySection(moduleKey, section.key, inlineEditable, recordData)) return true;
   // Notes pill stays when the page knows a real note total (crm_notes + legacy),
   // or when a legacy notes_history field anchors the section (form-excluded).
   if (
@@ -528,8 +529,53 @@ export function shouldAlwaysShowEmptySection(
   moduleKey: string | undefined | null,
   sectionKey: string,
   _inlineEditable: boolean,
+  recordData?: Record<string, unknown> | null,
 ): boolean {
-  return isPersonModuleKey(moduleKey) && isPersonCoverageSectionKey(sectionKey);
+  if (!isPersonModuleKey(moduleKey) || !isPersonCoverageSectionKey(sectionKey)) return false;
+  // Partner / vendor / support contacts are not members — empty HealthShare
+  // and insurance cards would make a banker look enrolled.
+  if (isNonMemberContact(recordData)) return false;
+  return true;
+}
+
+/**
+ * Member-only sections: coverage, household, billing, portal, fulfillment.
+ * Hidden on a Partner Contact unless a field already holds a value.
+ */
+export const MEMBER_ONLY_SECTION_KEYS = [
+  ...PERSON_COVERAGE_SECTION_KEYS,
+  'start_date',
+  'family',
+  'family_spouse',
+  'family_children',
+  'payment',
+  'portal',
+  'fulfillment',
+  'identifiers',
+  'compliance',
+  'conversion',
+] as const;
+
+export function isMemberOnlySectionKey(sectionKey: string): boolean {
+  return (
+    isPersonCoverageSectionKey(sectionKey) ||
+    (MEMBER_ONLY_SECTION_KEYS as readonly string[]).includes(sectionKey)
+  );
+}
+
+/**
+ * Whether a coverage / household / billing field should render.
+ * Non-member contacts hide empty member fields; a populated value always shows.
+ */
+export function shouldShowMemberOnlyFieldInForm(args: {
+  fieldKey: string;
+  sectionKey?: string | null;
+  values?: Record<string, unknown> | null;
+}): boolean {
+  const section = args.sectionKey || 'main';
+  if (!isMemberOnlySectionKey(section)) return true;
+  if (isPopulated(args.values?.[args.fieldKey])) return true;
+  return !isNonMemberContact(args.values);
 }
 
 /** Default heading for extra sections inferred only from {@link CrmField.section}. */
@@ -635,6 +681,15 @@ export function getSectionMeta(
       continue;
     }
     if (!shouldShowPartnerFieldInForm({ fieldKey: field.key, values: recordData })) {
+      continue;
+    }
+    if (
+      !shouldShowMemberOnlyFieldInForm({
+        fieldKey: field.key,
+        sectionKey: section,
+        values: recordData,
+      })
+    ) {
       continue;
     }
     if (!shouldShowStartDateFieldInForm({ fieldKey: field.key, values: recordData })) {

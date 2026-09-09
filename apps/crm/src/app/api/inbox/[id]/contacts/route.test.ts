@@ -88,6 +88,8 @@ describe('POST /api/inbox/[id]/contacts', () => {
     const createArg = mockExecuteCreate.mock.calls[0][0];
     expect(createArg.input.data.contact_category).toBe('Partner Contact');
     expect(createArg.input.data.contact_status).toBe('Active');
+    expect(createArg.input.data.relationship_type).toBe('Partner');
+    expect(createArg.input.data.partner_industry).toBe('Banking / Credit Union');
   });
 
   it('does not overwrite an existing thread contact', async () => {

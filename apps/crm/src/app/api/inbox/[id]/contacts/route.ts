@@ -24,6 +24,8 @@ const bodySchema = z.object({
   company: z.string().optional(),
   website: z.string().optional(),
   contact_category: z.string().optional(),
+  relationship_type: z.string().optional(),
+  partner_industry: z.string().optional(),
   note: z.string().optional(),
   force: z.boolean().optional(),
 });
@@ -89,7 +91,10 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       input: {
         org_id: profile.organization_id,
         module_id: moduleRow.id,
-        data: buildInboxContactData(fields, category),
+        data: buildInboxContactData(fields, category, {
+          relationship_type: parsed.data.relationship_type,
+          partner_industry: parsed.data.partner_industry,
+        }),
         force: parsed.data.force,
       },
     });

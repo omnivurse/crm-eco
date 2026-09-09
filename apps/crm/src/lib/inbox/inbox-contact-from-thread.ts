@@ -6,6 +6,7 @@
 import { participantsFromThread, type ThreadParticipant } from '@/lib/calendar/thread-participants';
 import {
   emailConversationNotePrefix,
+  inferPartnerIndustry,
   isConversationNoteBlank,
   isInboxContactCategory,
   type ExtractedInboxContact,
@@ -68,10 +69,11 @@ export function resolveInboxContactCategory(raw: string | null | undefined): Inb
 export function buildInboxContactData(
   fields: ExtractedInboxContact,
   category: InboxContactCategory,
+  extras?: { relationship_type?: string; partner_industry?: string },
 ): Record<string, string> {
   const out: Record<string, string> = {
     contact_category: category,
-    relationship_type: 'Partner',
+    relationship_type: extras?.relationship_type?.trim() || 'Partner',
     contact_status: 'Active',
   };
   const assign = (key: string, value: string) => {
@@ -85,6 +87,10 @@ export function buildInboxContactData(
   assign('title', fields.title);
   assign('company', fields.company);
   assign('website', fields.website);
+  assign(
+    'partner_industry',
+    extras?.partner_industry?.trim() || inferPartnerIndustry(fields.company, fields.email),
+  );
   return out;
 }
 

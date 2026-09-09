@@ -57,6 +57,7 @@ describe('overlay + payload', () => {
       contact_category: 'Support Contact',
       relationship_type: 'Partner',
       contact_status: 'Active',
+      partner_industry: 'Banking / Credit Union',
     });
   });
 

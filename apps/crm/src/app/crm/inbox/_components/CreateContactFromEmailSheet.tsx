@@ -19,6 +19,7 @@ import { toastCopy } from '@/lib/crm/toast-copy';
 import {
   INBOX_CONTACT_CATEGORIES,
   emailConversationNotePrefix,
+  inferPartnerIndustry,
   proposeContactFromParticipant,
   type ExtractedInboxContact,
 } from '@/lib/inbox/extract-contact-from-email';
@@ -50,6 +51,18 @@ interface CreateContactFromEmailSheetProps {
   onOpenChange: (open: boolean) => void;
   onLinked?: (patch: InboxContactLinkedPatch) => void;
 }
+
+const PARTNER_TYPES = ['Partner', 'Referring Partner', 'Agency', 'Vendor', 'Other'] as const;
+const PARTNER_INDUSTRIES = [
+  'Banking / Credit Union',
+  'Mortgage / Lending',
+  'Insurance - Property & Casualty',
+  'Financial Advisor / Wealth Management',
+  'CPA / Accounting / Bookkeeping',
+  'Attorney / Legal',
+  'Employer / Business Owner',
+  'Other',
+] as const;
 
 const fieldClass =
   'h-9 text-sm bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10';
@@ -104,6 +117,8 @@ export function CreateContactFromEmailSheet({
   const [email, setEmail] = useState(defaultEmail);
   const [fields, setFields] = useState<ExtractedInboxContact>(emptyFields);
   const [category, setCategory] = useState('Partner Contact');
+  const [relationshipType, setRelationshipType] = useState('Partner');
+  const [industry, setIndustry] = useState('');
   const [note, setNote] = useState('');
   const [existing, setExisting] = useState<DuplicateHit[] | null>(null);
   const [checking, setChecking] = useState(false);
@@ -120,6 +135,7 @@ export function CreateContactFromEmailSheet({
     const nextEmail = defaultEmail;
     setEmail(nextEmail);
     setCategory('Partner Contact');
+    setRelationshipType('Partner');
     setError(null);
     const prefix = conversationNotePrefixForThread({
       subject: conversation.subject,
@@ -128,9 +144,12 @@ export function CreateContactFromEmailSheet({
     setNote(`${prefix}\n`);
     const person = participants.find((p) => p.email === nextEmail);
     if (person) {
-      setFields(proposeContactFromParticipant({ participant: person, messages }));
+      const next = proposeContactFromParticipant({ participant: person, messages });
+      setFields(next);
+      setIndustry(inferPartnerIndustry(next.company, next.email));
     } else {
       setFields(emptyFields());
+      setIndustry('');
     }
   }, [open, defaultEmail, conversation.subject, messages, participants]);
 
@@ -160,13 +179,23 @@ export function CreateContactFromEmailSheet({
   }, [open, email]);
 
   const setField = (key: keyof ExtractedInboxContact, value: string) => {
-    setFields((prev) => ({ ...prev, [key]: value }));
+    setFields((prev) => {
+      const next = { ...prev, [key]: value };
+      if (key === 'company' || key === 'email') {
+        setIndustry(inferPartnerIndustry(next.company, next.email || email));
+      }
+      return next;
+    });
   };
 
   const pickPerson = (next: string) => {
     setEmail(next);
     const person = participants.find((p) => p.email === next);
-    if (person) setFields(proposeContactFromParticipant({ participant: person, messages }));
+    if (person) {
+      const next = proposeContactFromParticipant({ participant: person, messages });
+      setFields(next);
+      setIndustry(inferPartnerIndustry(next.company, next.email));
+    }
   };
 
   const applyLink = (recordId: string) => {
@@ -222,6 +251,8 @@ export function CreateContactFromEmailSheet({
           company: fields.company,
           website: fields.website,
           contact_category: category,
+          relationship_type: relationshipType,
+          partner_industry: industry,
           note,
         }),
       });
@@ -412,6 +443,37 @@ export function CreateContactFromEmailSheet({
                   onChange={(e) => setCategory(e.target.value)}
                 >
                   {INBOX_CONTACT_CATEGORIES.map((opt) => (
+                    <option key={opt} value={opt}>
+                      {opt}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="inbox-contact-rel">Partner type</Label>
+                <select
+                  id="inbox-contact-rel"
+                  className={`${fieldClass} w-full rounded-md border px-3`}
+                  value={relationshipType}
+                  onChange={(e) => setRelationshipType(e.target.value)}
+                >
+                  {PARTNER_TYPES.map((opt) => (
+                    <option key={opt} value={opt}>
+                      {opt}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="inbox-contact-industry">Industry</Label>
+                <select
+                  id="inbox-contact-industry"
+                  className={`${fieldClass} w-full rounded-md border px-3`}
+                  value={industry}
+                  onChange={(e) => setIndustry(e.target.value)}
+                >
+                  <option value="">Select…</option>
+                  {PARTNER_INDUSTRIES.map((opt) => (
                     <option key={opt} value={opt}>
                       {opt}
                     </option>

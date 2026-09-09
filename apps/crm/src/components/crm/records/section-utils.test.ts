@@ -53,6 +53,15 @@ describe('section-utils person coverage visibility', () => {
     expect(shouldAlwaysShowEmptySection('contacts', 'address', false)).toBe(false);
   });
 
+  it('does not force empty coverage cards on a Partner Contact', () => {
+    const frank = { contact_category: 'Partner Contact', relationship_type: 'Partner' };
+    expect(shouldAlwaysShowEmptySection('contacts', 'health_insurance', true, frank)).toBe(false);
+    expect(shouldAlwaysShowEmptySection('contacts', 'health_sharing', false, frank)).toBe(false);
+    expect(shouldAlwaysShowEmptySection('contacts', 'health_insurance', true, { first_name: 'Jane' })).toBe(
+      true,
+    );
+  });
+
   it('does not force orphan non-coverage sections just because inline edit is on', () => {
     // Blank fields in a real section stay visible via shouldIncludeSectionInNav;
     // zero-field layout leftovers (start_date, notes_history form card) must not.
@@ -610,6 +619,38 @@ describe('Partner Details section — visible only for partners', () => {
 
   it('appears for a service Partner', () => {
     expect(partnerSection({ relationship_type: 'Partner' }, true)?.fieldCount).toBe(3);
+  });
+
+  it('hides empty HealthShare / insurance sections on a Partner Contact', () => {
+    const fields = [
+      field('relationship_type', 'main'),
+      field('sharing_entity', 'health_sharing'),
+      field('health_insurance_plan_name', 'health_insurance'),
+      field('partner_industry', 'partner'),
+    ];
+    const layout = {
+      id: 'l',
+      config: {
+        sections: [
+          { key: 'main', label: 'Main', columns: 2 as const },
+          { key: 'partner', label: 'Partner Details', columns: 2 as const },
+          { key: 'health_sharing', label: 'Health Share', columns: 2 as const },
+          { key: 'health_insurance', label: 'Health Insurance', columns: 2 as const },
+        ],
+      },
+    } as never;
+    const frank = {
+      first_name: 'Frank',
+      last_name: 'Burnham',
+      contact_category: 'Partner Contact',
+      relationship_type: 'Partner',
+    };
+    const keys = getSectionMeta(fields, layout, frank, 'contacts', { inlineEditable: true }).map(
+      (s) => s.key,
+    );
+    expect(keys).toContain('partner');
+    expect(keys).not.toContain('health_sharing');
+    expect(keys).not.toContain('health_insurance');
   });
 
   it('still shows a stranded partner value on a re-tagged record', () => {

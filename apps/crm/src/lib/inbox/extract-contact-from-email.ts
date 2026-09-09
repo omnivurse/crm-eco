@@ -161,6 +161,18 @@ export function extractWebsite(text: string, html?: string | null): string {
 }
 
 /** `bank-of-colorado.com` → `Bank Of Colorado`. Mashed labels stay one word. */
+/** Guess a partner-industry picklist value from company / email. */
+export function inferPartnerIndustry(company: string, email: string): string {
+  const hay = `${company} ${email}`.toLowerCase();
+  if (/\bcredit union\b/.test(hay) || /\bbank\b/.test(hay) || /bankof|bank-of/.test(hay)) {
+    return 'Banking / Credit Union';
+  }
+  if (/\bmortgage\b|\blending\b|\blender\b/.test(hay)) return 'Mortgage / Lending';
+  if (/\bcpa\b|\baccount/.test(hay)) return 'CPA / Accounting / Bookkeeping';
+  if (/\battorney\b|\blaw\b|\blegal\b/.test(hay)) return 'Attorney / Legal';
+  return '';
+}
+
 export function companyFromEmailDomain(email: string): string {
   const domain = (email.split('@')[1] ?? '').trim().toLowerCase();
   if (!domain || FREE_EMAIL_DOMAINS.has(domain)) return '';
