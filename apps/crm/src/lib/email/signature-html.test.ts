@@ -27,7 +27,10 @@ describe('signature-html', () => {
   it('renders live fields into a PIFH layout without leftover tokens', () => {
     const html = renderLayoutHtml('pifh-horizontal', fields);
     expect(html).toContain('Ada Lovelace');
-    expect(html).toContain('Advisor at Pay it Forward Health');
+    expect(html).toContain('Advisor');
+    expect(html).toContain('Pay it Forward Health');
+    expect(html).not.toContain('Advisor at Pay it Forward Health');
+    expect(html).toMatch(/Ada Lovelace[\s\S]+Advisor[\s\S]+Pay it Forward Health/);
     expect(html).toContain('ada@payitforwardhealth.com');
     expect(html).toContain(DEFAULT_PIFH_LOGO_PATH);
     expect(html).not.toMatch(/\{\{[a-z_]+\}\}/);

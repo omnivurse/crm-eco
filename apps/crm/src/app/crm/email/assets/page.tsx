@@ -2,6 +2,7 @@
 
 import { toast } from 'sonner';
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import Link from 'next/link';
 import { Button } from '@crm-eco/ui/components/button';
 import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import { Input } from '@crm-eco/ui/components/input';
@@ -40,8 +41,10 @@ import {
   Check,
   Lock,
   ExternalLink,
+  FileSignature,
 } from 'lucide-react';
 import { ImageUploader } from '@/components/email/ImageUploader';
+import { AddToSignatureDialog, type SignatureTargetAsset } from '@/components/email/AddToSignatureDialog';
 import { useClientAuth } from '@/hooks/useClientAuth';
 import { useDebouncedValue } from '@/hooks/useDebouncedSearch';
 import {
@@ -76,6 +79,7 @@ const FOLDERS = [
   { value: 'products', label: 'Products' },
   { value: 'banners', label: 'Banners' },
   { value: 'icons', label: 'Icons' },
+  { value: 'signatures', label: 'Signatures' },
 ];
 
 function formatFileSize(bytes: number): string {
@@ -103,6 +107,7 @@ export default function AssetLibraryPage() {
   const [deleting, setDeleting] = useState<string | null>(null);
   const [showUploader, setShowUploader] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [applyAsset, setApplyAsset] = useState<SignatureTargetAsset | null>(null);
 
   const { profile, loading: authLoading } = useClientAuth();
   const canUpload = canUploadEmailAssets(profile?.crm_role);
@@ -265,9 +270,26 @@ export default function AssetLibraryPage() {
     }
   };
 
-  const handleUploadComplete = (_url?: string, _alt?: string) => {
+  const openAddToSignature = (asset: EmailAsset | SignatureTargetAsset) => {
+    setApplyAsset({
+      id: asset.id,
+      public_url: asset.public_url || `/api/email/public-assets/${asset.id}`,
+      name: asset.name,
+      alt_text: 'alt_text' in asset ? asset.alt_text : undefined,
+    });
+  };
+
+  const handleUploadComplete = (url?: string, alt?: string, meta?: { id?: string }) => {
     setShowUploader(false);
     fetchAssets();
+    if (meta?.id && url) {
+      openAddToSignature({
+        id: meta.id,
+        public_url: url,
+        name: alt || 'Uploaded image',
+        alt_text: alt,
+      });
+    }
   };
 
   return (
@@ -279,9 +301,13 @@ export default function AssetLibraryPage() {
             Asset Library
           </h1>
           <p className="text-sm text-slate-500">
-            Manage images and files for your email campaigns
+            Images for campaigns and signatures. Click Add to signature to put a logo on someone&apos;s email.
           </p>
         </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" asChild>
+            <Link href="/crm/settings/signatures">Signatures</Link>
+          </Button>
         {!authLoading && !canUpload ? (
           <div className="flex items-center gap-2 text-sm text-slate-500">
             <Lock className="w-4 h-4" />
@@ -297,6 +323,7 @@ export default function AssetLibraryPage() {
             Upload Image
           </Button>
         )}
+        </div>
       </div>
 
       {/* Filters */}
@@ -473,6 +500,15 @@ export default function AssetLibraryPage() {
                       <DropdownMenuItem
                         onClick={(e) => {
                           e.stopPropagation();
+                          openAddToSignature(asset);
+                        }}
+                      >
+                        <FileSignature className="w-4 h-4 mr-2" />
+                        Add to signature
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
                           handleCopyUrl(asset.public_url, asset.id);
                         }}
                       >
@@ -520,6 +556,19 @@ export default function AssetLibraryPage() {
                     {asset.folder}
                   </Badge>
                 </div>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  className="mt-2 w-full gap-1.5"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openAddToSignature(asset);
+                  }}
+                >
+                  <FileSignature className="w-3.5 h-3.5" />
+                  Add to signature
+                </Button>
               </CardContent>
             </Card>
           ))}
@@ -531,6 +580,13 @@ export default function AssetLibraryPage() {
         open={showUploader}
         onOpenChange={setShowUploader}
         onImageInsert={handleUploadComplete}
+      />
+      <AddToSignatureDialog
+        open={applyAsset !== null}
+        onOpenChange={(next) => {
+          if (!next) setApplyAsset(null);
+        }}
+        asset={applyAsset}
       />
     </div>
   );

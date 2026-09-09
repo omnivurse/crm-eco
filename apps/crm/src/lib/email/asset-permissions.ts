@@ -17,3 +17,8 @@ export function canUploadEmailAssets(crmRole: string | null | undefined): boolea
 export function canDeleteEmailAssets(crmRole: string | null | undefined): boolean {
   return ASSET_DELETE_ROLES.includes((crmRole ?? '') as (typeof ASSET_DELETE_ROLES)[number]);
 }
+
+/** Managers/admins may put a library image on a teammate's existing signature. */
+export function canApplyTeamSignatureImage(crmRole: string | null | undefined): boolean {
+  return canDeleteEmailAssets(crmRole);
+}

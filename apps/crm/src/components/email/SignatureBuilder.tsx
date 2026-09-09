@@ -38,8 +38,17 @@ import {
   Upload,
   Check,
   Sparkles,
+  FolderOpen,
 } from 'lucide-react';
 import { ImageUploader } from './ImageUploader';
+import { AssetLibrary } from './AssetLibrary';
+import { SignatureLogoSizeControl } from './SignatureLogoSizeControl';
+import {
+  DEFAULT_SIGNATURE_LOGO_HEIGHT,
+  clampSignatureLogoHeight,
+  readSignatureLogoHeight,
+  resizeSignatureImage,
+} from '@/lib/email/apply-signature-image';
 import {
   DEFAULT_PIFH_LOGO_PATH,
   SIGNATURE_LAYOUTS,
@@ -162,9 +171,26 @@ export function SignatureBuilder({
     };
   });
   const [uploadTarget, setUploadTarget] = useState<UploadTarget | null>(null);
+  const [libraryTarget, setLibraryTarget] = useState<UploadTarget | null>(null);
+  const [logoHeight, setLogoHeight] = useState(() =>
+    readSignatureLogoHeight(signature?.content_html, signature?.logo_url) ??
+      DEFAULT_SIGNATURE_LOGO_HEIGHT,
+  );
+
+  const sizeHtml = useCallback((html: string, height: number, slot: UploadTarget, matchSrc?: string) => {
+    return resizeSignatureImage(html, height, {
+      matchSrc,
+      square: slot === 'photo',
+    });
+  }, []);
 
   const applyLayout = useCallback((layoutId: string, nextFields: SignatureFields) => {
-    const html = htmlFromFields(layoutId, nextFields);
+    const html = sizeHtml(
+      htmlFromFields(layoutId, nextFields),
+      logoHeight,
+      layoutId === 'professional' ? 'photo' : 'logo',
+      layoutId === 'professional' ? nextFields.photo_url : nextFields.logo_url,
+    );
     setSelectedLayoutId(layoutId);
     setFormData((prev) => ({
       ...prev,
@@ -172,13 +198,18 @@ export function SignatureBuilder({
       logo_url: nextFields.logo_url,
       photo_url: nextFields.photo_url,
     }));
-  }, []);
+  }, [logoHeight, sizeHtml]);
 
   const updateField = (key: keyof SignatureFields, value: string) => {
     setFields((prev) => {
       const next = { ...prev, [key]: value };
       if (selectedLayoutId && selectedLayoutId !== 'full-image') {
-        const html = htmlFromFields(selectedLayoutId, next);
+        const html = sizeHtml(
+          htmlFromFields(selectedLayoutId, next),
+          logoHeight,
+          selectedLayoutId === 'professional' ? 'photo' : 'logo',
+          selectedLayoutId === 'professional' ? next.photo_url : next.logo_url,
+        );
         setFormData((current) => ({
           ...current,
           content_html: html,
@@ -211,19 +242,24 @@ export function SignatureBuilder({
     }));
   };
 
-  const handleUploadedImage = (url: string, alt?: string) => {
-    if (uploadTarget === 'full') {
+  const applyImageToSlot = (slot: UploadTarget, url: string, alt?: string) => {
+    if (slot === 'full') {
       setSelectedLayoutId('full-image');
       setFormData((prev) => ({
         ...prev,
-        content_html: renderFullImageSignature(url, alt || 'Email Signature'),
+        content_html: sizeHtml(
+          renderFullImageSignature(url, alt || 'Email Signature'),
+          logoHeight,
+          'full',
+          url,
+        ),
         logo_url: url,
       }));
       setFields((prev) => ({ ...prev, logo_url: url }));
       return;
     }
 
-    if (uploadTarget === 'photo') {
+    if (slot === 'photo') {
       const next = { ...fields, photo_url: url };
       setFields(next);
       if (selectedLayoutId === 'full-image') {
@@ -231,8 +267,11 @@ export function SignatureBuilder({
       } else if (selectedLayoutId) {
         applyLayout(selectedLayoutId, next);
       } else {
-        // Editing stored HTML: record the new photo without regenerating.
-        setFormData((current) => ({ ...current, photo_url: url }));
+        setFormData((current) => ({
+          ...current,
+          photo_url: url,
+          content_html: sizeHtml(current.content_html, logoHeight, 'photo', url),
+        }));
       }
       return;
     }
@@ -244,9 +283,30 @@ export function SignatureBuilder({
     } else if (selectedLayoutId) {
       applyLayout(selectedLayoutId, next);
     } else {
-      // Editing stored HTML: record the new logo without regenerating.
-      setFormData((current) => ({ ...current, logo_url: url }));
+      setFormData((current) => ({
+        ...current,
+        logo_url: url,
+        content_html: sizeHtml(current.content_html, logoHeight, 'logo', url),
+      }));
     }
+  };
+
+  const handleUploadedImage = (url: string, alt?: string) => {
+    if (uploadTarget) applyImageToSlot(uploadTarget, url, alt);
+  };
+
+  const handleLogoHeightChange = (height: number) => {
+    const nextHeight = clampSignatureLogoHeight(height);
+    setLogoHeight(nextHeight);
+    setFormData((current) => ({
+      ...current,
+      content_html: sizeHtml(
+        current.content_html,
+        nextHeight,
+        selectedLayoutId === 'professional' ? 'photo' : 'logo',
+        selectedLayoutId === 'professional' ? fields.photo_url : fields.logo_url,
+      ),
+    }));
   };
 
   const handleSave = async () => {
@@ -492,7 +552,7 @@ export function SignatureBuilder({
                       Images
                     </CardTitle>
                     <CardDescription className="text-xs">
-                      Upload a file from your computer. URL paste still works if you already have one.
+                      Upload a file, pick one from the library, or paste a URL. Resize the logo so it matches the rest of the signature.
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="pt-0 space-y-3">
@@ -512,10 +572,30 @@ export function SignatureBuilder({
                         variant="outline"
                         size="sm"
                         className="gap-2"
+                        onClick={() => setLibraryTarget('logo')}
+                      >
+                        <FolderOpen className="w-4 h-4" />
+                        Choose logo from library
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
                         onClick={() => setUploadTarget('photo')}
                       >
                         <Upload className="w-4 h-4" />
                         Upload photo
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                        onClick={() => setLibraryTarget('photo')}
+                      >
+                        <FolderOpen className="w-4 h-4" />
+                        Choose photo from library
                       </Button>
                       <Button
                         type="button"
@@ -527,7 +607,29 @@ export function SignatureBuilder({
                         <Upload className="w-4 h-4" />
                         Upload full signature image
                       </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                        onClick={() => setLibraryTarget('full')}
+                      >
+                        <FolderOpen className="w-4 h-4" />
+                        Choose full image from library
+                      </Button>
                     </div>
+                    <SignatureLogoSizeControl
+                      value={logoHeight}
+                      onChange={handleLogoHeightChange}
+                      previewUrl={
+                        selectedLayoutId === 'professional'
+                          ? fields.photo_url
+                          : fields.logo_url || formData.logo_url
+                      }
+                      previewAlt="Signature logo"
+                      label={selectedLayoutId === 'professional' ? 'Photo size' : 'Logo size'}
+                      square={selectedLayoutId === 'professional'}
+                    />
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="photo_url" className="flex items-center gap-2">
@@ -725,6 +827,18 @@ export function SignatureBuilder({
         description="Choose a file from your computer, or paste an image URL."
         insertLabel="Use image"
         onImageInsert={handleUploadedImage}
+      />
+      <AssetLibrary
+        open={libraryTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setLibraryTarget(null);
+        }}
+        onSelect={(asset) => {
+          const slot = libraryTarget;
+          const url = asset.public_url || `/api/email/public-assets/${asset.id}`;
+          if (slot) applyImageToSlot(slot, url, asset.alt_text || asset.name);
+          setLibraryTarget(null);
+        }}
       />
     </div>
   );

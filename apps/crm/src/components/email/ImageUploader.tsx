@@ -26,7 +26,7 @@ import imageCompression from 'browser-image-compression';
 interface ImageUploaderProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onImageInsert: (url: string, alt?: string) => void;
+  onImageInsert: (url: string, alt?: string, meta?: { id?: string }) => void;
   uploadEndpoint?: string;
   folder?: string;
   title?: string;
@@ -37,6 +37,7 @@ interface ImageUploaderProps {
 interface UploadedImage {
   url: string;
   alt: string;
+  id?: string;
   width?: number;
   height?: number;
 }
@@ -150,6 +151,7 @@ export function ImageUploader({
       setPreviewImage({
         url: uploadedUrl,
         alt: altText || file.name.replace(/\.[^/.]+$/, ''),
+        id: typeof data.id === 'string' ? data.id : undefined,
         width: data.width,
         height: data.height,
       });
@@ -209,7 +211,11 @@ export function ImageUploader({
 
   const handleInsert = useCallback(() => {
     if (previewImage) {
-      onImageInsert(previewImage.url, previewImage.alt || altText);
+      onImageInsert(
+        previewImage.url,
+        previewImage.alt || altText,
+        previewImage.id ? { id: previewImage.id } : undefined,
+      );
       handleClose();
     }
   }, [previewImage, altText, onImageInsert, handleClose]);

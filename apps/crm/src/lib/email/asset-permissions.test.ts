@@ -1,17 +1,23 @@
 import { describe, expect, it } from 'vitest';
-import { canDeleteEmailAssets, canUploadEmailAssets } from './asset-permissions';
+import {
+  canApplyTeamSignatureImage,
+  canDeleteEmailAssets,
+  canUploadEmailAssets,
+} from './asset-permissions';
 
 describe('email asset permissions', () => {
-  it('lets admins and managers upload and delete', () => {
+  it('lets admins and managers upload, delete, and apply images to teammate signatures', () => {
     for (const role of ['crm_admin', 'crm_manager']) {
       expect(canUploadEmailAssets(role)).toBe(true);
       expect(canDeleteEmailAssets(role)).toBe(true);
+      expect(canApplyTeamSignatureImage(role)).toBe(true);
     }
   });
 
   it('lets agents upload but not delete', () => {
     expect(canUploadEmailAssets('crm_agent')).toBe(true);
     expect(canDeleteEmailAssets('crm_agent')).toBe(false);
+    expect(canApplyTeamSignatureImage('crm_agent')).toBe(false);
   });
 
   it('refuses a member with no crm_role', () => {
@@ -21,6 +27,7 @@ describe('email asset permissions', () => {
     for (const role of [null, undefined, '']) {
       expect(canUploadEmailAssets(role)).toBe(false);
       expect(canDeleteEmailAssets(role)).toBe(false);
+      expect(canApplyTeamSignatureImage(role)).toBe(false);
     }
   });
 

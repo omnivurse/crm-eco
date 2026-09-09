@@ -56,8 +56,17 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch assets' }, { status: 500 });
     }
 
+    const origin = publicAssetOriginFromRequest(request.nextUrl.origin);
+    const withUrls = (assets || []).map((asset: { id: string; public_url?: string | null }) => ({
+      ...asset,
+      public_url:
+        typeof asset.public_url === 'string' && asset.public_url.trim()
+          ? asset.public_url
+          : buildPublicEmailAssetUrl(origin, asset.id),
+    }));
+
     return NextResponse.json({
-      assets,
+      assets: withUrls,
       total: count,
       limit,
       offset,
@@ -143,6 +152,7 @@ export async function POST(request: NextRequest) {
       .from('email_assets')
       .insert({
         org_id: profile.organization_id,
+        organization_id: profile.organization_id,
         name: name || file.name.replace(/\.[^/.]+$/, ''),
         file_name: file.name,
         file_path: uploadData.path,
@@ -156,7 +166,7 @@ export async function POST(request: NextRequest) {
         tags: tags ? tags.split(',').map((t) => t.trim()) : [],
         is_public: true,
         public_url: null,
-        created_by: profile.user_id,
+        created_by: profile.id,
       })
       .select()
       .single();

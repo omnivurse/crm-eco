@@ -74,6 +74,7 @@ const FOLDERS = [
   { value: 'products', label: 'Products' },
   { value: 'banners', label: 'Banners' },
   { value: 'icons', label: 'Icons' },
+  { value: 'signatures', label: 'Signatures' },
 ];
 
 function formatFileSize(bytes: number): string {

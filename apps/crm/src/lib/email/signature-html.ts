@@ -37,7 +37,8 @@ const PIFH_HORIZONTAL = `<table cellpadding="0" cellspacing="0" style="font-fami
     </td>
     <td style="border-left: 3px solid #12A065; padding-left: 16px; vertical-align: middle;">
       <p style="margin: 0 0 2px 0; font-weight: bold; font-size: 16px; color: #003A5C;">{{full_name}}</p>
-      <p style="margin: 0 0 8px 0; color: #0E8C9A;">{{title_company}}</p>
+      <p style="margin: 0 0 2px 0; color: #0E8C9A;">{{title}}</p>
+      <p style="margin: 0 0 8px 0; color: #0E8C9A;">{{company_name}}</p>
       <p style="margin: 0 0 2px 0;"><a href="mailto:{{email}}" style="color: #003A5C; text-decoration: none;">{{email}}</a></p>
       <p style="margin: 0 0 2px 0;"><a href="tel:{{phone}}" style="color: #003A5C; text-decoration: none;">{{phone}}</a></p>
       <p style="margin: 0;"><a href="{{website_href}}" style="color: #0E8C9A; text-decoration: none;">{{website}}</a></p>
@@ -54,7 +55,8 @@ const PIFH_STACKED = `<table cellpadding="0" cellspacing="0" style="font-family:
   <tr>
     <td style="border-top: 2px solid #0E8C9A; padding-top: 12px;">
       <p style="margin: 0 0 2px 0; font-weight: bold; font-size: 16px; color: #003A5C;">{{full_name}}</p>
-      <p style="margin: 0 0 8px 0; color: #666666;">{{title_company}}</p>
+      <p style="margin: 0 0 2px 0; color: #666666;">{{title}}</p>
+      <p style="margin: 0 0 8px 0; color: #666666;">{{company_name}}</p>
       <p style="margin: 0;">{{email}} | {{phone}}</p>
       <p style="margin: 4px 0 0 0;"><a href="{{website_href}}" style="color: #0E8C9A; text-decoration: none;">{{website}}</a></p>
     </td>
@@ -70,9 +72,9 @@ const PIFH_BRANDED = `<table cellpadding="0" cellspacing="0" style="font-family:
   <tr>
     <td style="padding: 12px 16px; border: 1px solid #D5E5EF; border-top: none;">
       <p style="margin: 0 0 2px 0; font-weight: bold; font-size: 16px; color: #003A5C;">{{full_name}}</p>
-      <p style="margin: 0 0 8px 0; color: #0E8C9A;">{{title_company}}</p>
+      <p style="margin: 0 0 2px 0; color: #0E8C9A;">{{title}}</p>
+      <p style="margin: 0 0 8px 0; color: #0E8C9A;">{{company_name}}</p>
       <p style="margin: 0 0 2px 0;">{{email}} | {{phone}}</p>
-      <p style="margin: 0; color: #666666;">{{company_name}}</p>
     </td>
   </tr>
 </table>`;
@@ -95,7 +97,8 @@ const MODERN = `<table cellpadding="0" cellspacing="0" style="font-family: Arial
   <tr>
     <td>
       <p style="margin: 0 0 4px 0; font-weight: bold; font-size: 16px; color: #0E8C9A;">{{full_name}}</p>
-      <p style="margin: 0 0 8px 0; color: #666666;">{{title_company}}</p>
+      <p style="margin: 0 0 2px 0; color: #666666;">{{title}}</p>
+      <p style="margin: 0 0 8px 0; color: #666666;">{{company_name}}</p>
       <p style="margin: 0;">
         <a href="mailto:{{email}}" style="color: #0E8C9A; text-decoration: none;">Email</a>
         &nbsp;·&nbsp;
@@ -187,7 +190,6 @@ function deriveFields(fields: SignatureFields): Record<string, string> {
     website_href: websiteHref(fields.website),
     logo_url: fields.logo_url.trim() || DEFAULT_PIFH_LOGO_PATH,
     photo_url: fields.photo_url.trim(),
-    title_company: title && company ? `${title} at ${company}` : title || company,
   };
 }
 
