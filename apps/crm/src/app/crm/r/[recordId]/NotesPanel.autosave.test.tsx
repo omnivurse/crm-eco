@@ -87,6 +87,88 @@ describe('NotesPanel autosave', () => {
     expect(screen.getByTestId('crm-notes-save-status').textContent).toBe('Saved');
   });
 
+  it('persists edits queued while an earlier autosave is in flight', async () => {
+    let resolveFirst!: (value: {
+      ok: boolean;
+      status: number;
+      json: () => Promise<Record<string, unknown>>;
+    }) => void;
+    const firstResponse = new Promise<{
+      ok: boolean;
+      status: number;
+      json: () => Promise<Record<string, unknown>>;
+    }>((resolve) => {
+      resolveFirst = resolve;
+    });
+    const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>;
+    fetchMock
+      .mockImplementationOnce(() => firstResponse)
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({}) });
+
+    renderPanel();
+    const el = editor();
+    el.innerHTML = '<p>First version</p>';
+    fireEvent.input(el);
+    await act(async () => {
+      vi.advanceTimersByTime(NOTE_AUTOSAVE_MS);
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    el.innerHTML = '<p>Newest version</p>';
+    fireEvent.input(el);
+    await act(async () => {
+      vi.advanceTimersByTime(NOTE_AUTOSAVE_MS);
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      resolveFirst({
+        ok: true,
+        status: 201,
+        json: async () => ({
+          id: 'note-1',
+          org_id: 'org-1',
+          record_id: '11111111-1111-4111-8111-111111111111',
+          body: '<p>First version</p>',
+        }),
+      });
+      await firstResponse;
+      await Promise.resolve();
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const [url, init] = fetchMock.mock.calls[1];
+    expect(url).toBe('/api/crm/notes/note-1');
+    expect((init as RequestInit).method).toBe('PATCH');
+    expect(JSON.parse((init as RequestInit).body as string).body).toContain('Newest version');
+  });
+
+  it('flushes edits before the secondary Done action closes an autosaved draft', async () => {
+    renderPanel();
+    const el = editor();
+    el.innerHTML = '<p>First version</p>';
+    fireEvent.input(el);
+    await act(async () => {
+      vi.advanceTimersByTime(NOTE_AUTOSAVE_MS);
+      await Promise.resolve();
+    });
+
+    el.innerHTML = '<p>Newest version</p>';
+    fireEvent.input(el);
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole('button', { name: 'Done' })[0]!);
+      await Promise.resolve();
+    });
+
+    const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>;
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const [url, init] = fetchMock.mock.calls[1];
+    expect(url).toBe('/api/crm/notes/note-1');
+    expect((init as RequestInit).method).toBe('PATCH');
+    expect(JSON.parse((init as RequestInit).body as string).body).toContain('Newest version');
+    expect(screen.queryByTestId('crm-notes-composer')).toBeNull();
+  });
+
   it('does not POST a blank draft', async () => {
     renderPanel();
     await act(async () => {
