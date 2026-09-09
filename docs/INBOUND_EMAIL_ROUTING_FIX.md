@@ -1,7 +1,18 @@
 # Inbound email routing fix — `payitforwardhealth.com`
 
-**Prepared 2026-09-05. Two people are needed: whoever administers the Liberation
-Email account, and whoever administers DNS at the registrar.**
+**Prepared 2026-09-05. Cutover applied 2026-09-08 (Vercel OI Agent zone).**
+
+Apex MX is CRM-only (`inbound-smtp.us-east-1.amazonaws.com`). Liberation MX,
+autodiscover, autoconfig, and Liberation SPF were removed. Do not re-add them.
+Do not CNAME `mail` to Resend tracking.
+
+Two people are needed: whoever administers the Liberation Email account, and
+whoever can edit **Vercel DNS** for `payitforwardhealth.com`.
+
+The domain is *registered* at Network Solutions. Its nameservers are
+`ns1.vercel-dns.com` / `ns2.vercel-dns.com`, so Domain Center edits at
+Network Solutions do **not** publish. Libtek / Liberation is the mailbox
+provider (MX), not the DNS host.
 
 ---
 
@@ -85,9 +96,10 @@ instead of the normal `billing@` queue, stop and report that before continuing.
 
 Repeat once more for a second address. Only proceed when both land correctly.
 
-### Step 3 — Registrar: remove one MX record
+### Step 3 — Vercel DNS: remove one MX record
 
-Delete **only** this record from `payitforwardhealth.com`:
+In Vercel → the project that owns `payitforwardhealth.com` → Domains → DNS,
+delete **only** this record from `payitforwardhealth.com`:
 
 ```
 10 inbound-smtp.us-east-1.amazonaws.com
