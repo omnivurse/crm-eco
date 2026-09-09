@@ -43,6 +43,15 @@ export function replyHasUserContent(html: string): boolean {
   return withoutQuote.length > 0;
 }
 
+/** Blank lines above the quote so Reply opens with room to type. */
+export const REPLY_COMPOSE_BLANK_LINES = 10;
+
+/** TipTap keeps hard breaks; empty `<p>` tags collapse to a single line. */
+export function replyComposePadHtml(lines = REPLY_COMPOSE_BLANK_LINES): string {
+  const count = Math.max(1, Math.floor(lines));
+  return `<p>${Array.from({ length: count }, () => '<br>').join('')}</p>`;
+}
+
 /**
  * Quoted last-inbound for the reply editor. Prefer stored text for Outlook
  * Word HTML so the dock does not swallow a 600KB document.
@@ -61,7 +70,7 @@ export function buildReplyQuotedHtml(msg: InboxMessage | null): string {
       ? extractEmailBodyFragment(msg.body_html)
       : `<p>${escapeForwardHtml(msg.body_text || '')}</p>`;
 
-  return `<p></p>
+  return `${replyComposePadHtml()}
 <div data-crm-quote="1" style="border-left: 2px solid #ccc; padding-left: 12px; margin-left: 0; color: #555;">
   <p style="margin: 0 0 8px 0; font-size: 12px; color: #888;">
     On ${date}, ${fromLine} wrote:

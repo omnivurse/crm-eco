@@ -5,6 +5,8 @@ import {
   buildInboxReplyCompose,
   buildReplyQuotedHtml,
   pickSignatureForCompose,
+  REPLY_COMPOSE_BLANK_LINES,
+  replyComposePadHtml,
   replyHasUserContent,
   replySubject,
 } from './inbox-reply';
@@ -57,8 +59,22 @@ describe('buildReplyQuotedHtml', () => {
     expect(html).not.toContain('xmlns:v=');
   });
 
+  it('opens with blank lines above the quote so the reply has room to type', () => {
+    const html = buildReplyQuotedHtml(inbound);
+    const pad = html.slice(0, html.indexOf('data-crm-quote'));
+    expect(pad.match(/<br>/g)?.length).toBe(REPLY_COMPOSE_BLANK_LINES);
+    expect(replyHasUserContent(html)).toBe(false);
+  });
+
   it('returns empty when there is no inbound letter', () => {
     expect(buildReplyQuotedHtml(null)).toBe('');
+  });
+});
+
+describe('replyComposePadHtml', () => {
+  it('emits one paragraph of hard breaks', () => {
+    expect(replyComposePadHtml(10)).toBe(`<p>${'<br>'.repeat(10)}</p>`);
+    expect(replyComposePadHtml(0)).toBe('<p><br></p>');
   });
 });
 

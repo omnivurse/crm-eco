@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Select,
   SelectContent,
@@ -51,8 +51,18 @@ export function SenderSelector({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Parent re-renders on every keystroke (compose body). Keep these out of the
+  // fetch identity or From flashes "Loading senders..." on each letter.
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+  const valueRef = useRef(value);
+  valueRef.current = value;
+  const fallbackEmailRef = useRef(fallbackEmail);
+  fallbackEmailRef.current = fallbackEmail;
+  const loadedRef = useRef(false);
+
   const fetchAddresses = useCallback(async () => {
-    setLoading(true);
+    if (!loadedRef.current) setLoading(true);
     setError(null);
 
     try {
@@ -64,20 +74,21 @@ export function SenderSelector({
       const data = await response.json();
       const rows = (data.addresses || []) as SenderAddress[];
       setAddresses(rows);
+      loadedRef.current = true;
 
-      if (!value && rows.length > 0) {
-        const initial = pickInitialSender(rows, fallbackEmail);
-        if (initial) onChange(initial.id, initial);
+      if (!valueRef.current && rows.length > 0) {
+        const initial = pickInitialSender(rows, fallbackEmailRef.current);
+        if (initial) onChangeRef.current(initial.id, initial);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load addresses');
     } finally {
       setLoading(false);
     }
-  }, [value, onChange, fallbackEmail]);
+  }, []);
 
   useEffect(() => {
-    fetchAddresses();
+    void fetchAddresses();
   }, [fetchAddresses]);
 
   const selectedAddress = addresses.find((a) => a.id === value);

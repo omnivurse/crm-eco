@@ -389,6 +389,12 @@ export const EmailComposer = memo(function EmailComposer({
     }
   };
 
+  const handleSenderChange = useCallback((id: string, address: { email: string; name: string }) => {
+    setSenderAddressId(id);
+    setFromEmail(address.email);
+    setFromName(address.name || '');
+  }, []);
+
   const composeSignatures = signatures.filter((s) =>
     signaturePurpose === 'reply' ? s.include_in_replies !== false : s.include_in_new !== false,
   );
@@ -406,11 +412,7 @@ export const EmailComposer = memo(function EmailComposer({
           <div className="flex-1">
             <SenderSelector
               value={senderAddressId}
-              onChange={(id, address) => {
-                setSenderAddressId(id);
-                setFromEmail(address.email);
-                setFromName(address.name || '');
-              }}
+              onChange={handleSenderChange}
               disabled={disabled}
               fallbackEmail={fallbackEmail}
               fallbackName={fallbackName}
