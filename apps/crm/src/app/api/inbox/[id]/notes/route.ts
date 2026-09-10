@@ -8,6 +8,7 @@ import {
   conversationNoteToInsert,
   findThreadParticipant,
   latestInboundSentAt,
+  resolveInboxContactCandidate,
 } from '@/lib/inbox/inbox-contact-from-thread';
 
 const bodySchema = z.object({
@@ -52,7 +53,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     const supabase = await createClient();
-    let recordId = parsed.data.record_id ?? conversation.contact_id ?? null;
+    let recordId = parsed.data.record_id ?? null;
 
     if (parsed.data.email) {
       const participant = findThreadParticipant(conversation, messages, parsed.data.email);
@@ -60,28 +61,48 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         return NextResponse.json({ error: 'That person is not on this email' }, { status: 400 });
       }
 
-      const { data: moduleRow } = await supabase
-        .from('crm_modules')
-        .select('id')
-        .eq('org_id', profile.organization_id)
-        .eq('key', 'contacts')
-        .maybeSingle();
-
-      if (!moduleRow) {
-        return NextResponse.json({ error: 'Contacts module not found' }, { status: 404 });
+      const email = parsed.data.email.trim().toLowerCase();
+      const linkedEmail = conversation.contact_email?.trim().toLowerCase();
+      if (!recordId && conversation.contact_id && linkedEmail === email) {
+        recordId = conversation.contact_id;
       }
 
-      const { data: duplicates } = await (supabase as any).rpc('check_crm_duplicate', {
-        p_org_id: profile.organization_id,
-        p_module_id: moduleRow.id,
-        p_email: parsed.data.email.trim().toLowerCase(),
-        p_phone: null,
-      });
-      const match = Array.isArray(duplicates) ? duplicates[0] : null;
-      if (!match?.id) {
-        return NextResponse.json({ error: 'No contact for that email yet' }, { status: 404 });
+      if (!recordId) {
+        const { data: moduleRow } = await supabase
+          .from('crm_modules')
+          .select('id')
+          .eq('org_id', profile.organization_id)
+          .eq('key', 'contacts')
+          .maybeSingle();
+
+        if (!moduleRow) {
+          return NextResponse.json({ error: 'Contacts module not found' }, { status: 404 });
+        }
+
+        const { data: duplicates } = await (supabase as any).rpc('check_crm_duplicate', {
+          p_org_id: profile.organization_id,
+          p_module_id: moduleRow.id,
+          p_email: email,
+          p_phone: null,
+        });
+        const candidates = Array.isArray(duplicates) ? duplicates : [];
+        const match = resolveInboxContactCandidate(candidates, participant.name);
+        if (!match) {
+          const ambiguous = candidates.length > 1;
+          return NextResponse.json(
+            {
+              error: ambiguous
+                ? 'More than one contact uses that email; choose the correct contact first'
+                : 'No contact for that email yet',
+              code: ambiguous ? 'AMBIGUOUS_CONTACT' : 'CONTACT_NOT_FOUND',
+            },
+            { status: ambiguous ? 409 : 404 },
+          );
+        }
+        recordId = match.id;
       }
-      recordId = match.id as string;
+    } else {
+      recordId ??= conversation.contact_id ?? null;
     }
 
     if (!recordId) {
@@ -96,6 +117,16 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     if (recordError || !record || record.org_id !== profile.organization_id) {
       return NextResponse.json({ error: 'Contact not found' }, { status: 404 });
+    }
+
+    if (
+      parsed.data.email &&
+      record.email?.trim().toLowerCase() !== parsed.data.email.trim().toLowerCase()
+    ) {
+      return NextResponse.json(
+        { error: 'Contact does not match that email participant' },
+        { status: 400 },
+      );
     }
 
     if (!parsed.data.email && conversation.contact_id && recordId !== conversation.contact_id) {

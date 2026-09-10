@@ -26,6 +26,7 @@ import {
 import {
   conversationNotePrefixForThread,
   latestInboundSentAt,
+  resolveInboxContactCandidate,
 } from '@/lib/inbox/inbox-contact-from-thread';
 import type { InboxConversation, InboxMessage } from '@/lib/inbox/types';
 
@@ -127,7 +128,12 @@ export function CreateContactFromEmailSheet({
 
   const selected = participants.find((p) => p.email === email) ?? participants[0];
   const isExisting = (existing?.length ?? 0) > 0;
-  const existingId = existing?.[0]?.id ?? (mode === 'note' ? conversation.contact_id : null);
+  const linkedEmail = conversation.contact_email?.trim().toLowerCase();
+  const existingId =
+    (mode === 'note' && linkedEmail === email ? conversation.contact_id : null) ??
+    resolveInboxContactCandidate(existing ?? [], selected?.name)?.id ??
+    null;
+  const hasAmbiguousExistingContact = isExisting && !existingId;
   const noteOnly = isExisting || (mode === 'note' && !!existingId);
 
   useEffect(() => {
@@ -218,7 +224,7 @@ export function CreateContactFromEmailSheet({
           body: JSON.stringify({
             body: note,
             email,
-            record_id: conversation.contact_id && !email ? conversation.contact_id : target,
+            record_id: target,
           }),
         });
         const json = (await res.json().catch(() => ({}))) as {
@@ -372,6 +378,27 @@ export function CreateContactFromEmailSheet({
             </div>
           )}
 
+          {hasAmbiguousExistingContact && (
+            <div
+              role="alert"
+              className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100"
+            >
+              <p>
+                More than one contact uses this email. Open the correct contact before adding a
+                note.
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {existing?.map((candidate) => (
+                  <Button key={candidate.id} asChild size="sm" variant="outline" className="h-8">
+                    <Link href={`/crm/r/${candidate.id}`}>
+                      {candidate.title?.trim() || 'Open contact'}
+                    </Link>
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {!noteOnly && (
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
@@ -507,7 +534,11 @@ export function CreateContactFromEmailSheet({
           )}
 
           <div className="flex flex-wrap gap-2 pt-1">
-            <Button type="button" onClick={() => void submit()} disabled={submitting || !email}>
+            <Button
+              type="button"
+              onClick={() => void submit()}
+              disabled={submitting || !email || hasAmbiguousExistingContact}
+            >
               {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : noteOnly ? <StickyNote className="mr-2 h-4 w-4" /> : <UserPlus className="mr-2 h-4 w-4" />}
               {noteOnly ? 'Save note' : 'Create contact'}
             </Button>
