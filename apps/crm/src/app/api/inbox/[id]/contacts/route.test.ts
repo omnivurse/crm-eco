@@ -4,7 +4,7 @@ import { buildProfile, buildRequest, buildSupabaseClient } from '@/test/helpers'
 const mockGetAuthProfile = vi.fn();
 const mockGetAuthUser = vi.fn();
 const mockGetConversation = vi.fn();
-const mockGetMessages = vi.fn();
+const mockGetRecentMessages = vi.fn();
 const mockUpdateConversation = vi.fn();
 const mockExecuteCreate = vi.fn();
 let supabase: ReturnType<typeof buildSupabaseClient>['client'];
@@ -17,7 +17,7 @@ vi.mock('@/lib/supabase-server', () => ({
 
 vi.mock('@/lib/inbox', () => ({
   getConversation: (...args: unknown[]) => mockGetConversation(...args),
-  getMessages: (...args: unknown[]) => mockGetMessages(...args),
+  getRecentMessages: (...args: unknown[]) => mockGetRecentMessages(...args),
   updateConversation: (...args: unknown[]) => mockUpdateConversation(...args),
 }));
 
@@ -63,7 +63,7 @@ describe('POST /api/inbox/[id]/contacts', () => {
     });
     supabase = built.client;
     mockGetConversation.mockResolvedValue(CONV);
-    mockGetMessages.mockResolvedValue({ messages: MESSAGES, total: 1, hasMore: false });
+    mockGetRecentMessages.mockResolvedValue(MESSAGES);
     mockUpdateConversation.mockResolvedValue({ ...CONV, contact_id: 'rec-1' });
     mockExecuteCreate.mockResolvedValue({ ok: true, record: { id: 'rec-1', title: 'Frank Burnham' } });
   });
@@ -84,6 +84,7 @@ describe('POST /api/inbox/[id]/contacts', () => {
     expect(json.record.id).toBe('rec-1');
     expect(json.linked).toBe(true);
     expect(json.extracted.first_name).toBe('Frank');
+    expect(mockGetRecentMessages).toHaveBeenCalledWith(CONV.id);
     expect(mockUpdateConversation).toHaveBeenCalledWith(CONV.id, { contact_id: 'rec-1' });
     const createArg = mockExecuteCreate.mock.calls[0][0];
     expect(createArg.input.data.contact_category).toBe('Partner Contact');
@@ -102,6 +103,33 @@ describe('POST /api/inbox/[id]/contacts', () => {
     expect(res.status).toBe(200);
     expect((await res.json()).linked).toBe(false);
     expect(mockUpdateConversation).not.toHaveBeenCalled();
+  });
+
+  it('keeps a failed note retryable after the contact was created', async () => {
+    supabase = buildSupabaseClient({
+      crm_modules: { data: { id: 'mod-contacts' } },
+      crm_notes: { data: null, error: { message: 'write failed' } },
+    }).client;
+    const req = buildRequest('http://localhost/api/inbox/x/contacts', {
+      method: 'POST',
+      body: {
+        email: 'frank@bank.com',
+        first_name: 'Frank',
+        last_name: 'Burnham',
+        note: 'Email: “ACH setup”\nDiscussed wholesale.',
+      },
+    });
+
+    const res = await POST(req, { params: Promise.resolve({ id: CONV.id }) });
+
+    expect(res.status).toBe(500);
+    expect(await res.json()).toMatchObject({
+      code: 'CONTACT_CREATED_NOTE_FAILED',
+      record: { id: 'rec-1' },
+      linked: true,
+      note_id: null,
+    });
+    expect(mockUpdateConversation).toHaveBeenCalledWith(CONV.id, { contact_id: 'rec-1' });
   });
 
   it('rejects a stranger who is not on the thread', async () => {

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createClient, getAuthProfile, getAuthUser } from '@/lib/supabase-server';
-import { getConversation, getMessages, updateConversation } from '@/lib/inbox';
+import { getConversation, getRecentMessages, updateConversation } from '@/lib/inbox';
 import { canCreateRecords } from '@/lib/crm/can-create-records';
 import { executeCrmRecordCreate } from '@/lib/crm/record-create-service';
 import { proposeContactFromParticipant } from '@/lib/inbox/extract-contact-from-email';
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Conversation not found' }, { status: 404 });
     }
 
-    const { messages } = await getMessages(id, 1, 100);
+    const messages = await getRecentMessages(id);
     const participant = findThreadParticipant(conversation, messages, parsed.data.email);
     if (!participant) {
       return NextResponse.json({ error: 'That person is not on this email' }, { status: 400 });
@@ -109,6 +109,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     });
     const noteBody = conversationNoteToInsert(parsed.data.note, prefix);
     let noteId: string | null = null;
+    let noteSaveFailed = false;
     if (noteBody) {
       const { data: note, error: noteError } = await (supabase as any)
         .from('crm_notes')
@@ -121,13 +122,34 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         })
         .select('id')
         .single();
-      if (!noteError && note?.id) noteId = note.id as string;
+      if (noteError || !note?.id) {
+        noteSaveFailed = true;
+      } else {
+        noteId = note.id as string;
+      }
     }
 
     let linked = false;
     if (!conversation.contact_id) {
       await updateConversation(id, { contact_id: created.record.id });
       linked = true;
+    }
+
+    if (noteSaveFailed) {
+      // Contact creation already committed and must not be retried as another
+      // create. Return the durable record so the sheet can switch to note-only
+      // mode, preserve the user's text, and retry through the notes endpoint.
+      return NextResponse.json(
+        {
+          error: 'Contact created, but the note was not saved. Select Save note to retry.',
+          code: 'CONTACT_CREATED_NOTE_FAILED',
+          record: created.record,
+          linked,
+          extracted,
+          note_id: null,
+        },
+        { status: 500 },
+      );
     }
 
     return NextResponse.json({

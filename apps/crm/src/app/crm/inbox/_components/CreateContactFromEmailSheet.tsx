@@ -260,9 +260,29 @@ export function CreateContactFromEmailSheet({
         error?: string;
         code?: string;
         duplicates?: DuplicateHit[];
-        record?: { id: string };
+        record?: { id: string; title?: string | null; email?: string | null };
         linked?: boolean;
       };
+      if (json.code === 'CONTACT_CREATED_NOTE_FAILED' && json.record?.id) {
+        // The contact is durable even though its optional note failed. Move to
+        // note-only mode so retrying cannot create a duplicate, keep the typed
+        // note in place, and reflect the server-side thread link immediately.
+        setExisting([
+          {
+            id: json.record.id,
+            title:
+              json.record.title ??
+              (`${fields.first_name} ${fields.last_name}`.trim() || null),
+            email: json.record.email ?? email,
+          },
+        ]);
+        if (json.linked) applyLink(json.record.id);
+        const message =
+          json.error ?? 'Contact created, but the note was not saved. Select Save note to retry.';
+        setError(message);
+        toast.error(message);
+        return;
+      }
       if (res.status === 409 && json.duplicates?.length) {
         setExisting(json.duplicates);
         return;
