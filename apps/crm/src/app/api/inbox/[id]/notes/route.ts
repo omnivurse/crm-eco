@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createClient, getAuthProfile } from '@/lib/supabase-server';
-import { getConversation, getMessages, updateConversation } from '@/lib/inbox';
+import { getConversation, getRecentMessages, updateConversation } from '@/lib/inbox';
 import { canCreateRecords } from '@/lib/crm/can-create-records';
 import {
   conversationNotePrefixForThread,
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Conversation not found' }, { status: 404 });
     }
 
-    const { messages } = await getMessages(id, 1, 100);
+    const messages = await getRecentMessages(id);
     const prefix = conversationNotePrefixForThread({
       subject: conversation.subject,
       sentAt: latestInboundSentAt(messages),
