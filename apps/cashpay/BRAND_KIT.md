@@ -53,9 +53,10 @@ Scale: 14 / 18 / 22 / 28 / 35 (ratio 1.25 from 14px body).
 
 | File | Use |
 |------|-----|
-| `/logo.png` | Full color wordmark on mist / white (print, PDF, light chrome) |
+| `/logo.png` | Full color Double Helix Hub wordmark — print, PDF, rate note |
 | `/logo-white.png` | White wordmark on night surfaces |
-| `/logo-icon.png` | Helix only — instrument chrome, favicon companion |
+| `/logo-icon.png` | Helix only — landing nav, instrument chrome |
+| `/logo.svg` | Cash Pay · Fair for All. product lockup |
 | `/favicon.svg` | Violet tile, teal strand, bronze nodes |
 | `/brand-kit.pdf` | Printable kit with the color wordmark and tagline |
 

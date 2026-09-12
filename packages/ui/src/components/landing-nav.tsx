@@ -16,6 +16,8 @@ export interface LandingNavProps {
   authLabel: string;
   themeToggle: ReactNode;
   productLabel?: string;
+  /** Replaces the default Double Helix Hub wordmark (e.g. a product lockup). */
+  brand?: ReactNode;
 }
 
 export function LandingNav({
@@ -24,6 +26,7 @@ export function LandingNav({
   authLabel,
   themeToggle,
   productLabel,
+  brand,
 }: LandingNavProps) {
   const [open, setOpen] = useState(false);
 
@@ -32,7 +35,7 @@ export function LandingNav({
       <nav className="lp-nav" aria-label="Primary">
         <a href="/" className="lp-nav-brand">
           <span className="lp-nav-wordmark">
-            <BrandLogo variant="full" size="sm" tone="auto" priority />
+            {brand ?? <BrandLogo variant="full" size="sm" tone="auto" priority />}
             {productLabel ? (
               <span className="lp-nav-wordmark-sub">{productLabel}</span>
             ) : null}

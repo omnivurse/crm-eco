@@ -7,6 +7,7 @@ describe('Cash Pay Advocate brand', () => {
     expect(brand.advocate).toBe('Cash Pay Advocate');
     expect(brand.tagline).toBe('Fair for All.');
     expect(brand.logo).toBe('/logo.png');
+    expect(brand.logoIcon).toBe('/logo-icon.png');
     expect(brand.colors.violet).toBe('#3B145B');
     expect(brand.colors.teal).toBe('#1088A2');
     expect(brand.colors.bronze).toBe('#AC641F');

@@ -6,6 +6,7 @@ import { AccessForm } from '@/components/AccessForm';
 import { InstrumentPreview } from '@/components/InstrumentPreview';
 import { MarketAtlas } from '@/components/MarketAtlas';
 import { landingFontVars } from '@/lib/fonts';
+import { CashPayWordmark } from '@/components/CashPayWordmark';
 import { brand } from '@/lib/brand';
 import { loadHclCatalog, uniqueStates } from '@crm-eco/cash-pay';
 import styles from './cashpay-landing.module.css';
@@ -26,7 +27,7 @@ export default function HomePage() {
         links={NAV_LINKS}
         authHref="/search"
         authLabel="Open the instrument"
-        productLabel={brand.product}
+        brand={<CashPayWordmark />}
         themeToggle={<ThemeToggle className="lp-theme-btn !h-11 !w-11" />}
       />
 
