@@ -55,7 +55,10 @@ export function createClient(): SupabaseClient<Database> {
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    if (isBuildPhase()) {
+    // Missing env used to throw during render and trip the app error
+    // boundary ("Something went wrong"). Defer the throw to the first
+    // real call so the page can still paint a form / config message.
+    if (isBuildPhase() || typeof window !== 'undefined') {
       return buildTimeStub();
     }
     throw new Error(ENV_ERROR);

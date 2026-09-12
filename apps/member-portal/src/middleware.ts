@@ -10,9 +10,43 @@ export async function middleware(request: NextRequest) {
     request,
   });
 
+  const { pathname } = request.nextUrl;
+  const publicRoutes = [
+    '/lock',
+    '/signin',
+    '/signup',
+    '/login',
+    '/reset-password',
+    '/update-password',
+    '/access-denied',
+    '/enroll',
+    '/legal',
+  ];
+  const isPublicRoute = publicRoutes.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`),
+  );
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  // Fail closed for protected routes when env is missing — never throw from
+  // createServerClient (that surfaces as a hard 500 on every navigation).
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.error(
+      '[Middleware] NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY are not set. ' +
+        'Add them to apps/member-portal/.env.local (see .env.example).',
+    );
+    if (isPublicRoute || pathname.startsWith('/api/')) {
+      return supabaseResponse;
+    }
+    const redirectUrl = new URL('/signin', request.url);
+    redirectUrl.searchParams.set('error', 'config');
+    return NextResponse.redirect(redirectUrl);
+  }
+
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseAnonKey,
     {
       cookies: {
         getAll() {
@@ -34,25 +68,6 @@ export async function middleware(request: NextRequest) {
   // IMPORTANT: Use getUser() instead of getSession() for proper JWT validation.
   // getSession() only reads from cookies and does NOT validate the JWT server-side.
   const { data: { user } } = await supabase.auth.getUser();
-
-  const { pathname } = request.nextUrl;
-
-  // Public routes that don't require authentication
-  const publicRoutes = [
-    '/lock',
-    '/signin',
-    '/signup',
-    '/login',
-    '/reset-password',
-    '/update-password',
-    '/access-denied',
-    '/enroll',
-    '/legal',
-  ];
-
-  const isPublicRoute = publicRoutes.some(route => 
-    pathname === route || pathname.startsWith(`${route}/`)
-  );
 
   // API routes
   if (pathname.startsWith('/api/')) {

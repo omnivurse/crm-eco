@@ -58,6 +58,9 @@ export function SignInForm() {
   const [lockoutUntil, setLockoutUntil] = useState<number | null>(null);
   const [lockoutSeconds, setLockoutSeconds] = useState(0);
 
+  const supabaseConfigured = Boolean(
+    process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  );
   const supabase = createClient();
 
   useEffect(() => {
@@ -99,7 +102,7 @@ export function SignInForm() {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isLockedOut) return;
+    if (isLockedOut || !supabaseConfigured) return;
 
     setLoading(true);
     setError(null);
@@ -172,6 +175,12 @@ export function SignInForm() {
       />
 
       <form onSubmit={handleSignIn} className="space-y-6">
+        {!supabaseConfigured && (
+          <AuthFormError>
+            <WarningCircle weight="light" className="auth-alert-icon" aria-hidden="true" />
+            <span>Sign-in is not configured. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to apps/member-portal/.env.local and restart the portal.</span>
+          </AuthFormError>
+        )}
         {error && (
           <AuthFormError>
             <WarningCircle weight="light" className="auth-alert-icon" aria-hidden="true" />
