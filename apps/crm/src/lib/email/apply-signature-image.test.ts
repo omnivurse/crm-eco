@@ -135,6 +135,35 @@ describe('applyImageToSignature', () => {
     expect(result.content_html).toContain('width="64"');
   });
 
+  it('preserves a professional-layout photo when applying a logo', () => {
+    const oldPhoto = 'https://old.example/photo.jpg';
+    const html = renderLayoutHtml('professional', {
+      full_name: 'Ada',
+      title: '',
+      email: '',
+      phone: '',
+      company_name: '',
+      website: '',
+      logo_url: '',
+      photo_url: oldPhoto,
+    });
+    const result = applyImageToSignature({
+      slot: 'logo',
+      imageUrl: LOGO,
+      contentHtml: html || '',
+      logoUrl: '',
+      photoUrl: oldPhoto,
+      logoHeight: 72,
+    });
+
+    expect(result.logo_url).toBe(LOGO);
+    expect(result.photo_url).toBe(oldPhoto);
+    expect(result.content_html).toContain(`src="${LOGO}"`);
+    expect(result.content_html).toContain(`src="${oldPhoto}"`);
+    expect(result.content_html).toContain('height="72"');
+    expect(result.content_html).toContain('width="80"');
+  });
+
   it('replaces the whole block for a full-image signature', () => {
     const result = applyImageToSignature({
       slot: 'full',
