@@ -229,9 +229,15 @@ export function absolutizeSignatureHtml(html: string, origin: string): string {
   return html.replace(/(\s(?:src|href))=(["'])\/(?!\/)/gi, `$1=$2${base}/`);
 }
 
+/**
+ * Stored signatures that still ship the HealthShare-era wordmark or
+ * placeholder copy. The current PIFH layouts never include these strings.
+ */
+const STALE_SIGNATURE_BRANDING_RE =
+  /Your Name|EmailSignature-02\.jpg|Double Helix Hub|HealthShare|health[\s_-]?share/i;
+
 export function signatureNeedsBrandingRefresh(html: string | null | undefined): boolean {
-  const source = html || '';
-  return /Your Name/i.test(source) || /EmailSignature-02\.jpg/i.test(source) || /Double Helix Hub/i.test(source);
+  return STALE_SIGNATURE_BRANDING_RE.test(html || '');
 }
 
 export function buildPifhSignatureFromProfile(opts: {

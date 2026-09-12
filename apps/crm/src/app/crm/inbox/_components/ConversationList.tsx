@@ -686,10 +686,19 @@ export const ConversationList = React.memo(function ConversationList({
                               </span>
                             )}
                             {flagged && (
-                              <span className="text-amber-500" title="Flagged">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  stop(e);
+                                  onToggleFlag(conv);
+                                }}
+                                aria-label={`Remove flag: ${sender}`}
+                                title="Clear flag"
+                                className="pointer-events-auto relative z-20 text-amber-500 hover:text-amber-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/40"
+                              >
                                 <Flag className="h-3 w-3 fill-current" aria-hidden />
                                 <span className="sr-only">Flagged</span>
-                              </span>
+                              </button>
                             )}
                           </span>
                         </div>

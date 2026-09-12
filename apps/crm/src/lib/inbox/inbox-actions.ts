@@ -67,11 +67,19 @@ export const SNOOZE_PRESETS: SnoozePreset[] = [
   },
 ];
 
-/** Add or remove the flag without disturbing the thread's other tags. */
-export function toggleFlagTags(tags: readonly string[] | null | undefined, flagged: boolean): string[] {
-  const current = tags ?? [];
-  if (flagged) return current.filter((tag) => tag !== FLAG_TAG);
-  return current.includes(FLAG_TAG) ? [...current] : [...current, FLAG_TAG];
+/**
+ * Set the flag to `flagged` without disturbing the thread's other tags.
+ *
+ * The inbox page passes the *desired* next state (`!isFlagged(conv)`). Treating
+ * that boolean as "currently flagged" made Clear flag a no-op — the helper
+ * added `starred` back on every unflag.
+ */
+export function toggleFlagTags(
+  tags: readonly string[] | null | undefined,
+  flagged: boolean,
+): string[] {
+  const current = Array.isArray(tags) ? tags.filter((tag) => tag !== FLAG_TAG) : [];
+  return flagged ? [...current, FLAG_TAG] : current;
 }
 
 /**

@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
+  COMPOSE_EDITOR_MIN_HEIGHT_NEW,
+  COMPOSE_EDITOR_MIN_HEIGHT_REPLY,
+  composeDockBodyClass,
   composeDockClass,
   composeDockTitle,
   composeDraftMeta,
+  composeEditorMinHeight,
   composeHeaderTitle,
   composeIsDirty,
   composeSendThreadFields,
@@ -65,11 +69,38 @@ describe('composeDockClass', () => {
   });
 });
 
+describe('composeDockBodyClass', () => {
+  it('fills leftover dock height without scrolling the pane as one sheet', () => {
+    const cls = composeDockBodyClass(false);
+    expect(cls).toContain('flex');
+    expect(cls).toContain('flex-1');
+    expect(cls).toContain('min-h-0');
+    expect(cls).toContain('overflow-hidden');
+    expect(cls).not.toContain('overflow-y-auto');
+    expect(cls.split(/\s+/)).not.toContain('hidden');
+  });
+
+  it('hides the body when minimized without unmounting the composer', () => {
+    expect(composeDockBodyClass(true).split(/\s+/)).toContain('hidden');
+    expect(composeDockBodyClass(true)).toContain('overflow-hidden');
+  });
+});
+
 describe('composeDockTitle', () => {
   it('falls back to a handle when the message has no subject yet', () => {
     expect(composeDockTitle(null)).toBe('New message');
     expect(composeDockTitle('   ')).toBe('New message');
     expect(composeDockTitle('Invoice 10428')).toBe('Invoice 10428');
+  });
+});
+
+describe('composeEditorMinHeight', () => {
+  it('gives reply and forward a taller typing well than a new message', () => {
+    expect(composeEditorMinHeight('new')).toBe(COMPOSE_EDITOR_MIN_HEIGHT_NEW);
+    expect(composeEditorMinHeight(undefined)).toBe(COMPOSE_EDITOR_MIN_HEIGHT_NEW);
+    expect(composeEditorMinHeight('reply')).toBe(COMPOSE_EDITOR_MIN_HEIGHT_REPLY);
+    expect(composeEditorMinHeight('forward')).toBe(COMPOSE_EDITOR_MIN_HEIGHT_REPLY);
+    expect(COMPOSE_EDITOR_MIN_HEIGHT_REPLY).toBeGreaterThan(COMPOSE_EDITOR_MIN_HEIGHT_NEW);
   });
 });
 

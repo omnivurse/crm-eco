@@ -31,8 +31,18 @@ import { EmailAttachments, EmailAttachment } from './EmailAttachments';
 import { SenderSelector } from './SenderSelector';
 import { toast } from 'sonner';
 import { assertComposerAttachmentsReady } from '@/lib/email/outbound-attachments';
+import Link from 'next/link';
 import { appendSignatureHtml, pickSignatureForCompose } from '@/app/crm/inbox/_components/inbox-reply';
 import { composeIsDirty } from '@/app/crm/inbox/_components/compose-dock';
+import { signatureNeedsBrandingRefresh } from '@/lib/email/signature-html';
+import {
+  composerActionsClass,
+  composerAttachmentsClass,
+  composerEditorClass,
+  composerEditorSlotClass,
+  composerHeaderClass,
+  composerRootClass,
+} from './email-composer-layout';
 
 interface EmailRecipient {
   email: string;
@@ -82,6 +92,13 @@ interface EmailComposerProps {
   showSignatures?: boolean;
   disabled?: boolean;
   className?: string;
+  /**
+   * Inbox dock: fill the pane and keep Send on screen. Off by default so
+   * dialogs that grow with content do not collapse the editor to zero.
+   */
+  pinActions?: boolean;
+  /** Typing-well floor. Reply/forward pass a taller value than new mail. */
+  minHeight?: number;
 
   // Merge field data for preview
   previewData?: Record<string, string>;
@@ -132,6 +149,8 @@ export const EmailComposer = memo(function EmailComposer({
   showSignatures = true,
   disabled = false,
   className,
+  pinActions = false,
+  minHeight = 300,
   previewData = {},
   campaignId,
   templateId,
@@ -403,9 +422,9 @@ export const EmailComposer = memo(function EmailComposer({
   const attachmentCount = attachments.filter(a => !a.error).length;
 
   return (
-    <div className={cn('email-composer rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden', className)}>
+    <div className={cn(composerRootClass(pinActions), className)}>
       {/* Header Section */}
-      <div className="border-b border-slate-200 dark:border-slate-700 p-4 space-y-4">
+      <div className={composerHeaderClass(pinActions)}>
         {/* From */}
         <div className="flex items-center gap-4">
           <Label className="w-16 text-sm font-medium text-slate-500">From</Label>
@@ -592,20 +611,32 @@ export const EmailComposer = memo(function EmailComposer({
         </div>
       </div>
 
-      {/* Editor Section */}
-      <LazyEmailEditor
-        content={body}
-        onChange={setBody}
-        placeholder="Start typing your email..."
-        minHeight={300}
-        editable={!disabled}
-        previewData={previewData}
-        className="border-0 rounded-none"
-      />
+      {showSignatures && selectedSignature && signatureNeedsBrandingRefresh(selectedSignature.content_html) && (
+        <div className="shrink-0 border-b border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
+          This signature still uses the old HealthShare logo.{' '}
+          <Link href="/crm/settings/signatures" className="font-medium underline underline-offset-2">
+            Update it in Settings
+          </Link>
+          .
+        </div>
+      )}
+
+      {/* Editor Section — when pinned, this slot absorbs a quoted thread. */}
+      <div className={composerEditorSlotClass(pinActions) || undefined}>
+        <LazyEmailEditor
+          content={body}
+          onChange={setBody}
+          placeholder="Start typing your email..."
+          minHeight={minHeight}
+          editable={!disabled}
+          previewData={previewData}
+          className={composerEditorClass(pinActions)}
+        />
+      </div>
 
       {/* Attachments Section */}
       {showAttachments && (
-        <div className="border-t border-slate-200 dark:border-slate-700">
+        <div className={composerAttachmentsClass(pinActions)}>
           <button
             type="button"
             onClick={() => setShowAttachmentsPanel(!showAttachmentsPanel)}
@@ -641,8 +672,8 @@ export const EmailComposer = memo(function EmailComposer({
         </div>
       )}
 
-      {/* Footer Section */}
-      <div className="border-t border-slate-200 dark:border-slate-700 px-4 py-3 flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
+      {/* Footer Section — shrink-0 when pinned so Send stays on screen. */}
+      <div className={composerActionsClass(pinActions)}>
         {/* Left side - Signature selector */}
         <div className="flex items-center gap-3">
           {showSignatures && (
@@ -687,7 +718,7 @@ export const EmailComposer = memo(function EmailComposer({
         </div>
 
         {/* Right side - Action buttons */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
           {onCancel && (
             <Button
               type="button"

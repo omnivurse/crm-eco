@@ -8,7 +8,8 @@
  * unread conversation into the client to length-check it would not survive
  * production volume.
  *
- * Kept as a hook (not context) because only the sidebar needs it today.
+ * Owned once at the CRM shell so the Communications tab, Inbox sidebar
+ * badge, and mobile module rail share a single subscription.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';

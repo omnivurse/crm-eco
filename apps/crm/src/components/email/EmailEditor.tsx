@@ -113,6 +113,7 @@ export function EmailEditor({
     },
     editorProps: {
       attributes: {
+        style: `min-height: ${minHeight}px`,
         class: cn(
           'prose prose-sm dark:prose-invert max-w-none focus:outline-none',
           'prose-headings:font-semibold prose-headings:text-slate-900 dark:prose-headings:text-white',
@@ -134,7 +135,6 @@ export function EmailEditor({
     },
   });
 
-  // Update editor content when prop changes
   useEffect(() => {
     if (editor && content !== editor.getHTML()) {
       editor.commands.setContent(content);
@@ -176,7 +176,10 @@ export function EmailEditor({
   }, [onImageUpload]);
 
   return (
-    <div className={cn('email-editor flex flex-col rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900', className)}>
+    <div
+      className={cn('email-editor flex flex-col rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900', className)}
+      style={{ ['--email-editor-min-height' as string]: `${minHeight}px` }}
+    >
       {/* Toolbar */}
       {editable && !showSource && !showPreview && (
         <div className="flex-shrink-0">
@@ -273,7 +276,7 @@ export function EmailEditor({
         ) : (
           <EditorContent
             editor={editor}
-            className="flex-1 flex flex-col [&_.ProseMirror]:flex-1 [&_.ProseMirror]:p-4 cursor-text"
+            className="flex-1 flex h-full min-h-0 flex-col cursor-text [&_.ProseMirror]:min-h-full [&_.ProseMirror]:flex-1 [&_.ProseMirror]:p-4"
             style={{ minHeight }}
           />
         )}
@@ -296,6 +299,9 @@ export function EmailEditor({
           float: left;
           height: 0;
           pointer-events: none;
+        }
+        .email-editor .ProseMirror {
+          min-height: var(--email-editor-min-height, inherit);
         }
         .email-editor .ProseMirror:focus {
           outline: none;

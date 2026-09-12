@@ -1,6 +1,6 @@
 'use client';
 
-import { FileText } from 'lucide-react';
+import { FileText, Trash2 } from 'lucide-react';
 import { cn } from '@crm-eco/ui/lib/utils';
 import type { InboxDraft } from '@/lib/inbox/types';
 
@@ -29,13 +29,21 @@ function recipientLabel(draft: InboxDraft): string {
   return first.name || first.email;
 }
 
+function draftSubject(draft: InboxDraft): string {
+  return draft.subject?.trim() || '(No subject)';
+}
+
+const ROW_ACTION =
+  'shrink-0 rounded p-1.5 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/40 dark:hover:bg-red-500/10 dark:hover:text-red-400';
+
 interface DraftsListProps {
   drafts: InboxDraft[];
   onSelectDraft: (draft: InboxDraft) => void;
+  onDeleteDraft: (draft: InboxDraft) => void;
   mobileView: 'list' | 'detail';
 }
 
-export function DraftsList({ drafts, onSelectDraft, mobileView }: DraftsListProps) {
+export function DraftsList({ drafts, onSelectDraft, onDeleteDraft, mobileView }: DraftsListProps) {
   return (
     <div
       className={cn(
@@ -60,27 +68,40 @@ export function DraftsList({ drafts, onSelectDraft, mobileView }: DraftsListProp
           </div>
         ) : (
           drafts.map((draft) => (
-            <button
+            <div
               key={draft.id}
-              type="button"
-              onClick={() => onSelectDraft(draft)}
-              className="w-full text-left p-3 lg:p-4 border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+              className="flex items-start gap-1 border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
             >
-              <div className="flex items-start justify-between gap-2">
-                <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
-                  {recipientLabel(draft)}
+              <button
+                type="button"
+                onClick={() => onSelectDraft(draft)}
+                className="min-w-0 flex-1 text-left p-3 lg:p-4"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
+                    {recipientLabel(draft)}
+                  </p>
+                  <span className="text-[11px] text-slate-400 shrink-0">
+                    {formatTime(draft.updated_at)}
+                  </span>
+                </div>
+                <p className="text-sm text-slate-700 dark:text-slate-300 truncate mt-0.5">
+                  {draftSubject(draft)}
                 </p>
-                <span className="text-[11px] text-slate-400 shrink-0">
-                  {formatTime(draft.updated_at)}
-                </span>
-              </div>
-              <p className="text-sm text-slate-700 dark:text-slate-300 truncate mt-0.5">
-                {draft.subject?.trim() || '(No subject)'}
-              </p>
-              <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
-                {previewText(draft) || 'Empty draft'}
-              </p>
-            </button>
+                <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                  {previewText(draft) || 'Empty draft'}
+                </p>
+              </button>
+              <button
+                type="button"
+                onClick={() => onDeleteDraft(draft)}
+                aria-label={`Delete draft: ${draftSubject(draft)}`}
+                title="Delete draft"
+                className={cn(ROW_ACTION, 'mt-3 mr-2')}
+              >
+                <Trash2 className="h-4 w-4" aria-hidden />
+              </button>
+            </div>
           ))
         )}
       </div>

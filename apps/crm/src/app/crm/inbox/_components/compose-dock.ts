@@ -56,6 +56,17 @@ export function composeDockClass(size: ComposeDockSize): string {
   );
 }
 
+/**
+ * The composer fills leftover dock height. The pane itself must not scroll —
+ * a quoted thread used to stretch this wrapper and bury Send under the whole
+ * conversation. The editor slot inside EmailComposer is the only scroller.
+ */
+export function composeDockBodyClass(minimized: boolean): string {
+  return minimized
+    ? 'hidden min-h-0 flex-1 flex-col overflow-hidden'
+    : 'flex min-h-0 flex-1 flex-col overflow-hidden';
+}
+
 /** Label for the minimized bar — an untitled message still needs a handle. */
 export function composeDockTitle(subject?: string | null): string {
   return subject?.trim() || 'New message';
@@ -181,3 +192,13 @@ export function shouldDeleteDraftAfterSend(result: ComposeSendResult): boolean {
 export const COMPOSE_SAVE_DRAFT_LABEL = 'save draft';
 export const COMPOSE_SUBJECT_INPUT_SELECTOR = 'input[placeholder="Enter email subject"]';
 export const COMPOSE_BODY_SELECTOR = '.email-composer .ProseMirror';
+
+/** Reply/forward need a taller typing well than a blank new message. */
+export const COMPOSE_EDITOR_MIN_HEIGHT_NEW = 280;
+export const COMPOSE_EDITOR_MIN_HEIGHT_REPLY = 420;
+
+export function composeEditorMinHeight(kind?: ComposeKind | null): number {
+  return kind === 'reply' || kind === 'forward'
+    ? COMPOSE_EDITOR_MIN_HEIGHT_REPLY
+    : COMPOSE_EDITOR_MIN_HEIGHT_NEW;
+}

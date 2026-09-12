@@ -347,6 +347,31 @@ function InboxPageContent() {
     loadDrafts();
   }, [loadDrafts]);
 
+  const handleDeleteDraft = useCallback(
+    async (draft: InboxDraft) => {
+      const confirmed = await confirmDialog({
+        title: 'Delete this draft?',
+        description: 'The text and any attachments will be removed.',
+        confirmLabel: 'Delete draft',
+        destructive: true,
+      });
+      if (!confirmed) return;
+      try {
+        const res = await fetch(`/api/inbox/drafts/${draft.id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Failed to delete draft');
+        if (composeIntent.draftId === draft.id) {
+          setShowCompose(false);
+          setComposeIntent({});
+        }
+        toast.success(toastCopy.deleted('Draft'));
+        await loadDrafts();
+      } catch (error) {
+        toast.error(toastCopy.failed('delete the draft', error, 'Try again'));
+      }
+    },
+    [composeIntent.draftId, loadDrafts],
+  );
+
   // Shared mailbox list + unread badges. Loaded once per session rather than
   // on every conversation event: the address registry is static between
   // Settings visits, and re-fetching it per inbound email was three extra
@@ -1161,6 +1186,7 @@ function InboxPageContent() {
           <DraftsList
             drafts={drafts}
             mobileView={mobileView}
+            onDeleteDraft={(draft) => void handleDeleteDraft(draft)}
             onSelectDraft={(draft) =>
               openCompose({
                 kind: draft.is_reply

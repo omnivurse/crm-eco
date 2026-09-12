@@ -94,10 +94,13 @@ describe('signature-html', () => {
     }
   });
 
-  it('flags placeholder and old Double Helix logos', () => {
+  it('flags placeholder, Double Helix, and HealthShare-era logos', () => {
     expect(signatureNeedsBrandingRefresh('<p>Your Name</p>')).toBe(true);
     expect(signatureNeedsBrandingRefresh('<img src="/signatures/EmailSignature-02.jpg" />')).toBe(true);
+    expect(signatureNeedsBrandingRefresh('<img alt="Pay it Forward HealthShare" src="/old.png" />')).toBe(true);
+    expect(signatureNeedsBrandingRefresh('<p>Pay it Forward Health Share</p>')).toBe(true);
     expect(signatureNeedsBrandingRefresh(buildPifhSignatureFromProfile({ full_name: 'Wendy Scipione' }))).toBe(false);
+    expect(signatureNeedsBrandingRefresh('<p>Pay it Forward Health</p>')).toBe(false);
   });
 
   it('prefixes bare websites with https', () => {

@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { FileText, Maximize2, Minimize2, Minus, X } from 'lucide-react';
+import { FileText, Maximize2, Minimize2, Minus, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import { cn } from '@crm-eco/ui/lib/utils';
@@ -22,9 +22,11 @@ import { TemplatePicker } from './TemplatePicker';
 import { composerDataToCommunicationsSendBody } from '@/lib/email/outbound-attachments';
 import {
   COMPOSE_DOCK_SIZE_KEY,
+  composeDockBodyClass,
   composeDockClass,
   composeDockTitle,
   composeDraftMeta,
+  composeEditorMinHeight,
   composeHeaderTitle,
   composeSendThreadFields,
   parseComposeDockSize,
@@ -204,6 +206,32 @@ export function ComposeDock({
     [dirty, onDraftsChanged, onOpenChange],
   );
 
+  const deleteDraft = useCallback(async () => {
+    const confirmed = await confirmDialog({
+      title: 'Delete this draft?',
+      description: 'The text and any attachments will be removed.',
+      confirmLabel: 'Delete draft',
+      destructive: true,
+    });
+    if (!confirmed) return;
+    if (draftIdRef.current) {
+      const res = await fetch(`/api/inbox/drafts/${draftIdRef.current}`, { method: 'DELETE' }).catch(
+        () => null,
+      );
+      if (!res?.ok) {
+        toast.error(toastCopy.failed('delete the draft', undefined, 'Try again'));
+        return;
+      }
+      draftIdRef.current = null;
+      onDraftsChanged?.();
+      toast.success(toastCopy.deleted('Draft'));
+    }
+    setDirty(false);
+    setTemplateSubject(undefined);
+    setTemplateBody(undefined);
+    onOpenChange(false);
+  }, [onDraftsChanged, onOpenChange]);
+
   const handleSend = useCallback(
     async (data: EmailComposerData) => {
       if (data.to.length === 0) throw new Error('At least one recipient is required');
@@ -379,6 +407,15 @@ export function ComposeDock({
             </button>
             <button
               type="button"
+              onClick={() => void deleteDraft()}
+              aria-label="Delete draft"
+              title="Delete draft"
+              className="rounded p-1.5 text-slate-500 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-500/10 dark:hover:text-red-400"
+            >
+              <Trash2 className="h-4 w-4" aria-hidden />
+            </button>
+            <button
+              type="button"
               onClick={() => void close()}
               aria-label="Close message"
               title="Close"
@@ -390,8 +427,9 @@ export function ComposeDock({
         </div>
 
         {/* Kept mounted while minimized: unmounting the composer would discard
-            every unsaved edit the bar exists to protect. */}
-        <div className={cn('min-h-0 flex-1 overflow-y-auto', minimized && 'hidden')}>
+            every unsaved edit the bar exists to protect. The pane does not
+            scroll — Send stays on the action bar; the editor scrolls quotes. */}
+        <div className={composeDockBodyClass(minimized)}>
           <EmailComposer
             key={composerKey}
             initialTo={initialTo}
@@ -412,7 +450,9 @@ export function ComposeDock({
             showSignatures
             fallbackEmail={fallbackEmail}
             fallbackName={fallbackName}
-            className="rounded-none border-0 shadow-none"
+            pinActions
+            minHeight={composeEditorMinHeight(composeKind)}
+            className="min-h-0 flex-1 rounded-none border-0 shadow-none"
           />
         </div>
       </div>

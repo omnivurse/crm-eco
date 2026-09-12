@@ -50,19 +50,25 @@ describe('snooze presets', () => {
 });
 
 describe('toggleFlagTags', () => {
-  it('keeps the thread\u2019s other tags', () => {
-    expect(toggleFlagTags(['vip', 'starred'], true)).toEqual(['vip']);
-    expect(toggleFlagTags(['vip'], false)).toEqual(['vip', 'starred']);
+  it('sets the desired next state and keeps the thread\u2019s other tags', () => {
+    expect(toggleFlagTags(['vip', 'starred'], false)).toEqual(['vip']);
+    expect(toggleFlagTags(['vip'], true)).toEqual(['vip', 'starred']);
   });
 
   it('is idempotent in both directions', () => {
-    expect(toggleFlagTags(['starred'], false)).toEqual(['starred']);
-    expect(toggleFlagTags(['vip'], true)).toEqual(['vip']);
+    expect(toggleFlagTags(['starred'], true)).toEqual(['starred']);
+    expect(toggleFlagTags(['vip'], false)).toEqual(['vip']);
   });
 
   it('handles a thread that has never been tagged', () => {
-    expect(toggleFlagTags(null, false)).toEqual(['starred']);
-    expect(toggleFlagTags(undefined, true)).toEqual([]);
+    expect(toggleFlagTags(null, true)).toEqual(['starred']);
+    expect(toggleFlagTags(undefined, false)).toEqual([]);
+  });
+
+  it('matches the inbox page contract: pass !isFlagged as the next state', () => {
+    expect(toggleFlagTags(['starred'], false)).toEqual([]);
+    expect(toggleFlagTags(['vip', 'starred'], false)).toEqual(['vip']);
+    expect(toggleFlagTags([], true)).toEqual(['starred']);
   });
 });
 

@@ -296,6 +296,17 @@ describe('ConversationList row actions', () => {
     expect(screen.getByRole('button', { name: 'Clear flag: Sender a' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Unpin: Sender a' })).toBeTruthy();
   });
+
+  it('unflags when the visible row flag is clicked, without opening the thread', () => {
+    const props = baseProps();
+    const flagged = makeConversation('a', { tags: ['starred'] });
+    render(<ConversationList {...props} conversations={[flagged]} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remove flag: Sender a' }));
+    expect(props.onToggleFlag).toHaveBeenCalledTimes(1);
+    expect(props.onToggleFlag).toHaveBeenCalledWith(flagged);
+    expect(props.onSelectConversation).not.toHaveBeenCalled();
+  });
 });
 
 describe('ConversationList bulk selection', () => {
