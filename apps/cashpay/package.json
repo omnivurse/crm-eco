@@ -2,13 +2,14 @@
   "name": "@crm-eco/cashpay",
   "version": "0.1.0",
   "private": true,
-  "description": "Double Helix Hub Cash Pay — published hospital cash prices (cashpay.doublehelixhub.com).",
+  "description": "Cash Pay Advocate — Fair for All. Published hospital cash prices (cashpay.doublehelixhub.com).",
   "scripts": {
     "dev": "next dev --port 3004",
     "build": "next build",
     "start": "next start",
     "lint": "eslint . --max-warnings 0",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "@crm-eco/cash-pay": "*",
@@ -34,6 +35,7 @@
     "postcss": "^8.4.33",
     "tailwindcss": "^3.4.1",
     "tailwindcss-animate": "^1.0.7",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "vitest": "^4.0.18"
   }
 }

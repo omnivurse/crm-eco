@@ -1,7 +1,7 @@
 # Cash Pay interface system
 
 ## Direction
-Chargemaster night-station. Dual surface: airy marketing on `/`, cockpit instrument on `/search`. Amber is the rate, never decoration. Cool paper / midnight chart; fluorescent hallway steel; ink.
+Cash Pay Advocate. Dual surface: airy marketing on `/`, cockpit instrument on `/search`. Tagline: “Fair for All.” Node bronze is the rate, never decoration. Helix teal / wordmark violet from `/logo.png`; mist paper / night chart.
 
 ## Density
 Marketing: 24–32px section gaps, 16px control pad, 44px targets.
@@ -16,6 +16,7 @@ Display: Bricolage Grotesque. Body: Plus Jakarta. CPT and money: IBM Plex Mono, 
 
 ## Tokens
 `--tape` `--ink` `--ink-muted` `--tick` `--hairline` `--signal` `--signal-hover` `--signal-subtle` `--cms-needle` `--focus`
+Brand: `--helix-violet` `#3B145B` · `--helix-teal` `#1088A2` · `--node-bronze` `#AC641F`
 Radius: control 6 · panel 10 · sheet 16.
 
 ## Signature

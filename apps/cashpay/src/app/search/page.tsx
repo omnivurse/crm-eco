@@ -5,6 +5,7 @@ import { landingFontVars } from '@/lib/fonts';
 
 export const metadata: Metadata = {
   title: 'Rate instrument',
+  description: 'Fair for All. Compare published hospital cash prices on the rate instrument.',
 };
 
 export default function SearchPage() {

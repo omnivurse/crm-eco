@@ -1,8 +1,9 @@
 'use client';
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Eye, EyeSlash, PushPin, PushPinSlash, X } from '@phosphor-icons/react';
+import { Eye, EyeSlash, FileText, PushPin, PushPinSlash, X } from '@phosphor-icons/react';
 import {
   classifyPayer,
   discardedStorageKey,
@@ -43,6 +44,7 @@ import {
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { brand } from '@/lib/brand';
 import { formatCash, formatCmsDollars, formatNeedle, formatPct, tickKey } from '@/lib/format';
+import { openRateNote } from '@/lib/rate-note';
 import type { HclRate, MsaOption, SliceSummary, SpecialtyOption } from '@/lib/hcl-types';
 import styles from '@/app/instrument.module.css';
 
@@ -215,8 +217,7 @@ export function RateInstrument() {
 
   useEffect(() => {
     void loadMeta(searchParams.get('zip') || '');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loadMeta, searchParams]);
 
   useEffect(() => {
     if (!stateName || allMsas.length === 0) return;
@@ -437,17 +438,29 @@ export function RateInstrument() {
   return (
     <div className={`${styles.shell} ${pins.length > 0 ? styles.shellHasTray : ''}`}>
       <header className={styles.chrome}>
-        <a className={styles.brand} href="/">
-          <span className={styles.brandName}>{brand.product}</span>
+        <Link className={styles.brand} href="/">
+          <span className={styles.brandLockup}>
+            <img
+              className={styles.brandMark}
+              src={brand.logoIcon}
+              alt=""
+              width={36}
+              height={36}
+            />
+            <span>
+              <span className={styles.brandName}>{brand.product}</span>
+              <span className={styles.brandTagline}>{brand.tagline}</span>
+            </span>
+          </span>
           <span className={styles.brandMeta}>
             {msaName || 'No metro selected'}
             {procedureCode ? ` · CPT ${procedureCode}` : ''}
           </span>
-        </a>
+        </Link>
         <div className={styles.chromeActions}>
-          <a className={styles.licenseLink} href="/#access">
+          <Link className={styles.licenseLink} href="/#access">
             License this UI
-          </a>
+          </Link>
           <ThemeToggle />
         </div>
       </header>
@@ -1050,9 +1063,35 @@ export function RateInstrument() {
 
       {pins.length > 0 ? (
         <aside className={styles.tray} aria-label="Compare tray">
-          <p className={styles.note} style={{ margin: 0 }}>
-            Compare {pins.length} of 4 · same CPT, different payers
-          </p>
+          <div className={styles.trayBar}>
+            <p className={styles.note} style={{ margin: 0 }}>
+              Compare {pins.length} of 4 · same CPT, different payers
+            </p>
+            <button
+              type="button"
+              className={styles.ghostBtn}
+              onClick={() => {
+                const opened = openRateNote({
+                  ticks: pins.map((p) => ({
+                    facilityName: p.facilityName,
+                    payer: describePayer(p),
+                    procedureCode: p.procedureCode,
+                    rate: p.rate,
+                    cmsRelativity: p.cmsRelativity,
+                    cmsRate: p.cmsRate,
+                    city: p.city,
+                    state: p.state,
+                  })),
+                  metro: msaName,
+                  procedureCode,
+                });
+                if (!opened) setError('Allow pop-ups to save the rate note PDF.');
+              }}
+            >
+              <FileText weight="light" aria-hidden />
+              Save as PDF
+            </button>
+          </div>
           <div className={styles.trayGrid}>
             {pins.map((p) => (
               <div key={tickKey(p)} className={styles.trayCard}>

@@ -31,12 +31,13 @@ export default function HomePage() {
       />
 
       <main>
-        <section className={`lp-hero ${styles.hero}`} aria-label={`${brand.name} ${brand.product}`}>
+        <section className={`lp-hero ${styles.hero}`} aria-label={`${brand.advocate} · ${brand.tagline}`}>
           <div className={`lp-hero-copy ${styles.heroCopy}`}>
-            <p className="lp-eyebrow">{brand.product}</p>
-            <h1 className="lp-display">Every published payer, on one tape.</h1>
+            <p className="lp-eyebrow">{brand.advocate}</p>
+            <h1 className="lp-display">{brand.tagline}</h1>
             <p className="lp-lede">
-              Anthem, UHC, Cigna, Medicare, cash — named on the tick, not guessed. 55 HCL markets.
+              Every published payer on one tape — Anthem, UHC, Cigna, Medicare, cash — named on
+              the tick, not guessed. 55 HCL markets.
             </p>
             <div className="lp-hero-actions">
               <a href="/search" className="lp-btn-primary">
@@ -116,14 +117,15 @@ export default function HomePage() {
       </main>
 
       <LandingFooter
-        brand={`${brand.name} · ${brand.product}`}
-        description="Cash Pay displays published hospital cash and self-pay figures via Health Cost Labs. Completeness varies by metro. Not a medical, insurance, or billing quote."
+        brand={`${brand.name} · ${brand.product} · ${brand.tagline}`}
+        description={`${brand.advocate} displays published hospital cash and self-pay figures via Health Cost Labs. Completeness varies by metro. Not a medical, insurance, or billing quote.`}
         columns={[
           {
             heading: 'Product',
             links: [
               { href: '/search', label: 'Open the instrument' },
               { href: '#access', label: 'License this UI' },
+              { href: '/brand-kit.pdf', label: 'Brand kit', external: true },
             ],
           },
           {

@@ -27,16 +27,40 @@
 .brand {
   display: flex;
   flex-direction: column;
-  gap: 0.1rem;
+  gap: 0.16rem;
   text-decoration: none;
   color: inherit;
+  min-width: 0;
+}
+
+.brandLockup {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.brandMark {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  flex: none;
 }
 
 .brandName {
+  display: block;
   font-family: var(--font-heading), sans-serif;
   font-size: 0.95rem;
   font-weight: 700;
   letter-spacing: -0.02em;
+}
+
+.brandTagline {
+  display: block;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--helix-teal-ink, var(--cms-needle));
 }
 
 .brandMeta {
@@ -203,8 +227,6 @@
   text-decoration: underline;
   text-underline-offset: 0.16em;
   font-weight: 750;
-}
-  font-weight: 700;
 }
 
 .statQuiet {
@@ -575,6 +597,31 @@
 
 .pager button:disabled {
   opacity: 0.45;
+}
+
+.trayBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.ghostBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 40px;
+  padding: 0 0.85rem;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-control);
+  background: var(--tick);
+  color: var(--ink);
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.ghostBtn:hover {
+  border-color: color-mix(in oklch, var(--signal) 45%, var(--hairline));
 }
 
 .tray {

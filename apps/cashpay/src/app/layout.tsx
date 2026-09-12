@@ -10,25 +10,23 @@ import './globals.css';
 const APP_METADATA: Metadata = {
   metadataBase: new URL(brand.siteUrl),
   title: {
-    default: `${brand.product} · ${brand.name}`,
+    default: `${brand.product} · ${brand.tagline} · ${brand.name}`,
     template: `%s · ${brand.product}`,
   },
-  description:
-    'Compare published hospital cash prices. Double Helix Hub Cash Pay surfaces transparency-file rates, not insurance quotes.',
+  description: `${brand.advocate} — ${brand.tagline} Compare published hospital cash prices. Transparency-file rates, not insurance quotes.`,
   openGraph: {
     type: 'website',
     locale: 'en_US',
     url: brand.siteUrl,
     siteName: `${brand.name} ${brand.product}`,
-    title: `${brand.product} · ${brand.name}`,
-    description:
-      'Find published hospital cash prices by metro. Honest coverage, no invented quotes.',
-    images: [{ url: '/og.png', width: 1200, height: 630, alt: `${brand.name} ${brand.product}` }],
+    title: `${brand.product} · ${brand.tagline}`,
+    description: `${brand.advocate}. Published hospital cash by metro. Honest coverage, no invented quotes.`,
+    images: [{ url: '/og.png', width: 1200, height: 630, alt: `${brand.advocate} · ${brand.tagline}` }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: `${brand.product} · ${brand.name}`,
-    description: 'Published hospital cash prices. Not insurance. Not a quote.',
+    title: `${brand.product} · ${brand.tagline}`,
+    description: `${brand.advocate}. Published hospital cash prices. Not insurance. Not a quote.`,
     images: ['/og.png'],
   },
   icons: {
@@ -44,8 +42,8 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#f7f8fa' },
-    { media: '(prefers-color-scheme: dark)', color: '#050505' },
+    { media: '(prefers-color-scheme: light)', color: brand.colors.mist },
+    { media: '(prefers-color-scheme: dark)', color: brand.colors.night },
   ],
   width: 'device-width',
   initialScale: 1,
