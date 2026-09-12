@@ -18,6 +18,7 @@ import {
   type TopModule,
 } from '@/contexts/ModuleContext';
 import type { NavProfile } from '@/lib/crm/nav-profile';
+import { formatUnreadBadge, unreadBadgeAriaLabel } from '@/lib/inbox/unread-badge';
 
 const iconMap: Record<string, LucideIcon> = {
   users: Users,
@@ -49,6 +50,8 @@ interface CrmModuleTabBarProps {
    * small orgs get one flat sidebar menu instead of 7 top-level tabs.
    */
   navProfile?: NavProfile;
+  /** Live unread inbox conversations; counted once in CrmShell. */
+  inboxUnread?: number | null;
 }
 
 /**
@@ -59,7 +62,7 @@ interface CrmModuleTabBarProps {
  * switcher — the grid inside the nav drawer (`ModuleSwitcherRail`) — so the
  * strip is hidden rather than duplicating it above a 390px viewport.
  */
-export function CrmModuleTabBar({ navProfile = 'full' }: CrmModuleTabBarProps) {
+export function CrmModuleTabBar({ navProfile = 'full', inboxUnread = null }: CrmModuleTabBarProps) {
   // NV-2: the provider's tab (sticky on cross-tab sidebar hops; URL-resolved
   // on a fresh load) — one source for the strip, the rail and the sidebar.
   const { activeModule, setActiveModule } = useModule();
@@ -76,6 +79,10 @@ export function CrmModuleTabBar({ navProfile = 'full' }: CrmModuleTabBarProps) {
         {MODULE_TABS.map((module) => {
           const Icon = getIcon(module.icon);
           const isActive = activeModule === module.key;
+          const unreadBadge =
+            module.key === 'communications' ? formatUnreadBadge(inboxUnread) : null;
+          const unreadLabel =
+            module.key === 'communications' ? unreadBadgeAriaLabel(inboxUnread) : null;
 
           return (
             <Link
@@ -100,6 +107,7 @@ export function CrmModuleTabBar({ navProfile = 'full' }: CrmModuleTabBarProps) {
                   : 'font-medium text-muted-foreground hover:bg-muted/70 hover:text-foreground',
               )}
               aria-current={isActive ? 'page' : undefined}
+              aria-label={unreadLabel ? `${module.label}, ${unreadLabel}` : undefined}
             >
               <Icon
                 style={isActive ? { color: 'var(--mod-fg)' } : undefined}
@@ -110,6 +118,15 @@ export function CrmModuleTabBar({ navProfile = 'full' }: CrmModuleTabBarProps) {
                 aria-hidden
               />
               <span>{module.label}</span>
+              {unreadBadge && (
+                <span
+                  data-testid="crm-comms-unread-badge"
+                  aria-hidden
+                  className="min-w-[16px] h-4 px-1 inline-flex items-center justify-center rounded-full bg-teal-500 text-[10px] font-bold leading-none text-white tabular-nums"
+                >
+                  {unreadBadge}
+                </span>
+              )}
               {isActive && (
                 <span
                   className="absolute inset-x-2 bottom-0 h-0.5 rounded-full"

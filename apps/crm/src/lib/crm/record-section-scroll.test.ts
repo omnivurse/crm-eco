@@ -3,6 +3,7 @@ import {
   computeRecordStickyOffset,
   isSectionJumpSuppressed,
   markSectionJumpProgrammatic,
+  offsetTopWithin,
   resetSectionJumpSuppressForTests,
   SECTION_JUMP_SUPPRESS_MS,
 } from './record-section-scroll';
@@ -44,3 +45,17 @@ describe('section jump suppress', () => {
     );
   });
 });
+
+describe('offsetTopWithin', () => {
+  it('uses viewport rects so sticky/transform ancestors cannot skew the jump', () => {
+    const container = {
+      getBoundingClientRect: () => ({ top: 100 }),
+      scrollTop: 400,
+    } as HTMLElement;
+    const el = {
+      getBoundingClientRect: () => ({ top: 260 }),
+    } as HTMLElement;
+    expect(offsetTopWithin(container, el)).toBe(560);
+  });
+});
+

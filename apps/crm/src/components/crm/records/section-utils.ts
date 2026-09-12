@@ -809,3 +809,21 @@ export function findSectionNavGroupForKey(
   }
   return null;
 }
+
+/**
+ * Which section a group pill should open. Clicking "Coverage" used to always
+ * jump to `sections[0]` (often an empty HealthShare stub), so the page
+ * appeared to land at random. Prefer a section that actually has data.
+ */
+export function pickSectionNavJumpTarget(sections: SectionMeta[]): SectionMeta | null {
+  if (sections.length === 0) return null;
+  const notesOnly = sections.every((s) => s.navAction === 'open-notes');
+  if (notesOnly) return sections[0];
+
+  const withData = sections.find(
+    (s) => s.navAction !== 'open-notes' && (s.badgeCount ?? s.filledCount) > 0,
+  );
+  if (withData) return withData;
+
+  return sections.find((s) => s.navAction !== 'open-notes') ?? sections[0];
+}

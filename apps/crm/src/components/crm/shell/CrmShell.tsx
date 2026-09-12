@@ -34,6 +34,7 @@ import {
   sidebarNavForToggle,
 } from '@/lib/crm/sidebar-nav-state';
 import { useInboxPrefs } from '@/hooks/useInboxPrefs';
+import { useInboxUnreadCount } from '@/hooks/useInboxUnreadCount';
 
 interface CrmShellProps {
   children: React.ReactNode;
@@ -142,6 +143,7 @@ export function CrmShell({
   }, [pathname, navOptions]);
 
   const fullBleedMain = isCrmFullBleedPath(pathname);
+  const inboxUnread = useInboxUnreadCount(profile.organization_id);
 
   return (
     <ModuleProvider>
@@ -206,7 +208,7 @@ export function CrmShell({
               onMobileMenuToggle={handleMobileMenuToggle}
             />
 
-            <CrmModuleTabBar navProfile={navProfile} />
+            <CrmModuleTabBar navProfile={navProfile} inboxUnread={inboxUnread} />
 
             {/* Mobile Menu Overlay */}
             {mobileMenuOpen && (
@@ -227,6 +229,7 @@ export function CrmShell({
                 navProfile={navProfile}
                 navModules={navModules ?? modules}
                 crmRole={profile.crm_role ?? null}
+                inboxUnread={inboxUnread}
               />
 
               <main

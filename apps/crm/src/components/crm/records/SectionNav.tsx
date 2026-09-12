@@ -1,14 +1,16 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@crm-eco/ui/lib/utils';
 import type { SectionMeta } from './section-utils';
 import {
   CRM_SECTION_NAV_EVENT,
   findSectionNavGroupForKey,
   groupSectionsForNav,
+  pickSectionNavJumpTarget,
   type SectionNavGroup,
+  type SectionNavGroupBand,
 } from './section-utils';
 import { getSectionCompactNavAccent, getSectionNavAccent } from './section-accent-tokens';
 import { scrollRecordSectionAfterExpand } from '@/lib/crm/record-section-scroll';
@@ -34,10 +36,10 @@ interface SectionNavProps {
  * Ownership · Admin …)
  * instead of one per section — a PIFH contact has 27 sections, which drew a
  * second scrollbar under the record header and buried the useful bands.
- * Clicking a group jumps to its first section. The per-section pills for the
- * ACTIVE group only render on a second row, so every section stays one click
- * away without the 27-pill wall. Records whose sections all share one group
- * (or single-group modules like deals) fall back to the flat per-section row.
+ * Clicking a group jumps to the first section in that band that actually has
+ * data (not an empty stub). The per-section pills for the ACTIVE group render
+ * on a second row so Health Insurance vs Dental is one click, not a hunt.
+ * Records whose sections all share one group fall back to a flat row.
  */
 export function SectionNav({
   sections,
@@ -57,11 +59,6 @@ export function SectionNav({
     () => bands.find((b) => b.group === activeGroup) ?? null,
     [bands, activeGroup],
   );
-  const [subnavOpen, setSubnavOpen] = useState(false);
-  useEffect(() => {
-    setSubnavOpen(false);
-  }, [activeGroup]);
-
   // The strip scrolls horizontally but hides its own scrollbar. Overflow is
   // measured and surfaced as chevron buttons + edge fades instead.
   const stripRef = useRef<HTMLDivElement>(null);
@@ -99,8 +96,8 @@ export function SectionNav({
     el.scrollBy({ left: direction === 'left' ? -delta : delta, behavior: 'smooth' });
   }, []);
 
-  const handleClick = useCallback(
-    (section: SectionMeta) => {
+  const navigateToSection = useCallback(
+    (section: SectionMeta, expandKeys?: string[]) => {
       // Notes-group pills open the Notes related list (the source of truth for
       // note records) rather than scrolling to the legacy notes_history field
       // section, so the pill and the sidebar count point at the same place.
@@ -109,20 +106,40 @@ export function SectionNav({
         return;
       }
 
-      const key = section.key;
-      onSectionClick(key);
+      const keys = expandKeys?.length ? expandKeys : [section.key];
+      onSectionClick(section.key);
 
       window.dispatchEvent(
         new CustomEvent(CRM_SECTION_NAV_EVENT, {
           bubbles: true,
-          detail: { key },
+          detail: { key: section.key, keys },
         }),
       );
 
       // Expand (async React) then scroll the record <main>, not the viewport.
-      scrollRecordSectionAfterExpand(key);
+      // Pass every key in the band so we skip 1px empty stubs.
+      scrollRecordSectionAfterExpand(keys);
     },
     [onSectionClick],
+  );
+
+  const handleClick = useCallback(
+    (section: SectionMeta) => {
+      navigateToSection(section);
+    },
+    [navigateToSection],
+  );
+
+  const handleGroupClick = useCallback(
+    (band: SectionNavGroupBand) => {
+      const target = pickSectionNavJumpTarget(band.sections);
+      if (!target) return;
+      navigateToSection(target, [
+        target.key,
+        ...band.sections.map((s) => s.key).filter((k) => k !== target.key),
+      ]);
+    },
+    [navigateToSection],
   );
 
   // Arrow-key roving focus inside a row of pills (WAI-ARIA tabs pattern).
@@ -272,9 +289,7 @@ export function SectionNav({
                   aria-controls={isActive ? 'record-section-nav-sections' : undefined}
                   tabIndex={isActive ? 0 : -1}
                   title={badgeTitle}
-                  onClick={() => {
-                    if (first) handleClick(first);
-                  }}
+                  onClick={() => handleGroupClick(band)}
                   className={cn(
                     'inline-flex shrink-0 snap-start items-center gap-1.5 whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                     compact
@@ -304,43 +319,24 @@ export function SectionNav({
       </div>
       </div>
 
-      {/* Row 2 — per-section pills for the active group only. Hidden when the
-          group has a single section (its pill would duplicate the group pill).
-          RP-6: xl+ only — below that the group row alone must leave the
-          one-glance snapshot above the fold (group pills still jump). */}
+      {/* Row 2 — every section in the active group. Hidden only when the
+          group is a single card (its pill would duplicate the group pill).
+          Always visible: hiding this row on <xl and behind "N sections"
+          forced reps to hunt the page for Health Insurance vs Dental. */}
       {grouped && activeBand && activeBand.sections.length > 1 && (
-        <div className="max-xl:hidden border-t border-slate-100 dark:border-white/5">
-          {activeBand.sections.length > 4 && !subnavOpen ? (
-            <button
-              type="button"
-              onClick={() => setSubnavOpen(true)}
-              className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100"
-            >
-              <ChevronDown className="h-3.5 w-3.5" aria-hidden />
-              {activeBand.sections.length} sections in {activeBand.label}
-            </button>
-          ) : (
-            <div
-              id="record-section-nav-sections"
-              role="tablist"
-              aria-label={`${activeBand.label} sections`}
-              onKeyDown={handleRowKeyDown}
-              className={cn('flex flex-wrap items-center gap-1', compact ? 'py-1' : 'py-1.5')}
-            >
-              {activeBand.sections.map(renderSectionPill)}
-              {activeBand.sections.length > 4 && (
-                <button
-                  type="button"
-                  onClick={() => setSubnavOpen(false)}
-                  className="inline-flex items-center gap-0.5 px-1.5 text-[11px] text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
-                  aria-label="Hide section pills"
-                >
-                  <ChevronUp className="h-3.5 w-3.5" aria-hidden />
-                  Hide
-                </button>
-              )}
-            </div>
-          )}
+        <div className="border-t border-slate-100 dark:border-white/5">
+          <div
+            id="record-section-nav-sections"
+            role="tablist"
+            aria-label={`${activeBand.label} sections`}
+            onKeyDown={handleRowKeyDown}
+            className={cn(
+              'flex flex-wrap items-center gap-1',
+              compact ? 'py-1' : 'py-1.5',
+            )}
+          >
+            {activeBand.sections.map(renderSectionPill)}
+          </div>
         </div>
       )}
     </div>

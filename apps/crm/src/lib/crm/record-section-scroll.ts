@@ -12,7 +12,7 @@
 export const RECORD_SCROLL_ROOT_SELECTOR = '[data-record-find-root]';
 
 /** How long OverviewLayout ignores observer updates after a pill/field jump. */
-export const SECTION_JUMP_SUPPRESS_MS = 400;
+export const SECTION_JUMP_SUPPRESS_MS = 800;
 
 let sectionJumpSuppressUntil = 0;
 
@@ -92,21 +92,35 @@ export function measureRecordStickyOffset(scrollRoot: HTMLElement): number {
   });
 }
 
-function offsetTopWithin(container: HTMLElement, el: HTMLElement): number {
-  let top = 0;
-  let node: HTMLElement | null = el;
-  while (node && node !== container) {
-    top += node.offsetTop;
-    node = node.offsetParent as HTMLElement | null;
+/**
+ * Position of `el` inside the record scroller. Always use viewport rects —
+ * `offsetParent` skips transformed / sticky ancestors (the header is
+ * `sticky` + `isolate`) and produced a random-looking jump.
+ */
+export function offsetTopWithin(container: HTMLElement, el: HTMLElement): number {
+  const cRect = container.getBoundingClientRect();
+  const eRect = el.getBoundingClientRect();
+  return eRect.top - cRect.top + container.scrollTop;
+}
+
+export function isUsableSectionScrollTarget(el: Element | null | undefined): el is HTMLElement {
+  if (!(el instanceof HTMLElement)) return false;
+  if (el.getAttribute('aria-hidden') === 'true') return false;
+  return el.getBoundingClientRect().height >= 24;
+}
+
+/** First on-page section card that actually has height (skip 1px stubs). */
+export function resolveSectionScrollTarget(sectionKeys: string[]): HTMLElement | null {
+  if (typeof document === 'undefined') return null;
+  for (const key of sectionKeys) {
+    const el = document.getElementById(`section-${key}`);
+    if (isUsableSectionScrollTarget(el)) return el;
   }
-  // If offsetParent chain left the container (transformed ancestors), fall back
-  // to getBoundingClientRect delta.
-  if (!node) {
-    const cRect = container.getBoundingClientRect();
-    const eRect = el.getBoundingClientRect();
-    return eRect.top - cRect.top + container.scrollTop;
+  for (const key of sectionKeys) {
+    const el = document.getElementById(`section-${key}`);
+    if (el instanceof HTMLElement) return el;
   }
-  return top;
+  return null;
 }
 
 export interface ScrollRecordTargetOptions {
@@ -158,24 +172,30 @@ export function scrollRecordTargetIntoView(
  * Uses double-rAF + a short timeout so React commit/paint has height.
  */
 export function scrollRecordSectionAfterExpand(
-  sectionKey: string,
+  sectionKey: string | string[],
   options: ScrollRecordTargetOptions & { delayMs?: number } = {},
 ): void {
   if (typeof window === 'undefined') return;
+  const keys = Array.isArray(sectionKey) ? sectionKey : [sectionKey];
   markSectionJumpProgrammatic();
-  const delay = options.delayMs ?? 150;
+  const delay = options.delayMs ?? 80;
 
-  window.setTimeout(() => {
+  const attempt = (triesLeft: number) => {
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        const el = document.getElementById(`section-${sectionKey}`);
+        const el = resolveSectionScrollTarget(keys);
         scrollRecordTargetIntoView(el, {
           ...options,
           block: options.block ?? 'start',
         });
+        if (triesLeft > 0 && !isUsableSectionScrollTarget(el)) {
+          window.setTimeout(() => attempt(triesLeft - 1), 140);
+        }
       });
     });
-  }, delay);
+  };
+
+  window.setTimeout(() => attempt(2), delay);
 }
 
 /**

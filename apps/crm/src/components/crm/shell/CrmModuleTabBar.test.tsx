@@ -72,4 +72,28 @@ describe('CrmModuleTabBar (NV-8)', () => {
     mount('simple');
     expect(screen.queryByTestId('crm-module-tabbar')).toBeNull();
   });
+
+  it('badges Communications with the unread count and leaves other tabs clean', () => {
+    render(
+      <ModuleProvider>
+        <CrmModuleTabBar inboxUnread={4} />
+      </ModuleProvider>,
+    );
+    const badge = screen.getByTestId('crm-comms-unread-badge');
+    expect(badge.textContent).toBe('4');
+    expect(screen.getAllByTestId('crm-comms-unread-badge')).toHaveLength(1);
+    const comms = screen.getByTestId('crm-module-tabbar').querySelector('[data-crm-module="communications"]');
+    expect(comms?.getAttribute('aria-label')).toBe('Communications, 4 unread conversations');
+  });
+
+  it('hides the Communications badge when there is nothing unread', () => {
+    render(
+      <ModuleProvider>
+        <CrmModuleTabBar inboxUnread={0} />
+      </ModuleProvider>,
+    );
+    expect(screen.queryByTestId('crm-comms-unread-badge')).toBeNull();
+    const comms = screen.getByTestId('crm-module-tabbar').querySelector('[data-crm-module="communications"]');
+    expect(comms?.getAttribute('aria-label')).toBeNull();
+  });
 });

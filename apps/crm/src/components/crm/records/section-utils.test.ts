@@ -7,6 +7,7 @@ import {
   getSectionMeta,
   getSectionNavGroup,
   groupSectionsForNav,
+  pickSectionNavJumpTarget,
   isPersonCoverageSectionKey,
   isPersonModuleKey,
   normalizeLegacySectionHeading,
@@ -569,6 +570,44 @@ describe('groupSectionsForNav', () => {
     const bands = groupSectionsForNav([meta('core', 1, 1), meta('address', 1, 1)]);
     expect(findSectionNavGroupForKey(bands, 'address')).toBe('address');
     expect(findSectionNavGroupForKey(bands, 'nope')).toBeNull();
+  });
+});
+
+describe('pickSectionNavJumpTarget', () => {
+  const meta = (
+    key: string,
+    filled: number,
+    extra: Partial<SectionMeta> = {},
+  ): SectionMeta => ({
+    key,
+    label: key,
+    fieldCount: 4,
+    filledCount: filled,
+    navGroup: getSectionNavGroup(key),
+    ...extra,
+  });
+
+  it('skips empty stubs and lands on the first filled section in the band', () => {
+    const target = pickSectionNavJumpTarget([
+      meta('health_sharing', 0),
+      meta('insurance_coverage', 5),
+      meta('dental_coverage', 1),
+    ]);
+    expect(target?.key).toBe('insurance_coverage');
+  });
+
+  it('falls back to the first real section when every card is empty', () => {
+    expect(
+      pickSectionNavJumpTarget([meta('health_sharing', 0), meta('dental_coverage', 0)])?.key,
+    ).toBe('health_sharing');
+  });
+
+  it('keeps the Notes band on the notes action', () => {
+    expect(
+      pickSectionNavJumpTarget([
+        meta('notes_history', 0, { navAction: 'open-notes', badgeCount: 3 }),
+      ])?.navAction,
+    ).toBe('open-notes');
   });
 });
 

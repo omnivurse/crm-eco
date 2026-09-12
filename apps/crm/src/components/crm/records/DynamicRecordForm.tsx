@@ -1024,14 +1024,22 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
   /** Overview section pills: expand accordion so `#section-{key}` scroll targets aren't height-zero. */
   useEffect(() => {
     const onNav = (e: Event) => {
-      const key = (e as CustomEvent<{ key?: string }>).detail?.key;
-      if (!key || typeof key !== 'string') return;
+      const detail = (e as CustomEvent<{ key?: string; keys?: string[] }>).detail;
+      const keys = [
+        ...(Array.isArray(detail?.keys) ? detail.keys : []),
+        ...(typeof detail?.key === 'string' ? [detail.key] : []),
+      ].filter((k, i, all) => all.indexOf(k) === i);
+      if (keys.length === 0) return;
       setCollapsedSections((prev) => {
-        if (!prev.has(key)) return prev;
+        let changed = false;
         const next = new Set(prev);
-        next.delete(key);
-        if (record?.id) persistSectionExpanded(record.id, key, true);
-        return next;
+        for (const key of keys) {
+          if (!next.has(key)) continue;
+          next.delete(key);
+          changed = true;
+          if (record?.id) persistSectionExpanded(record.id, key, true);
+        }
+        return changed ? next : prev;
       });
     };
     window.addEventListener(CRM_SECTION_NAV_EVENT, onNav as EventListener);

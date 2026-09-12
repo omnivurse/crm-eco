@@ -6,8 +6,6 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase-client';
 import { clearOfflineState } from '@/lib/offline/reset';
 import { cn } from '@crm-eco/ui/lib/utils';
-import { useTenantOrganizationId } from '@/contexts/TenantContext';
-import { useInboxUnreadCount } from '@/hooks/useInboxUnreadCount';
 import { formatUnreadBadge, unreadBadgeAriaLabel } from '@/lib/inbox/unread-badge';
 import {
     LayoutDashboard,
@@ -262,6 +260,8 @@ interface ZohoContextualSidebarProps {
      * clicked (NV-2 cross-tab, admin run).
      */
     crmRole?: string | null;
+    /** Live unread conversations; counted once in CrmShell. */
+    inboxUnread?: number | null;
 }
 
 const EMPTY_MODULES: readonly NavModule[] = [];
@@ -277,16 +277,12 @@ export function ZohoContextualSidebar({
     navProfile = 'full',
     navModules = EMPTY_MODULES,
     crmRole: serverCrmRole = null,
+    inboxUnread = null,
 }: ZohoContextualSidebarProps) {
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const router = useRouter();
     const isSimple = navProfile === 'simple';
-
-    // Live unread mail, so the count is visible from anywhere in the CRM rather
-    // than only once you are already on the inbox page.
-    const organizationId = useTenantOrganizationId();
-    const inboxUnread = useInboxUnreadCount(organizationId);
 
     const handleSignOut = async () => {
         try {
@@ -402,7 +398,7 @@ export function ZohoContextualSidebar({
             >
                 {/* Module switcher — icon rail when collapsed; top tab bar handles expanded desktop.
                     Hidden entirely under the simple profile (no top-level modules to switch). */}
-                {!isOpen && !isSimple && <ModuleSwitcherRail expanded={false} />}
+                {!isOpen && !isSimple && <ModuleSwitcherRail expanded={false} inboxUnread={inboxUnread} />}
 
                 {isOpen && (
                     <div className="px-3 py-1.5 border-b border-slate-200/80 dark:border-white/5">
@@ -558,7 +554,7 @@ export function ZohoContextualSidebar({
                 )}
             >
                 {/* Mobile Module switcher (full profile only) */}
-                {!isSimple && <ModuleSwitcherRail expanded />}
+                {!isSimple && <ModuleSwitcherRail expanded inboxUnread={inboxUnread} />}
 
                 <div className="px-4 py-2 border-b border-slate-200 dark:border-white/5">
                     <h2 className="flex items-center gap-1.5 text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-[0.14em]">

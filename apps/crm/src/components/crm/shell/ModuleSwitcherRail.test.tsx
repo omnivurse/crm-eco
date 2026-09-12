@@ -67,4 +67,26 @@ describe('ModuleSwitcherRail (NV-8)', () => {
     expect(screen.getByText('Communications')).toBeTruthy();
     expect(screen.getByText('Settings')).toBeTruthy();
   });
+
+  it('badges Communications with the unread count when expanded', () => {
+    render(
+      <ModuleProvider>
+        <ModuleSwitcherRail expanded inboxUnread={7} />
+      </ModuleProvider>,
+    );
+    expect(screen.getByTestId('crm-comms-unread-badge').textContent).toBe('7');
+    expect(screen.queryByTestId('crm-comms-unread-dot')).toBeNull();
+    const comms = screen.getByRole('link', { name: /communications/i });
+    expect(comms.getAttribute('aria-label')).toBe('Communications, 7 unread conversations');
+  });
+
+  it('shows a dot, not a count, on the collapsed Communications tile', () => {
+    render(
+      <ModuleProvider>
+        <ModuleSwitcherRail expanded={false} inboxUnread={7} />
+      </ModuleProvider>,
+    );
+    expect(screen.getByTestId('crm-comms-unread-dot')).toBeTruthy();
+    expect(screen.queryByTestId('crm-comms-unread-badge')).toBeNull();
+  });
 });
