@@ -83,4 +83,25 @@ describe('DraftsList', () => {
 
     expect(screen.getByRole('button', { name: 'Delete draft: (No subject)' })).toBeTruthy();
   });
+
+  it('does not offer false cancellation for an already queued scheduled message', () => {
+    render(
+      <DraftsList
+        drafts={[
+          makeDraft('scheduled', {
+            subject: 'Tomorrow follow-up',
+            scheduled_at: '2026-09-14T10:00:00.000Z',
+          }),
+        ]}
+        onSelectDraft={vi.fn()}
+        onDeleteDraft={vi.fn()}
+        mobileView="list"
+      />,
+    );
+
+    expect(screen.getByText('Scheduled')).toBeTruthy();
+    expect(
+      screen.queryByRole('button', { name: 'Delete draft: Tomorrow follow-up' }),
+    ).toBeNull();
+  });
 });
