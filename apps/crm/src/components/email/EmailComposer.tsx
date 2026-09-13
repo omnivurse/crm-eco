@@ -614,7 +614,12 @@ export const EmailComposer = memo(function EmailComposer({
       {showSignatures && selectedSignature && signatureNeedsBrandingRefresh(selectedSignature.content_html) && (
         <div className="shrink-0 border-b border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
           This signature still uses the old HealthShare logo.{' '}
-          <Link href="/crm/settings/signatures" className="font-medium underline underline-offset-2">
+          <Link
+            href="/crm/settings/signatures"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-medium underline underline-offset-2"
+          >
             Update it in Settings
           </Link>
           .

@@ -119,8 +119,12 @@ export function buildRateNoteHtml(input: RateNoteInput): string {
 
 export function openRateNote(input: Omit<RateNoteInput, 'asOf' | 'logoUrl'> & { logoUrl?: string }): boolean {
   if (input.ticks.length === 0 || typeof window === 'undefined') return false;
-  const w = window.open('', '_blank', 'noopener,noreferrer,width=900,height=720');
+  // `noopener` makes standards-compliant browsers return null even when the
+  // popup opens, so the document can never be populated. Sever the opener
+  // synchronously before writing any content instead.
+  const w = window.open('', '_blank', 'width=900,height=720');
   if (!w) return false;
+  w.opener = null;
   const logoUrl = input.logoUrl || new URL(brand.logo, window.location.origin).href;
   w.document.open();
   w.document.write(

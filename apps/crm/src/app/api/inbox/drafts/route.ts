@@ -18,6 +18,7 @@ export async function GET() {
       .from('inbox_drafts')
       .select('*')
       .eq('author_id', profile.id)
+      .eq('org_id', profile.organization_id)
       .order('updated_at', { ascending: false });
 
     if (error) {
@@ -45,6 +46,22 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const supabase = await createClient();
+
+    if (body.conversation_id) {
+      const { data: conversation, error: conversationError } = await supabase
+        .from('inbox_conversations')
+        .select('id')
+        .eq('id', body.conversation_id)
+        .eq('org_id', profile.organization_id)
+        .maybeSingle();
+
+      if (conversationError || !conversation) {
+        return NextResponse.json(
+          { error: 'Conversation not found in the active organization' },
+          { status: 400 },
+        );
+      }
+    }
 
     const { data, error } = await supabase
       .from('inbox_drafts')

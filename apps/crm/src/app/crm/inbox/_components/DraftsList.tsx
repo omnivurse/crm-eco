@@ -92,15 +92,21 @@ export function DraftsList({ drafts, onSelectDraft, onDeleteDraft, mobileView }:
                   {previewText(draft) || 'Empty draft'}
                 </p>
               </button>
-              <button
-                type="button"
-                onClick={() => onDeleteDraft(draft)}
-                aria-label={`Delete draft: ${draftSubject(draft)}`}
-                title="Delete draft"
-                className={cn(ROW_ACTION, 'mt-3 mr-2')}
-              >
-                <Trash2 className="h-4 w-4" aria-hidden />
-              </button>
+              {draft.scheduled_at ? (
+                <span className="mt-3 mr-2 shrink-0 text-[10px] font-medium uppercase tracking-wide text-slate-400">
+                  Scheduled
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => onDeleteDraft(draft)}
+                  aria-label={`Delete draft: ${draftSubject(draft)}`}
+                  title="Delete draft"
+                  className={cn(ROW_ACTION, 'mt-3 mr-2')}
+                >
+                  <Trash2 className="h-4 w-4" aria-hidden />
+                </button>
+              )}
             </div>
           ))
         )}

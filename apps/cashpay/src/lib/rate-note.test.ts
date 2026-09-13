@@ -1,6 +1,21 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { brand } from './brand';
-import { buildRateNoteHtml, escapeHtml } from './rate-note';
+import { buildRateNoteHtml, escapeHtml, openRateNote, type RateNoteTick } from './rate-note';
+
+const rateNoteTick: RateNoteTick = {
+  facilityName: 'Mercy Hospital',
+  payer: 'Anthem · Medicare',
+  procedureCode: '99213',
+  rate: 184,
+  cmsRelativity: 1.12,
+  cmsRate: 164,
+  city: 'Portland',
+  state: 'OR',
+};
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 describe('Cash Pay Advocate brand', () => {
   it('locks the advocate tagline and logo-sampled palette', () => {
@@ -24,18 +39,7 @@ describe('rate note PDF', () => {
 
   it('embeds the logo, tagline, and bronze cash figure', () => {
     const html = buildRateNoteHtml({
-      ticks: [
-        {
-          facilityName: 'Mercy Hospital',
-          payer: 'Anthem · Medicare',
-          procedureCode: '99213',
-          rate: 184,
-          cmsRelativity: 1.12,
-          cmsRate: 164,
-          city: 'Portland',
-          state: 'OR',
-        },
-      ],
+      ticks: [rateNoteTick],
       metro: 'Portland-Salem',
       procedureCode: '99213',
       asOf: '9/12/2026',
@@ -49,5 +53,46 @@ describe('rate note PDF', () => {
     expect(html).toContain('$184');
     expect(html).toContain('Mercy Hospital');
     expect(html).not.toContain('<script>alert');
+  });
+
+  it('populates an opened window after severing its opener', () => {
+    const document = {
+      open: vi.fn(),
+      write: vi.fn(),
+      close: vi.fn(),
+    };
+    const popup = { document, opener: {} };
+    const open = vi.fn(() => popup);
+    vi.stubGlobal('window', {
+      open,
+      location: { origin: 'https://cashpay.example' },
+    });
+
+    expect(
+      openRateNote({
+        ticks: [rateNoteTick],
+        metro: 'Portland-Salem',
+        procedureCode: '99213',
+      }),
+    ).toBe(true);
+    expect(open).toHaveBeenCalledWith('', '_blank', 'width=900,height=720');
+    expect(popup.opener).toBeNull();
+    expect(document.write).toHaveBeenCalledWith(expect.stringContaining('Mercy Hospital'));
+    expect(document.close).toHaveBeenCalledOnce();
+  });
+
+  it('reports a genuinely blocked popup', () => {
+    vi.stubGlobal('window', {
+      open: vi.fn(() => null),
+      location: { origin: 'https://cashpay.example' },
+    });
+
+    expect(
+      openRateNote({
+        ticks: [rateNoteTick],
+        metro: 'Portland-Salem',
+        procedureCode: '99213',
+      }),
+    ).toBe(false);
   });
 });

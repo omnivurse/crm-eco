@@ -23,6 +23,7 @@ export async function GET(
       .select('*')
       .eq('id', id)
       .eq('author_id', profile.id)
+      .eq('org_id', profile.organization_id)
       .single();
 
     if (error || !data) {
@@ -70,6 +71,7 @@ export async function PUT(
       .update(updates)
       .eq('id', id)
       .eq('author_id', profile.id)
+      .eq('org_id', profile.organization_id)
       .select()
       .single();
 
@@ -101,14 +103,48 @@ export async function DELETE(
     const { id } = await params;
     const supabase = await createClient();
 
-    const { error } = await supabase
+    const { data: existing, error: readError } = await supabase
+      .from('inbox_drafts')
+      .select('id, scheduled_at')
+      .eq('id', id)
+      .eq('author_id', profile.id)
+      .eq('org_id', profile.organization_id)
+      .maybeSingle();
+
+    if (readError) {
+      return NextResponse.json({ error: 'Failed to read draft' }, { status: 500 });
+    }
+    if (!existing) {
+      return NextResponse.json({ error: 'Draft not found' }, { status: 404 });
+    }
+    // The legacy scheduler reads drafts into memory before provider submit.
+    // Until schedules move to the durable outbox, claiming cancellation here
+    // would be unsafe: an already-read message could still be delivered.
+    if (existing.scheduled_at) {
+      return NextResponse.json(
+        { error: 'Scheduled messages cannot be deleted after they are queued' },
+        { status: 409 },
+      );
+    }
+
+    const { data, error } = await supabase
       .from('inbox_drafts')
       .delete()
       .eq('id', id)
-      .eq('author_id', profile.id);
+      .eq('author_id', profile.id)
+      .eq('org_id', profile.organization_id)
+      .is('scheduled_at', null)
+      .select('id')
+      .maybeSingle();
 
     if (error) {
       return NextResponse.json({ error: 'Failed to delete draft' }, { status: 500 });
+    }
+    if (!data) {
+      return NextResponse.json(
+        { error: 'Draft changed before it could be deleted' },
+        { status: 409 },
+      );
     }
 
     return NextResponse.json({ success: true });
