@@ -6,25 +6,11 @@ const ENV_ERROR =
   'Missing Supabase environment variables: NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY must be set';
 
 /**
- * Detect Next.js production build (`next build`).
- *
- * During SSG, Next pre-renders client components on the server to capture
- * their initial HTML. If env vars aren't set yet (e.g. on a fresh Vercel
- * preview before secrets are wired), throwing here would abort the entire
- * build. We instead return a lazy proxy so static markup still renders;
- * any real method call (which only happens at runtime in the browser) will
- * throw the same clear message.
+ * Returns a lazy no-op proxy so configuration-error UI can render without
+ * constructing a client from invalid values. No provider request can escape
+ * this proxy.
  */
-function isBuildPhase(): boolean {
-  return process.env.NEXT_PHASE === 'phase-production-build';
-}
-
-/**
- * Returns a no-op proxy that throws `ENV_ERROR` the first time anything
- * non-trivial is invoked on it. Method chains (`.from('x').select('*')`)
- * succeed up to the terminal `await`/Promise step, then reject.
- */
-function buildTimeStub(): SupabaseClient<Database> {
+function missingEnvStub(): SupabaseClient<Database> {
   const handler: ProxyHandler<object> = {
     get(_target, prop) {
       if (prop === Symbol.toPrimitive || prop === 'toString' || prop === 'then') {
@@ -46,22 +32,16 @@ function buildTimeStub(): SupabaseClient<Database> {
 /**
  * Create a typed Supabase browser client.
  *
- * Throws at runtime if the required environment variables are not set.
- * During `next build` (SSG/ISR pre-render) the throw is deferred to the
- * first method call so the build can still complete.
+ * When configuration is missing, construction stays lazy so Next.js can render
+ * a public configuration-error page during both builds and runtime SSR. Any
+ * real Supabase operation still fails closed through the stub.
  */
 export function createClient(): SupabaseClient<Database> {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    // Missing env used to throw during render and trip the app error
-    // boundary ("Something went wrong"). Defer the throw to the first
-    // real call so the page can still paint a form / config message.
-    if (isBuildPhase() || typeof window !== 'undefined') {
-      return buildTimeStub();
-    }
-    throw new Error(ENV_ERROR);
+    return missingEnvStub();
   }
 
   return createBrowserClient<Database>(supabaseUrl, supabaseAnonKey);
