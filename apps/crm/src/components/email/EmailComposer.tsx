@@ -77,7 +77,7 @@ interface EmailComposerProps {
    * composer owns its form state, so a host that needs to guard a dismissal —
    * the inbox compose dock — can only learn this by being told.
    */
-  onDirtyChange?: (dirty: boolean) => void;
+  onDirtyChange?: (dirty: boolean, data: EmailComposerData) => void;
   /**
    * Save silently this many ms after the last edit. Off by default: the
    * campaign and record surfaces have no draft row to write to. The inbox
@@ -257,8 +257,11 @@ export const EmailComposer = memo(function EmailComposer({
   const dirty = composeIsDirty({ to, cc, bcc, subject, bodyHtml: body, attachments });
 
   useEffect(() => {
-    onDirtyChange?.(dirty);
-  }, [dirty, onDirtyChange]);
+    // The dock needs the current snapshot to flush the debounce before it
+    // closes. Reporting only the boolean left "Keep in Drafts" with no data
+    // to persist when the user closed inside the autosave window.
+    onDirtyChange?.(dirty, getComposerData());
+  }, [dirty, getComposerData, onDirtyChange]);
 
   /**
    * Autosave keeps the newest getComposerData in a ref rather than in the
@@ -267,13 +270,10 @@ export const EmailComposer = memo(function EmailComposer({
    */
   const composerDataRef = useRef(getComposerData);
   composerDataRef.current = getComposerData;
-  const savingRef = useRef(false);
 
   useEffect(() => {
-    if (!autosaveMs || !onSave || !dirty) return;
+    if (!autosaveMs || !onSave || !dirty || isSending || isSaving || isScheduling) return;
     const timer = setTimeout(async () => {
-      if (savingRef.current) return;
-      savingRef.current = true;
       try {
         await onSave(composerDataRef.current());
       } catch (error) {
@@ -281,12 +281,24 @@ export const EmailComposer = memo(function EmailComposer({
         // one must never interrupt typing with a toast; the explicit Save
         // Draft button still reports its own failures.
         console.warn('[compose] autosave failed:', error);
-      } finally {
-        savingRef.current = false;
       }
     }, autosaveMs);
     return () => clearTimeout(timer);
-  }, [autosaveMs, onSave, dirty, to, cc, bcc, subject, body, attachments, signatureId]);
+  }, [
+    autosaveMs,
+    onSave,
+    dirty,
+    to,
+    cc,
+    bcc,
+    subject,
+    body,
+    attachments,
+    signatureId,
+    isSending,
+    isSaving,
+    isScheduling,
+  ]);
 
   // Add recipient helper
   const addRecipient = (

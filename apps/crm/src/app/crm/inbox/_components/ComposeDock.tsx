@@ -134,6 +134,8 @@ export function ComposeDock({
   const [dirty, setDirty] = useState(false);
   const [savedSubject, setSavedSubject] = useState<string | undefined>(initialSubject);
   const draftIdRef = useRef<string | null>(initialDraftId ?? null);
+  const latestDataRef = useRef<EmailComposerData | null>(null);
+  const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
   const paneRef = useRef<HTMLDivElement>(null);
 
   const applySize = useCallback((next: ComposeDockSize) => {
@@ -151,28 +153,42 @@ export function ComposeDock({
     paneRef.current?.focus({ preventScroll: true });
   }, [open, composerKey, size]);
 
-  const saveDraft = useCallback(async (data: EmailComposerData) => {
-    const payload = draftPayload(data, { kind: composeKind, conversationId });
-    setSavedSubject(data.subject);
-    if (draftIdRef.current) {
-      const res = await fetch(`/api/inbox/drafts/${draftIdRef.current}`, {
-        method: 'PUT',
+  const saveDraft = useCallback((data: EmailComposerData): Promise<void> => {
+    const persist = async () => {
+      const payload = draftPayload(data, { kind: composeKind, conversationId });
+      setSavedSubject(data.subject);
+      if (draftIdRef.current) {
+        const res = await fetch(`/api/inbox/drafts/${draftIdRef.current}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) throw new Error('Failed to save draft');
+        return;
+      }
+      const res = await fetch('/api/inbox/drafts', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      if (!res.ok) throw new Error('Failed to save draft');
-      return;
-    }
-    const res = await fetch('/api/inbox/drafts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    const result = await res.json().catch(() => ({}));
-    if (!res.ok || !result.draft?.id) throw new Error(result.error || 'Failed to save draft');
-    draftIdRef.current = result.draft.id;
-    onDraftsChanged?.();
+      const result = await res.json().catch(() => ({}));
+      if (!res.ok || !result.draft?.id) throw new Error(result.error || 'Failed to save draft');
+      draftIdRef.current = result.draft.id;
+      onDraftsChanged?.();
+    };
+
+    // Autosave, explicit Save, and close can overlap on a slow connection.
+    // Serialize them so only the first write creates a row and the newest
+    // snapshot is always the final PUT.
+    const queued = saveQueueRef.current.then(persist);
+    saveQueueRef.current = queued.catch(() => undefined);
+    return queued;
   }, [composeKind, conversationId, onDraftsChanged]);
+
+  const handleDirtyChange = useCallback((nextDirty: boolean, data: EmailComposerData) => {
+    latestDataRef.current = data;
+    setDirty(nextDirty);
+  }, []);
 
   const close = useCallback(
     async (force = false) => {
@@ -180,11 +196,14 @@ export function ComposeDock({
         const keep = await confirmDialog({
           title: 'Keep this message?',
           description:
-            'It is saved in Drafts. Discard removes it — the text and any attachments are gone.',
+            'Keep saves the latest version in Drafts. Discard removes the text and any attachments.',
           confirmLabel: 'Keep in Drafts',
           cancelLabel: 'Discard',
         });
         if (!keep) {
+          // An autosave may already be creating the row. Let it settle before
+          // deleting, or its late POST can resurrect a message after Discard.
+          await saveQueueRef.current;
           // Discard means discard: delete the autosaved row too, otherwise
           // Drafts fills with messages the user explicitly threw away.
           if (draftIdRef.current) {
@@ -195,6 +214,19 @@ export function ComposeDock({
             onDraftsChanged?.();
           }
         } else {
+          const latest = latestDataRef.current;
+          if (!latest) {
+            toast.error(toastCopy.failed('save the draft', undefined, 'Try again'));
+            return;
+          }
+          try {
+            // Flush the current snapshot instead of assuming the 1.2-second
+            // debounce has already fired.
+            await saveDraft(latest);
+          } catch (error) {
+            toast.error(toastCopy.failed('save the draft', error, 'Try again'));
+            return;
+          }
           onDraftsChanged?.();
         }
       }
@@ -203,7 +235,7 @@ export function ComposeDock({
       setTemplateBody(undefined);
       onOpenChange(false);
     },
-    [dirty, onDraftsChanged, onOpenChange],
+    [dirty, onDraftsChanged, onOpenChange, saveDraft],
   );
 
   const deleteDraft = useCallback(async () => {
@@ -214,6 +246,7 @@ export function ComposeDock({
       destructive: true,
     });
     if (!confirmed) return;
+    await saveQueueRef.current;
     if (draftIdRef.current) {
       const res = await fetch(`/api/inbox/drafts/${draftIdRef.current}`, { method: 'DELETE' }).catch(
         () => null,
@@ -235,6 +268,7 @@ export function ComposeDock({
   const handleSend = useCallback(
     async (data: EmailComposerData) => {
       if (data.to.length === 0) throw new Error('At least one recipient is required');
+      await saveQueueRef.current;
 
       const fromEmail = data.from_email || fallbackEmail;
       const fromName = data.from_name || fallbackName;
@@ -296,6 +330,7 @@ export function ComposeDock({
   const handleSchedule = useCallback(
     async (data: EmailComposerData, scheduledAt: Date) => {
       if (data.to.length === 0) throw new Error('At least one recipient is required');
+      await saveQueueRef.current;
       const payload = {
         ...draftPayload(data, { kind: composeKind, conversationId }),
         scheduled_at: scheduledAt.toISOString(),
@@ -442,7 +477,7 @@ export function ComposeDock({
             onSave={saveDraft}
             onSchedule={handleSchedule}
             onCancel={() => void close()}
-            onDirtyChange={setDirty}
+            onDirtyChange={handleDirtyChange}
             autosaveMs={AUTOSAVE_MS}
             showSchedule
             showSave
