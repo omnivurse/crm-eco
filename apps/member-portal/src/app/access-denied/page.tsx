@@ -23,6 +23,8 @@ export default async function AccessDeniedPage({ searchParams }: PageProps) {
         return 'You need an active membership to view this page. Enroll to get started — or contact support if you believe this is an error.';
       case 'inactive_member':
         return 'Your membership is not currently active, so the member portal is unavailable. If you believe this is an error or would like to reactivate, please contact support.';
+      case 'config':
+        return 'Enrollment is temporarily unavailable because the portal is not configured. Please contact support and try again later.';
       default:
         return 'You do not have permission to access this page.';
     }
@@ -31,6 +33,7 @@ export default async function AccessDeniedPage({ searchParams }: PageProps) {
   // Enroll CTA only makes sense for prospects with no membership — not for an
   // inactive member, who should reach support instead.
   const isMemberGate = reason === 'no_member' || reason === 'no_membership';
+  const isConfigurationError = reason === 'config';
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-[var(--mp-canvas)] p-4">
@@ -39,19 +42,23 @@ export default async function AccessDeniedPage({ searchParams }: PageProps) {
           <ShieldSlash weight="light" className="h-10 w-10 text-red-600" />
         </div>
         
-        <h1 className="mb-4 text-2xl font-bold tracking-[-0.03em] text-[var(--mp-ink)]">Access Denied</h1>
+        <h1 className="mb-4 text-2xl font-bold tracking-[-0.03em] text-[var(--mp-ink)]">
+          {isConfigurationError ? 'Enrollment unavailable' : 'Access Denied'}
+        </h1>
         
         <p className="mb-8 text-slate-600">
           {getReasonMessage()}
         </p>
 
         <div className="flex flex-col justify-center gap-3 sm:flex-row">
-          <Link href="/">
-            <Button variant="outline" className="w-full gap-2 rounded-full sm:w-auto">
-              <ArrowLeft weight="light" className="h-4 w-4" />
-              Go Home
-            </Button>
-          </Link>
+          {!isConfigurationError && (
+            <Link href="/">
+              <Button variant="outline" className="w-full gap-2 rounded-full sm:w-auto">
+                <ArrowLeft weight="light" className="h-4 w-4" />
+                Go Home
+              </Button>
+            </Link>
+          )}
           
           {reason === 'not_authenticated' ? (
             <Link href="/signin">
