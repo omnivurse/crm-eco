@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { type NextRequest, NextResponse } from 'next/server';
 import { enforcePinLock } from '@crm-eco/ui/lib/pin-lock-next';
+import { missingSupabaseConfigRedirect } from '@/lib/supabase-config';
 
 export async function middleware(request: NextRequest) {
   const pin = enforcePinLock(request);
@@ -36,6 +37,10 @@ export async function middleware(request: NextRequest) {
       '[Middleware] NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY are not set. ' +
         'Add them to apps/member-portal/.env.local (see .env.example).',
     );
+    const configRedirect = missingSupabaseConfigRedirect(pathname);
+    if (configRedirect) {
+      return NextResponse.redirect(new URL(configRedirect, request.url));
+    }
     if (isPublicRoute || pathname.startsWith('/api/')) {
       return supabaseResponse;
     }
