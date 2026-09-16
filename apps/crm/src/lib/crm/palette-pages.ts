@@ -19,7 +19,7 @@ import {
   getNavItemsForModule,
   type NavItem,
   type TopModule,
-} from '@/contexts/ModuleContext';
+} from '@/lib/crm/module-nav';
 import {
   buildFullCrmNav,
   buildSimpleNav,

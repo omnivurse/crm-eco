@@ -1,6 +1,18 @@
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { runGizmoTurn, stripDisallowedHrefs } from '@crm-eco/lib/gizmo';
 import { CRM_HOWTO, CRM_PLACES } from '@crm-eco/lib/gizmo/catalogs/crm';
+import { PALETTE_TABS } from '@/lib/crm/palette-pages';
+
+describe('crm gizmo chat collect-time safety', () => {
+  it('loads palette tabs without the client ModuleContext', () => {
+    expect(Array.isArray(PALETTE_TABS)).toBe(true);
+    expect(PALETTE_TABS[0]).toBe('crm');
+    const route = readFileSync(path.join(__dirname, 'route.ts'), 'utf8');
+    expect(route).not.toMatch(/ModuleContext/);
+  });
+});
 
 describe('crm gizmo chat fallback', () => {
   it('finds import how-to without an API key', () => {

@@ -13,7 +13,7 @@
  * profile via the `crm.nav.simple` feature flag and hands the result down.
  */
 
-import type { NavItem } from '@/contexts/ModuleContext';
+import type { NavItem } from '@/lib/crm/module-nav';
 
 export type NavProfile = 'simple' | 'full';
 

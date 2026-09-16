@@ -1,18 +1,16 @@
-import { describe, expect, it, vi } from 'vitest';
-
-vi.mock('next/navigation', () => ({
-  usePathname: () => '/crm',
-  useSearchParams: () => new URLSearchParams(''),
-}));
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import { describe, expect, it } from 'vitest';
 
 import {
   CRM_NAV_ITEMS,
   TOP_MODULES,
   getNavItemsForModule,
   type TopModule,
-} from '@/contexts/ModuleContext';
+} from '@/lib/crm/module-nav';
 import { buildFullCrmNav, type NavModule } from '@/lib/crm/nav-profile';
 import {
+  PALETTE_TABS,
   PERSONA_IDLE_PAGE_HREFS,
   buildPalettePages,
   palettePageMatches,
@@ -39,6 +37,15 @@ const PIFH = [
 const WITH_DEALS = [...PIFH, mod('deals', { display_order: 6 })];
 
 const ALL_TABS: TopModule[] = [...TOP_MODULES.map((m) => m.key), 'settings'];
+
+describe('server-safe palette catalog', () => {
+  it('does not import the client ModuleContext (Vercel collect /api/gizmo/chat)', () => {
+    const source = readFileSync(path.join(__dirname, 'palette-pages.ts'), 'utf8');
+    expect(source).not.toMatch(/ModuleContext/);
+    expect(Array.isArray(TOP_MODULES)).toBe(true);
+    expect(PALETTE_TABS).toEqual(ALL_TABS);
+  });
+});
 
 describe('buildPalettePages', () => {
   it('lists every non-separator sidebar href exactly once (admin, deals + advisors on)', () => {
