@@ -10,6 +10,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { buildRequest, buildProfile } from '@/test/helpers';
+import { prioritizeSearchJsonKeys } from '@/lib/crm/record-search';
 
 const ORG_A = '00000000-0000-0000-0000-000000000001';
 const ORG_B = '00000000-0000-0000-0000-00000000000b';
@@ -167,7 +168,7 @@ async function pageEquivalent(listUrl: URLSearchParams) {
     page: 1,
     pageSize: 25,
     search: listState.search,
-    searchDataJsonKeys: fields.map((f) => f.key),
+    searchDataJsonKeys: prioritizeSearchJsonKeys(fields.map((f) => f.key)),
     filters: listState.filters,
     sort: listState.sort,
     scope: listState.scope,

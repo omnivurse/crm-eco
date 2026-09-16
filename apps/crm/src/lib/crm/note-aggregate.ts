@@ -2,9 +2,10 @@
  * Central resolver: which `crm_records.id` values contribute notes to a given record’s UI.
  *
  * - **Person modules** (leads / contacts / members / history): this row + Zoho lineage fields
- *   (`converted_from_lead_id`, `converted_contact_id`) + `lead_to_contact` graph peers.
- * - **Contacts**: also same-email sibling contacts in the same org (Zoho duplicate contacts
- *   that share an email but were never linked via lead_to_contact).
+ *   (`converted_from_lead_id`, `converted_contact_id`) + `lead_to_contact` /
+ *   `lead_to_member` graph peers.
+ * - **Contacts**: also same-email person siblings (contacts / leads / members /
+ *   history) so enrollment notes on an unlinked lead still show on the Contact.
  * - **Deals**: this row + `deal_to_contact` / `deal_to_account` linked records; for each
  *   linked person row, same lineage + lead/contact graph as above (batched link query).
  *
@@ -26,6 +27,9 @@ const UUID_RE =
 const DEAL_MODULE_KEYS = new Set(['deals']);
 
 const LINK_LEAD_CONTACT = 'lead_to_contact';
+const LINK_LEAD_MEMBER = 'lead_to_member';
+const PERSON_LINEAGE_LINK_TYPES = [LINK_LEAD_CONTACT, LINK_LEAD_MEMBER] as const;
+const PERSON_NOTE_EMAIL_MODULES = ['contacts', 'leads', 'members', 'history'] as const;
 const LINK_DEAL_TO_RELATED = ['deal_to_contact', 'deal_to_account'] as const;
 
 /**
@@ -171,8 +175,8 @@ function emailsFromPersonRecord(record: NoteAggregateRecord): string[] {
 }
 
 /**
- * Adds every `lead_to_contact` edge touching any of `seedPersonIds` (both endpoints),
- * so lead + contact + any linked pair are all included in one round-trip.
+ * Adds every `lead_to_contact` / `lead_to_member` edge touching any of
+ * `seedPersonIds` (both endpoints), so lead + contact/member pairs stay together.
  */
 async function addLeadContactNeighborhood(
   supabase: SupabaseClient,
@@ -203,7 +207,7 @@ async function addLeadContactNeighborhood(
   const { data: links } = await supabase
     .from('crm_record_links')
     .select('source_record_id, target_record_id')
-    .eq('link_type', LINK_LEAD_CONTACT)
+    .in('link_type', [...PERSON_LINEAGE_LINK_TYPES])
     .or(orParts);
 
   for (const row of links || []) {
@@ -215,10 +219,49 @@ async function addLeadContactNeighborhood(
 }
 
 /**
- * Adds other **contacts** in the same org that share a normalized email.
- * Guards: contacts module only, non-empty email, org-scoped, exclude soft-deleted
- * and the current record. Does not cross tenants.
+ * Adds other person records in the same org that share a normalized email.
+ * Default modules: contacts / leads / members / history. Org-scoped, skips
+ * soft-deleted rows and the current record. Does not cross tenants.
  */
+export async function addSameEmailModuleSiblings(
+  supabase: SupabaseClient,
+  orgId: string | null | undefined,
+  email: string | null | undefined,
+  excludeId: string,
+  into: Set<string>,
+  moduleKeys: readonly string[] = PERSON_NOTE_EMAIL_MODULES,
+): Promise<void> {
+  const normalized = normalizeEmailForNoteAggregate(email);
+  const org = parseUuidLoose(orgId);
+  const exclude = parseUuidLoose(excludeId);
+  const keys = moduleKeys.map((k) => normalizeModuleKey(k)).filter(Boolean);
+  if (!normalized || !org || !exclude || keys.length === 0) return;
+
+  const allowed = new Set(keys);
+  let query = supabase
+    .from('crm_records')
+    .select('id, crm_modules!inner(key)')
+    .eq('org_id', org)
+    .ilike('email', normalized)
+    .is('deleted_at' as never, null)
+    .neq('id', exclude);
+  query =
+    keys.length === 1
+      ? query.eq('crm_modules.key', keys[0])
+      : query.in('crm_modules.key', keys);
+
+  const { data: siblings, error } = await query;
+  if (error || !siblings?.length) return;
+
+  for (const row of siblings) {
+    const joined = (row as { crm_modules?: unknown }).crm_modules;
+    const moduleKey = normalizeModuleKey(moduleKeyFromJoinedRelation(joined));
+    if (!allowed.has(moduleKey)) continue;
+    const id = parseUuidLoose(row.id);
+    if (id) into.add(id);
+  }
+}
+
 export async function addSameEmailContactSiblings(
   supabase: SupabaseClient,
   orgId: string | null | undefined,
@@ -226,31 +269,9 @@ export async function addSameEmailContactSiblings(
   excludeId: string,
   into: Set<string>,
 ): Promise<void> {
-  const normalized = normalizeEmailForNoteAggregate(email);
-  const org = parseUuidLoose(orgId);
-  const exclude = parseUuidLoose(excludeId);
-  if (!normalized || !org || !exclude) return;
-
-  const { data: siblings, error } = await supabase
-    .from('crm_records')
-    .select('id, crm_modules!inner(key)')
-    .eq('org_id', org)
-    .ilike('email', normalized)
-    .eq('crm_modules.key', 'contacts')
-    .is('deleted_at' as never, null)
-    .neq('id', exclude);
-
-  if (error || !siblings?.length) return;
-
-  for (const row of siblings) {
-    // Defense in depth: only accept rows whose joined module is contacts.
-    const joined = (row as { crm_modules?: unknown }).crm_modules;
-    if (normalizeModuleKey(moduleKeyFromJoinedRelation(joined)) !== 'contacts') {
-      continue;
-    }
-    const id = parseUuidLoose(row.id);
-    if (id) into.add(id);
-  }
+  return addSameEmailModuleSiblings(supabase, orgId, email, excludeId, into, [
+    'contacts',
+  ]);
 }
 
 async function resolvePersonNoteSources(
@@ -267,15 +288,21 @@ async function resolvePersonNoteSources(
 
   const mk = normalizeModuleKey(moduleKey);
 
-  // Same-email Zoho duplicate contacts — contacts module.
+  // Same-email person twins — contacts, leads, and members. Enrollment
+  // notes often land on the lead while `lead_to_contact` was never written
+  // (PIFH used `lead_to_member` + a later contact). Without this, Contact
+  // Notes is empty while Member Notes still shows the lead's history.
   if (mk === 'contacts') {
-    await addSameEmailContactSiblings(
-      supabase,
-      record.org_id,
-      record.email,
-      root,
-      ids,
-    );
+    for (const email of emailsFromPersonRecord(record)) {
+      await addSameEmailModuleSiblings(
+        supabase,
+        record.org_id,
+        email,
+        root,
+        ids,
+        PERSON_NOTE_EMAIL_MODULES,
+      );
+    }
   }
 
   // Members twins: also pull contact notes via alternate emails + member_number.

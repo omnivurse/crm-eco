@@ -180,11 +180,46 @@ describe('resolveNoteSourceRecordIdsWithClient', () => {
     expect(ids).toContain(CONTACT_A);
     expect(ids).toContain(CONTACT_B);
     expect(recordsChain.eq).toHaveBeenCalledWith('org_id', ORG_A);
-    expect(recordsChain.eq).toHaveBeenCalledWith('crm_modules.key', 'contacts');
+    expect(recordsChain.in).toHaveBeenCalledWith('crm_modules.key', [
+      'contacts',
+      'leads',
+      'members',
+      'history',
+    ]);
     expect(recordsChain.ilike).toHaveBeenCalledWith(
       'email',
       'janebaby311@gmail.com',
     );
+  });
+
+  it('contacts include same-email leads so enrollment notes surface without lead_to_contact', async () => {
+    const LEAD_ID = '0a8ab26e-7f7d-4d0e-9d12-a943a13bd3eb';
+    const linksChain = createChainMock({ data: [], error: null });
+    const recordsChain = createChainMock({
+      data: [{ id: LEAD_ID, crm_modules: { key: 'leads' } }],
+      error: null,
+    });
+    const from = vi.fn((table: string) => {
+      if (table === 'crm_record_links') return linksChain;
+      if (table === 'crm_records') return recordsChain;
+      throw new Error(`Unexpected table: ${table}`);
+    });
+    const supabase = { from } as unknown as SupabaseClient;
+    const record: NoteAggregateRecord = {
+      id: CONTACT_A,
+      org_id: ORG_A,
+      email: 'SchwartzLarissa@gmail.com',
+      data: { email: 'SchwartzLarissa@gmail.com' },
+    };
+
+    const ids = await resolveNoteSourceRecordIdsWithClient(
+      supabase,
+      record,
+      'contacts',
+    );
+
+    expect(ids).toContain(CONTACT_A);
+    expect(ids).toContain(LEAD_ID);
   });
 
   it('members module pulls contact notes via email2 and member_number', async () => {

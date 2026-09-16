@@ -37,6 +37,7 @@ import {
   getViewsForModule,
 } from '@/lib/crm/queries';
 import { loadListQueryState, readListUrlQueryState } from '@/lib/crm/list-query-resolve';
+import { prioritizeSearchJsonKeys } from '@/lib/crm/record-search';
 
 export const dynamic = 'force-dynamic';
 
@@ -107,7 +108,7 @@ export async function GET(request: NextRequest) {
       moduleKey,
       filters: listState.filters,
       search: listState.search,
-      searchDataJsonKeys: fields.map((f) => f.key),
+      searchDataJsonKeys: prioritizeSearchJsonKeys(fields.map((f) => f.key)),
       scope: listState.scope,
       territoryId: listState.territoryId,
     });

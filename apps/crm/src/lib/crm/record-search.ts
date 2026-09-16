@@ -44,8 +44,8 @@ const SEARCH_KEY_PRIORITY = [
   'member_number', 'sharing_member_id', 'e123_member_id', 'internal_id',
   'email', 'email2', 'secondary_email',
   'mobile', 'phone2', 'work_phone', 'home_phone', 'cell',
-  'city', 'state', 'zip_code', 'mailing_city', 'mailing_state', 'mailing_zip',
-  'address_line1', 'mailing_street',
+  'city', 'state', 'zip_code', 'zip', 'mailing_city', 'mailing_state', 'mailing_zip',
+  'address_line1', 'mailing_street', 'street',
   'company', 'company_name',
   'sharing_entity', 'carrier', 'product', 'plan_name',
   'advisor_name', 'advisor_code', 'producer_name',
@@ -54,27 +54,41 @@ const SEARCH_KEY_PRIORITY = [
 
 const PRIORITY_RANK = new Map(SEARCH_KEY_PRIORITY.map((k, i) => [k, i]));
 
-export async function fetchModuleDataJsonKeysForSearch(
-  supabase: any,
-  moduleId: string,
-  maxKeys = 80,
-): Promise<string[]> {
-  const { data, error } = await supabase
-    .from('crm_fields')
-    .select('key')
-    .eq('module_id', moduleId);
-  if (error || !data) return [];
-  return (data as { key: string }[])
-    .map((r) => r.key)
+/**
+ * Keep list / fallback search on identity keys. Members have 90+ crm_fields;
+ * OR-ing every `data->>key` for each word is what made module search feel
+ * like 10 seconds.
+ */
+export const SEARCH_JSON_KEY_CAP = 32;
+
+export function prioritizeSearchJsonKeys(
+  keys: readonly string[],
+  maxKeys = SEARCH_JSON_KEY_CAP,
+): string[] {
+  return keys
     .filter((k) => typeof k === 'string' && SAFE_DATA_JSON_KEY.test(k))
-    // Deterministic: high-value keys first, then alphabetical so the searched
-    // set is stable across deploys instead of depending on row order.
     .sort((a, b) => {
       const ra = PRIORITY_RANK.get(a) ?? Number.MAX_SAFE_INTEGER;
       const rb = PRIORITY_RANK.get(b) ?? Number.MAX_SAFE_INTEGER;
       return ra !== rb ? ra - rb : a.localeCompare(b);
     })
     .slice(0, maxKeys);
+}
+
+export async function fetchModuleDataJsonKeysForSearch(
+  supabase: any,
+  moduleId: string,
+  maxKeys = SEARCH_JSON_KEY_CAP,
+): Promise<string[]> {
+  const { data, error } = await supabase
+    .from('crm_fields')
+    .select('key')
+    .eq('module_id', moduleId);
+  if (error || !data) return [];
+  return prioritizeSearchJsonKeys(
+    (data as { key: string }[]).map((r) => r.key),
+    maxKeys,
+  );
 }
 
 /**
@@ -84,7 +98,7 @@ export async function fetchOrgDataJsonKeysForSearch(
   supabase: any,
   orgId: string,
   moduleKey: string | null = null,
-  maxKeys = 120,
+  maxKeys = SEARCH_JSON_KEY_CAP,
 ): Promise<string[]> {
   let moduleQuery = supabase.from('crm_modules').select('id').eq('org_id', orgId);
   if (moduleKey) {
@@ -104,12 +118,11 @@ export async function fetchOrgDataJsonKeysForSearch(
   const keys: string[] = [];
   for (const row of fields as { key: string }[]) {
     const k = row.key;
-    if (!k || !SAFE_DATA_JSON_KEY.test(k) || seen.has(k)) continue;
+    if (!k || seen.has(k)) continue;
     seen.add(k);
     keys.push(k);
-    if (keys.length >= maxKeys) break;
   }
-  return keys;
+  return prioritizeSearchJsonKeys(keys, maxKeys);
 }
 
 const JSON_PHONE_FIELD_KEYS = [
@@ -461,12 +474,6 @@ export interface ResolveSearchRowsOptions {
 /** Default trigram similarity threshold shared by both callers. */
 export const GLOBAL_SEARCH_DEFAULT_THRESHOLD = 0.2;
 
-/**
- * Below this many RPC hits we also run the identifier/address ilike pass.
- * A name search that already returns a full page skips the extra query.
- */
-const SUPPLEMENT_BELOW = 5;
-
 /** Phone-ish input: ≥4 digits, ≤15, (almost) nothing but digits/separators, no '@'. */
 function classifyDigits(searchQuery: string): { digits: string; phoneOnly: boolean; hasPhoneRun: boolean } {
   const digits = searchQuery.replace(/[^0-9]/g, '');
@@ -562,8 +569,10 @@ async function smartSearch(
     // keys Zoho-era rows are actually looked up by — searching a real member
     // number returned zero results. When the RPC comes back (near-)empty, run
     // the JSONB ilike pass, which does cover those keys, and merge.
-    // Only on a thin result set, so ordinary name searches cost one query.
-    if (rows.length >= SUPPLEMENT_BELOW) return rows;
+    // Name searches that already hit stay on the RPC. The JSONB ilike
+    // supplement is for misses (member # / address) — running it on every
+    // 1–4 hit name query OR-scans 80+ keys and is what felt like 10s.
+    if (rows.length > 0) return rows;
 
     const supplement = await ilikeFallback(supabase, orgId, opts).catch((e) => {
       console.warn('[search] identifier supplement failed:', e);

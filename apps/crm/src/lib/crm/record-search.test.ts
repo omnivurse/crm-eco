@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   CORE_GLOBAL_SEARCH_JSON_KEYS,
   IDENTIFIER_SEARCH_JSON_KEYS,
+  prioritizeSearchJsonKeys,
   buildIdentifierSearchOrFilter,
   isNumericIdentifierQuery,
   mergeUniqueByIdPreserveOrder,
@@ -68,6 +69,26 @@ describe('mergeUniqueByIdPreserveOrder', () => {
 
   it('works when the phone path returns nothing (member number only)', () => {
     expect(mergeUniqueByIdPreserveOrder([], [row('i1')], 5).map((r) => r.id)).toEqual(['i1']);
+  });
+});
+
+describe('prioritizeSearchJsonKeys', () => {
+  it('keeps identity keys and drops the long tail so member list search stays fast', () => {
+    const keys = [
+      'zoho_id',
+      'first_name',
+      'last_name',
+      'street',
+      'zip',
+      ...Array.from({ length: 80 }, (_, i) => `custom_${i}`),
+    ];
+    const out = prioritizeSearchJsonKeys(keys);
+    expect(out[0]).toBe('first_name');
+    expect(out[1]).toBe('last_name');
+    expect(out).toHaveLength(32);
+    expect(out).not.toContain('zoho_id');
+    expect(out).toContain('street');
+    expect(out).toContain('zip');
   });
 });
 

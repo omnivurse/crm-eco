@@ -134,7 +134,7 @@ describe('resolveSearchRows — phone-only queries', () => {
 });
 
 describe('resolveSearchRows — text queries', () => {
-  it('name queries use crm_smart_search with the threshold; a thin result set is supplemented by the JSONB ilike pass', async () => {
+  it('name queries use crm_smart_search and skip the JSONB ilike pass when the RPC already hit', async () => {
     const { client } = buildSupabaseClient(
       { crm_records: { data: [joinRow('supplement')], error: null } },
       { rpcResults: { crm_smart_search: { data: [row({ id: 'rpc-hit', match_type: 'fuzzy', rank: 0.4 })], error: null } } },
@@ -147,7 +147,17 @@ describe('resolveSearchRows — text queries', () => {
       p_limit: 50,
       p_similarity_threshold: 0.3,
     });
-    expect(rows.map((r) => r.id)).toEqual(['rpc-hit', 'supplement']);
+    expect(rows.map((r) => r.id)).toEqual(['rpc-hit']);
+    expect(client.from).not.toHaveBeenCalled();
+  });
+
+  it('an empty RPC result still runs the JSONB ilike pass (member # / address misses)', async () => {
+    const { client } = buildSupabaseClient(
+      { crm_records: { data: [joinRow('supplement')], error: null } },
+      { rpcResults: { crm_smart_search: { data: [], error: null } } },
+    );
+    const rows = await resolveSearchRows(client, ORG, { query: 'eagle co', limit: 50 });
+    expect(rows.map((r) => r.id)).toEqual(['supplement']);
   });
 
   it('a full RPC page skips the supplement (one query for ordinary name searches)', async () => {

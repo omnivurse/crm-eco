@@ -44,7 +44,11 @@ import {
   type TwinSourceRow,
 } from './resolve-record-twin';
 import type { MemberCrmRecordCandidate } from './resolve-member-crm-record';
-import { applyCrmRecordTextSearch, applyHideConvertedLeadsFilter } from './record-search';
+import {
+  applyCrmRecordTextSearch,
+  applyHideConvertedLeadsFilter,
+  prioritizeSearchJsonKeys,
+} from './record-search';
 import { alignMisalignedRecordModule } from './align-record-module';
 import { resolveCrmRecordFilterField } from './report-field-path';
 
@@ -830,7 +834,7 @@ export async function applyRecordListQuery<Q>(
     let dataJsonKeys = searchDataJsonKeys;
     if (!dataJsonKeys?.length) {
       const flds = await getFieldsForModule(moduleId);
-      dataJsonKeys = flds.map((f) => f.key);
+      dataJsonKeys = prioritizeSearchJsonKeys(flds.map((f) => f.key));
     }
     query = applyCrmRecordTextSearch(query, search, { dataJsonKeys });
   }

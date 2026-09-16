@@ -20,6 +20,7 @@ import type { AdvisorTreeData, AgentTreeData } from '@/lib/crm/queries';
 import { ModuleListClient, type ListPagerModel } from './ModuleListClient';
 import type { CrmModule, CrmField, CrmView, CrmRecord, ViewSort, ViewFilter, TreeGroupBy, CrmDealStage } from '@/lib/crm/types';
 import { parseCrmRecordPageSize } from '@/lib/crm/record-list-constants';
+import { prioritizeSearchJsonKeys } from '@/lib/crm/record-search';
 import { isListSurfaceTrimEnabled } from '@/lib/crm/feature-flags';
 import { habitPreferredViewId, resolveListQueryState } from '@/lib/crm/list-query-resolve';
 
@@ -218,7 +219,7 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
       page,
       pageSize,
       search: listState.search,
-      searchDataJsonKeys: fields.map((f) => f.key),
+      searchDataJsonKeys: prioritizeSearchJsonKeys(fields.map((f) => f.key)),
       filters,
       sort,
       scope: listState.scope,

@@ -56,6 +56,7 @@ import {
   resolveListQueryState,
 } from '@/lib/crm/list-query-resolve';
 import { applyRecordListQuery, getFieldsForModule } from '@/lib/crm/queries';
+import { prioritizeSearchJsonKeys } from '@/lib/crm/record-search';
 import type { ViewFilter } from '@/lib/crm/types';
 
 export const dynamic = 'force-dynamic';
@@ -138,8 +139,11 @@ export async function GET(request: NextRequest) {
     const listState = narrowed
       ? resolveListQueryState({ views: [], defaultView: null, url })
       : null;
-    const searchKeys =
-      listState?.search ? (await getFieldsForModule(moduleRow.id).catch(() => [])).map((f) => f.key) : undefined;
+    const searchKeys = listState?.search
+      ? prioritizeSearchJsonKeys(
+          (await getFieldsForModule(moduleRow.id).catch(() => [])).map((f) => f.key),
+        )
+      : undefined;
 
     const lanes: Array<{ lane: StatusLane; count: number }> = [];
     const rowRestricted = ROW_RESTRICTED_ROLES.has(String(profile.role ?? ''));
