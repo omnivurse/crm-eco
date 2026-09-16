@@ -4,6 +4,7 @@ import {
   canInviteOrgAdmin,
   canManageTeamMembers,
   canSendTeamInvite,
+  crmRoleForInvitedOrgRole,
   effectiveOrgRole,
   normalizeInvitableOrgRole,
 } from './invite-access';
@@ -33,6 +34,18 @@ describe('team invite access', () => {
   it('maps sales invite label to advisor org role', () => {
     expect(normalizeInvitableOrgRole('sales')).toBe('advisor');
     expect(normalizeInvitableOrgRole('admin')).toBe('admin');
+  });
+
+  it('grants CRM access for every persisted invite role', () => {
+    expect(crmRoleForInvitedOrgRole('admin')).toBe('crm_admin');
+    expect(crmRoleForInvitedOrgRole('advisor')).toBe('crm_agent');
+    expect(crmRoleForInvitedOrgRole('staff')).toBe('crm_agent');
+  });
+
+  it('fails closed for roles that cannot be persisted by the invite API', () => {
+    expect(crmRoleForInvitedOrgRole('super_admin')).toBeNull();
+    expect(crmRoleForInvitedOrgRole('owner')).toBeNull();
+    expect(crmRoleForInvitedOrgRole('unknown')).toBeNull();
   });
 
   it('elevates crm_admin to admin for org-role hierarchy', () => {
