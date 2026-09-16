@@ -5,6 +5,7 @@ import {
   hexRelativeLuminance,
   hexToContrastForegroundTriple,
   hexToHslTriple,
+  isLeftoverPlatformBrandColor,
 } from './branding';
 
 describe('hexToContrastForegroundTriple', () => {
@@ -27,15 +28,27 @@ describe('hexToContrastForegroundTriple', () => {
 });
 
 describe('brandingToCssText', () => {
+  it('ignores leftover Tailwind-blue PIFH seeds so CRM spruce / brand kit win', () => {
+    expect(isLeftoverPlatformBrandColor('#2563eb')).toBe(true);
+    expect(isLeftoverPlatformBrandColor('#1D4ED8')).toBe(true);
+    expect(isLeftoverPlatformBrandColor('#0B5D66')).toBe(false);
+    expect(
+      brandingToCssText({
+        colors: { primary: '#2563eb', secondary: '#1d4ed8', accent: '#0ea5e9' },
+        company_name: 'Pay It Forward Health',
+      }),
+    ).toBe('');
+  });
+
   it('emits a matching -foreground for every overridden token, in :root and .dark', () => {
     const css = brandingToCssText({
-      colors: { primary: '#2563eb', secondary: '#1d4ed8', accent: '#0ea5e9' },
+      colors: { primary: '#0B5D66', secondary: '#003A5C', accent: '#12A065' },
     });
-    expect(css).toContain(`--secondary: ${hexToHslTriple('#1d4ed8')};`);
-    expect(css).toContain('--secondary-foreground: 210 40% 98%;');
+    expect(css).toContain(`--primary: ${hexToHslTriple('#0B5D66')};`);
     expect(css).toContain('--primary-foreground: 210 40% 98%;');
-    // sky-500 is mid-luminance: ink wins (5.9:1 vs 2.8:1 for white)
-    expect(css).toContain('--accent-foreground: 222 47% 11%;');
+    expect(css).toContain(`--secondary: ${hexToHslTriple('#003A5C')};`);
+    expect(css).toContain('--secondary-foreground: 210 40% 98%;');
+    expect(css).toContain(`--accent: ${hexToHslTriple('#12A065')};`);
     expect(css.startsWith(':root{')).toBe(true);
     expect(css).toContain('.dark{');
   });

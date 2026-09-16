@@ -14,8 +14,10 @@
  *   // -> inject as a static <style dangerouslySetInnerHTML={{ __html: css }} />
  *
  * brandingToCssText returns '' for empty / unrecognizable branding so the
- * tenant falls through to the theme.css defaults (e.g. PIFH keeps branding='{}'
- * and provably renders the cyan #06b6d4 default).
+ * tenant falls through to the app theme (CRM muted spruce). Leftover
+ * Tailwind-blue seeds (`#2563eb` / `#1d4ed8` / `#0ea5e9`) are treated the
+ * same — they are platform defaults, not the PIFH brand kit, and they
+ * painted every `bg-primary` button electric blue.
  */
 
 /** Tokens we allow tenants to override, mapped to their branding key aliases. */
@@ -133,6 +135,39 @@ function asRecord(value: unknown): Record<string, unknown> | null {
  *   - flat:    branding.primary_color  (and branding.primary)
  * Returns the raw color string (expected hex) or null.
  */
+/**
+ * Stock Tailwind / admin-seed blues that were written into
+ * `organizations.branding` before the PIFH kit landed. Live PIFH still
+ * has primary `#2563eb` — that override wins over CRM spruce and makes
+ * every default Button look like generic SaaS blue.
+ *
+ * Hex digits only, lowercase, expanded 6-char form.
+ */
+const LEFTOVER_PLATFORM_BRAND_HEX = new Set([
+  '2563eb', // blue-600 — live PIFH primary
+  '1d4ed8', // blue-700 — live PIFH secondary
+  '0ea5e9', // sky-500 — live PIFH accent
+  '3b82f6', // blue-500 — shared theme.css secondary
+  '1e40af', // blue-800 — admin_settings seed primary
+]);
+
+function hexDigits(hex: string): string {
+  let value = hex.trim().replace(/^#/, '').toLowerCase();
+  if (/^[0-9a-f]{3}$/.test(value)) {
+    value = value
+      .split('')
+      .map((c) => c + c)
+      .join('');
+  }
+  return /^[0-9a-f]{6}$/.test(value) ? value : '';
+}
+
+/** True when the hex is a leftover platform blue, not a real tenant brand. */
+export function isLeftoverPlatformBrandColor(hex: string): boolean {
+  const digits = hexDigits(hex);
+  return digits !== '' && LEFTOVER_PLATFORM_BRAND_HEX.has(digits);
+}
+
 function readColor(
   branding: Record<string, unknown>,
   colors: Record<string, unknown> | null,
@@ -144,7 +179,10 @@ function readColor(
     branding[token],
   ];
   for (const candidate of candidates) {
-    if (typeof candidate === 'string' && candidate.trim()) return candidate;
+    if (typeof candidate === 'string' && candidate.trim()) {
+      if (isLeftoverPlatformBrandColor(candidate)) continue;
+      return candidate;
+    }
   }
   return null;
 }
