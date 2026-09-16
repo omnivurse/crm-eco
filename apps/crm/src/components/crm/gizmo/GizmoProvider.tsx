@@ -116,11 +116,6 @@ export function GizmoProvider({ children, profileId }: GizmoProviderProps) {
 
   const hasNewTips = currentTips.length > 0;
 
-  // Close popover on route change
-  useEffect(() => {
-    setIsOpen(false);
-  }, [pathname]);
-
   const setEnabled = useCallback(
     (enabled: boolean) => persist({ ...persisted, enabled }),
     [persisted, persist]

@@ -20,6 +20,7 @@ import {
 } from '@phosphor-icons/react';
 
 import type { Profile as ProfileRow, Advisor } from '@crm-eco/lib/types';
+import { AdvisorGizmoWidget } from '@/components/gizmo/GizmoWidget';
 
 /** Profile with joined advisor relation */
 type ProfileWithAdvisor = Pick<ProfileRow, 'id' | 'full_name' | 'email' | 'avatar_url' | 'advisor_role'> & {
@@ -254,6 +255,7 @@ export function PortalShell({ profile, children }: PortalShellProps) {
           </div>
         </div>
       )}
+      <AdvisorGizmoWidget />
     </div>
   );
 }

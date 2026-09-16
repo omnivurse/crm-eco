@@ -12,6 +12,7 @@ export * from './needs';
 export * from './views';
 export * from './billing';
 export * from './commissions';
+export * from './gizmo';
 export * from './email';
 export * from './tracking';
 export * from './realtime';

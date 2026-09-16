@@ -55,3 +55,21 @@ export interface GizmoContextValue {
   /** Control popover */
   setIsOpen: (open: boolean) => void;
 }
+
+export type GizmoChatRole = 'user' | 'gizmo';
+
+export interface GizmoChatCard {
+  kind: 'record' | 'place' | 'howto';
+  title: string;
+  subtitle?: string;
+  href: string;
+  module?: string;
+  steps?: string[];
+}
+
+export interface GizmoChatMessage {
+  id: string;
+  role: GizmoChatRole;
+  text: string;
+  cards?: GizmoChatCard[];
+}

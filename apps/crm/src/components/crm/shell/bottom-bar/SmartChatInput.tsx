@@ -20,6 +20,7 @@ import {
   ArrowRightLeft,
 } from 'lucide-react';
 import { cn } from '@crm-eco/ui/lib/utils';
+import { openGizmo } from '@crm-eco/ui/components/gizmo-open';
 import type { CrmModule } from '@/lib/crm/types';
 
 interface CommandItem {
@@ -259,7 +260,19 @@ export function SmartChatInput({ modules }: SmartChatInputProps) {
   const categories = Object.keys(grouped);
   const flat = categories.flatMap((c) => grouped[c]);
 
+  const sendToGizmo = useCallback((text: string) => {
+    const q = text.trim();
+    setIsOpen(false);
+    setQuery('');
+    inputRef.current?.blur();
+    openGizmo(q || undefined);
+  }, []);
+
   const executeSelected = useCallback(() => {
+    if (query.trim()) {
+      sendToGizmo(query);
+      return;
+    }
     if (terminalMatch) {
       terminalMatch.command.execute(terminalMatch.match, navigate);
       return;
@@ -267,7 +280,7 @@ export function SmartChatInput({ modules }: SmartChatInputProps) {
     if (flat[selectedIndex]) {
       flat[selectedIndex].action();
     }
-  }, [terminalMatch, flat, selectedIndex, navigate]);
+  }, [query, sendToGizmo, terminalMatch, flat, selectedIndex, navigate]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (!isOpen) {
@@ -303,18 +316,18 @@ export function SmartChatInput({ modules }: SmartChatInputProps) {
     setSelectedIndex(0);
   }, [query]);
 
-  // Global Ctrl+Space shortcut — Ctrl+K is owned by CommandPalette now.
+  // Global Ctrl+Space — open Gizmo (⌘K stays the command palette).
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.code === 'Space') {
         e.preventDefault();
-        inputRef.current?.focus();
-        setIsOpen(true);
+        openGizmo(query.trim() || undefined);
+        setIsOpen(false);
       }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, []);
+  }, [query]);
 
   // Close dropdown on outside click
   useEffect(() => {

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
+import { AdminGizmoWidget } from '@/components/gizmo/GizmoWidget';
 import { AdminSidebar } from './AdminSidebar';
 import { AdminTopNav } from './AdminTopNav';
 import { AdminFooter } from './AdminFooter';
@@ -115,6 +116,7 @@ export function AdminShell({
           <AdminFooter />
         </div>
       </div>
+      <AdminGizmoWidget />
     </div>
   );
 }

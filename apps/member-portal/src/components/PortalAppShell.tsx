@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation';
 import { PortalHeader } from '@/components/PortalHeader';
 import { BottomNav } from '@/components/BottomNav';
+import { MemberGizmoWidget } from '@/components/gizmo/GizmoWidget';
 
 const MINIMAL_CHROME_PREFIXES = [
   '/lock',
@@ -46,6 +47,7 @@ export function PortalAppShell({ children }: { children: React.ReactNode }) {
         </div>
       </footer>
       <BottomNav />
+      <MemberGizmoWidget />
     </div>
   );
 }

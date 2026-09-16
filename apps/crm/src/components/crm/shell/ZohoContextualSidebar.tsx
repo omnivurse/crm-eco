@@ -680,10 +680,10 @@ function GizmoReEnableButton({ isOpen }: { isOpen: boolean }) {
                 'text-teal-600 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-500/10',
                 !isOpen && 'justify-center px-2'
             )}
-            title="Show Gizmo page tips"
+            title="Show Gizmo"
         >
             <Lightbulb className="w-5 h-5 flex-shrink-0" />
-            {isOpen && <span>Show Gizmo Tips</span>}
+            {isOpen && <span>Show Gizmo</span>}
         </button>
     );
 }
