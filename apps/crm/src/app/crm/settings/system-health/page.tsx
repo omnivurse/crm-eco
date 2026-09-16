@@ -24,18 +24,39 @@ import {
   Gauge,
   Mail,
 } from 'lucide-react';
+import Link from 'next/link';
 import { getCurrentProfile } from '@/lib/crm/queries';
 import { createCrmClient } from '@/lib/crm/queries';
 import { PageHeader } from '@/components/layout';
 import SystemHealthTabs from '@/components/system-health/SystemHealthTabs';
+import {
+  healthCheckAnchor,
+  issuesNeedingAttention,
+  remediationFor,
+  type HealthCheckId,
+  type HealthCheckStatus,
+  type HealthRemediation,
+} from '@/lib/crm/system-health-actions';
+import { Button } from '@crm-eco/ui/components/button';
 
 interface HealthCheck {
+  id: HealthCheckId;
   name: string;
   description: string;
-  status: 'pass' | 'fail' | 'warning';
+  status: HealthCheckStatus;
   message: string;
   icon: React.ReactNode;
   category: 'infrastructure' | 'security' | 'hipaa' | 'configuration';
+  action?: string;
+  href?: string;
+  hrefLabel?: string;
+}
+
+function withRemediation(
+  check: Omit<HealthCheck, keyof HealthRemediation> & Partial<HealthRemediation>,
+): HealthCheck {
+  const rem = remediationFor(check.id, check.status);
+  return rem ? { ...check, ...rem } : check;
 }
 
 async function getHealthChecks(): Promise<HealthCheck[]> {
@@ -69,6 +90,7 @@ async function getHealthChecks(): Promise<HealthCheck[]> {
 
     if (error) {
       checks.push({
+        id: 'database',
         name: 'Database Connectivity',
         description: 'Verify Supabase database connection',
         status: 'fail',
@@ -78,6 +100,7 @@ async function getHealthChecks(): Promise<HealthCheck[]> {
       });
     } else {
       checks.push({
+        id: 'database',
         name: 'Database Connectivity',
         description: 'Verify Supabase database connection',
         status: 'pass',
@@ -88,6 +111,7 @@ async function getHealthChecks(): Promise<HealthCheck[]> {
     }
   } catch (e) {
     checks.push({
+      id: 'database',
       name: 'Database Connectivity',
       description: 'Verify Supabase database connection',
       status: 'fail',
@@ -99,6 +123,7 @@ async function getHealthChecks(): Promise<HealthCheck[]> {
 
   // 2. Server Runtime Check
   checks.push({
+    id: 'runtime',
     name: 'Server Runtime',
     description: 'Verify Next.js server is running correctly',
     status: 'pass',
@@ -119,6 +144,7 @@ async function getHealthChecks(): Promise<HealthCheck[]> {
 
   if (missingEnvVars.length === 0) {
     checks.push({
+      id: 'env',
       name: 'Environment Variables',
       description: 'Check required environment variables are set',
       status: 'pass',
@@ -128,6 +154,7 @@ async function getHealthChecks(): Promise<HealthCheck[]> {
     });
   } else {
     checks.push({
+      id: 'env',
       name: 'Environment Variables',
       description: 'Check required environment variables are set',
       status: 'fail',
@@ -141,6 +168,7 @@ async function getHealthChecks(): Promise<HealthCheck[]> {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
   const isHttps = supabaseUrl.startsWith('https://');
   checks.push({
+    id: 'tls',
     name: 'TLS Encryption',
     description: 'Verify all connections use HTTPS/TLS',
     status: isHttps ? 'pass' : 'fail',
@@ -163,6 +191,7 @@ async function getHealthChecks(): Promise<HealthCheck[]> {
       .limit(1);
 
     checks.push({
+      id: 'rls',
       name: 'Row Level Security',
       description: 'Verify RLS policies are active on CRM tables',
       status: 'pass',
@@ -172,6 +201,7 @@ async function getHealthChecks(): Promise<HealthCheck[]> {
     });
   } catch (e) {
     checks.push({
+      id: 'rls',
       name: 'Row Level Security',
       description: 'Verify RLS policies are active on CRM tables',
       status: 'warning',
@@ -185,6 +215,7 @@ async function getHealthChecks(): Promise<HealthCheck[]> {
   if (profile) {
     if (profile.crm_role) {
       checks.push({
+        id: 'rbac',
         name: 'Role-Based Access Control',
         description: 'Verify current user has a CRM role assigned',
         status: 'pass',
@@ -194,6 +225,7 @@ async function getHealthChecks(): Promise<HealthCheck[]> {
       });
     } else {
       checks.push({
+        id: 'rbac',
         name: 'Role-Based Access Control',
         description: 'Verify current user has a CRM role assigned',
         status: 'warning',
@@ -207,6 +239,7 @@ async function getHealthChecks(): Promise<HealthCheck[]> {
   // 7. Organization Isolation Check
   if (profile?.organization_id) {
     checks.push({
+      id: 'org-isolation',
       name: 'Organization Isolation',
       description: 'Verify multi-tenant data separation',
       status: 'pass',
@@ -228,6 +261,7 @@ async function getHealthChecks(): Promise<HealthCheck[]> {
       .limit(1);
 
     checks.push({
+      id: 'phi-logging',
       name: 'PHI Access Logging',
       description: 'HIPAA §164.312(b) - Audit controls for PHI access',
       status: logError ? 'warning' : 'pass',
@@ -239,6 +273,7 @@ async function getHealthChecks(): Promise<HealthCheck[]> {
     });
   } catch (e) {
     checks.push({
+      id: 'phi-logging',
       name: 'PHI Access Logging',
       description: 'HIPAA §164.312(b) - Audit controls for PHI access',
       status: 'pass',
@@ -256,6 +291,7 @@ async function getHealthChecks(): Promise<HealthCheck[]> {
       .limit(1);
 
     checks.push({
+      id: 'auth-logging',
       name: 'Authentication Logging',
       description: 'HIPAA §164.312(d) - Person authentication tracking',
       status: authError ? 'warning' : 'pass',
@@ -267,6 +303,7 @@ async function getHealthChecks(): Promise<HealthCheck[]> {
     });
   } catch (e) {
     checks.push({
+      id: 'auth-logging',
       name: 'Authentication Logging',
       description: 'HIPAA §164.312(d) - Person authentication tracking',
       status: 'pass',
@@ -284,6 +321,7 @@ async function getHealthChecks(): Promise<HealthCheck[]> {
       .limit(1);
 
     checks.push({
+      id: 'session',
       name: 'Session Security',
       description: 'HIPAA §164.312(a)(2)(iii) - Automatic logoff',
       status: sessionError ? 'warning' : 'pass',
@@ -295,6 +333,7 @@ async function getHealthChecks(): Promise<HealthCheck[]> {
     });
   } catch (e) {
     checks.push({
+      id: 'session',
       name: 'Session Security',
       description: 'HIPAA §164.312(a)(2)(iii) - Automatic logoff',
       status: 'pass',
@@ -312,6 +351,7 @@ async function getHealthChecks(): Promise<HealthCheck[]> {
       .limit(1);
 
     checks.push({
+      id: 'mfa',
       name: 'Multi-Factor Authentication',
       description: 'HIPAA §164.312(d) - Enhanced authentication',
       status: mfaError ? 'warning' : 'pass',
@@ -323,6 +363,7 @@ async function getHealthChecks(): Promise<HealthCheck[]> {
     });
   } catch (e) {
     checks.push({
+      id: 'mfa',
       name: 'Multi-Factor Authentication',
       description: 'HIPAA §164.312(d) - Enhanced authentication',
       status: 'pass',
@@ -334,6 +375,7 @@ async function getHealthChecks(): Promise<HealthCheck[]> {
 
   // 12. Data Encryption at Rest
   checks.push({
+    id: 'encryption-rest',
     name: 'Encryption at Rest',
     description: 'HIPAA §164.312(a)(2)(iv) - Data encryption',
     status: 'pass',
@@ -344,6 +386,7 @@ async function getHealthChecks(): Promise<HealthCheck[]> {
 
   // 13. Data Encryption in Transit
   checks.push({
+    id: 'encryption-transit',
     name: 'Encryption in Transit',
     description: 'HIPAA §164.312(e)(1) - Transmission security',
     status: isHttps ? 'pass' : 'fail',
@@ -362,6 +405,7 @@ async function getHealthChecks(): Promise<HealthCheck[]> {
       .limit(1);
 
     checks.push({
+      id: 'access-control',
       name: 'Granular Access Controls',
       description: 'HIPAA §164.312(a)(1) - Access control mechanisms',
       status: permError ? 'warning' : 'pass',
@@ -373,6 +417,7 @@ async function getHealthChecks(): Promise<HealthCheck[]> {
     });
   } catch (e) {
     checks.push({
+      id: 'access-control',
       name: 'Granular Access Controls',
       description: 'HIPAA §164.312(a)(1) - Access control mechanisms',
       status: 'pass',
@@ -397,6 +442,7 @@ async function getHealthChecks(): Promise<HealthCheck[]> {
 
       if (modulesError) {
         checks.push({
+          id: 'crm-modules',
           name: 'CRM Modules',
           description: 'Verify CRM modules are configured',
           status: 'warning',
@@ -406,6 +452,7 @@ async function getHealthChecks(): Promise<HealthCheck[]> {
         });
       } else if (!modules || modules.length === 0) {
         checks.push({
+          id: 'crm-modules',
           name: 'CRM Modules',
           description: 'Verify CRM modules are configured',
           status: 'warning',
@@ -415,6 +462,7 @@ async function getHealthChecks(): Promise<HealthCheck[]> {
         });
       } else {
         checks.push({
+          id: 'crm-modules',
           name: 'CRM Modules',
           description: 'Verify CRM modules are configured',
           status: 'pass',
@@ -425,6 +473,7 @@ async function getHealthChecks(): Promise<HealthCheck[]> {
       }
     } catch (e) {
       checks.push({
+        id: 'crm-modules',
         name: 'CRM Modules',
         description: 'Verify CRM modules are configured',
         status: 'warning',
@@ -443,6 +492,7 @@ async function getHealthChecks(): Promise<HealthCheck[]> {
       .limit(1);
 
     checks.push({
+      id: 'email-provider',
       name: 'Email Provider',
       description: 'Verify email sending is configured',
       status: provError ? 'warning' : 'pass',
@@ -454,6 +504,7 @@ async function getHealthChecks(): Promise<HealthCheck[]> {
     });
   } catch (e) {
     checks.push({
+      id: 'email-provider',
       name: 'Email Provider',
       description: 'Verify email sending is configured',
       status: 'warning',
@@ -475,6 +526,7 @@ async function getHealthChecks(): Promise<HealthCheck[]> {
 
     if (dlError) {
       checks.push({
+        id: 'undelivered-mail',
         name: 'Undelivered Inbound Mail',
         description: 'Inbound messages parked instead of filed',
         status: 'warning',
@@ -485,6 +537,7 @@ async function getHealthChecks(): Promise<HealthCheck[]> {
     } else {
       const open = count ?? 0;
       checks.push({
+        id: 'undelivered-mail',
         name: 'Undelivered Inbound Mail',
         description: 'Inbound messages parked instead of filed',
         status: open > 0 ? 'fail' : 'pass',
@@ -498,6 +551,7 @@ async function getHealthChecks(): Promise<HealthCheck[]> {
     }
   } catch (e) {
     checks.push({
+      id: 'undelivered-mail',
       name: 'Undelivered Inbound Mail',
       description: 'Inbound messages parked instead of filed',
       status: 'warning',
@@ -507,7 +561,7 @@ async function getHealthChecks(): Promise<HealthCheck[]> {
     });
   }
 
-  return checks;
+  return checks.map(withRemediation);
 }
 
 function HealthCheckCard({ check }: { check: HealthCheck }) {
@@ -538,7 +592,10 @@ function HealthCheckCard({ check }: { check: HealthCheck }) {
   const config = statusConfig[check.status];
 
   return (
-    <div className={`rounded-xl border p-4 ${config.bgColor} ${config.borderColor}`}>
+    <div
+      id={healthCheckAnchor(check.id)}
+      className={`rounded-xl border p-4 ${config.bgColor} ${config.borderColor} scroll-mt-24`}
+    >
       <div className="flex items-start gap-4">
         <div className={`flex-shrink-0 p-2 rounded-lg bg-white dark:bg-slate-800 ${config.iconColor}`}>
           {check.icon}
@@ -559,6 +616,19 @@ function HealthCheckCard({ check }: { check: HealthCheck }) {
           <p className="text-sm text-slate-700 dark:text-slate-300 mt-2 font-mono">
             {check.message}
           </p>
+          {check.status !== 'pass' && check.action && (
+            <div className="mt-3 space-y-2">
+              <p className="text-sm text-slate-800 dark:text-slate-200">
+                <span className="font-semibold">What to do: </span>
+                {check.action}
+              </p>
+              {check.href && check.hrefLabel && (
+                <Button asChild size="sm">
+                  <Link href={check.href}>{check.hrefLabel}</Link>
+                </Button>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -627,6 +697,7 @@ async function SystemHealthContent() {
   const passCount = checks.filter((c) => c.status === 'pass').length;
   const failCount = checks.filter((c) => c.status === 'fail').length;
   const warnCount = checks.filter((c) => c.status === 'warning').length;
+  const openIssues = issuesNeedingAttention(checks);
 
   const overallStatus = failCount > 0 ? 'fail' : warnCount > 0 ? 'warning' : 'pass';
   const statusText = {
@@ -655,7 +726,7 @@ async function SystemHealthContent() {
 
       {/* Summary Card */}
       <div className={`rounded-xl border p-6 ${statusBg[overallStatus]}`}>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-center gap-4">
             <div className={`p-3 rounded-xl ${overallStatus === 'pass' ? 'bg-emerald-100 dark:bg-emerald-500/20' : overallStatus === 'warning' ? 'bg-amber-100 dark:bg-amber-500/20' : 'bg-red-100 dark:bg-red-500/20'}`}>
               {overallStatus === 'pass' ? (
@@ -672,6 +743,9 @@ async function SystemHealthContent() {
               </h2>
               <p className="text-slate-600 dark:text-slate-400 text-sm mt-1">
                 {checks.length} security checks performed
+                {openIssues.length > 0
+                  ? ` · ${openIssues.length} ${openIssues.length === 1 ? 'needs' : 'need'} a decision`
+                  : ''}
               </p>
             </div>
           </div>
@@ -700,6 +774,56 @@ async function SystemHealthContent() {
           </div>
         </div>
       </div>
+
+      {openIssues.length > 0 && (
+        <div
+          id="needs-attention"
+          className="glass-card border border-slate-200 dark:border-slate-700 rounded-xl p-6 scroll-mt-24"
+        >
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+            Needs a decision
+          </h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 mb-4">
+            Each row is one check. Open it, do the work, then reload this page.
+            Passing HIPAA cards below do not need action.
+          </p>
+          <ul className="space-y-3">
+            {openIssues.map((issue) => (
+              <li
+                key={issue.id}
+                className="flex flex-col gap-3 rounded-lg border border-slate-200 dark:border-slate-700 p-4 sm:flex-row sm:items-start sm:justify-between"
+              >
+                <div className="min-w-0">
+                  <p className="font-semibold text-slate-900 dark:text-white">
+                    {issue.name}
+                    <span className="ml-2 text-xs font-medium uppercase tracking-wide text-slate-500">
+                      {issue.status}
+                    </span>
+                  </p>
+                  <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">
+                    {issue.message}
+                  </p>
+                  {issue.action && (
+                    <p className="text-sm text-slate-700 dark:text-slate-200 mt-2">
+                      {issue.action}
+                    </p>
+                  )}
+                </div>
+                <div className="flex shrink-0 flex-wrap gap-2">
+                  {issue.href && issue.hrefLabel && (
+                    <Button asChild size="sm">
+                      <Link href={issue.href}>{issue.hrefLabel}</Link>
+                    </Button>
+                  )}
+                  <Button asChild size="sm" variant="outline">
+                    <Link href={`#${healthCheckAnchor(issue.id)}`}>View check</Link>
+                  </Button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* HIPAA Compliance Section - Highlighted */}
       <div className="glass-card border border-slate-200 dark:border-slate-700 rounded-xl p-6">
@@ -787,7 +911,7 @@ export default async function SystemHealthPage({
   const tab = params?.tab;
 
   // If a tab is specified, render the client-side tab component
-  if (tab && ['jobs', 'signals', 'export', 'audit'].includes(tab)) {
+  if (tab && ['jobs', 'signals', 'export', 'audit', 'mail'].includes(tab)) {
     return (
       <Suspense
         fallback={

@@ -4,6 +4,7 @@ import { useSearchParams } from 'next/navigation';
 import DataJobsTab from './DataJobsTab';
 import ExportTab from './ExportTab';
 import AuditLogsTab from './AuditLogsTab';
+import UndeliveredMailTab from './UndeliveredMailTab';
 
 // PHASE 2A — Signals tab deferred until the signals/segmentation feature
 // is built out post-enrollment. The SignalsTab component is kept on disk
@@ -12,6 +13,7 @@ const TAB_COMPONENTS: Record<string, React.ComponentType> = {
   jobs: DataJobsTab,
   export: ExportTab,
   audit: AuditLogsTab,
+  mail: UndeliveredMailTab,
 };
 
 export default function SystemHealthTabs() {
