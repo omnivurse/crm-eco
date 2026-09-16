@@ -216,6 +216,19 @@ const SECTION_NAV_GROUP_LABELS: Record<SectionNavGroup, string> = {
   other: 'More',
 };
 
+/**
+ * Person records already keep email / phone / mobile on `core` (Contact Info).
+ * The leftover `contact` band is only Mobile 2 extras — fold those fields in
+ * so we never show a phone-only card next to Contact Info.
+ */
+export function foldPersonFormSectionKey(
+  sectionKey: string,
+  moduleKey?: string | null,
+): string {
+  if (sectionKey === 'contact' && isPersonModuleKey(moduleKey)) return 'core';
+  return sectionKey;
+}
+
 export function getSectionDisplayOrder(moduleKey?: string | null): readonly string[] {
   if (moduleKey && MODULE_SECTION_ORDERS[moduleKey]) {
     return MODULE_SECTION_ORDERS[moduleKey];
@@ -388,6 +401,7 @@ export function buildEffectiveSections(
   }
 
   return [...layoutSections, ...extraSections]
+    .filter((s) => foldPersonFormSectionKey(s.key, moduleKey) === s.key)
     .map((s) => ({
       ...s,
       label: normalizeLegacySectionHeading(s.key, s.label),
@@ -473,6 +487,20 @@ export function shouldIncludeSectionInNav(
  * Leaves custom titles alone (anything that doesn't start with "Insurance", case-insensitive).
  */
 export function normalizeLegacySectionHeading(key: string, label: string): string {
+  if (key === 'core') {
+    const t = label.trim();
+    if (t === '' || /^name$/i.test(t) || /^core$/i.test(t)) {
+      return 'Contact Info';
+    }
+    return label;
+  }
+  if (key === 'main') {
+    const t = label.trim();
+    if (t === '' || /^main$/i.test(t) || /^general( information)?$/i.test(t) || /^information$/i.test(t)) {
+      return 'Partner';
+    }
+    return label;
+  }
   if (key === 'relationships') {
     const t = label.trim();
     if (t === '' || /^relationships?$/i.test(t)) return PARTNER_TYPE_LABEL;
@@ -582,6 +610,8 @@ export function shouldShowMemberOnlyFieldInForm(args: {
 export function fallbackSectionHeadingFromFieldSection(sectionKey: string): string {
   // Legacy Zoho `insurance` holds product / premium / date rows — not the same as `health_sharing`.
   if (sectionKey === 'insurance') return 'Insurance';
+  if (sectionKey === 'core') return 'Contact Info';
+  if (sectionKey === 'main') return 'Partner';
   if (sectionKey === 'health_sharing') return 'HealthShare';
   // Bare "Partner" reads like a yes/no flag; the card holds industry, services
   // and the start date.
@@ -596,34 +626,6 @@ function isPopulated(value: unknown): boolean {
   if (Array.isArray(value)) return value.length > 0;
   if (typeof value === 'object') return Object.keys(value as Record<string, unknown>).length > 0;
   return true;
-}
-
-/**
- * Identity contact channels that often live in `core` while the Contact section
- * only defines sparse extras (e.g. `mobile_2`). Credit these toward the Contact
- * pill so "Contact: 0" never appears when the header already shows email/phone.
- */
-export const CONTACT_SECTION_IDENTITY_KEYS = [
-  'email',
-  'phone',
-  'mobile',
-  'secondary_email',
-  'work_phone',
-] as const;
-
-function contactSectionIdentityFill(
-  recordData: Record<string, unknown> | null | undefined,
-  sectionFieldKeys: Set<string>,
-): { extraFilled: number; extraFields: number } {
-  if (!recordData) return { extraFilled: 0, extraFields: 0 };
-  let extraFilled = 0;
-  let extraFields = 0;
-  for (const key of CONTACT_SECTION_IDENTITY_KEYS) {
-    if (sectionFieldKeys.has(key)) continue;
-    extraFields += 1;
-    if (isPopulated(recordData[key])) extraFilled += 1;
-  }
-  return { extraFilled, extraFields };
 }
 
 /**
@@ -653,7 +655,7 @@ export function getSectionMeta(
   const sectionKeys = new Set<string>();
   const notesAnchors = new Set<string>();
   for (const field of fields) {
-    const section = field.section || 'main';
+    const section = foldPersonFormSectionKey(field.section || 'main', moduleKey);
     sectionKeys.add(section);
     if (isRecordFormExcludedField(field.key)) {
       if (getSectionNavGroup(section) === 'notes') notesAnchors.add(section);
@@ -717,21 +719,10 @@ export function getSectionMeta(
     )
     .map((s) => {
       const sectionFields = grouped[s.key] ?? [];
-      let fieldCount = sectionFields.length;
-      let filledCount = recordData
+      const fieldCount = sectionFields.length;
+      const filledCount = recordData
         ? sectionFields.filter((f) => isPopulated(recordData[f.key])).length
         : fieldCount;
-      // Contact pill honesty: email/phone usually live in `core` ("Name"), so the
-      // Contact section would otherwise show "0 of 1" on long-time members.
-      if (s.key === 'contact' && isPersonModuleKey(moduleKey)) {
-        const { extraFilled, extraFields } = contactSectionIdentityFill(
-          recordData,
-          new Set(sectionFields.map((f) => f.key)),
-        );
-        fieldCount += extraFields;
-        if (recordData) filledCount += extraFilled;
-        else filledCount = fieldCount;
-      }
       const navGroup = getSectionNavGroup(s.key);
       // Notes-group pills always open the Notes tab (canonical crm_notes +
       // legacy history). When noteCount is provided, the badge mirrors that

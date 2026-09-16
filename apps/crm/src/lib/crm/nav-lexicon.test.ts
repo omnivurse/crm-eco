@@ -66,10 +66,10 @@ describe('nav lexicon', () => {
 
 describe('search promise (NV-1)', () => {
   it('is one compact string that fits every pill, with the full promise in the aria-label', () => {
-    expect(SEARCH_PLACEHOLDER).toBe('Search name, phone, member #…');
+    expect(SEARCH_PLACEHOLDER).toBe('Search name, phone, address…');
     expect(SEARCH_PLACEHOLDER.length).toBeLessThanOrEqual(30);
     expect(SEARCH_PLACEHOLDER_ON_RECORD.endsWith(SEARCH_PLACEHOLDER.replace(/^Search/, 'search'))).toBe(true);
-    expect(SEARCH_ARIA_LABEL).toMatch(/name, email, phone or member number/);
+    expect(SEARCH_ARIA_LABEL).toMatch(/name, email, phone, member number or address/);
     for (const s of [SEARCH_PLACEHOLDER, SEARCH_PLACEHOLDER_ON_RECORD]) {
       expect(s.endsWith('…')).toBe(true);
       expect(s).not.toContain('...');

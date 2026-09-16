@@ -33,6 +33,7 @@ import {
   MoreHorizontal,
   Mail,
   Phone,
+  MapPin,
   CheckSquare,
   StickyNote,
   Upload,
@@ -200,6 +201,11 @@ import {
   buildRecordSearchableRows,
 } from '@/lib/crm/record-field-search';
 import { setRecordCommandContext } from '@/lib/crm/record-command-context';
+import { mergeCrmRecordRowIntoFormDefaults } from '@/lib/crm/record-form-defaults';
+import {
+  formatRecordAddress,
+  primaryAddressFieldKey,
+} from '@/lib/crm/address-field-dedupe';
 
 /**
  * Related-list chips shown when the user has never customised the strip.
@@ -706,6 +712,22 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
   const recordValues = {
     ...((record.data && typeof record.data === 'object' ? record.data : {}) as Record<string, unknown>),
   };
+  const projectedRecordValues = useMemo(
+    () =>
+      mergeCrmRecordRowIntoFormDefaults(
+        record as unknown as Record<string, unknown> & {
+          data?: Record<string, unknown> | null;
+          email?: string | null;
+          phone?: string | null;
+          status?: string | null;
+        },
+        { moduleKey: module.key },
+      ),
+    [record, module.key],
+  );
+  const headerAddress = formatRecordAddress(projectedRecordValues, module.key);
+  const addressFieldKey = primaryAddressFieldKey(module.key);
+  const isPeopleModule = isContacts || isLeads || isMembers;
   const isPartnerStyleContact = isNonMemberContact(recordValues);
   const statusIsActiveLane =
     statusLane(displayStatus) === 'active' || isActiveCoverageStatus(displayStatus);
@@ -850,7 +872,9 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
       const nextH = header.getBoundingClientRect().height;
       const prevH = prevStickyHeaderHeightRef.current;
       prevStickyHeaderHeightRef.current = nextH;
-      root.style.setProperty('--record-sticky-offset', `${Math.ceil(nextH + 12)}px`);
+      // Flush under the header. Do not add a gutter: the coverage snapshot
+      // used to scroll through the 12px gap between header and section nav.
+      root.style.setProperty('--record-sticky-offset', `${Math.max(0, Math.ceil(nextH))}px`);
 
       if (lockHeaderCompact) return;
       if (prevH == null) return;
@@ -1026,6 +1050,44 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
     return Array.isArray(raw) && raw.some((v) => typeof v === 'string' && v.trim());
   }, [record.data]);
 
+  const focusFindInRecord = useCallback(() => {
+    // Focus the inline "find in this record" input (not global CRM search).
+    const findInput = () =>
+      document.querySelector<HTMLInputElement>('input[data-inline-record-search]');
+    const el = findInput();
+    if (el) {
+      el.focus();
+      return;
+    }
+    // RP-3: the compact (scrolled) header hides the breadcrumb row and the
+    // find box with it. `/` is the one keyboard door to it, so scroll to
+    // top and let the scroll handler expand the header (transition
+    // 'expanding' → the ResizeObserver re-anchor parks at ≤ EXIT, so it
+    // cannot re-compact), then focus the box once it mounts. Setting
+    // headerCompact directly would re-anchor with transition 'none' and
+    // bounce straight back into compact.
+    if (lockHeaderCompact) return;
+    const root = recordMainScrollRef.current;
+    if (!root) return;
+    root.scrollTo({ top: 0 });
+    let tries = 0;
+    const tick = () => {
+      const input = findInput();
+      if (input) {
+        input.focus();
+        return;
+      }
+      if (++tries < 30) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }, [lockHeaderCompact]);
+
+  useEffect(() => {
+    const onFocusSearch = () => focusFindInRecord();
+    window.addEventListener('crm:focus-record-search', onFocusSearch);
+    return () => window.removeEventListener('crm:focus-record-search', onFocusSearch);
+  }, [focusFindInRecord]);
+
   // Keyboard shortcuts (Zoho-parity). Inert when an input is focused —
   // see `useRecordHotkeys` for the full ignore rules.
   useRecordHotkeys(
@@ -1035,37 +1097,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
       task: handleAddTask,
       email: handleSendEmail,
       upload: handleUploadFile,
-      search: () => {
-        // Focus the inline "find in this record" header input (not global CRM search).
-        const findInput = () =>
-          document.querySelector<HTMLInputElement>('input[data-inline-record-search]');
-        const el = findInput();
-        if (el) {
-          el.focus();
-          return;
-        }
-        // RP-3: the compact (scrolled) header hides the breadcrumb row and the
-        // find box with it. `/` is the one keyboard door to it, so scroll to
-        // top and let the scroll handler expand the header (transition
-        // 'expanding' → the ResizeObserver re-anchor parks at ≤ EXIT, so it
-        // cannot re-compact), then focus the box once it mounts. Setting
-        // headerCompact directly would re-anchor with transition 'none' and
-        // bounce straight back into compact.
-        if (lockHeaderCompact) return;
-        const root = recordMainScrollRef.current;
-        if (!root) return;
-        root.scrollTo({ top: 0 });
-        let tries = 0;
-        const tick = () => {
-          const input = findInput();
-          if (input) {
-            input.focus();
-            return;
-          }
-          if (++tries < 30) requestAnimationFrame(tick);
-        };
-        requestAnimationFrame(tick);
-      },
+      search: focusFindInRecord,
       help: () => setShowShortcutsDialog(true),
       call: () => {
         // TE-8: `c` clicks the header's real tel: anchor (CallLink) so the OS
@@ -1603,19 +1635,19 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
             // layers composite content underneath and read as top-half flicker
             // in Chromium/Brave. No padding/height transition either — that
             // fights scroll anchoring and looks like shake/skip.
-            // Stack inside [data-record-find-root]: content 0, SectionNav 15,
-            // this header 20, open inline dropdown 30. Idle field z-20 used
-            // to paint labels through this bar on scroll.
+            // Stack inside [data-record-find-root]: content 0, this header 20,
+            // open inline dropdown 30. Idle field z-20 used to paint labels
+            // through this bar on scroll.
             'sticky top-0 z-20 isolate bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-white/5 transition-shadow duration-200 [overflow-anchor:none]',
             headerCompact && 'shadow-md shadow-slate-200/50 dark:shadow-black/20',
           )}
         >
-          <div className={cn('w-full px-4 xl:px-6', headerCompact ? 'py-2' : 'py-2 lg:py-2.5')}>
+          <div className={cn('w-full pl-3 pr-2', headerCompact ? 'py-2' : 'py-2 lg:py-2.5')}>
             {/* Breadcrumb + search */}
             {!headerCompact && (
             <div className="flex items-center justify-between gap-4 mb-1.5 lg:mb-2">
               {/* RP-6: keyboard users skip the header cluster straight to the
-                  section jump bar (SectionNav tablist id). Visible on focus. */}
+                  section rail (#record-section-nav). Visible on focus. */}
               <a
                 href="#record-section-nav"
                 onClick={(e) => {
@@ -1811,6 +1843,35 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                       />
                       {record.phone && <HeaderCopyButton value={record.phone} />}
                     </span>
+                    {headerAddress ? (
+                      <span className="group inline-flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400 min-w-0 max-w-[min(100%,22rem)]">
+                        <MapPin className="w-3.5 h-3.5 shrink-0" />
+                        <button
+                          type="button"
+                          data-testid="crm-record-address"
+                          title="Jump to address fields"
+                          onClick={() =>
+                            handleNavigateToMatch({ type: 'field', fieldKey: addressFieldKey })
+                          }
+                          className="truncate text-left hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
+                        >
+                          {headerAddress}
+                        </button>
+                        <HeaderCopyButton value={headerAddress} />
+                      </span>
+                    ) : isPeopleModule ? (
+                      <button
+                        type="button"
+                        data-testid="crm-record-address-add"
+                        onClick={() =>
+                          handleNavigateToMatch({ type: 'field', fieldKey: addressFieldKey })
+                        }
+                        className="inline-flex items-center gap-1 text-sm text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
+                      >
+                        <MapPin className="w-3.5 h-3.5 shrink-0" />
+                        Add address
+                      </button>
+                    ) : null}
                     {isPartnerStyleContact && (
                       <span
                         className="inline-flex items-center rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-[11px] font-medium text-indigo-800 dark:border-indigo-500/30 dark:bg-indigo-500/15 dark:text-indigo-200"
@@ -1888,6 +1949,17 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                         <CheckCircle className="w-3.5 h-3.5" />
                         View Contact
                       </Link>
+                    )}
+                    {headerCompact && (
+                      <div className="hidden md:block ml-auto">
+                        <InlineRecordSearch
+                          record={record}
+                          fields={_fields}
+                          moduleKey={module.key}
+                          noteBodies={notesProp.map((n) => n.body)}
+                          onNavigateToMatch={handleNavigateToMatch}
+                        />
+                      </div>
                     )}
                   </div>
                 </div>
@@ -2278,7 +2350,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
         </div>
 
         {/* Context banners scroll away so the compact header stays lean */}
-        <div className="px-4 xl:px-6">
+        <div className="pl-3 pr-2">
             {/* Deal stage progress */}
             {isDeals && stages.length > 0 && (
               <div className="mt-4">
@@ -2333,11 +2405,8 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
         {/* Body -------------------------------------------------------------- */}
           <TabsContent value="overview" className="mt-0">
             <div
-              className="flex py-3 pb-24 lg:pb-4"
-              style={{
-                paddingInline: 'var(--crm-gutter, 20px)',
-                columnGap: 'var(--crm-section-gap, 24px)',
-              }}
+              className="flex py-3 pb-24 lg:pb-1 pl-3 pr-2"
+              style={{ columnGap: '8px' }}
             >
               {/* Fields dominate the full viewport — the related-list switcher
                   now lives in the sticky header strip, not a wide left rail. */}
@@ -2558,7 +2627,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
           </TabsContent>
 
           <TabsContent value="timeline" className="mt-0">
-            <div className="w-full px-4 xl:px-6 py-4 pb-24 lg:pb-4 space-y-4">
+            <div className="w-full pl-3 pr-2 py-4 pb-24 lg:pb-1 space-y-4">
               <ComposerBar
                 recordId={record.id}
                 onNoteCreated={() => {
@@ -2579,7 +2648,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
           </TabsContent>
 
           <TabsContent value="privacy" className="mt-0">
-            <div className="w-full px-4 xl:px-6 py-6 pb-24 lg:pb-6">
+            <div className="w-full pl-3 pr-2 py-6 pb-24 lg:pb-1">
               <DataPrivacyPanel
                 record={record}
                 onUpdated={() => router.refresh()}

@@ -146,6 +146,45 @@ export function preferredAddressLineListColumnKey(
   return null;
 }
 
+/** Canonical line-1 key for a people module; contacts default. */
+export function primaryAddressFieldKey(moduleKey?: string | null): string {
+  return canonicalAddressKey(moduleKey, 'line1') ?? 'mailing_street';
+}
+
+export function pickAddressSlotValue(
+  values: Record<string, unknown> | null | undefined,
+  slot: AddressSlot,
+  moduleKey?: string | null,
+): string | null {
+  const canon = canonicalAddressKey(moduleKey, slot);
+  const keys = SLOT_KEYS[slot];
+  const ordered = canon ? [canon, ...keys.filter((k) => k !== canon)] : [...keys];
+  const src = values && typeof values === 'object' ? values : {};
+  for (const k of ordered) {
+    const v = cleanAddressValue(src[k]);
+    if (v) return v;
+  }
+  return null;
+}
+
+/**
+ * One-line mailing address for the record header / find-in-record.
+ * "P.O. Box 4935, Eagle, CO 81631"
+ */
+export function formatRecordAddress(
+  values: Record<string, unknown> | null | undefined,
+  moduleKey?: string | null,
+): string | null {
+  const line1 = pickAddressSlotValue(values, 'line1', moduleKey);
+  const city = pickAddressSlotValue(values, 'city', moduleKey);
+  const state = pickAddressSlotValue(values, 'state', moduleKey);
+  const zip = pickAddressSlotValue(values, 'zip', moduleKey);
+  const locality = [city, state].filter(Boolean).join(', ');
+  const cityStateZip = [locality, zip].filter(Boolean).join(' ');
+  const parts = [line1, cityStateZip].filter(Boolean);
+  return parts.length > 0 ? parts.join(', ') : null;
+}
+
 /** Keep the first line-1 column; drop later Zoho/E123 aliases. */
 export function collapseAddressListColumns(columns: readonly string[]): string[] {
   let seenLine = false;

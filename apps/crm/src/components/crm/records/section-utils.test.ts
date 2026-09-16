@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildEffectiveSections,
   compareSectionOrder,
+  foldPersonFormSectionKey,
   fallbackSectionHeadingFromFieldSection,
   findSectionNavGroupForKey,
   getSectionMeta,
@@ -82,6 +83,13 @@ describe('section-utils person coverage visibility', () => {
     expect(normalizeLegacySectionHeading('relationships', 'Relationships')).toBe('Partner Type');
     expect(normalizeLegacySectionHeading('relationships', 'Relationship')).toBe('Partner Type');
     expect(fallbackSectionHeadingFromFieldSection('relationships')).toBe('Partner Type');
+    expect(normalizeLegacySectionHeading('main', 'Main')).toBe('Partner');
+    expect(normalizeLegacySectionHeading('main', 'General')).toBe('Partner');
+    expect(fallbackSectionHeadingFromFieldSection('main')).toBe('Partner');
+    expect(normalizeLegacySectionHeading('core', 'Name')).toBe('Contact Info');
+    expect(normalizeLegacySectionHeading('core', 'Core')).toBe('Contact Info');
+    expect(normalizeLegacySectionHeading('core', 'Lead Information')).toBe('Lead Information');
+    expect(fallbackSectionHeadingFromFieldSection('core')).toBe('Contact Info');
   });
 
   it('does not count matching ownership aliases toward the Ownership badge', () => {
@@ -406,7 +414,23 @@ describe('section-utils person coverage visibility', () => {
     expect(meta.find((s) => s.key === 'start_date')).toBeUndefined();
   });
 
-  it('credits email/phone toward Contact section fill counts on person modules', () => {
+  it('folds person-module Contact extras into Contact Info instead of a phone-only card', () => {
+    expect(foldPersonFormSectionKey('contact', 'contacts')).toBe('core');
+    expect(foldPersonFormSectionKey('contact', 'deals')).toBe('contact');
+    expect(foldPersonFormSectionKey('address', 'contacts')).toBe('address');
+    expect(
+      buildEffectiveSections(
+        {
+          sections: [
+            { key: 'core', label: 'Name', columns: 2 },
+            { key: 'contact', label: 'Contact', columns: 2 },
+          ],
+        },
+        ['core', 'contact'],
+        'contacts',
+      ).map((s) => s.key),
+    ).toEqual(['core']);
+
     const meta = getSectionMeta(
       [
         field('mobile_2', 'contact'),
@@ -438,11 +462,11 @@ describe('section-utils person coverage visibility', () => {
       { inlineEditable: true },
     );
 
-    const contact = meta.find((s) => s.key === 'contact');
-    expect(contact).toBeDefined();
-    // mobile_2 empty + email/phone populated among identity extras
-    expect(contact!.filledCount).toBeGreaterThanOrEqual(2);
-    expect(contact!.fieldCount).toBeGreaterThan(1);
+    expect(meta.find((s) => s.key === 'contact')).toBeUndefined();
+    const core = meta.find((s) => s.key === 'core');
+    expect(core?.label).toBe('Contact Info');
+    expect(core?.fieldCount).toBe(4);
+    expect(core?.filledCount).toBe(3);
   });
 
   it('hides every live PIF orphan layout band from nav in inline-edit mode', () => {

@@ -80,7 +80,7 @@ export const InlineBooleanField = memo(function InlineBooleanField({
             local ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600',
           )}
         />
-        <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
+        <span className="text-sm font-normal text-slate-900 dark:text-slate-100">
           {local ? labels.on : labels.off}
         </span>
         {lockOwner ? <LockedFieldBadge owner={lockOwner} /> : null}
@@ -118,7 +118,7 @@ export const InlineBooleanField = memo(function InlineBooleanField({
           )}
         />
       </span>
-      <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
+      <span className="text-sm font-normal text-slate-900 dark:text-slate-100">
         {local ? labels.on : labels.off}
       </span>
       {state?.status === 'saving' || state?.status === 'pending' ? (

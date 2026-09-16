@@ -34,6 +34,10 @@ export const DEFAULT_IDENTITY_KEYS = [
   'member_number',
   'email',
   'phone',
+  // One street column — aliases collapse via isAddressLineListColumnKey.
+  'mailing_street',
+  'street',
+  'address_line1',
 ] as const;
 
 const isStatusKey = (key: string) => key === 'status' || key.endsWith('_status');

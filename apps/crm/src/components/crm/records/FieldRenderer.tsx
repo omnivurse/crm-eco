@@ -221,7 +221,7 @@ export const FieldRenderer = memo(function FieldRenderer({
         );
       }
       return (
-        <span className={cn('font-medium text-slate-900 dark:text-slate-100', className)}>
+        <span className={cn('font-normal text-slate-900 dark:text-slate-100', className)}>
           {str}
         </span>
       );
@@ -307,7 +307,7 @@ export const FieldRenderer = memo(function FieldRenderer({
 
     case 'currency':
       return (
-        <span className={cn('font-medium', className)}>
+        <span className={cn('font-normal', className)}>
           {new Intl.NumberFormat('en-US', {
             style: 'currency',
             currency: 'USD',

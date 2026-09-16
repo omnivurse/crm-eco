@@ -161,6 +161,12 @@ const KEY_LABELS: Record<string, string> = {
   home_phone: 'Home phone',
   zip: 'ZIP',
   zip_code: 'ZIP',
+  mailing_zip: 'ZIP',
+  mailing_street: 'Street',
+  mailing_city: 'City',
+  mailing_state: 'State',
+  address_line1: 'Street',
+  street: 'Street',
 };
 
 /** Human label for a field key when `crm_fields` labels aren't available. */

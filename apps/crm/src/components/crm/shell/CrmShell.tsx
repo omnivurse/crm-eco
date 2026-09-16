@@ -26,7 +26,12 @@ const CommandPalette = dynamic(
 import type { CrmModule, CrmProfile } from '@/lib/crm/types';
 import type { NavModule, NavProfile } from '@/lib/crm/nav-profile';
 import { CRM_OPEN_COMMAND_PALETTE_EVENT } from '@/lib/crm/command-palette-bus';
-import { crmShellMainClass, crmShellMainInnerClass, isCrmFullBleedPath } from '@/lib/crm/full-bleed-main';
+import {
+  crmShellMainClass,
+  crmShellMainInnerClass,
+  isCrmFullBleedPath,
+  isCrmRecordPath,
+} from '@/lib/crm/full-bleed-main';
 import {
   initialSidebarNavState,
   resolveSidebarNav,
@@ -143,6 +148,7 @@ export function CrmShell({
   }, [pathname, navOptions]);
 
   const fullBleedMain = isCrmFullBleedPath(pathname);
+  const flushMainEdges = fullBleedMain || isCrmRecordPath(pathname);
   const inboxUnread = useInboxUnreadCount(profile.organization_id);
 
   return (
@@ -235,11 +241,11 @@ export function CrmShell({
               <main
                 id="crm-main-content"
                 tabIndex={-1}
-                className={crmShellMainClass(fullBleedMain)}
+                className={crmShellMainClass(fullBleedMain, flushMainEdges)}
               >
                 {/* Inbox is a workspace: flush to the sidebar and the right
                     edge. Other pages keep the padded reading gutter. */}
-                <div className={crmShellMainInnerClass(fullBleedMain)}>
+                <div className={crmShellMainInnerClass(fullBleedMain, flushMainEdges)}>
                   {children}
                 </div>
               </main>

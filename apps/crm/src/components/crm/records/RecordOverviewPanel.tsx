@@ -1,8 +1,8 @@
 'use client';
 
 /**
- * Lead overview panel — section pills + inline field stack with live filled-count
- * updates as reps save coverage fields (no full page refresh required).
+ * Lead overview panel — left section rail + inline field stack with live
+ * filled-count updates as reps save coverage fields (no full page refresh).
  */
 
 import { useMemo, type ReactNode } from 'react';
@@ -95,7 +95,6 @@ function LiveSectionOverview({
       recordId={recordId}
       sections={sections}
       showSectionNav
-      navVariant={layoutV2Shell ? 'compact' : 'pills'}
       fieldContent={
         <>
           <RecordOverviewFields

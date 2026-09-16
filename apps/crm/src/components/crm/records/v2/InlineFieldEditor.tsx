@@ -493,7 +493,7 @@ function DisplayValue({
     );
   }
   return (
-    <span title={s} className="font-medium text-slate-900 dark:text-slate-100">
+    <span title={s} className="font-normal text-slate-900 dark:text-slate-100">
       {s}
     </span>
   );

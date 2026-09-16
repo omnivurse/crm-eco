@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
   addressFormLabel,
   collapseAddressListColumns,
+  formatRecordAddress,
   preferredAddressLineListColumnKey,
+  primaryAddressFieldKey,
   shouldShowAddressFieldInForm,
 } from './address-field-dedupe';
 
@@ -137,5 +139,40 @@ describe('collapseAddressListColumns', () => {
         new Set(['street', 'mailing_street', 'email']),
       ),
     ).toBe('mailing_street');
+  });
+});
+
+describe('formatRecordAddress', () => {
+  it('joins the contact mailing family into one line', () => {
+    expect(
+      formatRecordAddress(
+        {
+          mailing_street: 'P.O. Box 4935',
+          mailing_city: 'Eagle',
+          mailing_state: 'CO',
+          mailing_zip: '81631',
+        },
+        'contacts',
+      ),
+    ).toBe('P.O. Box 4935, Eagle, CO 81631');
+    expect(primaryAddressFieldKey('contacts')).toBe('mailing_street');
+  });
+
+  it('fills member address_line1 from leftover mailing_street', () => {
+    expect(
+      formatRecordAddress(
+        {
+          mailing_street: '1 Sharing Way',
+          city: 'Denver',
+          state: 'CO',
+          zip_code: '80202',
+        },
+        'members',
+      ),
+    ).toBe('1 Sharing Way, Denver, CO 80202');
+  });
+
+  it('returns null when every slot is blank', () => {
+    expect(formatRecordAddress({}, 'contacts')).toBeNull();
   });
 });

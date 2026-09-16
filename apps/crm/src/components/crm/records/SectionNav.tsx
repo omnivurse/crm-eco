@@ -1,7 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { cn } from '@crm-eco/ui/lib/utils';
 import type { SectionMeta } from './section-utils';
 import {
@@ -13,7 +13,10 @@ import {
   type SectionNavGroupBand,
 } from './section-utils';
 import { getSectionCompactNavAccent, getSectionNavAccent } from './section-accent-tokens';
-import { scrollRecordSectionAfterExpand } from '@/lib/crm/record-section-scroll';
+import {
+  getRecordScrollRoot,
+  scrollRecordSectionAfterExpand,
+} from '@/lib/crm/record-section-scroll';
 
 export type { SectionMeta };
 
@@ -30,7 +33,8 @@ interface SectionNavProps {
 }
 
 /**
- * Section jump bar.
+ * @deprecated V2 record overview uses {@link RecordSectionRail} (left tree).
+ * Kept so a rollback does not require rewriting the two-row jump bar.
  *
  * Top row = one pill per nav GROUP (Profile · Coverage · Family · Address ·
  * Ownership · Admin …)
@@ -158,6 +162,33 @@ export function SectionNav({
     tabs[next]?.focus();
   }, []);
 
+  const barRef = useRef<HTMLDivElement>(null);
+
+  // Pin flush under the record header. The shared CSS var can lag the
+  // compact-header resize by a frame and used to leave a 12px gutter the
+  // coverage card scrolled through.
+  useLayoutEffect(() => {
+    if (sections.length <= 1) return;
+    const bar = barRef.current;
+    const root = getRecordScrollRoot();
+    if (!bar || !root) return;
+    const header = root.querySelector<HTMLElement>(':scope > .sticky');
+    if (!header) return;
+
+    const sync = () => {
+      const h = Math.ceil(header.getBoundingClientRect().height);
+      bar.style.top = `${h}px`;
+    };
+    sync();
+    const ro = new ResizeObserver(sync);
+    ro.observe(header);
+    root.addEventListener('scroll', sync, { passive: true });
+    return () => {
+      ro.disconnect();
+      root.removeEventListener('scroll', sync);
+    };
+  }, [sections.length, activeGroup]);
+
   if (sections.length <= 1) return null;
 
   const renderSectionPill = (s: SectionMeta) => {
@@ -208,17 +239,22 @@ export function SectionNav({
 
   return (
     <div
+      ref={barRef}
       className={cn(
-        // Opaque sticky bar — alpha + backdrop-blur under the record header
-        // ghosts field content through the chip/section strip (top-half flicker).
-        // z-15 sits above scrolling fields and below the record header (z-20).
-        'sticky z-[15] isolate -mx-1 border-b border-slate-200 bg-white px-1 dark:border-white/5 dark:bg-slate-950',
-        compact ? 'shadow-none' : 'shadow-sm',
+        // Solid occluding sticky bar. Field cells use relative z-10 and the
+        // coverage snapshot is a translucent gradient — both used to paint
+        // through this strip on scroll (hard on the eyes for power users).
+        // z-20 + transform-gpu: known Tailwind tokens (arbitrary z-[19] did
+        // not emit CSS here) so Chromium cannot composite the card through.
+        'relative sticky z-20 isolate -mx-1 border-b border-slate-200 bg-white px-1',
+        'dark:border-white/5 dark:bg-slate-950',
+        'transform-gpu shadow-md',
       )}
       style={{ top: 'var(--record-sticky-offset, 180px)' }}
     >
       {/* Row 1 — group pills (or the flat per-section row when there is one group) */}
-      <div className="relative">
+      <div className="flex items-center gap-1 bg-white dark:bg-slate-950">
+      <div className="relative min-w-0 flex-1 bg-white dark:bg-slate-950">
       {overflow.left && (
         <>
           <div
@@ -318,13 +354,31 @@ export function SectionNav({
           : sections.map(renderSectionPill)}
       </div>
       </div>
+      <button
+        type="button"
+        aria-label="Find a field in this record"
+        title="Find a field or value in this record (press /)"
+        onClick={() => {
+          window.dispatchEvent(new CustomEvent('crm:focus-record-search'));
+        }}
+        className={cn(
+          'inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-slate-500 transition-colors',
+          'hover:bg-slate-100 hover:text-slate-900',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+          'dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-white',
+        )}
+      >
+        <Search className="h-3.5 w-3.5" aria-hidden />
+        <span className="hidden sm:inline">Find field</span>
+      </button>
+      </div>
 
       {/* Row 2 — every section in the active group. Hidden only when the
           group is a single card (its pill would duplicate the group pill).
           Always visible: hiding this row on <xl and behind "N sections"
           forced reps to hunt the page for Health Insurance vs Dental. */}
       {grouped && activeBand && activeBand.sections.length > 1 && (
-        <div className="border-t border-slate-100 dark:border-white/5">
+        <div className="border-t border-slate-100 bg-white dark:border-white/5 dark:bg-slate-950">
           <div
             id="record-section-nav-sections"
             role="tablist"

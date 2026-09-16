@@ -5,6 +5,12 @@
 
 import type { CrmField, CrmRecord } from '@/lib/crm/types';
 import { mergeCrmRecordRowIntoFormDefaults } from '@/lib/crm/record-form-defaults';
+import {
+  addressFormLabel,
+  addressSlotForKey,
+  formatRecordAddress,
+  primaryAddressFieldKey,
+} from '@/lib/crm/address-field-dedupe';
 
 export type RecordFieldNavigateTarget =
   | { type: 'field'; fieldKey: string }
@@ -15,6 +21,15 @@ export interface RecordFieldSearchHit {
   navigate: RecordFieldNavigateTarget;
   label: string;
   snippet: string;
+  /** Raw crm_fields.section key — UI maps this to Profile / Address / … */
+  section?: string;
+}
+
+export interface RecordSearchableRow {
+  fieldKey: string;
+  label: string;
+  text: string;
+  section?: string;
 }
 
 function stringifyValue(val: unknown): string {
@@ -62,6 +77,16 @@ export function recordValueFor(
   }
 }
 
+/** Collapse punctuation so "eagle co" hits "Eagle, CO" and "po box" hits "P.O. Box". */
+function normalizeForSearch(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/[.]/g, '')
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function snippetAround(text: string, queryLower: string, maxLen = 96): string {
   const raw = text.trim().replace(/\s+/g, ' ');
   if (!raw) return '';
@@ -76,11 +101,18 @@ function snippetAround(text: string, queryLower: string, maxLen = 96): string {
   return `${prefix}${slice}${suffix}`;
 }
 
+function addressSearchTokens(fieldKey: string): string {
+  const slot = addressSlotForKey(fieldKey);
+  if (!slot) return '';
+  if (slot === 'line1') return 'address mailing street';
+  return `address mailing ${slot}`;
+}
+
 export function buildRecordSearchableRows(
   record: CrmRecord,
   fields: CrmField[],
   moduleKey?: string | null,
-): Array<{ fieldKey: string; label: string; text: string }> {
+): RecordSearchableRow[] {
   // Search the SAME projected values the detail page renders, so a Zoho-era
   // value surfaced through projection is also findable via ⌘K.
   const projectedData = mergeCrmRecordRowIntoFormDefaults(
@@ -94,62 +126,93 @@ export function buildRecordSearchableRows(
   );
 
   const sortedFields = [...fields].sort((a, b) => a.display_order - b.display_order);
-  const rows: Array<{ fieldKey: string; label: string; text: string }> = [];
+  const filled: RecordSearchableRow[] = [];
+  const empty: RecordSearchableRow[] = [];
   const seen = new Set<string>();
 
   for (const f of sortedFields) {
     if (seen.has(f.key)) continue;
     seen.add(f.key);
     const text = stringifyValue(recordValueFor(record, f.key, projectedData));
-    if (text.trim()) {
-      rows.push({ fieldKey: f.key, label: f.label, text });
-    }
+    const label = addressFormLabel(f.key, moduleKey, f.label);
+    const row: RecordSearchableRow = {
+      fieldKey: f.key,
+      label,
+      text,
+      section: f.section,
+    };
+    if (text.trim()) filled.push(row);
+    else empty.push(row);
   }
 
-  const standard: Array<{ key: string; label: string }> = [
+  const standard: Array<{ key: string; label: string; section?: string }> = [
     { key: 'title', label: 'Title' },
-    { key: 'email', label: 'Email' },
-    { key: 'phone', label: 'Phone' },
+    { key: 'email', label: 'Email', section: 'contact' },
+    { key: 'phone', label: 'Phone', section: 'contact' },
     { key: 'status', label: 'Status' },
     { key: 'stage', label: 'Stage' },
   ];
   for (const s of standard) {
     if (seen.has(s.key)) continue;
     const text = stringifyValue(recordValueFor(record, s.key));
-    if (text.trim()) {
-      seen.add(s.key);
-      rows.push({ fieldKey: s.key, label: s.label, text });
-    }
+    if (!text.trim()) continue;
+    seen.add(s.key);
+    filled.push({ fieldKey: s.key, label: s.label, text, section: s.section });
+  }
+
+  const rows = [...filled, ...empty];
+  const composed = formatRecordAddress(projectedData, moduleKey);
+  if (composed) {
+    const fieldKey = primaryAddressFieldKey(moduleKey);
+    rows.unshift({
+      fieldKey,
+      label: 'Address',
+      text: composed,
+      section: 'address',
+    });
   }
 
   return rows;
 }
 
 export function buildRecordFieldSearchHits(
-  rows: Array<{ fieldKey: string; label: string; text: string }>,
+  rows: RecordSearchableRow[],
   noteText: string,
   rawQuery: string,
   limit = 30,
 ): RecordFieldSearchHit[] {
   const queryLower = rawQuery.trim().toLowerCase();
-  if (!queryLower) return [];
+  const queryNorm = normalizeForSearch(rawQuery);
+  if (!queryNorm) return [];
 
   const hits: RecordFieldSearchHit[] = [];
+  const seenRow = new Set<string>();
   let id = 0;
 
   for (const row of rows) {
-    const hay = `${row.label} ${row.text}`.toLowerCase();
-    if (!hay.includes(queryLower)) continue;
+    const valueHay = normalizeForSearch(row.text);
+    const labelHay = normalizeForSearch(
+      `${row.section ?? ''} ${row.label} ${addressSearchTokens(row.fieldKey)}`,
+    );
+    const matchValue = valueHay.includes(queryNorm);
+    const matchLabel = queryNorm.length >= 2 && labelHay.includes(queryNorm);
+    if (!matchValue && !matchLabel) continue;
+    const rowId = `${row.fieldKey}::${row.label}`;
+    if (seenRow.has(rowId)) continue;
+    seenRow.add(rowId);
     hits.push({
       id: `f-${row.fieldKey}-${id++}`,
       navigate: { type: 'field', fieldKey: row.fieldKey },
       label: row.label,
-      snippet: snippetAround(row.text, queryLower),
+      snippet: row.text.trim()
+        ? snippetAround(row.text, queryLower)
+        : 'Empty — jump to this field',
+      section: row.section,
     });
   }
 
   const nt = noteText.trim();
-  if (nt && nt.toLowerCase().includes(queryLower)) {
+  if (nt && normalizeForSearch(nt).includes(queryNorm)) {
     hits.push({
       id: `notes-${id++}`,
       navigate: { type: 'notes' },

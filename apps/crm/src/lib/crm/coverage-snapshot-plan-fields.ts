@@ -140,7 +140,6 @@ export const COVERAGE_SNAPSHOT_PREFERRED_KEYS = [
   'monthly_rate',
   'iua_amount',
   'member_tier',
-  'sharing_member_id',
   'sharing_status',
   'previous_product',
 ] as const;

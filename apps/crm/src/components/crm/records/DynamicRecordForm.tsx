@@ -59,6 +59,14 @@ import {
   selectCoverageSnapshotPlanFields,
 } from '@/lib/crm/coverage-snapshot-plan-fields';
 import {
+  applyCoverageSnapshotLayout,
+  coverageSnapshotModuleLabel,
+} from '@/lib/crm/coverage-snapshot-layout';
+import { useCoverageSnapshotLayout } from '@/hooks/useCoverageSnapshotLayout';
+import { useSectionFieldLayout } from '@/hooks/useSectionFieldLayout';
+import { applySectionFieldLayout } from '@/lib/crm/section-field-layout';
+import { CoverageSnapshotOrganizer } from './CoverageSnapshotOrganizer';
+import {
   isVisibleEnrolledByField,
   shouldShowOwnershipFieldInForm,
 } from '@/lib/crm/ownership-field-dedupe';
@@ -84,6 +92,7 @@ import { AdvisorCarrierField } from './AdvisorCarrierField';
 import {
   CRM_SECTION_NAV_EVENT,
   buildEffectiveSections,
+  foldPersonFormSectionKey,
   getSectionNavGroup,
   isPersonCoverageSectionKey,
   isPersonModuleKey,
@@ -96,10 +105,8 @@ import {
   INLINE_EDIT_GRID_CLASS,
   FULL_ROW_SPAN_CLASS,
   COVERAGE_SNAPSHOT_GLANCE_COLUMNS,
-  COVERAGE_SNAPSHOT_WIDE_GRID_CLASS,
   COVERAGE_SNAPSHOT_WRAP_CELL_CLASS,
   fieldSpansFullRow,
-  isCoverageSnapshotWideField,
   shouldUseDenseFieldRow,
 } from './field-layout';
 import { getSectionCardAccent } from './section-accent-tokens';
@@ -697,6 +704,9 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
     [fields],
   );
 
+  const snapshotLayout = useCoverageSnapshotLayout(moduleKey ?? '');
+  const sectionCardLayout = useSectionFieldLayout(moduleKey ?? '');
+
   // No layout → one "Information" section so every field still renders. This
   // is the degraded render for BOTH "no default layout row" (configuration)
   // and "layout fetch rejected" (transient); the record page (RP-M2) owns the
@@ -715,8 +725,8 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
       );
       const requiredSections = new Set<string>();
       for (const f of visibleFields) {
-        allSectionKeys.add(f.section || 'main');
-        if (f.required) requiredSections.add(f.section || 'main');
+        allSectionKeys.add(foldPersonFormSectionKey(f.section || 'main', moduleKey));
+        if (f.required) requiredSections.add(foldPersonFormSectionKey(f.section || 'main', moduleKey));
       }
       if (isPersonModuleKey(moduleKey)) {
         // Create-mode override (see CREATE_FORM_EXPANDED_SECTION_KEYS): collapse
@@ -961,7 +971,7 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
       if (!shouldShowStartDateFieldInForm({ fieldKey: field.key, values: defaultValues })) {
         continue;
       }
-      const section = field.section || 'main';
+      const section = foldPersonFormSectionKey(field.section || 'main', moduleKey);
       if (!grouped[section]) grouped[section] = [];
       grouped[section].push(field);
     }
@@ -1124,7 +1134,7 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
       const valueNode = cellReadOnly ? (
         <div
           className={cn(
-            'text-sm min-w-0 max-w-full',
+            'text-sm font-normal min-w-0 max-w-full',
             denseRow ? 'min-h-[20px]' : 'py-0.5 min-h-[28px]',
           )}
         >
@@ -1173,7 +1183,7 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
               htmlFor={opts?.readOnlyView ? undefined : field.key}
               title={cellLabelTitle}
               className={cn(
-                'shrink-0 text-muted-foreground text-[11px] font-medium uppercase leading-snug tracking-wide',
+                'shrink-0 !font-bold text-[11px] uppercase leading-snug tracking-wide text-slate-900 dark:text-white',
                 opts?.wrap
                   ? 'max-w-[40%] whitespace-normal break-words'
                   : 'truncate',
@@ -1206,7 +1216,7 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
           <Label
             htmlFor={field.key}
             className={cn(
-              'mb-0.5 block text-muted-foreground text-[11px] font-medium uppercase tracking-wider',
+              'mb-0.5 block !font-bold text-[11px] uppercase tracking-wider text-slate-900 dark:text-white',
               opts?.wrap ? 'whitespace-normal break-words' : 'truncate',
             )}
             title={cellLabelTitle}
@@ -1432,6 +1442,7 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
       skipKeys,
       planType: recordPlanType,
       values: defaultValues,
+      maxFields: 8,
     });
   }, [visibleFields, heroSharingField, heroStartDateField, recordPlanType, defaultValues]);
 
@@ -1496,6 +1507,41 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
     snapshotStatic,
   ]);
 
+  const snapshotCatalogFields = useMemo(() => {
+    const seen = new Set<string>();
+    const list: CrmField[] = [];
+    const push = (field?: CrmField | null) => {
+      if (!field || seen.has(field.key)) return;
+      seen.add(field.key);
+      list.push(field);
+    };
+    for (const field of heroProductPlanSnapshotFields) push(field);
+    if (
+      heroStartDateField &&
+      (!snapshotStatic || hasValue(heroStartDateField.key))
+    ) {
+      push(heroStartDateField);
+    }
+    for (const field of heroReferralSnapshotFields) push(field);
+    const sharingMemberId = findFieldByKey('sharing_member_id');
+    if (sharingMemberId && (!snapshotStatic || hasValue(sharingMemberId.key))) {
+      push(sharingMemberId);
+    }
+    return list;
+  }, [
+    heroProductPlanSnapshotFields,
+    heroStartDateField,
+    heroReferralSnapshotFields,
+    findFieldByKey,
+    hasValue,
+    snapshotStatic,
+  ]);
+
+  const snapshotGlanceFields = useMemo(
+    () => applyCoverageSnapshotLayout(snapshotCatalogFields, snapshotLayout.prefs),
+    [snapshotCatalogFields, snapshotLayout.prefs],
+  );
+
   // ── Coverage Snapshot ─────────────────────────────────────────────────
   // Lifted OUT of the Lead Information hero (where it crowded the fields as a
   // narrow right sidebar) into a full-width banner pinned to the top of the
@@ -1555,56 +1601,68 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
 
     const staticView = snapshotStatic;
     const firstPopulatedPlanKey =
-      heroProductPlanSnapshotFields.find((f) => {
+      snapshotGlanceFields.find((f) => {
         const display = coerceCoverageSnapshotFieldValue(f.key, defaultValues[f.key]);
         return display !== null && display !== undefined && display !== '';
       })?.key ?? null;
     const carrierHasValue = heroSharingField ? hasValue(heroSharingField.key) : false;
-    const showDate =
-      Boolean(heroStartDateField) &&
-      (!staticView || (heroStartDateField ? hasValue(heroStartDateField.key) : false));
-    const hasDetail = heroProductPlanSnapshotFields.length > 0 || showDate;
-    const hasReferral = heroReferralSnapshotFields.length > 0;
-    const isEmpty = staticView && !carrierHasValue && !hasDetail && !hasReferral;
-    const isWideSnapshotField = (key: string) =>
-      isCoverageSnapshotWideField(key) ||
-      key === heroReferringMemberField?.key ||
-      key === heroReferralSourceField?.key;
-    const wideReferralFields = heroReferralSnapshotFields.filter((f) =>
-      isWideSnapshotField(f.key),
-    );
-    const glanceReferralFields = heroReferralSnapshotFields.filter(
-      (f) => !isWideSnapshotField(f.key),
-    );
+    const isEmpty = staticView && !carrierHasValue && snapshotGlanceFields.length === 0;
 
     const divider = (
       <div className={cn('hidden w-px self-stretch xl:block', accent.divider)} aria-hidden />
     );
+
+    const organizer =
+      moduleKey && snapshotCatalogFields.length > 0 ? (
+        <div className="flex shrink-0 items-center gap-2">
+          <span className="hidden text-[11px] font-medium text-slate-500 sm:inline dark:text-slate-400">
+            All {coverageSnapshotModuleLabel(moduleKey)}
+          </span>
+          <CoverageSnapshotOrganizer
+            moduleKey={moduleKey}
+            fields={snapshotCatalogFields.map((field) => ({
+              key: field.key,
+              label:
+                heroEnrolledByField && field.key === heroEnrolledByField.key
+                  ? coverageSnapshotEnrolledByLabel(field).label
+                  : field.label,
+            }))}
+            prefs={snapshotLayout.prefs}
+            onSave={snapshotLayout.save}
+            onReset={snapshotLayout.reset}
+          />
+        </div>
+      ) : null;
 
     return (
       <div
         data-testid="crm-record-snapshot"
         className={cn('rounded-xl border bg-gradient-to-br to-transparent shadow-sm ring-1', accent.wrap)}
       >
+        <div className="flex items-center justify-between gap-3 border-b border-black/5 px-3 py-2 dark:border-white/10">
+          <div className="flex min-w-0 items-center gap-2">
+            <span
+              className={cn(
+                'inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg',
+                accent.iconWrap,
+              )}
+            >
+              <AccentIcon className="h-4 w-4" />
+            </span>
+            <div className={cn('text-[11px] font-bold uppercase tracking-[0.14em]', accent.eyebrow)}>
+              {accent.label}
+            </div>
+          </div>
+          {organizer}
+        </div>
         {/* RP-6: the side-by-side identity rail only from xl up — between
             1024 and 1279 it left the detail grid a single ~150px column that
             pushed the whole snapshot below the fold (walk T2-above-fold). */}
         <div className="flex flex-col gap-x-6 gap-y-2 p-3 xl:gap-y-3 xl:flex-row xl:flex-wrap xl:items-stretch">
-          {/* Identity rail — coverage type + carrier / sharing entity */}
+          {/* Identity rail — carrier / sharing entity */}
           <div className="flex items-start gap-3 xl:w-64 xl:shrink-0">
-            <span
-              className={cn(
-                'mt-0.5 inline-flex h-8 w-8 xl:h-10 xl:w-10 shrink-0 items-center justify-center rounded-xl',
-                accent.iconWrap,
-              )}
-            >
-              <AccentIcon className="h-4 w-4 xl:h-5 xl:w-5" />
-            </span>
             <div className="min-w-0 flex-1">
-              <div className={cn('text-[10px] font-semibold uppercase tracking-[0.16em]', accent.eyebrow)}>
-                {accent.label}
-              </div>
-              <div className="mt-1.5">
+              <div className="mt-0">
                 {heroSharingFieldForDisplay && (carrierHasValue || !staticView) ? (
                   renderFieldCell(heroSharingFieldForDisplay, { readOnlyView: !readOnly })
                 ) : (
@@ -1640,9 +1698,6 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
           ) : (
             <>
               {divider}
-              {/* Glance grid (plan / date / enrolled-by / member #) plus a
-                  wider row for referring member + referral source — those
-                  names do not fit the RP-6 8.75rem columns. */}
               <div className="flex min-w-0 flex-1 flex-col gap-y-2 border-t border-dashed pt-2 xl:gap-y-2.5 xl:border-0 xl:pt-0">
                 <div
                   className="grid gap-x-4 gap-y-1.5 xl:gap-x-6 xl:gap-y-2"
@@ -1650,54 +1705,27 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
                     gridTemplateColumns: COVERAGE_SNAPSHOT_GLANCE_COLUMNS,
                   }}
                 >
-                  {heroProductPlanSnapshotFields.map((field) =>
-                    renderFieldCell(field, {
-                      row: true,
-                      tightLabel: true,
-                      wrap: true,
-                      readOnlyView: !readOnly,
-                      // Phone glance keeps the FIRST populated plan/product cell
-                      // and any member-id/number cell (the member # is part of
-                      // the glance set wherever the module stores it).
-                      className: snapshotCellPhoneClass(
-                        field.key,
-                        field.key === firstPopulatedPlanKey || /member.?(number|id)$/i.test(field.key),
-                      ),
-                      // Capacity aliases ("Health Insurance") must not read as a
-                      // Membership / plan name — show the empty placeholder instead.
-                      displayValue: coerceCoverageSnapshotFieldValue(
-                        field.key,
-                        defaultValues[field.key],
-                      ),
-                    }),
-                  )}
-                  {showDate &&
-                    heroStartDateField &&
-                    renderFieldCell(heroStartDateField, {
-                      row: true,
-                      tightLabel: true,
-                      wrap: true,
-                      readOnlyView: !readOnly,
-                      className: snapshotCellPhoneClass(heroStartDateField.key, true),
-                    })}
-                  {glanceReferralFields.map((field) => {
-                    // "Who enrolled" wears ONE label everywhere (matches the
-                    // dashboard's "Enrolled by" column) no matter whether
-                    // producer_name / agent / advisor supplied the value; the
-                    // field's own label stays available as the hover title.
+                  {snapshotGlanceFields.map((field) => {
                     const enrolledBy =
                       heroEnrolledByField && field.key === heroEnrolledByField.key
                         ? coverageSnapshotEnrolledByLabel(field)
                         : null;
+                    const phoneGlance =
+                      field.key === firstPopulatedPlanKey ||
+                      field.key === 'referring_member' ||
+                      field.key === heroStartDateField?.key ||
+                      field.key === heroEnrolledByField?.key ||
+                      field.key === heroMemberIdField?.key ||
+                      /member.?(number|id)$/i.test(field.key);
                     return renderFieldCell(field, {
                       row: true,
                       tightLabel: true,
                       wrap: true,
                       readOnlyView: !readOnly,
-                      // Phone glance: who enrolled + member id; referral context is md+.
-                      className: snapshotCellPhoneClass(
+                      className: snapshotCellPhoneClass(field.key, phoneGlance),
+                      displayValue: coerceCoverageSnapshotFieldValue(
                         field.key,
-                        field.key === heroEnrolledByField?.key || field.key === heroMemberIdField?.key,
+                        defaultValues[field.key],
                       ),
                       ...(enrolledBy
                         ? { label: enrolledBy.label, labelTitle: enrolledBy.title }
@@ -1705,22 +1733,6 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
                     });
                   })}
                 </div>
-                {wideReferralFields.length > 0 ? (
-                  <div
-                    data-testid="crm-record-snapshot-referral"
-                    className={COVERAGE_SNAPSHOT_WIDE_GRID_CLASS}
-                  >
-                    {wideReferralFields.map((field) =>
-                      renderFieldCell(field, {
-                        // Stacked: the name uses the full cell, not a 8.75rem clip.
-                        row: false,
-                        wrap: true,
-                        readOnlyView: !readOnly,
-                        className: snapshotCellPhoneClass(field.key, false),
-                      }),
-                    )}
-                  </div>
-                ) : null}
               </div>
             </>
           )}
@@ -1747,6 +1759,10 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
             : undefined;
         const sectionFields = (fieldsBySection[section.key] || []).filter(
           (f) => f.key !== snapshotEnrolledByKey,
+        );
+        const displayFields = applySectionFieldLayout(
+          sectionFields,
+          sectionCardLayout.prefsFor(section.key),
         );
         const isHero = section.variant === 'hero';
         const forceCoverageSection = shouldAlwaysShowEmptySection(
@@ -1807,44 +1823,67 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
             data-section={section.key}
             className={cn('break-inside-avoid border', accent.border, overviewScrollAid)}
           >
-            <CardHeader
-              role="button"
-              tabIndex={0}
-              aria-expanded={!isCollapsed}
-              aria-controls={`section-${section.key}-content`}
+            <div
               className={cn(
-                'cursor-pointer hover:bg-muted/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                'flex items-center justify-between gap-2 border-b px-3',
                 accent.header,
-                readOnly ? 'py-2 px-4' : 'py-3',
+                readOnly ? 'py-2' : 'py-2.5',
               )}
-              onClick={() => toggleSection(section.key)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  toggleSection(section.key);
-                }
-              }}
             >
-              <CardTitle
+              <CardHeader
+                role="button"
+                tabIndex={0}
+                aria-expanded={!isCollapsed}
+                aria-controls={`section-${section.key}-content`}
                 className={cn(
-                  'font-medium flex items-center gap-2',
-                  accent.title,
-                  readOnly ? 'text-sm' : 'text-base',
+                  'min-w-0 flex-1 cursor-pointer p-0 hover:bg-transparent',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                 )}
+                onClick={() => toggleSection(section.key)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    toggleSection(section.key);
+                  }
+                }}
               >
-                {isCollapsed ? (
-                  <ChevronRight className="w-3.5 h-3.5" />
-                ) : (
-                  <ChevronDown className="w-3.5 h-3.5" />
-                )}
-                {section.label}
-                {sectionFields.length > 0 && (
-                  <span className="ml-auto text-[11px] font-normal tabular-nums text-muted-foreground">
-                    {sectionFields.filter((f) => hasValue(f.key)).length} of {sectionFields.length} filled
-                  </span>
-                )}
-              </CardTitle>
-            </CardHeader>
+                <CardTitle
+                  className={cn(
+                    'flex items-center gap-2 font-medium',
+                    accent.title,
+                    readOnly ? 'text-sm' : 'text-base',
+                  )}
+                >
+                  {isCollapsed ? (
+                    <ChevronRight className="w-3.5 h-3.5 shrink-0" />
+                  ) : (
+                    <ChevronDown className="w-3.5 h-3.5 shrink-0" />
+                  )}
+                  <span className="min-w-0 truncate">{section.label}</span>
+                  {displayFields.length > 0 && (
+                    <span className="shrink-0 text-[11px] font-normal tabular-nums text-muted-foreground">
+                      {displayFields.filter((f) => hasValue(f.key)).length} of {displayFields.length} filled
+                    </span>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              {moduleKey && sectionFields.length > 0 && (
+                <CoverageSnapshotOrganizer
+                  moduleKey={moduleKey}
+                  title={section.label}
+                  defaultOrder={sectionFields.map((f) => f.key)}
+                  fields={sectionFields.map((field) => ({
+                    key: field.key,
+                    label: field.label,
+                    required: field.required,
+                  }))}
+                  prefs={sectionCardLayout.prefsFor(section.key)}
+                  onSave={(next) => sectionCardLayout.save(section.key, next)}
+                  onReset={() => sectionCardLayout.reset(section.key)}
+                  testId="crm-record-section-organize"
+                />
+              )}
+            </div>
             {/* The embedded (server-action) form keeps collapsed content MOUNTED
                 but hidden so the inputs stay in the DOM: the create page builds
                 FormData from the DOM, so an unmounted section would silently drop
@@ -1885,8 +1924,14 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
                           : undefined
                     }
                   >
-                    {sectionFields.map((f) => renderFieldCell(f, { row: true }))}
+                    {displayFields.map((f) => renderFieldCell(f, { row: true }))}
                   </div>
+                ) : displayFields.length === 0 && sectionFields.length > 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    Fields on this card are hidden for all{' '}
+                    {coverageSnapshotModuleLabel(moduleKey ?? '')}. Use Organize fields to show
+                    them.
+                  </p>
                 ) : sectionFields.length === 0 ? (
                   <p className="text-sm text-muted-foreground">
                     {isPersonCoverageSectionKey(section.key)
@@ -1917,7 +1962,7 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
                         : undefined
                     }
                   >
-                    {sectionFields.map((f) => renderFieldCell(f, { row: true }))}
+                    {displayFields.map((f) => renderFieldCell(f, { row: true }))}
                   </div>
                 )}
               </CardContent>

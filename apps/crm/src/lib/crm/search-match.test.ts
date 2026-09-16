@@ -55,6 +55,7 @@ describe('humanizeFieldKey', () => {
   it('prefers curated labels, humanizes the rest', () => {
     expect(humanizeFieldKey('member_number')).toBe('Member ID');
     expect(humanizeFieldKey('first_name')).toBe('First name');
+    expect(humanizeFieldKey('mailing_street')).toBe('Street');
     expect(humanizeFieldKey('preferred_carrier')).toBe('Preferred Carrier');
   });
 });

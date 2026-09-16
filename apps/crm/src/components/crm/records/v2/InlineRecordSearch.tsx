@@ -22,6 +22,10 @@ import {
   buildRecordSearchableRows,
   type RecordFieldNavigateTarget,
 } from '@/lib/crm/record-field-search';
+import {
+  getSectionNavGroup,
+  getSectionNavGroupLabel,
+} from '@/components/crm/records/section-utils';
 
 export type NavigateToMatchArgs = RecordFieldNavigateTarget;
 
@@ -30,6 +34,7 @@ export type InlineRecordSearchHit = {
   navigate: NavigateToMatchArgs;
   label: string;
   snippet: string;
+  section?: string;
 };
 
 interface InlineRecordSearchProps {
@@ -124,7 +129,8 @@ export function InlineRecordSearch({
             if (query.trim()) setIsOpen(true);
           }}
           onKeyDown={handleKeyDown}
-          placeholder="Find in this record… (press /)"
+          placeholder="Find a field or value… (press /)"
+          aria-label="Find a field or value in this record"
           className="flex-1 bg-transparent text-sm text-slate-700 dark:text-slate-300 placeholder:text-slate-400 outline-none"
         />
         {query && (
@@ -171,7 +177,11 @@ export function InlineRecordSearch({
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">
-                            {r.label}
+                            {r.navigate.type === 'notes'
+                              ? r.label
+                              : r.section
+                                ? `${getSectionNavGroupLabel(getSectionNavGroup(r.section))} · ${r.label}`
+                                : r.label}
                           </p>
                           <p className="text-sm text-slate-900 dark:text-white truncate">
                             {r.snippet}

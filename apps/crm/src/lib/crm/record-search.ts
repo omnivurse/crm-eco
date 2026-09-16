@@ -134,11 +134,17 @@ export const CORE_GLOBAL_SEARCH_JSON_KEYS = [
   'member_number',
   'sharing_member_id',
   'e123_member_id',
-  // Address — contacts store the plain names, leads store the mailing_* ones.
+  // Address — contacts: mailing_*; leads: street; members: address_line1.
   'city',
   'state',
+  'zip_code',
+  'zip',
   'mailing_city',
   'mailing_state',
+  'mailing_zip',
+  'mailing_street',
+  'street',
+  'address_line1',
   'company',
   'company_name',
   'email2',

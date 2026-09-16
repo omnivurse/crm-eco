@@ -1276,6 +1276,17 @@ export interface CrmUiPreferences {
    * absent module keys mean "use view / module defaults".
    */
   list_prefs?: import('./list-preferences').ListPrefsMap;
+  /**
+   * Per-module coverage-card field order + hidden keys. Contacts and
+   * members keep separate layouts; one save applies to every record of
+   * that type for this viewer.
+   */
+  coverage_snapshot_layout?: import('./coverage-snapshot-layout').CoverageSnapshotLayoutMap;
+  /**
+   * Per-module, per-section card field order + hidden keys. Same organizer
+   * as the coverage snapshot; Address on Contacts stays apart from Members.
+   */
+  section_field_layout?: import('./section-field-layout').SectionFieldLayoutMap;
   [key: string]: unknown;
 }
 

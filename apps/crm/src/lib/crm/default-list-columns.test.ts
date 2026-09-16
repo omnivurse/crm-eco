@@ -117,6 +117,29 @@ describe('pickDefaultListColumns', () => {
     expect(cols).not.toContain('agent');
   });
 
+  it('puts mailing street in the identity set so contacts show address by default', () => {
+    const cols = pickDefaultListColumns(
+      [
+        field('first_name', { display_order: 1 }),
+        field('last_name', { display_order: 2 }),
+        field('email', { display_order: 3 }),
+        field('phone', { display_order: 4 }),
+        field('mailing_street', { display_order: 28 }),
+        field('contact_status', { display_order: 5 }),
+        field('notes', { display_order: 6 }),
+      ],
+      8,
+    );
+    expect(cols.slice(0, 6)).toEqual([
+      'first_name',
+      'last_name',
+      'email',
+      'phone',
+      'mailing_street',
+      'contact_status',
+    ]);
+  });
+
   it('skips duplicate street aliases so default lists get one address column', () => {
     const leadLike = pickDefaultListColumns(
       [
@@ -132,7 +155,7 @@ describe('pickDefaultListColumns', () => {
       8,
     );
     expect(leadLike.filter((k) => ['street', 'mailing_street'].includes(k))).toEqual([
-      'street',
+      'mailing_street',
     ]);
 
     const contactLike = pickDefaultListColumns(

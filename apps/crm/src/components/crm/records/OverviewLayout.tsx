@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { SectionNav, type SectionMeta } from './SectionNav';
+import { cn } from '@crm-eco/ui/lib/utils';
+import { RecordSectionRail, type SectionMeta } from './RecordSectionRail';
 import {
   getPersistedActiveSection,
   persistActiveSection,
@@ -16,11 +17,10 @@ interface OverviewLayoutProps {
   sections: SectionMeta[];
   fieldContent: React.ReactNode;
   /**
-   * Show the section navigator. Both classic (pills) and the V2 power cockpit
-   * (compact underline jump bar) render it; only single-section records hide it.
+   * Show the left section rail. Hidden only for single-section records.
    */
   showSectionNav?: boolean;
-  /** Nav style — 'compact' for the V2 cockpit jump bar, 'pills' for classic. */
+  /** @deprecated Top two-row bar is gone; kept so existing callers compile. */
   navVariant?: 'pills' | 'compact';
 }
 
@@ -29,7 +29,6 @@ export function OverviewLayout({
   sections,
   fieldContent,
   showSectionNav = true,
-  navVariant = 'pills',
 }: OverviewLayoutProps) {
   const [activeSectionKey, setActiveSectionKey] = useState(() => {
     const persisted = getPersistedActiveSection(recordId);
@@ -96,7 +95,7 @@ export function OverviewLayout({
       },
       {
         root: scrollRoot,
-        // Top band = sticky header + nav; bottom band keeps "active" near top.
+        // Top band = sticky header; bottom band keeps "active" near top.
         rootMargin: `-${stickyPx}px 0px -55% 0px`,
         threshold: 0.1,
       },
@@ -107,19 +106,24 @@ export function OverviewLayout({
   }, [sections, recordId]);
 
   return (
-    <div ref={containerRef}>
-      {/* Section navigator — field-band jump bar */}
+    <div
+      ref={containerRef}
+      className="flex flex-row items-start gap-1.5"
+    >
       {showSectionNav && (
-        <SectionNav
+        <RecordSectionRail
           sections={sections}
           activeSectionKey={activeSectionKey}
           onSectionClick={handleSectionClick}
-          variant={navVariant}
         />
       )}
 
-      {/* Full-width field sections */}
-      <div className={navVariant === 'compact' ? 'mt-2' : 'mt-3'}>
+      <div
+        className={cn(
+          'min-w-0 flex-1',
+          !showSectionNav && 'pl-[var(--crm-gutter,20px)]',
+        )}
+      >
         {fieldContent}
       </div>
     </div>

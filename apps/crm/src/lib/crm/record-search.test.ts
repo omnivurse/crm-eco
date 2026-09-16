@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  CORE_GLOBAL_SEARCH_JSON_KEYS,
   IDENTIFIER_SEARCH_JSON_KEYS,
   buildIdentifierSearchOrFilter,
   isNumericIdentifierQuery,
@@ -67,5 +68,19 @@ describe('mergeUniqueByIdPreserveOrder', () => {
 
   it('works when the phone path returns nothing (member number only)', () => {
     expect(mergeUniqueByIdPreserveOrder([], [row('i1')], 5).map((r) => r.id)).toEqual(['i1']);
+  });
+});
+
+describe('CORE_GLOBAL_SEARCH_JSON_KEYS', () => {
+  it('includes street and zip aliases so address fallback search works', () => {
+    for (const key of [
+      'mailing_street',
+      'street',
+      'address_line1',
+      'mailing_zip',
+      'zip_code',
+    ]) {
+      expect(CORE_GLOBAL_SEARCH_JSON_KEYS).toContain(key);
+    }
   });
 });

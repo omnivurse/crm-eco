@@ -50,7 +50,7 @@ function renderMoneyDisplay(value: string | number | null | undefined): ReactNod
   if (formatted === null) {
     return <span className="text-slate-400 dark:text-slate-500">—</span>;
   }
-  return <span className="font-medium">{formatted}</span>;
+  return <span className="font-normal">{formatted}</span>;
 }
 
 export interface InlineFieldCellProps {
