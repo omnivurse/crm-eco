@@ -11,6 +11,7 @@ import React, {
 } from 'react';
 import { createPortal } from 'react-dom';
 import { cn } from '../lib/utils';
+import { isGizmoResetQuery } from '../lib/gizmo-reset';
 import { GizmoOrbButton, GizmoOrbFace } from './gizmo-orb';
 import { GIZMO_OPEN_EVENT } from './gizmo-open';
 
@@ -46,11 +47,13 @@ type ChatResponse = {
 async function postGizmoChat(
   chatUrl: string,
   payload: Record<string, unknown>,
+  signal?: AbortSignal,
 ): Promise<ChatResponse> {
   const res = await fetch(chatUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
+    signal,
   });
   const data = (await res.json().catch(() => ({}))) as ChatResponse & { error?: string };
   if (!res.ok) {
@@ -58,6 +61,8 @@ async function postGizmoChat(
   }
   return data;
 }
+
+const FRESH_REPLY = 'Cleared. What should I find next?';
 
 export function GizmoCompanion({
   chatUrl,
@@ -90,11 +95,36 @@ export function GizmoCompanion({
   const [draft, setDraft] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [messages, setMessages] = useState<GizmoChatMessage[]>([]);
+  const abortRef = useRef<AbortController | null>(null);
+
+  const startFresh = useCallback((announce: boolean) => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setThinking(false);
+    setError(null);
+    setDraft('');
+    setMessages(
+      announce
+        ? [
+            {
+              id: `g-fresh-${Date.now()}`,
+              role: 'gizmo',
+              text: FRESH_REPLY,
+            },
+          ]
+        : [],
+    );
+    queueMicrotask(() => inputRef.current?.focus());
+  }, []);
 
   const ask = useCallback(
     async (text: string) => {
       const q = text.trim();
       if (!q || thinking) return;
+      if (isGizmoResetQuery(q)) {
+        startFresh(true);
+        return;
+      }
       setError(null);
       setDraft('');
       const userMsg: GizmoChatMessage = {
@@ -103,14 +133,22 @@ export function GizmoCompanion({
         text: q,
       };
       setMessages((prev) => [...prev, userMsg]);
+      abortRef.current?.abort();
+      const ac = new AbortController();
+      abortRef.current = ac;
       setThinking(true);
       try {
-        const data = await postGizmoChat(chatUrl, {
-          query: q,
-          pathname: pathname ?? undefined,
-          pageTitle: pageLabel ?? undefined,
-          pageTips: tips.map((t) => ({ id: t.id, title: t.title, body: t.body })),
-        });
+        const data = await postGizmoChat(
+          chatUrl,
+          {
+            query: q,
+            pathname: pathname ?? undefined,
+            pageTitle: pageLabel ?? undefined,
+            pageTips: tips.map((t) => ({ id: t.id, title: t.title, body: t.body })),
+          },
+          ac.signal,
+        );
+        if (ac.signal.aborted) return;
         setMessages((prev) => [
           ...prev,
           {
@@ -121,13 +159,15 @@ export function GizmoCompanion({
           },
         ]);
       } catch (e) {
+        if (e instanceof DOMException && e.name === 'AbortError') return;
         setError(e instanceof Error ? e.message : 'Gizmo could not answer.');
       } finally {
+        if (abortRef.current === ac) abortRef.current = null;
         setThinking(false);
         queueMicrotask(() => inputRef.current?.focus());
       }
     },
-    [chatUrl, pageLabel, pathname, tips, thinking],
+    [chatUrl, pageLabel, pathname, startFresh, tips, thinking],
   );
 
   useEffect(() => {
@@ -205,6 +245,14 @@ export function GizmoCompanion({
                 <p className="gizmo-muted mt-0.5 truncate text-[11px]">{pageLabel}</p>
               ) : null}
             </div>
+            <button
+              type="button"
+              onClick={() => startFresh(false)}
+              className="gizmo-ghost rounded px-1.5 py-1 text-[11px]"
+              aria-label="New search"
+            >
+              New
+            </button>
             {onHide ? (
               <button
                 type="button"
@@ -336,7 +384,11 @@ export function GizmoCompanion({
               ref={inputRef}
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
-              placeholder="Ask Gizmo to find anything…"
+              placeholder={
+                messages.length > 0
+                  ? 'Ask another thing, or type clear…'
+                  : 'Ask Gizmo to find anything…'
+              }
               className="gizmo-field w-full rounded-xl px-3 py-2 text-sm"
             />
           </form>
