@@ -2,7 +2,7 @@
  * Offline cache worker. Keep identifiers generic — this file is public.
  */
 
-const CACHE_VERSION = 15;
+const CACHE_VERSION = 16;
 const CACHE_NAME = `app-v${CACHE_VERSION}`;
 const STATIC_CACHE_NAME = `app-static-v${CACHE_VERSION}`;
 const API_CACHE_NAME = `app-api-v${CACHE_VERSION}`;
@@ -86,8 +86,15 @@ self.addEventListener('fetch', (event) => {
   // Skip non-GET requests
   if (request.method !== 'GET') return;
 
-  // Skip cross-origin requests (except Supabase API)
-  if (url.origin !== location.origin && !url.hostname.includes('supabase')) {
+  // Never intercept Supabase. A SW hop on REST/auth races token refresh
+  // (refresh_token 400) and then same-origin APIs 401 — churn/analytics
+  // tabs show "Failed to load" while the page shell is still visible.
+  if (url.hostname.includes('supabase')) {
+    return;
+  }
+
+  // Skip other cross-origin requests
+  if (url.origin !== location.origin) {
     return;
   }
 
@@ -193,8 +200,7 @@ function isStaticAsset(pathname) {
 function isApiRequest(url) {
   return (
     url.pathname.startsWith('/api/') ||
-    url.pathname.includes('/_next/data/') ||
-    url.hostname.includes('supabase')
+    url.pathname.includes('/_next/data/')
   );
 }
 

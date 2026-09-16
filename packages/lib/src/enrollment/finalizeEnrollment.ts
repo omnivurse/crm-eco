@@ -32,6 +32,7 @@ import {
   sendEnrollmentConfirmationEmail,
   sendAdvisorNotificationEmail,
 } from '../email/transactional';
+import { createCommissionService } from '../commissions';
 
 export interface FinalizeEnrollmentInput {
   organizationId: string;
@@ -260,6 +261,19 @@ export async function finalizeEnrollment(
     }
   } catch (e) {
     console.error('[finalizeEnrollment] agent email failed (non-fatal)', e);
+  }
+
+  try {
+    const { count } = await sb
+      .from('commissions')
+      .select('id', { count: 'exact', head: true })
+      .eq('enrollment_id', input.enrollmentId);
+    if (!count) {
+      const commissions = createCommissionService(sb as never, input.organizationId);
+      await commissions.processEnrollmentCommissions(input.enrollmentId);
+    }
+  } catch (e) {
+    console.error('[finalizeEnrollment] commission ensure failed (non-fatal)', e);
   }
 
   return {

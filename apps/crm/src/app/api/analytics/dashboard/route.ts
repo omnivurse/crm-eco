@@ -5,6 +5,7 @@ import {
   leadStatusKey,
   resolveLeadsModuleId,
 } from '@crm-eco/lib';
+import { ENROLLMENT_STATUS } from '@crm-eco/lib/analytics';
 
 export const dynamic = 'force-dynamic';
 
@@ -103,8 +104,8 @@ export async function GET(request: NextRequest) {
       supabase.from('members').select('*', { count: 'exact', head: true }).eq('organization_id', orgId),
       supabase.from('members').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).eq('status', 'active'),
       leadStatsPromise,
-      supabase.from('enrollments').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).in('status', ['draft', 'pending', 'in_progress']),
-      supabase.from('enrollments').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).eq('status', 'approved'),
+      supabase.from('enrollments').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).in('status', [...ENROLLMENT_STATUS.pendingReview, ...ENROLLMENT_STATUS.draft]),
+      supabase.from('enrollments').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).in('status', [...ENROLLMENT_STATUS.approvedOrActive]),
       supabase.from('needs').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).not('status', 'in', '(paid,closed)'),
       supabase.from('needs').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).eq('urgency_light', 'red'),
       supabase.from('advisors').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).eq('status', 'active'),
@@ -125,8 +126,17 @@ export async function GET(request: NextRequest) {
       leadsForPipeline,
     } = leadStats;
 
-    const totalMembers = totalMembersCount.count || 0;
-    const activeMembers = activeMembersCount.count || 0;
+    const today = now.toISOString().split('T')[0];
+    const { data: snapshot } = await supabase
+      .from('analytics_snapshots')
+      .select('total_members, active_members, total_enrollments, pending_enrollments, approved_enrollments, total_mrr, total_advisors, active_advisors')
+      .eq('organization_id', orgId)
+      .eq('snapshot_date', today)
+      .eq('metric_type', 'daily')
+      .maybeSingle();
+
+    const totalMembers = snapshot?.total_members ?? (totalMembersCount.count || 0);
+    const activeMembers = snapshot?.active_members ?? (activeMembersCount.count || 0);
     const totalLeads = totalLeadsCount.count || 0;
     const activeLeadsNum = activeLeadsCount.count || 0;
     const convertedLeadsNum = convertedLeadsCount.count || 0;
@@ -136,7 +146,9 @@ export async function GET(request: NextRequest) {
     // MRR from active billing schedules (authoritative), not the denormalized
     // members.monthly_share cache column.
     const mrrData = activeSchedulesForMRR.data || [];
-    const mrr = mrrData.reduce((sum: number, s: { amount: number | null }) => sum + (Number(s.amount) || 0), 0);
+    const mrr = snapshot?.total_mrr != null
+      ? Number(snapshot.total_mrr)
+      : mrrData.reduce((sum: number, s: { amount: number | null }) => sum + (Number(s.amount) || 0), 0);
 
     const conversionRate = totalLeads > 0 ? (convertedLeadsNum / totalLeads * 100) : 0;
 
@@ -184,14 +196,14 @@ export async function GET(request: NextRequest) {
         totalLeads,
         activeLeads: activeLeadsNum,
         conversionRate: Math.round(conversionRate * 10) / 10,
-        pendingEnrollments: pendingEnrollmentsCount.count || 0,
-        completedEnrollments: completedEnrollmentsCount.count || 0,
+        pendingEnrollments: snapshot?.pending_enrollments ?? (pendingEnrollmentsCount.count || 0),
+        completedEnrollments: snapshot?.approved_enrollments ?? (completedEnrollmentsCount.count || 0),
         openNeeds: openNeedsCount.count || 0,
         urgentNeeds: urgentNeedsCount.count || 0,
         totalNeedsAmount,
         totalReimbursed,
-        activeAdvisors: activeAdvisorsCount.count || 0,
-        totalAdvisors: totalAdvisorsCount.count || 0,
+        activeAdvisors: snapshot?.active_advisors ?? (activeAdvisorsCount.count || 0),
+        totalAdvisors: snapshot?.total_advisors ?? (totalAdvisorsCount.count || 0),
       },
       pipeline,
       dailyActivity,

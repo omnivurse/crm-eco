@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
+import { toastCopy } from '@/lib/crm/toast-copy';
 import type {
   CrmReport,
   ReportColumn,
@@ -170,6 +171,9 @@ export function useReportBuilder() {
   const [reportScope, setReportScope] = useState<ReportScope>('all');
   const [advisorId, setAdvisorId] = useState<string>('');
   const [includeDownline, setIncludeDownline] = useState(false);
+  const [previewing, setPreviewing] = useState(false);
+  const [previewRows, setPreviewRows] = useState<Record<string, unknown>[]>([]);
+  const [previewError, setPreviewError] = useState<string | null>(null);
 
   // Derived
   const primaryModule = modules.find(m => m.id === primaryModuleId);
@@ -397,6 +401,52 @@ export function useReportBuilder() {
     }
   }, [primaryModuleId, dataSource, reportType, columns.length, reportName]);
 
+  const handlePreview = useCallback(async () => {
+    if (!primaryModuleId && !dataSource) {
+      toast.error(toastCopy.chooseFirst('a module or data source'));
+      return;
+    }
+    setPreviewing(true);
+    setPreviewError(null);
+    try {
+      const res = await fetch('/api/reports/execute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          moduleId: primaryModuleId || undefined,
+          dataSource: dataSource || undefined,
+          columns: columns.map((c) => c.field).filter(Boolean),
+          filters,
+          grouping: grouping.map((g) => ({ field: g.field, order: g.order })),
+          aggregations,
+          relatedModules,
+          filterLogic,
+          productType: productTypeFilter,
+          scope: reportScope,
+          advisorId: advisorId || undefined,
+          includeDownline,
+          page: 1,
+          pageSize: 25,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Preview failed');
+      }
+      const data = await res.json();
+      setPreviewRows(data.data || []);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Preview failed';
+      setPreviewError(message);
+      setPreviewRows([]);
+    } finally {
+      setPreviewing(false);
+    }
+  }, [
+    primaryModuleId, dataSource, columns, filters, grouping, aggregations,
+    relatedModules, filterLogic, productTypeFilter, reportScope, advisorId, includeDownline,
+  ]);
+
   // ----- Save -----
 
   const handleSave = useCallback(async () => {
@@ -490,6 +540,9 @@ export function useReportBuilder() {
     reportScope,
     advisorId,
     includeDownline,
+    previewing,
+    previewRows,
+    previewError,
 
     // Setters
     setReportName,
@@ -538,7 +591,7 @@ export function useReportBuilder() {
     goToStep,
     canProceed,
 
-    // Save
+    handlePreview,
     handleSave,
   };
 }

@@ -2,6 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { requireAdminRole } from '@/lib/auth';
+import { unwrapAdvisorRpcResult } from '@crm-eco/lib/analytics';
+
+const ADVISOR_TEMPLATE_RPC: Record<string, string> = {
+  'advisor-enrollments': 'rpc_advisor_enrollment_report',
+  'advisor-active-members': 'rpc_advisor_active_members_report',
+  'advisor-cancellations': 'rpc_advisor_cancellations_report',
+  'advisor-revenue': 'rpc_advisor_revenue_report',
+};
 
 // Data source → (table, org-scoping column).
 // `members` / `advisors` / `enrollments` / `commissions` use `organization_id`.
@@ -58,12 +66,25 @@ export async function POST(request: NextRequest) {
 
     const {
       dataSource,
+      templateKey,
       columns = [],
       filters = [] as Filter[],
       sorting = [] as Sorting[],
       page = 1,
       pageSize = 100,
     } = body;
+
+    if (templateKey && ADVISOR_TEMPLATE_RPC[templateKey]) {
+      const { data: rpcData, error: rpcError } = await supabase.rpc(
+        ADVISOR_TEMPLATE_RPC[templateKey],
+        { p_org_id: profile.organization_id },
+      );
+      if (rpcError) {
+        return NextResponse.json({ error: rpcError.message }, { status: 500 });
+      }
+      const { rows, total } = unwrapAdvisorRpcResult(rpcData);
+      return NextResponse.json({ data: rows, total, page: 1, pageSize: rows.length });
+    }
 
     if (!dataSource) {
       return NextResponse.json({ error: 'Data source is required' }, { status: 400 });

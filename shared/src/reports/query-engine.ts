@@ -1,3 +1,8 @@
+/**
+ * @deprecated CRM `/api/reports/execute` is the production engine.
+ * Do not add new callers. Admin advisor templates now go through the
+ * shared advisor RPCs (`templateKey: advisor-*`).
+ */
 import type {
   DataSource,
   ColumnDefinition,

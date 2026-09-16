@@ -1,5 +1,6 @@
 'use client';
 
+import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
 import { Label } from '@crm-eco/ui/components/label';
 import { Checkbox } from '@crm-eco/ui/components/checkbox';
@@ -20,6 +21,8 @@ import {
   TrendingDown,
   Layers,
   Eye,
+  Loader2,
+  Play,
 } from 'lucide-react';
 import { CHART_TYPES, REPORT_TYPES, type FieldOption, type ModuleOption } from '../useReportBuilder';
 import type {
@@ -60,6 +63,10 @@ interface StepVisualizeProps {
   onChartConfigChange: (config: ChartConfig) => void;
   onSharedChange: (shared: boolean) => void;
   onNameChange: (name: string) => void;
+  previewing?: boolean;
+  previewRows?: Record<string, unknown>[];
+  previewError?: string | null;
+  onPreview?: () => void;
 }
 
 export function StepVisualize({
@@ -79,6 +86,10 @@ export function StepVisualize({
   onChartConfigChange,
   onSharedChange,
   onNameChange,
+  previewing,
+  previewRows,
+  previewError,
+  onPreview,
 }: StepVisualizeProps) {
   return (
     <div className="space-y-8">
@@ -228,6 +239,20 @@ export function StepVisualize({
           />
           <SummaryItem label="Shared" value={isShared ? 'Yes' : 'No'} />
         </div>
+        {onPreview && (
+          <div className="pt-3 border-t border-slate-200 dark:border-slate-700 space-y-3">
+            <Button type="button" variant="outline" onClick={onPreview} disabled={previewing}>
+              {previewing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Play className="w-4 h-4 mr-2" />}
+              Preview first 25 rows
+            </Button>
+            {previewError && <p className="text-sm text-red-600">{previewError}</p>}
+            {previewRows && previewRows.length > 0 && (
+              <p className="text-sm text-slate-600 dark:text-slate-400">
+                Preview returned {previewRows.length} row{previewRows.length === 1 ? '' : 's'}.
+              </p>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

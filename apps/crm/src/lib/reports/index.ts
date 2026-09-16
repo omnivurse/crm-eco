@@ -301,6 +301,8 @@ export function getTemplateById(id: string): ReportTemplate | undefined {
   return REPORT_TEMPLATES.find((t) => t.id === id);
 }
 
+export { getTemplateExecutePath, normalizeGrouping } from '@crm-eco/lib/analytics';
+
 export interface ExportOptions {
   format: 'csv' | 'xlsx' | 'pdf' | 'json';
   filename?: string;

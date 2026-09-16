@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, getAuthProfile } from '@/lib/supabase-server';
 import crypto from 'crypto';
+import {
+  expandEnrollmentStatusFilter,
+  unwrapAdvisorRpcResult,
+} from '@crm-eco/lib/analytics';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,7 +29,27 @@ function buildCacheKey(templateKey: string, filters: Record<string, unknown>): s
   return crypto.createHash('md5').update(`${templateKey}:${sortedFilters}`).digest('hex');
 }
 
-// POST /api/reports/advisor/execute - Execute an advisor report
+async function resolveAdvisorIds(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  orgId: string,
+  advisorIds: string[] | undefined,
+  advisorSearch: string | undefined,
+): Promise<string[] | null> {
+  if (advisorIds?.length) return advisorIds;
+  const query = advisorSearch?.trim().replace(/[,()]/g, ' ');
+  if (!query) return null;
+
+  const pattern = `%${query}%`;
+  const { data } = await supabase
+    .from('advisors')
+    .select('id')
+    .eq('organization_id', orgId)
+    .or(`first_name.ilike.${pattern},last_name.ilike.${pattern},email.ilike.${pattern},npn.ilike.${pattern}`)
+    .limit(50);
+
+  return (data ?? []).map((row) => row.id);
+}
+
 export async function POST(request: NextRequest) {
   try {
     const profile = await getAuthProfile();
@@ -37,6 +61,7 @@ export async function POST(request: NextRequest) {
     const {
       templateKey,
       advisorIds,
+      advisorSearch,
       includeDownline = false,
       dateStart,
       dateEnd,
@@ -57,10 +82,19 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createClient();
     const orgId = profile.organization_id;
+    const resolvedAdvisorIds = await resolveAdvisorIds(supabase, orgId, advisorIds, advisorSearch);
+    const expandedStatuses = expandEnrollmentStatusFilter(statuses);
 
-    // Check cache first (unless skipCache)
     const filterHash = buildCacheKey(templateKey, {
-      advisorIds, includeDownline, dateStart, dateEnd, states, planNames, planTypes, statuses, metric,
+      advisorIds: resolvedAdvisorIds,
+      includeDownline,
+      dateStart,
+      dateEnd,
+      states,
+      planNames,
+      planTypes,
+      statuses: expandedStatuses,
+      metric,
     });
 
     if (!skipCache) {
@@ -83,22 +117,20 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Build RPC params based on template
     const rpcName = TEMPLATE_RPC_MAP[templateKey as AdvisorTemplate];
     const rpcParams: Record<string, unknown> = {
       p_org_id: orgId,
-      p_advisor_ids: advisorIds?.length ? advisorIds : null,
+      p_advisor_ids: resolvedAdvisorIds?.length ? resolvedAdvisorIds : null,
       p_include_downline: includeDownline,
     };
 
-    // Template-specific params
     switch (templateKey) {
       case 'advisor-enrollments':
         rpcParams.p_date_start = dateStart || null;
         rpcParams.p_date_end = dateEnd || null;
         rpcParams.p_states = states?.length ? states : null;
         rpcParams.p_plan_names = planNames?.length ? planNames : null;
-        rpcParams.p_statuses = statuses?.length ? statuses : null;
+        rpcParams.p_statuses = expandedStatuses;
         break;
       case 'advisor-active-members':
         rpcParams.p_states = states?.length ? states : null;
@@ -126,13 +158,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const rows = rpcData || [];
-    const rowCount = rows.length;
-
-    // Build summary
+    const { rows, total } = unwrapAdvisorRpcResult(rpcData);
+    const rowCount = typeof total === 'number' ? total : rows.length;
     const summary = buildSummary(templateKey as AdvisorTemplate, rows);
 
-    // Cache the results (upsert)
     await supabase.from('crm_report_results_cache').upsert(
       {
         org_id: orgId,
@@ -148,10 +177,6 @@ export async function POST(request: NextRequest) {
       { onConflict: 'org_id,cache_key' }
     );
 
-    // Log to report_run_history. Fire-and-forget: a logging failure must
-    // never bubble up to the user-facing report response.
-    // Template-based reports have no row in crm_reports, so report_id is null
-    // (allowed by migration 202605220009) and template_key carries the route.
     await supabase
       .from('report_run_history')
       .insert({
@@ -159,7 +184,16 @@ export async function POST(request: NextRequest) {
         report_id: null,
         template_key: templateKey,
         executed_by: profile.id,
-        filters_used: { advisorIds, includeDownline, dateStart, dateEnd, states, planNames, planTypes, statuses },
+        filters_used: {
+          advisorIds: resolvedAdvisorIds,
+          includeDownline,
+          dateStart,
+          dateEnd,
+          states,
+          planNames,
+          planTypes,
+          statuses: expandedStatuses,
+        },
         row_count: rowCount,
         status: 'completed',
       })
@@ -187,8 +221,14 @@ function buildSummary(template: AdvisorTemplate, rows: Record<string, unknown>[]
   switch (template) {
     case 'advisor-enrollments': {
       const total = rows.reduce((s, r) => s + ((r.total_enrollments as number) || 0), 0);
-      const active = rows.reduce((s, r) => s + ((r.active_count as number) || 0), 0);
-      const pending = rows.reduce((s, r) => s + ((r.pending_count as number) || 0), 0);
+      const active = rows.reduce(
+        (s, r) => s + ((r.approved_or_active_count as number) || (r.active_count as number) || (r.active as number) || 0),
+        0,
+      );
+      const pending = rows.reduce(
+        (s, r) => s + ((r.pending_review_count as number) || (r.pending_count as number) || (r.pending as number) || 0),
+        0,
+      );
       return { totalEnrollments: total, active, pending, advisorCount: rows.length };
     }
     case 'advisor-active-members': {

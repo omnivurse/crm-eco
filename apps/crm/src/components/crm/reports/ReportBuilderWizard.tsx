@@ -195,6 +195,10 @@ export function ReportBuilderWizard() {
             onChartConfigChange={builder.setChartConfig}
             onSharedChange={builder.setIsShared}
             onNameChange={builder.setReportName}
+            previewing={builder.previewing}
+            previewRows={builder.previewRows}
+            previewError={builder.previewError}
+            onPreview={builder.handlePreview}
           />
         )}
       </div>

@@ -93,9 +93,10 @@ export default function AdvisorReportClient() {
 
       if (dateRange.from) body.dateStart = dateRange.from.toISOString().split('T')[0];
       if (dateRange.to) body.dateEnd = dateRange.to.toISOString().split('T')[0];
-      if (stateFilter) body.states = stateFilter.split(',').map((s) => s.trim());
-      if (statusFilter) body.statuses = statusFilter.split(',').map((s) => s.trim());
-      if (planFilter) body.planNames = planFilter.split(',').map((s) => s.trim());
+      if (advisorSearch.trim()) body.advisorSearch = advisorSearch.trim();
+      if (stateFilter) body.states = stateFilter.split(',').map((s) => s.trim()).filter(Boolean);
+      if (statusFilter) body.statuses = statusFilter.split(',').map((s) => s.trim()).filter(Boolean);
+      if (planFilter) body.planNames = planFilter.split(',').map((s) => s.trim()).filter(Boolean);
 
       const response = await fetch('/api/reports/advisor/execute', {
         method: 'POST',
@@ -285,7 +286,7 @@ export default function AdvisorReportClient() {
                     <Label htmlFor="statusFilter">Status</Label>
                     <Input
                       id="statusFilter"
-                      placeholder="e.g. active, pending"
+                      placeholder="e.g. active, submitted, approved"
                       value={statusFilter}
                       onChange={(e) => setStatusFilter(e.target.value)}
                     />

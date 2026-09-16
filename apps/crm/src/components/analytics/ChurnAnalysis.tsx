@@ -14,6 +14,8 @@ import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@crm-eco/ui/components/card';
 import { Button } from '@crm-eco/ui/components/button';
 import { toast } from 'sonner';
+import { fetchAnalyticsJson } from '@/lib/analytics/fetch-json';
+import { toastCopy } from '@/lib/crm/toast-copy';
 
 interface ChurnData {
   summary: {
@@ -48,17 +50,52 @@ const REASON_LABELS: Record<string, string> = {
 export default function ChurnAnalysis() {
   const [data, setData] = useState<ChurnData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [sessionHref, setSessionHref] = useState<string | null>(null);
 
-  async function fetchData() {
-    try {
-      const res = await fetch('/api/analytics/churn');
-      if (res.ok) setData(await res.json());
-      else toast.error('Failed to load churn data');
-    } catch { toast.error('Failed to load churn data'); }
-    finally { setLoading(false); }
+  function applyChurnResult(result: Awaited<ReturnType<typeof fetchAnalyticsJson<ChurnData>>>) {
+    if (result.ok) {
+      setSessionHref(null);
+      setData(result.data);
+    } else if (result.reason === 'session') {
+      setData(null);
+      setSessionHref(result.href);
+      toast.error(result.title, {
+        description: result.description,
+        action: {
+          label: result.actionLabel,
+          onClick: () => {
+            window.location.assign(result.href);
+          },
+        },
+      });
+    } else {
+      setData(null);
+      setSessionHref(null);
+      toast.error(toastCopy.failed('load churn analysis', undefined, 'Try again'));
+    }
+    setLoading(false);
   }
 
-  useEffect(() => { fetchData(); }, []);
+  function fetchData() {
+    return fetchAnalyticsJson<ChurnData>(
+      '/api/analytics/churn',
+      '/crm/analytics?tab=churn',
+    ).then(applyChurnResult);
+  }
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetchAnalyticsJson<ChurnData>(
+      '/api/analytics/churn',
+      '/crm/analytics?tab=churn',
+    ).then((result) => {
+      if (cancelled) return;
+      applyChurnResult(result);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   if (loading) {
     return <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-teal-500" /></div>;
@@ -68,8 +105,14 @@ export default function ChurnAnalysis() {
     return (
       <div className="text-center py-20 text-slate-500">
         <TrendingDown className="w-16 h-16 mx-auto mb-4 opacity-50" />
-        <p>Failed to load churn analysis</p>
-        <Button onClick={() => { setLoading(true); fetchData(); }} variant="outline" className="mt-4">Try Again</Button>
+        <p>{sessionHref ? 'Your session expired — sign in again' : 'Failed to load churn analysis'}</p>
+        {sessionHref ? (
+          <Button asChild className="mt-4">
+            <Link href={sessionHref}>Sign in</Link>
+          </Button>
+        ) : (
+          <Button onClick={() => { setLoading(true); fetchData(); }} variant="outline" className="mt-4">Try Again</Button>
+        )}
       </div>
     );
   }

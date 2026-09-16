@@ -1,5 +1,5 @@
 {
-  "total": 520,
+  "total": 518,
   "byDir": {
     "src/app/crm/activities": 1,
     "src/app/crm/analytics": 1,
@@ -75,7 +75,7 @@
     "src/app/crm/settings/users": 9,
     "src/app/crm/tasks/new": 3,
     "src/app/crm/trash": 5,
-    "src/components/analytics": 8,
+    "src/components/analytics": 6,
     "src/components/auth": 4,
     "src/components/automation": 4,
     "src/components/communications": 6,

@@ -78,6 +78,14 @@
     {
       "path": "/api/cron/meeting-reminders",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/run-scheduled-reports",
+      "schedule": "15 * * * *"
+    },
+    {
+      "path": "/api/cron/project-analytics-snapshots",
+      "schedule": "30 1 * * *"
     }
   ]
 }

@@ -49,6 +49,58 @@ const CATEGORY_MAP: Record<string, TemplateCategory> = {
 // ============================================================================
 
 export const REPORT_TEMPLATES: ReportTemplate[] = [
+  {
+    id: 'advisor-enrollments',
+    name: 'Advisor Enrollment Report',
+    description: 'Enrollments by advisor with live status buckets (same metric as CRM)',
+    category: 'team',
+    dataSource: 'enrollments',
+    columns: ['advisor_name', 'total_enrollments', 'active', 'pending', 'cancelled'],
+    filters: [],
+    grouping: [{ column: 'advisor_id', label: 'Advisor' }],
+    aggregations: [{ column: 'id', type: 'count', alias: 'total_enrollments' }],
+    sorting: [{ column: 'total_enrollments', direction: 'desc' }],
+    icon: 'UserCheck',
+  },
+  {
+    id: 'advisor-active-members',
+    name: 'Advisor Active Members',
+    description: 'Active members per advisor (same metric as CRM)',
+    category: 'team',
+    dataSource: 'members',
+    columns: ['advisor_name', 'active_members'],
+    filters: [],
+    grouping: [{ column: 'advisor_id', label: 'Advisor' }],
+    aggregations: [{ column: 'id', type: 'count', alias: 'active_members' }],
+    sorting: [{ column: 'active_members', direction: 'desc' }],
+    icon: 'Users',
+  },
+  {
+    id: 'advisor-cancellations',
+    name: 'Advisor Cancellations',
+    description: 'Cancelled and inactive members by advisor (same metric as CRM)',
+    category: 'team',
+    dataSource: 'members',
+    columns: ['advisor_name', 'cancelled_count', 'terminated_count'],
+    filters: [],
+    grouping: [{ column: 'advisor_id', label: 'Advisor' }],
+    aggregations: [{ column: 'id', type: 'count', alias: 'cancelled_count' }],
+    sorting: [{ column: 'cancelled_count', direction: 'desc' }],
+    icon: 'UserMinus',
+  },
+  {
+    id: 'advisor-revenue',
+    name: 'Advisor Revenue',
+    description: 'Commission revenue per advisor from commissions SoT (same metric as CRM)',
+    category: 'finance',
+    dataSource: 'commissions',
+    columns: ['advisor_name', 'gross_commissions', 'net_commissions'],
+    filters: [],
+    grouping: [{ column: 'advisor_id', label: 'Advisor' }],
+    aggregations: [{ column: 'commission_amount', type: 'sum', alias: 'gross_commissions' }],
+    sorting: [{ column: 'gross_commissions', direction: 'desc' }],
+    icon: 'DollarSign',
+  },
   // =========================================================================
   // OPERATIONS REPORTS (formerly Members)
   // =========================================================================

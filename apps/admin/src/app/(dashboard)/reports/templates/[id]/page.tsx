@@ -88,6 +88,7 @@ export default function AdminTemplateDetailPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          templateKey: template.id,
           dataSource: template.dataSource,
           columns: template.columns,
           filters,

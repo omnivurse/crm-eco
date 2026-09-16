@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { format, subDays, startOfMonth, endOfMonth } from 'date-fns';
 import { getActiveTenant } from '@/lib/tenant';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { ENROLLMENT_STATUS } from '@crm-eco/lib/analytics';
 
 interface EnrollmentStats {
   total: number;
@@ -39,7 +40,7 @@ async function getEnrollmentStats(): Promise<EnrollmentStats | null> {
   // constraint has no 'pending' value — submissions land as 'submitted'
   // (see get_dashboard_hero_stats, which counts pending review as 'submitted').
   // Include the forthcoming review statuses so this stays correct once they exist.
-  const PENDING_REVIEW_STATUSES = ['submitted', 'pending_review', 'more_info'];
+  const PENDING_REVIEW_STATUSES = [...ENROLLMENT_STATUS.pendingReview];
   const [totalSettled, pendingSettled, approvedSettled, rejectedSettled, cancelledSettled] = await Promise.allSettled([
     supabase.from('enrollments').select('id', { count: 'exact', head: true }).eq('organization_id', orgId),
     supabase.from('enrollments').select('id', { count: 'exact', head: true }).eq('organization_id', orgId).in('status', PENDING_REVIEW_STATUSES),

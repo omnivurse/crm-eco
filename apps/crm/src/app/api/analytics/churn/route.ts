@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { unwrapAdvisorRpcResult } from '@crm-eco/lib';
 import { createClient, getAuthProfile } from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
@@ -65,17 +66,20 @@ export async function GET(request: NextRequest) {
       .map(([reason, count]) => ({ reason, count }))
       .sort((a, b) => b.count - a.count);
 
-    // 4. Best retention advisors via RPC
-    const { data: bestRetentionAdvisors } = await supabase.rpc('rpc_lowest_churn_advisors_widget', {
+    // 4. Best retention advisors via RPC — live fn returns { advisors: [...] }
+    const { data: bestRetentionRpc } = await supabase.rpc('rpc_lowest_churn_advisors_widget', {
       p_org_id: orgId,
       p_limit: 10,
     });
 
-    // 5. Monthly retention time-series via RPC
-    const { data: retentionTrend } = await supabase.rpc('rpc_advisor_retention_widget', {
+    // 5. Monthly retention time-series via RPC — live fn returns { months: [...] }
+    const { data: retentionRpc } = await supabase.rpc('rpc_advisor_retention_widget', {
       p_org_id: orgId,
       p_months: months,
     });
+
+    const bestRetentionAdvisors = unwrapAdvisorRpcResult(bestRetentionRpc).rows;
+    const retentionTrend = unwrapAdvisorRpcResult(retentionRpc).rows;
 
     // 6. At-risk members (recently cancelled or returned, could churn again)
     const { data: atRiskMembers } = await supabase
@@ -117,8 +121,8 @@ export async function GET(request: NextRequest) {
       },
       monthlyChurn,
       cancellationReasons,
-      bestRetentionAdvisors: bestRetentionAdvisors || [],
-      retentionTrend: retentionTrend || [],
+      bestRetentionAdvisors,
+      retentionTrend,
       atRiskMembers: atRiskMembers || [],
     });
   } catch (error) {

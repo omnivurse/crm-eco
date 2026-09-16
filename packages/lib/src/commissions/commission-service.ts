@@ -210,7 +210,75 @@ export class CommissionService {
       return null;
     }
 
+    await this.upsertCommissionSourceOfTruth(input, calculation, enrollmentId, memberId);
     return data as CommissionTransaction;
+  }
+
+  /**
+   * Mirror CommissionService writes into `commissions` (advisor report SoT).
+   * Idempotent per (org, enrollment, type, advisor).
+   */
+  private async upsertCommissionSourceOfTruth(
+    input: CalculateCommissionInput,
+    calculation: CommissionCalculationResult,
+    enrollmentId?: string,
+    memberId?: string,
+  ): Promise<void> {
+    const commissionType =
+      input.transactionType === 'new_business'
+        ? 'signup'
+        : input.transactionType === 'renewal'
+          ? 'monthly'
+          : input.transactionType === 'override'
+            ? 'override'
+            : input.transactionType === 'chargeback'
+              ? 'clawback'
+              : 'bonus';
+
+    const period = new Date(input.periodStart);
+    period.setDate(1);
+    const periodMonth = period.toISOString().split('T')[0];
+
+    let existingQuery = (this.supabase as any)
+      .from('commissions')
+      .select('id')
+      .eq('organization_id', this.organizationId)
+      .eq('advisor_id', input.advisorId)
+      .eq('commission_type', commissionType)
+      .limit(1);
+
+    existingQuery = enrollmentId
+      ? existingQuery.eq('enrollment_id', enrollmentId)
+      : existingQuery.is('enrollment_id', null);
+
+    const { data: existing } = await existingQuery.maybeSingle();
+
+    const row = {
+      organization_id: this.organizationId,
+      advisor_id: input.advisorId,
+      enrollment_id: enrollmentId || null,
+      member_id: memberId || null,
+      commission_type: commissionType,
+      base_amount: input.grossAmount,
+      commission_rate: calculation.ratePct,
+      commission_amount: calculation.commissionAmount,
+      commission_period: periodMonth,
+      status: 'pending',
+      source_advisor_id: input.sourceAdvisorId || null,
+      override_level: input.overrideLevel || null,
+    };
+
+    if (existing?.id) {
+      const { error } = await (this.supabase as any)
+        .from('commissions')
+        .update(row)
+        .eq('id', existing.id);
+      if (error) console.error('Error updating commissions SoT:', error);
+      return;
+    }
+
+    const { error } = await (this.supabase as any).from('commissions').insert(row);
+    if (error) console.error('Error inserting commissions SoT:', error);
   }
 
   /**

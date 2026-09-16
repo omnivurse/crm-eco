@@ -37,7 +37,7 @@ import {
 } from '@crm-eco/ui/components/table';
 import { ExportButton, type ExportFormat } from '@crm-eco/ui/components/export-button';
 import { DateRangePicker, type DateRange } from '@crm-eco/ui/components/date-range-picker';
-import { getTemplateById, exportData, downloadExport } from '@/lib/reports';
+import { getTemplateById, getTemplateExecutePath, normalizeGrouping, exportData, downloadExport } from '@/lib/reports';
 
 export default function TemplateDetailPage() {
   const params = useParams();
@@ -106,19 +106,32 @@ export default function TemplateDetailPage() {
         });
       }
 
-      const response = await fetch('/api/reports/execute', {
+      const execute = getTemplateExecutePath(template);
+      const payload =
+        execute.kind === 'advisor'
+          ? {
+              templateKey: template.id,
+              dateStart: dateRange.from?.toISOString().split('T')[0],
+              dateEnd: dateRange.to?.toISOString().split('T')[0],
+              skipCache: true,
+            }
+          : execute.kind === 'healthcare'
+            ? { templateKey: template.id, filters: {} }
+            : {
+                dataSource: template.dataSource,
+                columns: template.columns,
+                filters: apiFilters,
+                grouping: normalizeGrouping(template.grouping),
+                aggregations: template.aggregations,
+                sorting: template.sorting,
+                page: 1,
+                pageSize: 100,
+              };
+
+      const response = await fetch(execute.path, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          dataSource: template.dataSource,
-          columns: template.columns,
-          filters: apiFilters,
-          grouping: template.grouping,
-          aggregations: template.aggregations,
-          sorting: template.sorting,
-          page: 1,
-          pageSize: 100,
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {

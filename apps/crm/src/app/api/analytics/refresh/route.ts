@@ -48,9 +48,13 @@ export async function POST(request: NextRequest) {
     // 2. Refresh advisor commission summaries for current month
     const { data: summaryCount, error: summaryError } = await supabase.rpc('refresh_advisor_commission_summary');
 
+    // 3. Daily org KPI snapshots
+    const { data: snapshotCount, error: snapshotError } = await supabase.rpc('project_daily_analytics_snapshots');
+
     const result = {
       materialized_views: mvError ? { error: mvError.message } : mvResult,
       commission_summaries: summaryError ? { error: summaryError.message } : { rows_upserted: summaryCount },
+      analytics_snapshots: snapshotError ? { error: snapshotError.message } : { orgs: snapshotCount },
       refreshed_at: new Date().toISOString(),
     };
 

@@ -29,6 +29,7 @@ import {
   ChartPie,
   Pulse,
   Funnel,
+  Percent,
   SignOut,
   ChatCircle,
 } from '@phosphor-icons/react';
@@ -97,6 +98,7 @@ const navSections: NavSection[] = [
     items: [
       { label: 'Overview', href: '/commissions', icon: icon(<Stack weight="light" className="h-5 w-5" />) },
       { label: 'Tiers', href: '/commissions/tiers', icon: icon(<ChartBar weight="light" className="h-5 w-5" />) },
+      { label: 'Rates', href: '/commissions/rates', icon: icon(<Percent weight="light" className="h-5 w-5" />) },
       { label: 'Transactions', href: '/commissions/transactions', icon: icon(<FileText weight="light" className="h-5 w-5" />) },
       { label: 'Payouts', href: '/commissions/payouts', icon: icon(<CreditCard weight="light" className="h-5 w-5" />) },
     ],
