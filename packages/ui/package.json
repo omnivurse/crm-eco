@@ -26,6 +26,7 @@
     "./styles/theme.css": "./src/styles/theme.css",
     "./styles/ethereal.css": "./src/styles/ethereal.css",
     "./styles/auth.css": "./src/styles/auth.css",
+    "./styles/gizmo.css": "./src/styles/gizmo.css",
     "./styles/landing.css": "./src/styles/landing.css",
     "./components/auth": "./src/components/auth/index.ts",
     "./hooks/*": "./src/hooks/*.ts",

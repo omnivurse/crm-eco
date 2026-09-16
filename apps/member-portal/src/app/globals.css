@@ -1,6 +1,7 @@
 /* Double Helix Hub - Member Portal Styles · Soft Structuralism */
 @import '@crm-eco/ui/styles/theme.css';
 @import '@crm-eco/ui/styles/auth.css';
+@import '@crm-eco/ui/styles/gizmo.css';
 
 @tailwind base;
 @tailwind components;

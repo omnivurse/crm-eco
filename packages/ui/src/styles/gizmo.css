@@ -1,0 +1,147 @@
+/**
+ * Gizmo companion paint. Do not use Tailwind `teal-*` here.
+ *
+ * CRM + Admin remap `teal` onto Muted Spruce (`consoleColors`), so
+ * `text-teal-50` is #eef4f5 (near-white). On a light dashboard, if the
+ * panel fill is missing or overridden, the whole companion vanishes.
+ * These classes use raw hex so light and dark shells both keep contrast.
+ */
+
+.gizmo-panel {
+  background: #0b1f1e;
+  color: #f0fdfa;
+  border: 1px solid rgba(240, 253, 250, 0.16);
+  box-shadow: 0 18px 40px rgba(11, 31, 30, 0.28);
+}
+
+.gizmo-panel-head,
+.gizmo-panel-tips,
+.gizmo-panel-form {
+  border-color: rgba(240, 253, 250, 0.14);
+}
+
+.gizmo-title {
+  color: #f0fdfa;
+}
+
+.gizmo-muted {
+  color: #99f6e4;
+}
+
+.gizmo-soft {
+  color: #ccfbf1;
+}
+
+.gizmo-ghost {
+  color: #5eead4;
+}
+
+.gizmo-ghost:hover {
+  color: #f0fdfa;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.gizmo-chip {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.gizmo-bubble-user {
+  background: rgba(15, 118, 110, 0.55);
+  color: #f0fdfa;
+}
+
+.gizmo-bubble-gizmo {
+  background: rgba(255, 255, 255, 0.08);
+  color: #f0fdfa;
+}
+
+.gizmo-card {
+  border: 1px solid rgba(240, 253, 250, 0.14);
+  background: rgba(0, 0, 0, 0.28);
+}
+
+.gizmo-open {
+  background: #14b8a6;
+  color: #042f2e;
+}
+
+.gizmo-field {
+  border: 1px solid rgba(240, 253, 250, 0.16);
+  background: rgba(0, 0, 0, 0.35);
+  color: #f0fdfa;
+}
+
+.gizmo-field::placeholder {
+  color: #5eead4;
+  opacity: 0.7;
+}
+
+.gizmo-field:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(45, 212, 191, 0.55);
+}
+
+.gizmo-alert {
+  color: #fecaca;
+}
+
+.gizmo-orb-fill {
+  background:
+    radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.55), transparent 42%),
+    radial-gradient(circle at 50% 55%, #14b8a6 0%, #0f766e 70%, #115e59 100%);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.45),
+    0 8px 20px rgba(13, 148, 136, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+.gizmo-orb-fill.is-thinking {
+  filter: brightness(1.25);
+}
+
+.gizmo-orb-gloss {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.gizmo-orb-eye,
+.gizmo-orb-smile {
+  background: #042f2e;
+}
+
+.gizmo-orb-smile {
+  background: transparent;
+  border: 1.5px solid #042f2e;
+  border-top: 0;
+}
+
+.gizmo-orb-pip {
+  background: #5eead4;
+  box-shadow: 0 0 0 2px #ffffff;
+}
+
+.gizmo-orb-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #14b8a6;
+}
+
+@keyframes gizmo-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+  50% {
+    transform: scale(1.04);
+    filter: brightness(1.08);
+  }
+}
+
+.gizmo-orb-breathe {
+  animation: gizmo-breathe 4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gizmo-orb-breathe {
+    animation: none !important;
+  }
+}
