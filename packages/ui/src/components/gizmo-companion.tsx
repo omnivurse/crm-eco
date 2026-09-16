@@ -1,6 +1,6 @@
 'use client';
 
-import {
+import React, {
   useCallback,
   useEffect,
   useId,
@@ -9,6 +9,7 @@ import {
   type FormEvent,
   type KeyboardEvent as ReactKeyboardEvent,
 } from 'react';
+import { createPortal } from 'react-dom';
 import { cn } from '../lib/utils';
 import { GizmoOrbButton, GizmoOrbFace } from './gizmo-orb';
 import { GIZMO_OPEN_EVENT } from './gizmo-open';
@@ -184,8 +185,8 @@ export function GizmoCompanion({
 
   if (!enabled) return null;
 
-  return (
-    <div className={cn('fixed z-50 flex flex-col items-end gap-2', bottomClassName)}>
+  const tree = (
+    <div className={cn('fixed z-[80] flex flex-col items-end gap-2', bottomClassName)}>
       {open ? (
         <div
           ref={panelRef}
@@ -360,4 +361,7 @@ export function GizmoCompanion({
       `}</style>
     </div>
   );
+
+  if (typeof document === 'undefined') return tree;
+  return createPortal(tree, document.body);
 }

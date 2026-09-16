@@ -9,8 +9,6 @@ export function GizmoWidget() {
   const pathname = usePathname();
   const router = useRouter();
 
-  if (!gizmo.enabled) return null;
-
   return (
     <GizmoCompanion
       chatUrl="/api/gizmo/chat"
@@ -18,11 +16,10 @@ export function GizmoWidget() {
       pathname={pathname}
       tips={gizmo.currentTips}
       onDismissTip={gizmo.dismissTip}
-      onHide={() => gizmo.setEnabled(false)}
       onNavigate={(href) => router.push(href)}
       hasUnreadTips={gizmo.hasNewTips}
-      bottomClassName="bottom-14 right-4"
-      enabled={gizmo.enabled}
+      bottomClassName="bottom-16 right-4"
+      enabled
     />
   );
 }
