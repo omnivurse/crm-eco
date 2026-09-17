@@ -5,6 +5,10 @@ import {
   pickSignatureForCompose,
   type ComposerSignature,
 } from '@/app/crm/inbox/_components/inbox-reply';
+import {
+  getSignatureOrigin,
+  withOfficialComposerSignatures,
+} from '@/lib/email/signature-html';
 
 export type { ComposerSignature };
 
@@ -20,7 +24,10 @@ export function useEmailSignatures(purpose: 'reply' | 'new' | 'all' = 'all') {
         const response = await fetch('/api/email/signatures');
         if (!response.ok) return;
         const data = await response.json();
-        const rows = (data.signatures || []) as ComposerSignature[];
+        const rows = withOfficialComposerSignatures(
+          (data.signatures || []) as ComposerSignature[],
+          getSignatureOrigin(),
+        );
         if (cancelled) return;
         setSignatures(rows);
         const picked = pickSignatureForCompose(

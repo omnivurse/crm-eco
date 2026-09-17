@@ -32,6 +32,28 @@ describe('pickSignatureForCompose', () => {
     expect(pickSignatureForCompose(sigs, 'reply')?.id).toBe('b');
     expect(pickSignatureForCompose(sigs, 'new')?.id).toBe('a');
   });
+
+  it('prefers a saved signature over the official catalog when no default is set', () => {
+    const picked = pickSignatureForCompose(
+      [
+        { id: 'official:pifh-banner', name: 'PIFH · Banner', content_html: '<img />', is_default: false, include_in_new: true, include_in_replies: true },
+        { id: 'saved', name: 'Mine', content_html: '<p>Mine</p>', is_default: false, include_in_new: true, include_in_replies: true },
+      ],
+      'new',
+    );
+    expect(picked?.id).toBe('saved');
+  });
+
+  it('falls back to the official banner when nothing is saved', () => {
+    const picked = pickSignatureForCompose(
+      [
+        { id: 'official:pifh-banner', name: 'PIFH · Banner', content_html: '<img />', is_default: true, include_in_new: true, include_in_replies: true },
+        { id: 'official:pifh-stacked-mark', name: 'PIFH · Stacked', content_html: '<img />', is_default: false, include_in_new: true, include_in_replies: true },
+      ],
+      'new',
+    );
+    expect(picked?.id).toBe('official:pifh-banner');
+  });
 });
 
 describe('appendSignatureHtml', () => {

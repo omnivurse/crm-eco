@@ -1,4 +1,32 @@
 export const DEFAULT_PIFH_LOGO_PATH = '/signatures/pifh-logo.png';
+export const DEFAULT_OFFICIAL_SIGNATURE_ID = 'pifh-banner';
+export const OFFICIAL_SIGNATURE_COMPOSER_PREFIX = 'official:';
+
+export interface OfficialSignatureMark {
+  id: string;
+  name: string;
+  description: string;
+  image_path: string;
+  alt: string;
+}
+
+/** Official PIFH email marks from the brand kit. HealthShare artwork is not listed. */
+export const OFFICIAL_SIGNATURES: OfficialSignatureMark[] = [
+  {
+    id: 'pifh-banner',
+    name: 'Banner',
+    description: 'Wordmark plus Your Health · Your Way',
+    image_path: '/signatures/pifh-signature-banner.png',
+    alt: 'Pay it Forward Health — Your Health · Your Way',
+  },
+  {
+    id: 'pifh-stacked-mark',
+    name: 'Stacked',
+    description: 'Full-color wordmark and tagline',
+    image_path: '/signatures/pifh-signature-stacked.png',
+    alt: 'Pay it Forward Health — Your Health · Your Way',
+  },
+];
 
 export interface SignatureFields {
   full_name: string;
@@ -209,6 +237,56 @@ export function renderLayoutHtml(layoutId: string, fields: SignatureFields): str
   const layout = SIGNATURE_LAYOUTS.find((item) => item.id === layoutId);
   if (!layout) return null;
   return renderSignatureHtml(layout.template, fields);
+}
+
+export function officialComposerId(id: string): string {
+  return `${OFFICIAL_SIGNATURE_COMPOSER_PREFIX}${id}`;
+}
+
+export function parseOfficialComposerId(id: string | null | undefined): string | null {
+  if (!id?.startsWith(OFFICIAL_SIGNATURE_COMPOSER_PREFIX)) return null;
+  return id.slice(OFFICIAL_SIGNATURE_COMPOSER_PREFIX.length);
+}
+
+export function isOfficialSignatureId(id: string | null | undefined): boolean {
+  if (!id) return false;
+  return OFFICIAL_SIGNATURES.some((mark) => mark.id === id || officialComposerId(mark.id) === id);
+}
+
+export function renderOfficialSignature(id: string): string | null {
+  const markId = parseOfficialComposerId(id) ?? id;
+  const mark = OFFICIAL_SIGNATURES.find((item) => item.id === markId);
+  if (!mark) return null;
+  return renderFullImageSignature(mark.image_path, mark.alt);
+}
+
+export function officialComposerSignatures(origin: string): Array<{
+  id: string;
+  name: string;
+  content_html: string;
+  is_default: boolean;
+  include_in_replies: boolean;
+  include_in_new: boolean;
+}> {
+  return OFFICIAL_SIGNATURES.map((mark) => ({
+    id: officialComposerId(mark.id),
+    name: `PIFH · ${mark.name}`,
+    content_html: absolutizeSignatureHtml(renderOfficialSignature(mark.id) || '', origin),
+    is_default: mark.id === DEFAULT_OFFICIAL_SIGNATURE_ID,
+    include_in_replies: true,
+    include_in_new: true,
+  }));
+}
+
+export function withOfficialComposerSignatures<
+  T extends { id: string; is_default: boolean },
+>(saved: T[], origin: string): Array<T | ReturnType<typeof officialComposerSignatures>[number]> {
+  const hasSavedDefault = saved.some((row) => row.is_default);
+  const official = officialComposerSignatures(origin).map((row) => ({
+    ...row,
+    is_default: hasSavedDefault ? false : row.is_default,
+  }));
+  return [...official, ...saved];
 }
 
 export function renderFullImageSignature(imageUrl: string, alt = 'Email Signature'): string {

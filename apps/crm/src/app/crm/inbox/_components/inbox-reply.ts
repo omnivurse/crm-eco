@@ -6,6 +6,7 @@ import {
 } from '../../../../../../../supabase/functions/_shared/rfc822-headers';
 import { escapeForwardHtml } from './inbox-forward';
 import { extractEmailBodyFragment, shouldReadAsPlainText } from './inbox-reading';
+import { isOfficialSignatureId } from '@/lib/email/signature-html';
 
 export type ComposerSignature = {
   id: string;
@@ -23,7 +24,12 @@ export function pickSignatureForCompose(
   const eligible = signatures.filter((s) =>
     purpose === 'reply' ? s.include_in_replies !== false : s.include_in_new !== false,
   );
-  return eligible.find((s) => s.is_default) ?? eligible[0] ?? null;
+  return (
+    eligible.find((s) => s.is_default) ??
+    eligible.find((s) => !isOfficialSignatureId(s.id)) ??
+    eligible[0] ??
+    null
+  );
 }
 
 export function appendSignatureHtml(body: string, signatureHtml: string | null | undefined): string {

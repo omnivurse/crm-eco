@@ -50,13 +50,17 @@ import {
   resizeSignatureImage,
 } from '@/lib/email/apply-signature-image';
 import {
+  DEFAULT_OFFICIAL_SIGNATURE_ID,
   DEFAULT_PIFH_LOGO_PATH,
+  OFFICIAL_SIGNATURES,
   SIGNATURE_LAYOUTS,
   type SignatureFields,
   absolutizeSignatureHtml,
   getSignatureOrigin,
+  isOfficialSignatureId,
   renderFullImageSignature,
   renderLayoutHtml,
+  renderOfficialSignature,
 } from '@/lib/email/signature-html';
 
 interface SignatureData {
@@ -132,7 +136,7 @@ function mergeInitialFields(
 }
 
 function htmlFromFields(layoutId: string | null, fields: SignatureFields): string {
-  if (!layoutId || layoutId === 'full-image') return '';
+  if (!layoutId || layoutId === 'full-image' || isOfficialSignatureId(layoutId)) return '';
   return renderLayoutHtml(layoutId, fields) || '';
 }
 
@@ -147,7 +151,7 @@ export function SignatureBuilder({
   const [activeTab, setActiveTab] = useState('editor');
   const [saving, setSaving] = useState(false);
   const [selectedLayoutId, setSelectedLayoutId] = useState<string | null>(
-    signature?.content_html ? null : 'pifh-horizontal',
+    signature?.content_html ? null : DEFAULT_OFFICIAL_SIGNATURE_ID,
   );
   const [fields, setFields] = useState<SignatureFields>(() =>
     mergeInitialFields(signature, defaults, userProfile, companyInfo),
@@ -156,6 +160,7 @@ export function SignatureBuilder({
     const initialFields = mergeInitialFields(signature, defaults, userProfile, companyInfo);
     const initialHtml =
       signature?.content_html ||
+      renderOfficialSignature(DEFAULT_OFFICIAL_SIGNATURE_ID) ||
       renderLayoutHtml('pifh-horizontal', initialFields) ||
       '';
     return {
@@ -184,7 +189,24 @@ export function SignatureBuilder({
     });
   }, []);
 
+  const applyOfficial = useCallback((layoutId: string) => {
+    const mark = OFFICIAL_SIGNATURES.find((item) => item.id === layoutId);
+    const html = renderOfficialSignature(layoutId);
+    if (!html || !mark) return;
+    setSelectedLayoutId(layoutId);
+    setFields((prev) => ({ ...prev, logo_url: mark.image_path }));
+    setFormData((prev) => ({
+      ...prev,
+      content_html: html,
+      logo_url: mark.image_path,
+    }));
+  }, []);
+
   const applyLayout = useCallback((layoutId: string, nextFields: SignatureFields) => {
+    if (isOfficialSignatureId(layoutId)) {
+      applyOfficial(layoutId);
+      return;
+    }
     const html = sizeHtml(
       htmlFromFields(layoutId, nextFields),
       logoHeight,
@@ -198,12 +220,12 @@ export function SignatureBuilder({
       logo_url: nextFields.logo_url,
       photo_url: nextFields.photo_url,
     }));
-  }, [logoHeight, sizeHtml]);
+  }, [applyOfficial, logoHeight, sizeHtml]);
 
   const updateField = (key: keyof SignatureFields, value: string) => {
     setFields((prev) => {
       const next = { ...prev, [key]: value };
-      if (selectedLayoutId && selectedLayoutId !== 'full-image') {
+      if (selectedLayoutId && selectedLayoutId !== 'full-image' && !isOfficialSignatureId(selectedLayoutId)) {
         const html = sizeHtml(
           htmlFromFields(selectedLayoutId, next),
           logoHeight,
@@ -462,7 +484,53 @@ export function SignatureBuilder({
             <CardHeader className="py-3">
               <CardTitle className="text-sm flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-teal-500" />
-                Pay it Forward Health signatures
+                Official PIFH signatures
+              </CardTitle>
+              <CardDescription className="text-xs">
+                Current brand marks. Banner is the default. Pick stacked if you want the tall wordmark.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {OFFICIAL_SIGNATURES.map((mark) => (
+                  <button
+                    key={mark.id}
+                    type="button"
+                    onClick={() => applyOfficial(mark.id)}
+                    className={cn(
+                      'relative rounded-lg border-2 overflow-hidden text-left transition-all hover:border-teal-500/50 bg-white dark:bg-slate-900',
+                      selectedLayoutId === mark.id
+                        ? 'border-teal-500 ring-2 ring-teal-500/20'
+                        : 'border-slate-200 dark:border-slate-700',
+                    )}
+                  >
+                    <div className="p-3 bg-slate-50 dark:bg-slate-800/40">
+                      <img
+                        src={mark.image_path}
+                        alt={mark.alt}
+                        className="w-full h-auto max-h-24 object-contain"
+                      />
+                    </div>
+                    {selectedLayoutId === mark.id && (
+                      <div className="absolute top-2 right-2 p-1 bg-teal-500 rounded-full">
+                        <Check className="w-3 h-3 text-white" />
+                      </div>
+                    )}
+                    <div className="px-3 py-2">
+                      <p className="font-medium text-sm">{mark.name}</p>
+                      <p className="text-xs text-slate-500">{mark.description}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="py-3">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-teal-500" />
+                Pay it Forward Health layouts
               </CardTitle>
               <CardDescription className="text-xs">
                 Branded layouts using the current wordmark. Your details stay editable.
@@ -618,6 +686,7 @@ export function SignatureBuilder({
                         Choose full image from library
                       </Button>
                     </div>
+                    {!isOfficialSignatureId(selectedLayoutId) && (
                     <SignatureLogoSizeControl
                       value={logoHeight}
                       onChange={handleLogoHeightChange}
@@ -630,6 +699,7 @@ export function SignatureBuilder({
                       label={selectedLayoutId === 'professional' ? 'Photo size' : 'Logo size'}
                       square={selectedLayoutId === 'professional'}
                     />
+                    )}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="photo_url" className="flex items-center gap-2">

@@ -34,7 +34,11 @@ import { assertComposerAttachmentsReady } from '@/lib/email/outbound-attachments
 import Link from 'next/link';
 import { appendSignatureHtml, pickSignatureForCompose } from '@/app/crm/inbox/_components/inbox-reply';
 import { composeIsDirty } from '@/app/crm/inbox/_components/compose-dock';
-import { signatureNeedsBrandingRefresh } from '@/lib/email/signature-html';
+import {
+  getSignatureOrigin,
+  signatureNeedsBrandingRefresh,
+  withOfficialComposerSignatures,
+} from '@/lib/email/signature-html';
 import {
   composerActionsClass,
   composerAttachmentsClass,
@@ -195,7 +199,10 @@ export const EmailComposer = memo(function EmailComposer({
         const response = await fetch('/api/email/signatures');
         if (response.ok) {
           const data = await response.json();
-          const rows = (data.signatures || []) as EmailSignature[];
+          const rows = withOfficialComposerSignatures(
+            (data.signatures || []) as EmailSignature[],
+            getSignatureOrigin(),
+          );
           setSignatures(rows);
           const picked = pickSignatureForCompose(rows, signaturePurpose);
           if (picked) {

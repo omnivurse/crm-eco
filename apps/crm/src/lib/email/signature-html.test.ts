@@ -1,15 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import {
+  DEFAULT_OFFICIAL_SIGNATURE_ID,
   DEFAULT_PIFH_LOGO_PATH,
+  OFFICIAL_SIGNATURES,
   SIGNATURE_LAYOUTS,
   absolutizeSignatureHtml,
   buildPifhSignatureFromProfile,
   escapeHtml,
+  officialComposerId,
   renderFullImageSignature,
   renderLayoutHtml,
+  renderOfficialSignature,
   renderSignatureHtml,
   signatureNeedsBrandingRefresh,
   websiteHref,
+  withOfficialComposerSignatures,
 } from './signature-html';
 
 const fields = {
@@ -101,6 +106,31 @@ describe('signature-html', () => {
     expect(signatureNeedsBrandingRefresh('<p>Pay it Forward Health Share</p>')).toBe(true);
     expect(signatureNeedsBrandingRefresh(buildPifhSignatureFromProfile({ full_name: 'Wendy Scipione' }))).toBe(false);
     expect(signatureNeedsBrandingRefresh('<p>Pay it Forward Health</p>')).toBe(false);
+    expect(signatureNeedsBrandingRefresh(renderOfficialSignature(DEFAULT_OFFICIAL_SIGNATURE_ID))).toBe(false);
+  });
+
+  it('ships the official banner and stacked marks, never HealthShare', () => {
+    expect(OFFICIAL_SIGNATURES).toHaveLength(2);
+    expect(DEFAULT_OFFICIAL_SIGNATURE_ID).toBe('pifh-banner');
+    for (const mark of OFFICIAL_SIGNATURES) {
+      expect(mark.image_path).toMatch(/^\/signatures\/pifh-signature-/);
+      expect(mark.image_path).not.toMatch(/\.jpg$/i);
+      expect(mark.alt).not.toMatch(/HealthShare/i);
+      const html = renderOfficialSignature(mark.id);
+      expect(html).toContain(mark.image_path);
+      expect(html).not.toMatch(/HealthShare/i);
+    }
+  });
+
+  it('prepends official marks and keeps a saved default in charge', () => {
+    const merged = withOfficialComposerSignatures(
+      [{ id: 'saved-1', name: 'Wendy', content_html: '<p>Wendy</p>', is_default: true }],
+      'https://crm.doublehelixhub.com',
+    );
+    expect(merged[0]?.id).toBe(officialComposerId('pifh-banner'));
+    expect(merged[0]?.is_default).toBe(false);
+    expect(merged.some((row) => row.id === 'saved-1' && row.is_default)).toBe(true);
+    expect(merged[0]?.content_html).toContain('https://crm.doublehelixhub.com/signatures/pifh-signature-banner.png');
   });
 
   it('prefixes bare websites with https', () => {

@@ -23,8 +23,10 @@ import {
 } from 'lucide-react';
 import { SignatureBuilder, type SignatureDefaults } from '@/components/email/SignatureBuilder';
 import {
+  DEFAULT_OFFICIAL_SIGNATURE_ID,
   DEFAULT_PIFH_LOGO_PATH,
-  buildPifhSignatureFromProfile,
+  OFFICIAL_SIGNATURES,
+  renderOfficialSignature,
   signatureNeedsBrandingRefresh,
 } from '@/lib/email/signature-html';
 import Link from 'next/link';
@@ -143,21 +145,14 @@ export default function SignaturesSettingsPage() {
   const handleApplyPifhBranding = async (signature: EmailSignature) => {
     setApplyingBrandingId(signature.id);
     try {
-      const content_html = buildPifhSignatureFromProfile({
-        full_name: defaults.full_name || signature.name,
-        title: defaults.title,
-        email: defaults.email,
-        phone: defaults.phone,
-        company_name: defaults.company_name || 'Pay it Forward Health',
-        website: defaults.website || 'payitforwardhealth.com',
-        logo_url: defaults.logo_url || DEFAULT_PIFH_LOGO_PATH,
-      });
+      const banner = OFFICIAL_SIGNATURES.find((mark) => mark.id === DEFAULT_OFFICIAL_SIGNATURE_ID);
+      const content_html = renderOfficialSignature(DEFAULT_OFFICIAL_SIGNATURE_ID) || '';
       const response = await fetch(`/api/email/signatures/${signature.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           content_html,
-          logo_url: defaults.logo_url || DEFAULT_PIFH_LOGO_PATH,
+          logo_url: banner?.image_path || defaults.logo_url || DEFAULT_PIFH_LOGO_PATH,
         }),
       });
       if (!response.ok) {
@@ -232,7 +227,7 @@ export default function SignaturesSettingsPage() {
               Email Signatures
             </h1>
             <p className="text-sm text-slate-500">
-              Create and manage your email signatures
+              Official PIFH banner and stacked marks ship in compose. Save one here to set your default.
             </p>
           </div>
         </div>
@@ -266,7 +261,7 @@ export default function SignaturesSettingsPage() {
               No Signatures Yet
             </h3>
             <p className="text-sm text-slate-500 mb-4 text-center max-w-sm">
-              Create your first email signature to automatically add it to your outgoing emails.
+              New emails already offer the official PIFH banner and stacked mark. Save one to make it yours.
             </p>
             <Button onClick={() => setIsCreating(true)} className="gap-2">
               <Plus className="w-4 h-4" />
@@ -346,7 +341,7 @@ export default function SignaturesSettingsPage() {
                         {applyingBrandingId === signature.id ? (
                           <Loader2 className="w-3 h-3 animate-spin mr-1" />
                         ) : null}
-                        Apply PIFH logo and my profile name
+                        Apply official PIFH banner
                       </Button>
                     </div>
                   )}
