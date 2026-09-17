@@ -107,13 +107,18 @@ export async function getRecordInsights(recordId: string): Promise<RecordInsight
     try {
       const { data: row } = await supabase
         .from('crm_records')
-        .select('id, data, email, module:crm_modules!crm_records_module_id_fkey(key)')
+        .select('id, org_id, data, email, module:crm_modules!crm_records_module_id_fkey(key)')
         .eq('id', recordId)
         .maybeSingle();
       if (row?.id) {
         recordEmail = (row.email as string | null) ?? null;
         const moduleKey = moduleKeyFromJoinedRelation(row.module);
-        const record = { id: row.id, data: row.data } as CrmRecord;
+        const record = {
+          id: row.id,
+          org_id: row.org_id,
+          email: row.email,
+          data: row.data,
+        } as CrmRecord;
         noteSourceIds = await resolveNoteSourceRecordIds(record, moduleKey);
       }
     } catch {
