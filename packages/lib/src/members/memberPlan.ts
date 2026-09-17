@@ -113,7 +113,7 @@ export async function staffAssignPlan(
     }>,
     next: { plan_id: input.plan_id, layer: 'core', sponsored: false },
   });
-  if (!allowed.ok) {
+  if (allowed.ok === false) {
     return { success: false, error: allowed.error };
   }
 

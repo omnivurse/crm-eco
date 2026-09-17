@@ -32,7 +32,7 @@ export async function POST(request: Request) {
     .eq('plan.organization_id', auth.key.organization_id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  const result = quote(buildRateConfigFromDb(rateSets ?? []), {
+  const result = quote(buildRateConfigFromDb((rateSets ?? []) as Parameters<typeof buildRateConfigFromDb>[0]), {
     planId: body.planId,
     coverageTier: body.coverageTier || 'member',
     household: {

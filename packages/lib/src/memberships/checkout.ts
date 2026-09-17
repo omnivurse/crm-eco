@@ -149,7 +149,7 @@ async function activateAddonPlan(
     existing: input.existing,
     next: { plan_id: plan.id, layer: 'addon', sponsored: false },
   });
-  if (!allowed.ok) throw new Error(allowed.error);
+  if (allowed.ok === false) throw new Error(allowed.error);
 
   const amount = Number(plan.monthly_share) || 0;
   const amountCents = shopPeriodAmountCents(amount, shop.frequency);

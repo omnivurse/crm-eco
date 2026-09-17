@@ -888,7 +888,7 @@ export async function applySponsorshipDecision(
     currentStatus: row.status,
     decision: input.decision,
   });
-  if (!planned.ok) throw new Error(planned.error);
+  if (planned.ok === false) throw new Error(planned.error);
 
   if (input.decision === 'deny') {
     const { error: updErr } = await supabase

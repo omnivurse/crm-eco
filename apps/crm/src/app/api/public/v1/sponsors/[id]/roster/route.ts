@@ -1,6 +1,14 @@
 import { NextResponse } from 'next/server';
 import { requireCrmApiKey } from '@/lib/public-api-auth';
 
+type LooseSponsorQuery = {
+  eq: (column: string, value: string) => LooseSponsorQuery;
+  order: (column: string) => LooseSponsorQuery;
+  limit: (n: number) => LooseSponsorQuery;
+  maybeSingle: () => Promise<{ data: { id: string; name: string } | null }>;
+  then: Promise<{ data: unknown[] | null; error: { message: string } | null }>['then'];
+};
+
 export const dynamic = 'force-dynamic';
 
 export async function GET(
@@ -10,8 +18,14 @@ export async function GET(
   const auth = await requireCrmApiKey(request, 'read');
   if ('error' in auth) return auth.error;
   const { id } = await params;
+  // Generated Database types do not include sponsor tables yet.
+  const db = auth.supabase as unknown as {
+    from: (table: string) => {
+      select: (columns: string) => LooseSponsorQuery;
+    };
+  };
 
-  const { data: sponsor } = await auth.supabase
+  const { data: sponsor } = await db
     .from('sponsors')
     .select('id, name')
     .eq('id', id)
@@ -19,7 +33,7 @@ export async function GET(
     .maybeSingle();
   if (!sponsor) return NextResponse.json({ error: 'Sponsor not found' }, { status: 404 });
 
-  const { data, error } = await auth.supabase
+  const { data, error } = await db
     .from('sponsor_roster')
     .select('id, first_name, last_name, date_of_birth, email, relationship, status, eligible_start, eligible_end')
     .eq('sponsor_id', id)
