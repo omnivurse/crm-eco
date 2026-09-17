@@ -102,14 +102,21 @@ export function writeSectionFieldLayout(
   }
 }
 
-/** Keep the card's natural field order until she customizes it. */
+/**
+ * Applies a user's card ordering and visibility preferences.
+ *
+ * Native server-action forms must set `preserveHidden`: their payload comes
+ * from mounted DOM controls, so filtering a field would silently omit its
+ * retained or restored value from `FormData`.
+ */
 export function applySectionFieldLayout<T extends { key: string; required?: boolean }>(
   fields: T[],
   prefs: SectionFieldPrefs | null,
+  options: { preserveHidden?: boolean } = {},
 ): T[] {
   const present = fields.map((f) => f.key);
   const hidden = new Set(
-    (prefs?.hidden ?? []).filter((key) => {
+    (options.preserveHidden ? [] : (prefs?.hidden ?? [])).filter((key) => {
       const field = fields.find((f) => f.key === key);
       return !field?.required;
     }),

@@ -252,7 +252,7 @@ export function CrmShell({
             </div>
 
             {/* Gizmo Tutorial Widget */}
-            <GizmoWidget />
+            <GizmoWidget key={profile.organization_id} />
 
             {/* Bottom Action Bar - Zoho-style. Hidden in the mail workspace:
                 chat, notes and contact panels are a second inbox competing

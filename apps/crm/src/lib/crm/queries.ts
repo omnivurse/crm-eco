@@ -2113,7 +2113,7 @@ export async function getTimelineForRecordAggregated(
   const supabase = await createCrmClient();
   const { data: row, error } = await supabase
     .from('crm_records')
-    .select('id, data, module:crm_modules!crm_records_module_id_fkey(key)')
+    .select('id, org_id, email, data, module:crm_modules!crm_records_module_id_fkey(key)')
     .eq('id', recordId)
     .maybeSingle();
 
@@ -2122,7 +2122,12 @@ export async function getTimelineForRecordAggregated(
   }
 
   const moduleKey = moduleKeyFromJoinedRelation(row.module);
-  const record = { id: row.id, data: row.data } as CrmRecord;
+  const record = {
+    id: row.id,
+    org_id: row.org_id,
+    email: row.email,
+    data: row.data,
+  } as CrmRecord;
   const noteIds = await resolveNoteSourceRecordIds(record, moduleKey);
   return getTimelineForRecord(recordId, limit, noteIds);
 }
