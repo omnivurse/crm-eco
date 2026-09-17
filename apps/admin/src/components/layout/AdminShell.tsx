@@ -116,7 +116,7 @@ export function AdminShell({
           <AdminFooter />
         </div>
       </div>
-      <AdminGizmoWidget />
+      <AdminGizmoWidget key={activeTenantId ?? profile.organizationId} />
     </div>
   );
 }
