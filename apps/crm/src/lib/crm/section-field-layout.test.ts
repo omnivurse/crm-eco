@@ -37,6 +37,25 @@ describe('section field layout', () => {
     expect(shown).toEqual(['title', 'first_name']);
   });
 
+  it('preserves customized-away fields for native form submission', () => {
+    const fields = [
+      { key: 'first_name', required: true },
+      { key: 'nickname', required: false },
+      { key: 'title', required: false },
+    ];
+    const shown = applySectionFieldLayout(
+      fields,
+      {
+        v: 1,
+        order: ['title', 'nickname', 'first_name'],
+        hidden: ['nickname'],
+      },
+      { preserveHidden: true },
+    ).map((f) => f.key);
+
+    expect(shown).toEqual(['title', 'nickname', 'first_name']);
+  });
+
   it('keeps section cards and module types isolated', () => {
     const merged = mergeSectionFieldLayout(
       {

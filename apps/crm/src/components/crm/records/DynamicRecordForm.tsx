@@ -1763,6 +1763,10 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
         const displayFields = applySectionFieldLayout(
           sectionFields,
           sectionCardLayout.prefsFor(section.key),
+          // Embedded create forms are submitted from the browser DOM. Removing
+          // a customized-away field here would omit a restored/entered value
+          // from FormData even though react-hook-form still retains it.
+          { preserveHidden: embedded && !readOnly },
         );
         const isHero = section.variant === 'hero';
         const forceCoverageSection = shouldAlwaysShowEmptySection(
@@ -1867,7 +1871,7 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
                   )}
                 </CardTitle>
               </CardHeader>
-              {moduleKey && sectionFields.length > 0 && (
+              {moduleKey && sectionFields.length > 0 && !(embedded && !readOnly) && (
                 <CoverageSnapshotOrganizer
                   moduleKey={moduleKey}
                   title={section.label}
