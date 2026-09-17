@@ -1754,7 +1754,8 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
       {sections.map((section) => {
         const snapshotEnrolledByKey =
           heroEnrolledByField &&
-          heroReferralSnapshotFields.some((f) => f.key === heroEnrolledByField.key)
+          heroReferralSnapshotFields.some((f) => f.key === heroEnrolledByField.key) &&
+          snapshotGlanceFields.some((f) => f.key === heroEnrolledByField.key)
             ? heroEnrolledByField.key
             : undefined;
         const sectionFields = (fieldsBySection[section.key] || []).filter(

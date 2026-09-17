@@ -188,7 +188,7 @@ import {
   scrollRecordFieldIntoView,
   scrollRecordTargetIntoView,
 } from '@/lib/crm/record-section-scroll';
-import { CRM_SECTION_NAV_EVENT } from './section-utils';
+import { CRM_SECTION_NAV_EVENT, foldPersonFormSectionKey } from './section-utils';
 import { useRecordHotkeys } from '@/hooks/useRecordHotkeys';
 import { useRecordPresence } from '@/hooks/useRecordPresence';
 import { useRecentlyViewedTracker } from '@/hooks/useRecentlyViewedTracker';
@@ -773,10 +773,11 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
     // Expand the field's section first so collapsed coverage cards have height.
     const fieldSection = _fields.find((f) => f.key === args.fieldKey)?.section;
     if (fieldSection) {
+      const renderedSection = foldPersonFormSectionKey(fieldSection, module.key);
       window.dispatchEvent(
         new CustomEvent(CRM_SECTION_NAV_EVENT, {
           bubbles: true,
-          detail: { key: fieldSection },
+          detail: { key: renderedSection },
         }),
       );
     }
@@ -784,7 +785,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
       scrollRoot: recordMainScrollRef.current,
       block: 'center',
     });
-  }, [_fields]);
+  }, [_fields, module.key]);
 
   const fieldLabelMap = useMemo(() => {
     const map: Record<string, string> = {};
