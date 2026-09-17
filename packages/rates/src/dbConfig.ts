@@ -4,6 +4,7 @@
 // Reads plan_rate_sets (+ joined plan_rate_entries / plan_fees) rows
 // and assembles a canonical E123 RateConfig the engine can quote against.
 // ──────────────────────────────────────────────
+import { parseCommercialTerms } from './commercialTerms';
 import type {
   RateConfig,
   Plan,
@@ -170,6 +171,7 @@ function dbRowToPlan(row: DbRateSetRow): Plan {
     provisional: planMeta.provisional === true || row.provisional === true,
     tobacco,
     fees: fees.length > 0 ? fees : undefined,
+    commercial_terms: parseCommercialTerms(planMeta.commercial_terms),
     rates,
   };
 }

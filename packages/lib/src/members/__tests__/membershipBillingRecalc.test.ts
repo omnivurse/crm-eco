@@ -55,6 +55,18 @@ describe('pickBillingMembership', () => {
     const newer = candidate({ id: 'newer', status: 'active', effective_date: '2026-06-01' });
     expect(pickBillingMembership([older, newer], TODAY)?.id).toBe('newer');
   });
+
+  it('ignores add-on memberships so household billing stays on the core plan', () => {
+    const addon = candidate({
+      id: 'addon',
+      status: 'active',
+      effective_date: '2026-08-01',
+      layer: 'addon',
+      custom_fields: { layer: 'addon' },
+    });
+    const core = candidate({ id: 'core', status: 'active', effective_date: '2026-01-01' });
+    expect(pickBillingMembership([addon, core], TODAY)?.id).toBe('core');
+  });
 });
 
 type Filter = { column: string; value: unknown };

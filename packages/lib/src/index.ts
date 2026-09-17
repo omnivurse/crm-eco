@@ -21,6 +21,8 @@ export * from './mutations';
 export * from './organizations/pifh';
 export * from './data-table';
 export * from './permissions';
+export * from './sponsors';
+export * from './memberships';
 
 
 // activity-log is server-only (uses next/headers via supabase/server)

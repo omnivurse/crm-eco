@@ -2,6 +2,8 @@
 // E123 Rate Engine – Core Types
 // ──────────────────────────────────────────────
 
+import type { BillingPeriod, BillingTiming, CommercialTerms } from './commercialTerms';
+
 /** Which rate set to use */
 export type RateSetKey = 'current' | 'rates_2026';
 
@@ -65,6 +67,8 @@ export interface Plan {
   regions?: Region[];
   tobacco?: TobaccoConfig;
   fees?: FeeLine[];
+  /** Group-size, period, registration family max, age min/max, arrears. */
+  commercial_terms?: CommercialTerms;
   rates: TieredHouseholdRates | AdditivePersonRates;
 }
 
@@ -177,6 +181,8 @@ export interface QuoteInput {
   state?: string;
   zip?: string;
   coverageStart: string;
+  /** When set, overrides plan commercial_terms.default_period for this quote. */
+  billingPeriod?: BillingPeriod;
 }
 
 export interface QuoteOptions {
@@ -184,6 +190,8 @@ export interface QuoteOptions {
   dependentsPricedOverride?: number;
   /** When provided, resolves enrollment-contribution fee with founding waiver */
   enrollmentContribution?: EnrollmentContributionPolicy;
+  /** Overrides plan.commercial_terms for this quote only. */
+  commercialTerms?: CommercialTerms;
 }
 
 export interface QuoteResult {
@@ -194,6 +202,9 @@ export interface QuoteResult {
   breakdown: BreakdownLine[];
   metadata: QuoteMetadata;
   errors?: QuoteError[];
+  billingPeriod?: BillingPeriod;
+  billingTiming?: BillingTiming;
+  periodAmount?: number;
 }
 
 export interface QuoteFee {
@@ -228,6 +239,13 @@ export interface QuoteMetadata {
     ratingBand?: string;
   };
   enrollmentContribution?: EnrollmentContributionResult;
+  commercial?: {
+    groupSizeDiscount?: number;
+    registrationCappedBy?: number;
+    period?: BillingPeriod;
+    periodAmount?: number;
+    billingTiming?: BillingTiming;
+  };
 }
 
 export interface QuoteError {

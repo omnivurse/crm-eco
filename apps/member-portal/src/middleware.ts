@@ -9,6 +9,7 @@ export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
   });
+  applyEmbedFramePolicy(request, supabaseResponse);
 
   const { pathname } = request.nextUrl;
   const publicRoutes = [
@@ -133,7 +134,19 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  applyEmbedFramePolicy(request, supabaseResponse);
   return supabaseResponse;
+}
+
+function applyEmbedFramePolicy(request: NextRequest, response: NextResponse) {
+  if (!/^\/enroll\/[^/]+\/embed\/?$/.test(request.nextUrl.pathname)) return;
+  const allow = (process.env.ENROLLMENT_EMBED_ORIGINS || "'self'")
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean)
+    .join(' ');
+  response.headers.set('Content-Security-Policy', `frame-ancestors ${allow}`);
+  response.headers.delete('X-Frame-Options');
 }
 
 export const config = {

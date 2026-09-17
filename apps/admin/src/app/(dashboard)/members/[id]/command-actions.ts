@@ -10,6 +10,7 @@ import {
   staffLogHistoricalCoveragePeriod,
   staffPurgeDependentRecord,
   staffAssignPlan,
+  staffAddAddon,
   staffChangePlan,
   staffEndPlan,
   staffSchedulePlanChange,
@@ -136,6 +137,14 @@ export async function adminAssignPlan(input: Parameters<typeof staffAssignPlan>[
   const staff = await resolveStaffContext();
   if (!staff.ok) return { success: false, error: staff.error };
   const result = await staffAssignPlan(staff.ctx, input);
+  if (result.success) revalidateMember(input.member_id);
+  return result;
+}
+
+export async function adminAddAddon(input: Parameters<typeof staffAddAddon>[1]) {
+  const staff = await resolveStaffContext();
+  if (!staff.ok) return { success: false, error: staff.error };
+  const result = await staffAddAddon(staff.ctx, input);
   if (result.success) revalidateMember(input.member_id);
   return result;
 }

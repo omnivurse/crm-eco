@@ -47,6 +47,7 @@ const landingPageSchema = z.object({
   secondary_color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Invalid color format'),
   background_style: z.enum(['gradient', 'solid', 'image']),
   default_advisor_id: z.string().uuid().optional().nullable(),
+  sponsor_id: z.string().uuid().optional().nullable(),
   advisor_selection_enabled: z.boolean(),
   is_published: z.boolean(),
   utm_source: z.string().optional(),
@@ -70,6 +71,11 @@ interface Plan {
   code: string;
 }
 
+interface SponsorOption {
+  id: string;
+  name: string;
+}
+
 interface LandingPageFormProps {
   landingPage?: any;
 }
@@ -80,6 +86,11 @@ export function LandingPageForm({ landingPage }: LandingPageFormProps) {
   const [saving, setSaving] = useState(false);
   const [advisors, setAdvisors] = useState<Advisor[]>([]);
   const [plans, setPlans] = useState<Plan[]>([]);
+  const [sponsors, setSponsors] = useState<SponsorOption[]>([]);
+  const [locale, setLocale] = useState<'en' | 'es'>(landingPage?.meta?.locale === 'es' ? 'es' : 'en');
+  const [documentIds, setDocumentIds] = useState(
+    Array.isArray(landingPage?.meta?.document_ids) ? landingPage.meta.document_ids.join(',') : '',
+  );
   const [selectedPlans, setSelectedPlans] = useState<string[]>(landingPage?.plan_ids || []);
   const isEditing = !!landingPage;
 
@@ -96,6 +107,7 @@ export function LandingPageForm({ landingPage }: LandingPageFormProps) {
       secondary_color: landingPage?.secondary_color || '#14b8a6',
       background_style: landingPage?.background_style || 'gradient',
       default_advisor_id: landingPage?.default_advisor_id || null,
+      sponsor_id: landingPage?.sponsor_id || null,
       advisor_selection_enabled: landingPage?.advisor_selection_enabled ?? false,
       is_published: landingPage?.is_published ?? false,
       utm_source: landingPage?.utm_source || '',
@@ -144,6 +156,17 @@ export function LandingPageForm({ landingPage }: LandingPageFormProps) {
     if (plansData) {
       setPlans(plansData);
     }
+
+    const { data: sponsorsData } = await (supabase as any)
+      .from('sponsors')
+      .select('id, name')
+      .eq('organization_id', profile.organization_id)
+      .in('status', ['draft', 'active'])
+      .order('name');
+
+    if (sponsorsData) {
+      setSponsors(sponsorsData);
+    }
   }
 
   async function onSubmit(data: LandingPageFormData) {
@@ -166,7 +189,16 @@ export function LandingPageForm({ landingPage }: LandingPageFormProps) {
         hero_image_url: data.hero_image_url || null,
         logo_url: data.logo_url || null,
         thank_you_redirect_url: data.thank_you_redirect_url || null,
+        sponsor_id: data.sponsor_id || null,
         plan_ids: selectedPlans,
+        meta: {
+          ...(landingPage?.meta && typeof landingPage.meta === 'object' ? landingPage.meta : {}),
+          locale,
+          document_ids: documentIds
+            .split(',')
+            .map((id: string) => id.trim())
+            .filter(Boolean),
+        },
         organization_id: profile.organization_id,
         created_by: isEditing ? undefined : profile.id,
       };
@@ -585,6 +617,72 @@ export function LandingPageForm({ landingPage }: LandingPageFormProps) {
                     onCheckedChange={(checked) => form.setValue('advisor_selection_enabled', checked)}
                   />
                 </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Employer / sponsor</CardTitle>
+                <CardDescription>
+                  Bind this page to a sponsor so signups match the employer roster
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Label htmlFor="sponsor_id">Sponsor</Label>
+                <Select
+                  value={form.watch('sponsor_id') || '__none__'}
+                  onValueChange={(value) => form.setValue('sponsor_id', value === '__none__' ? null : value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Retail enrollment (no sponsor)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">No sponsor (retail)</SelectItem>
+                    {sponsors.map((sponsor) => (
+                      <SelectItem key={sponsor.id} value={sponsor.id}>
+                        {sponsor.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="mt-1 text-sm text-slate-500">
+                  Employees who enroll here are matched first name + last name + date of birth.
+                </p>
+                <div className="mt-4 space-y-2">
+                  <Label htmlFor="locale">Locale</Label>
+                  <select
+                    id="locale"
+                    className="h-10 w-full rounded-md border px-3 text-sm"
+                    value={locale}
+                    onChange={(e) => setLocale(e.target.value === 'es' ? 'es' : 'en')}
+                  >
+                    <option value="en">English</option>
+                    <option value="es">Español</option>
+                  </select>
+                </div>
+                <div className="mt-4 space-y-2">
+                  <Label htmlFor="document_ids">Legal document IDs (comma-separated)</Label>
+                  <Input
+                    id="document_ids"
+                    value={documentIds}
+                    onChange={(e) => setDocumentIds(e.target.value)}
+                    placeholder="uuid, uuid"
+                  />
+                  <p className="text-sm text-slate-500">
+                    Plan/sponsor document pack from legal_documents. Used on this signup page.
+                  </p>
+                </div>
+                {isEditing && (
+                  <div className="mt-4 space-y-2">
+                    <Label>Embed snippet</Label>
+                    <textarea
+                      readOnly
+                      className="min-h-20 w-full rounded-md border p-2 font-mono text-xs"
+                      value={`<iframe src="${process.env.NEXT_PUBLIC_PORTAL_URL || 'https://members.payitforwardhealth.com'}/enroll/${form.watch('slug')}/embed" width="100%" height="900" frameborder="0"></iframe>
+<script>window.addEventListener('message',function(e){if(e.data&&e.data.type==='pifh-enroll-height'){var f=document.querySelector('iframe[src*="/enroll/"]');if(f)f.style.height=e.data.height+'px';}});</script>`}
+                    />
+                  </div>
+                )}
               </CardContent>
             </Card>
 

@@ -1,0 +1,14 @@
+---
+description: Standing policy — ship every slice fully, leave no gaps, and prove tests/builds before the next phase.
+alwaysApply: true
+---
+
+# Ship Fully, Verify Before Next Phase
+
+Policy for **all** CRM-ECO development. Pairs with Agent Operating Rules and the Production Change Playbook. This rule does **not** authorize production writes.
+
+1. **Ship complete.** Wire every layer the change touches in the same slice: UI, API, persistence, RLS/permissions, types, empty/error/loading states. No mock-only. No “finish later.”
+2. **Leave no gaps.** If a field is stored, enforce it. If a write exists, the matching read (and inverse write) exist. Close leftovers before calling the slice done. Do not start the next phase with known holes.
+3. **Verify with evidence.** Run the relevant tests, typecheck, and the apps you changed (`build:admin` / `build:portal` when UI or API changed). Paste actual command results. Visual inspection alone is not done.
+4. **Do not start the next phase** until the current phase is proven. If verification fails, fix and re-verify first.
+5. Production migrations, deploys, RLS changes, and real emails/SMS/payments still require explicit approval under the Production Change Playbook.

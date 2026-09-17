@@ -33,6 +33,7 @@ import {
   sendAdvisorNotificationEmail,
 } from '../email/transactional';
 import { createCommissionService } from '../commissions';
+import { linkSponsorshipToMembership } from '../sponsors/linkMembership';
 
 export interface FinalizeEnrollmentInput {
   organizationId: string;
@@ -188,6 +189,19 @@ export async function finalizeEnrollment(
     };
   }
   const f = (fin ?? {}) as Record<string, string | undefined>;
+
+  if (f.membership_id) {
+    try {
+      await linkSponsorshipToMembership(sb, {
+        organizationId: input.organizationId,
+        enrollmentId: input.enrollmentId,
+        membershipId: f.membership_id,
+        memberId: input.memberId,
+      });
+    } catch (e) {
+      console.error('[finalizeEnrollment] sponsor membership link failed (non-fatal)', e);
+    }
+  }
 
   // 6) Portal invite (non-fatal; ALREADY_LINKED is a benign idempotent outcome).
   let portalInvited = false;

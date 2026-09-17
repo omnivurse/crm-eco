@@ -39,6 +39,14 @@ export default function RateSettingsPage() {
                   </p>
                 </div>
               </div>
+              <div className="rounded-xl border border-[var(--adm-hairline)] bg-[var(--adm-void)]/60 p-4">
+                <h4 className="mb-2 font-semibold text-[var(--adm-ink)]">Commercial terms</h4>
+                <p>
+                  Group-size discounts, extra billing periods, registration family max, and age
+                  limits live on each plan. Open a product&apos;s pricing page to edit them. The
+                  quote engine applies them automatically.
+                </p>
+              </div>
               <div className="rounded-xl border border-cyan-100 bg-cyan-50/80 p-4">
                 <h4 className="mb-1 font-semibold text-cyan-950">Rate set selection</h4>
                 <ol className="list-inside list-decimal space-y-1 text-cyan-900">

@@ -1,5 +1,6 @@
 import { Clock, Heart, ShieldCheck } from '@phosphor-icons/react/dist/ssr';
 import type { Metadata } from 'next';
+import { resolveEnrollmentPlansForLanding } from '@crm-eco/lib';
 import { createServiceRoleClient } from '@crm-eco/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import { PublicEnrollmentWizard } from '../PublicEnrollmentWizard';
@@ -21,6 +22,7 @@ interface LandingPageData {
   default_advisor_id: string | null;
   plan_ids: string[];
   default_plan_id: string | null;
+  sponsor_id: string | null;
   is_published: boolean;
 }
 
@@ -79,32 +81,7 @@ export default async function PublicLandingEnrollPage({ params }: PageProps) {
     // RPC might not exist — ignore.
   }
 
-  // Plans: either the landing page's configured plan_ids, else the org's active plans.
-  let plans: Array<{
-    id: string;
-    name: string;
-    code: string;
-    monthly_share: number;
-    description: string | null;
-  }> = [];
-
-  if (landingPage.plan_ids && landingPage.plan_ids.length > 0) {
-    const { data: plansData } = await (supabase as any)
-      .from('plans')
-      .select('id, name, code, monthly_share, description')
-      .in('id', landingPage.plan_ids)
-      .eq('is_active', true)
-      .order('monthly_share');
-    plans = plansData || [];
-  } else {
-    const { data: plansData } = await (supabase as any)
-      .from('plans')
-      .select('id, name, code, monthly_share, description')
-      .eq('organization_id', landingPage.organization_id)
-      .eq('is_active', true)
-      .order('monthly_share');
-    plans = plansData || [];
-  }
+  const plans = await resolveEnrollmentPlansForLanding(supabase as any, landingPage);
 
   // Advisor branding.
   let advisorName = '';

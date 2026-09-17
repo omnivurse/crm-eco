@@ -15,6 +15,23 @@ export {
   DEFAULT_ENROLLMENT_CONTRIBUTION_POLICY,
 } from './enrollmentContributionSettings';
 export { fetchEnrollmentContributionSettings } from './loadContributionPolicy';
+export {
+  parseCommercialTerms,
+  applyCommercialTerms,
+  applyGroupSizeDiscount,
+  applyPeriodAmount,
+  capRegistrationFees,
+  householdLives,
+  periodMonths,
+  commercialAgeErrors,
+} from './commercialTerms';
+export type {
+  BillingPeriod,
+  BillingTiming,
+  CommercialTerms,
+  CommercialQuoteAdjustment,
+  GroupSizeDiscount,
+} from './commercialTerms';
 export { MSA_AGE_BANDS, MSA_COVERAGE_TIERS } from './msaAgeBands';
 export type {
   RateConfig,

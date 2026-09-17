@@ -27,6 +27,17 @@ import type {
 } from '../types';
 import { ENROLLMENT_STEPS } from '../types';
 import type { QuoteInput, QuoteResult, CoverageTier } from '@crm-eco/rates';
+import {
+  enrollmentCopy,
+  formatEnrollmentCopy,
+  localizedEnrollmentSteps,
+  type EnrollmentLocale,
+} from '../i18n';
+import {
+  resolveEnrollmentDocumentIds,
+  selectEnrollmentDocuments,
+  type EnrollmentLegalDocument,
+} from '../documents';
 
 // ============================================================================
 // Quote input adapter
@@ -121,6 +132,11 @@ interface SelfServeEnrollmentWizardProps {
    * client bundle. When false (default), eligibility findings are advisory only.
    */
   eligibilityEnforce?: boolean;
+  /** Skip the payment step when a sponsor pays the core membership. */
+  skipPayment?: boolean;
+  locale?: EnrollmentLocale;
+  documents?: EnrollmentLegalDocument[];
+  landingDocumentIds?: string[];
 }
 
 // ============================================================================
@@ -138,19 +154,33 @@ export function SelfServeEnrollmentWizard({
   afterSubmitUrl = '/',
   afterSubmitLabel = 'Return to Dashboard',
   eligibilityEnforce = false,
+  skipPayment = false,
+  locale = 'en',
+  documents = [],
+  landingDocumentIds = [],
 }: SelfServeEnrollmentWizardProps) {
+  const steps = useMemo(() => {
+    const localizedSteps = localizedEnrollmentSteps(locale);
+    return (skipPayment
+      ? localizedSteps.filter((step) => step.key !== 'payment')
+      : localizedSteps
+    ).map((step) => {
+      const base = ENROLLMENT_STEPS.find((item) => item.key === step.key);
+      return { ...base, ...step };
+    });
+  }, [locale, skipPayment]);
   // State
   const [enrollmentId, setEnrollmentId] = useState<string | undefined>(existingEnrollmentId);
   const [currentStepIndex, setCurrentStepIndex] = useState(() => {
-    const firstIncomplete = ENROLLMENT_STEPS.findIndex((step) => !completedSteps.includes(step.key));
-    return Math.max(0, firstIncomplete === -1 ? ENROLLMENT_STEPS.length - 1 : firstIncomplete);
+    const firstIncomplete = steps.findIndex((step) => !completedSteps.includes(step.key));
+    return Math.max(0, firstIncomplete === -1 ? steps.length - 1 : firstIncomplete);
   });
   const [snapshot, setSnapshot] = useState<WizardSnapshot>(existingSnapshot || {});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
 
-  const currentStep = ENROLLMENT_STEPS[currentStepIndex];
+  const currentStep = steps[currentStepIndex];
   // Remembers which direction the user last moved, so an inert step can be
   // skipped past in the SAME direction (forward Next vs backward Previous).
   const [navDirection, setNavDirection] = useState<1 | -1>(1);
@@ -175,12 +205,12 @@ export function SelfServeEnrollmentWizard({
   }, []);
 
   const goToNextStep = useCallback(() => {
-    if (currentStepIndex < ENROLLMENT_STEPS.length - 1) {
+    if (currentStepIndex < steps.length - 1) {
       setNavDirection(1);
       setCurrentStepIndex((prev) => prev + 1);
       setError(null);
     }
-  }, [currentStepIndex]);
+  }, [currentStepIndex, steps.length]);
 
   const goToPreviousStep = useCallback(() => {
     if (currentStepIndex > 0) {
@@ -486,10 +516,10 @@ export function SelfServeEnrollmentWizard({
     if (currentStep.key !== 'questionnaire' || questionnaireActive) return;
     setCurrentStepIndex((prev) => {
       const next = prev + navDirection;
-      if (next < 0 || next > ENROLLMENT_STEPS.length - 1) return prev;
+      if (next < 0 || next > steps.length - 1) return prev;
       return next;
     });
-  }, [currentStep.key, questionnaireActive, navDirection]);
+  }, [currentStep.key, questionnaireActive, navDirection, steps.length]);
 
   // Get selected plan for display
   const selectedPlan = useMemo(() => {
@@ -499,13 +529,13 @@ export function SelfServeEnrollmentWizard({
 
   // Steps shown in the progress bar / counter. The inert questionnaire step is
   // hidden so the user never sees an empty stage. Each entry keeps its REAL
-  // index into ENROLLMENT_STEPS so step-bar clicks still target the right step.
+  // index into the visible steps so step-bar clicks still target the right step.
   const visibleSteps = useMemo(
     () =>
-      ENROLLMENT_STEPS.map((step, index) => ({ step, index })).filter(
+      steps.map((step, index) => ({ step, index })).filter(
         ({ step }) => step.key !== 'questionnaire' || questionnaireActive
       ),
-    [questionnaireActive]
+    [questionnaireActive, steps]
   );
 
   // Render step content
@@ -527,6 +557,7 @@ export function SelfServeEnrollmentWizard({
             members={snapshot.household?.members || []}
             onComplete={handleHouseholdComplete}
             loading={loading}
+            locale={locale}
           />
         );
 
@@ -566,6 +597,17 @@ export function SelfServeEnrollmentWizard({
             data={snapshot.compliance}
             onComplete={handleComplianceComplete}
             loading={loading}
+            locale={locale}
+            documents={selectEnrollmentDocuments(
+              documents,
+              resolveEnrollmentDocumentIds({
+                landingDocumentIds,
+                planDocumentIds: documents
+                  .filter((doc) => doc.product_id && doc.product_id === snapshot.plan_selection?.selected_plan_id)
+                  .map((doc) => doc.id),
+                sponsorMatched: skipPayment,
+              }),
+            )}
           />
         );
 
@@ -599,6 +641,11 @@ export function SelfServeEnrollmentWizard({
 
   return (
     <div className="space-y-6">
+      {skipPayment && (
+        <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+          {enrollmentCopy(locale, 'sponsorPaid')}
+        </div>
+      )}
       {/* Progress Steps */}
       <Card>
         <CardContent className="pt-6">
@@ -669,11 +716,14 @@ export function SelfServeEnrollmentWizard({
             className="gap-2"
           >
             <ChevronLeft className="w-4 h-4" />
-            Previous
+            {enrollmentCopy(locale, 'previous')}
           </Button>
 
           <div className="text-sm text-slate-500">
-            Step {Math.max(0, visibleSteps.findIndex((v) => v.index === currentStepIndex)) + 1} of {visibleSteps.length}
+            {formatEnrollmentCopy(locale, 'stepOf', {
+              current: Math.max(0, visibleSteps.findIndex((v) => v.index === currentStepIndex)) + 1,
+              total: visibleSteps.length,
+            })}
           </div>
         </div>
       )}

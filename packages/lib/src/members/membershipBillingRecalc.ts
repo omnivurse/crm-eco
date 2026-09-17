@@ -49,6 +49,13 @@ export interface BillingMembershipCandidate {
   custom_fields: unknown;
   status: string;
   effective_date: string | null;
+  layer?: string | null;
+}
+
+function isHouseholdBillingMembership(row: BillingMembershipCandidate): boolean {
+  if (row.layer === 'addon') return false;
+  const layer = asRecord(row.custom_fields).layer;
+  return layer !== 'addon';
 }
 
 /**
@@ -70,13 +77,15 @@ export function pickBillingMembership(
   memberships: BillingMembershipCandidate[],
   today: string = new Date().toISOString().slice(0, 10),
 ): BillingMembershipCandidate | null {
+  const household = memberships.filter(isHouseholdBillingMembership);
+
   const byEffectiveDesc = (a: BillingMembershipCandidate, b: BillingMembershipCandidate) =>
     (b.effective_date ?? '').localeCompare(a.effective_date ?? '');
 
-  const active = memberships.filter((m) => m.status === 'active').sort(byEffectiveDesc);
+  const active = household.filter((m) => m.status === 'active').sort(byEffectiveDesc);
   if (active.length > 0) return active[0];
 
-  const pending = memberships.filter((m) => m.status === 'pending');
+  const pending = household.filter((m) => m.status === 'pending');
   const due = pending
     .filter((m) => (m.effective_date ?? '') <= today)
     .sort(byEffectiveDesc);

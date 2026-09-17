@@ -1,6 +1,8 @@
 import { Badge } from '@crm-eco/ui';
 import { notFound } from 'next/navigation';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
+import { CommercialTermsEditor } from '@/components/products/CommercialTermsEditor';
+import { ShopTermsEditor } from '@/components/products/ShopTermsEditor';
 import { E123PricingMatrix } from '@/components/products/E123PricingMatrix';
 import { RateQuoteCalculator } from '@/components/products/RateQuoteCalculator';
 import { EntityPageHeader } from '@/components/ui/EntityPageHeader';
@@ -57,6 +59,10 @@ export default async function ProductPricingPage({ params }: { params: Promise<{
             productCode={product.code}
             organizationId={organizationId}
           />
+          <div className="mt-6 space-y-6">
+            <CommercialTermsEditor planId={id} planCode={product.code} />
+            <ShopTermsEditor planId={id} />
+          </div>
         </div>
         <div>
           <RateQuoteCalculator defaultPlanId={product.code} />

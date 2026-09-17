@@ -121,6 +121,7 @@ const WEBHOOK_EVENTS = [
   'signal.fired', 'signal.resolved',
   'extension.installed', 'extension.uninstalled',
   'api_key.created', 'api_key.revoked',
+  'member.created', 'membership.updated', 'invoice.paid',
 ] as const;
 
 const STATUS_COLORS: Record<string, string> = {
@@ -399,7 +400,13 @@ export default function DeveloperHubPage() {
           </div>
           <div>
             <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Developer Hub</h1>
-            <p className="text-slate-600 dark:text-slate-400">API keys, outbound webhooks, and request logs</p>
+            <p className="text-slate-600 dark:text-slate-400">
+              API keys, outbound webhooks, and request logs. Membership routes live at
+              <code className="mx-1">/api/public/v1</code>
+              and use existing <code>crm.read</code>/<code>crm.write</code> keys.
+              Events <code>member.created</code>, <code>membership.updated</code>, and
+              <code>invoice.paid</code> require the pending Phase 5 migration before they can be stored.
+            </p>
           </div>
         </div>
       </div>

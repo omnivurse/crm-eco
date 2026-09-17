@@ -8,6 +8,7 @@ import {
   validateMedications,
   isEnrollmentCompletionEnabled,
   finalizeEnrollment,
+  linkSponsorshipToMembership,
   resolvePendingMemberEffectiveDate,
   type PaymentMethodInput,
 } from '@crm-eco/lib';
@@ -1244,6 +1245,20 @@ export async function submitSelfServeEnrollment(
           .update({ effective_date: coverageStart })
           .eq('id', enrollment.primary_member_id)
           .eq('status', 'pending');
+      }
+
+      if (membershipId && enrollment.primary_member_id) {
+        try {
+          await linkSponsorshipToMembership(createServiceRoleClient() as any, {
+            organizationId: enrollment.organization_id,
+            enrollmentId,
+            membershipId,
+            memberId: enrollment.primary_member_id,
+            sponsorId: (enrollment as { sponsor_id?: string | null }).sponsor_id ?? null,
+          });
+        } catch (e) {
+          console.error('submitSelfServeEnrollment sponsor link failed', e);
+        }
       }
     }
 

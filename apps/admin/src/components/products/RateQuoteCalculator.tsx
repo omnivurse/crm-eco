@@ -79,9 +79,23 @@ export function RateQuoteCalculator({ defaultPlanId, rateSetOverride }: RateQuot
       ...(rateSetOverride ? { rateSetOverride } : {}),
       enrollmentContribution: DEFAULT_ENROLLMENT_CONTRIBUTION_POLICY,
     };
-    const res = quote(config, input, opts);
-    setResult(res);
-    setLoading(false);
+
+    void (async () => {
+      try {
+        const res = await fetch('/api/rates/quote', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ input, options: opts }),
+        });
+        if (res.ok) {
+          setResult((await res.json()) as QuoteResult);
+          return;
+        }
+      } catch {
+        // Fall back to the local seed engine so the calculator still works offline.
+      }
+      setResult(quote(config, input, opts));
+    })().finally(() => setLoading(false));
   };
 
   const addDependent = () => setDependentAges([...dependentAges, '']);
@@ -279,6 +293,12 @@ export function RateQuoteCalculator({ defaultPlanId, rateSetOverride }: RateQuot
                       </span>
                     )}
                   </div>
+                  {result.periodAmount != null && result.billingPeriod && result.billingPeriod !== 'monthly' && (
+                    <p className="mt-2 text-sm text-white/80">
+                      {result.billingPeriod.replace('_', ' ')} bill: {formatCurrency(result.periodAmount)}
+                      {result.billingTiming ? ` · ${result.billingTiming}` : ''}
+                    </p>
+                  )}
                 </div>
 
                 {/* Metadata */}

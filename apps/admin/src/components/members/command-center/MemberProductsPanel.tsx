@@ -5,9 +5,8 @@ import { ArrowClockwise, CalendarBlank, CircleNotch, Package, Plus, XCircle } fr
  * MemberProductsPanel — staff management of a member's plan/product.
  * Reads memberships (the source of truth) and writes via admin plan actions
  * (command-actions → @crm-eco/lib memberPlan, service-role conduit + recalc).
- * A member has at most one CURRENT plan, plus optionally one UPCOMING plan —
- * a pending membership with a future effective date (a scheduled plan change,
- * activated by the daily cron). Everything else is history.
+ * A member has one CURRENT core plan, optional add-ons, plus optionally one
+ * UPCOMING core plan (scheduled change). Add-ons keep their own bill schedule.
  */
 
 import { useState } from 'react';
@@ -35,6 +34,7 @@ import { format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 import {
   adminAssignPlan,
+  adminAddAddon,
   adminChangePlan,
   adminEndPlan,
   adminSchedulePlanChange,
@@ -86,6 +86,12 @@ function isScheduledChange(m: Membership) {
   return Boolean(custom && typeof custom === 'object' && (custom as Record<string, unknown>).scheduled_change);
 }
 
+function membershipLayer(m: Membership): 'core' | 'addon' {
+  if (m.layer === 'addon') return 'addon';
+  const custom = m.custom_fields as Record<string, unknown> | null;
+  return custom?.layer === 'addon' ? 'addon' : 'core';
+}
+
 function statusVariant(s: string): 'default' | 'secondary' | 'destructive' | 'outline' {
   if (s === 'active') return 'default';
   if (s === 'pending' || s === 'paused') return 'secondary';
@@ -100,13 +106,21 @@ function planLabel(p: Plan) {
 
 export function MemberProductsPanel({ memberId, memberships, availablePlans }: Props) {
   const router = useRouter();
-  const active = memberships.find((m) => m.status === 'active') ?? null;
+  const active =
+    memberships.find((m) => m.status === 'active' && membershipLayer(m) === 'core') ??
+    memberships.find((m) => m.status === 'active') ??
+    null;
+  const addons = memberships.filter((m) => m.status === 'active' && membershipLayer(m) === 'addon');
   const upcoming =
     memberships.find(
-      (m) => m.status === 'pending' && ((m.effective_date as string) ?? '') > todayIso(),
+      (m) =>
+        m.status === 'pending' &&
+        ((m.effective_date as string) ?? '') > todayIso() &&
+        (isScheduledChange(m) || membershipLayer(m) === 'core'),
     ) ?? null;
 
-  const [mode, setMode] = useState<null | 'assign' | 'change' | 'end'>(null);
+  const [mode, setMode] = useState<null | 'assign' | 'addon' | 'change' | 'end'>(null);
+  const [endMembershipId, setEndMembershipId] = useState<string | null>(null);
   const [when, setWhen] = useState<'now' | 'future'>('now');
   const [planId, setPlanId] = useState('');
   const [effectiveDate, setEffectiveDate] = useState(todayIso());
@@ -117,6 +131,7 @@ export function MemberProductsPanel({ memberId, memberships, availablePlans }: P
 
   function close() {
     setMode(null);
+    setEndMembershipId(null);
     setWhen('now');
     setPlanId('');
     setEffectiveDate(todayIso());
@@ -137,6 +152,20 @@ export function MemberProductsPanel({ memberId, memberships, availablePlans }: P
       toast.warning(`Saved, but billing may be briefly out of date: ${result.billingError}`);
     }
     return true;
+  }
+
+  async function onAddAddon() {
+    if (!planId) return toast.error('Select a plan');
+    setSaving(true);
+    try {
+      const res = await adminAddAddon({ member_id: memberId, plan_id: planId });
+      if (surface(res, 'Add-on membership created')) {
+        close();
+        router.refresh();
+      }
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function onAssign() {
@@ -206,10 +235,11 @@ export function MemberProductsPanel({ memberId, memberships, availablePlans }: P
   }
 
   async function onEnd() {
-    if (!active) return;
+    const membershipId = endMembershipId ?? active?.id;
+    if (!membershipId) return;
     setSaving(true);
     try {
-      const res = await adminEndPlan({ member_id: memberId, membership_id: active.id, end_date: endDate, reason: reason || undefined });
+      const res = await adminEndPlan({ member_id: memberId, membership_id: membershipId, end_date: endDate, reason: reason || undefined });
       if (surface(res, 'Plan ended')) {
         close();
         router.refresh();
@@ -219,7 +249,9 @@ export function MemberProductsPanel({ memberId, memberships, availablePlans }: P
     }
   }
 
-  const historyRows = memberships.filter((m) => m.id !== active?.id && m.id !== upcoming?.id);
+  const historyRows = memberships.filter(
+    (m) => m.id !== active?.id && m.id !== upcoming?.id && !addons.some((a) => a.id === m.id),
+  );
 
   return (
     <Card>
@@ -233,12 +265,20 @@ export function MemberProductsPanel({ memberId, memberships, availablePlans }: P
             Source of truth: <code className="text-xs">memberships</code> → <code className="text-xs">plans</code>. Changes recalculate billing.
           </CardDescription>
         </div>
-        {!active && !upcoming && (
-          <Button size="sm" onClick={() => setMode('assign')} className="gap-2 shrink-0">
-            <Plus weight="light" className="h-4 w-4" />
-            Assign plan
-          </Button>
-        )}
+        <div className="flex shrink-0 flex-wrap gap-2">
+          {active && (
+            <Button size="sm" variant="outline" onClick={() => setMode('addon')} className="gap-2">
+              <Plus weight="light" className="h-4 w-4" />
+              Add add-on
+            </Button>
+          )}
+          {!active && !upcoming && (
+            <Button size="sm" onClick={() => setMode('assign')} className="gap-2">
+              <Plus weight="light" className="h-4 w-4" />
+              Assign plan
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="space-y-3">
         {/* Current plan */}
@@ -274,7 +314,7 @@ export function MemberProductsPanel({ memberId, memberships, availablePlans }: P
                 <ArrowClockwise weight="light" className="h-4 w-4" />
                 Change plan
               </Button>
-              <Button size="sm" variant="outline" className="gap-2 text-red-600" onClick={() => setMode('end')}>
+              <Button size="sm" variant="outline" className="gap-2 text-red-600" onClick={() => { setEndMembershipId(active.id); setMode('end'); }}>
                 <XCircle weight="light" className="h-4 w-4" />
                 End plan
               </Button>
@@ -291,6 +331,34 @@ export function MemberProductsPanel({ memberId, memberships, availablePlans }: P
               ? 'No current plan — the upcoming plan below starts automatically on its effective date.'
               : 'No active plan. Use “Assign plan” to add one.'}
           </p>
+        )}
+
+        {addons.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Add-ons</p>
+            {addons.map((m) => (
+              <div key={m.id} className="flex items-center justify-between rounded-lg border p-3 text-sm">
+                <div>
+                  <p className="font-medium">{membershipPlanName(m)}</p>
+                  <p className="text-slate-500">Effective {fmtDate(m.effective_date)}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <p>{fmtMoney(m.billing_amount)}/mo</p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-red-600"
+                    onClick={() => {
+                      setEndMembershipId(m.id);
+                      setMode('end');
+                    }}
+                  >
+                    End
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
         )}
 
         {/* Upcoming plan (scheduled change or future-dated enrollment) */}
@@ -345,12 +413,14 @@ export function MemberProductsPanel({ memberId, memberships, availablePlans }: P
       </CardContent>
 
       {/* Assign / Change dialog */}
-      <Dialog open={mode === 'assign' || mode === 'change'} onOpenChange={(o) => !o && close()}>
+      <Dialog open={mode === 'assign' || mode === 'change' || mode === 'addon'} onOpenChange={(o) => !o && close()}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{mode === 'assign' ? 'Assign plan' : 'Change plan'}</DialogTitle>
+            <DialogTitle>{mode === 'assign' ? 'Assign plan' : mode === 'addon' ? 'Add add-on' : 'Change plan'}</DialogTitle>
             <DialogDescription>
-              {mode === 'assign'
+              {mode === 'addon'
+                ? 'Layer another membership without cancelling the core plan. It gets its own billing schedule.'
+                : mode === 'assign'
                 ? 'Create an active membership for this member. Billing recalculates from the plan + covered dependents.'
                 : when === 'future'
                   ? 'Keep the current plan until the change date; the new plan starts (and billing switches) on that date automatically.'
@@ -421,11 +491,11 @@ export function MemberProductsPanel({ memberId, memberships, availablePlans }: P
           <DialogFooter>
             <Button variant="outline" onClick={close} disabled={saving}>Cancel</Button>
             <Button
-              onClick={mode === 'assign' ? onAssign : onChange}
+              onClick={mode === 'assign' ? onAssign : mode === 'addon' ? onAddAddon : onChange}
               disabled={saving || !planId || (mode === 'change' && when === 'future' && !changeDate)}
             >
               {saving && <CircleNotch weight="light" className="mr-2 h-4 w-4 animate-spin" />}
-              {mode === 'assign' ? 'Assign' : when === 'future' ? 'Schedule change' : 'Change'}
+              {mode === 'assign' ? 'Assign' : mode === 'addon' ? 'Add add-on' : when === 'future' ? 'Schedule change' : 'Change'}
             </Button>
           </DialogFooter>
         </DialogContent>

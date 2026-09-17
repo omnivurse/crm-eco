@@ -299,12 +299,16 @@ async function processCharge(
       await supabase.from('billing_failures').insert({
         organization_id: organizationId,
         billing_schedule_id: input.billingScheduleId,
-        transaction_id: transaction.id,
+        billing_transaction_id: transaction.id,
         member_id: input.memberId,
         amount: input.amount,
         failure_reason: errorMessage,
         failure_code: errorCode,
-        failed_at: new Date().toISOString(),
+        status: 'pending',
+        resolved: false,
+        retry_attempt: 0,
+        retry_scheduled: true,
+        next_retry_date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       });
     }
 

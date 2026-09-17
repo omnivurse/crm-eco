@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { Input, Label, Button, Card, CardContent } from '@crm-eco/ui';
 import { Loader2, ArrowRight, AlertTriangle, Check } from 'lucide-react';
+import { enrollmentCopy, type EnrollmentLocale } from '../../i18n';
+import type { EnrollmentLegalDocument } from '../../documents';
 
 interface ComplianceData {
   acknowledged_not_insurance?: boolean;
@@ -16,12 +18,16 @@ interface SelfServeComplianceStepProps {
   data?: ComplianceData;
   onComplete: (data: ComplianceData) => void;
   loading: boolean;
+  locale?: EnrollmentLocale;
+  documents?: EnrollmentLegalDocument[];
 }
 
 export function SelfServeComplianceStep({
   data,
   onComplete,
   loading,
+  locale = 'en',
+  documents = [],
 }: SelfServeComplianceStepProps) {
   const [formData, setFormData] = useState<ComplianceData>({
     acknowledged_not_insurance: data?.acknowledged_not_insurance || false,
@@ -78,13 +84,29 @@ export function SelfServeComplianceStep({
                 Important: Please Read Carefully
               </h4>
               <p className="text-sm text-amber-800">
-                Before proceeding, you must understand and acknowledge the following
-                about health sharing programs. Take your time to read each section.
+                {enrollmentCopy(locale, 'complianceIntro')}
               </p>
             </div>
           </div>
         </CardContent>
       </Card>
+
+      {documents.length > 0 && (
+        <Card>
+          <CardContent className="pt-6 space-y-4">
+            <h4 className="font-semibold text-slate-900">{enrollmentCopy(locale, 'docsHeading')}</h4>
+            {documents.map((doc) => (
+              <article key={doc.id} className="rounded-md border bg-white p-3">
+                <h5 className="mb-2 text-sm font-medium text-slate-800">{doc.document_name}</h5>
+                <div
+                  className="prose prose-sm max-h-64 overflow-auto text-slate-700"
+                  dangerouslySetInnerHTML={{ __html: doc.content_html }}
+                />
+              </article>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Acknowledgment 1: Not Insurance */}
       <Card className={formData.acknowledged_not_insurance ? 'border-green-300 bg-green-50' : ''}>

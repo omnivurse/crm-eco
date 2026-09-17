@@ -437,9 +437,10 @@ serve(async (req) => {
           )
         `)
         .eq('status', 'pending')
-        .lte('next_retry_at', new Date().toISOString())
-        .lt('retry_count', orgConfig.max_retries)
-        .order('next_retry_at', { ascending: true })
+        .eq('resolved', false)
+        .lte('next_retry_date', new Date().toISOString().split('T')[0])
+        .lt('retry_attempt', orgConfig.max_retries)
+        .order('next_retry_date', { ascending: true })
         .limit(Math.floor(orgConfig.batch_size / 2));
 
       if (targetOrgId) {
@@ -481,8 +482,10 @@ serve(async (req) => {
                 .from('billing_failures')
                 .update({
                   status: 'resolved',
+                  resolved: true,
                   resolved_at: new Date().toISOString(),
-                  resolution_transaction_id: chargeResult.transactionId,
+                  resolution_type: 'payment_succeeded',
+                  resolution_notes: chargeResult.transactionId ?? null,
                 })
                 .eq('id', failure.id);
 
@@ -505,10 +508,9 @@ serve(async (req) => {
               await supabase
                 .from('billing_failures')
                 .update({
-                  retry_count: (failure.retry_count || 0) + 1,
-                  last_retry_at: new Date().toISOString(),
-                  next_retry_at: nextRetry.toISOString(),
-                  last_error: chargeResult.errorMessage,
+                  retry_attempt: (failure.retry_attempt || 0) + 1,
+                  next_retry_date: nextRetry.toISOString().split('T')[0],
+                  failure_reason: chargeResult.errorMessage ?? failure.failure_reason,
                 })
                 .eq('id', failure.id);
             }
@@ -661,15 +663,16 @@ async function processCharge(
     await supabase.from('billing_failures').insert({
       organization_id: schedule.organization_id,
       billing_schedule_id: schedule.id,
-      transaction_id: transaction.id,
+      billing_transaction_id: transaction.id,
       member_id: schedule.member_id,
       amount: schedule.amount,
       failure_reason: errorMessage,
       failure_code: error?.errorCode || error?.code,
-      failed_at: new Date().toISOString(),
       status: 'pending',
-      retry_count: 0,
-      next_retry_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      resolved: false,
+      retry_attempt: 0,
+      retry_scheduled: true,
+      next_retry_date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     });
 
     return { success: false, errorMessage };

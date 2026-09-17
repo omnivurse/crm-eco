@@ -35,6 +35,7 @@ const ENROLLMENT_URL =
 const navItems = [
   { label: 'Home', href: '/' },
   { label: 'Coverage', href: '/coverage' },
+  { label: 'Shop', href: '/shop' },
   { label: 'Services', href: '/services' },
   { label: 'Billing', href: '/billing' },
   { label: 'Needs', href: '/needs' },
@@ -55,6 +56,7 @@ export function PortalHeader() {
   const [scrolled, setScrolled] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [memberName, setMemberName] = useState<string>('');
+  const [employerHref, setEmployerHref] = useState<string | null>(null);
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
@@ -101,6 +103,15 @@ export function PortalHeader() {
           }
         }
       }
+
+      try {
+        const res = await fetch('/api/employer/session');
+        const body = await res.json();
+        const first = Array.isArray(body.sponsors) ? body.sponsors[0] : null;
+        setEmployerHref(first ? `/employer/${first.id}` : null);
+      } catch {
+        setEmployerHref(null);
+      }
     };
 
     queueMicrotask(() => fetchUser());
@@ -119,6 +130,10 @@ export function PortalHeader() {
       .toUpperCase()
       .slice(0, 2);
   };
+
+  const items = employerHref
+    ? [...navItems, { label: 'Employer', href: employerHref }]
+    : navItems;
 
   if (isAuthRoute) {
     return null;
@@ -152,7 +167,7 @@ export function PortalHeader() {
               className="ml-1 hidden flex-1 items-center justify-center gap-0.5 md:flex"
               aria-label="Primary"
             >
-              {navItems.map((item) => {
+              {items.map((item) => {
                 const isActive =
                   pathname === item.href ||
                   (item.href !== '/' && pathname.startsWith(item.href));
@@ -222,6 +237,15 @@ export function PortalHeader() {
                       <FileText weight="light" className="mr-3 h-4 w-4 text-primary" aria-hidden />
                       <span className="font-medium">Documents</span>
                     </DropdownMenuItem>
+                    {employerHref && (
+                      <DropdownMenuItem
+                        onClick={() => router.push(employerHref)}
+                        className="cursor-pointer px-4 py-2.5"
+                      >
+                        <Users weight="light" className="mr-3 h-4 w-4 text-primary" aria-hidden />
+                        <span className="font-medium">Employer</span>
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem
                       onClick={() => router.push('/settings')}
                       className="cursor-pointer px-4 py-2.5"
@@ -285,7 +309,7 @@ export function PortalHeader() {
           />
           <div className="absolute inset-x-3 top-[4.5rem] max-h-[calc(100dvh-6rem)] overflow-y-auto rounded-[1.75rem] border border-[rgba(11,109,133,0.08)] bg-white/95 p-3 shadow-[var(--mp-shadow-soft)] backdrop-blur-xl">
             <nav className="flex flex-col gap-0.5" aria-label="Mobile">
-              {navItems.map((item) => {
+              {items.map((item) => {
                 const isActive =
                   pathname === item.href ||
                   (item.href !== '/' && pathname.startsWith(item.href));

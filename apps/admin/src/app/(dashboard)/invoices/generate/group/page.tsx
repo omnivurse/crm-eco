@@ -37,7 +37,6 @@ export default function GenerateGroupInvoicePage() {
   const [groups, setGroups] = useState<InvoiceGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [organizationId, setOrganizationId] = useState<string | null>(null);
-  const [profileId, setProfileId] = useState<string | null>(null);
 
   // Form state
   const [selectedGroupId, setSelectedGroupId] = useState('');
@@ -46,6 +45,7 @@ export default function GenerateGroupInvoicePage() {
   const [dueDate, setDueDate] = useState(format(addDays(endOfMonth(new Date()), 15), 'yyyy-MM-dd'));
   const [isRetro, setIsRetro] = useState(false);
   const [retroReason, setRetroReason] = useState('');
+  const [taxRate, setTaxRate] = useState(0);
 
   // Generation state
   const [generating, setGenerating] = useState(false);
@@ -75,7 +75,6 @@ export default function GenerateGroupInvoicePage() {
 
       if (profile) {
         setOrganizationId((profile as { id: string; organization_id: string }).organization_id);
-        setProfileId((profile as { id: string; organization_id: string }).id);
       }
     }
 
@@ -124,167 +123,40 @@ export default function GenerateGroupInvoicePage() {
     }
 
     setGenerating(true);
-    setProgress(0);
+    setProgress(15);
     setResult(null);
 
     try {
-      // Create generation job
-      const { data: job, error: jobError } = await (supabase as any)
-        .from('invoice_generation_jobs')
-        .insert({
-          organization_id: organizationId,
-          job_type: 'group',
-          job_name: `Group Invoice - ${selectedGroup?.name} - ${periodStart}`,
-          invoice_group_id: selectedGroupId,
-          billing_period_start: periodStart,
-          billing_period_end: periodEnd,
-          due_date: dueDate,
-          is_retro: isRetro,
-          retro_reason: isRetro ? retroReason : null,
-          status: 'processing',
-          created_by: profileId,
-          started_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
-
-      if (jobError) throw jobError;
-
-      setProgress(10);
-
-      // Get group members
-      const { data: members, error: membersError } = await (supabase as any)
-        .from('invoice_group_members')
-        .select('member_id')
-        .eq('invoice_group_id', selectedGroupId);
-
-      if (membersError && membersError.code !== '42P01') throw membersError;
-
-      const memberIds = (members || []).map((m: { member_id: string }) => m.member_id);
-      setProgress(20);
-
-      if (memberIds.length === 0) {
-        // Update job as failed
-        await (supabase as any)
-          .from('invoice_generation_jobs')
-          .update({
-            status: 'failed',
-            error_message: 'No members in the invoice group',
-            completed_at: new Date().toISOString(),
-          })
-          .eq('id', job.id);
-
-        toast.error('No members in the selected group');
-        setGenerating(false);
-        return;
-      }
-
-      // Get member details and their plans
-      const { data: memberDetails, error: memberError } = await supabase
-        .from('members')
-        .select('id, first_name, last_name, email, monthly_share')
-        .in('id', memberIds);
-
-      if (memberError) throw memberError;
-
-      setProgress(40);
-
-      // Generate invoices
-      let successCount = 0;
-      let failCount = 0;
-      let totalAmount = 0;
-
-      for (let i = 0; i < (memberDetails || []).length; i++) {
-        const member = memberDetails![i];
-        setProgress(40 + Math.floor((i / memberDetails!.length) * 50));
-
-        try {
-          // Generate invoice number
-          const invoiceNumber = `INV-${format(new Date(), 'yyyyMMdd')}-${String(successCount + 1).padStart(4, '0')}`;
-          const invoiceTotal = (member as { monthly_share?: number }).monthly_share || 0;
-
-          const { error: invoiceError } = await (supabase as any).from('invoices').insert({
-            organization_id: organizationId,
-            invoice_number: invoiceNumber,
-            member_id: (member as { id: string }).id,
-            status: 'draft',
-            subtotal: invoiceTotal,
-            discount_value: 0,
-            tax_amount: 0,
-            total: invoiceTotal,
-            amount_paid: 0,
-            balance_due: invoiceTotal,
-            due_date: dueDate,
-            generation_job_id: job.id,
-            is_retro: isRetro,
-            retro_reason: isRetro ? retroReason : null,
-          });
-
-          if (invoiceError) throw invoiceError;
-
-          successCount++;
-          totalAmount += invoiceTotal;
-        } catch (err) {
-          console.error('Error generating invoice for member:', (member as { id: string }).id, err);
-          failCount++;
-        }
-      }
-
-      setProgress(95);
-
-      // Update job with results
-      await (supabase as any)
-        .from('invoice_generation_jobs')
-        .update({
-          status: 'completed',
-          total_invoices: memberDetails!.length,
-          successful_invoices: successCount,
-          failed_invoices: failCount,
-          total_amount: totalAmount,
-          completed_at: new Date().toISOString(),
-          result_details: {
-            members_processed: memberDetails!.length,
-          },
-        })
-        .eq('id', job.id);
-
-      // Update group last generated
-      await (supabase as any)
-        .from('invoice_groups')
-        .update({
-          last_generated_at: new Date().toISOString(),
-          last_generated_by: profileId,
-        })
-        .eq('id', selectedGroupId);
-
-      // Log to audit
-      await (supabase as any).from('financial_audit_log').insert({
-        organization_id: organizationId,
-        action: 'invoice_batch_generated',
-        entity_type: 'invoice_generation_job',
-        entity_id: job.id,
-        performed_by: profileId,
-        details: {
-          group_id: selectedGroupId,
-          group_name: selectedGroup?.name,
-          total_invoices: successCount,
-          total_amount: totalAmount,
-          is_retro: isRetro,
-        },
+      const response = await fetch('/api/invoices/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mode: 'group',
+          groupId: selectedGroupId,
+          periodStart,
+          periodEnd,
+          dueDate,
+          isRetro,
+          retroReason,
+          taxRate,
+        }),
       });
+      setProgress(80);
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || 'Failed to generate invoices');
 
       setProgress(100);
       setResult({
-        total: memberDetails!.length,
-        successful: successCount,
-        failed: failCount,
-        totalAmount,
+        total: (payload.successful ?? 0) + (payload.failed ?? 0),
+        successful: payload.successful ?? 0,
+        failed: payload.failed ?? 0,
+        totalAmount: payload.totalAmount ?? 0,
       });
 
-      toast.success(`Generated ${successCount} invoices`);
+      toast.success(`Generated ${payload.successful ?? 0} invoices`);
     } catch (error) {
       console.error('Error generating invoices:', error);
-      toast.error('Failed to generate invoices');
+      toast.error(error instanceof Error ? error.message : 'Failed to generate invoices');
     } finally {
       setGenerating(false);
     }
@@ -385,9 +257,21 @@ export default function GenerateGroupInvoicePage() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label>Due Date</Label>
-                <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Due Date</Label>
+                  <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Sales tax %</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={taxRate}
+                    onChange={(e) => setTaxRate(parseFloat(e.target.value) || 0)}
+                  />
+                </div>
               </div>
             </CardContent>
           </Card>

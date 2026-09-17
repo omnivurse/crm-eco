@@ -11,6 +11,10 @@
     "./actions": "./src/actions/enrollment-actions.ts",
     "./types": "./src/types.ts"
   },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
   "dependencies": {
     "@crm-eco/lib": "*",
     "@crm-eco/rates": "*",
@@ -24,5 +28,9 @@
     "react": "^18.0.0 || ^19.0.0",
     "react-dom": "^18.0.0 || ^19.0.0",
     "sonner": ">=1.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3",
+    "vitest": "^1.6.0"
   }
 }

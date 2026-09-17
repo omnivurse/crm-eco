@@ -86,7 +86,11 @@ const PLAN = {
   data: { id: 'plan-premium', name: 'Premium Care', monthly_share: 350, is_active: true },
   error: null,
 };
-const CURRENT_ACTIVE = { data: { id: 'mem-old', plan_id: 'plan-care', end_date: null }, error: null };
+const CURRENT_ACTIVE = {
+  data: [{ id: 'mem-old', plan_id: 'plan-care', end_date: null, custom_fields: {} }],
+  error: null,
+};
+const NO_PENDING = { data: [], error: null };
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -109,7 +113,7 @@ describe('staffSchedulePlanChange', () => {
     const { supabase } = makeSupabase({
       members: [MEMBER],
       plans: [PLAN],
-      memberships: [{ data: null, error: null }], // no active membership
+      memberships: [{ data: [], error: null }], // no active membership
     });
     const result = await staffSchedulePlanChange(ctx(supabase), {
       member_id: 'member-1',
@@ -126,7 +130,7 @@ describe('staffSchedulePlanChange', () => {
       plans: [PLAN],
       memberships: [
         CURRENT_ACTIVE,
-        { data: { id: 'mem-pending', effective_date: '2099-10-01' }, error: null },
+        { data: [{ id: 'mem-pending', effective_date: '2099-10-01', custom_fields: { layer: 'core' } }], error: null },
       ],
     });
     const result = await staffSchedulePlanChange(ctx(supabase), {
@@ -158,7 +162,7 @@ describe('staffSchedulePlanChange', () => {
       plans: [PLAN],
       memberships: [
         CURRENT_ACTIVE,
-        { data: null, error: null }, // no existing pending
+        NO_PENDING,
         { data: { id: 'mem-new' }, error: null }, // insert result
         { data: null, error: null }, // end-date update
       ],
@@ -200,7 +204,8 @@ describe('staffSchedulePlanChange', () => {
       members: [MEMBER],
       plans: [PLAN],
       memberships: [
-        { data: { id: 'mem-old', plan_id: 'plan-care', end_date: '2099-06-30' }, error: null },
+        { data: [{ id: 'mem-old', plan_id: 'plan-care', end_date: '2099-06-30', custom_fields: {} }], error: null },
+        NO_PENDING,
       ],
     });
     const result = await staffSchedulePlanChange(ctx(supabase), {

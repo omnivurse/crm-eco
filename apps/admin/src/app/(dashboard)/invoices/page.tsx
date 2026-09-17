@@ -30,6 +30,7 @@ interface InvoiceView {
   id: string;
   invoice_number: string;
   contact_id: string | null;
+  member_id: string | null;
   status: string | null;
   subtotal: number | null;
   discount_value: number | null;
@@ -48,6 +49,23 @@ interface InvoiceView {
     title: string | null;
     email: string | null;
   } | null;
+  members?: {
+    first_name: string | null;
+    last_name: string | null;
+    email: string | null;
+  } | null;
+}
+
+function invoicePartyName(invoice: InvoiceView) {
+  const member = invoice.members;
+  if (member) {
+    const name = `${member.first_name ?? ''} ${member.last_name ?? ''}`.trim();
+    if (name) return { name, email: member.email ?? '' };
+  }
+  return {
+    name: invoice.contact?.title || '—',
+    email: invoice.contact?.email || '',
+  };
 }
 
 type StatusFilter = 'all' | 'draft' | 'sent' | 'paid' | 'partial' | 'overdue';
@@ -56,7 +74,6 @@ export default function InvoicesPage() {
   const [invoices, setInvoices] = useState<InvoiceView[]>([]);
   const [loading, setLoading] = useState(true);
   const [organizationId, setOrganizationId] = useState<string | null>(null);
-  const [profileId, setProfileId] = useState<string | null>(null);
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -70,6 +87,11 @@ export default function InvoicesPage() {
   // Modals
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<InvoiceView | null>(null);
+  const [showPayModal, setShowPayModal] = useState(false);
+  const [payAmount, setPayAmount] = useState('');
+  const [payKind, setPayKind] = useState<'payment' | 'credit'>('payment');
+  const [payMethod, setPayMethod] = useState('manual');
+  const [paying, setPaying] = useState(false);
 
   const supabase = createClient();
 
@@ -89,7 +111,6 @@ export default function InvoicesPage() {
       const profile = result.data as { id: string; organization_id: string } | null;
       if (profile) {
         setOrganizationId(profile.organization_id);
-        setProfileId(profile.id);
       }
     }
 
@@ -105,10 +126,11 @@ export default function InvoicesPage() {
         .from('invoices')
         .select(
           `
-          id, invoice_number, contact_id, status, subtotal, discount_value, tax_amount,
+          id, invoice_number, contact_id, member_id, status, subtotal, discount_value, tax_amount,
           total, amount_paid, balance_due, due_date, sent_at, paid_at, is_retro,
           generation_job_id, created_at,
-          contact:crm_records!contact_id(id, title, email)
+          contact:crm_records!contact_id(id, title, email),
+          members ( first_name, last_name, email )
         `
         )
         .eq('organization_id', organizationId)
@@ -144,10 +166,11 @@ export default function InvoicesPage() {
   const filteredInvoices = invoices.filter((inv) => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
+    const party = invoicePartyName(inv);
     return (
       inv.invoice_number?.toLowerCase().includes(query) ||
-      inv.contact?.title?.toLowerCase().includes(query) ||
-      inv.contact?.email?.toLowerCase().includes(query)
+      party.name.toLowerCase().includes(query) ||
+      party.email.toLowerCase().includes(query)
     );
   });
 
@@ -177,61 +200,68 @@ export default function InvoicesPage() {
 
   const handleSendInvoice = async (invoice: InvoiceView) => {
     try {
-      const { error } = await (supabase as any)
-        .from('invoices')
-        .update({
-          status: 'sent',
-          sent_at: new Date().toISOString(),
-        })
-        .eq('id', invoice.id);
-
-      if (error) throw error;
-
-      await (supabase as any).from('financial_audit_log').insert({
-        organization_id: organizationId,
-        action: 'invoice_sent',
-        entity_type: 'invoice',
-        entity_id: invoice.id,
-        performed_by: profileId,
-        details: { invoice_number: invoice.invoice_number, contact_id: invoice.contact_id },
-      });
-
-      toast.success('Invoice sent');
+      const response = await fetch(`/api/invoices/${invoice.id}/send`, { method: 'POST' });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || 'Failed to send invoice');
+      toast.success(payload.note || 'Invoice marked sent');
       fetchInvoices();
     } catch (error) {
       console.error('Error sending invoice:', error);
-      toast.error('Failed to send invoice');
+      toast.error(error instanceof Error ? error.message : 'Failed to send invoice');
     }
+  };
+
+  const handleApplyMoney = async (invoice: InvoiceView, amount: number, kind: 'payment' | 'credit') => {
+    const response = await fetch(`/api/invoices/${invoice.id}/payments`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amount, kind, paymentMethod: payMethod }),
+    });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.error || 'Could not apply amount');
+    return payload;
   };
 
   const handleMarkPaid = async (invoice: InvoiceView) => {
     try {
-      const { error } = await (supabase as any)
-        .from('invoices')
-        .update({
-          status: 'paid',
-          paid_at: new Date().toISOString(),
-          amount_paid: invoice.total,
-          balance_due: 0,
-        })
-        .eq('id', invoice.id);
-
-      if (error) throw error;
-
-      await (supabase as any).from('financial_audit_log').insert({
-        organization_id: organizationId,
-        action: 'invoice_paid',
-        entity_type: 'invoice',
-        entity_id: invoice.id,
-        performed_by: profileId,
-        details: { invoice_number: invoice.invoice_number, amount: invoice.total },
-      });
-
+      const remaining = invoice.balance_due ?? invoice.total ?? 0;
+      if (remaining <= 0) {
+        toast.error('Nothing left to collect');
+        return;
+      }
+      await handleApplyMoney(invoice, remaining, 'payment');
       toast.success('Invoice marked as paid');
       fetchInvoices();
     } catch (error) {
       console.error('Error marking invoice paid:', error);
-      toast.error('Failed to update invoice');
+      toast.error(error instanceof Error ? error.message : 'Failed to update invoice');
+    }
+  };
+
+  const openPayModal = (invoice: InvoiceView) => {
+    setSelectedInvoice(invoice);
+    setPayAmount(String(invoice.balance_due ?? invoice.total ?? ''));
+    setPayKind('payment');
+    setShowPayModal(true);
+  };
+
+  const submitPayModal = async () => {
+    if (!selectedInvoice) return;
+    const amount = Number(payAmount);
+    if (!(amount > 0)) {
+      toast.error('Enter an amount greater than zero');
+      return;
+    }
+    setPaying(true);
+    try {
+      await handleApplyMoney(selectedInvoice, amount, payKind);
+      toast.success(payKind === 'credit' ? 'Credit applied' : 'Payment applied');
+      setShowPayModal(false);
+      fetchInvoices();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not apply amount');
+    } finally {
+      setPaying(false);
     }
   };
 
@@ -272,6 +302,12 @@ export default function InvoicesPage() {
         description="Manage and generate member invoices"
         actions={
           <>
+            <Link href="/billing/collections">
+              <Button variant="outline" size="sm">
+                <Clock weight="light" className="h-4 w-4 sm:mr-1.5" aria-hidden />
+                <span className="hidden sm:inline">Collections</span>
+              </Button>
+            </Link>
             <Link href="/invoices/groups">
               <Button variant="outline" size="sm">
                 <Users weight="light" className="h-4 w-4 sm:mr-1.5" aria-hidden />
@@ -447,16 +483,15 @@ export default function InvoicesPage() {
                         </div>
                       </td>
                       <td className="py-3 px-4">
-                        {invoice.contact ? (
-                          <div>
-                            <p className="font-medium">
-                              {invoice.contact.title || '—'}
-                            </p>
-                            <p className="text-sm text-muted-foreground">{invoice.contact.email || ''}</p>
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
+                        {(() => {
+                          const party = invoicePartyName(invoice);
+                          return (
+                            <div>
+                              <p className="font-medium">{party.name}</p>
+                              <p className="text-sm text-muted-foreground">{party.email}</p>
+                            </div>
+                          );
+                        })()}
                       </td>
                       <td className="py-3 px-4 text-right font-medium">{formatCurrency(invoice.total ?? 0)}</td>
                       <td className="py-3 px-4 text-right">
@@ -487,9 +522,21 @@ export default function InvoicesPage() {
                           >
                             <Eye weight="light" className="h-4 w-4" />
                           </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => window.open(`/api/invoices/${invoice.id}/pdf`, '_blank')}
+                          >
+                            <DownloadSimple weight="light" className="h-4 w-4" />
+                          </Button>
                           {invoice.status === 'draft' && (
                             <Button variant="ghost" size="sm" onClick={() => handleSendInvoice(invoice)}>
                               <PaperPlaneTilt weight="light" className="h-4 w-4 text-blue-500" />
+                            </Button>
+                          )}
+                          {invoice.status !== 'paid' && (invoice.balance_due ?? 0) > 0 && (
+                            <Button variant="ghost" size="sm" onClick={() => openPayModal(invoice)}>
+                              <CurrencyDollar weight="light" className="h-4 w-4 text-amber-600" />
                             </Button>
                           )}
                           {invoice.status !== 'paid' && (invoice.balance_due ?? 0) > 0 && (
@@ -560,17 +607,13 @@ export default function InvoicesPage() {
                 {getStatusBadge(selectedInvoice.status ?? '', selectedInvoice.due_date)}
               </div>
 
-              {selectedInvoice.contact && (
-                <div className="flex items-center gap-3 p-3 border rounded-lg">
-                  <User weight="light" className="h-5 w-5 text-muted-foreground" />
-                  <div>
-                    <p className="font-medium">
-                      {selectedInvoice.contact.title || '—'}
-                    </p>
-                    <p className="text-sm text-muted-foreground">{selectedInvoice.contact.email || ''}</p>
-                  </div>
+              <div className="flex items-center gap-3 p-3 border rounded-lg">
+                <User weight="light" className="h-5 w-5 text-muted-foreground" />
+                <div>
+                  <p className="font-medium">{invoicePartyName(selectedInvoice).name}</p>
+                  <p className="text-sm text-muted-foreground">{invoicePartyName(selectedInvoice).email}</p>
                 </div>
-              )}
+              </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -636,6 +679,15 @@ export default function InvoicesPage() {
             <Button variant="outline" onClick={() => setShowDetailModal(false)}>
               Close
             </Button>
+            {selectedInvoice && (
+              <Button
+                variant="outline"
+                onClick={() => window.open(`/api/invoices/${selectedInvoice.id}/pdf`, '_blank')}
+              >
+                <DownloadSimple weight="light" className="h-4 w-4 mr-2" />
+                Print
+              </Button>
+            )}
             {selectedInvoice?.status === 'draft' && (
               <Button
                 onClick={() => {
@@ -644,7 +696,19 @@ export default function InvoicesPage() {
                 }}
               >
                 <PaperPlaneTilt weight="light" className="h-4 w-4 mr-2" />
-                PaperPlaneTilt Invoice
+                Mark sent
+              </Button>
+            )}
+            {selectedInvoice?.status !== 'paid' && selectedInvoice?.balance_due && selectedInvoice.balance_due > 0 && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowDetailModal(false);
+                  openPayModal(selectedInvoice);
+                }}
+              >
+                <CurrencyDollar weight="light" className="h-4 w-4 mr-2" />
+                Apply payment
               </Button>
             )}
             {selectedInvoice?.status !== 'paid' && selectedInvoice?.balance_due && selectedInvoice.balance_due > 0 && (
@@ -658,6 +722,50 @@ export default function InvoicesPage() {
                 Mark Paid
               </Button>
             )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showPayModal} onOpenChange={setShowPayModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Apply payment or credit</DialogTitle>
+            <DialogDescription>
+              {selectedInvoice
+                ? `Invoice ${selectedInvoice.invoice_number} · balance ${formatCurrency(selectedInvoice.balance_due ?? 0)}`
+                : 'Select an invoice'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <select
+              className="border rounded px-3 py-2 text-sm w-full"
+              value={payKind}
+              onChange={(e) => setPayKind(e.target.value as 'payment' | 'credit')}
+            >
+              <option value="payment">Payment</option>
+              <option value="credit">Credit</option>
+            </select>
+            <Input
+              type="number"
+              min="0.01"
+              step="0.01"
+              value={payAmount}
+              onChange={(e) => setPayAmount(e.target.value)}
+              placeholder="Amount"
+            />
+            <Input
+              value={payMethod}
+              onChange={(e) => setPayMethod(e.target.value)}
+              placeholder="Method (manual, check, card, credit)"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowPayModal(false)}>
+              Cancel
+            </Button>
+            <Button onClick={submitPayModal} disabled={paying}>
+              {paying ? 'Saving…' : 'Apply'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

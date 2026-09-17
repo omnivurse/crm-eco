@@ -27,12 +27,32 @@ function getCorsHeaders(req: Request): Record<string, string> {
   };
 }
 
-const RETRY_SCHEDULE = [
+const DEFAULT_RETRY_SCHEDULE = [
   { attempt: 1, daysAfterFailure: 1,  template: 'payment_failed_attempt_1' },
   { attempt: 2, daysAfterFailure: 4,  template: 'payment_failed_attempt_2' },
   { attempt: 3, daysAfterFailure: 7,  template: 'payment_failed_attempt_3' },
   { attempt: 4, daysAfterFailure: 14, template: 'payment_abandoned' },
 ];
+
+function parseDunningSchedule(value: unknown): Array<{ attempt: number; daysAfterFailure: number; template: string }> {
+  if (!Array.isArray(value) || value.length === 0) return DEFAULT_RETRY_SCHEDULE.map((step) => ({ ...step }));
+  const parsed = value
+    .map((row) => {
+      if (!row || typeof row !== 'object') return null;
+      const rec = row as Record<string, unknown>;
+      const attempt = Number(rec.attempt);
+      const daysAfterFailure = Number(rec.daysAfterFailure ?? rec.days_after_failure);
+      if (!Number.isFinite(attempt) || !Number.isFinite(daysAfterFailure)) return null;
+      return {
+        attempt,
+        daysAfterFailure,
+        template: typeof rec.template === 'string' ? rec.template : `payment_failed_attempt_${attempt}`,
+      };
+    })
+    .filter((row): row is { attempt: number; daysAfterFailure: number; template: string } => row != null)
+    .sort((a, b) => a.attempt - b.attempt);
+  return parsed.length ? parsed : DEFAULT_RETRY_SCHEDULE.map((step) => ({ ...step }));
+}
 
 interface RetryResult {
   failure_id: string;
@@ -67,11 +87,19 @@ serve(async (req) => {
 
     const jobRunId = await startJobRun(supabase, organization_id);
 
+    const { data: setting } = await supabase
+      .from('system_settings')
+      .select('setting_value')
+      .eq('organization_id', organization_id)
+      .eq('setting_key', 'dunning_schedule')
+      .maybeSingle();
+    const retrySchedule = parseDunningSchedule(setting?.setting_value);
+
     const { data: failures, error: failError } = await supabase
       .from('billing_failures')
       .select(`
-        id, organization_id, billing_schedule_id, retry_count, first_failed_at, last_attempted_at,
-        error_message, member_id,
+        id, organization_id, billing_schedule_id, billing_transaction_id, retry_attempt,
+        next_retry_date, created_at, failure_reason, member_id, status,
         billing_schedules!billing_failures_billing_schedule_id_fkey!inner(
           *,
           payment_profiles!billing_schedules_payment_profile_id_fkey(*)
@@ -80,7 +108,7 @@ serve(async (req) => {
       `)
       .eq('organization_id', organization_id)
       .eq('resolved', false)
-      .lt('retry_count', RETRY_SCHEDULE.length);
+      .lt('retry_attempt', retrySchedule.length);
 
     if (failError) {
       console.error('[BILLING-RETRY] Query error:', failError);
@@ -98,27 +126,39 @@ serve(async (req) => {
       || 'https://apitest.authorize.net/xml/v1/request.api';
 
     for (const failure of failures || []) {
-      const nextAttempt = (failure.retry_count ?? 0) + 1;
-      const schedule = RETRY_SCHEDULE[nextAttempt - 1];
+      const nextAttempt = (failure.retry_attempt ?? 0) + 1;
+      const schedule = retrySchedule.find((step) => step.attempt === nextAttempt);
       if (!schedule) {
         results.push({ failure_id: failure.id, status: 'skipped', attempt: nextAttempt });
         continue;
       }
 
-      const dueDate = new Date(failure.first_failed_at as string);
-      dueDate.setUTCDate(dueDate.getUTCDate() + schedule.daysAfterFailure);
+      const dueDate = failure.next_retry_date
+        ? new Date(`${failure.next_retry_date}T00:00:00Z`)
+        : new Date(failure.created_at as string);
+      if (!failure.next_retry_date) {
+        dueDate.setUTCDate(dueDate.getUTCDate() + schedule.daysAfterFailure);
+      }
       if (Date.now() < dueDate.getTime()) {
         results.push({ failure_id: failure.id, status: 'skipped', attempt: nextAttempt, message: 'Not yet due' });
         continue;
       }
 
+      const following = retrySchedule.find((step) => step.attempt === nextAttempt + 1);
+      const nextRetryDate = following
+        ? new Date(Date.now() + Math.max(following.daysAfterFailure - schedule.daysAfterFailure, 1) * 86400000)
+            .toISOString()
+            .split('T')[0]
+        : null;
+
       try {
-        if (nextAttempt === RETRY_SCHEDULE.length) {
+        if (!following) {
           await supabase
             .from('billing_failures')
             .update({
-              retry_count: nextAttempt,
-              last_attempted_at: new Date().toISOString(),
+              retry_attempt: nextAttempt,
+              next_retry_date: null,
+              retry_scheduled: false,
               status: 'abandoned',
             })
             .eq('id', failure.id);
@@ -136,8 +176,10 @@ serve(async (req) => {
             .update({
               resolved: true,
               resolved_at: new Date().toISOString(),
-              retry_count: nextAttempt,
-              last_attempted_at: new Date().toISOString(),
+              retry_attempt: nextAttempt,
+              next_retry_date: null,
+              status: 'resolved',
+              resolution_type: 'payment_succeeded',
             })
             .eq('id', failure.id);
 
@@ -147,9 +189,9 @@ serve(async (req) => {
           await supabase
             .from('billing_failures')
             .update({
-              retry_count: nextAttempt,
-              last_attempted_at: new Date().toISOString(),
-              error_message: charge.errorMessage ?? failure.error_message,
+              retry_attempt: nextAttempt,
+              next_retry_date: nextRetryDate,
+              failure_reason: charge.errorMessage ?? failure.failure_reason,
             })
             .eq('id', failure.id);
 

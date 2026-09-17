@@ -12,6 +12,8 @@
  * restricts to owner/admin/service_role. Callers verify staff authz with their
  * own client first; these functions re-assert org/membership ownership in code.
  */
+import { checkoutShopItems } from '../memberships/checkout';
+import { decideMembershipAdd, membershipLayerOf, withMembershipLayer } from '../memberships/layers';
 import { recalculateMemberBillingFromCoverage } from './membershipBillingRecalc';
 import type { StaffCoverageContext, StaffActionResult } from './staffDependentCoverage';
 
@@ -79,9 +81,8 @@ async function syncBilling(
 }
 
 /**
- * Assign a plan to a member (creates an active membership). Fails if the member
- * already has an active membership — use staffChangePlan or staffEndPlan first,
- * so a member always has at most one active plan.
+ * Assign a core plan to a member. Fails if they already have an active core
+ * plan — use staffChangePlan, staffEndPlan, or staffAddAddon instead.
  */
 export async function staffAssignPlan(
   ctx: StaffCoverageContext,
@@ -96,34 +97,51 @@ export async function staffAssignPlan(
   const planCheck = await getPlanInOrg(ctx, input.plan_id);
   if (!planCheck.success) return { success: false, error: planCheck.error };
 
-  const { data: existingActive } = await ctx.supabase
+  const { data: existingOpen } = await ctx.supabase
     .from('memberships')
-    .select('id')
+    .select('id, status, plan_id, sponsor_id, custom_fields')
     .eq('member_id', input.member_id)
     .eq('organization_id', ctx.organizationId)
-    .eq('status', 'active')
-    .limit(1)
-    .maybeSingle();
-  if (existingActive?.id) {
-    return {
-      success: false,
-      error: 'This member already has an active plan. Change or end it before assigning a new one.',
-    };
+    .in('status', ['active', 'pending']);
+  const allowed = decideMembershipAdd({
+    existing: (existingOpen ?? []) as Array<{
+      id: string;
+      status: string;
+      plan_id: string;
+      sponsor_id: string | null;
+      custom_fields: unknown;
+    }>,
+    next: { plan_id: input.plan_id, layer: 'core', sponsored: false },
+  });
+  if (!allowed.ok) {
+    return { success: false, error: allowed.error };
   }
 
-  const { data: inserted, error: insErr } = await ctx.supabase
-    .from('memberships')
-    .insert({
-      organization_id: ctx.organizationId,
-      member_id: input.member_id,
-      plan_id: input.plan_id,
-      status: 'active',
-      effective_date: input.effective_date,
-      billing_amount: planCheck.data!.monthly_share,
-      billing_frequency: 'monthly',
-    })
-    .select('id')
-    .single();
+  const coreRow = {
+    organization_id: ctx.organizationId,
+    member_id: input.member_id,
+    plan_id: input.plan_id,
+    status: 'active' as const,
+    effective_date: input.effective_date,
+    billing_amount: planCheck.data!.monthly_share,
+    billing_frequency: 'monthly',
+    layer: 'core',
+    custom_fields: withMembershipLayer({}, 'core'),
+  };
+  let inserted: { id: string } | null = null;
+  let insErr: { message?: string } | null = null;
+  const first = await ctx.supabase.from('memberships').insert(coreRow).select('id').single();
+  if (first.error && /column .*layer.*does not exist/i.test(first.error.message)) {
+    const withoutLayer = Object.fromEntries(
+      Object.entries(coreRow).filter(([key]) => key !== 'layer'),
+    );
+    const retry = await ctx.supabase.from('memberships').insert(withoutLayer).select('id').single();
+    inserted = retry.data;
+    insErr = retry.error;
+  } else {
+    inserted = first.data;
+    insErr = first.error;
+  }
 
   if (insErr || !inserted?.id) {
     return { success: false, error: insErr?.message ?? 'Failed to assign plan' };
@@ -131,6 +149,35 @@ export async function staffAssignPlan(
 
   const billingSync = await syncBilling(ctx, input.member_id);
   return { success: true, data: { membershipId: inserted.id }, ...billingSync };
+}
+
+/** Layer an add-on membership without cancelling the core plan. */
+export async function staffAddAddon(
+  ctx: StaffCoverageContext,
+  input: { member_id: string; plan_id: string },
+): Promise<StaffActionResult<{ membershipId: string; enrollmentId: string }>> {
+  if (!input.plan_id) return { success: false, error: 'A plan is required' };
+
+  const memberCheck = await assertMemberInOrg(ctx, input.member_id);
+  if (!memberCheck.success) return { success: false, error: memberCheck.error };
+
+  const planCheck = await getPlanInOrg(ctx, input.plan_id);
+  if (!planCheck.success) return { success: false, error: planCheck.error };
+
+  try {
+    const result = await checkoutShopItems(ctx.supabase, {
+      organizationId: ctx.organizationId,
+      memberId: input.member_id,
+      items: [{ item_type: 'plan', plan_id: input.plan_id }],
+      createdBy: ctx.profileId,
+      source: 'staff_addon',
+    });
+    const created = result.memberships[0];
+    if (!created) return { success: false, error: 'Add-on was not created' };
+    return { success: true, data: created };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Could not add the add-on' };
+  }
 }
 
 /** Change the plan on an existing membership. */
@@ -222,16 +269,15 @@ export async function staffSchedulePlanChange(
     };
   }
 
-  const { data: current, error: currentError } = await ctx.supabase
+  const { data: currentRows, error: currentError } = await ctx.supabase
     .from('memberships')
-    .select('id, plan_id, end_date')
+    .select('id, plan_id, end_date, custom_fields')
     .eq('member_id', input.member_id)
     .eq('organization_id', ctx.organizationId)
     .eq('status', 'active')
-    .order('effective_date', { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .order('effective_date', { ascending: false });
   if (currentError) return { success: false, error: currentError.message };
+  const current = (currentRows ?? []).find((row) => membershipLayerOf(row) === 'core') ?? null;
   if (!current) {
     return {
       success: false,
@@ -243,14 +289,15 @@ export async function staffSchedulePlanChange(
   // one (cron lag) that would otherwise end up as a second active membership.
   // Checked BEFORE the end-date guard so a member with a scheduled change gets
   // the actionable "cancel it first" message, not the misleading end-date one.
-  const { data: existingPending } = await ctx.supabase
+  const { data: existingPendingRows } = await ctx.supabase
     .from('memberships')
-    .select('id, effective_date')
+    .select('id, effective_date, custom_fields')
     .eq('member_id', input.member_id)
     .eq('organization_id', ctx.organizationId)
-    .eq('status', 'pending')
-    .limit(1)
-    .maybeSingle();
+    .eq('status', 'pending');
+  const existingPending = (existingPendingRows ?? []).find(
+    (row) => membershipLayerOf(row) === 'core' || asRecord(asRecord(row.custom_fields).scheduled_change).from_membership_id,
+  );
   if (existingPending?.id) {
     return {
       success: false,

@@ -350,7 +350,7 @@ export default async function BillingPage() {
               </div>
             </Link>
             <Link
-              href="/billing/invoices"
+              href="/invoices"
               className="block p-3 rounded-lg border hover:bg-slate-50 transition-colors"
             >
               <div className="flex items-center gap-3">

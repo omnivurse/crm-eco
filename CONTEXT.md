@@ -95,6 +95,71 @@ locality) comes from the `/codebase-design` skill; the terms below name the
 - **Billing** — recurring collection of member contributions. `billing_schedules`
   drive `billing_transactions`; failures land in `billing_failures`. Payment rails:
   Authorize.Net (active), Stripe (adapter, inactive), NACHA/ACH.
+  Member/group invoices live on the same `invoices` table (plus
+  `invoice_line_items` / `invoice_payments`). Generation, send, print, and
+  payment/credit writes go through admin `/api/invoices/*` — not a second
+  invoice engine. Recurring charges still do **not** auto-create invoices.
+  Dunning schedule is `system_settings.dunning_schedule` (default 1/4/7/14).
+  Patched edge functions on PIF-ECO-V2 (2026-09-13): `billing-retry` v14,
+  `process-billing` v41, `process-payment` v36 — live `billing_failures`
+  columns (`billing_transaction_id`, `retry_attempt`, `next_retry_date`).
+
+- **Sponsor (Employer / Plan Sponsor)** — a company that pays for employee
+  memberships. Not the tenant (`organizations`). Lives in `sponsors` with
+  `sponsor_plans`, `sponsor_roster`, `sponsorships`, and `sponsor_admins`.
+  One sponsor invoice per period (`invoices.payer_type = 'sponsor'`). Distinct
+  from `invoice_groups` (staff billing cohorts) and from `vendor_eligibility_runs`
+  (vendor sync stubs). See `docs/plans/2026-09-13-hint-parity-membership-os.md`.
+
+- **Sponsor Roster** — people the employer says are eligible (`sponsor_roster`).
+  Status: eligible | pending_approval | enrolled | terminated. Match on
+  first + last + DOB (normalized). A miss on employee signup waits for
+  employer-admin approval.
+
+- **Sponsorship** — the enrolled link of a roster person (or member) to a
+  sponsor (`sponsorships`): role `employee` | `spouse` | `child`. Finalize and
+  sponsor-paid provision write both `sponsorships.membership_id` and
+  `memberships.sponsor_id`. The eligibility job heals unlinked rows before
+  ending coverage. Sponsor-slug enroll skips the employee card; unmatched
+  people wait for employer Approve/Deny on portal `/employer`.
+
+- **Commercial terms** — plan-level quote adjustments stored on
+  `plans.metadata.commercial_terms`: group-size discounts, billing period /
+  period discounts, registration-fee family max, age min/max, advance vs
+  arrears. Applied inside `@crm-eco/rates` `quote()`. Not a second rate table.
+
+- **Membership layer** — a member may hold many `memberships` rows. `layer`
+  is `core` (household / health-share, at most one active) or `addon`
+  (own bill date, amount, schedule). At most one **sponsored** membership
+  (`sponsor_id` set). Plan-change still updates the core row; add-ons are
+  not cancel-and-recreate. Shop flags live on `plans.metadata.shop`.
+  Live on PIF-ECO-V2 (`memberships.layer` + unique indexes).
+
+- **Package** — prepaid bundle with remaining units (`packages` catalog +
+  `member_packages`). Not a recurring membership and not Cash Pay. Tax and
+  deferred-revenue remaining are stored on the purchase; utilization is
+  `member_package_redemptions`. Live on PIF-ECO-V2
+  (`membership_packages_shop` + `membership_packages_shop_grants`).
+
+- **Portal shop / cart** — member-facing catalog of purchasable add-on
+  plans and packages (`shop_carts`). Checkout **charges first** (member
+  default `payment_profiles` via Authorize.Net), then provisions an add-on
+  membership or a paid package invoice. Decline leaves no membership row.
+
+- **Enrollment locale / embed** — landing `meta.locale` (`en`|`es`) and
+  `meta.document_ids`. Public slug wizard localizes copy; rating still uses
+  existing sex fields. Embed: `/enroll/[slug]/embed` + `ENROLLMENT_EMBED_ORIGINS`.
+
+- **Public membership API** — CRM developer keys (`crm.read` / `crm.write`)
+  at `/api/public/v1/{plans,quotes,members,payment-methods,memberships,invoices,sponsors/:id/roster}`.
+  Webhook events `member.created`, `membership.updated`, `invoice.paid` need
+  the pending `20260914013000_phase5_membership_api_and_invites` migration
+  before those event names can be stored on `crm_webhooks`.
+
+- **Sponsor flags (default-safe)** — `SPONSOR_KNOWN_ROSTER_ENABLED` off;
+  `SPONSOR_EMAIL_ENABLED` off; `SPONSOR_ELIGIBILITY_JOB_ENABLED` on unless
+  `'false'`; `INVOICE_EMAIL_ENABLED` still dry-run; `ABANDONED_ENROLLMENT_EMAIL_ENABLED`
+  off. `last_invited_at` is coded but the live column is not applied yet.
 
 ---
 

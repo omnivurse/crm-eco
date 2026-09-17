@@ -16,6 +16,7 @@ const WEBHOOK_EVENTS = [
   'signal.fired', 'signal.resolved',
   'extension.installed', 'extension.uninstalled',
   'api_key.created', 'api_key.revoked',
+  'member.created', 'membership.updated', 'invoice.paid',
 ] as const;
 
 const AUTH_TYPES = ['hmac_sha256', 'basic', 'bearer', 'none'] as const;

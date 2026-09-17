@@ -7,6 +7,8 @@ alwaysApply: true
 
 Apply on every substantive coding task. The **Production Change Playbook** (separate rule) governs production-sensitive changes; these govern *all* coding work. When unsure, follow the stricter of the two.
 
+**Ship-fully policy** (`.cursor/rules/ship-fully-verify-before-next.mdc`): leave no gaps, prove tests/builds, and do not start the next phase until the current one is verified.
+
 ## 1. No-Assumptions Discovery
 Inspect the real repo before implementing. Never assume file paths, framework version, routing, DB schema, component library, auth model, env vars, API contracts, existing utilities, styling, package manager, or deploy target. Locate and read existing similar implementations first; identify the test/build/lint/typecheck commands; state what's confirmed vs unknown. Prefer extending the existing architecture over inventing a parallel one.
 

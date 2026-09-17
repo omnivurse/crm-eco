@@ -8,6 +8,9 @@ import {
   createHouseholdDependentsForEnrollment,
   buildAdultIntakeCustomFields,
   findEnrollmentByDraftIdempotencyKey,
+  bindSponsorEnrollmentAfterSubmit,
+  completeSponsorPaidEnrollment,
+  shouldProvisionSponsorPaidEnrollment,
 } from '@crm-eco/lib';
 import { createServiceRoleClient } from '@crm-eco/lib/supabase/server';
 import {
@@ -104,6 +107,7 @@ interface SubmitBody {
     lives_at_home?: boolean;
   }>;
   acknowledgments?: Record<string, boolean>;
+  locale?: 'en' | 'es';
 }
 
 /**
@@ -131,6 +135,7 @@ export async function POST(request: NextRequest) {
   }
 
   const { member, selected_plan_id, effective_date, household, acknowledgments } = body;
+  const locale = body.locale === 'es' || draft.data?.locale === 'es' ? 'es' : 'en';
   if (!member?.first_name || !member?.last_name || !member?.email) {
     return NextResponse.json({ error: 'missing_member_fields' }, { status: 400 });
   }
@@ -300,6 +305,7 @@ export async function POST(request: NextRequest) {
         recaptcha_score: captcha.score,
         acknowledgments: acknowledgments ?? {},
         household: household ?? [],
+        locale,
       }),
       dependents: dependentLinks,
     },
@@ -348,6 +354,22 @@ export async function POST(request: NextRequest) {
     .from('enrollments')
     .update(enrollmentUpdate)
     .eq('id', enrollmentId);
+
+  const sponsorBind = await bindSponsorEnrollmentAfterSubmit(supabase, {
+    organizationId: orgId,
+    enrollmentId,
+    memberId,
+    firstName: member.first_name,
+    lastName: member.last_name,
+    dateOfBirth: member.date_of_birth,
+    landingSlug: draft.slug,
+    requestedEffectiveDate: coverageStart,
+    selectedPlanId: selected_plan_id,
+    householdDependents: (household ?? []).filter((person) => {
+      const rel = (person.relationship || '').toLowerCase();
+      return rel === 'spouse' || rel === 'child' || rel === 'dependent';
+    }).length,
+  });
 
   // 5. Audit log
   await supabase.from('enrollment_audit_log').insert({
@@ -537,9 +559,32 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  let sponsorPaid = false;
+  if (
+    shouldProvisionSponsorPaidEnrollment(sponsorBind.outcome) &&
+    sponsorBind.sponsorId &&
+    selected_plan_id
+  ) {
+    try {
+      await completeSponsorPaidEnrollment(supabase as any, {
+        organizationId: orgId,
+        enrollmentId,
+        memberId,
+        sponsorId: sponsorBind.sponsorId,
+        planId: selected_plan_id,
+        amount: basePrice,
+        effectiveDate: coverageStart,
+      });
+      sponsorPaid = true;
+    } catch {
+      sponsorPaid = false;
+    }
+  }
+
   const response = NextResponse.json({
     enrollment_id: enrollmentId,
     redirect: `/enroll/${draft.slug}/done?id=${enrollmentId}`,
+    sponsor_paid: sponsorPaid,
   });
   clearDraftCookie(response);
   return response;

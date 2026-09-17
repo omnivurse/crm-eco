@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { requireAdminRole } from '@/lib/auth';
 import { getActiveTenant } from '@/lib/tenant';
-import { buildRateConfigFromDb } from '@crm-eco/rates';
+import { buildRateConfigFromDb, parseCommercialTerms } from '@crm-eco/rates';
 
 export const dynamic = 'force-dynamic';
 
@@ -77,22 +77,62 @@ export async function POST(request: NextRequest) {
       ageRatingBasis,
       rates,
       fees,
+      commercialTerms,
     } = body;
 
-    if (!planId || !rateSetKey) {
+    const mutatingRates = Boolean(
+      rateSetKey &&
+        (ageBands ||
+          rates ||
+          fees ||
+          label ||
+          effectiveDate ||
+          ratingModel ||
+          tobaccoConfig ||
+          maxDependentsPriced != null ||
+          ageRatingBasis)
+    );
+
+    if (!planId) {
+      return NextResponse.json({ error: 'planId is required' }, { status: 400 });
+    }
+    if (mutatingRates && !rateSetKey) {
+      return NextResponse.json({ error: 'rateSetKey is required when saving rates' }, { status: 400 });
+    }
+    if (!mutatingRates && commercialTerms === undefined) {
       return NextResponse.json({ error: 'planId and rateSetKey are required' }, { status: 400 });
     }
 
     // Verify plan belongs to org
     const { data: plan } = await supabase
       .from('plans')
-      .select('id, organization_id')
+      .select('id, organization_id, metadata')
       .eq('id', planId)
       .eq('organization_id', tenant.organizationId)
       .single();
 
     if (!plan) {
       return NextResponse.json({ error: 'Plan not found' }, { status: 404 });
+    }
+
+    if (commercialTerms !== undefined) {
+      const parsed = parseCommercialTerms(commercialTerms);
+      const metadata = {
+        ...(((plan as { metadata?: Record<string, unknown> | null }).metadata as Record<string, unknown> | null) ?? {}),
+      };
+      if (parsed) metadata.commercial_terms = parsed;
+      else delete metadata.commercial_terms;
+      const { error: metaErr } = await (supabase as any)
+        .from('plans')
+        .update({ metadata })
+        .eq('id', planId)
+        .eq('organization_id', tenant.organizationId);
+      if (metaErr) {
+        return NextResponse.json({ error: metaErr.message }, { status: 500 });
+      }
+      if (!mutatingRates) {
+        return NextResponse.json({ ok: true });
+      }
     }
 
     // Upsert rate set

@@ -28,7 +28,9 @@
     "./permissions": "./src/permissions/index.ts",
     "./csv/escape": "./src/csv/escape.ts",
     "./rate-limit": "./src/rate-limit.ts",
-    "./security/captcha": "./src/security/captcha.ts"
+    "./security/captcha": "./src/security/captcha.ts",
+    "./sponsors": "./src/sponsors/index.ts",
+    "./memberships": "./src/memberships/index.ts"
   },
   "scripts": {
     "test": "vitest run",

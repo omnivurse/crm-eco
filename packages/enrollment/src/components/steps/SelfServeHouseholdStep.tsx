@@ -5,11 +5,13 @@ import { Input, Label, Button, Card, CardContent, Badge, Checkbox } from '@crm-e
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@crm-eco/ui';
 import { Loader2, ArrowRight, Plus, Trash2, Users } from 'lucide-react';
 import type { HouseholdMember } from '../../types';
+import { enrollmentCopy, type EnrollmentLocale } from '../../i18n';
 
 interface SelfServeHouseholdStepProps {
   members: HouseholdMember[];
   onComplete: (members: HouseholdMember[]) => void;
   loading: boolean;
+  locale?: EnrollmentLocale;
 }
 
 const generateId = () => Math.random().toString(36).substring(2, 9);
@@ -27,6 +29,7 @@ export function SelfServeHouseholdStep({
   members: initialMembers,
   onComplete,
   loading,
+  locale = 'en',
 }: SelfServeHouseholdStepProps) {
   const [members, setMembers] = useState<HouseholdMember[]>(
     initialMembers.length > 0 ? initialMembers : []
@@ -144,7 +147,7 @@ export function SelfServeHouseholdStep({
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                   <div className="space-y-2">
-                    <Label>First Name *</Label>
+                    <Label>{enrollmentCopy(locale, 'firstName')} *</Label>
                     <Input
                       placeholder="First name"
                       value={member.first_name}
@@ -157,7 +160,7 @@ export function SelfServeHouseholdStep({
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Last Name *</Label>
+                    <Label>{enrollmentCopy(locale, 'lastName')} *</Label>
                     <Input
                       placeholder="Last name"
                       value={member.last_name}
@@ -170,7 +173,7 @@ export function SelfServeHouseholdStep({
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Date of Birth *</Label>
+                    <Label>{enrollmentCopy(locale, 'dob')} *</Label>
                     <Input
                       type="date"
                       value={member.date_of_birth}
@@ -183,7 +186,7 @@ export function SelfServeHouseholdStep({
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Relationship *</Label>
+                    <Label>{enrollmentCopy(locale, 'relationship')} *</Label>
                     <Select
                       value={member.relationship}
                       onValueChange={(value) => updateMember(member.id, 'relationship', value)}
@@ -192,9 +195,9 @@ export function SelfServeHouseholdStep({
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="spouse">Spouse</SelectItem>
-                        <SelectItem value="child">Child</SelectItem>
-                        <SelectItem value="dependent">Other Dependent</SelectItem>
+                        <SelectItem value="spouse">{enrollmentCopy(locale, 'spousePartner')}</SelectItem>
+                        <SelectItem value="child">{enrollmentCopy(locale, 'child')}</SelectItem>
+                        <SelectItem value="dependent">{enrollmentCopy(locale, 'otherDependent')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -208,7 +211,7 @@ export function SelfServeHouseholdStep({
                       }
                     />
                     <Label htmlFor={`${member.id}-lives-at-home`} className="font-normal">
-                      Lives at the same address
+                      {enrollmentCopy(locale, 'livesAtHome')}
                     </Label>
                   </div>
                 </div>

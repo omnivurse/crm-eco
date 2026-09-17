@@ -6,6 +6,8 @@ import {
   getFamilyCoverageSummary,
   listAgreementSignatures,
   listChangeRequests,
+  listActiveMemberships,
+  listMemberPackages,
 } from '@/lib/data/member';
 import { PlanCoverageCard } from '@/components/plan/PlanCoverageCard';
 import { formatCoverageDateRange, formatCoverageReason } from '@crm-eco/lib';
@@ -19,11 +21,13 @@ export default async function PlanOverviewPage() {
   const ctx = await requireActiveMembership();
   const supabase = await createServerSupabaseClient();
 
-  const [planOverview, familyCoverage, signatures, changeRequests, planDocs] = await Promise.all([
+  const [planOverview, familyCoverage, signatures, changeRequests, memberships, memberPackages, planDocs] = await Promise.all([
     getPlanOverview(),
     getFamilyCoverageSummary(),
     listAgreementSignatures(),
     listChangeRequests(),
+    listActiveMemberships(),
+    listMemberPackages(),
     supabase
       .from('legal_documents')
       .select('id, document_name, document_type, version, status')
@@ -55,7 +59,45 @@ export default async function PlanOverviewPage() {
         </Card>
       )}
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+      {memberships.filter((m) => (m.custom_fields as { layer?: string } | null)?.layer === 'addon').length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Add-on memberships</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            {memberships
+              .filter((m) => (m.custom_fields as { layer?: string } | null)?.layer === 'addon')
+              .map((m) => (
+                <div key={m.id} className="rounded-lg border p-3">
+                  <p className="font-medium text-slate-900">{(m.plans as { name?: string } | null)?.name ?? 'Add-on'}</p>
+                  <p className="text-xs text-slate-500">
+                    {m.billing_amount != null ? `$${m.billing_amount}/${m.billing_frequency || 'mo'}` : 'Active'}
+                  </p>
+                </div>
+              ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {memberPackages.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Packages</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            {memberPackages.map((row: any) => (
+              <div key={row.id} className="rounded-lg border p-3">
+                <p className="font-medium text-slate-900">{row.packages?.name ?? 'Package'}</p>
+                <p className="text-xs text-slate-500">
+                  {row.units_remaining} of {row.units_purchased} {row.packages?.unit_label ?? 'units'} remaining · {row.status}
+                </p>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
         <Link
           href="/dependents"
           className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:border-slate-300 hover:shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
@@ -65,6 +107,14 @@ export default async function PlanOverviewPage() {
           <p className="mt-1 text-xs text-slate-500">
             {familyCoverage.coveredCount} of {familyCoverage.totalDependents} currently on plan
           </p>
+        </Link>
+        <Link
+          href="/shop"
+          className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:border-slate-300 hover:shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+        >
+          <FileText weight="light" className="mb-3 h-6 w-6 text-[var(--mp-teal)]" />
+          <p className="font-semibold text-slate-900">Shop add-ons</p>
+          <p className="mt-1 text-xs text-slate-500">Layer another membership or buy a package</p>
         </Link>
         <Link
           href="/plan/change"

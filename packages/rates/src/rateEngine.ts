@@ -19,6 +19,7 @@ import type {
   AgeRatingBasis,
 } from './types';
 import { resolveEnrollmentContribution } from './enrollmentContribution';
+import { applyCommercialTerms, commercialAgeErrors, parseCommercialTerms } from './commercialTerms';
 
 // ──────────────────────────────────────────────
 // Public API
@@ -50,8 +51,12 @@ export function quote(
     ]);
   }
 
-  // 3. Validate coverage tier requirements
-  const tierErrors = validateCoverageTierHousehold(input);
+  // 3. Validate coverage tier requirements + commercial age limits
+  const terms = parseCommercialTerms(opts?.commercialTerms ?? plan.commercial_terms);
+  const tierErrors = [
+    ...validateCoverageTierHousehold(input),
+    ...commercialAgeErrors(terms, input.household),
+  ];
   if (tierErrors.length > 0) {
     return errorResult(rateSetKey, rateSet, input, tierErrors, plan);
   }
@@ -174,8 +179,27 @@ export function quote(
     }
   }
 
+  const commercial = applyCommercialTerms({
+    terms,
+    monthlyPremium,
+    oneTimeFees,
+    coverageTier: input.coverageTier,
+    household: input.household,
+    period: input.billingPeriod,
+  });
+  monthlyPremium = commercial.monthlyPremium;
+  const resolvedOneTimeFees = commercial.oneTimeFees;
+  breakdown.push(...commercial.breakdown);
+
   const totalMonthlyFees = monthlyFees.reduce((s, f) => s + f.amount, 0);
   const totalMonthly = round(monthlyPremium + totalMonthlyFees);
+
+  const groupDiscount = commercial.breakdown.find((line) =>
+    line.label.startsWith('Group-size discount')
+  );
+  const registrationCap = commercial.breakdown.find((line) =>
+    line.label.startsWith('Registration fee family max')
+  );
 
   const metadata: QuoteMetadata = {
     planId: plan.planId,
@@ -193,15 +217,33 @@ export function quote(
     ...(enrollmentContributionMeta
       ? { enrollmentContribution: enrollmentContributionMeta }
       : {}),
+    ...(commercial.period
+      ? {
+          commercial: {
+            groupSizeDiscount: groupDiscount ? Math.abs(groupDiscount.amount) : undefined,
+            registrationCappedBy: registrationCap ? Math.abs(registrationCap.amount) : undefined,
+            period: commercial.period,
+            periodAmount: commercial.periodAmount,
+            billingTiming: commercial.billingTiming,
+          },
+        }
+      : {}),
   };
 
   return {
     monthlyPremium,
     monthlyFees,
     totalMonthly,
-    oneTimeFees,
+    oneTimeFees: resolvedOneTimeFees,
     breakdown,
     metadata,
+    ...(commercial.period
+      ? {
+          billingPeriod: commercial.period,
+          billingTiming: commercial.billingTiming,
+          periodAmount: commercial.periodAmount,
+        }
+      : {}),
     ...(errors.length > 0 ? { errors } : {}),
   };
 }

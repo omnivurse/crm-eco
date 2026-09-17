@@ -32,6 +32,7 @@ import {
   Percent,
   SignOut,
   ChatCircle,
+  Warning,
 } from '@phosphor-icons/react';
 import { useTerminal } from '@/components/terminal';
 
@@ -71,6 +72,7 @@ const navSections: NavSection[] = [
     collapsible: true,
     items: [
       { label: 'Products', href: '/products', icon: icon(<Package weight="light" className="h-5 w-5" />) },
+      { label: 'Packages', href: '/products/packages', icon: icon(<Package weight="light" className="h-5 w-5" />) },
       { label: 'Carriers', href: '/carriers', icon: icon(<ShieldCheck weight="light" className="h-5 w-5" />) },
     ],
   },
@@ -79,6 +81,7 @@ const navSections: NavSection[] = [
     collapsible: true,
     items: [
       { label: 'Enrollments', href: '/enrollments', icon: icon(<FileText weight="light" className="h-5 w-5" />) },
+      { label: 'Sponsors', href: '/sponsors', icon: icon(<Buildings weight="light" className="h-5 w-5" />) },
       { label: 'Landing Pages', href: '/enrollment-links', icon: icon(<LinkIcon weight="light" className="h-5 w-5" />) },
       { label: 'Agent Links', href: '/enrollment-links/agents', icon: icon(<UserCircleGear weight="light" className="h-5 w-5" />) },
     ],
@@ -88,8 +91,10 @@ const navSections: NavSection[] = [
     collapsible: true,
     items: [
       { label: 'Overview', href: '/billing', icon: icon(<CreditCard weight="light" className="h-5 w-5" />) },
+      { label: 'Invoices', href: '/invoices', icon: icon(<FileText weight="light" className="h-5 w-5" />) },
+      { label: 'Collections', href: '/billing/collections', icon: icon(<ShieldCheck weight="light" className="h-5 w-5" />) },
       { label: 'Transactions', href: '/billing/transactions', icon: icon(<FileText weight="light" className="h-5 w-5" />) },
-      { label: 'Failed Payments', href: '/billing/failures', icon: icon(<ShieldCheck weight="light" className="h-5 w-5" />) },
+      { label: 'Failed Payments', href: '/billing/failures', icon: icon(<Warning weight="light" className="h-5 w-5" />) },
     ],
   },
   {

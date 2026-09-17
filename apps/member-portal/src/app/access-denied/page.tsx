@@ -23,6 +23,8 @@ export default async function AccessDeniedPage({ searchParams }: PageProps) {
         return 'You need an active membership to view this page. Enroll to get started — or contact support if you believe this is an error.';
       case 'inactive_member':
         return 'Your membership is not currently active, so the member portal is unavailable. If you believe this is an error or would like to reactivate, please contact support.';
+      case 'not_employer':
+        return 'This employer portal is only for people invited as a sponsor admin. Ask your administrator to add your email on the sponsor.';
       default:
         return 'You do not have permission to access this page.';
     }

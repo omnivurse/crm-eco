@@ -256,6 +256,83 @@ describe('quote — additive_person fixture', () => {
   });
 });
 
+describe('quote — commercial terms', () => {
+  const familyInput: QuoteInput = {
+    planId: 'demo-additive',
+    coverageTier: 'family',
+    household: { memberAge: 28, spouseAge: 30, dependentAges: [4, 7] },
+    coverageStart: '2025-06-01',
+  };
+
+  it('leaves seed quotes unchanged when no terms are set', () => {
+    const result = quote(config, {
+      planId: 'PIFH-MSA-IND-1250',
+      coverageTier: 'member',
+      household: { memberAge: 28 },
+      coverageStart: '2025-06-01',
+    });
+    expect(result.errors).toBeUndefined();
+    expect(result.monthlyPremium).toBe(197.1);
+    expect(result.billingPeriod).toBeUndefined();
+  });
+
+  it('applies group-size discount and period amount', () => {
+    const result = quote(additiveConfig, familyInput, {
+      commercialTerms: {
+        group_size_discounts: [{ min_lives: 3, percent: 10 }],
+        default_period: 'quarterly',
+        period_discounts: { quarterly: 0 },
+      },
+    });
+    expect(result.errors).toBeUndefined();
+    // 200 + 100 + 50 + 50 = 400, then 10% off
+    expect(result.monthlyPremium).toBe(360);
+    expect(result.periodAmount).toBe(1080);
+    expect(result.billingPeriod).toBe('quarterly');
+  });
+
+  it('caps registration-like one-time fees at the family max', () => {
+    const withFee: RateConfig = {
+      ...additiveConfig,
+      rate_sets: {
+        ...additiveConfig.rate_sets,
+        current: {
+          ...additiveConfig.rate_sets.current,
+          plans: [
+            {
+              ...additiveConfig.rate_sets.current.plans[0],
+              fees: [
+                {
+                  id: 'enrollment-contribution',
+                  label: 'Enrollment',
+                  type: 'flat_one_time',
+                  amount: 200,
+                  applies_to: 'enrollment',
+                  enabled: true,
+                },
+              ],
+            },
+          ],
+        },
+      },
+    };
+    const result = quote(
+      withFee,
+      { ...familyInput, coverageTier: 'member', household: { memberAge: 28 } },
+      { commercialTerms: { registration_fee_family_max: 80 } }
+    );
+    expect(result.oneTimeFees.find((fee) => fee.id === 'enrollment-contribution')?.amount).toBe(80);
+  });
+
+  it('rejects subscriber ages outside the configured range', () => {
+    const result = quote(additiveConfig, familyInput, {
+      commercialTerms: { min_age_years: 30 },
+    });
+    expect(result.errors?.some((error) => error.code === 'AGE_BELOW_MIN')).toBe(true);
+    expect(result.monthlyPremium).toBe(0);
+  });
+});
+
 describe('getPlanOptions / buildMatrixPreview', () => {
   it('lists six MSA plans', () => {
     const options = getPlanOptions(config, 'current');

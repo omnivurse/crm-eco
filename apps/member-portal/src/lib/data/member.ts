@@ -39,21 +39,44 @@ export const listMemberEnrollments = cache(async () => {
 });
 
 export const getActiveMembership = cache(async () => {
+  const rows = await listActiveMemberships();
+  return (
+    rows.find((row) => {
+      const custom = row.custom_fields as Record<string, unknown> | null;
+      return custom?.layer !== 'addon';
+    }) ??
+    rows[0] ??
+    null
+  );
+});
+
+export const listActiveMemberships = cache(async () => {
   const ctx = await requireActiveMembership();
   const supabase = await createServerSupabaseClient();
   const { data } = await supabase
     .from('memberships')
     .select(`
-      id, status, billing_amount, effective_date, end_date,
+      id, status, billing_amount, billing_frequency, effective_date, end_date, custom_fields,
       plans:plan_id (id, name, code, monthly_share, description)
     `)
     .eq('member_id', ctx.member.id)
     .eq('organization_id', ctx.member.organization_id)
     .eq('status', 'active')
-    .order('effective_date', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  return data;
+    .order('effective_date', { ascending: false });
+  return data ?? [];
+});
+
+export const listMemberPackages = cache(async () => {
+  const ctx = await requireActiveMembership();
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await (supabase as any)
+    .from('member_packages')
+    .select('id, units_purchased, units_remaining, status, price_paid, purchased_at, expires_at, packages:package_id (name, unit_label)')
+    .eq('member_id', ctx.member.id)
+    .eq('organization_id', ctx.member.organization_id)
+    .order('purchased_at', { ascending: false });
+  if (error?.code === '42P01' || (error?.message ?? '').includes('does not exist')) return [];
+  return data ?? [];
 });
 
 export interface PlanBenefit {
@@ -139,10 +162,10 @@ function extractBenefits(source: unknown): PlanBenefit[] | null {
 export const getPlanOverview = cache(async (): Promise<PlanOverview | null> => {
   const ctx = await requireActiveMembership();
   const supabase = await createServerSupabaseClient();
-  const { data } = await supabase
+  const { data: rows } = await supabase
     .from('memberships')
     .select(`
-      id, status, billing_amount, billing_frequency, effective_date, end_date, membership_number,
+      id, status, billing_amount, billing_frequency, effective_date, end_date, membership_number, custom_fields,
       plans:plan_id (
         id, name, brand_name, code, monthly_share, description,
         iua_amount, default_iua, plan_type, metadata, custom_fields
@@ -151,9 +174,12 @@ export const getPlanOverview = cache(async (): Promise<PlanOverview | null> => {
     .eq('member_id', ctx.member.id)
     .eq('organization_id', ctx.member.organization_id)
     .eq('status', 'active')
-    .order('effective_date', { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .order('effective_date', { ascending: false });
+
+  const data =
+    (rows ?? []).find((row) => (row.custom_fields as { layer?: string } | null)?.layer !== 'addon') ??
+    rows?.[0] ??
+    null;
 
   if (!data) return null;
 

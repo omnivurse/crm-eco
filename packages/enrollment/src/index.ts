@@ -33,3 +33,16 @@ export type {
 } from './types';
 
 export { ENROLLMENT_STEPS, ADULT_MEDICAL_OVERLAP_QUESTIONS } from './types';
+export {
+  detectEnrollmentLocale,
+  enrollmentCopy,
+  formatEnrollmentCopy,
+  localizedEnrollmentSteps,
+} from './i18n';
+export type { EnrollmentLocale } from './i18n';
+export {
+  parseLandingEnrollmentMeta,
+  resolveEnrollmentDocumentIds,
+  selectEnrollmentDocuments,
+} from './documents';
+export type { EnrollmentLegalDocument } from './documents';

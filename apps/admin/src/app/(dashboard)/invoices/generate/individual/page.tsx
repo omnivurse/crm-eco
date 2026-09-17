@@ -44,7 +44,6 @@ export default function GenerateIndividualInvoicePage() {
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [organizationId, setOrganizationId] = useState<string | null>(null);
-  const [profileId, setProfileId] = useState<string | null>(null);
 
   // MagnifyingGlass
   const [searchQuery, setSearchQuery] = useState('');
@@ -60,6 +59,7 @@ export default function GenerateIndividualInvoicePage() {
   const [isRetro, setIsRetro] = useState(false);
   const [retroReason, setRetroReason] = useState('');
   const [notes, setNotes] = useState('');
+  const [taxRate, setTaxRate] = useState(0);
 
   // Line items
   const [lineItems, setLineItems] = useState<LineItem[]>([
@@ -93,7 +93,6 @@ export default function GenerateIndividualInvoicePage() {
       const profile = result.data as { id: string; organization_id: string } | null;
       if (profile) {
         setOrganizationId(profile.organization_id);
-        setProfileId(profile.id);
       }
     }
 
@@ -195,7 +194,8 @@ export default function GenerateIndividualInvoicePage() {
   };
 
   const subtotal = lineItems.reduce((sum, item) => sum + item.amount, 0);
-  const total = subtotal; // No discount or tax in this simple version
+  const taxAmount = Math.round(subtotal * (Number(taxRate) || 0)) / 100;
+  const total = Math.round((subtotal + taxAmount) * 100) / 100;
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
@@ -220,76 +220,42 @@ export default function GenerateIndividualInvoicePage() {
     setGenerating(true);
 
     try {
-      // Generate invoice number
-      const invoiceNumber = `INV-${format(new Date(), 'yyyyMMddHHmmss')}`;
-
-      // Create invoice
-      const { data: invoice, error: invoiceError } = await (supabase as any)
-        .from('invoices')
-        .insert({
-          organization_id: organizationId,
-          invoice_number: invoiceNumber,
-          member_id: selectedMember.id,
-          status: 'draft',
-          subtotal: subtotal,
-          discount_value: 0,
-          tax_amount: 0,
-          total: total,
-          amount_paid: 0,
-          balance_due: total,
-          due_date: dueDate,
-          is_retro: isRetro,
-          retro_reason: isRetro ? retroReason : null,
+      const response = await fetch('/api/invoices/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mode: 'member',
+          memberId: selectedMember.id,
+          dueDate,
+          periodStart,
+          periodEnd,
           notes: notes || null,
-        })
-        .select()
-        .single();
-
-      if (invoiceError) throw invoiceError;
-
-      // Create line items
-      const lineItemsToInsert = lineItems
-        .filter((item) => item.amount > 0)
-        .map((item) => ({
-          invoice_id: invoice.id,
-          description: item.description,
-          quantity: item.quantity,
-          unit_price: item.unitPrice,
-          amount: item.amount,
-        }));
-
-      if (lineItemsToInsert.length > 0) {
-        const { error: itemsError } = await (supabase as any).from('invoice_line_items').insert(lineItemsToInsert);
-
-        if (itemsError) throw itemsError;
-      }
-
-      // Log to audit
-      await (supabase as any).from('financial_audit_log').insert({
-        organization_id: organizationId,
-        action: 'invoice_created',
-        entity_type: 'invoice',
-        entity_id: invoice.id,
-        performed_by: profileId,
-        details: {
-          invoice_number: invoiceNumber,
-          member_id: selectedMember.id,
-          member_name: `${selectedMember.first_name} ${selectedMember.last_name}`,
-          total: total,
-          is_retro: isRetro,
-        },
+          isRetro,
+          retroReason,
+          taxRate,
+          lines: lineItems
+            .filter((item) => item.amount > 0)
+            .map((item) => ({
+              name: item.description || 'Line',
+              description: item.description || null,
+              quantity: item.quantity,
+              unit_price: item.unitPrice,
+            })),
+        }),
       });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || 'Failed to generate invoice');
 
       setGeneratedInvoice({
-        id: invoice.id,
-        invoice_number: invoiceNumber,
-        total: total,
+        id: payload.id,
+        invoice_number: payload.invoice_number,
+        total: Number(payload.total) || total,
       });
 
       toast.success('Invoice generated successfully');
     } catch (error) {
       console.error('Error generating invoice:', error);
-      toast.error('Failed to generate invoice');
+      toast.error(error instanceof Error ? error.message : 'Failed to generate invoice');
     } finally {
       setGenerating(false);
     }
@@ -434,9 +400,21 @@ export default function GenerateIndividualInvoicePage() {
                     <Input type="date" value={periodEnd} onChange={(e) => setPeriodEnd(e.target.value)} />
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label>Due Date</Label>
-                  <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Due Date</Label>
+                    <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Sales tax %</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={taxRate}
+                      onChange={(e) => setTaxRate(parseFloat(e.target.value) || 0)}
+                    />
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -567,6 +545,12 @@ export default function GenerateIndividualInvoicePage() {
                     <span className="text-muted-foreground">Subtotal</span>
                     <span>{formatCurrency(subtotal)}</span>
                   </div>
+                  {taxRate > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Tax ({taxRate}%)</span>
+                      <span>{formatCurrency(taxAmount)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between pt-2 border-t font-bold">
                     <span>Total</span>
                     <span className="text-lg">{formatCurrency(total)}</span>

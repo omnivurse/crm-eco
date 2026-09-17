@@ -89,13 +89,22 @@ export function MembershipCard({ membership }: MembershipCardProps) {
           </p>
         )}
 
-        <Link
-          href="/plan"
-          className="mt-4 inline-flex items-center gap-1 text-[0.8rem] font-semibold text-[var(--mp-teal)] transition-[gap] duration-500 hover:gap-1.5"
-        >
-          View details
-          <ArrowUpRight weight="light" className="h-3.5 w-3.5" aria-hidden />
-        </Link>
+        <div className="mt-4 flex flex-wrap gap-3">
+          <Link
+            href="/plan"
+            className="inline-flex items-center gap-1 text-[0.8rem] font-semibold text-[var(--mp-teal)] transition-[gap] duration-500 hover:gap-1.5"
+          >
+            View details
+            <ArrowUpRight weight="light" className="h-3.5 w-3.5" aria-hidden />
+          </Link>
+          <Link
+            href="/shop"
+            className="inline-flex items-center gap-1 text-[0.8rem] font-semibold text-[var(--mp-teal)] transition-[gap] duration-500 hover:gap-1.5"
+          >
+            Shop add-ons
+            <ArrowUpRight weight="light" className="h-3.5 w-3.5" aria-hidden />
+          </Link>
+        </div>
       </div>
     </Bezel>
   );

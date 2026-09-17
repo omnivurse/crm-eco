@@ -200,6 +200,14 @@ export default function BillingPage() {
       <PageHeader
         title="Billing & Payments"
         description="View your billing history and manage payment methods"
+        actions={
+          <Link href="/billing/invoices">
+            <Button variant="outline" size="sm">
+              <Receipt weight="light" className="mr-1.5 h-4 w-4" />
+              Invoices
+            </Button>
+          </Link>
+        }
       />
 
       {/* Summary Cards */}
