@@ -16,6 +16,9 @@ export function shouldSkipMemberChargeForSponsor(outcome: string): boolean {
 }
 
 /** Only a clean roster match may create the membership before employer review. */
-export function shouldProvisionSponsorPaidEnrollment(outcome: string): boolean {
-  return outcome === 'matched';
+export function shouldProvisionSponsorPaidEnrollment(
+  outcome: string,
+  needsApproval = false,
+): boolean {
+  return outcome === 'matched' && !needsApproval;
 }

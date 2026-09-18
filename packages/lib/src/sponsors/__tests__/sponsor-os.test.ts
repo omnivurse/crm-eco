@@ -174,6 +174,7 @@ describe('known roster and sponsor-paid enroll', () => {
     expect(shouldSkipMemberChargeForSponsor('needs_approval')).toBe(true);
     expect(shouldSkipMemberChargeForSponsor('no_sponsor')).toBe(false);
     expect(shouldProvisionSponsorPaidEnrollment('matched')).toBe(true);
+    expect(shouldProvisionSponsorPaidEnrollment('matched', true)).toBe(false);
     expect(shouldProvisionSponsorPaidEnrollment('needs_approval')).toBe(false);
   });
 

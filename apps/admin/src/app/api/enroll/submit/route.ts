@@ -505,7 +505,7 @@ export async function POST(request: NextRequest) {
     | { success: boolean; error?: string; placeholderPayment?: boolean }
     | undefined;
   if (
-    shouldProvisionSponsorPaidEnrollment(sponsorBind.outcome) &&
+    shouldProvisionSponsorPaidEnrollment(sponsorBind.outcome, sponsorBind.needsApproval) &&
     sponsorBind.sponsorId &&
     selected_plan_id
   ) {
