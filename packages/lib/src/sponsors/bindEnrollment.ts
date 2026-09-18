@@ -24,9 +24,11 @@ export async function bindSponsorEnrollmentAfterSubmit(
     householdDependents?: number;
     selectedPlanId?: string | null;
   }
-): Promise<{ sponsorId: string | null; outcome: string }> {
+): Promise<{ sponsorId: string | null; outcome: string; needsApproval: boolean }> {
   try {
-    if (!input.landingSlug) return { sponsorId: null, outcome: 'no_sponsor' };
+    if (!input.landingSlug) {
+      return { sponsorId: null, outcome: 'no_sponsor', needsApproval: false };
+    }
 
     const { data: landing } = await supabase
       .from('landing_pages')
@@ -36,7 +38,9 @@ export async function bindSponsorEnrollmentAfterSubmit(
       .maybeSingle();
 
     const sponsorId = (landing as { sponsor_id?: string | null } | null)?.sponsor_id ?? null;
-    if (!sponsorId) return { sponsorId: null, outcome: 'no_sponsor' };
+    if (!sponsorId) {
+      return { sponsorId: null, outcome: 'no_sponsor', needsApproval: false };
+    }
 
     const { data: sponsor } = await supabase
       .from('sponsors')
@@ -120,8 +124,8 @@ export async function bindSponsorEnrollmentAfterSubmit(
       data_after: { sponsor_id: sponsorId, outcome: decision.outcome },
     });
 
-    return { sponsorId, outcome: decision.outcome };
+    return { sponsorId, outcome: decision.outcome, needsApproval };
   } catch {
-    return { sponsorId: null, outcome: 'error' };
+    return { sponsorId: null, outcome: 'error', needsApproval: true };
   }
 }

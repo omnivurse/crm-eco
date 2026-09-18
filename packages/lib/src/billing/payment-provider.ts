@@ -342,13 +342,25 @@ export function registerPaymentProvider(name: string, factory: PaymentProviderFa
 let cached: PaymentProvider | null = null;
 
 /**
- * Resolve the active payment provider from env (PAYMENT_PROVIDER). Defaults to
- * the placeholder. The flow code calls this and never branches on the processor.
+ * Resolve the active payment provider from env (PAYMENT_PROVIDER). Local/test
+ * environments default to the placeholder; production always requires a real rail.
  */
 export function getPaymentProvider(): PaymentProvider {
   if (cached) return cached;
-  const name = (process.env.PAYMENT_PROVIDER || 'placeholder').toLowerCase();
-  const factory = REGISTRY.get(name) ?? REGISTRY.get('placeholder')!;
+  const configuredName = process.env.PAYMENT_PROVIDER?.trim().toLowerCase();
+  if (
+    process.env.NODE_ENV === 'production' &&
+    (!configuredName || configuredName === 'placeholder')
+  ) {
+    throw new Error(
+      'A real PAYMENT_PROVIDER is required in production. Refusing to use a no-op payment rail.',
+    );
+  }
+  const name = configuredName || 'placeholder';
+  const factory = REGISTRY.get(name);
+  if (!factory) {
+    throw new Error(`Unknown PAYMENT_PROVIDER "${name}". Refusing to use a no-op payment rail.`);
+  }
   cached = factory();
   return cached;
 }

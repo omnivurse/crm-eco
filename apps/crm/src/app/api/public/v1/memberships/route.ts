@@ -38,6 +38,35 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'member_id and plan_id are required' }, { status: 400 });
   }
 
+  // Service-role clients bypass RLS, and the database foreign keys do not include
+  // organization_id. Validate both references before creating a tenant-owned row.
+  const [{ data: member, error: memberError }, { data: plan, error: planError }] =
+    await Promise.all([
+      auth.supabase
+        .from('members')
+        .select('id')
+        .eq('id', body.member_id)
+        .eq('organization_id', auth.key.organization_id)
+        .is('merged_into_id', null)
+        .maybeSingle(),
+      auth.supabase
+        .from('plans')
+        .select('id')
+        .eq('id', body.plan_id)
+        .eq('organization_id', auth.key.organization_id)
+        .maybeSingle(),
+    ]);
+
+  if (memberError || planError) {
+    return NextResponse.json({ error: 'Could not validate membership references' }, { status: 500 });
+  }
+  if (!member || !plan) {
+    return NextResponse.json(
+      { error: 'Member or plan not found in the API key organization' },
+      { status: 404 },
+    );
+  }
+
   const activate = process.env.PUBLIC_API_MEMBERSHIP_ACTIVATE === 'true';
   const { data, error } = await auth.supabase
     .from('memberships')

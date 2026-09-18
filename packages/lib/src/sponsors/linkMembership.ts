@@ -36,14 +36,19 @@ export async function linkSponsorshipToMembership(
 
   if (byEnrollment.error) throw new Error(byEnrollment.error.message);
 
-  let rows = byEnrollment.data ?? [];
+  let rows = (byEnrollment.data ?? []).filter(
+    (row) => !input.sponsorId || row.sponsor_id === input.sponsorId,
+  );
 
-  if (rows.length === 0 && input.memberId) {
+  // A bare member can have multiple sponsorships. Only fall back when the
+  // caller supplies the exact sponsor partition to avoid cross-sponsor links.
+  if (rows.length === 0 && input.memberId && input.sponsorId) {
     const byMember = await supabase
       .from('sponsorships')
       .select('id, sponsor_id, status')
       .eq('organization_id', input.organizationId)
       .eq('member_id', input.memberId)
+      .eq('sponsor_id', input.sponsorId)
       .in('status', ['pending', 'active', 'needs_approval']);
     if (byMember.error) throw new Error(byMember.error.message);
     rows = byMember.data ?? [];

@@ -3,6 +3,8 @@ import { decideMembershipAdd, membershipLayerOf, parseShopTerms } from '../layer
 import { packagePurchaseAmounts, planPackageRedeem } from '../packages';
 import { buildShopCatalog, normalizeCartItems } from '../shop';
 import {
+  nextShopBillingDate,
+  requireSupportedShopBillingFrequency,
   shopChargeIdempotencyKey,
   shopPeriodAmountCents,
   shouldProvisionAfterShopCharge,
@@ -195,6 +197,18 @@ describe('shop charge-then-provision', () => {
   it('charges the period amount, not only one month', () => {
     expect(shopPeriodAmountCents(40, 'quarterly')).toBe(12000);
     expect(shopPeriodAmountCents(40, 'monthly')).toBe(4000);
+  });
+
+  it('moves recurring billing past the period collected at checkout', () => {
+    expect(nextShopBillingDate('2026-09-18', 'monthly')).toBe('2026-10-20');
+    expect(nextShopBillingDate('2026-09-18', 'quarterly')).toBe('2026-12-20');
+    expect(nextShopBillingDate('2026-09-18', 'annual')).toBe('2027-09-20');
+  });
+
+  it('rejects unsupported schedule frequencies before charging', () => {
+    expect(() => requireSupportedShopBillingFrequency('semi_annual')).toThrow(
+      /Unsupported recurring shop billing frequency/,
+    );
   });
 
   it('does not provision after a declined charge', () => {

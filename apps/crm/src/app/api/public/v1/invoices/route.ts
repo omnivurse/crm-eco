@@ -31,13 +31,22 @@ export async function POST(request: Request) {
 
   const body = (await request.json().catch(() => null)) as { invoice_id?: string; event?: string } | null;
   if (body?.event === 'invoice.paid' && body.invoice_id) {
-    const { data: invoice } = await auth.supabase
+    const { data: invoice, error: invoiceError } = await auth.supabase
       .from('invoices')
       .select('id, status, organization_id')
       .eq('id', body.invoice_id)
       .eq('organization_id', auth.key.organization_id)
       .maybeSingle();
+    if (invoiceError) {
+      return NextResponse.json({ error: 'Could not validate invoice status' }, { status: 500 });
+    }
     if (!invoice) return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
+    if (invoice.status !== 'paid') {
+      return NextResponse.json(
+        { error: 'invoice.paid can only be emitted for a paid invoice' },
+        { status: 409 },
+      );
+    }
     const webhook = await emitMembershipWebhook(
       auth.supabase,
       auth.key.organization_id,

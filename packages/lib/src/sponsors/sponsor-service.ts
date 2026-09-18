@@ -289,9 +289,11 @@ export async function applySponsorEligibilityEndings(
         .select('id')
         .eq('organization_id', organizationId)
         .eq('member_id', row.member_id)
+        .eq('sponsor_id', row.sponsor_id)
         .in('status', ['active', 'pending'])
         .limit(1)
         .maybeSingle();
+      if (found.error) throw new Error(found.error.message);
       membershipId = found.data?.id ?? null;
     }
     if (shouldHealSponsorshipLink(row.membership_id, membershipId) && membershipId) {
@@ -714,9 +716,11 @@ async function applyKnownRosterPlan(
       .select('id')
       .eq('organization_id', input.organizationId)
       .eq('member_id', memberId)
+      .eq('sponsor_id', input.sponsorId)
       .in('status', ['active', 'pending'])
       .limit(1)
       .maybeSingle();
+    if (existing.error) throw new Error(existing.error.message);
     let membershipId = existing.data?.id as string | undefined;
 
     if (!membershipId) {

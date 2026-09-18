@@ -561,7 +561,7 @@ export async function POST(request: NextRequest) {
 
   let sponsorPaid = false;
   if (
-    shouldProvisionSponsorPaidEnrollment(sponsorBind.outcome) &&
+    shouldProvisionSponsorPaidEnrollment(sponsorBind.outcome, sponsorBind.needsApproval) &&
     sponsorBind.sponsorId &&
     selected_plan_id
   ) {
