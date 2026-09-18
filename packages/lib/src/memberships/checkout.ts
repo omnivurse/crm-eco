@@ -5,9 +5,12 @@ import { decideMembershipAdd, parseShopTerms, withMembershipLayer } from './laye
 import { packagePurchaseAmounts } from './packages';
 import { normalizeCartItems } from './shop';
 import {
+  nextShopBillingDate,
+  requireSupportedShopBillingFrequency,
   shopChargeIdempotencyKey,
   shopChargePeriod,
   shopPeriodAmountCents,
+  shopPeriodMonths,
   shouldProvisionAfterShopCharge,
 } from './shopCharge';
 import type { MembershipLayerRow, ShopCartItemInput } from './types';
@@ -145,6 +148,7 @@ async function activateAddonPlan(
   if (plan.is_active === false) throw new Error('That plan is not available');
 
   const shop = parseShopTerms(plan.metadata);
+  const billingFrequency = requireSupportedShopBillingFrequency(shop.frequency);
   const allowed = decideMembershipAdd({
     existing: input.existing,
     next: { plan_id: plan.id, layer: 'addon', sponsored: false },
@@ -152,7 +156,9 @@ async function activateAddonPlan(
   if (allowed.ok === false) throw new Error(allowed.error);
 
   const amount = Number(plan.monthly_share) || 0;
-  const amountCents = shopPeriodAmountCents(amount, shop.frequency);
+  const amountCents = shopPeriodAmountCents(amount, billingFrequency);
+  const effectiveDate = todayIso();
+  const nextBillingDate = nextShopBillingDate(effectiveDate, billingFrequency);
   const profile = await defaultPaymentProfile(supabase, input.organizationId, input.memberId);
   const idem = shopChargeIdempotencyKey({
     memberId: input.memberId,
@@ -181,7 +187,6 @@ async function activateAddonPlan(
     throw new Error(charge.error ?? 'The payment was declined.');
   }
 
-  const effectiveDate = todayIso();
   const { data: enrollment, error: enrErr } = await supabase
     .from('enrollments')
     .insert({
@@ -211,21 +216,30 @@ async function activateAddonPlan(
     status: 'active',
     effective_date: effectiveDate,
     billing_amount: amount,
-    billing_frequency: shop.frequency ?? 'monthly',
+    billing_frequency: billingFrequency,
     layer: 'addon',
     custom_fields: withMembershipLayer({}, 'addon'),
   });
 
-  if (profile?.id) {
-    await supabase
-      .from('billing_schedules')
-      .update({
-        payment_profile_id: profile.id,
-        billing_frequency: shop.frequency ?? 'monthly',
-      })
-      .eq('enrollment_id', enrollment.id)
-      .eq('organization_id', input.organizationId)
-      .eq('status', 'active');
+  const { data: schedule, error: scheduleError } = await supabase
+    .from('billing_schedules')
+    .update({
+      ...(profile?.id ? { payment_profile_id: profile.id } : {}),
+      amount: amount * shopPeriodMonths(billingFrequency),
+      frequency: billingFrequency,
+      last_billed_date: effectiveDate,
+      next_billing_date: nextBillingDate,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('enrollment_id', enrollment.id)
+    .eq('organization_id', input.organizationId)
+    .eq('status', 'active')
+    .select('id')
+    .maybeSingle();
+  if (scheduleError || !schedule) {
+    throw new Error(
+      scheduleError?.message ?? 'Could not advance the recurring schedule after checkout',
+    );
   }
 
   return { membershipId: membership.id, enrollmentId: enrollment.id };
