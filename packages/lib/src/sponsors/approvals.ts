@@ -1,4 +1,13 @@
 export type SponsorshipDecision = 'approve' | 'deny';
+export type SponsorAdminRole = 'admin' | 'billing' | 'roster';
+
+export function canManageSponsorApprovals(role: string | null | undefined): boolean {
+  return role === 'admin';
+}
+
+export function canManageSponsorRoster(role: string | null | undefined): boolean {
+  return role === 'admin' || role === 'roster';
+}
 
 export function planSponsorshipDecision(input: {
   currentStatus: string;

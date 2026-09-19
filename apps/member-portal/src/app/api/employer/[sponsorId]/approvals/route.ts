@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { applySponsorshipDecision } from '@crm-eco/lib';
+import { applySponsorshipDecision, canManageSponsorApprovals } from '@crm-eco/lib';
 import { createServiceRoleClient } from '@crm-eco/lib/supabase/server';
 import { requireEmployerSponsors } from '@/lib/employer';
 
@@ -15,6 +15,9 @@ export async function POST(
   const { sponsorId } = await params;
   const sponsor = ctx.sponsors.find((s) => s.id === sponsorId);
   if (!sponsor) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  if (!canManageSponsorApprovals(sponsor.role)) {
+    return NextResponse.json({ error: 'Sponsor admin role required' }, { status: 403 });
+  }
 
   const body = (await request.json().catch(() => null)) as {
     sponsorshipId?: string;
