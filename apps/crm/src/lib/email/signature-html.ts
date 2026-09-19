@@ -248,6 +248,17 @@ export function parseOfficialComposerId(id: string | null | undefined): string |
   return id.slice(OFFICIAL_SIGNATURE_COMPOSER_PREFIX.length);
 }
 
+/**
+ * Official catalog IDs exist only in composer state. Draft rows reference the
+ * UUID-backed `email_signatures` table, while the rendered HTML already carries
+ * the selected official mark.
+ */
+export function persistableSignatureId(id: string | null | undefined): string | null {
+  const value = id?.trim();
+  if (!value || parseOfficialComposerId(value)) return null;
+  return value;
+}
+
 export function isOfficialSignatureId(id: string | null | undefined): boolean {
   if (!id) return false;
   return OFFICIAL_SIGNATURES.some((mark) => mark.id === id || officialComposerId(mark.id) === id);
