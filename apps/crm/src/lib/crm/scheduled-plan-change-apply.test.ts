@@ -108,6 +108,13 @@ describe('buildScheduledPlanChangeUpdates', () => {
     expect(built!.followUpTaskId).toBe('task-1');
   });
 
+  it('also flips product_type so a stacked alias does not stay on the old plan', () => {
+    const rec = record();
+    rec.data = { ...rec.data, product_type: 'Care+' };
+    const data = buildScheduledPlanChangeUpdates(rec, TODAY)!.updates.data as Record<string, unknown>;
+    expect(data.product_type).toBe('Premium Care');
+  });
+
   it('updates every monthly key present on the record', () => {
     const rec = record();
     rec.data = { ...rec.data, monthly_premium: '250', monthly_amount: '250' };

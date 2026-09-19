@@ -75,7 +75,12 @@ import {
   shouldShowAddressFieldInForm,
 } from '@/lib/crm/address-field-dedupe';
 import { resolveCoverageSnapshotPlanType } from '@/lib/crm/coverage-snapshot-plan-type';
-import { selectHeroSharingField } from '@/lib/crm/coverage-snapshot-identity';
+import {
+  filterHeroCarrierCandidatesByPlanType,
+  filterHeroStartDateCandidatesByPlanType,
+  selectHeroSharingField,
+} from '@/lib/crm/coverage-snapshot-identity';
+import { isActiveCoverageLane } from '@/lib/crm/active-coverage-glance';
 import {
   dateValueToInputDisplay,
   maskDateTyping,
@@ -119,7 +124,8 @@ import {
 } from '@/lib/crm/coverage-end-date-fields';
 import { isNonMemberContact, shouldShowPartnerFieldInForm } from '@/lib/crm/partner-fields';
 import { shouldShowStartDateFieldInForm } from '@/lib/crm/product-start-date-fields';
-import { CalendarClock, ChevronDown, ChevronRight, Loader2, ShieldCheck, Heart, Shield } from 'lucide-react';
+import { ChevronDown, ChevronRight, Loader2, ShieldCheck, Heart, Shield } from 'lucide-react';
+import { CoverageSnapshotMembershipActions } from './v2/CoverageSnapshotMembershipActions';
 
 // Section accent palette — see section-accent-tokens.ts (shared with SectionNav).
 
@@ -1283,9 +1289,9 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
     [visibleFields, hasValue],
   );
 
-  const heroSharingField = useMemo(() => {
+  const heroCarrierCandidates = useMemo(() => {
     const isCarrierType = (f: CrmField) => f.type === 'select' || f.type === 'text';
-    const candidates = [
+    return [
       findFieldByKey('sharing_entity'),
       findFieldByKey('health_insurance_carrier'),
       findFieldByKey('insurance_carrier'),
@@ -1302,35 +1308,44 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
         isCarrierType,
       ),
     ].filter((f): f is CrmField => Boolean(f));
-
-    // Prefer a candidate whose value is *resolvable* (a carrier UUID or a real
-    // ministry name) over an ambiguous legacy value like `carrier: "Other"`, so
-    // a HealthShare member with `sharing_entity: <Sedera UUID>` never reads
-    // "Sharing Entity: Other". Falls back to first-populated, then placeholder.
-    return selectHeroSharingField({ candidates, values: defaultValues });
-  }, [findFieldByKey, findFieldInSection, matchByKeyPattern, defaultValues]);
+  }, [findFieldByKey, findFieldInSection, matchByKeyPattern]);
 
   // Classify the record's coverage as health-sharing vs insurance so the
   // snapshot shows ONE coherent set of terms — never an insurance Monthly
   // Premium next to a health-share Monthly Contribution — and so the carrier
   // row is labelled correctly. Logic lives in resolveCoverageSnapshotPlanType
-  // (conflict override: healthshare market_type + known insurer hero → insurance).
+  // (status-first: Active Insurance Client / Active HS Member; then market_type
+  // with conflict override: healthshare + known insurer hero → insurance).
   const recordPlanType = useMemo<'healthshare' | 'insurance' | 'unknown'>(() => {
-    const heroCarrierValue = heroSharingField
-      ? defaultValues[heroSharingField.key]
-      : undefined;
+    const provisionalHero = selectHeroSharingField({
+      candidates: heroCarrierCandidates,
+      values: defaultValues,
+    });
     const resolved = resolveCoverageSnapshotPlanType({
       values: defaultValues,
-      heroCarrierValue,
+      heroCarrierValue: provisionalHero ? defaultValues[provisionalHero.key] : undefined,
       hasValue,
     });
     // Field metadata can still tip an otherwise-unknown hero when market_type
     // and product aliases did not decide.
-    if (resolved !== 'unknown' || !heroSharingField) return resolved;
-    const byMeta = heroSharingField.metadata?.carrier_type;
+    if (resolved !== 'unknown' || !provisionalHero) return resolved;
+    const byMeta = provisionalHero.metadata?.carrier_type;
     if (byMeta === 'insurance' || byMeta === 'healthshare') return byMeta;
     return resolved;
-  }, [heroSharingField, defaultValues, hasValue]);
+  }, [heroCarrierCandidates, defaultValues, hasValue]);
+
+  // Prefer a candidate whose value is *resolvable* (a carrier UUID or a real
+  // ministry name) over an ambiguous legacy value like `carrier: "Other"`.
+  // After classification, drop the opposite product's keys so leftover
+  // sharing_entity / insurance carrier values cannot steal the identity rail.
+  const heroSharingField = useMemo(
+    () =>
+      selectHeroSharingField({
+        candidates: filterHeroCarrierCandidatesByPlanType(heroCarrierCandidates, recordPlanType),
+        values: defaultValues,
+      }),
+    [heroCarrierCandidates, recordPlanType, defaultValues],
+  );
 
   // Relabel the resolved carrier row so insurance vs health sharing read as
   // distinct (same field key, so inline edit still saves to the right field).
@@ -1362,8 +1377,9 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
       ),
     ].filter((f): f is CrmField => Boolean(f));
 
-    return candidates.find((f) => hasValue(f.key)) ?? candidates[0];
-  }, [findFieldByKey, findFieldInSection, matchByKeyPattern, hasValue]);
+    const filtered = filterHeroStartDateCandidatesByPlanType(candidates, recordPlanType);
+    return filtered.find((f) => hasValue(f.key)) ?? filtered[0];
+  }, [findFieldByKey, findFieldInSection, matchByKeyPattern, hasValue, recordPlanType]);
 
   // Referral context (source + referring member). Reps need this at a glance
   // when talking with a member, so we surface it in the snapshot instead of
@@ -1570,33 +1586,53 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
     // an empty HealthShare / Insurance coverage banner.
     if (isNonMemberContact(defaultValues)) return null;
 
+    const lifecycleStatus = String(defaultValues.status ?? defaultValues.contact_status ?? '');
+    const isActiveCoverage = isActiveCoverageLane(lifecycleStatus);
+    const activeGreen = {
+      wrap: 'border-emerald-300/80 from-emerald-100/90 ring-emerald-500/15 dark:border-emerald-500/35 dark:from-emerald-500/[0.14] dark:ring-emerald-400/15',
+      iconWrap: 'bg-emerald-600 text-white dark:bg-emerald-500 dark:text-white',
+      eyebrow: 'text-emerald-800 dark:text-emerald-200',
+      divider: 'bg-emerald-500/25 dark:bg-emerald-400/25',
+    };
     const accent =
-      recordPlanType === 'insurance'
+      isActiveCoverage && recordPlanType === 'insurance'
         ? {
             Icon: Shield,
-            label: 'Insurance Coverage',
-            wrap: 'border-blue-200/70 from-blue-50/80 ring-blue-500/10 dark:border-blue-500/25 dark:from-blue-500/[0.08] dark:ring-blue-400/10',
-            iconWrap: 'bg-blue-500/15 text-blue-700 dark:bg-blue-400/15 dark:text-blue-300',
-            eyebrow: 'text-blue-700 dark:text-blue-300',
-            divider: 'bg-blue-500/20 dark:bg-blue-400/20',
+            label: 'Active Insurance Plan',
+            ...activeGreen,
           }
-        : recordPlanType === 'healthshare'
+        : isActiveCoverage && recordPlanType === 'healthshare'
           ? {
               Icon: Heart,
-              label: 'HealthShare Coverage',
-              wrap: 'border-emerald-200/70 from-emerald-50/80 ring-emerald-500/10 dark:border-emerald-500/25 dark:from-emerald-500/[0.08] dark:ring-emerald-400/10',
-              iconWrap: 'bg-emerald-500/15 text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-300',
-              eyebrow: 'text-emerald-700 dark:text-emerald-300',
-              divider: 'bg-emerald-500/20 dark:bg-emerald-400/20',
+              label: 'Active Health Sharing Membership',
+              ...activeGreen,
             }
-          : {
-              Icon: ShieldCheck,
-              label: 'Coverage',
-              wrap: 'border-slate-200/80 from-slate-50/70 ring-slate-500/5 dark:border-slate-700/60 dark:from-slate-800/40 dark:ring-slate-400/5',
-              iconWrap: 'bg-slate-500/10 text-slate-600 dark:bg-slate-400/15 dark:text-slate-300',
-              eyebrow: 'text-slate-600 dark:text-slate-300',
-              divider: 'bg-slate-400/20 dark:bg-slate-500/30',
-            };
+        : recordPlanType === 'insurance'
+          ? {
+              Icon: Shield,
+              label: 'Insurance Coverage',
+              wrap: 'border-blue-200/70 from-blue-50/80 ring-blue-500/10 dark:border-blue-500/25 dark:from-blue-500/[0.08] dark:ring-blue-400/10',
+              iconWrap: 'bg-blue-500/15 text-blue-700 dark:bg-blue-400/15 dark:text-blue-300',
+              eyebrow: 'text-blue-700 dark:text-blue-300',
+              divider: 'bg-blue-500/20 dark:bg-blue-400/20',
+            }
+          : recordPlanType === 'healthshare'
+            ? {
+                Icon: Heart,
+                label: 'HealthShare Coverage',
+                wrap: 'border-emerald-200/70 from-emerald-50/80 ring-emerald-500/10 dark:border-emerald-500/25 dark:from-emerald-500/[0.08] dark:ring-emerald-400/10',
+                iconWrap: 'bg-emerald-500/15 text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-300',
+                eyebrow: 'text-emerald-700 dark:text-emerald-300',
+                divider: 'bg-emerald-500/20 dark:bg-emerald-400/20',
+              }
+            : {
+                Icon: ShieldCheck,
+                label: 'Coverage',
+                wrap: 'border-slate-200/80 from-slate-50/70 ring-slate-500/5 dark:border-slate-700/60 dark:from-slate-800/40 dark:ring-slate-400/5',
+                iconWrap: 'bg-slate-500/10 text-slate-600 dark:bg-slate-400/15 dark:text-slate-300',
+                eyebrow: 'text-slate-600 dark:text-slate-300',
+                divider: 'bg-slate-400/20 dark:bg-slate-500/30',
+              };
     const AccentIcon = accent.Icon;
 
     const staticView = snapshotStatic;
@@ -1637,6 +1673,8 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
     return (
       <div
         data-testid="crm-record-snapshot"
+        data-plan-type={recordPlanType}
+        data-active-coverage={isActiveCoverage ? 'true' : 'false'}
         className={cn('rounded-xl border bg-gradient-to-br to-transparent shadow-sm ring-1', accent.wrap)}
       >
         <div className="flex items-center justify-between gap-3 border-b border-black/5 px-3 py-2 dark:border-white/10">
@@ -1669,21 +1707,17 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
                   <p className="text-sm text-muted-foreground">Not set</p>
                 )}
               </div>
-              {(() => {
-                // Read-only chip for a pending scheduled plan change (CRM-only
-                // records; consumed by the apply-scheduled-plan-changes cron).
-                const spc = record?.data?.scheduled_plan_change as
-                  | { to_plan?: string; effective_date?: string }
-                  | null
-                  | undefined;
-                if (!spc || typeof spc !== 'object' || !spc.effective_date) return null;
-                return (
-                  <span className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-300">
-                    <CalendarClock className="h-3.5 w-3.5" />
-                    Upcoming: {spc.to_plan || 'plan change'} · starts {spc.effective_date}
-                  </span>
-                );
-              })()}
+              {record?.id && (recordPlanType === 'healthshare' || recordPlanType === 'insurance') ? (
+                <CoverageSnapshotMembershipActions
+                  recordId={record.id}
+                  recordTitle={record.title || ''}
+                  data={{
+                    ...((record.data as Record<string, unknown> | null) ?? {}),
+                    ...defaultValues,
+                  }}
+                  canEdit={inlineEditable || !readOnly}
+                />
+              ) : null}
             </div>
           </div>
 

@@ -20,6 +20,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { recalculateMemberBillingFromCoverage } from '@crm-eco/lib';
+import { projectActivatedPlanToCrmRecords } from '@/lib/crm/project-membership-to-crm';
 
 export type DuePendingMembership = {
   id: string;
@@ -342,16 +343,22 @@ async function applySupersede(
 async function refreshMemberAfterSwitch(
   supabase: SupabaseClient,
   candidate: SupersedeCandidate,
-): Promise<{ error?: string }> {
+): Promise<{ error?: string; planName?: string | null; iuaAmount?: number | null }> {
+  let planName: string | null = null;
+  let iuaAmount: number | null = null;
   if (candidate.incoming_plan_id) {
     const { data: plan } = await supabase
       .from('plans')
-      .select('name')
+      .select('name, iua_amount')
       .eq('id', candidate.incoming_plan_id)
       .maybeSingle();
 
+    planName = (plan?.name as string | null | undefined) ?? null;
+    const rawIua = (plan as { iua_amount?: number | null } | null)?.iua_amount;
+    iuaAmount = typeof rawIua === 'number' ? rawIua : null;
+
     const memberUpdate: Record<string, unknown> = { updated_at: new Date().toISOString() };
-    if (plan?.name) memberUpdate.plan_name = plan.name;
+    if (planName) memberUpdate.plan_name = planName;
     if (candidate.incoming_billing_amount != null) {
       memberUpdate.monthly_share = candidate.incoming_billing_amount;
     }
@@ -362,7 +369,7 @@ async function refreshMemberAfterSwitch(
       .eq('id', candidate.member_id);
 
     if (memberError) {
-      return { error: `member refresh ${candidate.member_id}: ${memberError.message}` };
+      return { error: `member refresh ${candidate.member_id}: ${memberError.message}`, planName, iuaAmount };
     }
   }
 
@@ -376,7 +383,7 @@ async function refreshMemberAfterSwitch(
     }
   }
 
-  return {};
+  return { planName, iuaAmount };
 }
 
 /**
@@ -470,8 +477,23 @@ export async function applyDueMembershipActivation(
     base.memberships_activated += (activated ?? []).length;
     activatedMemberIds.add(group[0].member_id);
 
-    const { error: refreshError } = await refreshMemberAfterSwitch(supabase, group[0]);
+    const { error: refreshError, planName, iuaAmount } = await refreshMemberAfterSwitch(
+      supabase,
+      group[0],
+    );
     if (refreshError) base.supersede_errors.push(refreshError);
+
+    if (group[0].organization_id && planName) {
+      const projected = await projectActivatedPlanToCrmRecords(supabase, {
+        memberId: group[0].member_id,
+        organizationId: group[0].organization_id,
+        planName,
+        monthly: group[0].incoming_billing_amount,
+        iua: iuaAmount,
+        effectiveDate: group[0].incoming_effective_date,
+      });
+      if (projected.error) base.supersede_errors.push(projected.error);
+    }
   }
 
   // 2. Plain first activations — PINNED to the due ids vetted this run that

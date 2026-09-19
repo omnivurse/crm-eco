@@ -9,7 +9,7 @@
  * effective date, from/to plan, IUA, monthly amounts, and free-text notes.
  */
 
-import { memo, useCallback, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ArrowUpCircle,
   ArrowDownCircle,
@@ -88,9 +88,9 @@ export interface MembershipChange {
    */
   change_status?: 'scheduled' | 'applied';
   applied_at?: string;
+  /** Billing catalog plan when this change also schedules an MMS membership. */
+  plan_id?: string;
 }
-
-const SCHEDULABLE_TYPES: MembershipChangeType[] = ['upgrade', 'downgrade', 'lateral'];
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -333,6 +333,7 @@ interface ChangeFormState {
   from_monthly: string;
   to_monthly: string;
   notes: string;
+  plan_id: string;
 }
 
 const EMPTY_FORM: ChangeFormState = {
@@ -345,15 +346,19 @@ const EMPTY_FORM: ChangeFormState = {
   from_monthly: '',
   to_monthly: '',
   notes: '',
+  plan_id: '',
 };
 
-function ChangeFormDialog({
+export function ChangeFormDialog({
   open,
   onClose,
   onSave,
   initial,
   currentData,
   syncedToMms,
+  billingPlans,
+  dialogTitle,
+  submitLabel,
 }: {
   open: boolean;
   onClose: () => void;
@@ -362,6 +367,9 @@ function ChangeFormDialog({
   /** Current record data to auto-populate "from" fields */
   currentData?: Record<string, unknown> | null;
   syncedToMms?: boolean;
+  billingPlans?: Array<{ id: string; name: string; monthly_share: number | null }>;
+  dialogTitle?: string;
+  submitLabel?: string;
 }) {
   const [form, setForm] = useState<ChangeFormState>(() => {
     if (initial) {
@@ -375,6 +383,7 @@ function ChangeFormDialog({
         from_monthly: initial.from_monthly ?? '',
         to_monthly: initial.to_monthly ?? '',
         notes: initial.notes ?? '',
+        plan_id: initial.plan_id ?? '',
       };
     }
     // Auto-populate "from" values from current record data
@@ -432,6 +441,7 @@ function ChangeFormDialog({
         ...(form.from_monthly && { from_monthly: form.from_monthly }),
         ...(form.to_monthly && { to_monthly: form.to_monthly }),
         ...(form.notes && { notes: form.notes }),
+        ...(form.plan_id && { plan_id: form.plan_id }),
         created_at: initial?.created_at ?? new Date().toISOString(),
         created_by: initial?.created_by,
         ...(initial?.follow_up_task_id && {
@@ -458,7 +468,7 @@ function ChangeFormDialog({
       <DialogContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10 max-w-lg">
         <DialogHeader>
           <DialogTitle className="text-slate-900 dark:text-white">
-            {initial ? 'Edit Plan Change' : 'Log a Plan Change'}
+            {dialogTitle ?? (initial ? 'Edit Plan Change' : 'Log a Plan Change')}
           </DialogTitle>
         </DialogHeader>
 
@@ -526,12 +536,42 @@ function ChangeFormDialog({
                 className="bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white placeholder:text-slate-400"
               />
               <ChevronRight className="w-4 h-4 text-slate-400" />
-              <Input
-                value={form.to_plan}
-                onChange={(e) => set('to_plan', e.target.value)}
-                placeholder="To plan"
-                className="bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white placeholder:text-slate-400"
-              />
+              {billingPlans && billingPlans.length > 0 ? (
+                <Select
+                  value={form.plan_id || form.to_plan}
+                  onValueChange={(v) => {
+                    const plan = billingPlans.find((p) => p.id === v);
+                    setForm((prev) => ({
+                      ...prev,
+                      plan_id: v,
+                      to_plan: plan?.name ?? prev.to_plan,
+                      to_monthly:
+                        plan?.monthly_share != null
+                          ? String(plan.monthly_share)
+                          : prev.to_monthly,
+                    }));
+                  }}
+                >
+                  <SelectTrigger className="bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white">
+                    <SelectValue placeholder="To plan" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10">
+                    {billingPlans.map((plan) => (
+                      <SelectItem key={plan.id} value={plan.id}>
+                        {plan.name}
+                        {plan.monthly_share != null ? ` · $${plan.monthly_share}` : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input
+                  value={form.to_plan}
+                  onChange={(e) => set('to_plan', e.target.value)}
+                  placeholder="To plan"
+                  className="bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white placeholder:text-slate-400"
+                />
+              )}
             </div>
           </div>
 
@@ -594,19 +634,12 @@ function ChangeFormDialog({
           </div>
 
           {form.date > localTodayIso() && (
-            syncedToMms ? (
-              <p className="text-xs rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 px-3 py-2.5 text-slate-600 dark:text-slate-300">
-                This member is managed in the enrollment system. To keep the current
-                plan and switch automatically on the date, schedule the change from the
-                Member Command Center — this entry only logs history.
-              </p>
-            ) : (
-              <p className="text-xs rounded-lg border border-amber-200 dark:border-amber-500/30 bg-amber-50/80 dark:bg-amber-500/10 px-3 py-2.5 text-slate-700 dark:text-slate-200">
-                <span className="font-semibold">Scheduled change:</span> the record keeps
-                its current plan until {formatDate(form.date)}, then Product, IUA and
-                monthly update automatically.
-              </p>
-            )
+            <p className="text-xs rounded-lg border border-amber-200 dark:border-amber-500/30 bg-amber-50/80 dark:bg-amber-500/10 px-3 py-2.5 text-slate-700 dark:text-slate-200">
+              <span className="font-semibold">Current stays until {formatDate(form.date)}.</span>{' '}
+              {syncedToMms
+                ? 'If this person has a billing membership, that plan switches the same day. Otherwise the CRM card flips and vendor billing still needs an ops change form.'
+                : 'Product, IUA and monthly update automatically on that date.'}
+            </p>
           )}
 
           {followUpEligible ? (
@@ -652,7 +685,7 @@ function ChangeFormDialog({
             {saving ? (
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
             ) : null}
-            {initial ? 'Save Changes' : 'Add Change'}
+            {submitLabel ?? (initial ? 'Save Changes' : 'Add Change')}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -721,6 +754,36 @@ export const MembershipChangeHistory = memo(function MembershipChangeHistory({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<MembershipChange | null>(null);
   const [collapsed, setCollapsed] = useState(changes.length > 4);
+  const [billingPlans, setBillingPlans] = useState<
+    Array<{ id: string; name: string; monthly_share: number | null }>
+  >([]);
+
+  // Catalog for MMS-linked records — empty list keeps the free-text "to plan".
+  useEffect(() => {
+    if (!dialogOpen || !recordId) return;
+    let cancelled = false;
+    void fetch(`/api/crm/records/${recordId}/schedule-membership-change`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then(
+        (json: {
+          plans?: Array<{ id: string; name: string; monthly_share: number | null }>;
+          has_active_core?: boolean;
+        } | null) => {
+          if (cancelled) return;
+          if (json?.has_active_core && Array.isArray(json.plans)) {
+            setBillingPlans(json.plans);
+          } else {
+            setBillingPlans([]);
+          }
+        },
+      )
+      .catch(() => {
+        if (!cancelled) setBillingPlans([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [dialogOpen, recordId]);
 
   // Persist changes array back to the record (local mirror updates first so
   // subsequent edits in this page view never rebuild from the stale prop).
@@ -777,87 +840,83 @@ export const MembershipChangeHistory = memo(function MembershipChangeHistory({
         toast.success(toastCopy.added('Plan change'));
       }
 
-      // Scheduled-change lane (CRM-only records): a strictly-future plan
-      // change stores a machine-readable data.scheduled_plan_change that the
-      // apply cron consumes on the effective date — no manual field flip.
-      // Member-synced records are excluded: the member sync replaces `data`
-      // wholesale, so their changes are scheduled in the Member Command Center.
-      const schedulable =
-        !syncedToMms &&
-        SCHEDULABLE_TYPES.includes(nextChange.type) &&
-        nextChange.date > localTodayIso() &&
-        Boolean(saveCtx);
-      const wasScheduled = nextChange.change_status === 'scheduled';
-
-      if (schedulable) {
-        nextChange = { ...nextChange, change_status: 'scheduled' };
-      } else if (wasScheduled && nextChange.change_status !== 'applied') {
-        // Edited a scheduled entry to a today/past date — it is no longer
-        // automated; drop the marker and the scheduled key below.
-        const { change_status: _drop, ...rest } = nextChange;
-        nextChange = rest as MembershipChange;
+      const res = await fetch(`/api/crm/records/${recordId}/schedule-membership-change`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: nextChange.type,
+          effective_date: nextChange.date,
+          ...(nextChange.from_plan && { from_plan: nextChange.from_plan }),
+          ...(nextChange.to_plan && { to_plan: nextChange.to_plan }),
+          ...(nextChange.from_iua && { from_iua: nextChange.from_iua }),
+          ...(nextChange.to_iua && { to_iua: nextChange.to_iua }),
+          ...(nextChange.from_monthly && { from_monthly: nextChange.from_monthly }),
+          ...(nextChange.to_monthly && { to_monthly: nextChange.to_monthly }),
+          ...(nextChange.notes && { notes: nextChange.notes }),
+          ...(nextChange.plan_id && { plan_id: nextChange.plan_id }),
+          ...(nextChange.follow_up_task_id && {
+            follow_up_task_id: nextChange.follow_up_task_id,
+          }),
+          change_id: nextChange.id,
+        }),
+      });
+      const json = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        warning?: string;
+        lane?: string;
+        data?: Record<string, unknown>;
+      };
+      if (!res.ok) {
+        toast.error(toastCopy.failed('save the plan change', json.error, 'Try again'));
+        return;
       }
 
-      let arr = [...sourceChanges];
-      const idx = arr.findIndex((c) => c.id === nextChange.id);
-      if (idx >= 0) {
-        arr[idx] = nextChange;
-      } else {
-        arr.push(nextChange);
-      }
-      if (schedulable) {
-        // Only ONE change can be scheduled (the key fires one change) — strip
-        // the marker from any other still-scheduled entry so it cannot claim
-        // it will auto-apply after this save re-points the key.
-        arr = arr.map((c) =>
-          c.id !== nextChange.id && c.change_status === 'scheduled'
-            ? (({ change_status: _drop, ...rest }) => rest as MembershipChange)(c)
-            : c,
-        );
-      }
-      await persistChanges(arr);
+      const nextData = json.data ?? {};
+      const nextChanges = Array.isArray(nextData.membership_changes)
+        ? (nextData.membership_changes as MembershipChange[])
+        : [];
+      setLocalChanges(nextChanges);
+      const nextSpc = nextData.scheduled_plan_change;
+      setLocalSpc(
+        nextSpc && typeof nextSpc === 'object'
+          ? (nextSpc as Record<string, unknown>)
+          : null,
+      );
 
-      if (saveCtx) {
-        if (schedulable) {
-          setLocalSpc({ change_id: nextChange.id, effective_date: nextChange.date });
-          await saveCtx.save('scheduled_plan_change', {
-            change_id: nextChange.id,
-            effective_date: nextChange.date,
-            ...(nextChange.to_plan && { to_plan: nextChange.to_plan }),
-            ...(nextChange.to_iua && { to_iua: nextChange.to_iua }),
-            ...(nextChange.to_monthly && { to_monthly: nextChange.to_monthly }),
-            ...(nextChange.from_plan && { from_plan: nextChange.from_plan }),
-            ...(nextChange.from_iua && { from_iua: nextChange.from_iua }),
-            ...(nextChange.from_monthly && { from_monthly: nextChange.from_monthly }),
-            scheduled_at: new Date().toISOString(),
-          });
-          toast.success(toastCopy.saved('Scheduled plan change'), {
-            description: `Product, IUA and monthly update automatically on ${formatDate(nextChange.date)}.`,
-          });
-        } else if (wasScheduled && currentSpc?.change_id === nextChange.id) {
-          setLocalSpc(null);
-          await saveCtx.save('scheduled_plan_change', null);
-        }
+      if (json.lane === 'mms' || json.lane === 'crm' || json.warning) {
+        toast.success(toastCopy.saved('Scheduled membership change'), {
+          description:
+            json.warning ||
+            (json.lane === 'mms'
+              ? 'Billing membership will switch on the effective date. Current plan stays until then.'
+              : `Current membership stays until ${formatDate(nextChange.date)}.`),
+        });
       }
 
       setDialogOpen(false);
       setEditing(null);
     },
-    [sourceChanges, currentSpc, persistChanges, recordId, recordTitle, saveCtx, syncedToMms],
+    [recordId, recordTitle],
   );
 
   const handleDelete = useCallback(
     async (id: string) => {
-      await persistChanges(sourceChanges.filter((c) => c.id !== id));
-
-      // Deleting the entry behind a pending scheduled change cancels it.
-      if (saveCtx && currentSpc?.change_id === id) {
+      if (currentSpc?.change_id === id) {
+        const res = await fetch(`/api/crm/records/${recordId}/schedule-membership-change`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'cancel' }),
+        });
+        if (!res.ok) {
+          const json = (await res.json().catch(() => ({}))) as { error?: string };
+          toast.error(toastCopy.failed('cancel the scheduled change', json.error, 'Try again'));
+          return;
+        }
         setLocalSpc(null);
-        await saveCtx.save('scheduled_plan_change', null);
-        toast.success(toastCopy.deleted('Scheduled plan change'));
       }
+      await persistChanges(sourceChanges.filter((c) => c.id !== id));
     },
-    [sourceChanges, currentSpc, persistChanges, saveCtx],
+    [sourceChanges, currentSpc, persistChanges, recordId],
   );
 
   // A scheduled key whose timeline entry is missing (e.g. a partial save) —
@@ -870,11 +929,19 @@ export const MembershipChangeHistory = memo(function MembershipChangeHistory({
       : null;
 
   const cancelOrphanSpc = useCallback(async () => {
-    if (!saveCtx) return;
+    const res = await fetch(`/api/crm/records/${recordId}/schedule-membership-change`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'cancel' }),
+    });
+    if (!res.ok) {
+      const json = (await res.json().catch(() => ({}))) as { error?: string };
+      toast.error(toastCopy.failed('cancel the scheduled change', json.error, 'Try again'));
+      return;
+    }
     setLocalSpc(null);
-    await saveCtx.save('scheduled_plan_change', null);
     toast.success(toastCopy.deleted('Scheduled plan change'));
-  }, [saveCtx]);
+  }, [recordId]);
 
   const visibleChanges = collapsed ? changes.slice(0, 3) : changes;
 
@@ -896,7 +963,7 @@ export const MembershipChangeHistory = memo(function MembershipChangeHistory({
             </Badge>
           )}
         </div>
-        {!readOnly && saveCtx && (
+        {!readOnly && (
           <Button
             variant="ghost"
             size="sm"
@@ -937,11 +1004,12 @@ export const MembershipChangeHistory = memo(function MembershipChangeHistory({
           <div className="text-center py-6">
             <ChevronsUpDown className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
             <p className="text-sm text-slate-500 dark:text-slate-400">
-              No plan changes recorded yet.
+              No upgrades recorded. Use Schedule change on the coverage card
+              — do not add a second current membership.
             </p>
-            {!readOnly && saveCtx && (
+            {!readOnly && (
               <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
-                Click &quot;Log Change&quot; to record an upgrade, downgrade, or plan switch.
+                Or click &quot;Log Change&quot; here for a past switch or cancellation.
               </p>
             )}
           </div>
@@ -1000,6 +1068,7 @@ export const MembershipChangeHistory = memo(function MembershipChangeHistory({
           initial={editing}
           currentData={data}
           syncedToMms={syncedToMms}
+          billingPlans={billingPlans}
         />
       )}
     </div>
