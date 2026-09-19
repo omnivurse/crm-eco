@@ -8,7 +8,11 @@ import { canAttachAnotherPlan, wouldExceedDependentCap } from '../caps';
 import { filterPlansForSponsor } from '../landingPlans';
 import { planKnownRosterEnroll } from '../knownRoster';
 import { shouldHealSponsorshipLink, shouldLinkSponsorship } from '../linkMembership';
-import { planSponsorshipDecision } from '../approvals';
+import {
+  canManageSponsorApprovals,
+  canManageSponsorRoster,
+  planSponsorshipDecision,
+} from '../approvals';
 import { shouldProvisionSponsorPaidEnrollment, shouldSkipMemberChargeForSponsor } from '../flags';
 import { employeeInviteHtml } from '../invites';
 
@@ -38,6 +42,22 @@ describe('decideEnrollmentMatch', () => {
       { roster_id: 'r2', status: 'eligible', relationship: 'employee', member_id: null },
     ]);
     expect(d.outcome).toBe('needs_approval');
+  });
+});
+
+describe('sponsor admin role permissions', () => {
+  it('reserves enrollment approvals for sponsor admins', () => {
+    expect(canManageSponsorApprovals('admin')).toBe(true);
+    expect(canManageSponsorApprovals('billing')).toBe(false);
+    expect(canManageSponsorApprovals('roster')).toBe(false);
+    expect(canManageSponsorApprovals('unknown')).toBe(false);
+  });
+
+  it('allows sponsor admins and roster managers to mutate the roster', () => {
+    expect(canManageSponsorRoster('admin')).toBe(true);
+    expect(canManageSponsorRoster('roster')).toBe(true);
+    expect(canManageSponsorRoster('billing')).toBe(false);
+    expect(canManageSponsorRoster(null)).toBe(false);
   });
 });
 

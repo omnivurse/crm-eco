@@ -1,6 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
-  applyInvoiceMoney,
   buildInvoiceHtml,
   computeBillingInvoiceTotals,
   type InvoiceLineInput,
@@ -233,45 +232,19 @@ export async function applyInvoicePayment(
 ) {
   if (!(input.amount > 0)) throw new Error('Amount must be greater than zero');
 
-  const { data: invoice, error } = await supabase
-    .from('invoices')
-    .select('id, total, amount_paid, status, organization_id')
-    .eq('id', input.invoiceId)
-    .eq('organization_id', input.organizationId)
-    .maybeSingle();
-  if (error || !invoice) throw new Error(error?.message ?? 'Invoice not found');
-
-  const next = applyInvoiceMoney({
-    total: Number(invoice.total) || 0,
-    amountPaid: Number(invoice.amount_paid) || 0,
-    application: input.amount,
-    previousStatus: invoice.status,
+  const { data, error } = await supabase.rpc('apply_invoice_payment_tx', {
+    p_organization_id: input.organizationId,
+    p_invoice_id: input.invoiceId,
+    p_amount: input.amount,
+    p_kind: input.kind,
+    p_payment_method: input.paymentMethod ?? null,
+    p_reference_number: input.referenceNumber ?? null,
+    p_notes: input.notes ?? null,
+    p_payment_date: input.paymentDate ?? null,
   });
+  if (error || !data) throw new Error(error?.message ?? 'Could not apply invoice payment');
 
-  const { error: payErr } = await supabase.from('invoice_payments').insert({
-    invoice_id: input.invoiceId,
-    amount: input.amount,
-    payment_method: input.kind === 'credit' ? input.paymentMethod || 'credit' : input.paymentMethod || 'manual',
-    payment_date: input.paymentDate || new Date().toISOString().slice(0, 10),
-    reference_number: input.referenceNumber ?? null,
-    notes: input.notes ?? (input.kind === 'credit' ? 'Credit applied' : null),
-  });
-  if (payErr) throw new Error(payErr.message);
-
-  const { error: updErr } = await supabase
-    .from('invoices')
-    .update({
-      amount_paid: next.amount_paid,
-      balance_due: next.balance_due,
-      status: next.status,
-      paid_at: next.status === 'paid' ? new Date().toISOString() : null,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', input.invoiceId)
-    .eq('organization_id', input.organizationId);
-  if (updErr) throw new Error(updErr.message);
-
-  return next;
+  return data as { amount_paid: number; balance_due: number; status: string };
 }
 
 export async function renderInvoiceHtml(

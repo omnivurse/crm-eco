@@ -8,6 +8,7 @@ import {
   buildPifhSignatureFromProfile,
   escapeHtml,
   officialComposerId,
+  persistableSignatureId,
   renderFullImageSignature,
   renderLayoutHtml,
   renderOfficialSignature,
@@ -131,6 +132,12 @@ describe('signature-html', () => {
     expect(merged[0]?.is_default).toBe(false);
     expect(merged.some((row) => row.id === 'saved-1' && row.is_default)).toBe(true);
     expect(merged[0]?.content_html).toContain('https://crm.doublehelixhub.com/signatures/pifh-signature-banner.png');
+  });
+
+  it('does not persist virtual official IDs into UUID signature references', () => {
+    expect(persistableSignatureId(officialComposerId('pifh-banner'))).toBeNull();
+    expect(persistableSignatureId('  saved-signature-id  ')).toBe('saved-signature-id');
+    expect(persistableSignatureId(null)).toBeNull();
   });
 
   it('prefixes bare websites with https', () => {

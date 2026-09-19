@@ -36,6 +36,7 @@ import { appendSignatureHtml, pickSignatureForCompose } from '@/app/crm/inbox/_c
 import { composeIsDirty } from '@/app/crm/inbox/_components/compose-dock';
 import {
   getSignatureOrigin,
+  persistableSignatureId,
   signatureNeedsBrandingRefresh,
   withOfficialComposerSignatures,
 } from '@/lib/email/signature-html';
@@ -244,7 +245,7 @@ export const EmailComposer = memo(function EmailComposer({
     bcc,
     subject,
     body_html: getFullBody(),
-    signature_id: signatureId || undefined,
+    signature_id: persistableSignatureId(signatureId) || undefined,
     attachments: attachments.filter(a => !a.is_uploading && !a.error),
   }), [
     senderAddressId,

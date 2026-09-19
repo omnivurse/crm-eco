@@ -1,5 +1,9 @@
 import { NextResponse } from 'next/server';
-import { addSponsorRosterPerson, importSponsorRoster } from '@crm-eco/lib';
+import {
+  addSponsorRosterPerson,
+  canManageSponsorRoster,
+  importSponsorRoster,
+} from '@crm-eco/lib';
 import { requireEmployerSponsors } from '@/lib/employer';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 
@@ -15,6 +19,9 @@ export async function POST(
   const { sponsorId } = await params;
   const sponsor = ctx.sponsors.find((s) => s.id === sponsorId);
   if (!sponsor) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  if (!canManageSponsorRoster(sponsor.role)) {
+    return NextResponse.json({ error: 'Roster manager role required' }, { status: 403 });
+  }
 
   const body = (await request.json().catch(() => null)) as {
     csvText?: string;
