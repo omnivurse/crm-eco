@@ -8,6 +8,7 @@ export * from './invoice-os';
 export * from './invoice-service';
 export * from './nacha';
 export * from './ach-vault';
+export * from './nacha-returns';
 export {
   AuthorizeNetPaymentProvider,
   createAuthorizeNetPaymentProvider,

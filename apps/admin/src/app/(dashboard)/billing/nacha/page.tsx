@@ -138,8 +138,9 @@ export default function NachaPage() {
               you have verified it. Automated SFTP is not live.
             </p>
             <p>
-              Cards stay on NMI. First-month and recurring ACH now queue here instead of charging
-              the card processor. Returns posting is still Phase 4.
+              Cards stay on NMI. First-month and recurring ACH queue here instead of charging
+              the card processor. Returns and NOCs post from the Returns page against originated
+              traces only. A missing return is not treated as success.
             </p>
           </div>
         </CardContent>
