@@ -299,6 +299,12 @@ export function RateQuoteCalculator({ defaultPlanId, rateSetOverride }: RateQuot
                       {result.billingTiming ? ` · ${result.billingTiming}` : ''}
                     </p>
                   )}
+                  {(result.memberMonthly != null || result.sponsorMonthly != null) && (
+                    <div className="mt-3 flex flex-wrap gap-4 text-sm text-white/80">
+                      <span>Member: {formatCurrency(result.memberMonthly ?? result.totalMonthly)}</span>
+                      <span>Sponsor: {formatCurrency(result.sponsorMonthly ?? 0)}</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Metadata */}

@@ -152,6 +152,61 @@ describe('sponsor invoice', () => {
     expect(isCoveredInPeriod({ status: 'active', effective_date: '2026-06-01', end_date: null }, '2026-05-01', '2026-05-31')).toBe(false);
     expect(isCoveredInPeriod({ status: 'ended', effective_date: '2026-01-01', end_date: '2026-04-15' }, '2026-05-01', '2026-05-31')).toBe(false);
   });
+
+  it('keeps the full amount with no rule and zeros a member-paid core share', () => {
+    const noRule = buildSponsorInvoiceDraft({
+      sponsor_id: 'sp1',
+      organization_id: 'org1',
+      sponsor_name: 'Acme',
+      period_start: '2026-05-01',
+      period_end: '2026-05-31',
+      rows: [
+        {
+          roster_id: 'r1',
+          member_id: 'm1',
+          membership_id: 'ms1',
+          first_name: 'Ada',
+          last_name: 'Lovelace',
+          role: 'employee',
+          amount: 199,
+          plan_id: 'p1',
+          plan_name: 'MSA 2500',
+          status: 'active',
+          effective_date: '2026-05-01',
+          end_date: null,
+        },
+      ],
+    });
+    expect(noRule.total).toBe(199);
+
+    const memberPays = buildSponsorInvoiceDraft({
+      sponsor_id: 'sp1',
+      organization_id: 'org1',
+      sponsor_name: 'Acme',
+      period_start: '2026-05-01',
+      period_end: '2026-05-31',
+      rows: [
+        {
+          roster_id: 'r1',
+          member_id: 'm1',
+          membership_id: 'ms1',
+          first_name: 'Ada',
+          last_name: 'Lovelace',
+          role: 'employee',
+          amount: 199,
+          plan_id: 'p1',
+          plan_name: 'MSA 2500',
+          status: 'active',
+          effective_date: '2026-05-01',
+          end_date: null,
+          coverage: {
+            rules: [{ charge_item_code: 'core_membership', treatment: 'pass_through', who_pays: 'member' }],
+          },
+        },
+      ],
+    });
+    expect(memberPays.total).toBe(0);
+  });
 });
 
 describe('known roster and sponsor-paid enroll', () => {

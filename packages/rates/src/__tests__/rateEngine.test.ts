@@ -333,6 +333,34 @@ describe('quote — commercial terms', () => {
   });
 });
 
+describe('quote coverage split', () => {
+  const memberInput: QuoteInput = {
+    planId: 'demo-additive',
+    coverageTier: 'member',
+    household: { memberAge: 28 },
+    coverageStart: '2025-06-01',
+  };
+
+  it('defaults the monthly quote to the member when no rule exists', () => {
+    const result = quote(additiveConfig, memberInput);
+    expect(result.errors).toBeUndefined();
+    expect(result.memberMonthly).toBe(result.totalMonthly);
+    expect(result.sponsorMonthly).toBe(0);
+  });
+
+  it('sends the core share to the sponsor when a pass-through rule says so', () => {
+    const result = quote(additiveConfig, memberInput, {
+      coverage: {
+        items: [],
+        rules: [{ charge_item_code: 'core_membership', treatment: 'pass_through', who_pays: 'sponsor' }],
+      },
+    });
+    expect(result.errors).toBeUndefined();
+    expect(result.sponsorMonthly).toBe(result.totalMonthly);
+    expect(result.memberMonthly).toBe(0);
+  });
+});
+
 describe('getPlanOptions / buildMatrixPreview', () => {
   it('lists six MSA plans', () => {
     const options = getPlanOptions(config, 'current');

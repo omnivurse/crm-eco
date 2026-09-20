@@ -435,7 +435,7 @@ export async function generateSponsorInvoice(
       id, roster_id, member_id, membership_id, role, status, effective_date, end_date,
       members ( id, first_name, last_name ),
       sponsor_roster ( first_name, last_name ),
-      memberships ( id, billing_amount, plan_id, plans ( id, name ) )
+      memberships ( id, billing_amount, plan_id, plans ( id, name, metadata ) )
     `)
     .eq('organization_id', input.organizationId)
     .eq('sponsor_id', input.sponsorId)
@@ -463,7 +463,7 @@ export async function generateSponsorInvoice(
         memberships?: {
           billing_amount?: number | null;
           plan_id?: string | null;
-          plans?: { id?: string | null; name?: string | null } | null;
+          plans?: { id?: string | null; name?: string | null; metadata?: unknown } | null;
         } | null;
       };
       const member = firstJoin(row.members);
@@ -480,6 +480,7 @@ export async function generateSponsorInvoice(
         amount: Number(membership?.billing_amount) || 0,
         plan_id: membership?.plan_id ?? plan?.id ?? null,
         plan_name: plan?.name ?? null,
+        coverage: plan?.metadata,
         status: row.status,
         effective_date: row.effective_date,
         end_date: row.end_date,

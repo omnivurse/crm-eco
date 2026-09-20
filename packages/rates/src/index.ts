@@ -32,6 +32,25 @@ export type {
   CommercialQuoteAdjustment,
   GroupSizeDiscount,
 } from './commercialTerms';
+export {
+  CORE_MEMBERSHIP_CODE,
+  parseCoverageConfig,
+  findCoverageRule,
+  applyCoverageToCharge,
+  applyCoverageToCharges,
+  sponsorInvoiceAmount,
+} from './coverageRules';
+export type {
+  CoverageTreatment,
+  CoveragePayer,
+  ChargeCategory,
+  ChargeItem,
+  CoverageRule,
+  CoverageConfig,
+  ChargeInput,
+  CoverageLine,
+  CoverageAllocation,
+} from './coverageRules';
 export { MSA_AGE_BANDS, MSA_COVERAGE_TIERS } from './msaAgeBands';
 export type {
   RateConfig,

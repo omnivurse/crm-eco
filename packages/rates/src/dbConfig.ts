@@ -5,6 +5,7 @@
 // and assembles a canonical E123 RateConfig the engine can quote against.
 // ──────────────────────────────────────────────
 import { parseCommercialTerms } from './commercialTerms';
+import { parseCoverageConfig } from './coverageRules';
 import type {
   RateConfig,
   Plan,
@@ -172,6 +173,7 @@ function dbRowToPlan(row: DbRateSetRow): Plan {
     tobacco,
     fees: fees.length > 0 ? fees : undefined,
     commercial_terms: parseCommercialTerms(planMeta.commercial_terms),
+    coverage: parseCoverageConfig(planMeta),
     rates,
   };
 }

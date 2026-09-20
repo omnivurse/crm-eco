@@ -10,6 +10,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'src'),
+      '@crm-eco/rates': path.resolve(__dirname, '../rates/src/index.ts'),
     },
   },
 });

@@ -1,3 +1,4 @@
+import { parseCoverageConfig, sponsorInvoiceAmount } from '@crm-eco/rates';
 import type { SponsorInvoiceDraft, SponsorInvoiceLine, SponsorRelationship } from './types';
 
 export interface BillableSponsorship {
@@ -13,6 +14,8 @@ export interface BillableSponsorship {
   status: string;
   effective_date: string | null;
   end_date: string | null;
+  /** plans.metadata (or a coverage object). No rule keeps today's full amount. */
+  coverage?: unknown;
 }
 
 export function buildSponsorInvoiceDraft(input: {
@@ -31,7 +34,7 @@ export function buildSponsorInvoiceDraft(input: {
       membership_id: row.membership_id,
       name: `${row.first_name} ${row.last_name}`.trim(),
       role: row.role,
-      amount: Number(row.amount) || 0,
+      amount: sponsorInvoiceAmount(Number(row.amount) || 0, parseCoverageConfig(row.coverage)),
       plan_id: row.plan_id,
       plan_name: row.plan_name,
     }));

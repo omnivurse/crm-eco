@@ -3,6 +3,7 @@
 // ──────────────────────────────────────────────
 
 import type { BillingPeriod, BillingTiming, CommercialTerms } from './commercialTerms';
+import type { CoverageConfig, CoverageLine } from './coverageRules';
 
 /** Which rate set to use */
 export type RateSetKey = 'current' | 'rates_2026';
@@ -69,6 +70,8 @@ export interface Plan {
   fees?: FeeLine[];
   /** Group-size, period, registration family max, age min/max, arrears. */
   commercial_terms?: CommercialTerms;
+  /** Charge items + who-pays rules. Stored on plans.metadata.coverage. */
+  coverage?: CoverageConfig;
   rates: TieredHouseholdRates | AdditivePersonRates;
 }
 
@@ -192,6 +195,8 @@ export interface QuoteOptions {
   enrollmentContribution?: EnrollmentContributionPolicy;
   /** Overrides plan.commercial_terms for this quote only. */
   commercialTerms?: CommercialTerms;
+  /** Overrides plan.coverage for this quote only. */
+  coverage?: CoverageConfig;
 }
 
 export interface QuoteResult {
@@ -205,6 +210,9 @@ export interface QuoteResult {
   billingPeriod?: BillingPeriod;
   billingTiming?: BillingTiming;
   periodAmount?: number;
+  memberMonthly?: number;
+  sponsorMonthly?: number;
+  coverageLines?: CoverageLine[];
 }
 
 export interface QuoteFee {
@@ -245,6 +253,11 @@ export interface QuoteMetadata {
     period?: BillingPeriod;
     periodAmount?: number;
     billingTiming?: BillingTiming;
+  };
+  coverage?: {
+    memberMonthly: number;
+    sponsorMonthly: number;
+    planAbsorbed: number;
   };
 }
 

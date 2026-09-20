@@ -20,6 +20,11 @@ import type {
 } from './types';
 import { resolveEnrollmentContribution } from './enrollmentContribution';
 import { applyCommercialTerms, commercialAgeErrors, parseCommercialTerms } from './commercialTerms';
+import {
+  applyCoverageToCharges,
+  CORE_MEMBERSHIP_CODE,
+  parseCoverageConfig,
+} from './coverageRules';
 
 // ──────────────────────────────────────────────
 // Public API
@@ -194,6 +199,19 @@ export function quote(
   const totalMonthlyFees = monthlyFees.reduce((s, f) => s + f.amount, 0);
   const totalMonthly = round(monthlyPremium + totalMonthlyFees);
 
+  const coverageConfig = parseCoverageConfig(opts?.coverage ?? plan.coverage);
+  const coverageAllocation = applyCoverageToCharges(
+    [
+      { code: CORE_MEMBERSHIP_CODE, name: 'Membership share', listAmount: monthlyPremium },
+      ...monthlyFees.map((fee) => ({
+        code: fee.id,
+        name: fee.label,
+        listAmount: fee.amount,
+      })),
+    ],
+    coverageConfig
+  );
+
   const groupDiscount = commercial.breakdown.find((line) =>
     line.label.startsWith('Group-size discount')
   );
@@ -228,6 +246,11 @@ export function quote(
           },
         }
       : {}),
+    coverage: {
+      memberMonthly: coverageAllocation.memberTotal,
+      sponsorMonthly: coverageAllocation.sponsorTotal,
+      planAbsorbed: coverageAllocation.planAbsorbed,
+    },
   };
 
   return {
@@ -237,6 +260,9 @@ export function quote(
     oneTimeFees: resolvedOneTimeFees,
     breakdown,
     metadata,
+    memberMonthly: coverageAllocation.memberTotal,
+    sponsorMonthly: coverageAllocation.sponsorTotal,
+    coverageLines: coverageAllocation.lines,
     ...(commercial.period
       ? {
           billingPeriod: commercial.period,

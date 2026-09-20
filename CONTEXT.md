@@ -129,6 +129,15 @@ locality) comes from the `/codebase-design` skill; the terms below name the
   period discounts, registration-fee family max, age min/max, advance vs
   arrears. Applied inside `@crm-eco/rates` `quote()`. Not a second rate table.
 
+- **Coverage rules** — charge items and who-pays stored on
+  `plans.metadata.coverage` (`items` + `rules`). Treatments: included,
+  included-under, quantity limit, percent, flat, pass-through, not covered.
+  Payer is `member` or `sponsor` (no split on one line). No rule: quotes
+  stay member-paid; sponsor invoices keep the full membership amount so
+  current employer bills do not go to $0. Applied in `quote()` and
+  `generateSponsorInvoice`. Not a live `charge_items` / `coverage_rules`
+  table yet.
+
 - **Membership layer** — a member may hold many `memberships` rows. `layer`
   is `core` (household / health-share, at most one active) or `addon`
   (own bill date, amount, schedule). At most one **sponsored** membership
