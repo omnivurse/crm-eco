@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Gizmo</title>
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+      background:
+        radial-gradient(1200px 600px at 70% 20%, rgba(20,184,166,0.12), transparent 50%),
+        #071413;
+      color: #ecfdf5;
+      padding: 48px 40px 64px;
+    }
+    h1 { font-size: 18px; font-weight: 600; margin: 0 0 6px; letter-spacing: -0.02em; }
+    .sub { color: rgba(153,246,228,0.55); font-size: 13px; margin-bottom: 36px; }
+    .row { display: flex; flex-wrap: wrap; gap: 48px; align-items: flex-end; }
+    .shot { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+    .label { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(153,246,228,0.45); }
+
+    .orb {
+      position: relative;
+      width: 176px;
+      height: 176px;
+    }
+    .orb.sm { width: 44px; height: 44px; }
+    .glass {
+      position: absolute; inset: 0; border-radius: 999px;
+      background:
+        radial-gradient(circle at 35% 30%, rgba(255,255,255,0.55), transparent 42%),
+        radial-gradient(circle at 50% 55%, #14b8a6 0%, #0f766e 70%, #115e59 100%);
+      box-shadow: inset 0 1px 1px rgba(255,255,255,0.45), 0 16px 40px rgba(13,148,136,0.35);
+      outline: 1px solid rgba(255,255,255,0.3);
+    }
+    .sheen { position: absolute; inset: 0; border-radius: 999px; background: rgba(255,255,255,0.10); }
+    .eye-l, .eye-r {
+      position: absolute; top: 34%; width: 11.3%; height: 11.3%;
+      border-radius: 999px; background: #042f2e;
+    }
+    .orb.sm .eye-l, .orb.sm .eye-r { top: 15px; width: 5px; height: 5px; }
+    .eye-l { left: 29.5%; }
+    .eye-r { right: 29.5%; }
+    .orb.sm .eye-l { left: 13px; }
+    .orb.sm .eye-r { right: 13px; }
+    .mouth {
+      position: absolute; bottom: 29.5%; left: 50%;
+      width: 32%; height: 16%;
+      transform: translateX(-50%);
+      border-radius: 999px;
+      border: 6px solid #042f2e;
+      border-top: 0;
+      background: transparent;
+    }
+    .orb.sm .mouth {
+      bottom: 13px; width: 14px; height: 7px; border-width: 1.5px; border-top: 0;
+    }
+    .think .glass { filter: brightness(1.25); }
+    .pip {
+      position: absolute; right: 0; top: 0;
+      width: 14px; height: 14px; border-radius: 999px;
+      background: #5eead4; box-shadow: 0 0 0 4px #071413;
+    }
+    .orb.sm .pip { width: 8px; height: 8px; box-shadow: 0 0 0 2px #071413; }
+
+    @keyframes gizmo-breathe {
+      0%, 100% { transform: scale(1); filter: brightness(1); }
+      50% { transform: scale(1.04); filter: brightness(1.08); }
+    }
+    .breathe { animation: gizmo-breathe 4s ease-in-out infinite; }
+
+    .stage {
+      display: flex; flex-direction: column; align-items: flex-end; gap: 10px;
+    }
+    .panel {
+      width: 380px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(11,31,30,0.92);
+      box-shadow: 0 24px 60px rgba(0,0,0,0.45);
+      backdrop-filter: blur(18px);
+      overflow: hidden;
+    }
+    .hdr {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.10);
+    }
+    .hdr .name { font-size: 14px; font-weight: 600; line-height: 1; }
+    .hdr .page { margin-top: 3px; font-size: 11px; color: rgba(153,246,228,0.7); }
+    .hdr .spacer { flex: 1; }
+    .ghost { font-size: 11px; color: rgba(153,246,228,0.7); background: none; border: 0; }
+    .tips { padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,0.10); }
+    .tips h2 { margin: 0 0 6px; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(153,246,228,0.6); }
+    .chip { background: rgba(255,255,255,0.05); border-radius: 8px; padding: 6px 8px; }
+    .chip b { display: block; font-size: 12px; }
+    .chip span { font-size: 11px; color: rgba(204,251,241,0.7); }
+    .body { padding: 10px 12px; min-height: 88px; }
+    .msg { font-size: 13px; color: rgba(204,251,241,0.75); margin: 0 0 10px; }
+    .card { border: 1px solid rgba(255,255,255,0.10); background: rgba(0,0,0,0.2); border-radius: 8px; padding: 8px; }
+    .card b { font-size: 12px; }
+    .card em { display: block; font-style: normal; font-size: 11px; color: rgba(204,251,241,0.6); }
+    .btns { margin-top: 6px; display: flex; gap: 8px; }
+    .open { background: rgba(20,184,166,0.9); color: #042f2e; border: 0; border-radius: 6px; font-size: 11px; font-weight: 600; padding: 3px 8px; }
+    .copy { background: none; border: 0; color: rgba(204,251,241,0.8); font-size: 11px; }
+    .foot { border-top: 1px solid rgba(255,255,255,0.10); padding: 8px; }
+    .foot input {
+      width: 100%; border-radius: 12px; border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(0,0,0,0.3); color: #ecfdf5; padding: 8px 12px; font-size: 14px;
+    }
+    .foot input::placeholder { color: rgba(153,246,228,0.4); }
+  </style>
+</head>
+<body>
+  <h1>Gizmo</h1>
+  <p class="sub">Teal glass companion — two-dot + arc face. Same look as the live orb.</p>
+
+  <div class="row">
+    <div class="shot">
+      <div class="orb breathe" aria-hidden>
+        <span class="glass"></span><span class="sheen"></span>
+        <span class="eye-l"></span><span class="eye-r"></span>
+        <span class="mouth"></span>
+      </div>
+      <span class="label">Idle · 4s breathe</span>
+    </div>
+
+    <div class="shot">
+      <div class="orb think" aria-hidden>
+        <span class="glass"></span><span class="sheen"></span>
+        <span class="eye-l"></span><span class="eye-r"></span>
+        <span class="mouth"></span>
+      </div>
+      <span class="label">Thinking</span>
+    </div>
+
+    <div class="shot">
+      <div class="orb sm" aria-hidden>
+        <span class="glass"></span><span class="sheen"></span>
+        <span class="eye-l"></span><span class="eye-r"></span>
+        <span class="mouth"></span>
+        <span class="pip"></span>
+      </div>
+      <span class="label">44px · unread pip</span>
+    </div>
+
+    <div class="stage">
+      <div class="panel">
+        <div class="hdr">
+          <div class="orb sm" style="width:32px;height:32px">
+            <span class="glass"></span><span class="sheen"></span>
+            <span class="eye-l"></span><span class="eye-r"></span>
+            <span class="mouth"></span>
+          </div>
+          <div>
+            <div class="name">Gizmo</div>
+            <div class="page">Contacts</div>
+          </div>
+          <span class="spacer"></span>
+          <button class="ghost" type="button">Hide</button>
+          <button class="ghost" type="button">Close</button>
+        </div>
+        <div class="tips">
+          <h2>On this page</h2>
+          <div class="chip"><b>Horizontal scroll</b><span>More columns live to the right.</span></div>
+        </div>
+        <div class="body">
+          <p class="msg">Ask me to find a record, a page, or a how-to in this workspace.</p>
+          <div class="card">
+            <b>Reports</b>
+            <em>/crm/reports</em>
+            <div class="btns">
+              <button class="open" type="button">Open</button>
+              <button class="copy" type="button">Copy link</button>
+            </div>
+          </div>
+        </div>
+        <div class="foot">
+          <input readonly value="" placeholder="Ask Gizmo to find anything…" />
+        </div>
+      </div>
+      <div class="orb sm breathe">
+        <span class="glass"></span><span class="sheen"></span>
+        <span class="eye-l"></span><span class="eye-r"></span>
+        <span class="mouth"></span>
+      </div>
+      <span class="label">Open panel · bottom-right</span>
+    </div>
+  </div>
+</body>
+</html>
