@@ -47,8 +47,14 @@ import {
   DEFAULT_SIGNATURE_LOGO_HEIGHT,
   clampSignatureLogoHeight,
   readSignatureLogoHeight,
-  resizeSignatureImage,
 } from '@/lib/email/apply-signature-image';
+import {
+  applyEditorSignatureImage,
+  detectSignatureLayout,
+  extractSignatureFields,
+  renderEditorSignatureHtml,
+  sizeEditorSignatureHtml,
+} from '@/lib/email/signature-editor';
 import {
   DEFAULT_OFFICIAL_SIGNATURE_ID,
   DEFAULT_PIFH_LOGO_PATH,
@@ -58,9 +64,8 @@ import {
   absolutizeSignatureHtml,
   getSignatureOrigin,
   isOfficialSignatureId,
-  renderFullImageSignature,
   renderLayoutHtml,
-  renderOfficialSignature,
+  renderOfficialSignatureWithFields,
 } from '@/lib/email/signature-html';
 
 interface SignatureData {
@@ -123,7 +128,7 @@ function mergeInitialFields(
   userProfile: SignatureBuilderProps['userProfile'],
   companyInfo: SignatureBuilderProps['companyInfo'],
 ): SignatureFields {
-  return {
+  const fallback: SignatureFields = {
     full_name: defaults?.full_name || userProfile?.full_name || '',
     title: defaults?.title || userProfile?.title || '',
     email: defaults?.email || userProfile?.email || '',
@@ -133,11 +138,7 @@ function mergeInitialFields(
     logo_url: signature?.logo_url || defaults?.logo_url || DEFAULT_PIFH_LOGO_PATH,
     photo_url: signature?.photo_url || defaults?.photo_url || '',
   };
-}
-
-function htmlFromFields(layoutId: string | null, fields: SignatureFields): string {
-  if (!layoutId || layoutId === 'full-image' || isOfficialSignatureId(layoutId)) return '';
-  return renderLayoutHtml(layoutId, fields) || '';
+  return extractSignatureFields(signature?.content_html, fallback);
 }
 
 export function SignatureBuilder({
@@ -150,17 +151,27 @@ export function SignatureBuilder({
 }: SignatureBuilderProps) {
   const [activeTab, setActiveTab] = useState('editor');
   const [saving, setSaving] = useState(false);
-  const [selectedLayoutId, setSelectedLayoutId] = useState<string | null>(
-    signature?.content_html ? null : DEFAULT_OFFICIAL_SIGNATURE_ID,
+  const [selectedLayoutId, setSelectedLayoutId] = useState<string | null>(() =>
+    signature?.content_html
+      ? detectSignatureLayout(signature.content_html)
+      : DEFAULT_OFFICIAL_SIGNATURE_ID,
   );
   const [fields, setFields] = useState<SignatureFields>(() =>
     mergeInitialFields(signature, defaults, userProfile, companyInfo),
   );
   const [formData, setFormData] = useState<SignatureData>(() => {
     const initialFields = mergeInitialFields(signature, defaults, userProfile, companyInfo);
+    const initialLayout = signature?.content_html
+      ? detectSignatureLayout(signature.content_html)
+      : DEFAULT_OFFICIAL_SIGNATURE_ID;
     const initialHtml =
       signature?.content_html ||
-      renderOfficialSignature(DEFAULT_OFFICIAL_SIGNATURE_ID) ||
+      sizeEditorSignatureHtml(
+        renderEditorSignatureHtml(initialLayout, initialFields, ''),
+        initialLayout,
+        initialFields,
+        DEFAULT_SIGNATURE_LOGO_HEIGHT,
+      ) ||
       renderLayoutHtml('pifh-horizontal', initialFields) ||
       '';
     return {
@@ -182,37 +193,33 @@ export function SignatureBuilder({
       DEFAULT_SIGNATURE_LOGO_HEIGHT,
   );
 
-  const sizeHtml = useCallback((html: string, height: number, slot: UploadTarget, matchSrc?: string) => {
-    return resizeSignatureImage(html, height, {
-      matchSrc,
-      square: slot === 'photo',
-    });
-  }, []);
+  const writeHtml = useCallback(
+    (layoutId: string | null, nextFields: SignatureFields, fallbackHtml = '') =>
+      sizeEditorSignatureHtml(
+        renderEditorSignatureHtml(layoutId, nextFields, fallbackHtml),
+        layoutId,
+        nextFields,
+        logoHeight,
+      ),
+    [logoHeight],
+  );
 
   const applyOfficial = useCallback((layoutId: string) => {
-    const mark = OFFICIAL_SIGNATURES.find((item) => item.id === layoutId);
-    const html = renderOfficialSignature(layoutId);
-    if (!html || !mark) return;
+    const html = renderOfficialSignatureWithFields(layoutId, fields);
+    if (!html) return;
     setSelectedLayoutId(layoutId);
-    setFields((prev) => ({ ...prev, logo_url: mark.image_path }));
-    setFormData((prev) => ({
-      ...prev,
+    setFormData((current) => ({
+      ...current,
       content_html: html,
-      logo_url: mark.image_path,
     }));
-  }, []);
+  }, [fields]);
 
   const applyLayout = useCallback((layoutId: string, nextFields: SignatureFields) => {
     if (isOfficialSignatureId(layoutId)) {
       applyOfficial(layoutId);
       return;
     }
-    const html = sizeHtml(
-      htmlFromFields(layoutId, nextFields),
-      logoHeight,
-      layoutId === 'professional' ? 'photo' : 'logo',
-      layoutId === 'professional' ? nextFields.photo_url : nextFields.logo_url,
-    );
+    const html = writeHtml(layoutId, nextFields);
     setSelectedLayoutId(layoutId);
     setFormData((prev) => ({
       ...prev,
@@ -220,18 +227,24 @@ export function SignatureBuilder({
       logo_url: nextFields.logo_url,
       photo_url: nextFields.photo_url,
     }));
-  }, [applyOfficial, logoHeight, sizeHtml]);
+  }, [applyOfficial, writeHtml]);
 
   const updateField = (key: keyof SignatureFields, value: string) => {
     setFields((prev) => {
       const next = { ...prev, [key]: value };
-      if (selectedLayoutId && selectedLayoutId !== 'full-image' && !isOfficialSignatureId(selectedLayoutId)) {
-        const html = sizeHtml(
-          htmlFromFields(selectedLayoutId, next),
-          logoHeight,
-          selectedLayoutId === 'professional' ? 'photo' : 'logo',
-          selectedLayoutId === 'professional' ? next.photo_url : next.logo_url,
-        );
+      if (selectedLayoutId === 'full-image') {
+        const html =
+          key === 'logo_url'
+            ? writeHtml('full-image', next, formData.content_html)
+            : formData.content_html;
+        setFormData((current) => ({
+          ...current,
+          content_html: html,
+          logo_url: next.logo_url,
+          photo_url: next.photo_url,
+        }));
+      } else if (selectedLayoutId) {
+        const html = writeHtml(selectedLayoutId, next, formData.content_html);
         setFormData((current) => ({
           ...current,
           content_html: html,
@@ -239,10 +252,6 @@ export function SignatureBuilder({
           photo_url: next.photo_url,
         }));
       } else {
-        // selectedLayoutId null = an existing signature's stored HTML (or the
-        // full-image variant). Never regenerate from a layout here — that
-        // silently destroys the stored markup. A layout is only applied when
-        // the user explicitly picks one from the layout gallery.
         setFormData((current) => ({
           ...current,
           logo_url: next.logo_url,
@@ -265,52 +274,23 @@ export function SignatureBuilder({
   };
 
   const applyImageToSlot = (slot: UploadTarget, url: string, alt?: string) => {
-    if (slot === 'full') {
-      setSelectedLayoutId('full-image');
-      setFormData((prev) => ({
-        ...prev,
-        content_html: sizeHtml(
-          renderFullImageSignature(url, alt || 'Email Signature'),
-          logoHeight,
-          'full',
-          url,
-        ),
-        logo_url: url,
-      }));
-      setFields((prev) => ({ ...prev, logo_url: url }));
-      return;
-    }
-
-    if (slot === 'photo') {
-      const next = { ...fields, photo_url: url };
-      setFields(next);
-      if (selectedLayoutId === 'full-image') {
-        applyLayout('professional', next);
-      } else if (selectedLayoutId) {
-        applyLayout(selectedLayoutId, next);
-      } else {
-        setFormData((current) => ({
-          ...current,
-          photo_url: url,
-          content_html: sizeHtml(current.content_html, logoHeight, 'photo', url),
-        }));
-      }
-      return;
-    }
-
-    const next = { ...fields, logo_url: url };
-    setFields(next);
-    if (selectedLayoutId === 'full-image') {
-      applyLayout('pifh-horizontal', next);
-    } else if (selectedLayoutId) {
-      applyLayout(selectedLayoutId, next);
-    } else {
-      setFormData((current) => ({
-        ...current,
-        logo_url: url,
-        content_html: sizeHtml(current.content_html, logoHeight, 'logo', url),
-      }));
-    }
+    const applied = applyEditorSignatureImage({
+      slot,
+      url,
+      alt,
+      layoutId: selectedLayoutId,
+      fields,
+      contentHtml: formData.content_html,
+      logoHeight,
+    });
+    setSelectedLayoutId(applied.layoutId);
+    setFields(applied.fields);
+    setFormData((current) => ({
+      ...current,
+      content_html: applied.content_html,
+      logo_url: applied.fields.logo_url,
+      photo_url: applied.fields.photo_url,
+    }));
   };
 
   const handleUploadedImage = (url: string, alt?: string) => {
@@ -322,17 +302,23 @@ export function SignatureBuilder({
     setLogoHeight(nextHeight);
     setFormData((current) => ({
       ...current,
-      content_html: sizeHtml(
+      content_html: sizeEditorSignatureHtml(
         current.content_html,
+        selectedLayoutId,
+        fields,
         nextHeight,
-        selectedLayoutId === 'professional' ? 'photo' : 'logo',
-        selectedLayoutId === 'professional' ? fields.photo_url : fields.logo_url,
       ),
     }));
   };
 
   const handleSave = async () => {
-    if (!formData.name.trim() || !formData.content_html.trim()) {
+    const html = sizeEditorSignatureHtml(
+      renderEditorSignatureHtml(selectedLayoutId, fields, formData.content_html),
+      selectedLayoutId,
+      fields,
+      logoHeight,
+    );
+    if (!formData.name.trim() || !html.trim()) {
       toast.error(toastCopy.failed('save the signature', 'add a name and signature content', 'Fill both fields and try again'));
       return;
     }
@@ -345,8 +331,12 @@ export function SignatureBuilder({
         id: signature?.id,
         logo_url: fields.logo_url,
         photo_url: fields.photo_url,
-        content_html: absolutizeSignatureHtml(formData.content_html, origin),
+        content_html: absolutizeSignatureHtml(html, origin),
+        content_text: formData.content_text || html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim(),
       });
+      toast.success(
+        signature?.id ? toastCopy.updated('Signature') : toastCopy.saved('Signature'),
+      );
     } catch (error) {
       console.error('Failed to save signature:', error);
       toast.error(toastCopy.failed('save the signature', error, 'Try again'));
@@ -418,7 +408,7 @@ export function SignatureBuilder({
             <CardHeader className="py-3">
               <CardTitle className="text-sm">Your details</CardTitle>
               <CardDescription className="text-xs">
-                These fields update the live preview. They are not locked inside an image.
+                These fields write into the signature you save. They are not locked inside an image.
               </CardDescription>
             </CardHeader>
             <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-0">
@@ -487,7 +477,7 @@ export function SignatureBuilder({
                 Official PIFH signatures
               </CardTitle>
               <CardDescription className="text-xs">
-                Current brand marks. Banner is the default. Pick stacked if you want the tall wordmark.
+                Uses the current PIFH artwork. Your name and details stay under the mark. Uploading a logo switches back to a layout that keeps that file.
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-0">

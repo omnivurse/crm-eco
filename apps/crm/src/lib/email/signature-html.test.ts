@@ -11,6 +11,7 @@ import {
   renderFullImageSignature,
   renderLayoutHtml,
   renderOfficialSignature,
+  renderOfficialSignatureWithFields,
   renderSignatureHtml,
   signatureNeedsBrandingRefresh,
   websiteHref,
@@ -131,6 +132,13 @@ describe('signature-html', () => {
     expect(merged[0]?.is_default).toBe(false);
     expect(merged.some((row) => row.id === 'saved-1' && row.is_default)).toBe(true);
     expect(merged[0]?.content_html).toContain('https://crm.doublehelixhub.com/signatures/pifh-signature-banner.png');
+  });
+
+  it('keeps the official mark and appends editable details', () => {
+    const html = renderOfficialSignatureWithFields(DEFAULT_OFFICIAL_SIGNATURE_ID, fields);
+    expect(html).toContain('/signatures/pifh-signature-banner.png');
+    expect(html).toContain('Ada Lovelace');
+    expect(html).toContain('ada@payitforwardhealth.com');
   });
 
   it('prefixes bare websites with https', () => {

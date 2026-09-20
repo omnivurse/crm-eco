@@ -260,6 +260,40 @@ export function renderOfficialSignature(id: string): string | null {
   return renderFullImageSignature(mark.image_path, mark.alt);
 }
 
+const OFFICIAL_DETAILS = `<table cellpadding="0" cellspacing="0" style="font-family: Arial, Helvetica, sans-serif; font-size: 14px; color: #0A2233; border-collapse: collapse;">
+  <tr>
+    <td style="padding-top: 12px;">
+      <p style="margin: 0 0 2px 0; font-weight: bold; font-size: 16px; color: #003A5C;">{{full_name}}</p>
+      <p style="margin: 0 0 2px 0; color: #666666;">{{title}}</p>
+      <p style="margin: 0 0 8px 0; color: #666666;">{{company_name}}</p>
+      <p style="margin: 0;">{{email}} | {{phone}}</p>
+      <p style="margin: 4px 0 0 0;"><a href="{{website_href}}" style="color: #0E8C9A; text-decoration: none;">{{website}}</a></p>
+    </td>
+  </tr>
+</table>`;
+
+export function hasSignatureDetails(fields: SignatureFields): boolean {
+  return Boolean(
+    fields.full_name.trim() ||
+      fields.title.trim() ||
+      fields.email.trim() ||
+      fields.phone.trim() ||
+      fields.company_name.trim() ||
+      fields.website.trim(),
+  );
+}
+
+/** Official mark plus the editable name/contact block used in the signature builder. */
+export function renderOfficialSignatureWithFields(
+  id: string,
+  fields: SignatureFields,
+): string | null {
+  const mark = renderOfficialSignature(id);
+  if (!mark) return null;
+  if (!hasSignatureDetails(fields)) return mark;
+  return `${mark}\n${renderSignatureHtml(OFFICIAL_DETAILS, fields)}`;
+}
+
 export function officialComposerSignatures(origin: string): Array<{
   id: string;
   name: string;

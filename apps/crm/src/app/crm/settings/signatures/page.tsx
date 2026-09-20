@@ -110,11 +110,10 @@ export default function SignaturesSettingsPage() {
     });
 
     if (!response.ok) {
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
       throw new Error(data.error || 'Failed to save signature');
     }
 
-    // Refresh list
     await fetchSignatures();
     setEditingSignature(null);
     setIsCreating(false);
