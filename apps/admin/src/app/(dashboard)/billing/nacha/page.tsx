@@ -140,7 +140,9 @@ export default function NachaPage() {
             <p>
               Cards stay on NMI. First-month and recurring ACH queue here instead of charging
               the card processor. Returns and NOCs post from the Returns page against originated
-              traces only. A missing return is not treated as success.
+              traces only. A return on the settlement offset matches the stored export trace;
+              older exports without that trace still refuse. A missing return is not treated as
+              success.
             </p>
           </div>
         </CardContent>

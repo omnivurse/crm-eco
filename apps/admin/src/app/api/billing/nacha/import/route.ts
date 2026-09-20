@@ -30,6 +30,7 @@ function publicPreview(preview: Awaited<ReturnType<typeof persistNachaImport>>['
       alreadyPosted: row.alreadyPosted,
     })),
     unmatched: preview.unmatched,
+    settlementReturns: preview.settlementReturns,
     nocBlocked: preview.nocBlocked,
   };
 }

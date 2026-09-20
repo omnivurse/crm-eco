@@ -52,12 +52,22 @@ interface UnmatchedRow {
   accountLast4: string | null;
 }
 
+interface SettlementRow {
+  originalTrace: string;
+  kind: 'return' | 'noc';
+  code: string;
+  reason: string;
+  amountCents: number;
+  accountLast4: string | null;
+}
+
 interface Preview {
   fileDate: string;
   returnCount: number;
   nocCount: number;
   matched: PreviewRow[];
   unmatched: UnmatchedRow[];
+  settlementReturns: SettlementRow[];
   nocBlocked: Array<{ originalTrace: string; code: string; reason: string }>;
 }
 
@@ -116,6 +126,7 @@ export default function NachaImportPage() {
             nocCount: 0,
             matched: [],
             unmatched: data.unmatched,
+            settlementReturns: data.settlementReturns ?? [],
             nocBlocked: [],
           });
         }
@@ -125,7 +136,13 @@ export default function NachaImportPage() {
       if (previewOnly) {
         toast.success('Preview ready. Nothing was posted.');
       } else {
-        toast.success(`Posted ${data.posted} return/NOC row(s). Raw file was not stored.`);
+        toast.success(
+          `Posted ${data.posted} return/NOC row(s)` +
+            (data.preview?.settlementReturns?.length
+              ? `, recorded ${data.preview.settlementReturns.length} settlement-offset return(s)`
+              : '') +
+            '. Raw file was not stored.',
+        );
         await load();
       }
     } catch (error) {
@@ -158,8 +175,10 @@ export default function NachaImportPage() {
           <Warning weight="light" className="h-5 w-5 text-amber-700 shrink-0 mt-0.5" />
           <div className="text-sm text-amber-950 space-y-1">
             <p>
-              Upload a bank return/NOC file here. The original 15-digit trace must already exist
-              on an originated export. Unmatched traces refuse the whole post.
+              Upload a bank return/NOC file here. Member traces must exist on an originated
+              export. A settlement-offset return matches the stored export trace, amount, and
+              last4 — it is recorded, not posted as a member charge. Anything else unmatched
+              refuses the whole post.
             </p>
             <p>
               Returns mark the matched charge/refund failed. NOCs update the encrypted vault when
@@ -214,6 +233,12 @@ export default function NachaImportPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {preview.settlementReturns?.length ? (
+              <p className="text-sm text-slate-600">
+                {preview.settlementReturns.length} settlement-offset return(s) matched by
+                stored trace, amount, and last4. Those are not member charges.
+              </p>
+            ) : null}
             {preview.unmatched.length ? (
               <p className="text-sm text-amber-800">
                 {preview.unmatched.length} unmatched original trace(s). Apply stays disabled.
@@ -242,6 +267,15 @@ export default function NachaImportPage() {
                     <TableCell>${(row.amountCents / 100).toFixed(2)}</TableCell>
                     <TableCell>{row.accountLast4 ?? '—'}</TableCell>
                     <TableCell>{row.alreadyPosted ? 'Already posted' : 'Matched'}</TableCell>
+                  </TableRow>
+                ))}
+                {(preview.settlementReturns ?? []).map((row) => (
+                  <TableRow key={`s-${row.originalTrace}-${row.code}`}>
+                    <TableCell>{row.kind}</TableCell>
+                    <TableCell className="font-mono">{row.code}</TableCell>
+                    <TableCell>${(row.amountCents / 100).toFixed(2)}</TableCell>
+                    <TableCell>{row.accountLast4 ?? '—'}</TableCell>
+                    <TableCell>Settlement offset</TableCell>
                   </TableRow>
                 ))}
                 {preview.unmatched.map((row) => (

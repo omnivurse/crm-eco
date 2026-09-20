@@ -8,12 +8,14 @@ import {
   coalesceAccountLast4,
   isLast4OnlyAccount,
   maskAccountNumber,
+  matchSettlementOffsetReturn,
   mergeAchOriginatorInput,
   missingAchOriginatorFields,
   nachaTransactionCode,
   nextFileIdModifier,
   parseAchOriginator,
   readAchOriginatorDraft,
+  readBalancingTraceFromNotes,
   toPublicAchOriginator,
   type AchOriginatorConfig,
   type NachaEntryInput,
@@ -214,6 +216,32 @@ describe('generateNachaFile', () => {
     });
     expect(file.traces.some((trace) => trace.transactionId === NACHA_BALANCING_ENTRY_ID)).toBe(false);
     expect(file.traces).toHaveLength(2);
+  });
+
+  it('matches a settlement return only when trace, amount, and last4 agree', () => {
+    const file = generateNachaFile({
+      originator: originator(),
+      entries: [charge({ amountCents: 1500 })],
+      effectiveDate: '2026-09-22',
+      createdAt,
+      fileIdModifier: 'A',
+    });
+    const balancing = file.traces.find((trace) => trace.transactionId === NACHA_BALANCING_ENTRY_ID);
+    expect(balancing?.traceNumber).toMatch(/^\d{15}$/);
+    const notes = {
+      balancingEntry: {
+        traceNumber: balancing?.traceNumber,
+        amountCents: balancing?.amountCents,
+        accountLast4: balancing?.accountLast4,
+      },
+    };
+    const stored = readBalancingTraceFromNotes(notes);
+    expect(stored?.traceNumber).toBe(balancing?.traceNumber);
+    expect(matchSettlementOffsetReturn([stored!], stored!.traceNumber, 1500, '7788')).toEqual(stored);
+    expect(matchSettlementOffsetReturn([stored!], stored!.traceNumber, 9999, '7788')).toBeNull();
+    expect(matchSettlementOffsetReturn([stored!], stored!.traceNumber, 1500, '9999')).toBeNull();
+    expect(matchSettlementOffsetReturn([stored!], '021000020000099', 1500, '7788')).toBeNull();
+    expect(readBalancingTraceFromNotes({ balancingEntry: { amountCents: 1500 } })).toBeNull();
   });
 
   it('refuses to invent a last4-only settlement offset', () => {

@@ -7,7 +7,10 @@ import {
   persistAchVault,
   parseNachaReturnFile,
   nocAccountTypeFromCorrectedData,
+  matchSettlementOffsetReturn,
+  readBalancingTraceFromNotes,
   NachaReturnParseError,
+  type NachaBalancingTrace,
   type NachaReturnEntry,
 } from '@crm-eco/lib/billing';
 import { recordNachaJobRun } from '@/lib/nacha-export';
@@ -37,6 +40,16 @@ export interface UnmatchedReturnRow {
   accountLast4: string | null;
 }
 
+export interface SettlementReturnRow {
+  originalTrace: string;
+  kind: NachaReturnEntry['kind'];
+  code: string;
+  reason: string;
+  amountCents: number;
+  accountLast4: string | null;
+  nachaFileId?: string;
+}
+
 export interface NachaImportPreview {
   fileDate: string;
   fileHash: string;
@@ -44,6 +57,7 @@ export interface NachaImportPreview {
   nocCount: number;
   matched: MatchedReturnRow[];
   unmatched: UnmatchedReturnRow[];
+  settlementReturns: SettlementReturnRow[];
   nocBlocked: Array<{ originalTrace: string; code: string; reason: string }>;
 }
 
@@ -98,6 +112,20 @@ export async function buildNachaImportPreview(
     if (rec.trace_number) linesByTrace.set(rec.trace_number, rec);
   }
 
+  const { data: exportFiles, error: exportError } = await supabase
+    .from('nacha_files')
+    .select('id, processing_notes')
+    .eq('organization_id', organizationId)
+    .eq('file_type', 'export')
+    .order('created_at', { ascending: false })
+    .limit(100);
+  if (exportError) throw new Error(exportError.message);
+  const balancingTraces: NachaBalancingTrace[] = [];
+  for (const file of exportFiles ?? []) {
+    const balancing = readBalancingTraceFromNotes(file.processing_notes, file.id);
+    if (balancing) balancingTraces.push(balancing);
+  }
+
   const txnIds = [...new Set([...linesByTrace.values()].map((row) => row.transaction_id))];
   const txns = new Map<
     string,
@@ -124,12 +152,31 @@ export async function buildNachaImportPreview(
 
   const matched: MatchedReturnRow[] = [];
   const unmatched: UnmatchedReturnRow[] = [];
+  const settlementReturns: SettlementReturnRow[] = [];
   const nocBlocked: NachaImportPreview['nocBlocked'] = [];
 
   for (const entry of parsed.entries) {
     const line = linesByTrace.get(entry.originalTrace);
     const txn = line ? txns.get(line.transaction_id) : undefined;
     if (!line || !txn) {
+      const settlement = matchSettlementOffsetReturn(
+        balancingTraces,
+        entry.originalTrace,
+        entry.amountCents,
+        entry.accountLast4,
+      );
+      if (settlement) {
+        settlementReturns.push({
+          originalTrace: entry.originalTrace,
+          kind: entry.kind,
+          code: entry.code,
+          reason: entry.reason,
+          amountCents: entry.amountCents,
+          accountLast4: entry.accountLast4,
+          nachaFileId: settlement.nachaFileId,
+        });
+        continue;
+      }
       unmatched.push({
         originalTrace: entry.originalTrace,
         kind: entry.kind,
@@ -202,6 +249,7 @@ export async function buildNachaImportPreview(
     nocCount: parsed.nocCount,
     matched,
     unmatched,
+    settlementReturns,
     nocBlocked,
   };
 }
@@ -284,9 +332,9 @@ export async function persistNachaImport(opts: {
       status: 'processed',
       effective_date: preview.fileDate,
       file_content: null,
-      transaction_count: preview.matched.length,
+      transaction_count: preview.matched.length + preview.settlementReturns.length,
       return_count: preview.returnCount,
-      processed_count: preview.matched.length,
+      processed_count: preview.matched.length + preview.settlementReturns.length,
       failed_count: preview.matched.filter((row) => row.entry.kind === 'return').length,
       success_count: 0,
       created_by: opts.profileId,
@@ -307,6 +355,13 @@ export async function persistNachaImport(opts: {
             code: row.entry.code,
             accountLast4: row.entry.accountLast4,
           })),
+        settlementReturns: preview.settlementReturns.map((row) => ({
+          originalTrace: row.originalTrace,
+          code: row.code,
+          amountCents: row.amountCents,
+          accountLast4: row.accountLast4,
+          nachaFileId: row.nachaFileId ?? null,
+        })),
       },
     })
     .select('id')
@@ -348,10 +403,16 @@ export async function persistNachaImport(opts: {
     jobType: 'nacha_import',
     jobName: opts.fileName,
     status: 'completed',
-    recordsProcessed: preview.matched.length,
-    recordsSucceeded: posted + alreadyPosted,
+    recordsProcessed: preview.matched.length + preview.settlementReturns.length,
+    recordsSucceeded: posted + alreadyPosted + preview.settlementReturns.length,
     recordsFailed: 0,
-    result: { nachaFileId: inserted.id, fileHash: preview.fileHash, posted, alreadyPosted },
+    result: {
+      nachaFileId: inserted.id,
+      fileHash: preview.fileHash,
+      posted,
+      alreadyPosted,
+      settlementReturns: preview.settlementReturns.length,
+    },
   });
 
   return { preview, nachaFileId: inserted.id, posted, alreadyPosted };
@@ -369,7 +430,8 @@ async function writeFailedImport(
     status: 'failed',
     effective_date: preview.fileDate,
     file_content: null,
-    transaction_count: preview.matched.length + preview.unmatched.length,
+    transaction_count:
+      preview.matched.length + preview.unmatched.length + preview.settlementReturns.length,
     return_count: preview.returnCount,
     error_message: message,
     created_by: opts.profileId,
@@ -377,6 +439,7 @@ async function writeFailedImport(
       fileHash: preview.fileHash,
       redacted: true,
       unmatched: preview.unmatched,
+      settlementReturns: preview.settlementReturns,
       nocBlocked: preview.nocBlocked,
     },
   });

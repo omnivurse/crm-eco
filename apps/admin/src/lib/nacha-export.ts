@@ -239,6 +239,7 @@ export async function persistNachaExport(opts: {
           balanced: file.debitCents === file.creditCents,
           balancingEntry: balancing
             ? {
+                traceNumber: balancing.traceNumber,
                 amountCents: balancing.amountCents,
                 transactionCode: balancing.transactionCode,
                 accountLast4: balancing.accountLast4,

@@ -32,6 +32,53 @@ export type NachaAccountType = AchSettlementAccountType;
 /** File-level settlement offset. Not a billing_transactions row. */
 export const NACHA_BALANCING_ENTRY_ID = '__nacha_balancing__';
 
+export interface NachaBalancingTrace {
+  nachaFileId?: string;
+  traceNumber: string;
+  amountCents: number;
+  accountLast4: string | null;
+  transactionCode?: string | null;
+}
+
+/** Read the settlement-offset trace stored on an export's processing_notes. */
+export function readBalancingTraceFromNotes(
+  notes: unknown,
+  nachaFileId?: string,
+): NachaBalancingTrace | null {
+  if (!notes || typeof notes !== 'object') return null;
+  const entry = (notes as { balancingEntry?: Record<string, unknown> }).balancingEntry;
+  if (!entry || typeof entry !== 'object') return null;
+  const traceNumber = typeof entry.traceNumber === 'string' ? entry.traceNumber.trim() : '';
+  if (!/^\d{15}$/.test(traceNumber)) return null;
+  const amountCents = Number(entry.amountCents);
+  if (!Number.isInteger(amountCents) || amountCents <= 0) return null;
+  const last4 = typeof entry.accountLast4 === 'string' ? digitsOnly(entry.accountLast4).slice(-4) : '';
+  return {
+    nachaFileId,
+    traceNumber,
+    amountCents,
+    accountLast4: last4.length === 4 ? last4 : null,
+    transactionCode: typeof entry.transactionCode === 'string' ? entry.transactionCode : null,
+  };
+}
+
+export function matchSettlementOffsetReturn(
+  traces: NachaBalancingTrace[],
+  originalTrace: string,
+  amountCents: number,
+  accountLast4?: string | null,
+): NachaBalancingTrace | null {
+  const last4 = accountLast4 ? digitsOnly(accountLast4).slice(-4) : '';
+  return (
+    traces.find((trace) => {
+      if (trace.traceNumber !== originalTrace) return false;
+      if (trace.amountCents !== amountCents) return false;
+      if (trace.accountLast4 && last4 && trace.accountLast4 !== last4) return false;
+      return true;
+    }) ?? null
+  );
+}
+
 export interface NachaEntryInput {
   transactionId: string;
   transactionType: NachaEntryType;
