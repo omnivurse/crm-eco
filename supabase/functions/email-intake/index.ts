@@ -1,6 +1,10 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { inboundLookupDomains, resolveMailboxAddress } from "../_shared/mailbox-address.ts";
-import { pickSenderOwnedConversation, shouldJoinThreadedConversation } from "../_shared/inbox-threading.ts";
+import {
+  displayNameFromEmailLocalPart,
+  pickSenderOwnedConversation,
+  shouldJoinThreadedConversation,
+} from "../_shared/inbox-threading.ts";
 import {
   inboundSentAt,
   parseMessageIdHeader,
@@ -460,6 +464,7 @@ async function conversationIdIfSameSender(
 async function findSenderOwnedConversation(
   fromEmail: string,
   mailboxAddress: string | null,
+  subject: string | null,
   orgId: string,
   supabaseUrl: string,
   headers: SupaHeaders,
@@ -470,7 +475,7 @@ async function findSenderOwnedConversation(
       : "";
     const convs = await supaFetch(
       supabaseUrl,
-      `/rest/v1/inbox_conversations?org_id=eq.${orgId}&contact_email=eq.${encodeURIComponent(fromEmail)}${mailboxFilter}&select=id,contact_email,mailbox_address,last_message_at&order=last_message_at.desc&limit=20`,
+      `/rest/v1/inbox_conversations?org_id=eq.${orgId}&contact_email=eq.${encodeURIComponent(fromEmail)}${mailboxFilter}&select=id,contact_email,mailbox_address,last_message_at,subject&order=last_message_at.desc&limit=20`,
       headers,
     );
     const prior = await supaFetch(
@@ -482,7 +487,7 @@ async function findSenderOwnedConversation(
     const extraConvs = extraIds.length > 0
       ? await supaFetch(
         supabaseUrl,
-        `/rest/v1/inbox_conversations?id=in.(${extraIds.join(",")})&org_id=eq.${orgId}&select=id,contact_email,mailbox_address,last_message_at`,
+        `/rest/v1/inbox_conversations?id=in.(${extraIds.join(",")})&org_id=eq.${orgId}&select=id,contact_email,mailbox_address,last_message_at,subject`,
         headers,
       )
       : [];
@@ -492,13 +497,14 @@ async function findSenderOwnedConversation(
       if (!id) continue;
       inboundByConversation[id] = [...(inboundByConversation[id] ?? []), row.from_address];
     }
-    const byId = new Map<string, { id: string; contact_email?: string | null; mailbox_address?: string | null; last_message_at?: string | null }>();
+    const byId = new Map<string, { id: string; contact_email?: string | null; mailbox_address?: string | null; last_message_at?: string | null; subject?: string | null }>();
     for (const row of [...(convs ?? []), ...(extraConvs ?? [])]) {
       byId.set(row.id, row);
     }
     return pickSenderOwnedConversation({
       fromEmail,
       mailboxAddress,
+      incomingSubject: subject,
       candidates: [...byId.values()],
       inboundByConversation,
     });
@@ -758,6 +764,7 @@ async function handleInboxMessage(
     conversationId = await findSenderOwnedConversation(
       from.email,
       mailboxAddress,
+      emailData.subject || null,
       orgId,
       supabaseUrl,
       headers,
@@ -878,7 +885,7 @@ async function handleInboxMessage(
       mailbox_address: mailboxAddress,
       contact_id: contactId,
       contact_email: from.email,
-      contact_name: from.name || null,
+      contact_name: from.name || displayNameFromEmailLocalPart(from.email),
       status: "open",
       priority,
       // Seeded at zero because the message insert below fires

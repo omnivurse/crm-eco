@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+  displayNameFromEmailLocalPart,
+  normalizeThreadSubject,
   pickSenderOwnedConversation,
   shouldJoinThreadedConversation,
 } from '../../../../../supabase/functions/_shared/inbox-threading';
@@ -77,6 +79,24 @@ describe('shouldJoinThreadedConversation', () => {
   });
 });
 
+describe('normalizeThreadSubject', () => {
+  it('treats RE/FWD prefixes as the same conversation', () => {
+    expect(normalizeThreadSubject('RE: Account')).toBe('account');
+    expect(normalizeThreadSubject('Account')).toBe('account');
+    expect(normalizeThreadSubject('SFTP file connection questionnaire')).toBe(
+      'sftp file connection questionnaire',
+    );
+  });
+});
+
+describe('displayNameFromEmailLocalPart', () => {
+  it('turns an Outlook-empty From into a readable name', () => {
+    expect(displayNameFromEmailLocalPart('frank.burnham@bankofcolorado.com')).toBe(
+      'Frank Burnham',
+    );
+  });
+});
+
 describe('pickSenderOwnedConversation', () => {
   it('after rejecting Dawn\'s thread, joins Frank\'s existing row', () => {
     const dawnId = 'dawn-thread';
@@ -93,18 +113,21 @@ describe('pickSenderOwnedConversation', () => {
       pickSenderOwnedConversation({
         fromEmail: 'frank.burnham@bankofcolorado.com',
         mailboxAddress: 'wendy@payitforwardhealth.com',
+        incomingSubject: 'RE: Account',
         candidates: [
           {
             id: dawnId,
             contact_email: 'dawn.marsh@bankofcolorado.com',
             mailbox_address: 'wendy@payitforwardhealth.com',
             last_message_at: '2026-09-02T18:50:46.000Z',
+            subject: 'Account',
           },
           {
             id: frankId,
             contact_email: 'frank.burnham@bankofcolorado.com',
             mailbox_address: 'wendy@payitforwardhealth.com',
             last_message_at: '2026-09-03T15:49:59.000Z',
+            subject: 'Account',
           },
         ],
         inboundByConversation: {
@@ -113,5 +136,31 @@ describe('pickSenderOwnedConversation', () => {
         },
       }),
     ).toBe(frankId);
+  });
+
+  it('does not glue a new subject onto the last thread the sender wrote on', () => {
+    const accountId = 'dawn-account';
+    expect(
+      pickSenderOwnedConversation({
+        fromEmail: 'frank.burnham@bankofcolorado.com',
+        mailboxAddress: 'wendy@payitforwardhealth.com',
+        incomingSubject: 'SFTP file connection questionnaire',
+        candidates: [
+          {
+            id: accountId,
+            contact_email: 'dawn.marsh@bankofcolorado.com',
+            mailbox_address: 'wendy@payitforwardhealth.com',
+            last_message_at: '2026-09-09T14:32:47.000Z',
+            subject: 'Account',
+          },
+        ],
+        inboundByConversation: {
+          [accountId]: [
+            'dawn.marsh@bankofcolorado.com',
+            'frank.burnham@bankofcolorado.com',
+          ],
+        },
+      }),
+    ).toBeNull();
   });
 });

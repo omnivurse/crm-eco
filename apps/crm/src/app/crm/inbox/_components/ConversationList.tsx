@@ -55,6 +55,7 @@ import {
 import { pluralize } from '@/lib/crm/toast-copy';
 import type { InboxConversation, InboxChannel, ConversationStatus } from '@/lib/inbox/types';
 import type { ConversationSort, InboxDensity, QuickFilterKey } from '@/lib/inbox/inbox-prefs';
+import { displaySenderName } from './inbox-reading';
 
 /** How many skeleton rows stand in for the first page while it loads. */
 const SKELETON_ROWS = 6;
@@ -143,7 +144,9 @@ function conversationLooksUnread(conv: InboxConversation): boolean {
 
 /** Distinct from the view model's `senderLabel`, which lower-cases for sorting. */
 function displaySender(conv: InboxConversation): string {
-  return conv.contact_name || conv.contact_email || conv.contact_phone || 'Unknown';
+  const named = displaySenderName(conv.contact_name, conv.contact_email);
+  if (named !== 'Unknown') return named;
+  return conv.contact_phone || 'Unknown';
 }
 
 function formatTime(dateStr: string) {
@@ -558,7 +561,7 @@ export const ConversationList = React.memo(function ConversationList({
                             <AvatarFallback
                               className={cn('text-xs font-medium', CHANNEL_COLORS[conv.channel])}
                             >
-                              {getInitials(conv.contact_name)}
+                              {getInitials(sender)}
                             </AvatarFallback>
                           </Avatar>
                         )}

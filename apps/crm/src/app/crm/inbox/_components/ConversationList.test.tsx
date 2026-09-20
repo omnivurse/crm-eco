@@ -506,4 +506,24 @@ describe('ConversationList header wiring', () => {
     fireEvent.click(screen.getByRole('menuitem', { name: /^subject/i }));
     expect(props.onSortChange).toHaveBeenCalledWith({ field: 'subject', direction: 'desc' });
   });
+
+  it('derives a readable sender when Outlook left from_name empty', () => {
+    render(
+      <ConversationList
+        {...baseProps()}
+        conversations={[
+          makeConversation('frank', {
+            contact_name: null,
+            contact_email: 'frank.burnham@bankofcolorado.com',
+            subject: 'SFTP file connection questionnaire',
+          }),
+        ]}
+      />,
+    );
+    expect(
+      screen.getByRole('button', {
+        name: /^open conversation from Frank Burnham: SFTP file connection questionnaire/i,
+      }),
+    ).toBeTruthy();
+  });
 });

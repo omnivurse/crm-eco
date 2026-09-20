@@ -21,6 +21,29 @@ export function normalizeThreadEmail(email: string | null | undefined): string {
   return (email || '').trim().toLowerCase();
 }
 
+/**
+ * Strip reply/forward prefixes so "RE: Account" and "Account" are the same
+ * conversation. A brand-new subject is not a continuation of the last thread
+ * this person happened to write on.
+ */
+export function normalizeThreadSubject(subject: string | null | undefined): string {
+  return (subject ?? '')
+    .replace(/^(\s*(re|fwd?|aw|sv|vs|antw)\s*(\[\d+\])?\s*:\s*)+/i, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+}
+
+/** Outlook often sends an empty From name; the local-part is the next-best face. */
+export function displayNameFromEmailLocalPart(email: string | null | undefined): string | null {
+  const addr = normalizeThreadEmail(email);
+  if (!addr || !addr.includes('@')) return null;
+  const local = addr.split('@')[0] ?? '';
+  const titled = local.replace(/[._+]+/g, ' ').replace(/\s+/g, ' ').trim();
+  if (!titled) return null;
+  return titled.replace(/\b([a-z])/g, (c) => c.toUpperCase());
+}
+
 export function shouldJoinThreadedConversation(opts: {
   fromEmail: string;
   conversationContactEmail: string | null | undefined;
@@ -52,17 +75,24 @@ export function shouldJoinThreadedConversation(opts: {
 export function pickSenderOwnedConversation(opts: {
   fromEmail: string;
   mailboxAddress?: string | null;
+  incomingSubject?: string | null;
   candidates: Array<{
     id: string;
     contact_email?: string | null;
     mailbox_address?: string | null;
     last_message_at?: string | null;
+    subject?: string | null;
   }>;
   inboundByConversation: Record<string, Array<string | null | undefined>>;
 }): string | null {
   const from = normalizeThreadEmail(opts.fromEmail);
   if (!from) return null;
   const mailbox = normalizeThreadEmail(opts.mailboxAddress);
+  const incomingSubject = normalizeThreadSubject(opts.incomingSubject);
+  // No subject (or a blank one) is too weak to claim the last thread this
+  // sender ever touched — that is how Frank's SFTP questionnaire landed
+  // under Dawn's Account row.
+  if (!incomingSubject) return null;
 
   const matches = opts.candidates.filter((candidate) => {
     if (
@@ -72,6 +102,7 @@ export function pickSenderOwnedConversation(opts: {
     ) {
       return false;
     }
+    if (normalizeThreadSubject(candidate.subject) !== incomingSubject) return false;
     if (normalizeThreadEmail(candidate.contact_email) === from) return true;
     return (opts.inboundByConversation[candidate.id] ?? []).some(
       (addr) => normalizeThreadEmail(addr) === from,
