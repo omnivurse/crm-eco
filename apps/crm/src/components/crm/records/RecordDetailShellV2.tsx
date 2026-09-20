@@ -127,6 +127,8 @@ import {
 import { RecordRelatedListChips } from './v2/RecordRelatedListChips';
 import { MobileActionBar } from './v2/MobileActionBar';
 import { RecordInsightsPanel } from './v2/RecordInsightsPanel';
+import { ActiveCoverageCard } from './v2/ActiveCoverageCard';
+import { buildActiveCoverageGlance } from '@/lib/crm/active-coverage-glance';
 import { HabitNextBestActions } from '@/components/crm/habits/HabitNextBestActions';
 import { RecordBriefingCard } from './v2/RecordBriefingCard';
 import { InlineRecordSearch, type NavigateToMatchArgs } from './v2/InlineRecordSearch';
@@ -164,7 +166,7 @@ import {
   isNonMemberContact,
   nonMemberContactLabel,
 } from '@/lib/crm/partner-fields';
-import { isHistoricalStatus } from '@/lib/crm/person-module-keys';
+import { isHistoricalStatus, isPersonModuleKey } from '@/lib/crm/person-module-keys';
 import { useSyncBroadcast } from '@/hooks/useSyncBroadcast';
 import { RecordFieldSaveProvider, useRecordFieldSaveOptional } from '@/hooks/useRecordFieldSave';
 import { NoteComposeProvider, noteTemplateBodyToHtml } from '@/components/crm/notes/NoteComposeContext';
@@ -729,6 +731,27 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
   const addressFieldKey = primaryAddressFieldKey(module.key);
   const isPeopleModule = isContacts || isLeads || isMembers;
   const isPartnerStyleContact = isNonMemberContact(recordValues);
+  const activeCoverageGlance = useMemo(() => {
+    if (!isPersonModuleKey(module.key) || isPartnerStyleContact) return null;
+    return buildActiveCoverageGlance({
+      ...projectedRecordValues,
+      status: displayStatus,
+      contact_status: displayStatus,
+    });
+  }, [module.key, isPartnerStyleContact, projectedRecordValues, displayStatus]);
+  const openActiveCoverageSnapshot = useCallback(() => {
+    setInsightsSheetOpen(false);
+    setTopTab('overview');
+    setOverviewPane('details');
+    requestAnimationFrame(() => {
+      document
+        .querySelector('[data-testid="crm-record-snapshot"]')
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }, []);
+  const activeCoverageCard = activeCoverageGlance ? (
+    <ActiveCoverageCard glance={activeCoverageGlance} onOpen={openActiveCoverageSnapshot} />
+  ) : null;
   const statusIsActiveLane =
     statusLane(displayStatus) === 'active' || isActiveCoverageStatus(displayStatus);
   const canConvertToMember =
@@ -1410,6 +1433,9 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
     const raw = (record.data as Record<string, unknown> | null)?.membership_changes;
     return Array.isArray(raw) ? raw.length : 0;
   })();
+  const hasScheduledPlanChange = Boolean(
+    (record.data as Record<string, unknown> | null)?.scheduled_plan_change,
+  );
 
   /**
    * Screen-one context strip: the last few notes + plan/dependent history.
@@ -1442,11 +1468,13 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
               icon={ClipboardList}
               title="Plan changes"
               summary={
-                membershipChangeCount > 0
-                  ? `${membershipChangeCount} change${membershipChangeCount === 1 ? '' : 's'}`
-                  : 'No plan changes recorded'
+                hasScheduledPlanChange
+                  ? 'Upcoming change scheduled'
+                  : membershipChangeCount > 0
+                    ? `${membershipChangeCount} change${membershipChangeCount === 1 ? '' : 's'}`
+                    : 'Schedule from the coverage card — not a second current product'
               }
-              defaultOpen={membershipChangeCount > 0}
+              defaultOpen={membershipChangeCount > 0 || hasScheduledPlanChange}
             >
               <MembershipChangeHistory
                 data={(record.data ?? null) as Record<string, unknown> | null}
@@ -1488,6 +1516,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
       showChangeHistory,
       linkedMemberId,
       membershipChangeCount,
+      hasScheduledPlanChange,
       record,
       sortedNotes,
       noteTotal,
@@ -2450,6 +2479,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
               </div>
               <RecordInsightsPanel
                 className="flex"
+                activeCoverage={activeCoverageCard}
                 lastUpdatedAt={insights?.lastInteractionAt ?? record.updated_at}
                 bestTime={bestTimeSlots}
                 quickActions={
@@ -2995,6 +3025,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
           <div className="mt-4">
             <RecordInsightsPanel
               className="w-full"
+              activeCoverage={activeCoverageCard}
               lastUpdatedAt={insights?.lastInteractionAt ?? record.updated_at}
               bestTime={bestTimeSlots}
               quickActions={

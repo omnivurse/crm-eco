@@ -20,6 +20,8 @@ export interface InsightBestTimeSlot {
 }
 
 export interface RecordInsightsPanelProps {
+  /** Active membership / plan card — first block under Insights. */
+  activeCoverage?: ReactNode;
   /** Last update ISO date for the pill at the top of the panel. */
   lastUpdatedAt?: string | null;
   bestTime?: InsightBestTimeSlot[];
@@ -44,6 +46,7 @@ const CHANNEL_ICONS: Record<InsightBestTimeSlot['channel'], LucideIcon> = {
  * quick actions, and record info rows.
  */
 export const RecordInsightsPanel = memo(function RecordInsightsPanel({
+  activeCoverage,
   lastUpdatedAt,
   bestTime,
   quickActions,
@@ -59,6 +62,8 @@ export const RecordInsightsPanel = memo(function RecordInsightsPanel({
         className,
       )}
     >
+      {activeCoverage}
+
       {lastUpdatedAt && (
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-white/10 self-start">
           <Clock className="w-3.5 h-3.5 text-slate-400" />

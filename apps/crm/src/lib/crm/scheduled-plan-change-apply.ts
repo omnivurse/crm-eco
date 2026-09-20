@@ -25,6 +25,8 @@ export interface ScheduledPlanChange {
   from_monthly?: string;
   scheduled_at?: string;
   scheduled_by?: string;
+  /** Pending `memberships.id` when this change also scheduled billing. */
+  mms_membership_id?: string;
 }
 
 export type RecordForScheduledPlanChange = {
@@ -83,6 +85,66 @@ export function isRecordSyncedToMember(record: {
 }
 
 /**
+ * Flip current-plan fields on a CRM `data` blob. Pure — used by the CRM-only
+ * apply cron and by MMS activation projection (which must run even when the
+ * record is linked_member_id / synced).
+ */
+export function applyPlanChangeFieldsToData(
+  data: Record<string, unknown>,
+  spc: ScheduledPlanChange,
+  appliedAt: string = new Date().toISOString(),
+): { data: Record<string, unknown>; followUpTaskId: string | null } {
+  const next = { ...data };
+
+  const oldProduct =
+    (next.product as string | undefined) || (next.plan_name as string | undefined) || undefined;
+  const oldIua =
+    (next.iua_amount as string | undefined) || (next.iua as string | undefined) || undefined;
+  const oldMonthly =
+    MONTHLY_KEYS.map((k) => next[k] as string | undefined).find((v) => v != null && v !== '') ??
+    undefined;
+
+  // Flip the flat plan fields. start_date / original_start_date / any end-date
+  // key stay untouched (the cancel cron must never see this as a termination).
+  if (oldProduct) next.previous_product = oldProduct;
+  if (spc.to_plan) {
+    next.product = spc.to_plan;
+    if (next.plan_name != null) next.plan_name = spc.to_plan;
+    if (next.product_type != null) next.product_type = spc.to_plan;
+  }
+  if (spc.to_iua) {
+    next.iua_amount = spc.to_iua;
+    if (next.iua != null) next.iua = spc.to_iua;
+  }
+  if (spc.to_monthly != null && spc.to_monthly !== '') {
+    const present = MONTHLY_KEYS.filter((k) => next[k] != null && next[k] !== '');
+    for (const k of present) next[k] = spc.to_monthly;
+    if (present.length === 0) next.monthly_contribution = spc.to_monthly;
+  }
+  if (spc.effective_date) next.sharing_effective_date = spc.effective_date;
+
+  let followUpTaskId: string | null = null;
+  const changes = Array.isArray(next.membership_changes)
+    ? [...(next.membership_changes as Record<string, unknown>[])]
+    : [];
+  const idx = changes.findIndex((c) => c && c.id === spc.change_id);
+  if (idx >= 0) {
+    const entry = { ...changes[idx] };
+    if (!entry.from_plan && oldProduct) entry.from_plan = oldProduct;
+    if (!entry.from_iua && oldIua) entry.from_iua = oldIua;
+    if (!entry.from_monthly && oldMonthly) entry.from_monthly = oldMonthly;
+    entry.change_status = 'applied';
+    entry.applied_at = appliedAt;
+    changes[idx] = entry;
+    next.membership_changes = changes;
+    followUpTaskId = (entry.follow_up_task_id as string | undefined) ?? null;
+  }
+
+  delete next.scheduled_plan_change;
+  return { data: next, followUpTaskId };
+}
+
+/**
  * Compute the record update that applies a due scheduled plan change.
  * Returns null when nothing is due. Pure — no I/O.
  */
@@ -99,55 +161,10 @@ export function buildScheduledPlanChangeUpdates(
       ? { ...record.data }
       : {};
 
-  const oldProduct =
-    (data.product as string | undefined) || (data.plan_name as string | undefined) || undefined;
-  const oldIua =
-    (data.iua_amount as string | undefined) || (data.iua as string | undefined) || undefined;
-  const oldMonthly =
-    MONTHLY_KEYS.map((k) => data[k] as string | undefined).find((v) => v != null && v !== '') ??
-    undefined;
-
-  // Flip the flat plan fields. start_date / original_start_date / any end-date
-  // key stay untouched (the cancel cron must never see this as a termination).
-  if (oldProduct) data.previous_product = oldProduct;
-  if (spc.to_plan) {
-    data.product = spc.to_plan;
-    if (data.plan_name != null) data.plan_name = spc.to_plan;
-  }
-  if (spc.to_iua) {
-    data.iua_amount = spc.to_iua;
-    if (data.iua != null) data.iua = spc.to_iua;
-  }
-  if (spc.to_monthly) {
-    const present = MONTHLY_KEYS.filter((k) => data[k] != null && data[k] !== '');
-    for (const k of present) data[k] = spc.to_monthly;
-    if (present.length === 0) data.monthly_contribution = spc.to_monthly;
-  }
-  data.sharing_effective_date = spc.effective_date;
-
-  // Mark the audit entry applied (and backfill from_* if staff left them blank).
-  let followUpTaskId: string | null = null;
-  const changes = Array.isArray(data.membership_changes)
-    ? [...(data.membership_changes as Record<string, unknown>[])]
-    : [];
-  const idx = changes.findIndex((c) => c && c.id === spc.change_id);
-  if (idx >= 0) {
-    const entry = { ...changes[idx] };
-    if (!entry.from_plan && oldProduct) entry.from_plan = oldProduct;
-    if (!entry.from_iua && oldIua) entry.from_iua = oldIua;
-    if (!entry.from_monthly && oldMonthly) entry.from_monthly = oldMonthly;
-    entry.change_status = 'applied';
-    entry.applied_at = new Date().toISOString();
-    changes[idx] = entry;
-    data.membership_changes = changes;
-    followUpTaskId = (entry.follow_up_task_id as string | undefined) ?? null;
-  }
-
-  delete data.scheduled_plan_change;
-
+  const applied = applyPlanChangeFieldsToData(data, spc);
   return {
-    updates: { data, updated_at: new Date().toISOString() },
-    followUpTaskId,
+    updates: { data: applied.data, updated_at: new Date().toISOString() },
+    followUpTaskId: applied.followUpTaskId,
     spc,
   };
 }

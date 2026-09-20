@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { resolveCoverageSnapshotPlanType } from './coverage-snapshot-plan-type';
+import {
+  coverageTypeFromStatus,
+  resolveCoverageSnapshotPlanType,
+} from './coverage-snapshot-plan-type';
 
 function hasValueFrom(values: Record<string, unknown>) {
   return (key: string) => {
@@ -7,6 +10,17 @@ function hasValueFrom(values: Record<string, unknown>) {
     return v !== null && v !== undefined && v !== '';
   };
 }
+
+describe('coverageTypeFromStatus', () => {
+  it('reads type-specific active spellings and ignores generic Active', () => {
+    expect(coverageTypeFromStatus('Active Insurance Client')).toBe('insurance');
+    expect(coverageTypeFromStatus('Active HS Member')).toBe('healthshare');
+    expect(coverageTypeFromStatus('Active HS Member - LHS Not Paid')).toBe('healthshare');
+    expect(coverageTypeFromStatus('Active')).toBeNull();
+    expect(coverageTypeFromStatus('Active Member')).toBeNull();
+    expect(coverageTypeFromStatus('Cancelled')).toBeNull();
+  });
+});
 
 describe('resolveCoverageSnapshotPlanType', () => {
   it('overrides healthshare market_type when hero is a known insurer and no ministry present (James)', () => {
@@ -62,5 +76,64 @@ describe('resolveCoverageSnapshotPlanType', () => {
         hasValue: hasValueFrom(values),
       }),
     ).toBe('healthshare');
+  });
+
+  it('lets Active Insurance Client win over leftover healthshare fields', () => {
+    const values = {
+      status: 'Active Insurance Client',
+      market_type: 'healthshare',
+      sharing_entity: 'Sedera',
+      product: 'Premium Care',
+      monthly_contribution: 324,
+      health_insurance_plan_name: 'Cigna Gold',
+    };
+    expect(
+      resolveCoverageSnapshotPlanType({
+        values,
+        heroCarrierValue: 'Sedera',
+        hasValue: hasValueFrom(values),
+      }),
+    ).toBe('insurance');
+  });
+
+  it('lets Active HS Member win over leftover insurance fields', () => {
+    const values = {
+      status: 'Active HS Member',
+      market_type: 'traditional_insurance',
+      health_insurance_carrier: 'Cigna',
+      health_insurance_plan_name: 'Cigna Gold',
+      product: 'Secure HSA',
+    };
+    expect(
+      resolveCoverageSnapshotPlanType({
+        values,
+        heroCarrierValue: 'Cigna',
+        hasValue: hasValueFrom(values),
+      }),
+    ).toBe('healthshare');
+  });
+
+  it('does not treat generic Active as a type signal', () => {
+    const values = { status: 'Active', market_type: 'traditional_insurance' };
+    expect(
+      resolveCoverageSnapshotPlanType({
+        values,
+        hasValue: hasValueFrom(values),
+      }),
+    ).toBe('insurance');
+  });
+
+  it('does not let stale sharing_status flip a cancelled contact', () => {
+    const values = {
+      status: 'Cancelled',
+      sharing_status: 'Active HS Member',
+      market_type: 'traditional_insurance',
+    };
+    expect(
+      resolveCoverageSnapshotPlanType({
+        values,
+        hasValue: hasValueFrom(values),
+      }),
+    ).toBe('insurance');
   });
 });

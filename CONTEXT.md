@@ -136,6 +136,16 @@ locality) comes from the `/codebase-design` skill; the terms below name the
   not cancel-and-recreate. Shop flags live on `plans.metadata.shop`.
   Live on PIF-ECO-V2 (`memberships.layer` + unique indexes).
 
+- **Scheduled membership change** — one **current** membership plus optional
+  **upcoming** (name + effective date). Never two current products on the
+  coverage snapshot. CRM writes `data.membership_changes` +
+  `data.scheduled_plan_change`; a linked `members` row with an active core
+  also gets `staffSchedulePlanChange`. CRM-only records flip on
+  `apply-scheduled-plan-changes`; billing rows flip on
+  `activate-due-memberships`, which then projects plan/IUA/monthly onto the
+  contact. `add_on_product` / `previous_product` are history leftovers, not
+  an upcoming slot.
+
 - **Package** — prepaid bundle with remaining units (`packages` catalog +
   `member_packages`). Not a recurring membership and not Cash Pay. Tax and
   deferred-revenue remaining are stored on the purchase; utilization is

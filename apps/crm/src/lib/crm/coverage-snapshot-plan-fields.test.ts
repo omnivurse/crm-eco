@@ -145,6 +145,26 @@ describe('selectCoverageSnapshotPlanFields', () => {
     expect(keys).not.toContain('member_tier');
   });
 
+  it('shows only one Health Sharing Membership when product and product_type are both set', () => {
+    const result = selectCoverageSnapshotPlanFields({
+      planType: 'healthshare',
+      fields: [
+        { key: 'product', label: 'Membership / Plan', type: 'text' },
+        { key: 'product_type', label: 'Product Type', type: 'text' },
+        { key: 'monthly_contribution', label: 'Monthly Contribution', type: 'currency' },
+      ],
+      values: {
+        product: 'Care Plus 2024 (42644)',
+        product_type: 'Secure HSA',
+        monthly_contribution: 360,
+      },
+    });
+    const membershipRows = result.filter((f) => f.label === MEMBERSHIP_LABEL);
+    expect(membershipRows).toHaveLength(1);
+    expect(membershipRows[0]?.key).toBe('product');
+    expect(result.some((f) => f.key === 'product_type')).toBe(false);
+  });
+
   it('relabels product → Health Sharing Membership on HealthShare snapshots only', () => {
     const healthshare = selectCoverageSnapshotPlanFields({
       planType: 'healthshare',
@@ -183,7 +203,8 @@ describe('selectCoverageSnapshotPlanFields', () => {
       ],
       values: { product: 'Health Insurance', plan_name: 'Premium Care' },
     });
-    expect(result.map((f) => f.key)).toEqual(['plan_name', 'product']);
+    expect(result.map((f) => f.key)).toEqual(['plan_name']);
+    expect(result.find((f) => f.key === 'plan_name')?.label).toBe(MEMBERSHIP_LABEL);
   });
 
   it('prefers real plan-name keys ahead of product in preferred order', () => {
@@ -238,6 +259,7 @@ describe('coverageSnapshotSkipKeysForPlanType', () => {
   it('hides coverage_option on HealthShare and leaves member_tier visible', () => {
     const skip = coverageSnapshotSkipKeysForPlanType('healthshare');
     expect(skip).toContain('coverage_option');
+    expect(skip).toContain('previous_product');
     expect(skip).not.toContain('member_tier');
   });
 

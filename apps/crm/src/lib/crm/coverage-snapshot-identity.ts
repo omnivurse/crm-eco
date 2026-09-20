@@ -15,6 +15,8 @@
  * ambiguous placeholder, while keeping the caller's candidate priority order.
  */
 
+import type { CoverageSnapshotPlanType } from '@/lib/crm/coverage-snapshot-plan-fields';
+
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -97,4 +99,79 @@ export function selectHeroSharingField<T extends HeroSharingCandidate>(
   if (populated) return populated;
 
   return candidates[0];
+}
+
+/** Carrier / entity keys that belong on an insurance snapshot. */
+export const INSURANCE_HERO_CARRIER_KEYS = [
+  'health_insurance_carrier',
+  'insurance_carrier',
+  'carrier',
+  'carrier_name',
+] as const;
+
+/** Carrier / entity keys that belong on a health-sharing snapshot. */
+export const HEALTHSHARE_HERO_CARRIER_KEYS = [
+  'sharing_entity',
+  'carrier',
+  'carrier_name',
+] as const;
+
+/** Effective-date keys that belong on an insurance snapshot. */
+export const INSURANCE_HERO_START_DATE_KEYS = [
+  'health_insurance_start_date',
+  'insurance_effective_date',
+  'effective_date',
+  'start_date',
+  'original_start_date',
+  'current_year_start_date',
+] as const;
+
+/** Effective-date keys that belong on a health-sharing snapshot. */
+export const HEALTHSHARE_HERO_START_DATE_KEYS = [
+  'sharing_effective_date',
+  'effective_date',
+  'start_date',
+  'original_start_date',
+  'current_year_start_date',
+] as const;
+
+function filterHeroCandidates<T extends HeroSharingCandidate>(
+  candidates: T[],
+  allowedKeys: readonly string[],
+): T[] {
+  const allowed = new Set<string>(allowedKeys);
+  const filtered = candidates.filter((candidate) => allowed.has(candidate.key));
+  return filtered.length > 0 ? filtered : candidates;
+}
+
+/**
+ * Drop the opposite product's carrier keys once the record is classified.
+ * Unknown type keeps the caller's full candidate list.
+ */
+export function filterHeroCarrierCandidatesByPlanType<T extends HeroSharingCandidate>(
+  candidates: T[],
+  planType: CoverageSnapshotPlanType,
+): T[] {
+  if (planType === 'insurance') return filterHeroCandidates(candidates, INSURANCE_HERO_CARRIER_KEYS);
+  if (planType === 'healthshare') {
+    return filterHeroCandidates(candidates, HEALTHSHARE_HERO_CARRIER_KEYS);
+  }
+  return candidates;
+}
+
+/**
+ * Drop the opposite product's start-date keys once the record is classified.
+ * Unknown type keeps the caller's full candidate list.
+ */
+export function filterHeroStartDateCandidatesByPlanType<T extends HeroSharingCandidate>(
+  candidates: T[],
+  planType: CoverageSnapshotPlanType,
+): T[] {
+  if (planType === 'insurance') {
+    return filterHeroCandidates(candidates, INSURANCE_HERO_START_DATE_KEYS);
+  }
+  if (planType === 'healthshare') {
+    return filterHeroCandidates(candidates, HEALTHSHARE_HERO_START_DATE_KEYS);
+  }
+  return candidates;
 }

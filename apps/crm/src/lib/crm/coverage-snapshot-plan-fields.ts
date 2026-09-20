@@ -144,6 +144,56 @@ export const COVERAGE_SNAPSHOT_PREFERRED_KEYS = [
   'previous_product',
 ] as const;
 
+/** Keys that can carry the current health-share membership name. */
+export const HEALTHSHARE_MEMBERSHIP_KEYS = [
+  'plan_name',
+  'product',
+  'product_type',
+] as const;
+
+/**
+ * One current membership on a HealthShare snapshot. `product` + `product_type`
+ * both used to receive MEMBERSHIP_LABEL, so stacking Care+ and Secure HSA
+ * looked like two current memberships.
+ */
+export function pickHealthshareMembershipKey(
+  keys: string[],
+  values?: Record<string, unknown>,
+): string | null {
+  const present = HEALTHSHARE_MEMBERSHIP_KEYS.filter((k) => keys.includes(k));
+  if (present.length === 0) return null;
+  if (values) {
+    for (const key of present) {
+      const v = coerceCoverageSnapshotFieldValue(key, values[key]);
+      if (v != null && v !== '') return key;
+    }
+  }
+  if (present.includes('product')) return 'product';
+  return present[0];
+}
+
+function dropHealthshareMembershipAliases<T extends CoverageSnapshotPlanField>(
+  fields: T[],
+  values?: Record<string, unknown>,
+): T[] {
+  const keys = fields.map((f) => f.key);
+  const membershipPresent = keys.filter((k) =>
+    (HEALTHSHARE_MEMBERSHIP_KEYS as readonly string[]).includes(k),
+  );
+  if (membershipPresent.length <= 1) return fields;
+
+  const keep = pickHealthshareMembershipKey(keys, values);
+  if (!keep) return fields;
+  if (!values) {
+    return fields.filter((f) => f.key !== 'product_type');
+  }
+  return fields.filter(
+    (f) =>
+      !(HEALTHSHARE_MEMBERSHIP_KEYS as readonly string[]).includes(f.key) ||
+      f.key === keep,
+  );
+}
+
 const PATTERN =
   /plan|product|tier|premium|monthly|contribution|coverage.?option|member.?tier|rate|amount/i;
 
@@ -169,6 +219,9 @@ export function coverageSnapshotSkipKeysForPlanType(
       // Household tier lives on member_tier for HealthShare; coverage_option is
       // the insurance / Zoho leftover and must not share the snapshot.
       'coverage_option',
+      // History slot — not a second current membership. Upcoming lives on
+      // scheduled_plan_change, not previous_product.
+      'previous_product',
     ];
   }
   if (planType === 'insurance') {
@@ -235,17 +288,27 @@ export function selectCoverageSnapshotPlanFields<T extends CoverageSnapshotPlanF
           .sort((a, b) => a.tier - b.tier || a.i - b.i)
           .map((entry) => entry.f);
 
-  // 3. Cap, then normalize amount labels (Monthly Premium invariant).
-  const labeled = applyCoverageSnapshotAmountLabels(ranked.slice(0, maxFields));
+  // 3. One HealthShare membership name, then cap, then amount-label normalize.
+  const deduped =
+    args.planType === 'healthshare'
+      ? dropHealthshareMembershipAliases(ranked, values)
+      : ranked;
+  const labeled = applyCoverageSnapshotAmountLabels(deduped.slice(0, maxFields));
 
-  // 4. On HealthShare records the membership name IS the product — relabel the
-  //    product row so the snapshot names the member's sharing membership.
+  const membershipKey =
+    args.planType === 'healthshare'
+      ? pickHealthshareMembershipKey(
+          labeled.map((f) => f.key),
+          values,
+        )
+      : null;
+
+  // 4. On HealthShare records the membership name IS the product — relabel
+  //    ONE row so the snapshot never shows two "Health Sharing Membership"s.
   const finalFields =
     args.planType === 'healthshare'
       ? labeled.map((f) =>
-          f.key === 'product' || f.key === 'product_type'
-            ? { ...f, label: MEMBERSHIP_LABEL }
-            : f,
+          f.key === membershipKey ? { ...f, label: MEMBERSHIP_LABEL } : f,
         )
       : labeled.map((f) =>
           f.key === 'health_insurance_plan_name' || f.key === 'insurance_plan_name'
