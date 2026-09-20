@@ -3,8 +3,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   RECORD_SECTION_RAIL_DEFAULT_OPEN,
   RECORD_SECTION_RAIL_STORAGE_KEY,
+  computeRecordSectionRailMaxHeight,
   parseRecordSectionRailOpen,
   readRecordSectionRailOpen,
+  scrollChildIntoNearest,
   subscribeRecordSectionRailOpen,
   writeRecordSectionRailOpen,
 } from './record-section-rail';
@@ -64,5 +66,60 @@ describe('read / write (localStorage)', () => {
     unsubscribe();
     writeRecordSectionRailOpen(true);
     expect(listener).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('computeRecordSectionRailMaxHeight', () => {
+  it('uses the leftover viewport under a stuck rail', () => {
+    expect(
+      computeRecordSectionRailMaxHeight({
+        railTop: 200,
+        viewportHeight: 900,
+        bottomPad: 16,
+      }),
+    ).toBe(684);
+  });
+
+  it('never shrinks below the minimum so the rail stays usable', () => {
+    expect(
+      computeRecordSectionRailMaxHeight({
+        railTop: 880,
+        viewportHeight: 900,
+        minHeight: 160,
+      }),
+    ).toBe(160);
+  });
+});
+
+describe('scrollChildIntoNearest', () => {
+  it('moves only the container scrollTop to reveal a clipped child', () => {
+    const container = document.createElement('div');
+    const child = document.createElement('button');
+    container.appendChild(child);
+    Object.defineProperty(container, 'scrollTop', { value: 0, writable: true });
+    vi.spyOn(container, 'getBoundingClientRect').mockReturnValue({
+      top: 100,
+      bottom: 300,
+      height: 200,
+      width: 100,
+      left: 0,
+      right: 100,
+      x: 0,
+      y: 100,
+      toJSON: () => ({}),
+    });
+    vi.spyOn(child, 'getBoundingClientRect').mockReturnValue({
+      top: 340,
+      bottom: 364,
+      height: 24,
+      width: 80,
+      left: 8,
+      right: 88,
+      x: 8,
+      y: 340,
+      toJSON: () => ({}),
+    });
+    scrollChildIntoNearest(container, child);
+    expect(container.scrollTop).toBe(64);
   });
 });

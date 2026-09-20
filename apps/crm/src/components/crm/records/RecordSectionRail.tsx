@@ -1,15 +1,17 @@
 'use client';
 
-import { useCallback, useMemo, useSyncExternalStore } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { ChevronDown, PanelLeftClose, Search } from 'lucide-react';
 import { cn } from '@crm-eco/ui/lib/utils';
 import {
   RECORD_SECTION_RAIL_DEFAULT_OPEN,
+  computeRecordSectionRailMaxHeight,
   readRecordSectionRailOpen,
+  scrollChildIntoNearest,
   subscribeRecordSectionRailOpen,
   writeRecordSectionRailOpen,
 } from '@/lib/crm/record-section-rail';
-import { scrollRecordSectionAfterExpand } from '@/lib/crm/record-section-scroll';
+import { getRecordScrollRoot, scrollRecordSectionAfterExpand } from '@/lib/crm/record-section-scroll';
 import type { SectionMeta } from './section-utils';
 import {
   CRM_SECTION_NAV_EVENT,
@@ -87,6 +89,48 @@ export function RecordSectionRail({
     },
     [navigateToSection],
   );
+
+  const asideRef = useRef<HTMLElement>(null);
+  const [railMaxHeight, setRailMaxHeight] = useState<number | null>(null);
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    const el = asideRef.current;
+    if (!el) return;
+
+    const measure = () => {
+      const next = computeRecordSectionRailMaxHeight({
+        railTop: el.getBoundingClientRect().top,
+        viewportHeight: window.innerHeight,
+      });
+      setRailMaxHeight((prev) => (prev === next ? prev : next));
+    };
+    measure();
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(measure) : null;
+    ro?.observe(el);
+    window.addEventListener('resize', measure);
+    const scrollRoot = getRecordScrollRoot();
+    scrollRoot?.addEventListener('scroll', measure, { passive: true });
+    return () => {
+      ro?.disconnect();
+      window.removeEventListener('resize', measure);
+      scrollRoot?.removeEventListener('scroll', measure);
+    };
+  }, [open, sections.length]);
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    const box = asideRef.current;
+    if (!box) return;
+    const escaped =
+      typeof CSS !== 'undefined' && typeof CSS.escape === 'function'
+        ? CSS.escape(activeSectionKey)
+        : activeSectionKey.replace(/"/g, '\\"');
+    const active =
+      box.querySelector<HTMLElement>(`[data-rail-section="${escaped}"]`) ??
+      box.querySelector<HTMLElement>('[aria-current="true"]');
+    if (active) scrollChildIntoNearest(box, active);
+  }, [activeSectionKey, open, railMaxHeight]);
 
   const handleTreeKeyDown = useCallback((e: React.KeyboardEvent<HTMLElement>) => {
     if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown' && e.key !== 'Home' && e.key !== 'End') {
@@ -169,10 +213,14 @@ export function RecordSectionRail({
       </div>
 
       <aside
+        ref={asideRef}
         aria-label="Record sections"
-        className="flex min-w-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-white/10 dark:bg-slate-900"
+        className="flex min-h-0 min-w-0 flex-col overflow-y-auto overscroll-contain rounded-xl border border-slate-200 bg-white scrollbar-thin dark:border-white/10 dark:bg-slate-900"
         style={{
-          maxHeight: 'calc(100dvh - var(--record-sticky-offset, 11rem) - 2.5rem)',
+          maxHeight:
+            railMaxHeight != null
+              ? `${railMaxHeight}px`
+              : 'calc(100dvh - var(--record-sticky-offset, 11rem) - 5rem)',
         }}
       >
         <button
@@ -182,7 +230,7 @@ export function RecordSectionRail({
           onClick={() => {
             window.dispatchEvent(new CustomEvent('crm:focus-record-search'));
           }}
-          className="mx-1.5 mt-1.5 inline-flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-white"
+          className="sticky top-0 z-10 mx-1.5 mt-1.5 inline-flex shrink-0 items-center gap-1.5 rounded-md bg-white px-2 py-1.5 text-xs font-medium text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-white"
         >
           <Search className="h-3.5 w-3.5" aria-hidden />
           Find field
@@ -193,7 +241,7 @@ export function RecordSectionRail({
           tabIndex={-1}
           aria-label="Record sections"
           onKeyDown={handleTreeKeyDown}
-          className="min-h-0 flex-1 overflow-y-auto px-1.5 pb-2 pt-1"
+          className="min-h-0 px-1.5 pb-2 pt-1"
         >
           {grouped
             ? bands.map((band) => {

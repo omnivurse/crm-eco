@@ -50,3 +50,33 @@ export function writeRecordSectionRailOpen(open: boolean): void {
   }
   listeners.forEach((l) => l());
 }
+
+/**
+ * Remaining viewport below a sticky rail, so Coverage → Vision (and Admin /
+ * More) stay inside a real scrollport. `max-height` alone on a flex parent
+ * does not shrink the child — the list clips and wheel-scrolls the record
+ * instead of the rail.
+ */
+export function computeRecordSectionRailMaxHeight(input: {
+  railTop: number;
+  viewportHeight: number;
+  bottomPad?: number;
+  minHeight?: number;
+}): number {
+  const bottomPad = input.bottomPad ?? 16;
+  const minHeight = input.minHeight ?? 160;
+  return Math.max(minHeight, Math.floor(input.viewportHeight - input.railTop - bottomPad));
+}
+
+/** Scroll `child` inside `container` without moving ancestor scrollers. */
+export function scrollChildIntoNearest(container: HTMLElement, child: HTMLElement): void {
+  const c = container.getBoundingClientRect();
+  const t = child.getBoundingClientRect();
+  if (t.top < c.top) {
+    container.scrollTop -= c.top - t.top;
+    return;
+  }
+  if (t.bottom > c.bottom) {
+    container.scrollTop += t.bottom - c.bottom;
+  }
+}
