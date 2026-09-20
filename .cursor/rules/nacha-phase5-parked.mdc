@@ -9,4 +9,4 @@ On the next session, remind the owner: **Phase 5 Bank of Colorado SFTP is next. 
 
 Read the handoff in the user store: `nacha-phase5-handoff.md` (also in this agent store). Chat: [NACHA phases 1–4](df118e04-5433-4d8c-b919-0885991a378c).
 
-Still fail-closed. Cards on NMI. ACH is local vault + pending queue. Shop ACH Champion repair is **uncommitted** (`shopCharge.ts`, `checkout.ts`, `membership-os.test.ts`, `ShopClient.tsx`) — do not mix with rates/sponsor/`tenant.ts`. Pushed through `34a64aea` (settlement-offset match).
+Still fail-closed. Cards on NMI. ACH is local vault + pending queue. Shop ACH queues add-on memberships (`24151c94`). Coverage rules landed separately (`28a38476`). Pushed through tenant cache (`5a2945aa`). Do not start Phase 5 SFTP until the owner asks.
