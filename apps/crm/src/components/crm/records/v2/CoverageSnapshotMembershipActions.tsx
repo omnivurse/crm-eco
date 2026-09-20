@@ -10,14 +10,14 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowUpCircle, CalendarClock, Loader2, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { format, parseISO } from 'date-fns';
+import { addDays, format, parseISO } from 'date-fns';
 import { Button } from '@crm-eco/ui/components/button';
 import { toastCopy } from '@/lib/crm/toast-copy';
-import { parseScheduledPlanChange } from '@/lib/crm/scheduled-plan-change-apply';
 import {
-  ChangeFormDialog,
-  type MembershipChange,
-} from './MembershipChangeHistory';
+  AUTOMATED_MEMBERSHIP_CHANGE_TYPES,
+  parseScheduledPlanChange,
+} from '@/lib/crm/scheduled-plan-change-apply';
+import { ChangeFormDialog, type MembershipChange } from './MembershipChangeHistory';
 import type { BillingPlanOption } from '@/lib/crm/schedule-membership-change';
 
 function formatDate(iso: string): string {
@@ -33,17 +33,21 @@ export function CoverageSnapshotMembershipActions({
   recordTitle,
   data,
   canEdit,
+  managedByMemberSync = false,
 }: {
   recordId: string;
   recordTitle: string;
   data: Record<string, unknown> | null;
   canEdit: boolean;
+  /** Members-module rows are replaced wholesale by the member sync trigger. */
+  managedByMemberSync?: boolean;
 }) {
   const router = useRouter();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [plans, setPlans] = useState<BillingPlanOption[]>([]);
   const [hasActiveCore, setHasActiveCore] = useState(false);
+  const earliestScheduleDate = format(addDays(new Date(), 1), 'yyyy-MM-dd');
 
   const scheduled = parseScheduledPlanChange(data);
 
@@ -126,7 +130,7 @@ export function CoverageSnapshotMembershipActions({
     }
   }, [recordId, router]);
 
-  if (!canEdit && !scheduled) return null;
+  if ((!canEdit || managedByMemberSync) && !scheduled) return null;
 
   return (
     <div
@@ -154,7 +158,7 @@ export function CoverageSnapshotMembershipActions({
             </button>
           ) : null}
         </span>
-      ) : canEdit ? (
+      ) : canEdit && !managedByMemberSync ? (
         <Button
           type="button"
           variant="outline"
@@ -177,6 +181,9 @@ export function CoverageSnapshotMembershipActions({
           }}
           currentData={data}
           billingPlans={hasActiveCore ? plans : []}
+          allowedTypes={AUTOMATED_MEMBERSHIP_CHANGE_TYPES}
+          initialDate={earliestScheduleDate}
+          minimumDate={earliestScheduleDate}
           dialogTitle="Schedule a membership change"
           submitLabel="Schedule change"
         />

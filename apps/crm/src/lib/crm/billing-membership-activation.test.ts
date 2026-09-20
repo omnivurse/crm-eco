@@ -52,6 +52,7 @@ function makeSupabase(queues: Record<string, { data: unknown; error: unknown }[]
       return b;
     };
     b.eq = (column: string, value: unknown) => (record('eq', column, value), b);
+    b.is = (column: string, value: unknown) => (record('is', column, value), b);
     b.in = (column: string, value: unknown) => (record('in', column, value), b);
     b.lte = (column: string, value: unknown) => (record('lte', column, value), b);
     b.limit = () => b;
@@ -316,6 +317,70 @@ describe('applyDueMembershipActivation — supersede pass', () => {
       (o) => o.table === 'memberships' && o.kind === 'update' && o.values?.status === 'active',
     );
     expect(activate?.filters).toContainEqual({ method: 'in', column: 'id', value: ['mem-new'] });
+  });
+
+  it('projects a staff-scheduled plan when an independently ended outgoing row forces plain activation', async () => {
+    const dueWithEndedOutgoing = {
+      ...DUE_ROW,
+      enrollment_id: null,
+      custom_fields: { scheduled_change: { from_membership_id: 'mem-old' } },
+    };
+    const { supabase, ops } = makeSupabase({
+      memberships: [
+        { data: [dueWithEndedOutgoing], error: null }, // due list
+        { data: [], error: null }, // no active outgoing
+        {
+          data: [
+            {
+              ...OUTGOING_ACTIVE,
+              status: 'terminated',
+              cancellation_reason: 'member_cancelled',
+            },
+          ],
+          error: null,
+        }, // pointed row is not resumable
+        { data: [{ id: 'mem-new', member_id: 'member-1' }], error: null }, // plain activation
+      ],
+      plans: [{ data: { name: 'Premium Care', iua_amount: 500 }, error: null }],
+      members: [
+        { data: null, error: null }, // plan refresh
+        { data: [], error: null }, // member already active
+      ],
+      crm_records: [
+        {
+          data: [
+            {
+              id: 'crm-1',
+              data: {
+                linked_member_id: 'member-1',
+                product: 'Care Plus',
+                scheduled_plan_change: {
+                  change_id: 'change-1',
+                  effective_date: '2026-09-01',
+                },
+              },
+            },
+          ],
+          error: null,
+        },
+        { data: null, error: null },
+      ],
+    });
+
+    const result = await applyDueMembershipActivation(supabase, '2026-09-01', {
+      supersede: true,
+    });
+
+    expect(result.memberships_activated).toBe(1);
+    expect(result.supersede_errors).toEqual([]);
+    const crmUpdate = ops.find(
+      (op) => op.table === 'crm_records' && op.kind === 'update',
+    );
+    expect(crmUpdate?.values?.data).toMatchObject({
+      product: 'Premium Care',
+      previous_product: 'Care Plus',
+    });
+    expect((crmUpdate?.values?.data as Record<string, unknown>).scheduled_plan_change).toBeUndefined();
   });
 
   it('skips the supersede pass entirely when disabled', async () => {

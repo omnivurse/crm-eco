@@ -1716,6 +1716,9 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
                     ...defaultValues,
                   }}
                   canEdit={inlineEditable || !readOnly}
+                  managedByMemberSync={
+                    (record.system as Record<string, unknown> | null)?.source_table === 'members'
+                  }
                 />
               ) : null}
             </div>

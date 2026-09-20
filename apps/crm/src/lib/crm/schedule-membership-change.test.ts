@@ -4,6 +4,9 @@ import {
   buildMembershipChangeEntry,
   buildScheduledPlanChangeObject,
   currentPlanFieldsFromData,
+  executeScheduleMembershipChange,
+  linkedMemberMatchesRecord,
+  mergeChangedCrmData,
   normalizePlanLookup,
   pickActiveCoreMembership,
   resolvePlanFromCatalog,
@@ -15,6 +18,26 @@ const PLANS: BillingPlanOption[] = [
   { id: 'p-cp', name: 'PIFH Care Plus', code: 'PIFH-CP-2025', monthly_share: 360, iua_amount: 2500 },
   { id: 'p-hsa', name: 'PIFH Secure HSA', code: 'PIFH-SHSA-2025', monthly_share: 390, iua_amount: 2500 },
 ];
+
+function makeReadSupabase(
+  queues: Record<string, Array<{ data: unknown; error: unknown }>>,
+) {
+  const remaining = Object.fromEntries(
+    Object.entries(queues).map(([table, results]) => [table, [...results]]),
+  );
+  return {
+    from(table: string) {
+      const next = () => remaining[table]?.shift() ?? { data: null, error: null };
+      const builder: Record<string, unknown> = {};
+      builder.select = () => builder;
+      builder.eq = () => builder;
+      builder.order = () => builder;
+      builder.maybeSingle = () => Promise.resolve(next());
+      builder.then = (resolve: (value: unknown) => unknown) => resolve(next());
+      return builder;
+    },
+  };
+}
 
 describe('normalizePlanLookup', () => {
   it('folds Care+ / Care Plus / year / plan codes', () => {
@@ -66,6 +89,55 @@ describe('upsertMembershipChange', () => {
   });
 });
 
+describe('mergeChangedCrmData', () => {
+  it('preserves concurrent unrelated edits while applying schedule keys', () => {
+    const original = {
+      phone: 'old',
+      product: 'Care Plus',
+      membership_changes: [],
+    };
+    const desired = {
+      ...original,
+      membership_changes: [{ id: 'change-1', change_status: 'scheduled' }],
+      scheduled_plan_change: {
+        change_id: 'change-1',
+        effective_date: '2099-10-01',
+      },
+    };
+    const latest = {
+      ...original,
+      phone: 'new',
+      notes: 'saved concurrently',
+    };
+
+    expect(mergeChangedCrmData(original, desired, latest)).toEqual({
+      phone: 'new',
+      product: 'Care Plus',
+      notes: 'saved concurrently',
+      membership_changes: [{ id: 'change-1', change_status: 'scheduled' }],
+      scheduled_plan_change: {
+        change_id: 'change-1',
+        effective_date: '2099-10-01',
+      },
+    });
+  });
+
+  it('removes a cancelled scheduled key without reverting concurrent fields', () => {
+    const original = {
+      email: 'old@example.com',
+      scheduled_plan_change: { change_id: 'change-1' },
+    };
+    const desired = { email: 'old@example.com' };
+    const latest = {
+      ...original,
+      email: 'new@example.com',
+    };
+    expect(mergeChangedCrmData(original, desired, latest)).toEqual({
+      email: 'new@example.com',
+    });
+  });
+});
+
 describe('buildCancelScheduledChangeData', () => {
   it('clears the scheduled key and unmarks the matching history entry', () => {
     const change = buildMembershipChangeEntry(
@@ -110,5 +182,136 @@ describe('currentPlanFieldsFromData', () => {
       iua: '2500',
       monthly: '360',
     });
+  });
+});
+
+describe('linkedMemberMatchesRecord', () => {
+  const member = {
+    id: 'member-1',
+    member_number: 'PIF-1001',
+    email: 'alex@example.com',
+    phone: '(555) 111-2222',
+    first_name: 'Alex',
+    last_name: 'Morgan',
+  };
+
+  it('requires corroboration beyond the mutable linked_member_id', () => {
+    expect(
+      linkedMemberMatchesRecord(member, {
+        data: {
+          linked_member_id: 'member-1',
+          member_number: 'PIF-9999',
+          first_name: 'Different',
+          last_name: 'Person',
+        },
+      }),
+    ).toBe(false);
+  });
+
+  it('accepts matching member numbers or matching name plus contact identity', () => {
+    expect(
+      linkedMemberMatchesRecord(member, {
+        data: { linked_member_id: 'member-1', member_number: 'PIF-1001' },
+      }),
+    ).toBe(true);
+    expect(
+      linkedMemberMatchesRecord(
+        { ...member, member_number: null },
+        {
+          email: 'alex@example.com',
+          data: {
+            linked_member_id: 'member-1',
+            first_name: 'Alex',
+            last_name: 'Morgan',
+          },
+        },
+      ),
+    ).toBe(true);
+  });
+});
+
+describe('executeScheduleMembershipChange linked-record guards', () => {
+  const linkedRecord = {
+    id: 'crm-1',
+    email: 'alex@example.com',
+    phone: null,
+    system: null,
+    data: {
+      linked_member_id: 'member-1',
+      member_number: 'PIF-1001',
+      first_name: 'Alex',
+      last_name: 'Morgan',
+      product: 'Care Plus',
+    },
+  };
+
+  it('fails closed when a linked member has no active core membership', async () => {
+    const staffSupabase = makeReadSupabase({
+      members: [
+        {
+          data: {
+            id: 'member-1',
+            member_number: 'PIF-1001',
+            email: 'alex@example.com',
+            phone: null,
+            first_name: 'Alex',
+            last_name: 'Morgan',
+          },
+          error: null,
+        },
+      ],
+      memberships: [{ data: [], error: null }],
+    });
+
+    const result = await executeScheduleMembershipChange({
+      userSupabase: {} as never,
+      staffCtx: {
+        supabase: staffSupabase as never,
+        organizationId: 'org-1',
+        profileId: 'staff-1',
+        source: 'crm',
+      },
+      organizationId: 'org-1',
+      profileId: 'staff-1',
+      record: linkedRecord,
+      input: {
+        type: 'upgrade',
+        effective_date: '2099-10-01',
+        plan_id: 'plan-new',
+      },
+      today: '2099-09-01',
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      error: 'This member has no active core membership to change.',
+    });
+  });
+
+  it('rejects members-module records whose JSON is replaced by member sync', async () => {
+    const result = await executeScheduleMembershipChange({
+      userSupabase: {} as never,
+      staffCtx: {
+        supabase: {} as never,
+        organizationId: 'org-1',
+        profileId: 'staff-1',
+        source: 'crm',
+      },
+      organizationId: 'org-1',
+      profileId: 'staff-1',
+      record: {
+        ...linkedRecord,
+        system: { source_table: 'members', source_id: 'member-1', synced: true },
+      },
+      input: {
+        type: 'upgrade',
+        effective_date: '2099-10-01',
+        plan_id: 'plan-new',
+      },
+      today: '2099-09-01',
+    });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toMatch(/Member Command Center/);
   });
 });

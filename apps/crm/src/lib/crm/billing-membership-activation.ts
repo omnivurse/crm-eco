@@ -514,8 +514,47 @@ export async function applyDueMembershipActivation(
       return { ...base, error: e1.message };
     }
     base.memberships_activated += (m1 ?? []).length;
+    const dueById = new Map(due.map((membership) => [membership.id, membership]));
     for (const row of m1 ?? []) {
       if (row.member_id) activatedMemberIds.add(row.member_id);
+
+      // A staff-scheduled row can reach this plain path when its outgoing
+      // membership was ended independently before switch day. Billing still
+      // activated the new plan, so run the same member refresh + CRM projection
+      // as the normal supersede path instead of leaving the CRM card stale.
+      const incoming = dueById.get(row.id);
+      const outgoingId = incoming ? scheduledChangeFromMembershipId(incoming) : null;
+      if (!incoming?.effective_date || !incoming.organization_id || !outgoingId) continue;
+
+      const projectionContext: SupersedeCandidate = {
+        member_id: incoming.member_id,
+        organization_id: incoming.organization_id,
+        incoming_membership_id: incoming.id,
+        incoming_plan_id: incoming.plan_id,
+        incoming_enrollment_id: incoming.enrollment_id,
+        incoming_effective_date: incoming.effective_date,
+        incoming_billing_amount: incoming.billing_amount,
+        incoming_custom_fields: incoming.custom_fields,
+        outgoing_membership_id: outgoingId,
+        outgoing_enrollment_id: null,
+        outgoing_end_date: null,
+      };
+      const { error: refreshError, planName, iuaAmount } = await refreshMemberAfterSwitch(
+        supabase,
+        projectionContext,
+      );
+      if (refreshError) base.supersede_errors.push(refreshError);
+      if (planName) {
+        const projected = await projectActivatedPlanToCrmRecords(supabase, {
+          memberId: incoming.member_id,
+          organizationId: incoming.organization_id,
+          planName,
+          monthly: incoming.billing_amount,
+          iua: iuaAmount,
+          effectiveDate: incoming.effective_date,
+        });
+        if (projected.error) base.supersede_errors.push(projected.error);
+      }
     }
   }
 
