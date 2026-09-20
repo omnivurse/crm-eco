@@ -69,6 +69,49 @@ export interface TenantMembership {
   branding: Record<string, unknown>;
 }
 
+type MembershipRow = {
+  id: string;
+  name: string;
+  slug: string;
+  subdomain: string | null;
+  plan: string;
+  branding: Record<string, unknown> | null;
+  role: string;
+  is_default: boolean;
+};
+
+function toTenantMembership(row: MembershipRow): TenantMembership {
+  return {
+    organizationId: row.id,
+    organizationName: row.name,
+    organizationSlug: row.slug,
+    subdomain: row.subdomain,
+    role: row.role as TenantRole,
+    isDefault: row.is_default,
+    plan: row.plan,
+    branding: (row.branding ?? {}) as Record<string, unknown>,
+  };
+}
+
+/**
+ * One `my_organizations` read per request. Shared by tenant resolution
+ * and the org switcher so dashboard RSC navigations do not double-query.
+ */
+const getMembershipRows = cache(async (): Promise<MembershipRow[]> => {
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data, error } = (await (supabase as any)
+    .from('my_organizations')
+    .select(
+      'id, name, slug, subdomain, plan, branding, role, is_default',
+    )) as { data: MembershipRow[] | null; error: unknown };
+
+  if (error || !data) return [];
+  return data;
+});
+
 /**
  * Extract a candidate subdomain from a host header.
  * Returns null when the host is the bare root domain (no tenant slug).
@@ -118,9 +161,8 @@ export function extractSubdomain(host: string | null): string | null {
  */
 export const getActiveTenant = cache(
   async (): Promise<ResolvedTenant | null> => {
-    const supabase = await createServerSupabaseClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return null;
+    const memberships = await getMembershipRows();
+    if (memberships.length === 0) return null;
 
     const hdrs = await headers();
     const cookieStore = await cookies();
@@ -129,27 +171,6 @@ export const getActiveTenant = cache(
     const cookieOrg = cookieStore.get(ACTIVE_ORG_COOKIE)?.value;
     const host = hdrs.get('host');
     const subdomain = extractSubdomain(host);
-
-    // Fetch every membership the user has — RLS guarantees they only
-    // see their own rows.
-    type MembershipRow = {
-      id: string;
-      name: string;
-      slug: string;
-      subdomain: string | null;
-      plan: string;
-      branding: Record<string, unknown> | null;
-      role: string;
-      is_default: boolean;
-    };
-
-    const { data: memberships, error } = (await (supabase as any)
-      .from('my_organizations')
-      .select(
-        'id, name, slug, subdomain, plan, branding, role, is_default',
-      )) as { data: MembershipRow[] | null; error: unknown };
-
-    if (error || !memberships || memberships.length === 0) return null;
 
     const byId = new Map<string, MembershipRow>(memberships.map((m) => [m.id, m]));
     const bySubdomain = new Map<string, MembershipRow>(
@@ -202,37 +223,15 @@ export async function requireActiveTenant(): Promise<ResolvedTenant> {
 /**
  * List every organization the current user belongs to (for the switcher UI).
  */
-export async function listMyTenants(): Promise<TenantMembership[]> {
-  const supabase = await createServerSupabaseClient();
-  type MembershipRow = {
-    id: string;
-    name: string;
-    slug: string;
-    subdomain: string | null;
-    plan: string;
-    branding: Record<string, unknown> | null;
-    role: string;
-    is_default: boolean;
-  };
-  const { data, error } = (await (supabase as any)
-    .from('my_organizations')
-    .select('id, name, slug, subdomain, plan, branding, role, is_default')
-    .order('is_default', { ascending: false })
-    .order('name', { ascending: true })) as { data: MembershipRow[] | null; error: unknown };
-
-  if (error || !data) return [];
-
-  return data.map((row) => ({
-    organizationId: row.id,
-    organizationName: row.name,
-    organizationSlug: row.slug,
-    subdomain: row.subdomain,
-    role: row.role as TenantRole,
-    isDefault: row.is_default,
-    plan: row.plan,
-    branding: (row.branding ?? {}) as Record<string, unknown>,
-  }));
-}
+export const listMyTenants = cache(async (): Promise<TenantMembership[]> => {
+  const data = await getMembershipRows();
+  return [...data]
+    .sort((a, b) => {
+      if (a.is_default !== b.is_default) return a.is_default ? -1 : 1;
+      return a.name.localeCompare(b.name);
+    })
+    .map(toTenantMembership);
+});
 
 /**
  * Persist the active tenant choice in a cookie. Call from a server

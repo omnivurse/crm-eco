@@ -1,0 +1,12 @@
+---
+description: Remind on next session — NACHA Phase 5 SFTP is parked; owner will bring SFTP.
+alwaysApply: true
+---
+
+# NACHA Phase 5 is parked
+
+On the next session, remind the owner: **Phase 5 Bank of Colorado SFTP is next. They said they will get SFTP.** Do not start SFTP, invent bank fields, or send a file until they ask.
+
+Read the handoff in the user store: `nacha-phase5-handoff.md` (also in this agent store). Chat: [NACHA phases 1–4](df118e04-5433-4d8c-b919-0885991a378c).
+
+Still fail-closed. Cards on NMI. ACH is local vault + pending queue. Shop ACH Champion repair is **uncommitted** (`shopCharge.ts`, `checkout.ts`, `membership-os.test.ts`, `ShopClient.tsx`) — do not mix with rates/sponsor/`tenant.ts`. Pushed through `34a64aea` (settlement-offset match).
