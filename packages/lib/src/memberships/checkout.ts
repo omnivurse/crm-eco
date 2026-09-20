@@ -1,16 +1,28 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { AchVaultError, loadAchVaultPresence } from '../billing/ach-vault';
 import { applyInvoicePayment, generateMemberInvoice } from '../billing/invoice-service';
 import { getPaymentProviderForProcessor } from '../billing/charge-resolver';
 import { decideMembershipAdd, parseShopTerms, withMembershipLayer } from './layers';
 import { packagePurchaseAmounts } from './packages';
 import { normalizeCartItems } from './shop';
 import {
+  shopAchCartGuard,
+  shopCardGatewayGuard,
   shopChargeIdempotencyKey,
   shopChargePeriod,
+  shopPaymentUsesNachaQueue,
   shopPeriodAmountCents,
   shouldProvisionAfterShopCharge,
 } from './shopCharge';
 import type { MembershipLayerRow, ShopCartItemInput } from './types';
+
+export type ShopChargeResult = {
+  success: boolean;
+  transactionId?: string;
+  error?: string;
+  queued?: boolean;
+  enrollmentId?: string | null;
+};
 
 export type ShopCharger = (input: {
   organizationId: string;
@@ -18,7 +30,15 @@ export type ShopCharger = (input: {
   amountCents: number;
   description: string;
   idempotencyKey: string;
-}) => Promise<{ success: boolean; transactionId?: string; error?: string }>;
+}) => Promise<ShopChargeResult>;
+
+type ShopPaymentProfile = {
+  id: string;
+  authorize_customer_profile_id: string | null;
+  authorize_payment_profile_id: string | null;
+  processor?: string | null;
+  payment_type?: string | null;
+};
 
 type AnyClient = SupabaseClient;
 
@@ -76,45 +96,168 @@ async function defaultPaymentProfile(
   supabase: AnyClient,
   organizationId: string,
   memberId: string,
-): Promise<{
-  id: string;
-  authorize_customer_profile_id: string | null;
-  authorize_payment_profile_id: string | null;
-  processor?: string | null;
-} | null> {
+): Promise<ShopPaymentProfile | null> {
   const { data } = await supabase
     .from('payment_profiles')
-    .select('id, authorize_customer_profile_id, authorize_payment_profile_id, processor')
+    .select('id, authorize_customer_profile_id, authorize_payment_profile_id, processor, payment_type')
     .eq('organization_id', organizationId)
     .eq('member_id', memberId)
     .eq('is_active', true)
     .order('is_default', { ascending: false })
     .limit(1)
     .maybeSingle();
-  return data ?? null;
+  return (data as ShopPaymentProfile | null) ?? null;
+}
+
+async function queueShopAchCharge(input: {
+  supabase: AnyClient;
+  organizationId: string;
+  memberId: string;
+  paymentProfileId: string;
+  amountCents: number;
+  description: string;
+  idempotencyKey: string;
+}): Promise<ShopChargeResult> {
+  try {
+    const present = await loadAchVaultPresence(input.supabase, input.organizationId, [
+      input.paymentProfileId,
+    ]);
+    if (!present.has(input.paymentProfileId)) {
+      return {
+        success: false,
+        error: 'ACH vault is empty for this payment method. Collect the bank account again before shop checkout.',
+      };
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof AchVaultError ? error.message : 'ACH vault could not be read.',
+    };
+  }
+
+  const { data: existing } = await input.supabase
+    .from('billing_transactions')
+    .select('id, status, enrollment_id')
+    .eq('organization_id', input.organizationId)
+    .eq('idempotency_key', input.idempotencyKey)
+    .maybeSingle();
+  if (existing?.id) {
+    const status = String(existing.status || '');
+    if (status === 'failed' || status === 'voided') {
+      return {
+        success: false,
+        error: 'This shop ACH charge already failed. Do not invent a second debit.',
+      };
+    }
+    return {
+      success: true,
+      queued: true,
+      transactionId: existing.id as string,
+      enrollmentId: (existing.enrollment_id as string | null) ?? null,
+    };
+  }
+
+  const { data: queued, error: queueError } = await input.supabase
+    .from('billing_transactions')
+    .insert({
+      organization_id: input.organizationId,
+      member_id: input.memberId,
+      payment_profile_id: input.paymentProfileId,
+      transaction_type: 'charge',
+      amount: input.amountCents / 100,
+      processing_fee: 0,
+      status: 'pending',
+      description: `${input.description} — queued for NACHA`,
+      idempotency_key: input.idempotencyKey,
+    })
+    .select('id')
+    .single();
+
+  if (queueError?.code === '23505') {
+    const { data: raced } = await input.supabase
+      .from('billing_transactions')
+      .select('id')
+      .eq('organization_id', input.organizationId)
+      .eq('idempotency_key', input.idempotencyKey)
+      .maybeSingle();
+    if (raced?.id) return { success: true, queued: true, transactionId: raced.id as string };
+  }
+
+  if (queueError || !queued) {
+    return { success: false, error: queueError?.message || 'Failed to queue ACH for NACHA' };
+  }
+  return { success: true, queued: true, transactionId: queued.id as string };
+}
+
+async function attachQueuedShopCharge(
+  supabase: AnyClient,
+  input: {
+    organizationId: string;
+    transactionId?: string;
+    enrollmentId: string;
+  },
+) {
+  if (!input.transactionId || input.transactionId.startsWith('ZERO-')) return;
+  const { data: schedule } = await supabase
+    .from('billing_schedules')
+    .select('id')
+    .eq('organization_id', input.organizationId)
+    .eq('enrollment_id', input.enrollmentId)
+    .maybeSingle();
+  await supabase
+    .from('billing_transactions')
+    .update({
+      enrollment_id: input.enrollmentId,
+      billing_schedule_id: schedule?.id ?? null,
+    })
+    .eq('id', input.transactionId)
+    .eq('organization_id', input.organizationId)
+    .eq('status', 'pending');
 }
 
 async function defaultChargeShopItem(input: {
+  supabase: AnyClient;
   organizationId: string;
   memberId: string;
   amountCents: number;
   description: string;
   idempotencyKey: string;
-  gatewayCustomerId?: string | null;
-  gatewayPaymentProfileId?: string | null;
-  processor?: string | null;
-}): Promise<{ success: boolean; transactionId?: string; error?: string }> {
+  profile: ShopPaymentProfile | null;
+}): Promise<ShopChargeResult> {
   if (input.amountCents <= 0) {
     return { success: true, transactionId: `ZERO-${input.idempotencyKey}` };
   }
-  if (!input.gatewayCustomerId || !input.gatewayPaymentProfileId) {
+  if (!input.profile) {
     return { success: false, error: 'Add a payment method before buying from the shop.' };
   }
-  const charge = await getPaymentProviderForProcessor(input.processor).chargeOnce({
+  if (shopPaymentUsesNachaQueue(input.profile.payment_type)) {
+    return queueShopAchCharge({
+      supabase: input.supabase,
+      organizationId: input.organizationId,
+      memberId: input.memberId,
+      paymentProfileId: input.profile.id,
+      amountCents: input.amountCents,
+      description: input.description,
+      idempotencyKey: input.idempotencyKey,
+    });
+  }
+  const gate = shopCardGatewayGuard({
+    paymentType: input.profile.payment_type,
+    processor: input.profile.processor,
+    gatewayCustomerId: input.profile.authorize_customer_profile_id,
+    gatewayPaymentProfileId: input.profile.authorize_payment_profile_id,
+  });
+  if (!gate.ok) return { success: false, error: gate.error };
+  const gatewayCustomerId = input.profile.authorize_customer_profile_id;
+  const gatewayPaymentProfileId = input.profile.authorize_payment_profile_id;
+  if (!gatewayCustomerId || !gatewayPaymentProfileId) {
+    return { success: false, error: 'Add a payment method before buying from the shop.' };
+  }
+  const charge = await getPaymentProviderForProcessor(input.profile.processor).chargeOnce({
     organizationId: input.organizationId,
     memberId: input.memberId,
-    gatewayCustomerId: input.gatewayCustomerId,
-    gatewayPaymentProfileId: input.gatewayPaymentProfileId,
+    gatewayCustomerId,
+    gatewayPaymentProfileId,
     amountCents: input.amountCents,
     description: input.description,
     idempotencyKey: input.idempotencyKey,
@@ -136,7 +279,7 @@ async function activateAddonPlan(
     existing: MembershipLayerRow[];
     charger?: ShopCharger;
   },
-): Promise<{ membershipId: string; enrollmentId: string }> {
+): Promise<{ membershipId: string; enrollmentId: string; queued?: boolean }> {
   const { data: plan, error: planErr } = await supabase
     .from('plans')
     .select('id, name, monthly_share, metadata, is_active')
@@ -171,17 +314,31 @@ async function activateAddonPlan(
         idempotencyKey: idem,
       })
     : await defaultChargeShopItem({
+        supabase,
         organizationId: input.organizationId,
         memberId: input.memberId,
         amountCents,
         description: `Shop add-on — ${plan.name}`,
         idempotencyKey: idem,
-        gatewayCustomerId: profile?.authorize_customer_profile_id,
-        gatewayPaymentProfileId: profile?.authorize_payment_profile_id,
-        processor: profile?.processor,
+        profile,
       });
   if (!shouldProvisionAfterShopCharge(charge)) {
     throw new Error(charge.error ?? 'The payment was declined.');
+  }
+  if (charge.enrollmentId) {
+    const { data: existingMembership } = await supabase
+      .from('memberships')
+      .select('id')
+      .eq('organization_id', input.organizationId)
+      .eq('enrollment_id', charge.enrollmentId)
+      .maybeSingle();
+    if (existingMembership?.id) {
+      return {
+        membershipId: existingMembership.id as string,
+        enrollmentId: charge.enrollmentId,
+        queued: charge.queued,
+      };
+    }
   }
 
   const effectiveDate = todayIso();
@@ -231,7 +388,15 @@ async function activateAddonPlan(
       .eq('status', 'active');
   }
 
-  return { membershipId: membership.id, enrollmentId: enrollment.id };
+  if (charge.queued) {
+    await attachQueuedShopCharge(supabase, {
+      organizationId: input.organizationId,
+      transactionId: charge.transactionId,
+      enrollmentId: enrollment.id,
+    });
+  }
+
+  return { membershipId: membership.id, enrollmentId: enrollment.id, queued: charge.queued };
 }
 
 async function purchasePackage(
@@ -265,6 +430,11 @@ async function purchasePackage(
   const units = Math.max(1, Number(pack.units) || 1) * Math.max(1, input.quantity);
   const amountCents = Math.round(money.total * 100);
   const profile = await defaultPaymentProfile(supabase, input.organizationId, input.memberId);
+  const achCart = shopAchCartGuard({
+    paymentType: profile?.payment_type,
+    itemTypes: ['package'],
+  });
+  if (!achCart.ok) throw new Error(achCart.error);
   const idem = shopChargeIdempotencyKey({
     memberId: input.memberId,
     itemType: 'package',
@@ -280,14 +450,13 @@ async function purchasePackage(
         idempotencyKey: idem,
       })
     : await defaultChargeShopItem({
+        supabase,
         organizationId: input.organizationId,
         memberId: input.memberId,
         amountCents,
         description: `Shop package — ${pack.name}`,
         idempotencyKey: idem,
-        gatewayCustomerId: profile?.authorize_customer_profile_id,
-        gatewayPaymentProfileId: profile?.authorize_payment_profile_id,
-        processor: profile?.processor,
+        profile,
       });
   if (!shouldProvisionAfterShopCharge(charge)) {
     throw new Error(charge.error ?? 'The payment was declined.');
@@ -358,13 +527,22 @@ export async function checkoutShopItems(
 ): Promise<{
   memberships: Array<{ membershipId: string; enrollmentId: string; planId: string }>;
   packages: Array<{ memberPackageId: string; invoiceId: string; packageId: string }>;
+  queued: boolean;
 }> {
   const items = normalizeCartItems(input.items);
   if (items.length === 0) throw new Error('Cart is empty');
 
+  const profile = await defaultPaymentProfile(supabase, input.organizationId, input.memberId);
+  const achCart = shopAchCartGuard({
+    paymentType: profile?.payment_type,
+    itemTypes: items.map((item) => item.item_type),
+  });
+  if (!achCart.ok) throw new Error(achCart.error);
+
   const existing = await loadOpenMemberships(supabase, input.organizationId, input.memberId);
   const memberships: Array<{ membershipId: string; enrollmentId: string; planId: string }> = [];
   const packages: Array<{ memberPackageId: string; invoiceId: string; packageId: string }> = [];
+  let queued = false;
 
   for (const item of items) {
     if (item.item_type === 'plan' && item.plan_id) {
@@ -384,6 +562,7 @@ export async function checkoutShopItems(
         layer: 'addon',
         custom_fields: { layer: 'addon' },
       });
+      if (created.queued) queued = true;
       memberships.push({ ...created, planId: item.plan_id });
     }
     if (item.item_type === 'package' && item.package_id) {
@@ -399,7 +578,7 @@ export async function checkoutShopItems(
     }
   }
 
-  return { memberships, packages };
+  return { memberships, packages, queued };
 }
 
 export async function redeemMemberPackage(

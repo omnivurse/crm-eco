@@ -3,7 +3,11 @@ import { decideMembershipAdd, membershipLayerOf, parseShopTerms } from '../layer
 import { packagePurchaseAmounts, planPackageRedeem } from '../packages';
 import { buildShopCatalog, normalizeCartItems } from '../shop';
 import {
+  shopAchAllowsItem,
+  shopAchCartGuard,
+  shopCardGatewayGuard,
   shopChargeIdempotencyKey,
+  shopPaymentUsesNachaQueue,
   shopPeriodAmountCents,
   shouldProvisionAfterShopCharge,
 } from '../shopCharge';
@@ -200,5 +204,46 @@ describe('shop charge-then-provision', () => {
   it('does not provision after a declined charge', () => {
     expect(shouldProvisionAfterShopCharge({ success: false })).toBe(false);
     expect(shouldProvisionAfterShopCharge({ success: true })).toBe(true);
+  });
+
+  it('queues bank accounts for NACHA and refuses placeholder card charges', () => {
+    expect(shopPaymentUsesNachaQueue('bank_account')).toBe(true);
+    expect(shopPaymentUsesNachaQueue('credit_card')).toBe(false);
+    expect(
+      shopCardGatewayGuard({
+        paymentType: 'bank_account',
+        processor: 'placeholder',
+        gatewayCustomerId: 'nacha-local-1',
+        gatewayPaymentProfileId: 'nacha-local-1',
+      }).ok,
+    ).toBe(false);
+    expect(
+      shopCardGatewayGuard({
+        paymentType: 'credit_card',
+        processor: 'placeholder',
+        gatewayCustomerId: 'cust',
+        gatewayPaymentProfileId: 'prof',
+      }),
+    ).toEqual({
+      ok: false,
+      error: 'Card checkout requires a live card processor. Placeholder charges are refused.',
+    });
+    expect(
+      shopCardGatewayGuard({
+        paymentType: 'credit_card',
+        processor: 'nmi',
+        gatewayCustomerId: 'cust',
+        gatewayPaymentProfileId: 'prof',
+      }).ok,
+    ).toBe(true);
+    expect(shopAchAllowsItem('plan')).toBe(true);
+    expect(shopAchAllowsItem('package')).toBe(false);
+    expect(shopAchCartGuard({ paymentType: 'bank_account', itemTypes: ['plan'] }).ok).toBe(true);
+    expect(shopAchCartGuard({ paymentType: 'bank_account', itemTypes: ['package'] })).toEqual({
+      ok: false,
+      error:
+        'Prepaid packages require a card. ACH can only buy add-on memberships until the bank file settles.',
+    });
+    expect(shopAchCartGuard({ paymentType: 'credit_card', itemTypes: ['package'] }).ok).toBe(true);
   });
 });

@@ -114,7 +114,9 @@ export function ShopClient() {
       const addOnCount = json.memberships?.length ?? 0;
       const packageCount = json.packages?.length ?? 0;
       toast.success(
-        `Added ${addOnCount} add-on${addOnCount === 1 ? '' : 's'}${packageCount ? ` and ${packageCount} package invoice${packageCount === 1 ? '' : 's'}` : ''}.`,
+        json.queued
+          ? `Queued ${addOnCount} add-on${addOnCount === 1 ? '' : 's'} for NACHA. Nothing was charged on a card.`
+          : `Added ${addOnCount} add-on${addOnCount === 1 ? '' : 's'}${packageCount ? ` and ${packageCount} package invoice${packageCount === 1 ? '' : 's'}` : ''}.`,
       );
       setItems([]);
       if (packageCount > 0) router.push('/billing/invoices');
@@ -213,8 +215,10 @@ export function ShopClient() {
             {checkingOut ? 'Checking out…' : 'Checkout'}
           </Button>
           <p className="text-xs text-slate-500">
-            Checkout charges your saved payment method first. A declined card does not create a
-            membership or package.
+            Checkout uses your saved payment method first. Cards charge immediately. Bank
+            accounts can buy add-on memberships only — those queue for NACHA and are not
+            sent to the card processor. Prepaid packages require a card. A declined or
+            refused payment does not create a membership or package.
           </p>
         </CardContent>
       </Card>
