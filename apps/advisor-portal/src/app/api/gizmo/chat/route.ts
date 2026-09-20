@@ -2,10 +2,13 @@ import { createHash } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import {
   hrefAllowed,
+  parseRecordQuery,
   runGizmoTurn,
+  shouldSearchRecords,
 } from '@crm-eco/lib/gizmo';
 import { ADVISOR_PORTAL_HOWTO, ADVISOR_PORTAL_PLACES } from '@crm-eco/lib/gizmo/catalogs/advisor-portal';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
+import { searchAdvisorRecords } from '@/lib/gizmo/search-records';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,12 +48,18 @@ export async function POST(request: NextRequest) {
     actorId: profile.id,
   });
 
+  const parsed = parseRecordQuery(query);
+  const records =
+    shouldSearchRecords('advisor_portal', query) && parsed.shouldSearch && parsed.searchTerm.trim()
+      ? await searchAdvisorRecords(parsed.searchTerm)
+      : [];
+
   const turn = runGizmoTurn({
     app: 'advisor_portal',
     query,
     places: ADVISOR_PORTAL_PLACES.filter((p) => hrefAllowed('advisor_portal', p.href)),
     howto: ADVISOR_PORTAL_HOWTO.filter((h) => hrefAllowed('advisor_portal', h.href)),
-    records: [],
+    records,
     pathname: body.pathname,
     pageTitle: body.pageTitle,
     pageTips: body.pageTips,

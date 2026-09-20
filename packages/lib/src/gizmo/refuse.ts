@@ -1,3 +1,4 @@
+import { parseRecordQuery } from './parse-query';
 import type { GizmoAppId } from './types';
 
 export interface GizmoRefuse {
@@ -70,6 +71,15 @@ export function detectForeignAsk(app: GizmoAppId, query: string): GizmoRefuse | 
           message: 'I can only help with your own membership — not other members or staff tools.',
         };
       }
+      {
+        const parsed = parseRecordQuery(q);
+        if (parsed.isPersonLookup && parsed.searchTerm && !/\bmy\b/i.test(q)) {
+          return {
+            reason: 'other_person',
+            message: 'I can only help with your own membership — not other members or staff tools.',
+          };
+        }
+      }
       if (MEMBER_FOREIGN_APP.some((re) => re.test(q))) {
         return { reason: 'foreign_app', message: WORKSPACE_REFUSE };
       }
@@ -86,7 +96,9 @@ export function detectForeignAsk(app: GizmoAppId, query: string): GizmoRefuse | 
 
 export function shouldSearchRecords(app: GizmoAppId, query: string): boolean {
   if (app === 'member_portal') {
-    return /\b(my\s+)?(account|profile|coverage|membership|member\s*#)\b/i.test(query);
+    return /\b(my\s+)?(account|profile|coverage|membership|member\s*#|phone|email|name|address)\b/i.test(
+      query,
+    ) || /\bwhat(?:'s| is) my\b/i.test(query);
   }
   return true;
 }

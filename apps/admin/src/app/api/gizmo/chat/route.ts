@@ -1,7 +1,7 @@
 import { createHash } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import {
-  looksLikeRecordQuery,
+  parseRecordQuery,
   runGizmoTurn,
   shouldSearchRecords,
 } from '@crm-eco/lib/gizmo';
@@ -34,9 +34,10 @@ export async function POST(request: NextRequest) {
     actorId: profile.id,
   });
 
+  const parsed = parseRecordQuery(query);
   const records =
-    shouldSearchRecords('admin', query) && looksLikeRecordQuery(query)
-      ? await searchAdminRecords(query)
+    shouldSearchRecords('admin', query) && parsed.shouldSearch && parsed.searchTerm.trim()
+      ? await searchAdminRecords(parsed.searchTerm)
       : [];
 
   const turn = runGizmoTurn({

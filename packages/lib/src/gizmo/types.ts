@@ -3,6 +3,13 @@ export type GizmoAppId = 'crm' | 'admin' | 'member_portal' | 'advisor_portal';
 
 export type GizmoCardKind = 'record' | 'place' | 'howto';
 
+export interface RecordAsk {
+  key: string;
+  label: string;
+}
+
+export type RecordAskField = RecordAsk | null;
+
 export interface GizmoPlace {
   id: string;
   title: string;
@@ -24,6 +31,9 @@ export interface GizmoRecordHit {
   subtitle?: string;
   href: string;
   module: string;
+  phone?: string | null;
+  email?: string | null;
+  fields?: Record<string, string>;
 }
 
 export interface GizmoCard {
@@ -112,4 +122,5 @@ export interface GizmoTurnResult {
   usedTools: GizmoToolName[];
   allowedHrefs: string[];
   voice: { system: string; user: string };
+  askedField: RecordAskField;
 }

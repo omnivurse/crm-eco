@@ -1,9 +1,52 @@
 import type { GizmoHowto, GizmoPlace } from './types';
 
+const BASIC_STOP = new Set(['the', 'a', 'an', 'my', 'to']);
+
+/** Filler + field words that must not score settings pages on person asks. */
+const PLACE_SCORE_STOP = new Set([
+  ...BASIC_STOP,
+  'i',
+  'im',
+  'need',
+  'please',
+  'can',
+  'you',
+  'me',
+  'get',
+  'give',
+  'show',
+  'tell',
+  'what',
+  'whats',
+  'for',
+  'of',
+  'and',
+  'or',
+  'his',
+  'her',
+  'their',
+  'is',
+  'do',
+  'how',
+  'where',
+  'this',
+  'page',
+  'phone',
+  'telephone',
+  'mobile',
+  'cell',
+  'email',
+  'mail',
+  'address',
+  'number',
+  'numbers',
+]);
+
 export function normalizeQuery(q: string): string {
   return q
     .trim()
     .toLowerCase()
+    .replace(/['’]s\b/g, ' ')
     .replace(/[^\p{L}\p{N}\s#+./-]+/gu, ' ')
     .replace(/\s+/g, ' ');
 }
@@ -11,7 +54,13 @@ export function normalizeQuery(q: string): string {
 export function tokenize(q: string): string[] {
   return normalizeQuery(q)
     .split(' ')
-    .filter((t) => t.length > 0 && t !== 'the' && t !== 'a' && t !== 'an' && t !== 'my' && t !== 'to');
+    .filter((t) => t.length > 1 && !BASIC_STOP.has(t));
+}
+
+function tokenizeForPlace(q: string): string[] {
+  return normalizeQuery(q)
+    .split(' ')
+    .filter((t) => t.length >= 3 && !PLACE_SCORE_STOP.has(t));
 }
 
 function scoreHaystack(hay: string, tokens: string[], raw: string): number {
@@ -41,7 +90,7 @@ function scoreHaystack(hay: string, tokens: string[], raw: string): number {
 export function scorePlace(place: GizmoPlace, query: string): number {
   const raw = normalizeQuery(query);
   if (!raw) return 0;
-  const tokens = tokenize(query);
+  const tokens = tokenizeForPlace(query);
   let best = scoreHaystack(place.title, tokens, raw);
   for (const alias of place.aliases) {
     best = Math.max(best, scoreHaystack(alias, tokens, raw));
@@ -53,7 +102,7 @@ export function scorePlace(place: GizmoPlace, query: string): number {
 export function scoreHowto(item: GizmoHowto, query: string): number {
   const raw = normalizeQuery(query);
   if (!raw) return 0;
-  const tokens = tokenize(query);
+  const tokens = tokenizeForPlace(query);
   let best = scoreHaystack(item.title, tokens, raw);
   for (const alias of item.aliases) {
     best = Math.max(best, scoreHaystack(alias, tokens, raw));
@@ -77,75 +126,6 @@ export function rankHowto(items: GizmoHowto[], query: string, limit = 4): GizmoH
     .sort((a, b) => b.s - a.s || a.p.title.localeCompare(b.p.title))
     .slice(0, limit)
     .map((x) => x.p);
-}
-
-const FIND_HINT = /\b(find|search|open|lookup|look up|who is)\b/i;
-const PHONE_HINT = /(?:\+?1[\s.-]?)?(?:\(?\d{3}\)?[\s.-]?)?\d{3}[\s.-]?\d{4}/;
-const MEMBER_NUM = /(?:#|member(?:ship)?\s*(?:#|number|no\.?)?\s*)\d{3,}/i;
-const UUID_HINT = /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/i;
-const PAGE_WORDS = new Set([
-  'reports',
-  'report',
-  'settings',
-  'import',
-  'inbox',
-  'workqueue',
-  'dashboard',
-  'contacts',
-  'leads',
-  'deals',
-  'members',
-  'calendar',
-  'tasks',
-  'mfa',
-  '2fa',
-  'security',
-  'billing',
-  'commissions',
-  'coverage',
-  'needs',
-  'pipeline',
-  'home',
-  'learn',
-  'help',
-  'rates',
-]);
-
-function remainderAfterIntent(query: string): string {
-  return query
-    .replace(
-      /^(where'?s|where is|take me to|go to|find the|page for|how do i|how to|how can i|find|search for|search|open|look up|lookup|who is)\s+/i,
-      '',
-    )
-    .trim();
-}
-
-function isNameish(query: string): boolean {
-  const tokens = tokenize(query).filter(
-    (t) => !['find', 'search', 'open', 'where', 'is', 'who', 'how', 'do'].includes(t),
-  );
-  if (tokens.length >= 2 && tokens.every((t) => /^[a-z][a-z'-]{1,}$/i.test(t))) return true;
-  if (/^[A-Z][a-z]+(?:\s+[A-Z][a-z]+)+$/.test(query.trim())) return true;
-  return false;
-}
-
-export function looksLikeRecordQuery(query: string): boolean {
-  const q = query.trim();
-  if (!q) return false;
-  if (PHONE_HINT.test(q) || MEMBER_NUM.test(q) || UUID_HINT.test(q)) return true;
-
-  const rest = remainderAfterIntent(q);
-  const restNorm = normalizeQuery(rest);
-  const restIsPage = restNorm.split(' ').every((t) => PAGE_WORDS.has(t));
-
-  if (looksLikePlaceQuery(q) || looksLikeHowtoQuery(q)) {
-    return Boolean(rest) && isNameish(rest) && !restIsPage;
-  }
-  if (FIND_HINT.test(q) && q.split(/\s+/).length >= 2) {
-    if (!restNorm || restIsPage) return false;
-    return isNameish(rest) || !PAGE_WORDS.has(restNorm);
-  }
-  return isNameish(q);
 }
 
 export function looksLikeHowtoQuery(query: string): boolean {

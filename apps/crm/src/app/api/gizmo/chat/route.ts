@@ -4,7 +4,7 @@ import OpenAI from 'openai';
 import {
   attachAliasPlaces,
   hrefAllowed,
-  looksLikeRecordQuery,
+  parseRecordQuery,
   runGizmoTurn,
   shouldSearchRecords,
   stripDisallowedHrefs,
@@ -76,12 +76,13 @@ export async function POST(request: NextRequest) {
     }));
   const places = attachAliasPlaces(palettePlaces, CRM_PLACES, 'crm');
 
+  const parsed = parseRecordQuery(query);
   const records =
-    shouldSearchRecords('crm', query) && looksLikeRecordQuery(query)
+    shouldSearchRecords('crm', query) && parsed.shouldSearch && parsed.searchTerm.trim()
       ? await searchCrmGizmoRecords(
           supabase,
           profile.organization_id,
-          query,
+          parsed.searchTerm,
           body.module?.trim() || null,
         )
       : [];
@@ -99,7 +100,7 @@ export async function POST(request: NextRequest) {
   });
 
   let reply = turn.reply;
-  if (process.env.OPENAI_API_KEY && !turn.refused) {
+  if (process.env.OPENAI_API_KEY && !turn.refused && !parsed.askedField) {
     try {
       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
       const completion = await openai.chat.completions.create({

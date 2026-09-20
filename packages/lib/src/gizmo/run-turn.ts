@@ -2,17 +2,21 @@ import { hrefAllowed, sanitizeRecordHits } from './href-guard';
 import {
   looksLikeHowtoQuery,
   looksLikePlaceQuery,
-  looksLikeRecordQuery,
   rankHowto,
   rankPlaces,
+  scorePlace,
 } from './match';
+import { parseRecordQuery } from './parse-query';
+import { resolveAskedValue } from './record-fields';
 import { detectForeignAsk } from './refuse';
 import type {
   GizmoCard,
   GizmoHowto,
   GizmoPlace,
+  GizmoRecordHit,
   GizmoToolName,
   GizmoTurnResult,
+  RecordAskField,
   RunGizmoTurnInput,
 } from './types';
 
@@ -21,6 +25,9 @@ Answer where / who / how. Be brief and concrete.
 Cite ONLY hrefs listed under Allowed links. Never invent a URL or record path.
 If tools found nothing, say so and offer a narrower search.
 If the user asks about another app, say: That's not in this workspace.`;
+
+/** Exact / prefix / substring place hits from scoreHaystack. */
+const STRONG_PLACE_SCORE = 60;
 
 function cardsFromPlaces(places: GizmoPlace[]): GizmoCard[] {
   return places.map((p) => ({
@@ -40,12 +47,43 @@ function cardsFromHowto(items: GizmoHowto[]): GizmoCard[] {
   }));
 }
 
+function cardsFromRecords(records: GizmoRecordHit[]): GizmoCard[] {
+  return records.map((r) => ({
+    kind: 'record' as const,
+    title: r.title,
+    subtitle: r.subtitle,
+    href: r.href,
+    module: r.module,
+  }));
+}
+
 function scopedPlaces(input: RunGizmoTurnInput): GizmoPlace[] {
   return input.places.filter((p) => hrefAllowed(input.app, p.href));
 }
 
 function scopedHowto(input: RunGizmoTurnInput): GizmoHowto[] {
   return input.howto.filter((h) => hrefAllowed(input.app, h.href));
+}
+
+function personReply(
+  records: GizmoRecordHit[],
+  searchTerm: string,
+  askedField: RecordAskField,
+): string {
+  if (records.length === 0) {
+    const label = searchTerm.trim() || 'that person';
+    return `I couldn't find anyone matching ${label}. Try a full name, email, or phone.`;
+  }
+  if (records.length === 1) {
+    const r = records[0];
+    if (askedField) {
+      const value = resolveAskedValue(r, askedField);
+      if (value) return `${r.title}'s ${askedField.label} is ${value}.`;
+      return `I found ${r.title}, but no ${askedField.label} is on file. Open the card to check the record.`;
+    }
+    return `Found ${r.title}.`;
+  }
+  return `Found ${records.length} records matching ${searchTerm}. Open a card.`;
 }
 
 function buildVoice(
@@ -72,8 +110,22 @@ function buildVoice(
   return { system, user };
 }
 
+function dedupeCards(cards: GizmoCard[]): GizmoCard[] {
+  const unique: GizmoCard[] = [];
+  const seen = new Set<string>();
+  for (const c of cards) {
+    const key = `${c.kind}:${c.href}:${c.title}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    unique.push(c);
+  }
+  return unique;
+}
+
 export function runGizmoTurn(input: RunGizmoTurnInput): GizmoTurnResult {
   const usedTools: GizmoToolName[] = [];
+  const parsed = parseRecordQuery(input.query);
+
   const foreign = detectForeignAsk(input.app, input.query);
   if (foreign) {
     const voice = buildVoice(input, [], foreign.message);
@@ -84,6 +136,7 @@ export function runGizmoTurn(input: RunGizmoTurnInput): GizmoTurnResult {
       usedTools,
       allowedHrefs: [],
       voice,
+      askedField: parsed.askedField,
     };
   }
 
@@ -97,33 +150,42 @@ export function runGizmoTurn(input: RunGizmoTurnInput): GizmoTurnResult {
       usedTools: ['page_context'],
       allowedHrefs: [],
       voice,
+      askedField: null,
     };
   }
 
   const places = scopedPlaces(input);
   const howto = scopedHowto(input);
-  const records = looksLikeRecordQuery(input.query)
-    ? sanitizeRecordHits(input.app, input.records ?? [])
-    : [];
+  const records = parsed.shouldSearch ? sanitizeRecordHits(input.app, input.records ?? []) : [];
 
   const placeHits = rankPlaces(places, input.query);
   const howtoHits = rankHowto(howto, input.query);
+  const topPlaceScore = placeHits[0] ? scorePlace(placeHits[0], input.query) : 0;
+  const strongPlace = looksLikePlaceQuery(input.query) || topPlaceScore >= STRONG_PLACE_SCORE;
+  const suppressNav =
+    parsed.isPersonLookup && (records.length > 0 || Boolean(parsed.askedField) || !strongPlace);
 
   if (records.length) usedTools.push('search_records');
-  if (placeHits.length) usedTools.push('find_place');
-  if (howtoHits.length) usedTools.push('find_howto');
+  if (placeHits.length && !suppressNav) usedTools.push('find_place');
+  if (howtoHits.length && !suppressNav) usedTools.push('find_howto');
   if (input.pageTips?.length || input.pathname) usedTools.push('page_context');
 
-  const cards: GizmoCard[] = [];
-  for (const r of records) {
-    cards.push({
-      kind: 'record',
-      title: r.title,
-      subtitle: r.subtitle,
-      href: r.href,
-      module: r.module,
-    });
+  if (suppressNav) {
+    const unique = dedupeCards(cardsFromRecords(records));
+    const reply = personReply(records, parsed.searchTerm, parsed.askedField);
+    const voice = buildVoice(input, unique, reply);
+    return {
+      reply,
+      cards: unique,
+      refused: false,
+      usedTools,
+      allowedHrefs: unique.map((c) => c.href),
+      voice,
+      askedField: parsed.askedField,
+    };
   }
+
+  const cards: GizmoCard[] = cardsFromRecords(records);
   const preferHowto = looksLikeHowtoQuery(input.query) && howtoHits.length > 0;
   const preferPlace = looksLikePlaceQuery(input.query) && placeHits.length > 0;
 
@@ -138,22 +200,14 @@ export function runGizmoTurn(input: RunGizmoTurnInput): GizmoTurnResult {
     if (howtoHits.length && cards.length < 6) cards.push(...cardsFromHowto(howtoHits));
   }
 
-  const unique: GizmoCard[] = [];
-  const seen = new Set<string>();
-  for (const c of cards) {
-    const key = `${c.kind}:${c.href}:${c.title}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    unique.push(c);
-  }
-
+  const unique = dedupeCards(cards);
   const allowedHrefs = unique.map((c) => c.href);
   let reply: string;
   if (unique.length === 0) {
     reply =
       "I couldn't find that in this workspace. Try a name, a page title, or a shorter how-to.";
   } else if (records.length) {
-    reply = `Found ${records.length} record${records.length === 1 ? '' : 's'}. Open a card to go there.`;
+    reply = personReply(records, parsed.searchTerm, parsed.askedField);
   } else if (unique[0]?.kind === 'howto') {
     reply = `${unique[0].title}. ${unique[0].steps?.join(' ') ?? ''}`.trim();
   } else {
@@ -168,5 +222,6 @@ export function runGizmoTurn(input: RunGizmoTurnInput): GizmoTurnResult {
     usedTools,
     allowedHrefs,
     voice,
+    askedField: parsed.askedField,
   };
 }

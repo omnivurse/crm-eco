@@ -1,4 +1,4 @@
-import { hrefAllowed, sanitizeRecordHits, type GizmoRecordHit } from '@crm-eco/lib/gizmo';
+import { hrefAllowed, sanitizeRecordHits, speakableFields, type GizmoRecordHit } from '@crm-eco/lib/gizmo';
 import {
   GLOBAL_SEARCH_DEFAULT_THRESHOLD,
   resolveSearchRows,
@@ -22,11 +22,24 @@ export async function searchCrmGizmoRecords(
     'crm',
     rows.map((record) => {
       const subtitle = [record.email, record.phone, record.status].filter(Boolean).join(' · ');
+      const data =
+        record.data && typeof record.data === 'object' && !Array.isArray(record.data)
+          ? (record.data as Record<string, unknown>)
+          : null;
       return {
         title: searchRowDisplayTitle(record),
         subtitle: subtitle || undefined,
         href: `/crm/r/${record.id}`,
         module: record.module_name_plural || record.module_name || record.module_key,
+        phone: record.phone,
+        email: record.email,
+        fields: speakableFields({
+          email: record.email,
+          phone: record.phone,
+          status: record.status,
+          title: record.title,
+          data,
+        }),
       };
     }).filter((r) => hrefAllowed('crm', r.href)),
     8,

@@ -1,7 +1,7 @@
 import 'server-only';
 
 import type { GizmoRecordHit } from '@crm-eco/lib/gizmo';
-import { hrefAllowed, sanitizeRecordHits } from '@crm-eco/lib/gizmo';
+import { hrefAllowed, sanitizeRecordHits, speakableFields } from '@crm-eco/lib/gizmo';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { getActiveTenant } from '@/lib/tenant';
 
@@ -32,7 +32,7 @@ export async function searchAdminRecords(query: string): Promise<GizmoRecordHit[
 
   let memberQuery = supabase
     .from('members')
-    .select('id, first_name, last_name, email, phone, status')
+    .select('id, first_name, last_name, email, phone, status, date_of_birth, member_number')
     .eq('organization_id', orgId)
     .limit(8);
 
@@ -40,7 +40,7 @@ export async function searchAdminRecords(query: string): Promise<GizmoRecordHit[
     memberQuery = memberQuery.in('id', memberIds.slice(0, 8));
   } else {
     memberQuery = memberQuery.or(
-      `first_name.ilike.%${q}%,last_name.ilike.%${q}%,email.ilike.%${q}%,phone.ilike.%${q}%`,
+      `first_name.ilike.%${q}%,last_name.ilike.%${q}%,email.ilike.%${q}%,phone.ilike.%${q}%,member_number.ilike.%${q}%`,
     );
   }
 
@@ -56,12 +56,27 @@ export async function searchAdminRecords(query: string): Promise<GizmoRecordHit[
       subtitle: [m.email, m.phone, m.status].filter(Boolean).join(' · '),
       href,
       module: 'members',
+      phone: m.phone,
+      email: m.email,
+      fields: speakableFields({
+        email: m.email,
+        phone: m.phone,
+        status: m.status,
+        title,
+        data: {
+          first_name: m.first_name,
+          last_name: m.last_name,
+          dob: m.date_of_birth,
+          date_of_birth: m.date_of_birth,
+          member_number: m.member_number,
+        },
+      }),
     });
   }
 
   const enrollSelect =
     'id, enrollment_number, status, primary_member:members!enrollments_primary_member_id_fkey(first_name, last_name)';
-  const [byNumber, byMember] = await Promise.all([
+  const [byNumber, byMember, agents] = await Promise.all([
     supabase
       .from('enrollments')
       .select(enrollSelect)
@@ -76,6 +91,14 @@ export async function searchAdminRecords(query: string): Promise<GizmoRecordHit[
           .in('primary_member_id', foundMemberIds)
           .limit(4)
       : Promise.resolve({ data: [] as never[] }),
+    supabase
+      .from('advisors')
+      .select('id, first_name, last_name, email, phone, mobile_phone, status')
+      .eq('organization_id', orgId)
+      .or(
+        `first_name.ilike.%${q}%,last_name.ilike.%${q}%,email.ilike.%${q}%,phone.ilike.%${q}%,mobile_phone.ilike.%${q}%`,
+      )
+      .limit(4),
   ]);
   const enrollments = [...(byNumber.data ?? []), ...(byMember.data ?? [])];
 
@@ -91,6 +114,38 @@ export async function searchAdminRecords(query: string): Promise<GizmoRecordHit[
       subtitle: [name, e.status].filter(Boolean).join(' · '),
       href,
       module: 'enrollments',
+      fields: speakableFields({
+        status: e.status,
+        title: e.enrollment_number ? `Enrollment ${e.enrollment_number}` : 'Enrollment',
+        data: { enrollment_number: e.enrollment_number },
+      }),
+    });
+  }
+
+  for (const a of agents.data ?? []) {
+    const href = `/agents/${a.id}`;
+    if (!hrefAllowed('admin', href)) continue;
+    const title = [a.first_name, a.last_name].filter(Boolean).join(' ').trim() || a.email || 'Agent';
+    const phone = a.phone || a.mobile_phone;
+    hits.push({
+      title,
+      subtitle: [a.email, phone, a.status].filter(Boolean).join(' · '),
+      href,
+      module: 'agents',
+      phone,
+      email: a.email,
+      fields: speakableFields({
+        email: a.email,
+        phone,
+        status: a.status,
+        title,
+        data: {
+          first_name: a.first_name,
+          last_name: a.last_name,
+          advisor_name: title,
+          mobile_phone: a.mobile_phone,
+        },
+      }),
     });
   }
 

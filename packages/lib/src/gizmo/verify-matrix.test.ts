@@ -46,6 +46,23 @@ describe('gizmo verification matrix', () => {
       howto: CRM_HOWTO,
     });
     expect(miss.allowedHrefs).toHaveLength(0);
+
+    const personMiss = runGizmoTurn({
+      app: 'crm',
+      query: "I need Frank Burnham's phone number please.",
+      places: [
+        ...CRM_PLACES,
+        {
+          id: 'api-keys',
+          title: 'API Keys',
+          href: '/crm/integrations?tab=api-keys',
+          aliases: ['api keys', 'integrations'],
+        },
+      ],
+      howto: CRM_HOWTO,
+    });
+    expect(personMiss.cards).toHaveLength(0);
+    expect(personMiss.reply).not.toMatch(/API Keys/i);
   });
 
   it('Admin: commission rates; refuse CRM workqueue', () => {

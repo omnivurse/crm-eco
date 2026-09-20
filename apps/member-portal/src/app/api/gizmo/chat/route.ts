@@ -2,9 +2,11 @@ import { createHash } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import {
   hrefAllowed,
+  parseRecordQuery,
   runGizmoTurn,
   sanitizeRecordHits,
   shouldSearchRecords,
+  speakableFields,
 } from '@crm-eco/lib/gizmo';
 import { MEMBER_PORTAL_HOWTO, MEMBER_PORTAL_PLACES } from '@crm-eco/lib/gizmo/catalogs/member-portal';
 import { requireActiveMembership } from '@/lib/auth/require-active-membership';
@@ -32,16 +34,36 @@ export async function POST(request: NextRequest) {
     actorId: ctx.profile.id,
   });
 
+  const parsed = parseRecordQuery(query);
   const selfName = [member.first_name, member.last_name].filter(Boolean).join(' ').trim();
-  const selfHay = [selfName, member.email, member.id].filter(Boolean).join(' ').toLowerCase();
+  const selfAsk =
+    /\bmy\b/i.test(query) ||
+    shouldSearchRecords('member_portal', query) ||
+    (Boolean(parsed.askedField) && !parsed.searchTerm);
+
   const records =
-    shouldSearchRecords('member_portal', query) && selfHay.includes(query.toLowerCase())
+    selfAsk
       ? sanitizeRecordHits('member_portal', [
           {
             title: selfName || 'Your membership',
             subtitle: member.email ?? undefined,
             href: '/coverage',
             module: 'self',
+            phone: member.phone,
+            email: member.email,
+            fields: speakableFields({
+              email: member.email,
+              phone: member.phone,
+              status: member.status,
+              title: selfName || 'Your membership',
+              data: {
+                first_name: member.first_name,
+                last_name: member.last_name,
+                dob: member.date_of_birth,
+                date_of_birth: member.date_of_birth,
+                member_number: member.member_number,
+              },
+            }),
           },
         ])
       : [];
