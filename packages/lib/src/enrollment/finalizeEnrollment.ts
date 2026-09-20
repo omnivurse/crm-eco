@@ -119,6 +119,7 @@ export async function finalizeEnrollment(
       is_default: true,
       is_active: true,
       status: 'active',
+      processor: provider.name,
     })
     .select('id')
     .single();

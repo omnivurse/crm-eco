@@ -5,7 +5,14 @@ import { noIndexRouteHeaders } from '../../packages/ui/src/lib/pin-lock-headers.
 const nextConfig = {
   poweredByHeader: false,
   productionBrowserSourceMaps: false,
-  transpilePackages: ['@crm-eco/ui', '@crm-eco/lib', '@crm-eco/enrollment', '@crm-eco/cash-pay'],
+  transpilePackages: [
+    '@crm-eco/ui',
+    '@crm-eco/lib',
+    '@crm-eco/enrollment',
+    '@crm-eco/cash-pay',
+    '@nmipayments/nmi-pay-react',
+    '@nmipayments/nmi-pay',
+  ],
 
   experimental: {
     serverActions: {

@@ -15,6 +15,7 @@ import {
   maskNumber,
   detectCardType,
 } from './authorize-net';
+import { dollarsToCents, getPaymentProviderForProcessor } from './charge-resolver';
 
 export interface PaymentProfileData {
   id: string;
@@ -107,13 +108,17 @@ export interface ProcessPaymentResult {
  */
 export class BillingService {
   private supabase: SupabaseClientAny;
-  private authorizeNet: AuthorizeNetService;
+  private authorizeNet: AuthorizeNetService | null = null;
   private organizationId: string;
 
   constructor(supabase: SupabaseClientAny, organizationId: string) {
     this.supabase = supabase;
     this.organizationId = organizationId;
-    this.authorizeNet = createAuthorizeNetService();
+  }
+
+  private authNet(): AuthorizeNetService {
+    if (!this.authorizeNet) this.authorizeNet = createAuthorizeNetService();
+    return this.authorizeNet;
   }
 
   /**
@@ -137,7 +142,7 @@ export class BillingService {
     }
 
     // Create new customer profile in Authorize.Net
-    const createResult = await this.authorizeNet.createCustomerProfile({
+    const createResult = await this.authNet().createCustomerProfile({
       email: member.email,
       merchantCustomerId: memberId,
       description: `${member.first_name} ${member.last_name}`,
@@ -163,7 +168,7 @@ export class BillingService {
     const customerProfileId = await this.getOrCreateCustomerProfile(input.memberId);
 
     // Create payment profile in Authorize.Net
-    const createResult = await this.authorizeNet.createPaymentProfile({
+    const createResult = await this.authNet().createPaymentProfile({
       customerProfileId,
       paymentMethod: input.paymentMethod,
       billingAddress: input.billingAddress,
@@ -232,6 +237,7 @@ export class BillingService {
         is_default: input.setAsDefault || false,
         is_active: true,
         nickname: input.nickname,
+        processor: 'authorizenet',
       })
       .select('*')
       .single();
@@ -278,7 +284,7 @@ export class BillingService {
     }
 
     // Delete from Authorize.Net
-    const deleteResult = await this.authorizeNet.deletePaymentProfile(
+    const deleteResult = await this.authNet().deletePaymentProfile(
       profile.authorize_customer_profile_id,
       profile.authorize_payment_profile_id
     );
@@ -363,14 +369,25 @@ export class BillingService {
       };
     }
 
-    // Charge via Authorize.Net
-    const chargeResult = await this.authorizeNet.chargeCustomerProfile({
-      customerProfileId: profile.authorize_customer_profile_id,
-      paymentProfileId: profile.authorize_payment_profile_id,
-      amount: input.amount,
+    const charge = await getPaymentProviderForProcessor(profile.processor).chargeOnce({
+      organizationId: input.organizationId,
+      memberId: input.memberId,
+      gatewayCustomerId: profile.authorize_customer_profile_id,
+      gatewayPaymentProfileId: profile.authorize_payment_profile_id,
+      amountCents: dollarsToCents(input.amount),
       description: input.description,
-      invoiceNumber: input.invoiceNumber,
+      idempotencyKey: input.invoiceNumber ?? transaction.id,
     });
+    const chargeResult = {
+      success: charge.success,
+      transactionId: charge.transactionId,
+      responseCode: charge.status === 'declined' ? '2' : charge.success ? '1' : '3',
+      authCode: undefined as string | undefined,
+      avsResultCode: undefined as string | undefined,
+      cvvResultCode: undefined as string | undefined,
+      errorCode: charge.status === 'declined' ? 'DECLINED' : charge.success ? undefined : 'ERROR',
+      errorMessage: charge.error,
+    };
 
     // Update transaction with result
     if (chargeResult.success) {
@@ -489,13 +506,19 @@ export class BillingService {
       };
     }
 
-    // Process refund via Authorize.Net
-    const refundResult = await this.authorizeNet.refundTransaction({
+    const refund = await getPaymentProviderForProcessor(profile?.processor).refund({
       transactionId: originalTxn.authorize_transaction_id,
-      amount,
-      customerProfileId: profile?.authorize_customer_profile_id,
-      paymentProfileId: profile?.authorize_payment_profile_id,
+      amountCents: dollarsToCents(amount),
+      gatewayCustomerId: profile?.authorize_customer_profile_id,
+      gatewayPaymentProfileId: profile?.authorize_payment_profile_id,
+      reason,
     });
+    const refundResult = {
+      success: refund.success,
+      transactionId: refund.transactionId,
+      errorCode: refund.success ? undefined : 'ERROR',
+      errorMessage: refund.error,
+    };
 
     if (refundResult.success) {
       // Update refund transaction

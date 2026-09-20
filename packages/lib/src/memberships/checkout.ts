@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { applyInvoicePayment, generateMemberInvoice } from '../billing/invoice-service';
-import { getPaymentProvider } from '../billing/payment-provider';
+import { getPaymentProviderForProcessor } from '../billing/charge-resolver';
 import { decideMembershipAdd, parseShopTerms, withMembershipLayer } from './layers';
 import { packagePurchaseAmounts } from './packages';
 import { normalizeCartItems } from './shop';
@@ -80,10 +80,11 @@ async function defaultPaymentProfile(
   id: string;
   authorize_customer_profile_id: string | null;
   authorize_payment_profile_id: string | null;
+  processor?: string | null;
 } | null> {
   const { data } = await supabase
     .from('payment_profiles')
-    .select('id, authorize_customer_profile_id, authorize_payment_profile_id')
+    .select('id, authorize_customer_profile_id, authorize_payment_profile_id, processor')
     .eq('organization_id', organizationId)
     .eq('member_id', memberId)
     .eq('is_active', true)
@@ -101,6 +102,7 @@ async function defaultChargeShopItem(input: {
   idempotencyKey: string;
   gatewayCustomerId?: string | null;
   gatewayPaymentProfileId?: string | null;
+  processor?: string | null;
 }): Promise<{ success: boolean; transactionId?: string; error?: string }> {
   if (input.amountCents <= 0) {
     return { success: true, transactionId: `ZERO-${input.idempotencyKey}` };
@@ -108,7 +110,7 @@ async function defaultChargeShopItem(input: {
   if (!input.gatewayCustomerId || !input.gatewayPaymentProfileId) {
     return { success: false, error: 'Add a payment method before buying from the shop.' };
   }
-  const charge = await getPaymentProvider().chargeOnce({
+  const charge = await getPaymentProviderForProcessor(input.processor).chargeOnce({
     organizationId: input.organizationId,
     memberId: input.memberId,
     gatewayCustomerId: input.gatewayCustomerId,
@@ -176,6 +178,7 @@ async function activateAddonPlan(
         idempotencyKey: idem,
         gatewayCustomerId: profile?.authorize_customer_profile_id,
         gatewayPaymentProfileId: profile?.authorize_payment_profile_id,
+        processor: profile?.processor,
       });
   if (!shouldProvisionAfterShopCharge(charge)) {
     throw new Error(charge.error ?? 'The payment was declined.');
@@ -284,6 +287,7 @@ async function purchasePackage(
         idempotencyKey: idem,
         gatewayCustomerId: profile?.authorize_customer_profile_id,
         gatewayPaymentProfileId: profile?.authorize_payment_profile_id,
+        processor: profile?.processor,
       });
   if (!shouldProvisionAfterShopCharge(charge)) {
     throw new Error(charge.error ?? 'The payment was declined.');

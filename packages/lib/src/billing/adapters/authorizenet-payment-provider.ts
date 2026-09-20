@@ -16,6 +16,8 @@ import type {
   ChargeResult,
   PaymentBillingAddress,
   PaymentProvider,
+  RefundInput,
+  RefundResult,
   VaultPaymentInput,
   VaultPaymentResult,
 } from '../payment-provider';
@@ -189,6 +191,30 @@ export class AuthorizeNetPaymentProvider implements PaymentProvider {
         success: false,
         status: 'error',
         error: err instanceof Error ? err.message : 'Authorize.Net charge failed',
+      };
+    }
+  }
+
+  async refund(input: RefundInput): Promise<RefundResult> {
+    try {
+      const result = await this.gateway.refundTransaction({
+        transactionId: input.transactionId,
+        amount: input.amountCents / 100,
+        customerProfileId: input.gatewayCustomerId,
+        paymentProfileId: input.gatewayPaymentProfileId,
+      });
+      if (result.success) {
+        return { success: true, transactionId: result.transactionId };
+      }
+      return {
+        success: false,
+        transactionId: result.transactionId,
+        error: result.errorMessage ?? 'Authorize.Net refund failed',
+      };
+    } catch (err) {
+      return {
+        success: false,
+        error: err instanceof Error ? err.message : 'Authorize.Net refund failed',
       };
     }
   }

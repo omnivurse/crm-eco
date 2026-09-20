@@ -98,13 +98,30 @@ export interface ChargeResult {
   placeholder?: boolean;
 }
 
+export interface RefundInput {
+  transactionId: string;
+  amountCents: number;
+  gatewayCustomerId?: string;
+  gatewayPaymentProfileId?: string;
+  reason?: string;
+}
+
+export interface RefundResult {
+  success: boolean;
+  transactionId?: string;
+  error?: string;
+  placeholder?: boolean;
+}
+
 export interface PaymentProvider {
-  /** Stable identifier, e.g. 'placeholder' | 'authorizenet' | 'newbank' */
+  /** Stable identifier, e.g. 'placeholder' | 'authorizenet' | 'nmi' */
   readonly name: string;
   /** Tokenize + store the payment method at the gateway (no DB writes here) */
   vaultPaymentMethod(input: VaultPaymentInput): Promise<VaultPaymentResult>;
   /** One-time charge against a vaulted profile (e.g. the first month) */
   chargeOnce(input: ChargeInput): Promise<ChargeResult>;
+  /** Refund a prior gateway transaction */
+  refund(input: RefundInput): Promise<RefundResult>;
 }
 
 /**
@@ -146,6 +163,15 @@ export class PlaceholderPaymentProvider implements PaymentProvider {
       placeholder: true,
       status: 'approved',
       transactionId: `PLACEHOLDER-TXN-${input.idempotencyKey ?? input.memberId}`,
+    };
+  }
+
+  async refund(input: RefundInput): Promise<RefundResult> {
+    this.warn('refund');
+    return {
+      success: true,
+      placeholder: true,
+      transactionId: `PLACEHOLDER-REFUND-${input.transactionId}`,
     };
   }
 }
@@ -293,6 +319,10 @@ export class GenericHttpPaymentProvider implements PaymentProvider {
       status: (dotGet(r.json, m.status ?? 'status') as ChargeResult['status']) ?? 'approved',
     };
   }
+
+  async refund(): Promise<RefundResult> {
+    return { success: false, error: 'HTTP payment adapter does not implement refund' };
+  }
 }
 
 function httpConfigFromEnv(): HttpProviderConfig {
@@ -320,6 +350,7 @@ function httpConfigFromEnv(): HttpProviderConfig {
 }
 
 import { createAuthorizeNetPaymentProvider } from './adapters/authorizenet-payment-provider';
+import { createNmiPaymentProvider } from './adapters/nmi-payment-provider';
 
 /* ------------------------------- Registry -------------------------------- */
 
@@ -329,6 +360,7 @@ const REGISTRY = new Map<string, PaymentProviderFactory>([
   ['placeholder', () => new PlaceholderPaymentProvider()],
   ['http', () => new GenericHttpPaymentProvider(httpConfigFromEnv())],
   ['authorizenet', () => createAuthorizeNetPaymentProvider()],
+  ['nmi', () => createNmiPaymentProvider()],
 ]);
 
 /**
@@ -348,7 +380,12 @@ let cached: PaymentProvider | null = null;
 export function getPaymentProvider(): PaymentProvider {
   if (cached) return cached;
   const name = (process.env.PAYMENT_PROVIDER || 'placeholder').toLowerCase();
-  const factory = REGISTRY.get(name) ?? REGISTRY.get('placeholder')!;
+  const factory = REGISTRY.get(name);
+  if (!factory) {
+    throw new Error(
+      `Unknown PAYMENT_PROVIDER "${name}". Registered: ${[...REGISTRY.keys()].join(', ')}`,
+    );
+  }
   cached = factory();
   return cached;
 }

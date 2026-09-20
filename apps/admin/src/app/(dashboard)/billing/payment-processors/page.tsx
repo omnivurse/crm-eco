@@ -356,7 +356,7 @@ export default function PaymentProcessorsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Payment processors"
-        description="Configure payment gateway integrations"
+        description="Catalog of processor labels. Live charges use PAYMENT_PROVIDER and env secrets — not this table."
         icon={<CreditCard weight="light" className="w-6 h-6" />}
         gradient="from-amber-500 to-orange-400"
         actions={
@@ -366,6 +366,15 @@ export default function PaymentProcessorsPage() {
           </Button>
         }
       />
+
+      <Card className="border-amber-200 bg-amber-50">
+        <CardContent className="pt-6 text-sm text-amber-950">
+          NMI is the intended live rail. Set <code className="rounded bg-white/70 px-1">PAYMENT_PROVIDER=nmi</code>{' '}
+          plus sandbox/live NMI keys on Vercel and edge functions. Rows here are labels only and do
+          not move money. Existing Authorize.Net vaulted cards keep charging Authorize.Net until the
+          member re-adds a card.
+        </CardContent>
+      </Card>
 
       {/* Processors List */}
       {loading ? (

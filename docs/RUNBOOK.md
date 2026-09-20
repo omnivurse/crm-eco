@@ -46,6 +46,10 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY     # Anon JWT
 RESEND_API_KEY                    # For dunning + transactional email
 RESEND_FROM_EMAIL                 # noreply@yourdomain.com
 RESEND_FROM_NAME                  # "Pay It Forward Health"
+PAYMENT_PROVIDER                  # nmi | authorizenet | placeholder
+NMI_PRIVATE_API_KEY               # server-only — admin retry / billing service
+NMI_ENVIRONMENT                   # sandbox | production
+# Keep AUTHORIZE_NET_* until the last CIM profile is gone
 ```
 
 ### Vercel — portal app
@@ -59,14 +63,25 @@ ENROLL_DRAFT_SECRET               # 32-byte random; HMAC for public draft cookie
 RECAPTCHA_SECRET                  # reCAPTCHA v3 secret (omit in dev to bypass)
 NEXT_PUBLIC_RECAPTCHA_SITE_KEY    # reCAPTCHA v3 site key (client-side)
 
-# Authorize.Net Accept.js (member add payment method — public client key only)
+# NMI Payment Component (member add payment method — public tokenization key only)
+NEXT_PUBLIC_NMI_TOKENIZATION_KEY
+NEXT_PUBLIC_NMI_ENVIRONMENT             # sandbox | production
+PAYMENT_PROVIDER                        # nmi | authorizenet | placeholder
+NMI_PRIVATE_API_KEY                     # server-only — never NEXT_PUBLIC_
+NMI_ENVIRONMENT                         # sandbox | production
+# NMI_API_BASE                          # optional host override
+
+# Authorize.Net Accept.js fallback (existing CIM profiles keep billing)
 NEXT_PUBLIC_AUTHORIZE_NET_API_LOGIN_ID
 NEXT_PUBLIC_AUTHORIZE_NET_CLIENT_KEY
 NEXT_PUBLIC_AUTHORIZE_NET_ENVIRONMENT   # sandbox | production
 ```
 
-Until Accept.js vars are set, `/billing/methods/new` shows a friendly
-"not configured" message. Deploy checklist: `./scripts/ready-acceptjs-billing.sh`
+If `PAYMENT_PROVIDER=nmi` but `NEXT_PUBLIC_NMI_TOKENIZATION_KEY` is missing,
+`/billing/methods/new` shows a hard error (no Accept.js fallback). Existing
+Authorize.Net vaulted cards keep charging Authorize.Net until the member
+re-adds a card. Do not apply the `payment_profiles.processor` migration or
+deploy updated edge functions without explicit approval.
 
 ### Supabase — Edge Function secrets
 
@@ -77,6 +92,9 @@ AUTHNET_API_ENDPOINT              # https://api.authorize.net/xml/v1/request.api
 AUTHNET_SIGNATURE_KEY             # HMAC-SHA512 secret from Authorize.Net portal
 # process-payment also accepts AUTHORIZE_NET_API_LOGIN_ID, AUTHORIZE_NET_TRANSACTION_KEY,
 # AUTHORIZE_NET_ENVIRONMENT (sandbox | production)
+NMI_PRIVATE_API_KEY               # server-only; required for NMI vault/sale/refund
+NMI_ENVIRONMENT                   # sandbox | production
+# NMI_API_BASE                    # optional host override
 RESEND_API_KEY
 RESEND_FROM_EMAIL
 RESEND_FROM_NAME

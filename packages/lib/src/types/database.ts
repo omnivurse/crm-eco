@@ -30990,6 +30990,7 @@ export type Database = {
           organization_id: string
           payment_profile_id: string | null
           payment_type: string
+          processor: string
           status: string | null
           updated_at: string | null
         }
@@ -31022,6 +31023,7 @@ export type Database = {
           organization_id: string
           payment_profile_id?: string | null
           payment_type: string
+          processor?: string
           status?: string | null
           updated_at?: string | null
         }
@@ -31054,6 +31056,7 @@ export type Database = {
           organization_id?: string
           payment_profile_id?: string | null
           payment_type?: string
+          processor?: string
           status?: string | null
           updated_at?: string | null
         }

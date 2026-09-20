@@ -7,6 +7,13 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import {
+  NMI_OPAQUE_DESCRIPTOR,
+  isNmiProcessor,
+  nmiCreateCustomer,
+  nmiRefund,
+  nmiSale,
+} from '../_shared/nmi.ts';
 
 const ALLOWED_ORIGINS = (Deno.env.get('ALLOWED_ORIGINS') || '*').split(',').map(s => s.trim());
 
@@ -134,18 +141,23 @@ serve(async (req) => {
       (Deno.env.get('AUTHNET_API_ENDPOINT')?.includes('apitest') ? 'sandbox' : null) ||
       'sandbox';
 
-    if (!apiLoginId || !transactionKey) {
+    const apiEndpoint = environment === 'production'
+      ? 'https://api.authorize.net/xml/v1/request.api'
+      : 'https://apitest.authorize.net/xml/v1/request.api';
+
+    const merchantAuth = apiLoginId && transactionKey
+      ? { name: apiLoginId, transactionKey }
+      : null;
+
+    const nmiCreate = body.action === 'create_profile' &&
+      body.opaqueData?.dataDescriptor === NMI_OPAQUE_DESCRIPTOR;
+
+    if (!nmiCreate && !merchantAuth) {
       return new Response(
         JSON.stringify({ error: 'Payment gateway not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-
-    const apiEndpoint = environment === 'production'
-      ? 'https://api.authorize.net/xml/v1/request.api'
-      : 'https://apitest.authorize.net/xml/v1/request.api';
-
-    const merchantAuth = { name: apiLoginId, transactionKey };
 
     // Process based on action
     switch (body.action) {
@@ -177,7 +189,7 @@ async function processCharge(
   supabase: any,
   organizationId: string,
   input: ChargeRequest,
-  merchantAuth: { name: string; transactionKey: string },
+  merchantAuth: { name: string; transactionKey: string } | null,
   apiEndpoint: string
 ) {
   // Get payment profile
@@ -219,6 +231,73 @@ async function processCharge(
   if (txnError || !transaction) {
     return new Response(
       JSON.stringify({ success: false, error: 'Failed to create transaction' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  if (isNmiProcessor(profile.processor)) {
+    const nmi = await nmiSale({
+      customerVaultId: profile.authorize_payment_profile_id || profile.authorize_customer_profile_id,
+      amountDollars: Number(input.amount),
+      description: input.description,
+      idempotencyKey: input.invoiceNumber ?? transaction.id,
+    });
+    if (nmi.success && nmi.transactionId) {
+      await supabase
+        .from('billing_transactions')
+        .update({
+          status: 'success',
+          authorize_transaction_id: nmi.transactionId,
+          processed_at: new Date().toISOString(),
+        })
+        .eq('id', transaction.id);
+      return new Response(
+        JSON.stringify({
+          success: true,
+          transactionId: transaction.id,
+          authorizeTransactionId: nmi.transactionId,
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    await supabase
+      .from('billing_transactions')
+      .update({
+        status: 'failed',
+        authorize_transaction_id: nmi.transactionId,
+        error_message: nmi.error,
+        processed_at: new Date().toISOString(),
+      })
+      .eq('id', transaction.id);
+    if (input.billingScheduleId) {
+      await supabase.from('billing_failures').insert({
+        organization_id: organizationId,
+        billing_schedule_id: input.billingScheduleId,
+        billing_transaction_id: transaction.id,
+        member_id: input.memberId,
+        amount: input.amount,
+        failure_reason: nmi.error,
+        failure_code: nmi.declined ? 'DECLINED' : 'ERROR',
+        status: 'pending',
+        resolved: false,
+        retry_attempt: 0,
+        retry_scheduled: true,
+        next_retry_date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      });
+    }
+    return new Response(
+      JSON.stringify({
+        success: false,
+        transactionId: transaction.id,
+        errorMessage: nmi.error,
+      }),
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  if (!merchantAuth) {
+    return new Response(
+      JSON.stringify({ success: false, error: 'Authorize.Net is not configured' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
@@ -328,7 +407,7 @@ async function processRefund(
   supabase: any,
   organizationId: string,
   input: RefundRequest,
-  merchantAuth: { name: string; transactionKey: string },
+  merchantAuth: { name: string; transactionKey: string } | null,
   apiEndpoint: string
 ) {
   // Get original transaction
@@ -370,8 +449,58 @@ async function processRefund(
     );
   }
 
-  // Process refund via Authorize.Net
   const profile = originalTxn.payment_profiles;
+  if (isNmiProcessor(profile?.processor)) {
+    const nmi = await nmiRefund({
+      transactionId: originalTxn.authorize_transaction_id,
+      amountDollars: Number(input.amount),
+    });
+    if (nmi.success) {
+      await supabase
+        .from('billing_transactions')
+        .update({
+          status: 'success',
+          authorize_transaction_id: nmi.transactionId,
+          processed_at: new Date().toISOString(),
+        })
+        .eq('id', refundTxn.id);
+      if (input.amount >= originalTxn.amount) {
+        await supabase
+          .from('billing_transactions')
+          .update({ status: 'refunded' })
+          .eq('id', input.transactionId);
+      }
+      return new Response(
+        JSON.stringify({
+          success: true,
+          transactionId: refundTxn.id,
+          authorizeTransactionId: nmi.transactionId,
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    await supabase
+      .from('billing_transactions')
+      .update({
+        status: 'failed',
+        error_message: nmi.error,
+        processed_at: new Date().toISOString(),
+      })
+      .eq('id', refundTxn.id);
+    return new Response(
+      JSON.stringify({ success: false, transactionId: refundTxn.id, errorMessage: nmi.error }),
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  if (!merchantAuth) {
+    return new Response(
+      JSON.stringify({ success: false, error: 'Authorize.Net is not configured' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // Process refund via Authorize.Net
   const refundResponse = await fetch(apiEndpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -454,7 +583,7 @@ async function createPaymentProfile(
   organizationId: string,
   userId: string,
   input: CreateProfileRequest,
-  merchantAuth: { name: string; transactionKey: string },
+  merchantAuth: { name: string; transactionKey: string } | null,
   apiEndpoint: string,
   environment: string,
 ) {
@@ -518,6 +647,80 @@ async function createPaymentProfile(
     return new Response(
       JSON.stringify({ success: false, error: 'Member not found in organization' }),
       { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  if (usesOpaque && input.opaqueData!.dataDescriptor === NMI_OPAQUE_DESCRIPTOR) {
+    const vault = await nmiCreateCustomer({
+      paymentToken: input.opaqueData!.dataValue,
+      email: member.email,
+      firstName: input.billingAddress?.firstName ?? member.first_name,
+      lastName: input.billingAddress?.lastName ?? member.last_name,
+      address: input.billingAddress?.address,
+      city: input.billingAddress?.city,
+      state: input.billingAddress?.state,
+      zip: input.billingAddress?.zip,
+      memberId: input.memberId,
+    });
+    if (!vault.success || !vault.customerVaultId) {
+      return new Response(
+        JSON.stringify({ success: false, error: vault.error || 'Failed to vault NMI payment method' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    if (input.setAsDefault) {
+      await supabase
+        .from('payment_profiles')
+        .update({ is_default: false })
+        .eq('member_id', input.memberId)
+        .eq('is_active', true);
+    }
+    const lastFour = vault.lastFour || '0000';
+    const { data: nmiProfile, error: nmiSaveError } = await supabase
+      .from('payment_profiles')
+      .insert({
+        organization_id: organizationId,
+        member_id: input.memberId,
+        authorize_customer_profile_id: vault.customerVaultId,
+        authorize_payment_profile_id: vault.customerVaultId,
+        payment_type: 'credit_card',
+        last_four: lastFour,
+        card_last4: lastFour,
+        card_type: vault.brand ?? null,
+        expiration_date: input.expirationDate ?? vault.expiration ?? null,
+        billing_first_name: input.billingAddress?.firstName,
+        billing_last_name: input.billingAddress?.lastName,
+        billing_address: input.billingAddress?.address,
+        billing_city: input.billingAddress?.city,
+        billing_state: input.billingAddress?.state,
+        billing_zip: input.billingAddress?.zip,
+        is_default: input.setAsDefault || false,
+        is_active: true,
+        processor: 'nmi',
+      })
+      .select('id')
+      .single();
+    if (nmiSaveError || !nmiProfile) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Failed to save payment profile' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    return new Response(
+      JSON.stringify({
+        success: true,
+        paymentProfileId: nmiProfile.id,
+        lastFour,
+        cardType: vault.brand,
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  if (!merchantAuth) {
+    return new Response(
+      JSON.stringify({ success: false, error: 'Authorize.Net is not configured' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 
@@ -708,6 +911,7 @@ async function createPaymentProfile(
       billing_zip: input.billingAddress?.zip,
       is_default: input.setAsDefault || false,
       is_active: true,
+      processor: 'authorizenet',
       status: 'active',
     })
     .select('id')

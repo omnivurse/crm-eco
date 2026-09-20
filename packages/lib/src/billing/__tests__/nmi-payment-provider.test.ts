@@ -13,7 +13,7 @@ import {
   __setPaymentProvider,
   getPaymentProvider,
 } from '../payment-provider';
-import { normalizeStoredPaymentProcessor } from '../charge-resolver';
+import { getPaymentProviderForProcessor, normalizeStoredPaymentProcessor } from '../charge-resolver';
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -245,6 +245,12 @@ describe('getPaymentProvider fail-closed', () => {
 });
 
 describe('charge resolver', () => {
+  afterEach(() => {
+    delete process.env.NMI_PRIVATE_API_KEY;
+    delete process.env.AUTHORIZE_NET_API_LOGIN_ID;
+    delete process.env.AUTHORIZE_NET_TRANSACTION_KEY;
+  });
+
   it('treats missing processor as Authorize.Net', () => {
     expect(normalizeStoredPaymentProcessor(null)).toBe('authorizenet');
     expect(normalizeStoredPaymentProcessor('NMI')).toBe('nmi');
@@ -253,5 +259,9 @@ describe('charge resolver', () => {
   it('does not treat placeholder or http stored values as NMI', () => {
     expect(normalizeStoredPaymentProcessor('placeholder')).toBe('authorizenet');
     expect(normalizeStoredPaymentProcessor('http')).toBe('authorizenet');
+  });
+
+  it('fails closed when routing an NMI profile without keys', () => {
+    expect(() => getPaymentProviderForProcessor('nmi')).toThrow(/NMI_PRIVATE_API_KEY/);
   });
 });

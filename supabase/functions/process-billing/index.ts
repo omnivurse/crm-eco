@@ -16,6 +16,7 @@ import {
   authorizeInternalEdgeRequest,
   unauthorizedResponse,
 } from '../_shared/cron-auth.ts';
+import { isNmiProcessor, nmiSale } from '../_shared/nmi.ts';
 
 const ALLOWED_ORIGINS = (Deno.env.get('ALLOWED_ORIGINS') || '*').split(',').map(s => s.trim());
 
@@ -164,12 +165,13 @@ serve(async (req) => {
       // No body = process all orgs
     }
 
-    // Get Authorize.Net credentials
-    const apiLoginId = Deno.env.get('AUTHORIZE_NET_API_LOGIN_ID');
-    const transactionKey = Deno.env.get('AUTHORIZE_NET_TRANSACTION_KEY');
+    // Get Authorize.Net credentials (still required for existing CIM profiles)
+    const apiLoginId = Deno.env.get('AUTHORIZE_NET_API_LOGIN_ID') || Deno.env.get('AUTHNET_API_LOGIN_ID');
+    const transactionKey = Deno.env.get('AUTHORIZE_NET_TRANSACTION_KEY') || Deno.env.get('AUTHNET_TRANSACTION_KEY');
     const environment = Deno.env.get('AUTHORIZE_NET_ENVIRONMENT') || 'sandbox';
+    const nmiConfigured = Boolean(Deno.env.get('NMI_PRIVATE_API_KEY')?.trim());
 
-    if (!apiLoginId || !transactionKey) {
+    if (!nmiConfigured && (!apiLoginId || !transactionKey)) {
       return new Response(
         JSON.stringify({ error: 'Payment gateway not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -180,7 +182,9 @@ serve(async (req) => {
       ? 'https://api.authorize.net/xml/v1/request.api'
       : 'https://apitest.authorize.net/xml/v1/request.api';
 
-    const merchantAuth = { name: apiLoginId, transactionKey };
+    const merchantAuth = apiLoginId && transactionKey
+      ? { name: apiLoginId, transactionKey }
+      : null;
     const today = new Date().toISOString().split('T')[0];
 
     // Load org-specific config (or defaults)
@@ -236,7 +240,8 @@ serve(async (req) => {
           id,
           authorize_customer_profile_id,
           authorize_payment_profile_id,
-          is_active
+          is_active,
+          processor
         ),
         members (
           id,
@@ -432,7 +437,8 @@ serve(async (req) => {
               id,
               authorize_customer_profile_id,
               authorize_payment_profile_id,
-              is_active
+              is_active,
+              processor
             )
           )
         `)
@@ -577,7 +583,7 @@ serve(async (req) => {
 async function processCharge(
   supabase: any,
   schedule: any,
-  merchantAuth: { name: string; transactionKey: string },
+  merchantAuth: { name: string; transactionKey: string } | null,
   apiEndpoint: string,
   idempotencyKey?: string,
 ): Promise<{ success: boolean; transactionId?: string; errorMessage?: string }> {
@@ -601,6 +607,40 @@ async function processCharge(
     })
     .select('id')
     .single();
+
+  if (isNmiProcessor(profile.processor)) {
+    const nmi = await nmiSale({
+      customerVaultId: profile.authorize_payment_profile_id || profile.authorize_customer_profile_id,
+      amountDollars: Number(schedule.amount),
+      description: `Recurring payment - ${schedule.frequency}`,
+      idempotencyKey: idempotencyKey ?? transaction?.id,
+    });
+    if (nmi.success && nmi.transactionId) {
+      await supabase
+        .from('billing_transactions')
+        .update({
+          status: 'success',
+          authorize_transaction_id: nmi.transactionId,
+          processed_at: new Date().toISOString(),
+        })
+        .eq('id', transaction.id);
+      return { success: true, transactionId: nmi.transactionId };
+    }
+    await supabase
+      .from('billing_transactions')
+      .update({
+        status: 'failed',
+        authorize_transaction_id: nmi.transactionId,
+        error_message: nmi.error,
+        processed_at: new Date().toISOString(),
+      })
+      .eq('id', transaction.id);
+    return { success: false, transactionId: nmi.transactionId, errorMessage: nmi.error };
+  }
+
+  if (!merchantAuth) {
+    return { success: false, errorMessage: 'Authorize.Net is not configured' };
+  }
 
   // Charge via Authorize.Net
   const chargeResponse = await fetch(apiEndpoint, {

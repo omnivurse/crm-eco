@@ -14,6 +14,7 @@ import {
   authorizeInternalEdgeRequest,
   unauthorizedResponse,
 } from '../_shared/cron-auth.ts';
+import { isNmiProcessor, nmiSale } from '../_shared/nmi.ts';
 
 const ALLOWED_ORIGINS = (Deno.env.get('ALLOWED_ORIGINS') || '*').split(',').map(s => s.trim());
 
@@ -119,8 +120,8 @@ serve(async (req) => {
 
     const results: RetryResult[] = [];
     const merchantAuth = {
-      name: Deno.env.get('AUTHNET_API_LOGIN_ID') || '',
-      transactionKey: Deno.env.get('AUTHNET_TRANSACTION_KEY') || '',
+      name: Deno.env.get('AUTHNET_API_LOGIN_ID') || Deno.env.get('AUTHORIZE_NET_API_LOGIN_ID') || '',
+      transactionKey: Deno.env.get('AUTHNET_TRANSACTION_KEY') || Deno.env.get('AUTHORIZE_NET_TRANSACTION_KEY') || '',
     };
     const apiEndpoint = Deno.env.get('AUTHNET_API_ENDPOINT')
       || 'https://apitest.authorize.net/xml/v1/request.api';
@@ -281,6 +282,40 @@ async function processRetryCharge(
     })
     .select('id')
     .single();
+
+  if (isNmiProcessor(profile.processor)) {
+    const nmi = await nmiSale({
+      customerVaultId: profile.authorize_payment_profile_id || profile.authorize_customer_profile_id,
+      amountDollars: Number(schedule.amount),
+      description: `Retry charge - ${schedule.frequency}`,
+      idempotencyKey: transaction?.id,
+    });
+    if (nmi.success && nmi.transactionId) {
+      await supabase
+        .from('billing_transactions')
+        .update({
+          status: 'success',
+          authorize_transaction_id: nmi.transactionId,
+          processed_at: new Date().toISOString(),
+        })
+        .eq('id', transaction.id);
+      return { success: true, transactionId: nmi.transactionId };
+    }
+    await supabase
+      .from('billing_transactions')
+      .update({
+        status: 'failed',
+        authorize_transaction_id: nmi.transactionId,
+        error_message: nmi.error,
+        processed_at: new Date().toISOString(),
+      })
+      .eq('id', transaction.id);
+    return { success: false, transactionId: nmi.transactionId, errorMessage: nmi.error };
+  }
+
+  if (!merchantAuth.name || !merchantAuth.transactionKey) {
+    return { success: false, errorMessage: 'Authorize.Net is not configured' };
+  }
 
   try {
     const response = await fetch(apiEndpoint, {

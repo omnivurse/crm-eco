@@ -1,7 +1,7 @@
 'use server';
 
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
-import { createAuthorizeNetService } from '@crm-eco/lib/billing/authorize-net';
+import { dollarsToCents, getPaymentProviderForProcessor } from '@crm-eco/lib/billing/charge-resolver';
 import { createResendService } from '@crm-eco/lib/email';
 import { getActiveTenant } from '@/lib/tenant';
 import { getAdminProfile } from '@/lib/profile';
@@ -52,6 +52,7 @@ export async function retryFailedPayment(failureId: string): Promise<RetryPaymen
           id: string;
           authorize_customer_profile_id: string;
           authorize_payment_profile_id: string;
+          processor?: string | null;
         } | null;
       } | null;
     }
@@ -72,7 +73,8 @@ export async function retryFailedPayment(failureId: string): Promise<RetryPaymen
           payment_profile:payment_profiles!billing_schedules_payment_profile_id_fkey(
             id,
             authorize_customer_profile_id,
-            authorize_payment_profile_id
+            authorize_payment_profile_id,
+            processor
           )
         )
       `)
@@ -102,17 +104,14 @@ export async function retryFailedPayment(failureId: string): Promise<RetryPaymen
       return { success: false, error: 'No payment profile found for this billing schedule' };
     }
 
-    // Charge via Authorize.Net directly — do NOT use getPaymentProvider() here.
-    // getPaymentProvider() defaults to PlaceholderPaymentProvider (fake success,
-    // no real money) unless PAYMENT_PROVIDER=authorizenet is set. Admin retry
-    // must always hit the live gateway in production.
-    const authNet = createAuthorizeNetService();
-    const chargeResult = await authNet.chargeCustomerProfile({
-      customerProfileId: paymentProfile.authorize_customer_profile_id,
-      paymentProfileId: paymentProfile.authorize_payment_profile_id,
-      amount: failure.amount,
-      invoiceNumber: `RETRY-${failure.id.substring(0, 8)}`,
+    const chargeResult = await getPaymentProviderForProcessor(paymentProfile.processor).chargeOnce({
+      organizationId: tenant.organizationId,
+      memberId: failure.member_id,
+      gatewayCustomerId: paymentProfile.authorize_customer_profile_id,
+      gatewayPaymentProfileId: paymentProfile.authorize_payment_profile_id,
+      amountCents: dollarsToCents(failure.amount),
       description: `Retry payment for billing failure`,
+      idempotencyKey: `RETRY-${failure.id}`,
     });
 
     if (chargeResult.success && chargeResult.transactionId) {
@@ -129,7 +128,6 @@ export async function retryFailedPayment(failureId: string): Promise<RetryPaymen
           processing_fee: 0,
           status: 'success',
           authorize_transaction_id: chargeResult.transactionId,
-          auth_code: chargeResult.authCode,
           description: `Retry payment for failed billing`,
           processed_at: new Date().toISOString(),
         });
@@ -165,8 +163,8 @@ export async function retryFailedPayment(failureId: string): Promise<RetryPaymen
         .from('billing_failures') as any)
         .update({
           retry_attempt: newRetryAttempt,
-          failure_reason: chargeResult.errorMessage || 'Payment declined',
-          failure_code: chargeResult.errorCode,
+          failure_reason: chargeResult.error || 'Payment declined',
+          failure_code: chargeResult.status === 'declined' ? 'DECLINED' : 'ERROR',
           retry_scheduled: newRetryAttempt < maxRetries,
           next_retry_date: newRetryAttempt < maxRetries ? nextRetryDate.toISOString() : null,
           last_retry_at: new Date().toISOString(),
@@ -186,14 +184,14 @@ export async function retryFailedPayment(failureId: string): Promise<RetryPaymen
           processing_fee: 0,
           status: 'failed',
           authorize_transaction_id: chargeResult.transactionId,
-          error_message: chargeResult.errorMessage,
+          error_message: chargeResult.error,
           description: `Retry payment attempt ${newRetryAttempt} failed`,
           processed_at: new Date().toISOString(),
         });
 
       return {
         success: false,
-        error: chargeResult.errorMessage || 'Payment was declined',
+        error: chargeResult.error || 'Payment was declined',
       };
     }
   } catch (error) {

@@ -11,6 +11,8 @@
     "./types": "./src/types/index.ts",
     "./billing": "./src/billing/index.ts",
     "./billing/authorize-net": "./src/billing/authorize-net.ts",
+    "./billing/nmi": "./src/billing/nmi.ts",
+    "./billing/charge-resolver": "./src/billing/charge-resolver.ts",
     "./commissions": "./src/commissions/index.ts",
     "./analytics": "./src/analytics/index.ts",
     "./gizmo": "./src/gizmo/index.ts",

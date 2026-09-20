@@ -94,7 +94,8 @@ locality) comes from the `/codebase-design` skill; the terms below name the
 
 - **Billing** — recurring collection of member contributions. `billing_schedules`
   drive `billing_transactions`; failures land in `billing_failures`. Payment rails:
-  Authorize.Net (active), Stripe (adapter, inactive), NACHA/ACH.
+  NMI (intended live rail; sandbox first), Authorize.Net (existing CIM
+  profiles until the member re-adds a card), Stripe (adapter, inactive), NACHA/ACH.
   Member/group invoices live on the same `invoices` table (plus
   `invoice_line_items` / `invoice_payments`). Generation, send, print, and
   payment/credit writes go through admin `/api/invoices/*` — not a second

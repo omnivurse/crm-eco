@@ -7,6 +7,11 @@ the **`PaymentProvider`** seam (`payment-provider.ts`):
 const provider = getPaymentProvider();           // chosen by PAYMENT_PROVIDER env
 await provider.vaultPaymentMethod({ ... });       // tokenize/store card or ACH
 await provider.chargeOnce({ ... });               // one-time charge (e.g. month 1)
+await provider.refund({ ... });                   // refund a prior transaction
+
+Recurring charges use `getPaymentProviderForProcessor(payment_profiles.processor)`
+so existing Authorize.Net CIM ids keep billing Authorize.Net after NMI is the
+intended live rail.
 ```
 
 So swapping processors is **configuration + (at most) a thin adapter** — no flow
@@ -18,7 +23,25 @@ changes. Until the client's bank is chosen, the default is a no-op placeholder.
 |---|---|
 | `placeholder` (default) | Returns deterministic synthetic results, **never moves money**, warns loudly. For dev / before a bank is wired. |
 | `http` | **Generic REST adapter** — talks to any JSON gateway via env config (below). Covers most processors with zero code. |
+| `nmi` | **Intended live rail.** Browser Payment Component → Customer Vault → MIT sale. Fails closed if `NMI_PRIVATE_API_KEY` is missing. Never falls through to placeholder. |
+| `authorizenet` | Authorize.Net CIM. Still required for existing `payment_profiles.processor = authorizenet` rows. |
 | `<bankname>` | A bespoke adapter you register (see "Adding a bespoke adapter"). |
+
+### NMI env (sandbox first)
+
+```
+PAYMENT_PROVIDER=nmi
+NMI_PRIVATE_API_KEY=...          # server-only
+NMI_ENVIRONMENT=sandbox          # or production
+# NMI_API_BASE=https://sandbox.nmi.com
+NEXT_PUBLIC_NMI_TOKENIZATION_KEY=...   # browser Payment Component only
+```
+
+Hosts: sandbox `https://sandbox.nmi.com` · live `https://secure.nmi.com`.
+PCI: only `nmi_payment_token` / vault ids. No PAN/CVV on our servers.
+
+Unknown `PAYMENT_PROVIDER` throws. Do not apply the `processor` column
+migration, set production keys, or deploy edge functions without approval.
 
 ## Wiring the generic `http` adapter (most banks)
 
