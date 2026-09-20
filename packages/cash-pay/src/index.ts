@@ -141,3 +141,20 @@ export {
   DEFAULT_BOOK_NAME,
 } from './rate-book';
 export type { RateClipSnapshot, RateBookCompile } from './rate-book';
+
+export { CASH_PAY_BRAND } from './brand';
+export type { CashPayBrand } from './brand';
+
+export {
+  escapeHtml,
+  formatRateNoteMoney,
+  buildCompareRateNoteHtml,
+  buildBookRateNoteHtml,
+  openRateNoteWindow,
+} from './rate-note';
+export type {
+  RateNoteTick,
+  CompareRateNoteInput,
+  BookRateNoteClip,
+  BookRateNoteInput,
+} from './rate-note';
