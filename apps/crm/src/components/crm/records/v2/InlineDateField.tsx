@@ -8,7 +8,7 @@
  * segment. A calendar button still opens the browser picker when preferred.
  */
 
-import { memo, useCallback, useEffect, useId, useRef, useState } from 'react';
+import { memo, useCallback, useId, useRef, useState } from 'react';
 import { format, parseISO } from 'date-fns';
 import { normalizeDateColumnValue } from '@/lib/crm/merge-crm-data-json-to-row';
 import {
@@ -98,11 +98,24 @@ export const InlineDateField = memo(function InlineDateField({
   const textRef = useRef<HTMLInputElement>(null);
   const { save, fields } = useRecordFieldSave();
   const state = fields[field];
+  // The parent RSC prop can remain stale after a successful PATCH. Treat the
+  // last persisted value as the editing source of truth until that prop catches
+  // up, not only as a display overlay.
+  const optimisticValue =
+    state?.lastValue !== undefined &&
+    (state.status === 'saved' ||
+      state.status === 'pending' ||
+      state.status === 'saving' ||
+      !serverHasCaughtUp(value, state.lastValue))
+      ? (state.lastValue as string | null)
+      : value;
   const { acquireFieldLock, releaseFieldLock } = useRecordFieldLocks();
   const lockOwner = useFieldLockOwner(field);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<string>(() =>
-    mode === 'date' ? dateValueToMaskedDraft(value) : toInputValue(value, mode),
+    mode === 'date'
+      ? dateValueToMaskedDraft(optimisticValue)
+      : toInputValue(optimisticValue, mode),
   );
   const [localError, setLocalError] = useState<string | null>(null);
 
@@ -110,22 +123,34 @@ export const InlineDateField = memo(function InlineDateField({
   // update from another user). Uses React's "storing information from previous
   // renders" pattern (same as InlineFieldEditor) instead of an effect, so we
   // never trigger a cascading render after commit.
-  const [lastSyncedValue, setLastSyncedValue] = useState(value);
-  if (!editing && value !== lastSyncedValue) {
-    setLastSyncedValue(value);
-    setDraft(mode === 'date' ? dateValueToMaskedDraft(value) : toInputValue(value, mode));
+  const [lastSyncedValue, setLastSyncedValue] = useState(optimisticValue);
+  if (!editing && optimisticValue !== lastSyncedValue) {
+    setLastSyncedValue(optimisticValue);
+    setDraft(
+      mode === 'date'
+        ? dateValueToMaskedDraft(optimisticValue)
+        : toInputValue(optimisticValue, mode),
+    );
     setLocalError(null);
   }
+
+  const finishEditing = useCallback(() => {
+    setEditing(false);
+    onEditEnd?.();
+    void releaseFieldLock(field);
+  }, [field, onEditEnd, releaseFieldLock]);
 
   const commit = useCallback(
     async (nextRaw: string, opts?: { closeEditor?: boolean }) => {
       const normalized = nextRaw.trim();
       if (!normalized) {
         setLocalError(null);
+        if (!toInputValue(optimisticValue, mode)) {
+          if (opts?.closeEditor !== false) finishEditing();
+          return true;
+        }
         if (opts?.closeEditor !== false) {
-          setEditing(false);
-          onEditEnd?.();
-          void releaseFieldLock(field);
+          finishEditing();
         }
         await save(field, null, target ? { target } : undefined);
         return true;
@@ -142,33 +167,45 @@ export const InlineDateField = memo(function InlineDateField({
       }
 
       setLocalError(null);
+      const currentValue =
+        mode === 'date'
+          ? normalizeDateColumnValue(optimisticValue)
+          : toInputValue(optimisticValue, mode);
+      if (iso === currentValue) {
+        if (opts?.closeEditor !== false) finishEditing();
+        return true;
+      }
       if (opts?.closeEditor !== false) {
-        setEditing(false);
-        onEditEnd?.();
-        void releaseFieldLock(field);
+        finishEditing();
       }
       await save(field, iso, target ? { target } : undefined);
       return true;
     },
-    [save, field, target, onEditEnd, releaseFieldLock, mode],
+    [field, finishEditing, mode, optimisticValue, save, target],
   );
 
   const startEditing = useCallback(() => {
-    setDraft(mode === 'date' ? dateValueToMaskedDraft(value) : toInputValue(value, mode));
+    setDraft(
+      mode === 'date'
+        ? dateValueToMaskedDraft(optimisticValue)
+        : toInputValue(optimisticValue, mode),
+    );
     setLocalError(null);
     setEditing(true);
     onEditStart?.();
     void acquireFieldLock(field);
     queueMicrotask(() => textRef.current?.focus());
-  }, [acquireFieldLock, field, mode, onEditStart, value]);
+  }, [acquireFieldLock, field, mode, onEditStart, optimisticValue]);
 
   const cancelEditing = useCallback(() => {
-    setDraft(mode === 'date' ? dateValueToMaskedDraft(value) : toInputValue(value, mode));
+    setDraft(
+      mode === 'date'
+        ? dateValueToMaskedDraft(optimisticValue)
+        : toInputValue(optimisticValue, mode),
+    );
     setLocalError(null);
-    setEditing(false);
-    onEditEnd?.();
-    void releaseFieldLock(field);
-  }, [field, mode, onEditEnd, releaseFieldLock, value]);
+    finishEditing();
+  }, [finishEditing, mode, optimisticValue]);
 
   const openCalendarPicker = useCallback(() => {
     const picker = pickerRef.current;
@@ -203,18 +240,6 @@ export const InlineDateField = memo(function InlineDateField({
     );
   }
 
-  // Durable optimistic overlay (same rule as InlineFieldEditor): keep the
-  // last-saved value visible after the save status settles back to 'idle',
-  // until the server prop actually reflects the new date — otherwise the
-  // field snaps back to the stale server value ~4s after every edit.
-  const optimisticValue =
-    state?.lastValue !== undefined &&
-    (state.status === 'saved' ||
-      state.status === 'pending' ||
-      state.status === 'saving' ||
-      !serverHasCaughtUp(value, state.lastValue))
-      ? (state.lastValue as string | null)
-      : value;
   const displayLabel = toDisplay(optimisticValue, mode);
   const pickerValue = normalizeDateColumnValue(optimisticValue) ?? '';
 
