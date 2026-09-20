@@ -247,7 +247,7 @@ async function defaultChargeShopItem(input: {
     gatewayCustomerId: input.profile.authorize_customer_profile_id,
     gatewayPaymentProfileId: input.profile.authorize_payment_profile_id,
   });
-  if (!gate.ok) return { success: false, error: gate.error };
+  if (gate.ok === false) return { success: false, error: gate.error };
   const gatewayCustomerId = input.profile.authorize_customer_profile_id;
   const gatewayPaymentProfileId = input.profile.authorize_payment_profile_id;
   if (!gatewayCustomerId || !gatewayPaymentProfileId) {
@@ -434,7 +434,7 @@ async function purchasePackage(
     paymentType: profile?.payment_type,
     itemTypes: ['package'],
   });
-  if (!achCart.ok) throw new Error(achCart.error);
+  if (achCart.ok === false) throw new Error(achCart.error);
   const idem = shopChargeIdempotencyKey({
     memberId: input.memberId,
     itemType: 'package',
@@ -537,7 +537,7 @@ export async function checkoutShopItems(
     paymentType: profile?.payment_type,
     itemTypes: items.map((item) => item.item_type),
   });
-  if (!achCart.ok) throw new Error(achCart.error);
+  if (achCart.ok === false) throw new Error(achCart.error);
 
   const existing = await loadOpenMemberships(supabase, input.organizationId, input.memberId);
   const memberships: Array<{ membershipId: string; enrollmentId: string; planId: string }> = [];
