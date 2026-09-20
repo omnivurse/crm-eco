@@ -1,6 +1,6 @@
 'use client';
 
-import { Bell, CircleNotch, FloppyDisk, Globe, Lightning, Palette, ShieldCheck } from '@phosphor-icons/react';
+import { Bell, Buildings, CircleNotch, FloppyDisk, Globe, Lightning, Palette, ShieldCheck } from '@phosphor-icons/react';
 import { useState, useEffect } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import {
@@ -15,6 +15,7 @@ import {
   Switch,
 } from '@crm-eco/ui';
 import { toast } from 'sonner';
+import Link from 'next/link';
 import { saveOrgBranding, getOrgBranding } from './actions';
 import { PageHeader } from '@/components/ui/PageHeader';
 
@@ -251,6 +252,23 @@ export default function SettingsPage() {
           </Button>
         }
       />
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Buildings weight="light" className="h-5 w-5" />
+            Billing rails
+          </CardTitle>
+          <CardDescription>
+            Card charges stay on NMI. Bank ACH file origination for enrollments lives on the NACHA hub.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Link href="/billing/nacha">
+            <Button variant="outline" size="sm">Open NACHA / ACH</Button>
+          </Link>
+        </CardContent>
+      </Card>
 
       {/* Branding Section */}
       <Card>

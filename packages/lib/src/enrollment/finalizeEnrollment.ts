@@ -27,6 +27,7 @@ import {
   type PaymentMethodInput,
   type PaymentBillingAddress,
 } from '../billing/payment-provider';
+import { normalizeAchBankDetails, persistAchVault, type AchBankDetails } from '../billing/ach-vault';
 import { onboardMemberLogin } from '../members/memberOnboarding';
 import {
   sendEnrollmentConfirmationEmail,
@@ -81,20 +82,50 @@ export async function finalizeEnrollment(
   // its query builders accept the dynamic table/column shapes below.
   const sb = service;
   const fullName = `${input.firstName} ${input.lastName}`.trim();
+  const paymentMethod = input.paymentMethod;
+  const isAch = paymentMethod.type === 'ach';
 
-  // 1) Vault the payment method at the gateway.
-  const vault = await provider.vaultPaymentMethod({
-    organizationId: input.organizationId,
-    memberId: input.memberId,
-    email: input.email,
-    method: input.paymentMethod,
-    billingAddress: input.billingAddress,
-  });
+  let achDetails: AchBankDetails | null = null;
+  if (paymentMethod.type === 'ach') {
+    try {
+      achDetails = normalizeAchBankDetails({
+        routingNumber: paymentMethod.routingNumber,
+        accountNumber: paymentMethod.accountNumber,
+        accountType: paymentMethod.accountType,
+      });
+    } catch (error) {
+      return {
+        success: false,
+        stage: 'vault',
+        error: error instanceof Error ? error.message : 'ACH bank details are invalid.',
+      };
+    }
+  }
+
+  // 1) Vault cards at the gateway. ACH is local NACHA vault only — NMI will not
+  // accept raw routing/account and cannot return them later.
+  const vault = isAch
+    ? {
+        success: true as const,
+        gatewayCustomerId: `nacha-local-${input.enrollmentId}`,
+        gatewayPaymentProfileId: `nacha-local-${input.enrollmentId}`,
+        paymentType: 'bank_account' as const,
+        lastFour: achDetails?.last4,
+        brand: 'Bank of Colorado ACH',
+        placeholder: true,
+      }
+    : await provider.vaultPaymentMethod({
+        organizationId: input.organizationId,
+        memberId: input.memberId,
+        email: input.email,
+        method: input.paymentMethod,
+        billingAddress: input.billingAddress,
+      });
   if (!vault.success || !vault.gatewayCustomerId || !vault.gatewayPaymentProfileId) {
     return { success: false, stage: 'vault', error: vault.error ?? 'Payment method could not be saved.' };
   }
   const paymentType =
-    vault.paymentType ?? (input.paymentMethod.type === 'ach' ? 'bank_account' : 'credit_card');
+    vault.paymentType ?? (isAch ? 'bank_account' : 'credit_card');
 
   // 2) Persist the vaulted profile (make it the member's default).
   await sb.from('payment_profiles').update({ is_default: false }).eq('member_id', input.memberId).eq('is_active', true);
@@ -106,7 +137,9 @@ export async function finalizeEnrollment(
       authorize_customer_profile_id: vault.gatewayCustomerId,
       authorize_payment_profile_id: vault.gatewayPaymentProfileId,
       payment_type: paymentType,
-      last_four: vault.lastFour ?? '0000',
+      last_four: vault.lastFour ?? achDetails?.last4 ?? '0000',
+      account_last4: paymentType === 'bank_account' ? (vault.lastFour ?? achDetails?.last4 ?? null) : null,
+      account_type: paymentType === 'bank_account' ? (achDetails?.accountType ?? null) : null,
       card_type: paymentType === 'credit_card' ? (vault.brand ?? null) : null,
       expiration_date: vault.expiration ?? null,
       bank_name: paymentType === 'bank_account' ? (vault.brand ?? null) : null,
@@ -119,7 +152,7 @@ export async function finalizeEnrollment(
       is_default: true,
       is_active: true,
       status: 'active',
-      processor: provider.name,
+      processor: isAch ? 'placeholder' : provider.name,
     })
     .select('id')
     .single();
@@ -128,17 +161,36 @@ export async function finalizeEnrollment(
   }
   const paymentProfileId = profile.id as string;
 
-  // 3) Charge month 1 (idempotent).
+  if (isAch && achDetails) {
+    try {
+      await persistAchVault(sb, input.organizationId, paymentProfileId, achDetails);
+    } catch (error) {
+      await sb
+        .from('payment_profiles')
+        .update({ is_active: false, is_default: false })
+        .eq('id', paymentProfileId);
+      return {
+        success: false,
+        stage: 'vault',
+        error: error instanceof Error ? error.message : 'ACH bank details could not be stored.',
+        paymentProfileId,
+      };
+    }
+  }
+
+  // 3) Charge month 1 (idempotent). ACH is queued for NACHA — do not send to NMI.
   const idem = `enroll_first_${input.enrollmentId}`;
-  const charge = await provider.chargeOnce({
-    organizationId: input.organizationId,
-    memberId: input.memberId,
-    gatewayCustomerId: vault.gatewayCustomerId,
-    gatewayPaymentProfileId: vault.gatewayPaymentProfileId,
-    amountCents: input.amountCents,
-    description: `First month — ${fullName}`,
-    idempotencyKey: idem,
-  });
+  const charge = isAch
+    ? { success: true as const, transactionId: undefined as string | undefined }
+    : await provider.chargeOnce({
+        organizationId: input.organizationId,
+        memberId: input.memberId,
+        gatewayCustomerId: vault.gatewayCustomerId,
+        gatewayPaymentProfileId: vault.gatewayPaymentProfileId,
+        amountCents: input.amountCents,
+        description: `First month — ${fullName}`,
+        idempotencyKey: idem,
+      });
 
   // 4) Record the transaction (unique idempotency_key prevents duplicates).
   try {
@@ -149,12 +201,12 @@ export async function finalizeEnrollment(
       payment_profile_id: paymentProfileId,
       transaction_type: 'charge',
       amount: input.amountCents / 100,
-      status: charge.success ? 'success' : 'failed',
+      status: isAch ? 'pending' : charge.success ? 'success' : 'failed',
       authorize_transaction_id: charge.transactionId ?? null,
       error_message: charge.success ? null : (charge.error ?? null),
-      description: `First month — ${fullName}`,
-      submitted_at: new Date().toISOString(),
-      processed_at: new Date().toISOString(),
+      description: isAch ? `First month ACH — queued for NACHA — ${fullName}` : `First month — ${fullName}`,
+      submitted_at: isAch ? null : new Date().toISOString(),
+      processed_at: isAch ? null : new Date().toISOString(),
       idempotency_key: idem,
     });
   } catch (e) {

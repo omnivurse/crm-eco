@@ -6,6 +6,8 @@ export * from './nmi';
 export * from './charge-resolver';
 export * from './invoice-os';
 export * from './invoice-service';
+export * from './nacha';
+export * from './ach-vault';
 export {
   AuthorizeNetPaymentProvider,
   createAuthorizeNetPaymentProvider,

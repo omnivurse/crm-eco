@@ -667,6 +667,8 @@ const gotoCommand: Command = {
       products: '/products',
       enrollments: '/enrollments',
       billing: '/billing',
+      nacha: '/billing/nacha',
+      ach: '/billing/nacha',
       invoices: '/invoices',
       commissions: '/commissions',
       communications: '/communications',
@@ -703,6 +705,17 @@ const billingCommand: Command = {
   handler: (_args, context) => {
     context.navigate('/billing');
     return { type: 'success', message: '◈ NAVIGATING TO BILLING ◈' };
+  },
+};
+
+const nachaCommand: Command = {
+  name: 'nacha',
+  aliases: ['ach', 'sftp'],
+  description: 'Go to NACHA / ACH origination',
+  category: 'navigation',
+  handler: (_args, context) => {
+    context.navigate('/billing/nacha');
+    return { type: 'success', message: '◈ NAVIGATING TO NACHA / ACH ◈' };
   },
 };
 
@@ -998,6 +1011,7 @@ const builtInCommands: Command[] = [
   gotoCommand,
   dashboardCommand,
   billingCommand,
+  nachaCommand,
   reportsCommand,
   settingsCommand,
   opsCommand,
@@ -1129,7 +1143,7 @@ export function getSuggestions(input: string): string[] {
   }
 
   if (parts.length === 2 && ['goto', 'go', 'nav', 'navigate'].includes(parts[0])) {
-    const destinations = ['dashboard', 'members', 'agents', 'vendors', 'products', 'enrollments', 'billing', 'invoices', 'commissions', 'communications', 'settings', 'reports', 'analytics', 'ops', 'payables', 'links'];
+    const destinations = ['dashboard', 'members', 'agents', 'vendors', 'products', 'enrollments', 'billing', 'nacha', 'invoices', 'commissions', 'communications', 'settings', 'reports', 'analytics', 'ops', 'payables', 'links'];
     const destPrefix = parts[1];
     return destinations
       .filter(d => d.startsWith(destPrefix))

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
-import { createBillingService, type PaymentMethod, type BillingAddress } from '@crm-eco/lib/billing';
+import { createServerSupabaseClient, createServiceRoleClient } from '@crm-eco/lib/supabase/server';
+import { createBillingService, persistAchVault, type PaymentMethod, type BillingAddress } from '@crm-eco/lib/billing';
 import { getActiveTenant } from '@/lib/tenant';
 import { getAdminProfile } from '@/lib/profile';
 
@@ -129,6 +129,31 @@ export async function POST(request: NextRequest) {
       setAsDefault,
       nickname,
     });
+
+    if (paymentMethod.type === 'bank_account') {
+      const service = createServiceRoleClient();
+      try {
+        await persistAchVault(
+          service,
+          tenant.organizationId,
+          newProfile.id,
+          {
+            routingNumber: paymentMethod.routingNumber,
+            accountNumber: paymentMethod.accountNumber,
+            accountType: paymentMethod.accountType,
+          },
+          profile.id,
+        );
+      } catch (error) {
+        await service
+          .from('payment_profiles')
+          .update({ is_active: false, is_default: false })
+          .eq('id', newProfile.id)
+          .eq('organization_id', tenant.organizationId);
+        const message = error instanceof Error ? error.message : 'Failed to store encrypted ACH vault';
+        return NextResponse.json({ error: message }, { status: 500 });
+      }
+    }
 
     // Log activity
     await (supabase as any).rpc('log_admin_activity', {

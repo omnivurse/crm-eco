@@ -31,6 +31,7 @@ import {
 } from '@crm-eco/ui';
 import { format, formatDistanceToNow, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, addMonths, subMonths, isSameDay, getDay, startOfWeek, endOfWeek } from 'date-fns';
 import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
 import { PageHeader } from '@/components/ui/PageHeader';
 
 interface JobDefinition {
@@ -169,6 +170,7 @@ function parseCronExpression(cron: string): { description: string; nextRuns: Dat
 }
 
 export default function SchedulerPage() {
+  const router = useRouter();
   const [jobs, setJobs] = useState<JobDefinition[]>([]);
   const [loading, setLoading] = useState(true);
   const [organizationId, setOrganizationId] = useState<string | null>(null);
@@ -393,6 +395,12 @@ export default function SchedulerPage() {
   };
 
   const runJobNow = async (job: JobDefinition) => {
+    if (job.job_type === 'nacha_export' || job.job_type === 'nacha_import') {
+      toast.message('NACHA is not a background scheduler job. Opening Billing → NACHA / ACH.');
+      router.push(job.job_type === 'nacha_import' ? '/billing/nacha/import' : '/billing/nacha/export');
+      return;
+    }
+
     try {
       const { error } = await (supabase as any)
         .from('job_runs')
@@ -725,6 +733,12 @@ export default function SchedulerPage() {
                     ))}
                   </SelectContent>
                 </Select>
+                {(formData.job_type === 'nacha_export' || formData.job_type === 'nacha_import') && (
+                  <p className="text-xs text-amber-800 mt-2">
+                    Run Now opens Billing → NACHA / ACH. There is no worker that generates or SFTPs a
+                    bank file from this schedule. Automated SFTP is Phase 5.
+                  </p>
+                )}
               </div>
 
               <div>

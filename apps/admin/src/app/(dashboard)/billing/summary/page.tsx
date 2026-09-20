@@ -629,10 +629,10 @@ export default function BillingSummaryPage() {
                 Today's Declines
               </Button>
             </Link>
-            <Link href="/billing/nacha/export">
+            <Link href="/billing/nacha">
               <Button variant="outline">
                 <DownloadSimple weight="light" className="h-4 w-4 mr-2" />
-                NACHA Export
+                NACHA / ACH
               </Button>
             </Link>
             <Link href="/billing/payment-processors">

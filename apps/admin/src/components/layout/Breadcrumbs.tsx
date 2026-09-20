@@ -18,6 +18,9 @@ const pathLabels: Record<string, string> = {
   products: 'Products',
   enrollments: 'Enrollments',
   billing: 'Billing',
+  nacha: 'NACHA / ACH',
+  export: 'Export',
+  import: 'Returns',
   reports: 'Reports',
   settings: 'Settings',
   new: 'New',
@@ -103,6 +106,7 @@ export function Breadcrumbs() {
               ) : (
                 <Link
                   href={crumb.href}
+                  prefetch={false}
                   className={cn(
                     'transition-colors hover:text-[var(--adm-ink)]',
                     isFirst && 'flex items-center gap-1'

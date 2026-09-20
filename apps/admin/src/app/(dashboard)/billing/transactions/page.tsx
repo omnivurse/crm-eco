@@ -226,14 +226,19 @@ export default function TransactionsPage() {
         icon={<CreditCard weight="light" className="w-6 h-6" />}
         gradient="from-amber-500 to-orange-400"
         actions={
-          <Button variant="outline" size="sm" onClick={exportToCSV} disabled={exporting}>
-            {exporting ? (
-              <CircleNotch weight="light" className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <DownloadSimple weight="light" className="h-4 w-4 mr-2" />
-            )}
-            Export
-          </Button>
+          <div className="flex gap-2">
+            <Link href="/billing/nacha">
+              <Button variant="outline" size="sm">NACHA / ACH</Button>
+            </Link>
+            <Button variant="outline" size="sm" onClick={exportToCSV} disabled={exporting}>
+              {exporting ? (
+                <CircleNotch weight="light" className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <DownloadSimple weight="light" className="h-4 w-4 mr-2" />
+              )}
+              Export
+            </Button>
+          </div>
         }
       />
 
@@ -293,7 +298,9 @@ export default function TransactionsPage() {
                         {txn.payment_profile ? (
                           <div className="flex items-center gap-2">
                             <span className="text-slate-600">
-                              {txn.payment_profile.card_type || txn.payment_profile.payment_type}
+                              {txn.payment_profile.payment_type === 'bank_account'
+                                ? 'ACH'
+                                : txn.payment_profile.card_type || txn.payment_profile.payment_type}
                             </span>
                             <span className="text-slate-400">
                               •••• {txn.payment_profile.last_four}

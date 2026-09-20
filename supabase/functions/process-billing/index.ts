@@ -241,7 +241,8 @@ serve(async (req) => {
           authorize_customer_profile_id,
           authorize_payment_profile_id,
           is_active,
-          processor
+          processor,
+          payment_type
         ),
         members (
           id,
@@ -344,8 +345,8 @@ serve(async (req) => {
 
             console.log(`[BILLING] Schedule ${schedule.id}: SUCCESS — txn ${chargeResult.transactionId}`);
 
-            // Send receipt email (non-blocking)
-            if (schedule.members?.email) {
+            // Send receipt email (non-blocking). Queued ACH is not collected yet.
+            if (schedule.members?.email && !chargeResult.queued) {
               sendEmail(supabase, schedule.organization_id, {
                 to: schedule.members.email,
                 toName: `${schedule.members.first_name} ${schedule.members.last_name}`,
@@ -438,7 +439,8 @@ serve(async (req) => {
               authorize_customer_profile_id,
               authorize_payment_profile_id,
               is_active,
-              processor
+              processor,
+              payment_type
             )
           )
         `)
@@ -586,8 +588,31 @@ async function processCharge(
   merchantAuth: { name: string; transactionKey: string } | null,
   apiEndpoint: string,
   idempotencyKey?: string,
-): Promise<{ success: boolean; transactionId?: string; errorMessage?: string }> {
+): Promise<{ success: boolean; transactionId?: string; errorMessage?: string; queued?: boolean }> {
   const profile = schedule.payment_profiles;
+
+  if (profile?.payment_type === 'bank_account') {
+    const { data: queued, error: queueError } = await supabase
+      .from('billing_transactions')
+      .insert({
+        organization_id: schedule.organization_id,
+        billing_schedule_id: schedule.id,
+        member_id: schedule.member_id,
+        enrollment_id: schedule.enrollment_id,
+        payment_profile_id: profile.id,
+        transaction_type: 'charge',
+        amount: schedule.amount,
+        status: 'pending',
+        description: `Recurring ACH — queued for NACHA — ${schedule.frequency}`,
+        idempotency_key: idempotencyKey || null,
+      })
+      .select('id')
+      .single();
+    if (queueError || !queued) {
+      return { success: false, errorMessage: queueError?.message || 'Failed to queue ACH for NACHA' };
+    }
+    return { success: true, transactionId: queued.id, queued: true };
+  }
 
   // Create transaction record with idempotency key
   const { data: transaction } = await supabase

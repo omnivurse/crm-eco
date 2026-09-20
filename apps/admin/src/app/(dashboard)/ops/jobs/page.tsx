@@ -31,6 +31,8 @@ import {
 } from '@crm-eco/ui';
 import { format, formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
+import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { PageHeader } from '@/components/ui/PageHeader';
 
 interface JobRun {
@@ -94,6 +96,8 @@ function formatDuration(ms: number | null): string {
 }
 
 export default function JobsPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [jobs, setJobs] = useState<JobRun[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedJob, setSelectedJob] = useState<JobRun | null>(null);
@@ -105,7 +109,10 @@ export default function JobsPage() {
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [typeFilter, setTypeFilter] = useState<string>('all');
+  const initialType = searchParams.get('type');
+  const [typeFilter, setTypeFilter] = useState<string>(
+    initialType && initialType in jobTypeLabels ? initialType : 'all',
+  );
   const [vendorFilter, setVendorFilter] = useState<string>('all');
 
   // Pagination
@@ -206,6 +213,13 @@ export default function JobsPage() {
     }
   }, [organizationId, fetchJobs]);
 
+  useEffect(() => {
+    const id = searchParams.get('id');
+    if (!id || jobs.length === 0) return;
+    const match = jobs.find((job) => job.id === id);
+    if (match) setSelectedJob(match);
+  }, [jobs, searchParams]);
+
   // Poll for running jobs
   useEffect(() => {
     const hasRunning = jobs.some(j => j.status === 'running' || j.status === 'pending');
@@ -218,6 +232,12 @@ export default function JobsPage() {
   const handleRetry = async (job: JobRun) => {
     if (!organizationId || !profileId) return;
 
+    if (job.job_type === 'nacha_export' || job.job_type === 'nacha_import') {
+      toast.message('NACHA is not retried from the job queue. Opening Billing → NACHA / ACH.');
+      router.push(job.job_type === 'nacha_import' ? '/billing/nacha/import' : '/billing/nacha/export');
+      return;
+    }
+
     setRetrying(true);
     try {
       const { data, error } = await (supabase as any)
@@ -229,7 +249,7 @@ export default function JobsPage() {
           job_name: `${job.job_name} (Retry)`,
           vendor_code: job.vendor_code,
           status: 'pending',
-          trigger_type: 'retry',
+          trigger_type: 'manual',
           triggered_by: profileId,
           retry_count: (job.retry_count || 0) + 1,
           retried_from_id: job.id,
@@ -307,10 +327,15 @@ export default function JobsPage() {
           title="Job history"
           description="View and manage job runs"
           actions={
-            <Button variant="outline" size="sm" onClick={fetchJobs}>
-              <ArrowClockwise weight="light" className="w-4 h-4 mr-2" />
-              Refresh
-            </Button>
+            <div className="flex gap-2">
+              <Link href="/billing/nacha">
+                <Button variant="outline" size="sm">NACHA / ACH</Button>
+              </Link>
+              <Button variant="outline" size="sm" onClick={fetchJobs}>
+                <ArrowClockwise weight="light" className="w-4 h-4 mr-2" />
+                Refresh
+              </Button>
+            </div>
           }
         />
 
@@ -718,6 +743,11 @@ export default function JobsPage() {
                 </Button>
               )}
             </div>
+            {(selectedJob?.job_type === 'nacha_export' || selectedJob?.job_type === 'nacha_import') && (
+              <Link href={selectedJob.job_type === 'nacha_import' ? '/billing/nacha/import' : '/billing/nacha/export'}>
+                <Button variant="outline">Open NACHA / ACH</Button>
+              </Link>
+            )}
             <Button variant="outline" onClick={() => setSelectedJob(null)}>
               Close
             </Button>

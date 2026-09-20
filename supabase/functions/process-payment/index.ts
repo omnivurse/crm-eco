@@ -14,6 +14,7 @@ import {
   nmiRefund,
   nmiSale,
 } from '../_shared/nmi.ts';
+import { persistAchVault } from '../_shared/ach-vault.ts';
 
 const ALLOWED_ORIGINS = (Deno.env.get('ALLOWED_ORIGINS') || '*').split(',').map(s => s.trim());
 
@@ -26,6 +27,11 @@ function getCorsHeaders(req: Request): Record<string, string> {
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   };
 }
+
+let corsHeaders: Record<string, string> = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
 
 interface ChargeRequest {
   action: 'charge';
@@ -50,6 +56,16 @@ interface RefundRequest {
 interface CreateProfileRequest {
   action: 'create_profile';
   memberId: string;
+  /** CRM enrollment sends card | ach at the top level. */
+  paymentType?: 'card' | 'ach' | 'credit_card' | 'bank_account';
+  cardNumber?: string;
+  expiryMonth?: string;
+  expiryYear?: string;
+  cvv?: string;
+  routingNumber?: string;
+  accountNumber?: string;
+  accountType?: 'checking' | 'savings';
+  accountName?: string;
   paymentMethod?: {
     type: 'credit_card' | 'bank_account';
     cardNumber?: string;
@@ -80,8 +96,38 @@ interface CreateProfileRequest {
 
 type PaymentRequest = ChargeRequest | RefundRequest | CreateProfileRequest;
 
+function isAchCreateProfile(body: CreateProfileRequest): boolean {
+  if (body.paymentMethod?.type === 'bank_account') return true;
+  if (body.paymentType === 'ach' || body.paymentType === 'bank_account') return true;
+  return Boolean(body.routingNumber && body.accountNumber);
+}
+
+function normalizeCreateProfileMethod(input: CreateProfileRequest): CreateProfileRequest['paymentMethod'] {
+  if (input.paymentMethod?.type) return input.paymentMethod;
+  if (isAchCreateProfile(input)) {
+    return {
+      type: 'bank_account',
+      routingNumber: input.routingNumber || input.paymentMethod?.routingNumber,
+      accountNumber: input.accountNumber || input.paymentMethod?.accountNumber,
+      accountType: input.accountType || input.paymentMethod?.accountType || 'checking',
+      nameOnAccount: input.accountName || input.paymentMethod?.nameOnAccount,
+    };
+  }
+  if (input.cardNumber || input.paymentType === 'card' || input.paymentType === 'credit_card') {
+    const month = input.expiryMonth || '';
+    const year = input.expiryYear || '';
+    return {
+      type: 'credit_card',
+      cardNumber: input.cardNumber,
+      expirationDate: year && month ? `${year}-${month.padStart(2, '0')}` : undefined,
+      cvv: input.cvv,
+    };
+  }
+  return undefined;
+}
+
 serve(async (req) => {
-  const corsHeaders = getCorsHeaders(req);
+  corsHeaders = getCorsHeaders(req);
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -151,8 +197,9 @@ serve(async (req) => {
 
     const nmiCreate = body.action === 'create_profile' &&
       body.opaqueData?.dataDescriptor === NMI_OPAQUE_DESCRIPTOR;
+    const achCreate = body.action === 'create_profile' && isAchCreateProfile(body);
 
-    if (!nmiCreate && !merchantAuth) {
+    if (!nmiCreate && !merchantAuth && !achCreate) {
       return new Response(
         JSON.stringify({ error: 'Payment gateway not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -204,6 +251,37 @@ async function processCharge(
     return new Response(
       JSON.stringify({ success: false, error: 'Payment profile not found' }),
       { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  if (profile.payment_type === 'bank_account') {
+    const { data: queued, error: queueError } = await supabase
+      .from('billing_transactions')
+      .insert({
+        organization_id: organizationId,
+        member_id: input.memberId,
+        enrollment_id: input.enrollmentId,
+        payment_profile_id: input.paymentProfileId,
+        billing_schedule_id: input.billingScheduleId,
+        transaction_type: 'charge',
+        amount: input.amount,
+        status: 'pending',
+        description: input.description ?? 'ACH charge queued for NACHA',
+        invoice_number: input.invoiceNumber,
+        billing_period_start: input.billingPeriodStart,
+        billing_period_end: input.billingPeriodEnd,
+      })
+      .select('id')
+      .single();
+    if (queueError || !queued) {
+      return new Response(
+        JSON.stringify({ success: false, error: queueError?.message || 'Failed to queue ACH for NACHA' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    return new Response(
+      JSON.stringify({ success: true, queued: true, transactionId: queued.id }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 
@@ -424,6 +502,35 @@ async function processRefund(
     );
   }
 
+  const refundProfile = originalTxn.payment_profiles;
+  if (refundProfile?.payment_type === 'bank_account') {
+    const { data: queuedRefund, error: queueRefundError } = await supabase
+      .from('billing_transactions')
+      .insert({
+        organization_id: organizationId,
+        member_id: originalTxn.member_id,
+        enrollment_id: originalTxn.enrollment_id,
+        payment_profile_id: originalTxn.payment_profile_id,
+        transaction_type: 'refund',
+        amount: Math.abs(input.amount),
+        status: 'pending',
+        description: input.reason || 'ACH refund queued for NACHA',
+        metadata: { original_transaction_id: input.transactionId },
+      })
+      .select('id')
+      .single();
+    if (queueRefundError || !queuedRefund) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Failed to queue ACH refund for NACHA' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    return new Response(
+      JSON.stringify({ success: true, queued: true, transactionId: queuedRefund.id }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
   // Create refund transaction record
   const { data: refundTxn, error: refundError } = await supabase
     .from('billing_transactions')
@@ -588,6 +695,8 @@ async function createPaymentProfile(
   environment: string,
 ) {
   const usesOpaque = Boolean(input.opaqueData?.dataDescriptor && input.opaqueData?.dataValue);
+  const paymentMethod = normalizeCreateProfileMethod(input);
+  if (paymentMethod) input.paymentMethod = paymentMethod;
   const usesRaw = Boolean(input.paymentMethod?.type);
 
   if (!usesOpaque && !usesRaw) {
@@ -712,6 +821,82 @@ async function createPaymentProfile(
         paymentProfileId: nmiProfile.id,
         lastFour,
         cardType: vault.brand,
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  if (input.paymentMethod?.type === 'bank_account') {
+    if (!input.paymentMethod.routingNumber || !input.paymentMethod.accountNumber) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Routing and account numbers are required for ACH' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    if (input.setAsDefault) {
+      await supabase
+        .from('payment_profiles')
+        .update({ is_default: false })
+        .eq('member_id', input.memberId)
+        .eq('is_active', true);
+    }
+    const lastFour = input.paymentMethod.accountNumber.replace(/\D/g, '').slice(-4) || '0000';
+    const gatewayId = `nacha-local-${input.memberId}-${Date.now()}`;
+    const { data: achProfile, error: achSaveError } = await supabase
+      .from('payment_profiles')
+      .insert({
+        organization_id: organizationId,
+        member_id: input.memberId,
+        authorize_customer_profile_id: gatewayId,
+        authorize_payment_profile_id: gatewayId,
+        payment_type: 'bank_account',
+        last_four: lastFour,
+        account_last4: lastFour,
+        account_type: input.paymentMethod.accountType ?? 'checking',
+        billing_first_name: input.billingAddress?.firstName,
+        billing_last_name: input.billingAddress?.lastName,
+        billing_address: input.billingAddress?.address,
+        billing_city: input.billingAddress?.city,
+        billing_state: input.billingAddress?.state,
+        billing_zip: input.billingAddress?.zip,
+        is_default: input.setAsDefault || false,
+        is_active: true,
+        processor: 'placeholder',
+        status: 'active',
+      })
+      .select('id')
+      .single();
+    if (achSaveError || !achProfile) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Failed to save ACH payment profile' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    try {
+      await persistAchVault(supabase, organizationId, achProfile.id, {
+        routingNumber: input.paymentMethod.routingNumber,
+        accountNumber: input.paymentMethod.accountNumber,
+        accountType: input.paymentMethod.accountType,
+      });
+    } catch (error) {
+      await supabase
+        .from('payment_profiles')
+        .update({ is_active: false, is_default: false })
+        .eq('id', achProfile.id);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: error instanceof Error ? error.message : 'Failed to store encrypted ACH vault',
+        }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    return new Response(
+      JSON.stringify({
+        success: true,
+        paymentProfileId: achProfile.id,
+        lastFour,
+        cardType: null,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
@@ -899,6 +1084,7 @@ async function createPaymentProfile(
       authorize_payment_profile_id: paymentProfileId,
       payment_type: paymentType,
       last_four: lastFour,
+      account_last4: paymentType === 'bank_account' ? lastFour : null,
       card_last4: lastFour,
       card_type: cardType,
       expiration_date: expirationStored,
@@ -922,6 +1108,28 @@ async function createPaymentProfile(
       JSON.stringify({ success: false, error: 'Failed to save payment profile' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
+  }
+
+  if (
+    paymentType === 'bank_account' &&
+    input.paymentMethod?.routingNumber &&
+    input.paymentMethod?.accountNumber
+  ) {
+    try {
+      await persistAchVault(supabase, organizationId, profile.id, {
+        routingNumber: input.paymentMethod.routingNumber,
+        accountNumber: input.paymentMethod.accountNumber,
+        accountType: input.paymentMethod.accountType,
+      });
+    } catch (error) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: error instanceof Error ? error.message : 'Failed to store encrypted ACH vault',
+        }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
   }
 
   return new Response(

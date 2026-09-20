@@ -16,6 +16,7 @@ import {
   detectCardType,
 } from './authorize-net';
 import { dollarsToCents, getPaymentProviderForProcessor } from './charge-resolver';
+import { normalizeAchBankDetails } from './ach-vault';
 
 export interface PaymentProfileData {
   id: string;
@@ -97,6 +98,7 @@ export interface ProcessPaymentInput {
 
 export interface ProcessPaymentResult {
   success: boolean;
+  queued?: boolean;
   transactionId?: string;
   authorizeTransactionId?: string;
   errorCode?: string;
@@ -165,6 +167,10 @@ export class BillingService {
    * Create a new payment profile for a member
    */
   async createPaymentProfile(input: CreatePaymentProfileInput): Promise<PaymentProfileData> {
+    if (input.paymentMethod.type === 'bank_account') {
+      return this.createLocalAchPaymentProfile(input);
+    }
+
     const customerProfileId = await this.getOrCreateCustomerProfile(input.memberId);
 
     // Create payment profile in Authorize.Net
@@ -179,18 +185,9 @@ export class BillingService {
       throw new Error(createResult.errorMessage || 'Failed to create payment profile');
     }
 
-    // Determine payment details to store
-    const isCard = input.paymentMethod.type === 'credit_card';
-    let lastFour: string;
-    let cardType: string | undefined;
-    
-    if (input.paymentMethod.type === 'credit_card') {
-      lastFour = maskNumber(input.paymentMethod.cardNumber);
-      cardType = detectCardType(input.paymentMethod.cardNumber);
-    } else {
-      lastFour = maskNumber(input.paymentMethod.accountNumber);
-      cardType = undefined;
-    }
+    const lastFour = maskNumber(input.paymentMethod.cardNumber);
+    const cardType = detectCardType(input.paymentMethod.cardNumber);
+    const expirationDate = input.paymentMethod.expirationDate.replace('-', '/').substring(2);
 
     // If setting as default, unset other defaults first
     if (input.setAsDefault) {
@@ -201,18 +198,6 @@ export class BillingService {
         .eq('is_active', true);
     }
 
-    // Build payment profile data based on payment method type
-    let expirationDate: string | null = null;
-    let accountType: string | null = null;
-    let bankName: string | null = null;
-    
-    if (input.paymentMethod.type === 'credit_card') {
-      expirationDate = input.paymentMethod.expirationDate.replace('-', '/').substring(2);
-    } else {
-      accountType = input.paymentMethod.accountType;
-      bankName = input.paymentMethod.bankName || null;
-    }
-
     // Store in database
     const { data: profile, error } = await this.supabase
       .from('payment_profiles')
@@ -221,12 +206,13 @@ export class BillingService {
         member_id: input.memberId,
         authorize_customer_profile_id: customerProfileId,
         authorize_payment_profile_id: createResult.paymentProfileId,
-        payment_type: input.paymentMethod.type,
+        payment_type: 'credit_card',
         last_four: lastFour,
+        account_last4: null,
         card_type: cardType,
         expiration_date: expirationDate,
-        account_type: accountType,
-        bank_name: bankName,
+        account_type: null,
+        bank_name: null,
         billing_first_name: input.billingAddress?.firstName,
         billing_last_name: input.billingAddress?.lastName,
         billing_address: input.billingAddress?.address,
@@ -244,6 +230,68 @@ export class BillingService {
 
     if (error || !profile) {
       throw new Error('Failed to save payment profile to database');
+    }
+
+    return this.mapPaymentProfile(profile);
+  }
+
+  /**
+   * ACH is Bank of Colorado NACHA, not NMI/Auth.net. Store last4 + type only;
+   * the encrypted vault is written by the admin route with the service role.
+   */
+  private async createLocalAchPaymentProfile(
+    input: CreatePaymentProfileInput,
+  ): Promise<PaymentProfileData> {
+    if (input.paymentMethod.type !== 'bank_account') {
+      throw new Error('ACH profile requires a bank account');
+    }
+    const details = normalizeAchBankDetails({
+      routingNumber: input.paymentMethod.routingNumber,
+      accountNumber: input.paymentMethod.accountNumber,
+      accountType: input.paymentMethod.accountType,
+    });
+
+    if (input.setAsDefault) {
+      await this.supabase
+        .from('payment_profiles')
+        .update({ is_default: false })
+        .eq('member_id', input.memberId)
+        .eq('is_active', true);
+    }
+
+    const gatewayId = `nacha-local-${input.memberId}-${Date.now()}`;
+    const { data: profile, error } = await this.supabase
+      .from('payment_profiles')
+      .insert({
+        organization_id: input.organizationId,
+        member_id: input.memberId,
+        authorize_customer_profile_id: gatewayId,
+        authorize_payment_profile_id: gatewayId,
+        payment_type: 'bank_account',
+        last_four: details.last4,
+        account_last4: details.last4,
+        card_type: null,
+        expiration_date: null,
+        account_type: details.accountType,
+        bank_name: input.paymentMethod.bankName || null,
+        billing_first_name: input.billingAddress?.firstName,
+        billing_last_name: input.billingAddress?.lastName,
+        billing_address: input.billingAddress?.address,
+        billing_city: input.billingAddress?.city,
+        billing_state: input.billingAddress?.state,
+        billing_zip: input.billingAddress?.zip,
+        billing_country: input.billingAddress?.country || 'US',
+        is_default: input.setAsDefault || false,
+        is_active: true,
+        status: 'active',
+        nickname: input.nickname,
+        processor: 'placeholder',
+      })
+      .select('*')
+      .single();
+
+    if (error || !profile) {
+      throw new Error(error?.message || 'Failed to save ACH payment profile');
     }
 
     return this.mapPaymentProfile(profile);
@@ -336,6 +384,42 @@ export class BillingService {
         success: false,
         errorCode: 'PROFILE_NOT_FOUND',
         errorMessage: 'Payment profile not found or inactive',
+      };
+    }
+
+    if (profile.payment_type === 'bank_account') {
+      const { data: transaction, error: txnError } = await this.supabase
+        .from('billing_transactions')
+        .insert({
+          organization_id: input.organizationId,
+          billing_schedule_id: input.billingScheduleId,
+          member_id: input.memberId,
+          enrollment_id: input.enrollmentId,
+          payment_profile_id: input.paymentProfileId,
+          transaction_type: 'charge',
+          amount: input.amount,
+          processing_fee: 0,
+          status: 'pending',
+          description: input.description ?? 'ACH charge queued for NACHA',
+          invoice_number: input.invoiceNumber,
+          billing_period_start: input.billingPeriodStart,
+          billing_period_end: input.billingPeriodEnd,
+        })
+        .select('id')
+        .single();
+
+      if (txnError || !transaction) {
+        return {
+          success: false,
+          errorCode: 'DB_ERROR',
+          errorMessage: 'Failed to queue ACH transaction',
+        };
+      }
+
+      return {
+        success: true,
+        queued: true,
+        transactionId: transaction.id,
       };
     }
 
@@ -479,6 +563,38 @@ export class BillingService {
       .select('*')
       .eq('id', originalTxn.payment_profile_id)
       .single();
+
+    if (profile?.payment_type === 'bank_account') {
+      const { data: refundTxn, error: refundError } = await this.supabase
+        .from('billing_transactions')
+        .insert({
+          organization_id: originalTxn.organization_id,
+          member_id: originalTxn.member_id,
+          enrollment_id: originalTxn.enrollment_id,
+          payment_profile_id: originalTxn.payment_profile_id,
+          transaction_type: 'refund',
+          amount: Math.abs(amount),
+          status: 'pending',
+          description: reason || 'ACH refund queued for NACHA',
+          metadata: { original_transaction_id: transactionId },
+        })
+        .select('id')
+        .single();
+
+      if (refundError || !refundTxn) {
+        return {
+          success: false,
+          errorCode: 'DB_ERROR',
+          errorMessage: 'Failed to queue ACH refund',
+        };
+      }
+
+      return {
+        success: true,
+        queued: true,
+        transactionId: refundTxn.id,
+      };
+    }
 
     // Create refund transaction record
     const { data: refundTxn, error: refundError } = await this.supabase

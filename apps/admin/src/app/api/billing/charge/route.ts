@@ -99,6 +99,7 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json({
         success: true,
+        queued: Boolean(result.queued),
         transactionId: result.transactionId,
         authorizeTransactionId: result.authorizeTransactionId,
       });

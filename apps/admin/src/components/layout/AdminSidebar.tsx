@@ -95,6 +95,7 @@ const navSections: NavSection[] = [
       { label: 'Collections', href: '/billing/collections', icon: icon(<ShieldCheck weight="light" className="h-5 w-5" />) },
       { label: 'Transactions', href: '/billing/transactions', icon: icon(<FileText weight="light" className="h-5 w-5" />) },
       { label: 'Failed Payments', href: '/billing/failures', icon: icon(<Warning weight="light" className="h-5 w-5" />) },
+      { label: 'NACHA / ACH', href: '/billing/nacha', icon: icon(<Buildings weight="light" className="h-5 w-5" />) },
     ],
   },
   {
@@ -116,6 +117,7 @@ const navSections: NavSection[] = [
       { label: 'Eligibility', href: '/ops/eligibility', icon: icon(<ShieldCheck weight="light" className="h-5 w-5" />) },
       { label: 'Job History', href: '/ops/jobs', icon: icon(<ChartBar weight="light" className="h-5 w-5" />) },
       { label: 'Scheduler', href: '/ops/scheduler', icon: icon(<GearSix weight="light" className="h-5 w-5" />) },
+      { label: 'NACHA / ACH', href: '/billing/nacha', icon: icon(<Buildings weight="light" className="h-5 w-5" />) },
       { label: 'Vendors', href: '/vendors', icon: icon(<Buildings weight="light" className="h-5 w-5" />) },
       { label: 'Documents', href: '/documents', icon: icon(<FileText weight="light" className="h-5 w-5" />) },
     ],

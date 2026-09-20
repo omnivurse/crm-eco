@@ -180,12 +180,19 @@ serve(async (req) => {
               retry_attempt: nextAttempt,
               next_retry_date: null,
               status: 'resolved',
-              resolution_type: 'payment_succeeded',
+              resolution_type: charge.queued ? 'manually_resolved' : 'payment_succeeded',
             })
             .eq('id', failure.id);
 
-          await sendDunningEmail(supabase, failure, 'payment_recovered');
-          results.push({ failure_id: failure.id, status: 'retried', attempt: nextAttempt, message: 'recovered' });
+          if (!charge.queued) {
+            await sendDunningEmail(supabase, failure, 'payment_recovered');
+          }
+          results.push({
+            failure_id: failure.id,
+            status: 'retried',
+            attempt: nextAttempt,
+            message: charge.queued ? 'queued_nacha' : 'recovered',
+          });
         } else {
           await supabase
             .from('billing_failures')
@@ -261,9 +268,31 @@ async function processRetryCharge(
   schedule: any,
   merchantAuth: { name: string; transactionKey: string },
   apiEndpoint: string,
-): Promise<{ success: boolean; transactionId?: string; errorMessage?: string }> {
+): Promise<{ success: boolean; queued?: boolean; transactionId?: string; errorMessage?: string }> {
   const profile = schedule.payment_profiles;
   if (!profile) return { success: false, errorMessage: 'No payment profile' };
+
+  if (profile.payment_type === 'bank_account') {
+    const { data: queued, error: queueError } = await supabase
+      .from('billing_transactions')
+      .insert({
+        organization_id: schedule.organization_id,
+        billing_schedule_id: schedule.id,
+        member_id: schedule.member_id,
+        enrollment_id: schedule.enrollment_id,
+        payment_profile_id: profile.id,
+        transaction_type: 'charge',
+        amount: schedule.amount,
+        status: 'pending',
+        description: 'Retry ACH — queued for NACHA',
+      })
+      .select('id')
+      .single();
+    if (queueError || !queued) {
+      return { success: false, errorMessage: queueError?.message || 'Failed to queue ACH retry for NACHA' };
+    }
+    return { success: true, queued: true, transactionId: queued.id };
+  }
 
   const { data: transaction } = await supabase
     .from('billing_transactions')

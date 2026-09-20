@@ -138,8 +138,10 @@ export function PaymentForm({
       if (!routingNumber || routingNumber.length !== 9) {
         errors.routingNumber = 'Valid 9-digit routing number required';
       }
-      if (!accountNumber || accountNumber.length < 4) {
-        errors.accountNumber = 'Valid account number required';
+      if (!accountNumber || accountNumber.length < 5 || accountNumber.length > 17) {
+        errors.accountNumber = 'Account number must be 5–17 digits';
+      } else if (/^0+\d{1,4}$/.test(accountNumber.replace(/\D/g, ''))) {
+        errors.accountNumber = 'Full account number is required, not last4';
       }
       if (accountNumber !== accountNumberConfirm) {
         errors.accountNumberConfirm = 'Account numbers must match';

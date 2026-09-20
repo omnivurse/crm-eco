@@ -53,6 +53,7 @@ export async function retryFailedPayment(failureId: string): Promise<RetryPaymen
           authorize_customer_profile_id: string;
           authorize_payment_profile_id: string;
           processor?: string | null;
+          payment_type?: string | null;
         } | null;
       } | null;
     }
@@ -74,7 +75,8 @@ export async function retryFailedPayment(failureId: string): Promise<RetryPaymen
             id,
             authorize_customer_profile_id,
             authorize_payment_profile_id,
-            processor
+            processor,
+            payment_type
           )
         )
       `)
@@ -102,6 +104,41 @@ export async function retryFailedPayment(failureId: string): Promise<RetryPaymen
 
     if (!paymentProfile.authorize_payment_profile_id) {
       return { success: false, error: 'No payment profile found for this billing schedule' };
+    }
+
+    if (paymentProfile.payment_type === 'bank_account') {
+      const { data: queued, error: queueError } = await (supabase
+        .from('billing_transactions') as any)
+        .insert({
+          organization_id: tenant.organizationId,
+          member_id: failure.member_id,
+          billing_schedule_id: failure.billing_schedule_id,
+          payment_profile_id: paymentProfile.id,
+          transaction_type: 'charge',
+          amount: failure.amount,
+          processing_fee: 0,
+          status: 'pending',
+          description: 'Retry ACH — queued for NACHA',
+        })
+        .select('id')
+        .single();
+
+      if (queueError || !queued) {
+        return { success: false, error: queueError?.message || 'Failed to queue ACH retry for NACHA' };
+      }
+
+      await (supabase
+        .from('billing_failures') as any)
+        .update({
+          resolved: true,
+          resolved_at: new Date().toISOString(),
+          resolved_by: profile.id,
+          resolution_type: 'manually_resolved',
+          retry_scheduled: false,
+        })
+        .eq('id', failureId);
+
+      return { success: true, transactionId: queued.id };
     }
 
     const chargeResult = await getPaymentProviderForProcessor(paymentProfile.processor).chargeOnce({

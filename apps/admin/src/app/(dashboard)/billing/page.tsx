@@ -386,6 +386,18 @@ export default async function BillingPage() {
               </div>
             </Link>
             <Link
+              href="/billing/nacha"
+              className="block p-3 rounded-lg border hover:bg-slate-50 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <CreditCard weight="light" className="h-5 w-5 text-amber-600" />
+                <div>
+                  <p className="font-medium text-sm">NACHA / ACH</p>
+                  <p className="text-xs text-slate-500">Bank of Colorado file origination</p>
+                </div>
+              </div>
+            </Link>
+            <Link
               href="/members"
               className="block p-3 rounded-lg border hover:bg-slate-50 transition-colors"
             >

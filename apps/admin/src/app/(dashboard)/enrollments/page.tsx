@@ -82,12 +82,17 @@ export default async function EnrollmentsPage({
         }
         icon={<FileText weight="light" className="w-6 h-6" />}
         actions={
-          <Link href="/enrollments/queue" prefetch={false}>
-            <Button variant="outline" size="sm">
-              <Tray weight="light" className="h-4 w-4 mr-2" />
-              Review Queue
-            </Button>
-          </Link>
+          <div className="flex gap-2">
+            <Link href="/billing/nacha" prefetch={false}>
+              <Button variant="outline" size="sm">NACHA / ACH</Button>
+            </Link>
+            <Link href="/enrollments/queue" prefetch={false}>
+              <Button variant="outline" size="sm">
+                <Tray weight="light" className="h-4 w-4 mr-2" />
+                Review Queue
+              </Button>
+            </Link>
+          </div>
         }
       />
 

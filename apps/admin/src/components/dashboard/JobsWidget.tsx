@@ -348,6 +348,11 @@ export function JobsWidget({ organizationId }: JobsWidgetProps) {
                 {selectedJob.triggered_by_profile && (
                   <span>By: {selectedJob.triggered_by_profile.full_name}</span>
                 )}
+                {(selectedJob.job_type === 'nacha_export' || selectedJob.job_type === 'nacha_import') && (
+                  <Link href="/billing/nacha" className="text-amber-800 underline">
+                    Open NACHA / ACH
+                  </Link>
+                )}
               </div>
             </div>
           )}

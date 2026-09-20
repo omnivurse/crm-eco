@@ -128,6 +128,7 @@ export default function OpsPage() {
   const quickLinks = [
     { name: 'Job History', href: '/ops/jobs', icon: Clock, description: 'View all job runs' },
     { name: 'Scheduler', href: '/ops/scheduler', icon: Calendar, description: 'Manage job schedules' },
+    { name: 'NACHA / ACH', href: '/billing/nacha', icon: HardDrives, description: 'Bank file origination' },
     { name: 'Age Up/Out Report', href: '/ops/reports/age-up-out', icon: FileText, description: 'Sedera age tracking' },
   ];
 
@@ -148,13 +149,13 @@ export default function OpsPage() {
         description="Monitor and manage system operations"
         actions={
           <>
-            <Link href="/ops/scheduler">
+            <Link href="/ops/scheduler" prefetch={false}>
               <Button variant="outline" size="sm">
                 <Calendar weight="light" className="w-4 h-4 mr-2" />
                 Scheduler
               </Button>
             </Link>
-            <Link href="/ops/jobs">
+            <Link href="/ops/jobs" prefetch={false}>
               <Button size="sm">
                 <Clock weight="light" className="w-4 h-4 mr-2" />
                 View jobs
@@ -233,7 +234,7 @@ export default function OpsPage() {
             const VendorIcon = vendor.icon;
 
             return (
-              <Link key={vendorCode} href={`/ops/vendor/${vendorCode}`}>
+              <Link key={vendorCode} href={`/ops/vendor/${vendorCode}`} prefetch={false}>
                 <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
                   <CardContent className="pt-6">
                     <div className="flex items-center gap-3 mb-3">
@@ -282,6 +283,7 @@ export default function OpsPage() {
                 <CardTitle>Recent Job Runs</CardTitle>
                 <Link
                   href="/ops/jobs"
+                  prefetch={false}
                   className="text-sm text-[#0891b2] hover:underline flex items-center gap-1"
                 >
                   View all <CaretRight weight="light" className="w-4 h-4" />
@@ -299,6 +301,7 @@ export default function OpsPage() {
                       <Link
                         key={job.id}
                         href={`/ops/jobs?id=${job.id}`}
+                        prefetch={false}
                         className="flex items-center gap-4 p-3 rounded-lg hover:bg-slate-50 transition-colors"
                       >
                         <div className={`p-2 rounded-lg ${config.color}`}>
@@ -343,6 +346,7 @@ export default function OpsPage() {
               <Link
                 key={link.href}
                 href={link.href}
+                prefetch={false}
                 className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 transition-colors group"
               >
                 <div className="p-2 rounded-lg bg-slate-100 group-hover:bg-[#0891b2] group-hover:text-white transition-colors">

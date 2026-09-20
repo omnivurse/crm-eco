@@ -23,6 +23,7 @@ import {
 } from '@crm-eco/ui';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { toast } from 'sonner';
+import Link from 'next/link';
 
 interface PaymentProcessor {
   id: string;
@@ -360,10 +361,15 @@ export default function PaymentProcessorsPage() {
         icon={<CreditCard weight="light" className="w-6 h-6" />}
         gradient="from-amber-500 to-orange-400"
         actions={
-          <Button size="sm" onClick={openCreateModal}>
-            <Plus weight="light" className="h-4 w-4 mr-2" />
-            Add processor
-          </Button>
+          <div className="flex gap-2">
+            <Link href="/billing/nacha">
+              <Button variant="outline" size="sm">NACHA / ACH</Button>
+            </Link>
+            <Button size="sm" onClick={openCreateModal}>
+              <Plus weight="light" className="h-4 w-4 mr-2" />
+              Add processor
+            </Button>
+          </div>
         }
       />
 
@@ -372,7 +378,8 @@ export default function PaymentProcessorsPage() {
           NMI is the intended live rail. Set <code className="rounded bg-white/70 px-1">PAYMENT_PROVIDER=nmi</code>{' '}
           plus sandbox/live NMI keys on Vercel and edge functions. Rows here are labels only and do
           not move money. Existing Authorize.Net vaulted cards keep charging Authorize.Net until the
-          member re-adds a card.
+          member re-adds a card. Bank ACH file origination is{' '}
+          <Link href="/billing/nacha" className="underline">Billing → NACHA / ACH</Link>, not this table.
         </CardContent>
       </Card>
 
