@@ -62,6 +62,31 @@ export async function POST(request: NextRequest) {
 
         const supabase = await createCrmClient();
 
+        // Bind the child row to a record in the caller's active tenant before
+        // inserting. Without this check, a caller who knows another tenant's
+        // record UUID can stamp their own org_id on a note for that record.
+        const { data: record, error: recordError } = await supabase
+          .from('crm_records')
+          .select('id')
+          .eq('id', parsed.data.record_id)
+          .eq('organization_id', profile.organization_id)
+          .is('deleted_at', null)
+          .maybeSingle();
+
+        if (recordError) {
+          console.error('Error verifying note record:', recordError);
+          return NextResponse.json(
+            { error: 'Failed to verify record' },
+            { status: 500 },
+          );
+        }
+
+        // Use 404 for missing, deleted, and cross-tenant records so this route
+        // does not disclose whether a client-supplied UUID exists elsewhere.
+        if (!record) {
+          return NextResponse.json({ error: 'Record not found' }, { status: 404 });
+        }
+
         const insertPayload: Record<string, unknown> = {
           org_id: profile.organization_id,
           record_id: parsed.data.record_id,
