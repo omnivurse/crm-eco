@@ -4,6 +4,8 @@ import { loadAchVaultPresence, NachaConfigError, NachaGenerateError } from '@crm
 import { FINANCIAL_TENANT_ROLES, requireAdminRole } from '@/lib/auth';
 import {
   MEMBER_BANK_DETAILS_UNAVAILABLE,
+  NACHA_TRANSACTION_CLAIM_CONFLICT,
+  NachaTransactionClaimError,
   buildResolvedEntries,
   countExportsToday,
   generateFromResolved,
@@ -197,6 +199,12 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (err) {
+    if (err instanceof NachaTransactionClaimError) {
+      return jsonError(409, {
+        error: err.message,
+        code: NACHA_TRANSACTION_CLAIM_CONFLICT,
+      });
+    }
     if (err instanceof NachaGenerateError) {
       if (!preview) {
         await recordNachaJobRun({
