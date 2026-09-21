@@ -3,6 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   AchVaultError,
   applyNocCorrection,
+  coalesceAccountLast4,
   loadAchVault,
   persistAchVault,
   parseNachaReturnFile,
@@ -14,6 +15,7 @@ import {
   type NachaReturnEntry,
 } from '@crm-eco/lib/billing';
 import { recordNachaJobRun } from '@/lib/nacha-export';
+import { matchReturnCandidate } from '@/lib/nacha-return-match';
 
 export const UNMATCHED_TRACES = 'UNMATCHED_TRACES';
 export const ALREADY_POSTED = 'ALREADY_POSTED';
@@ -89,12 +91,12 @@ export async function buildNachaImportPreview(
 
   const linesByTrace = new Map<
     string,
-    {
+    Array<{
       id: string;
       transaction_id: string;
       entry_status: string | null;
       return_code: string | null;
-    }
+    }>
   >();
   for (const row of lineRows ?? []) {
     const rec = row as {
@@ -109,7 +111,11 @@ export async function buildNachaImportPreview(
     };
     const file = Array.isArray(rec.nacha_file) ? rec.nacha_file[0] : rec.nacha_file;
     if (!file || file.organization_id !== organizationId || file.file_type !== 'export') continue;
-    if (rec.trace_number) linesByTrace.set(rec.trace_number, rec);
+    if (rec.trace_number) {
+      const candidates = linesByTrace.get(rec.trace_number) ?? [];
+      candidates.push(rec);
+      linesByTrace.set(rec.trace_number, candidates);
+    }
   }
 
   const { data: exportFiles, error: exportError } = await supabase
@@ -126,7 +132,13 @@ export async function buildNachaImportPreview(
     if (balancing) balancingTraces.push(balancing);
   }
 
-  const txnIds = [...new Set([...linesByTrace.values()].map((row) => row.transaction_id))];
+  const txnIds = [
+    ...new Set(
+      [...linesByTrace.values()].flatMap((candidates) =>
+        candidates.map((row) => row.transaction_id),
+      ),
+    ),
+  ];
   const txns = new Map<
     string,
     {
@@ -136,17 +148,40 @@ export async function buildNachaImportPreview(
       member_id: string;
       amount: number;
       status: string;
+      account_last4: string | null;
     }
   >();
   if (txnIds.length) {
     const { data: txnRows, error: txnError } = await supabase
       .from('billing_transactions')
-      .select('id, payment_profile_id, billing_schedule_id, member_id, amount, status')
+      .select(
+        'id, payment_profile_id, billing_schedule_id, member_id, amount, status, payment_profile:payment_profiles(account_last4, last_four)',
+      )
       .eq('organization_id', organizationId)
       .in('id', txnIds);
     if (txnError) throw new Error(txnError.message);
-    for (const txn of txnRows ?? []) {
-      txns.set(txn.id, txn as (typeof txnRows)[number]);
+    for (const raw of txnRows ?? []) {
+      const txn = raw as typeof raw & {
+        payment_profile?:
+          | { account_last4: string | null; last_four: string | null }
+          | Array<{ account_last4: string | null; last_four: string | null }>
+          | null;
+      };
+      const profile = Array.isArray(txn.payment_profile)
+        ? txn.payment_profile[0]
+        : txn.payment_profile;
+      txns.set(txn.id, {
+        id: txn.id,
+        payment_profile_id: txn.payment_profile_id,
+        billing_schedule_id: txn.billing_schedule_id,
+        member_id: txn.member_id,
+        amount: Number(txn.amount),
+        status: txn.status,
+        account_last4: coalesceAccountLast4(
+          profile?.account_last4,
+          profile?.last_four,
+        ),
+      });
     }
   }
 
@@ -156,26 +191,33 @@ export async function buildNachaImportPreview(
   const nocBlocked: NachaImportPreview['nocBlocked'] = [];
 
   for (const entry of parsed.entries) {
-    const line = linesByTrace.get(entry.originalTrace);
-    const txn = line ? txns.get(line.transaction_id) : undefined;
+    const candidates = (linesByTrace.get(entry.originalTrace) ?? []).flatMap((line) => {
+      const transaction = txns.get(line.transaction_id);
+      return transaction ? [{ line, transaction }] : [];
+    });
+    const matchedCandidate = matchReturnCandidate(candidates, entry);
+    const line = matchedCandidate?.line;
+    const txn = matchedCandidate?.transaction;
     if (!line || !txn) {
-      const settlement = matchSettlementOffsetReturn(
-        balancingTraces,
-        entry.originalTrace,
-        entry.amountCents,
-        entry.accountLast4,
-      );
-      if (settlement) {
-        settlementReturns.push({
-          originalTrace: entry.originalTrace,
-          kind: entry.kind,
-          code: entry.code,
-          reason: entry.reason,
-          amountCents: entry.amountCents,
-          accountLast4: entry.accountLast4,
-          nachaFileId: settlement.nachaFileId,
-        });
-        continue;
+      if (candidates.length === 0) {
+        const settlement = matchSettlementOffsetReturn(
+          balancingTraces,
+          entry.originalTrace,
+          entry.amountCents,
+          entry.accountLast4,
+        );
+        if (settlement) {
+          settlementReturns.push({
+            originalTrace: entry.originalTrace,
+            kind: entry.kind,
+            code: entry.code,
+            reason: entry.reason,
+            amountCents: entry.amountCents,
+            accountLast4: entry.accountLast4,
+            nachaFileId: settlement.nachaFileId,
+          });
+          continue;
+        }
       }
       unmatched.push({
         originalTrace: entry.originalTrace,
@@ -329,13 +371,13 @@ export async function persistNachaImport(opts: {
       organization_id: opts.organizationId,
       file_type: 'import',
       file_name: opts.fileName.replace(/[^\w.\-]+/g, '_').slice(0, 120) || 'ACH_RETURNS.txt',
-      status: 'processed',
+      status: 'processing',
       effective_date: preview.fileDate,
       file_content: null,
       transaction_count: preview.matched.length + preview.settlementReturns.length,
       return_count: preview.returnCount,
-      processed_count: preview.matched.length + preview.settlementReturns.length,
-      failed_count: preview.matched.filter((row) => row.entry.kind === 'return').length,
+      processed_count: 0,
+      failed_count: 0,
       success_count: 0,
       created_by: opts.profileId,
       processing_notes: {
@@ -384,6 +426,21 @@ export async function persistNachaImport(opts: {
         await postNoc(opts.supabase, opts.organizationId, opts.profileId, row);
       }
       posted += 1;
+    }
+
+    const { data: completed, error: completeError } = await opts.supabase
+      .from('nacha_files')
+      .update({
+        status: 'processed',
+        processed_count: preview.matched.length + preview.settlementReturns.length,
+        failed_count: preview.matched.filter((row) => row.entry.kind === 'return').length,
+      })
+      .eq('id', inserted.id)
+      .eq('status', 'processing')
+      .select('id')
+      .maybeSingle();
+    if (completeError || !completed) {
+      throw new Error(completeError?.message || 'Return import could not be finalized');
     }
   } catch (error) {
     await opts.supabase
