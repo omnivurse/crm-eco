@@ -13,6 +13,16 @@ import {
 } from '@crm-eco/lib/billing';
 
 export const MEMBER_BANK_DETAILS_UNAVAILABLE = 'MEMBER_BANK_DETAILS_UNAVAILABLE';
+export const NACHA_TRANSACTION_CLAIM_CONFLICT = 'NACHA_TRANSACTION_CLAIM_CONFLICT';
+
+export class NachaTransactionClaimError extends Error {
+  readonly code = NACHA_TRANSACTION_CLAIM_CONFLICT;
+
+  constructor() {
+    super('One or more ACH transactions were already claimed by another export. Refresh and try again.');
+    this.name = 'NachaTransactionClaimError';
+  }
+}
 
 export interface PendingAchTransaction {
   id: string;
@@ -256,6 +266,46 @@ export async function persistNachaExport(opts: {
     throw new Error(fileError?.message || 'Failed to record NACHA file');
   }
 
+  const transactionIds = txns.map((txn) => txn.id);
+  const submittedAt = new Date().toISOString();
+  const { data: claimed, error: claimError } = await supabase
+    .from('billing_transactions')
+    .update({
+      status: 'processing',
+      nacha_job_id: inserted.id,
+      submitted_at: submittedAt,
+    })
+    .in('id', transactionIds)
+    .eq('organization_id', organizationId)
+    .eq('status', 'pending')
+    .select('id');
+
+  const claimedIds = (claimed ?? []).map((row) => row.id as string);
+  if (claimError || claimedIds.length !== transactionIds.length) {
+    if (claimedIds.length > 0) {
+      await supabase
+        .from('billing_transactions')
+        .update({
+          status: 'pending',
+          nacha_job_id: null,
+          submitted_at: null,
+        })
+        .in('id', claimedIds)
+        .eq('organization_id', organizationId)
+        .eq('nacha_job_id', inserted.id)
+        .eq('status', 'processing');
+    }
+    const message =
+      claimError?.message ??
+      'One or more ACH transactions were already claimed by another export.';
+    await supabase
+      .from('nacha_files')
+      .update({ status: 'failed', error_message: message })
+      .eq('id', inserted.id);
+    if (claimError) throw new Error(claimError.message);
+    throw new NachaTransactionClaimError();
+  }
+
   const tracesByTxn = new Map(file.traces.map((trace) => [trace.transactionId, trace]));
   const lineRows = txns.map((txn) => {
     const trace = tracesByTxn.get(txn.id);
@@ -270,29 +320,21 @@ export async function persistNachaExport(opts: {
   const { error: linesError } = await supabase.from('nacha_file_transactions').insert(lineRows);
   if (linesError) {
     await supabase
+      .from('billing_transactions')
+      .update({
+        status: 'pending',
+        nacha_job_id: null,
+        submitted_at: null,
+      })
+      .in('id', claimedIds)
+      .eq('organization_id', organizationId)
+      .eq('nacha_job_id', inserted.id)
+      .eq('status', 'processing');
+    await supabase
       .from('nacha_files')
       .update({ status: 'failed', error_message: linesError.message })
       .eq('id', inserted.id);
     throw new Error(linesError.message);
-  }
-
-  const { error: updateError } = await supabase
-    .from('billing_transactions')
-    .update({
-      status: 'processing',
-      nacha_job_id: inserted.id,
-      submitted_at: new Date().toISOString(),
-    })
-    .in('id', txns.map((txn) => txn.id))
-    .eq('organization_id', organizationId)
-    .eq('status', 'pending');
-
-  if (updateError) {
-    await supabase
-      .from('nacha_files')
-      .update({ status: 'failed', error_message: updateError.message })
-      .eq('id', inserted.id);
-    throw new Error(updateError.message);
   }
 
   await recordNachaJobRun({
