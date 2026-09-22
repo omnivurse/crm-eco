@@ -2,7 +2,12 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { AchVaultError, loadAchVaultPresence } from '../billing/ach-vault';
 import { applyInvoicePayment, generateMemberInvoice } from '../billing/invoice-service';
 import { getPaymentProviderForProcessor } from '../billing/charge-resolver';
-import { decideMembershipAdd, parseShopTerms, withMembershipLayer } from './layers';
+import {
+  decideMembershipAdd,
+  parseShopTerms,
+  validateAddonPlanSelection,
+  withMembershipLayer,
+} from './layers';
 import { packagePurchaseAmounts } from './packages';
 import { normalizeCartItems } from './shop';
 import {
@@ -290,6 +295,9 @@ async function activateAddonPlan(
   if (plan.is_active === false) throw new Error('That plan is not available');
 
   const shop = parseShopTerms(plan.metadata);
+  const selection = validateAddonPlanSelection(shop, input.source);
+  if (selection.ok === false) throw new Error(selection.error);
+
   const allowed = decideMembershipAdd({
     existing: input.existing,
     next: { plan_id: plan.id, layer: 'addon', sponsored: false },

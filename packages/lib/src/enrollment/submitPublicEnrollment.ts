@@ -34,6 +34,45 @@ export interface FindOrCreateMemberResult {
   created: boolean;
 }
 
+export interface PublicEnrollmentPlan {
+  id: string;
+  name: string;
+  code: string | null;
+  monthly_share: number | null;
+}
+
+export type PublicEnrollmentPlanResult =
+  | { plan: PublicEnrollmentPlan }
+  | { error: 'invalid_selected_plan' | 'plan_lookup_failed'; message?: string; status: number };
+
+/**
+ * Resolves a client-selected plan inside the signed draft's tenant boundary.
+ * Public submit routes use a service-role client, so this explicit scope check
+ * must happen before any member, dependent, enrollment, or billing writes.
+ */
+export async function loadPublicEnrollmentPlan(
+  supabase: SupabaseClient,
+  organizationId: string,
+  planId: string,
+): Promise<PublicEnrollmentPlanResult> {
+  const { data, error } = await supabase
+    .from('plans')
+    .select('id, name, code, monthly_share')
+    .eq('id', planId)
+    .eq('organization_id', organizationId)
+    .eq('is_active', true)
+    .maybeSingle();
+
+  if (error) {
+    return { error: 'plan_lookup_failed', message: error.message, status: 500 };
+  }
+  if (!data) {
+    return { error: 'invalid_selected_plan', status: 400 };
+  }
+
+  return { plan: data as PublicEnrollmentPlan };
+}
+
 export async function findOrCreatePublicMember(
   supabase: SupabaseClient,
   opts: {

@@ -19,6 +19,24 @@ export function parseShopTerms(metadata: unknown): ShopTerms {
   };
 }
 
+/**
+ * Validates a plan before the service-role checkout path treats it as an add-on.
+ * Portal callers may only select plans explicitly published in the shop, while
+ * staff may assign hidden add-ons without turning a core plan into a second layer.
+ */
+export function validateAddonPlanSelection(
+  shop: ShopTerms,
+  source: 'portal_shop' | 'staff_addon',
+): { ok: true } | { ok: false; error: string } {
+  if (shop.kind !== 'addon') {
+    return { ok: false, error: 'That plan is not available as an add-on.' };
+  }
+  if (source === 'portal_shop' && !shop.purchasable) {
+    return { ok: false, error: 'That add-on is not available in the member shop.' };
+  }
+  return { ok: true };
+}
+
 export function membershipLayerOf(row: Pick<MembershipLayerRow, 'layer' | 'custom_fields'>): MembershipLayer {
   if (row.layer === 'addon' || row.layer === 'core') return row.layer;
   const custom = asRecord(row.custom_fields).layer;
