@@ -5,6 +5,7 @@ import {
   checkEnrollmentApprovalRequired,
   resolvePendingMemberEffectiveDate,
   findOrCreatePublicMember,
+  loadPublicEnrollmentPlan,
   createHouseholdDependentsForEnrollment,
   buildAdultIntakeCustomFields,
   findEnrollmentByDraftIdempotencyKey,
@@ -145,6 +146,17 @@ export async function POST(request: NextRequest) {
   const supabase = createServiceRoleClient();
   const orgId = draft.organizationId;
 
+  const planResult = selected_plan_id
+    ? await loadPublicEnrollmentPlan(supabase, orgId, selected_plan_id)
+    : null;
+  if (planResult && 'error' in planResult) {
+    return NextResponse.json(
+      { error: planResult.error, message: planResult.message },
+      { status: planResult.status },
+    );
+  }
+  const selectedPlan = planResult?.plan ?? null;
+
   // 1. Find-or-create member via Adult Intake projection (shared orchestrator).
   const memberResult = await findOrCreatePublicMember(supabase, {
     organizationId: orgId,
@@ -198,14 +210,9 @@ export async function POST(request: NextRequest) {
   let engineSetupFee: number | null = null;
   let engineTotalMonthly: number | null = null;
 
-  if (selected_plan_id) {
-    const { data: plan } = await supabase
-      .from('plans')
-      .select('code, monthly_share')
-      .eq('id', selected_plan_id)
-      .single();
-    basePrice = Number(plan?.monthly_share ?? 0);
-    planCode = plan?.code ?? null;
+  if (selectedPlan) {
+    basePrice = Number(selectedPlan.monthly_share ?? 0);
+    planCode = selectedPlan.code ?? null;
   }
 
   // Derive household shape from the submitted members (ages by DOB + coverage tier).

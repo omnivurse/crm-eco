@@ -12,9 +12,15 @@ export {
   ENROLLMENT_COMPLETION_FLAG,
   isEnrollmentCompletionEnabled,
   findOrCreatePublicMember,
+  loadPublicEnrollmentPlan,
   createHouseholdDependentsForEnrollment,
   buildAdultIntakeCustomFields,
   findEnrollmentByDraftIdempotencyKey,
 } from './submitPublicEnrollment';
-export type { PublicSubmitMemberBody, FindOrCreateMemberResult } from './submitPublicEnrollment';
+export type {
+  PublicSubmitMemberBody,
+  FindOrCreateMemberResult,
+  PublicEnrollmentPlan,
+  PublicEnrollmentPlanResult,
+} from './submitPublicEnrollment';
 
