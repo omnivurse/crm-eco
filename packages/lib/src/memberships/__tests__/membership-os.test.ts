@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { decideMembershipAdd, membershipLayerOf, parseShopTerms } from '../layers';
+import {
+  decideMembershipAdd,
+  membershipLayerOf,
+  parseShopTerms,
+  validateAddonPlanSelection,
+} from '../layers';
 import { packagePurchaseAmounts, planPackageRedeem } from '../packages';
 import { buildShopCatalog, normalizeCartItems } from '../shop';
 import {
@@ -23,6 +28,38 @@ describe('parseShopTerms', () => {
       purchasable: true,
       frequency: 'quarterly',
     });
+  });
+});
+
+describe('validateAddonPlanSelection', () => {
+  it('blocks crafted portal requests for core and unpublished plans', () => {
+    expect(
+      validateAddonPlanSelection(
+        { kind: 'core', purchasable: false, frequency: 'monthly' },
+        'portal_shop',
+      ),
+    ).toEqual({ ok: false, error: 'That plan is not available as an add-on.' });
+    expect(
+      validateAddonPlanSelection(
+        { kind: 'addon', purchasable: false, frequency: 'monthly' },
+        'portal_shop',
+      ),
+    ).toEqual({ ok: false, error: 'That add-on is not available in the member shop.' });
+  });
+
+  it('allows published portal add-ons and hidden staff add-ons', () => {
+    expect(
+      validateAddonPlanSelection(
+        { kind: 'addon', purchasable: true, frequency: 'monthly' },
+        'portal_shop',
+      ),
+    ).toEqual({ ok: true });
+    expect(
+      validateAddonPlanSelection(
+        { kind: 'addon', purchasable: false, frequency: 'monthly' },
+        'staff_addon',
+      ),
+    ).toEqual({ ok: true });
   });
 });
 
