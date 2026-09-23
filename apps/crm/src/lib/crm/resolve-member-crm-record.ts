@@ -150,7 +150,9 @@ export function memberMatchesCrmRecord(
   const memberEmails = emailsForMember(member);
   const recordEmails = emailsForRecord(candidate);
   for (const email of memberEmails) {
-    if (recordEmails.has(email)) {
+    // Household members legitimately share billing addresses. Treat email as
+    // identity evidence only when the candidate's person name also matches.
+    if (recordEmails.has(email) && namesMatch(member, candidate)) {
       return {
         matched: true,
         reason: email === normalizeEmail(member.email) ? 'email' : 'secondary_email',

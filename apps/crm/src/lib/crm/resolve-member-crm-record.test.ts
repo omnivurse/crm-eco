@@ -45,6 +45,35 @@ describe('memberMatchesCrmRecord', () => {
     expect(result.matched).toBe(true);
     expect(result.reason).toBe('phone_name');
   });
+
+  it('matches on email when the candidate name identifies the same person', () => {
+    const result = memberMatchesCrmRecord(member, {
+      id: '7fdce6a9-d020-43b1-b0cf-0578acd6cef3',
+      email: 'AMBERBDONNELL@gmail.com',
+      data: { first_name: 'Amber', last_name: 'Donnell' },
+    });
+
+    expect(result.matched).toBe(true);
+    expect(result.reason).toBe('email');
+  });
+
+  it('rejects a shared household email when the candidate name is different', () => {
+    const result = memberMatchesCrmRecord(
+      {
+        ...member,
+        first_name: 'Jane',
+        last_name: 'Smith',
+        email: 'family@gmail.com',
+      },
+      {
+        id: '287ff80f-fbc2-4829-b422-182d0fe429a8',
+        email: 'family@gmail.com',
+        data: { first_name: 'John', last_name: 'Smith' },
+      },
+    );
+
+    expect(result).toEqual({ matched: false });
+  });
 });
 
 describe('pickBestMemberCrmRecord', () => {
@@ -135,5 +164,30 @@ describe('pickBestMemberCrmRecord', () => {
     expect(pickBestMemberCrmRecord(adamMember, [enrollmentStub, membersTwin, zoho])?.id).toBe(
       zoho.id,
     );
+  });
+
+  it('does not resolve a member to another household member by shared email alone', () => {
+    const janeMember = {
+      id: '2e7d13cc-64fb-48f6-ab11-6d3170374a5f',
+      first_name: 'Jane',
+      last_name: 'Smith',
+      email: 'family@gmail.com',
+    };
+    const johnZohoContact = {
+      id: '287ff80f-fbc2-4829-b422-182d0fe429a8',
+      email: 'family@gmail.com',
+      source_record_id: 'zcrm_john',
+      market_type: 'healthshare',
+      module_key: 'contacts',
+      data: {
+        first_name: 'John',
+        last_name: 'Smith',
+        carrier: 'Zion Health',
+        product: 'Direct Membership',
+        monthly_premium: '450.00',
+      },
+    };
+
+    expect(pickBestMemberCrmRecord(janeMember, [johnZohoContact])).toBeNull();
   });
 });
