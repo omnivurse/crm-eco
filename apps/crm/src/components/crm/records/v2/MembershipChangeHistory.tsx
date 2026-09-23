@@ -53,6 +53,7 @@ import {
   localTodayIso,
   shouldCreatePlanChangeFollowUp,
 } from '@/lib/crm/plan-change-follow-up';
+import { shouldAutomateMembershipChange } from '@/lib/crm/scheduled-plan-change-apply';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -357,6 +358,9 @@ export function ChangeFormDialog({
   currentData,
   syncedToMms,
   billingPlans,
+  allowedTypes,
+  initialDate,
+  minimumDate,
   dialogTitle,
   submitLabel,
 }: {
@@ -368,6 +372,11 @@ export function ChangeFormDialog({
   currentData?: Record<string, unknown> | null;
   syncedToMms?: boolean;
   billingPlans?: Array<{ id: string; name: string; monthly_share: number | null }>;
+  /** Limit this dialog to operations supported by its caller. */
+  allowedTypes?: readonly MembershipChangeType[];
+  /** Optional default/minimum date for schedule-only callers. */
+  initialDate?: string;
+  minimumDate?: string;
   dialogTitle?: string;
   submitLabel?: string;
 }) {
@@ -390,6 +399,7 @@ export function ChangeFormDialog({
     const d = currentData ?? {};
     return {
       ...EMPTY_FORM,
+      ...(initialDate && { date: initialDate }),
       type: 'downgrade',
       from_plan:
         (d.product as string) ||
@@ -487,16 +497,16 @@ export function ChangeFormDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10">
-                  {(Object.entries(CHANGE_TYPE_META) as [MembershipChangeType, typeof CHANGE_TYPE_META.upgrade][]).map(
-                    ([k, meta]) => (
+                  {(Object.entries(CHANGE_TYPE_META) as [MembershipChangeType, typeof CHANGE_TYPE_META.upgrade][])
+                    .filter(([k]) => !allowedTypes || allowedTypes.includes(k))
+                    .map(([k, meta]) => (
                       <SelectItem key={k} value={k} className="text-slate-700 dark:text-slate-300">
                         <span className="flex items-center gap-2">
                           <meta.icon className={cn('w-3.5 h-3.5', meta.color)} />
                           {meta.label}
                         </span>
                       </SelectItem>
-                    ),
-                  )}
+                    ))}
                 </SelectContent>
               </Select>
             </div>
@@ -506,6 +516,7 @@ export function ChangeFormDialog({
               </label>
               <Input
                 type="date"
+                min={minimumDate}
                 value={form.date}
                 onChange={(e) => {
                   const next = e.target.value;
@@ -840,6 +851,20 @@ export const MembershipChangeHistory = memo(function MembershipChangeHistory({
         toast.success(toastCopy.added('Plan change'));
       }
 
+      // The timeline is an audit log. Past/today changes, enrollments, and
+      // cancellations must only update history; sending them through the
+      // scheduling endpoint would rewrite the live MMS membership and billing.
+      if (!shouldAutomateMembershipChange(nextChange.type, nextChange.date, localTodayIso())) {
+        const next = [...sourceChanges];
+        const index = next.findIndex((entry) => entry.id === nextChange.id);
+        if (index >= 0) next[index] = nextChange;
+        else next.push(nextChange);
+        await persistChanges(next);
+        setDialogOpen(false);
+        setEditing(null);
+        return;
+      }
+
       const res = await fetch(`/api/crm/records/${recordId}/schedule-membership-change`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -896,7 +921,7 @@ export const MembershipChangeHistory = memo(function MembershipChangeHistory({
       setDialogOpen(false);
       setEditing(null);
     },
-    [recordId, recordTitle],
+    [persistChanges, recordId, recordTitle, sourceChanges],
   );
 
   const handleDelete = useCallback(
@@ -963,7 +988,7 @@ export const MembershipChangeHistory = memo(function MembershipChangeHistory({
             </Badge>
           )}
         </div>
-        {!readOnly && (
+        {!readOnly && saveCtx && (
           <Button
             variant="ghost"
             size="sm"
@@ -1007,7 +1032,7 @@ export const MembershipChangeHistory = memo(function MembershipChangeHistory({
               No upgrades recorded. Use Schedule change on the coverage card
               — do not add a second current membership.
             </p>
-            {!readOnly && (
+            {!readOnly && saveCtx && (
               <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
                 Or click &quot;Log Change&quot; here for a past switch or cancellation.
               </p>
@@ -1027,7 +1052,7 @@ export const MembershipChangeHistory = memo(function MembershipChangeHistory({
                   change={change}
                   readOnly={readOnly}
                   onEdit={
-                    !readOnly && saveCtx
+                    !readOnly && saveCtx && change.change_status !== 'scheduled'
                       ? () => {
                           setEditing(change);
                           setDialogOpen(true);

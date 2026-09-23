@@ -9,6 +9,7 @@ import {
   buildScheduledPlanChangeUpdates,
   isRecordSyncedToMember,
   parseScheduledPlanChange,
+  shouldAutomateMembershipChange,
   type RecordForScheduledPlanChange,
 } from './scheduled-plan-change-apply';
 
@@ -60,6 +61,19 @@ describe('parseScheduledPlanChange', () => {
     expect(
       parseScheduledPlanChange({ scheduled_plan_change: { effective_date: 'not-a-date' } }),
     ).toBeNull();
+  });
+});
+
+describe('shouldAutomateMembershipChange', () => {
+  it('automates only future plan switches', () => {
+    expect(shouldAutomateMembershipChange('upgrade', '2026-09-02', TODAY)).toBe(true);
+    expect(shouldAutomateMembershipChange('downgrade', TODAY, TODAY)).toBe(false);
+    expect(shouldAutomateMembershipChange('lateral', '2026-08-31', TODAY)).toBe(false);
+  });
+
+  it('keeps enrollments and cancellations on the audit-history path', () => {
+    expect(shouldAutomateMembershipChange('enrollment', '2026-09-02', TODAY)).toBe(false);
+    expect(shouldAutomateMembershipChange('cancellation', '2026-09-02', TODAY)).toBe(false);
   });
 });
 

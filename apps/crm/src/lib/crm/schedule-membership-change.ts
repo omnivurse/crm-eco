@@ -98,6 +98,15 @@ export interface ScheduleMembershipChangeFailure {
   plans?: BillingPlanOption[];
 }
 
+export interface LinkedMemberIdentity {
+  id: string;
+  member_number?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  first_name?: string | null;
+  last_name?: string | null;
+}
+
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 export function isSchedulableMembershipChangeType(
@@ -172,6 +181,57 @@ export function currentPlanFieldsFromData(data: Record<string, unknown> | null):
     (d.monthly_amount != null && String(d.monthly_amount)) ||
     undefined;
   return { product, iua, monthly };
+}
+
+function normalizeIdentityText(value: unknown): string {
+  return typeof value === 'string' ? value.trim().toLowerCase() : '';
+}
+
+function normalizeIdentityPhone(value: unknown): string {
+  return typeof value === 'string' ? value.replace(/\D/g, '') : '';
+}
+
+/**
+ * `linked_member_id` is mutable CRM JSON, so it cannot be the only evidence
+ * used before a service-role billing mutation. Require member-number parity,
+ * or matching first/last name plus an email/phone identifier.
+ */
+export function linkedMemberMatchesRecord(
+  member: LinkedMemberIdentity,
+  record: {
+    email?: string | null;
+    phone?: string | null;
+    data: Record<string, unknown> | null;
+  },
+): boolean {
+  const data = record.data ?? {};
+  if (data.linked_member_id !== member.id) return false;
+
+  const memberNumber = normalizeIdentityText(member.member_number);
+  const recordMemberNumber = normalizeIdentityText(data.member_number);
+  if (memberNumber && recordMemberNumber) return memberNumber === recordMemberNumber;
+
+  const firstMatches =
+    normalizeIdentityText(member.first_name) !== '' &&
+    normalizeIdentityText(member.first_name) === normalizeIdentityText(data.first_name);
+  const lastMatches =
+    normalizeIdentityText(member.last_name) !== '' &&
+    normalizeIdentityText(member.last_name) === normalizeIdentityText(data.last_name);
+  if (!firstMatches || !lastMatches) return false;
+
+  const memberEmail = normalizeIdentityText(member.email);
+  const recordEmails = [
+    normalizeIdentityText(record.email),
+    normalizeIdentityText(data.email),
+  ].filter(Boolean);
+  if (memberEmail && recordEmails.includes(memberEmail)) return true;
+
+  const memberPhone = normalizeIdentityPhone(member.phone);
+  const recordPhones = [
+    normalizeIdentityPhone(record.phone),
+    normalizeIdentityPhone(data.phone),
+  ].filter(Boolean);
+  return Boolean(memberPhone && recordPhones.includes(memberPhone));
 }
 
 export function buildMembershipChangeEntry(
@@ -260,6 +320,29 @@ export function buildCancelScheduledChangeData(
   return { data: next, mmsMembershipId, changeId };
 }
 
+/**
+ * Apply only the keys this operation changed onto a freshly-read CRM blob.
+ * This preserves unrelated inline edits and member-sync projections that land
+ * while the service-role membership operation is running.
+ */
+export function mergeChangedCrmData(
+  original: Record<string, unknown>,
+  desired: Record<string, unknown>,
+  latest: Record<string, unknown>,
+): Record<string, unknown> {
+  const merged = { ...latest };
+  const touchedKeys = new Set([...Object.keys(original), ...Object.keys(desired)]);
+  for (const key of touchedKeys) {
+    if (JSON.stringify(original[key]) === JSON.stringify(desired[key])) continue;
+    if (Object.prototype.hasOwnProperty.call(desired, key)) {
+      merged[key] = desired[key];
+    } else {
+      delete merged[key];
+    }
+  }
+  return merged;
+}
+
 export function pickActiveCoreMembership(
   rows: Array<{
     id: string;
@@ -313,6 +396,9 @@ export async function executeScheduleMembershipChange(args: {
   profileId: string;
   record: {
     id: string;
+    email?: string | null;
+    phone?: string | null;
+    updated_at?: string | null;
     data: Record<string, unknown> | null;
     system: Record<string, unknown> | null;
   };
@@ -347,64 +433,101 @@ export async function executeScheduleMembershipChange(args: {
       : null;
 
   let lane: ScheduleMembershipLane = schedulable ? 'crm' : immediate ? 'crm_immediate' : 'crm';
-  let warning: string | undefined;
   let mmsMembershipId: string | undefined;
   let resolvedPlanName = filled.to_plan;
 
-  if (linked && memberId && args.staffCtx && isSchedulableMembershipChangeType(filled.type)) {
+  if (linked && isSchedulableMembershipChangeType(filled.type)) {
+    if (!memberId || !args.staffCtx) {
+      return {
+        ok: false,
+        error: 'This synced record cannot safely schedule a billing plan change.',
+      };
+    }
+    if (
+      record.system?.source_table === 'members' ||
+      record.system?.synced === true ||
+      record.system?.synced === 'true'
+    ) {
+      return {
+        ok: false,
+        error: 'Manage plan changes from the Member Command Center for this synced record.',
+      };
+    }
+
+    const { data: member, error: memberError } = await args.staffCtx.supabase
+      .from('members')
+      .select('id, member_number, email, phone, first_name, last_name')
+      .eq('id', memberId)
+      .eq('organization_id', organizationId)
+      .maybeSingle();
+    if (
+      memberError ||
+      !member ||
+      !linkedMemberMatchesRecord(member as LinkedMemberIdentity, {
+        email: record.email,
+        phone: record.phone,
+        data,
+      })
+    ) {
+      return {
+        ok: false,
+        error: 'The linked member identity does not match this CRM record.',
+      };
+    }
+
     const core = await loadActiveCoreMembership(args.staffCtx.supabase, {
       organizationId,
       memberId,
     });
     if (!core) {
-      warning =
-        'No billing membership on file — the CRM card will update on the date. Vendor billing still needs an ops change form.';
-    } else {
-      const plans = await listOrgCorePlans(args.staffCtx.supabase, organizationId);
-      const resolved = resolvePlanFromCatalog(plans, {
-        plan_id: filled.plan_id,
-        to_plan: filled.to_plan,
-      });
-      if (!resolved.ok) {
-        return { ok: false, error: resolved.error, plans };
-      }
-      resolvedPlanName = resolved.plan.name;
-      filled.to_plan = resolved.plan.name;
-      filled.plan_id = resolved.plan.id;
-      if (resolved.plan.monthly_share != null && !filled.to_monthly) {
-        filled.to_monthly = String(resolved.plan.monthly_share);
-      }
-      if (resolved.plan.iua_amount != null && !filled.to_iua) {
-        filled.to_iua = String(resolved.plan.iua_amount);
-      }
-
-      if (schedulable) {
-        const scheduled = await staffSchedulePlanChange(args.staffCtx, {
-          member_id: memberId,
-          plan_id: resolved.plan.id,
-          effective_date: filled.effective_date,
-          reason: filled.notes,
-        });
-        if (!scheduled.success) {
-          return { ok: false, error: scheduled.error ?? 'Could not schedule the billing plan change.' };
-        }
-        mmsMembershipId = scheduled.data?.membershipId;
-        lane = 'mms';
-      } else if (immediate) {
-        const changed = await staffChangePlan(args.staffCtx, {
-          member_id: memberId,
-          membership_id: core.id,
-          plan_id: resolved.plan.id,
-          effective_date: filled.effective_date,
-        });
-        if (!changed.success) {
-          return { ok: false, error: changed.error ?? 'Could not change the billing plan.' };
-        }
-        lane = 'mms_immediate';
-      }
+      return {
+        ok: false,
+        error: 'This member has no active core membership to change.',
+      };
     }
-  } else if (linked && isSchedulableMembershipChangeType(filled.type) && !args.staffCtx) {
-    return { ok: false, error: 'Enrollment system is not available to schedule this change.' };
+
+    const plans = await listOrgCorePlans(args.staffCtx.supabase, organizationId);
+    const resolved = resolvePlanFromCatalog(plans, {
+      plan_id: filled.plan_id,
+      to_plan: filled.to_plan,
+    });
+    if (!resolved.ok) {
+      return { ok: false, error: resolved.error, plans };
+    }
+    resolvedPlanName = resolved.plan.name;
+    filled.to_plan = resolved.plan.name;
+    filled.plan_id = resolved.plan.id;
+    if (resolved.plan.monthly_share != null && !filled.to_monthly) {
+      filled.to_monthly = String(resolved.plan.monthly_share);
+    }
+    if (resolved.plan.iua_amount != null && !filled.to_iua) {
+      filled.to_iua = String(resolved.plan.iua_amount);
+    }
+
+    if (schedulable) {
+      const scheduled = await staffSchedulePlanChange(args.staffCtx, {
+        member_id: memberId,
+        plan_id: resolved.plan.id,
+        effective_date: filled.effective_date,
+        reason: filled.notes,
+      });
+      if (!scheduled.success) {
+        return { ok: false, error: scheduled.error ?? 'Could not schedule the billing plan change.' };
+      }
+      mmsMembershipId = scheduled.data?.membershipId;
+      lane = 'mms';
+    } else if (immediate) {
+      const changed = await staffChangePlan(args.staffCtx, {
+        member_id: memberId,
+        membership_id: core.id,
+        plan_id: resolved.plan.id,
+        effective_date: filled.effective_date,
+      });
+      if (!changed.success) {
+        return { ok: false, error: changed.error ?? 'Could not change the billing plan.' };
+      }
+      lane = 'mms_immediate';
+    }
   }
 
   const change = buildMembershipChangeEntry(
@@ -436,21 +559,75 @@ export async function executeScheduleMembershipChange(args: {
     delete nextData.scheduled_plan_change;
   }
 
-  const { error: updateError } = await userSupabase
+  const { data: latestRecord, error: latestError } = await userSupabase
+    .from('crm_records')
+    .select('data, updated_at')
+    .eq('id', record.id)
+    .eq('org_id', organizationId)
+    .maybeSingle();
+  if (latestError || !latestRecord) {
+    if (schedulable && mmsMembershipId && memberId && args.staffCtx) {
+      const rollback = await staffCancelScheduledPlanChange(args.staffCtx, {
+        member_id: memberId,
+        pending_membership_id: mmsMembershipId,
+      });
+      if (!rollback.success) {
+        return {
+          ok: false,
+          error: `${latestError?.message ?? 'The CRM record is no longer available.'} Billing rollback also failed: ${rollback.error ?? 'unknown error'}`,
+        };
+      }
+    }
+    return {
+      ok: false,
+      error: latestError?.message ?? 'The CRM record is no longer available.',
+    };
+  }
+  nextData = mergeChangedCrmData(
+    data,
+    nextData,
+    (latestRecord.data as Record<string, unknown> | null) ?? {},
+  );
+
+  let updateQuery = userSupabase
     .from('crm_records')
     .update({ data: nextData, updated_at: new Date().toISOString() })
     .eq('id', record.id)
     .eq('org_id', organizationId);
-
-  if (updateError) {
-    return { ok: false, error: updateError.message };
+  if (latestRecord.updated_at) {
+    updateQuery = updateQuery.eq('updated_at', latestRecord.updated_at);
   }
+  const { data: updatedRecord, error: updateError } = await updateQuery
+    .select('data')
+    .maybeSingle();
+
+  if (updateError || !updatedRecord) {
+    // Scheduling mutates MMS first. If the optimistic CRM write loses a race
+    // or fails, remove the pending membership and restore the outgoing end
+    // date so billing never proceeds with an invisible CRM schedule.
+    if (schedulable && mmsMembershipId && memberId && args.staffCtx) {
+      const rollback = await staffCancelScheduledPlanChange(args.staffCtx, {
+        member_id: memberId,
+        pending_membership_id: mmsMembershipId,
+      });
+      if (!rollback.success) {
+        return {
+          ok: false,
+          error: `${updateError?.message ?? 'The CRM record changed while scheduling.'} Billing rollback also failed: ${rollback.error ?? 'unknown error'}`,
+        };
+      }
+    }
+    return {
+      ok: false,
+      error: updateError?.message ?? 'The CRM record changed while scheduling. Please retry.',
+    };
+  }
+  nextData = (updatedRecord.data as Record<string, unknown> | null) ?? nextData;
 
   return {
     ok: true,
     lane,
     data: nextData,
-    ...(warning && { warning }),
     ...(mmsMembershipId && { mms_membership_id: mmsMembershipId }),
   };
 }
@@ -461,11 +638,16 @@ export async function executeCancelScheduledMembershipChange(args: {
   organizationId: string;
   record: {
     id: string;
+    updated_at?: string | null;
     data: Record<string, unknown> | null;
     system: Record<string, unknown> | null;
   };
 }): Promise<{ ok: true; data: Record<string, unknown> } | { ok: false; error: string }> {
-  const cancelled = buildCancelScheduledChangeData(args.record.data);
+  const originalData =
+    args.record.data && typeof args.record.data === 'object'
+      ? { ...args.record.data }
+      : {};
+  const cancelled = buildCancelScheduledChangeData(originalData);
   const memberId =
     typeof args.record.data?.linked_member_id === 'string'
       ? args.record.data.linked_member_id
@@ -481,12 +663,75 @@ export async function executeCancelScheduledMembershipChange(args: {
     }
   }
 
-  const { error } = await args.userSupabase
+  let expectedUpdatedAt = args.record.updated_at;
+  const { data: latestBeforeCancel } = await args.userSupabase
+    .from('crm_records')
+    .select('data, updated_at')
+    .eq('id', args.record.id)
+    .eq('org_id', args.organizationId)
+    .maybeSingle();
+  if (latestBeforeCancel) {
+    cancelled.data = mergeChangedCrmData(
+      originalData,
+      cancelled.data,
+      (latestBeforeCancel.data as Record<string, unknown> | null) ?? {},
+    );
+    expectedUpdatedAt = latestBeforeCancel.updated_at;
+  }
+
+  let updateQuery = args.userSupabase
     .from('crm_records')
     .update({ data: cancelled.data, updated_at: new Date().toISOString() })
     .eq('id', args.record.id)
     .eq('org_id', args.organizationId);
+  if (expectedUpdatedAt) {
+    updateQuery = updateQuery.eq('updated_at', expectedUpdatedAt);
+  }
+  const { data: updatedRecord, error } = await updateQuery
+    .select('data')
+    .maybeSingle();
 
-  if (error) return { ok: false, error: error.message };
-  return { ok: true, data: cancelled.data };
+  if (error || !updatedRecord) {
+    // MMS cancellation already succeeded. Merge the cancellation into the
+    // latest CRM JSON through the service client so concurrent unrelated edits
+    // survive and the UI cannot keep showing a plan that will no longer apply.
+    if (cancelled.mmsMembershipId && args.staffCtx) {
+      const { data: latest, error: latestError } = await args.staffCtx.supabase
+        .from('crm_records')
+        .select('data, updated_at')
+        .eq('id', args.record.id)
+        .eq('org_id', args.organizationId)
+        .maybeSingle();
+      if (!latestError && latest) {
+        const converged = buildCancelScheduledChangeData(
+          (latest.data as Record<string, unknown> | null) ?? null,
+        ).data;
+        let convergeQuery = args.staffCtx.supabase
+          .from('crm_records')
+          .update({ data: converged, updated_at: new Date().toISOString() })
+          .eq('id', args.record.id)
+          .eq('org_id', args.organizationId);
+        if (latest.updated_at) {
+          convergeQuery = convergeQuery.eq('updated_at', latest.updated_at);
+        }
+        const { data: convergedRecord, error: convergeError } = await convergeQuery
+          .select('data')
+          .maybeSingle();
+        if (!convergeError && convergedRecord) {
+          return {
+            ok: true,
+            data: (convergedRecord.data as Record<string, unknown> | null) ?? converged,
+          };
+        }
+      }
+    }
+    return {
+      ok: false,
+      error: error?.message ?? 'The CRM record changed while cancelling. Please retry.',
+    };
+  }
+  return {
+    ok: true,
+    data: (updatedRecord.data as Record<string, unknown> | null) ?? cancelled.data,
+  };
 }

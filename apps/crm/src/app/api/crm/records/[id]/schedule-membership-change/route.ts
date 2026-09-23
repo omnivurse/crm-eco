@@ -15,22 +15,19 @@ import {
   executeScheduleMembershipChange,
   listOrgCorePlans,
   loadActiveCoreMembership,
-  type MembershipChangeType,
   type ScheduleMembershipChangeInput,
 } from '@/lib/crm/schedule-membership-change';
-import { isRecordSyncedToMember, parseScheduledPlanChange } from '@/lib/crm/scheduled-plan-change-apply';
+import {
+  isAutomatedMembershipChangeType,
+  isRecordSyncedToMember,
+  parseScheduledPlanChange,
+  shouldAutomateMembershipChange,
+} from '@/lib/crm/scheduled-plan-change-apply';
+import { localTodayIso } from '@/lib/crm/plan-change-follow-up';
 
 export const dynamic = 'force-dynamic';
 
 const WRITE_ROLES = ['crm_admin', 'crm_manager', 'crm_agent'];
-
-const CHANGE_TYPES = new Set<MembershipChangeType>([
-  'upgrade',
-  'downgrade',
-  'lateral',
-  'enrollment',
-  'cancellation',
-]);
 
 function staffCtxFor(
   profile: { id: string; organization_id: string },
@@ -122,7 +119,7 @@ export async function POST(
     const supabase = await createClient();
     const { data: record, error } = await supabase
       .from('crm_records')
-      .select('id, data, system')
+      .select('id, email, phone, data, system, updated_at')
       .eq('id', id)
       .eq('org_id', profile.organization_id)
       .is('deleted_at' as never, null)
@@ -135,6 +132,9 @@ export async function POST(
     const staffCtx = staffCtxFor(profile);
     const recordForChange = {
       id: record.id as string,
+      email: record.email,
+      phone: record.phone,
+      updated_at: record.updated_at,
       data: (record.data as Record<string, unknown> | null) ?? null,
       system: (record.system as Record<string, unknown> | null) ?? null,
     };
@@ -152,12 +152,21 @@ export async function POST(
       return NextResponse.json({ ok: true, action: 'cancel', data: result.data });
     }
 
-    const type = body.type as MembershipChangeType;
-    if (!CHANGE_TYPES.has(type)) {
-      return NextResponse.json({ error: 'Invalid change type' }, { status: 400 });
+    const type = typeof body.type === 'string' ? body.type : '';
+    if (!isAutomatedMembershipChangeType(type)) {
+      return NextResponse.json(
+        { error: 'Only upgrades, downgrades, and lateral plan changes can be scheduled.' },
+        { status: 400 },
+      );
     }
     if (typeof body.effective_date !== 'string') {
       return NextResponse.json({ error: 'Effective date is required' }, { status: 400 });
+    }
+    if (!shouldAutomateMembershipChange(type, body.effective_date, localTodayIso())) {
+      return NextResponse.json(
+        { error: 'Scheduled plan changes must start on a future date.' },
+        { status: 400 },
+      );
     }
 
     const input: ScheduleMembershipChangeInput = {

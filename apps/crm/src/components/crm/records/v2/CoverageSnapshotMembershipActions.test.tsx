@@ -44,4 +44,17 @@ describe('CoverageSnapshotMembershipActions', () => {
     expect(chip).toContain('Upcoming: Secure HSA');
     expect(chip).toContain('Oct 1, 2026');
   });
+
+  it('hides scheduling for Members-module rows managed by member sync', () => {
+    render(
+      <CoverageSnapshotMembershipActions
+        recordId="rec-1"
+        recordTitle="Bailey Johnson"
+        data={{ product: 'Care Plus 2024 (42644)' }}
+        canEdit
+        managedByMemberSync
+      />,
+    );
+    expect(screen.queryByTestId('crm-schedule-membership-change')).toBeNull();
+  });
 });

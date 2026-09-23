@@ -37,6 +37,27 @@ export type RecordForScheduledPlanChange = {
   system: Record<string, unknown> | null;
 };
 
+export const AUTOMATED_MEMBERSHIP_CHANGE_TYPES = ['upgrade', 'downgrade', 'lateral'] as const;
+
+export function isAutomatedMembershipChangeType(
+  type: string,
+): type is (typeof AUTOMATED_MEMBERSHIP_CHANGE_TYPES)[number] {
+  return (AUTOMATED_MEMBERSHIP_CHANGE_TYPES as readonly string[]).includes(type);
+}
+
+/**
+ * Only future plan switches belong on the automation path. Historical entries,
+ * original enrollments, and cancellations are audit history and must never
+ * mutate the member's current billing membership.
+ */
+export function shouldAutomateMembershipChange(
+  type: string,
+  effectiveDate: string,
+  today: string,
+): boolean {
+  return isAutomatedMembershipChangeType(type) && effectiveDate > today;
+}
+
 export interface ScheduledPlanChangeApplyResult {
   today: string;
   dry_run: boolean;

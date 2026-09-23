@@ -64,7 +64,7 @@ export async function projectActivatedPlanToCrmRecords(
     .select('id, data')
     .eq('org_id', args.organizationId)
     .eq('data->>linked_member_id', args.memberId)
-    .eq('deleted_at', null);
+    .is('deleted_at', null);
 
   if (error) {
     return { updated: 0, error: `crm project ${args.memberId}: ${error.message}` };
