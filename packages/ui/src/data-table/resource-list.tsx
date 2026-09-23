@@ -83,6 +83,7 @@ export function ResourceList<Row>({
     rows,
     total,
     loading,
+    exporting,
     error,
     search,
     setSearch,
@@ -136,6 +137,7 @@ export function ResourceList<Row>({
           onRefresh={() => void refresh()}
           onExport={enableExport ? exportCsv : undefined}
           loading={loading}
+          exporting={exporting}
           toolbar={descriptor.toolbar}
         />
       </div>

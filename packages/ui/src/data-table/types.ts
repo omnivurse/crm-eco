@@ -108,6 +108,7 @@ export type ResourceListState<Row> = {
   rows: Row[];
   total: number;
   loading: boolean;
+  exporting: boolean;
   error: string | null;
   search: string;
   setSearch: (value: string) => void;
@@ -126,6 +127,6 @@ export type ResourceListState<Row> = {
   columnWidths: Record<string, number>;
   onResizeStart: (col: string, startX: number) => void;
   refresh: () => Promise<void>;
-  exportCsv: () => void;
+  exportCsv: () => Promise<void>;
   ctx: ActionContext;
 };
