@@ -235,9 +235,20 @@ export function applyImageToSignature(input: ApplySignatureImageInput): AppliedS
     );
     html = replaced.html;
     if (!replaced.replaced && !html.includes(imageUrl)) {
-      const first = replaceFirstImgSrc(html, imageUrl);
-      if (first.replaced) html = first.html;
-      else html = prependLogoImg(html, imageUrl, alt);
+      const firstImg = findImgTags(html)[0] ?? '';
+      const firstImgIsPhoto =
+        /\balt=(["'])Photo\1/i.test(firstImg) ||
+        collectUrlTargets(photoUrl).some((url) => firstImg.includes(url));
+
+      // Professional signatures contain only a headshot. Preserve that image
+      // and add the requested logo instead of silently replacing the photo.
+      if (firstImgIsPhoto) {
+        html = prependLogoImg(html, imageUrl, alt);
+      } else {
+        const first = replaceFirstImgSrc(html, imageUrl);
+        if (first.replaced) html = first.html;
+        else html = prependLogoImg(html, imageUrl, alt);
+      }
     }
     result = { content_html: html, logo_url: imageUrl, photo_url: photoUrl };
   }
