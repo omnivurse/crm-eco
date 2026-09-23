@@ -323,6 +323,37 @@ export async function getMessages(
 }
 
 /**
+ * Get the same newest-anchored message window shown in the inbox reader.
+ *
+ * Contact/note actions validate participants from the visible thread. Fetching
+ * page one through {@link getMessages} would instead return the oldest rows and
+ * reject people who joined later in a long conversation.
+ */
+export async function getRecentMessages(
+  conversationId: string,
+  limit: number = 200,
+): Promise<InboxMessage[]> {
+  const auth = await getAuthContext();
+  if (!auth) return [];
+
+  const { supabase } = auth;
+  const { data, error } = await supabase
+    .from('inbox_messages')
+    .select('*')
+    .eq('conversation_id', conversationId)
+    .order('sent_at', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error('Error fetching recent messages:', error);
+    throw new Error('Failed to fetch messages');
+  }
+
+  // Consumers expect chronological order; cap newest-first, then restore it.
+  return ((data || []) as InboxMessage[]).slice().reverse();
+}
+
+/**
  * Add a message to a conversation
  */
 export async function addMessage(params: {

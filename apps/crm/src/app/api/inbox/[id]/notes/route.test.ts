@@ -3,7 +3,7 @@ import { buildProfile, buildRequest, buildSupabaseClient } from '@/test/helpers'
 
 const mockGetAuthProfile = vi.fn();
 const mockGetConversation = vi.fn();
-const mockGetMessages = vi.fn();
+const mockGetRecentMessages = vi.fn();
 const mockUpdateConversation = vi.fn();
 let supabase: ReturnType<typeof buildSupabaseClient>['client'];
 
@@ -14,7 +14,7 @@ vi.mock('@/lib/supabase-server', () => ({
 
 vi.mock('@/lib/inbox', () => ({
   getConversation: (...args: unknown[]) => mockGetConversation(...args),
-  getMessages: (...args: unknown[]) => mockGetMessages(...args),
+  getRecentMessages: (...args: unknown[]) => mockGetRecentMessages(...args),
   updateConversation: (...args: unknown[]) => mockUpdateConversation(...args),
 }));
 
@@ -52,7 +52,7 @@ describe('POST /api/inbox/[id]/notes', () => {
     );
     supabase = built.client;
     mockGetConversation.mockResolvedValue(CONV);
-    mockGetMessages.mockResolvedValue({ messages: MESSAGES, total: 1, hasMore: false });
+    mockGetRecentMessages.mockResolvedValue(MESSAGES);
   });
 
   it('saves a conversation note on the linked contact', async () => {
@@ -63,6 +63,7 @@ describe('POST /api/inbox/[id]/notes', () => {
     const res = await POST(req, { params: Promise.resolve({ id: CONV.id }) });
     expect(res.status).toBe(200);
     expect(await res.json()).toMatchObject({ note_id: 'note-2', record_id: 'rec-1', linked: false });
+    expect(mockGetRecentMessages).toHaveBeenCalledWith(CONV.id);
   });
 
   it('rejects an empty note', async () => {
