@@ -2,7 +2,10 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { decideEnrollmentMatch, rosterMatchKey } from './match';
 import { applyDependentCapToImport, planRosterImport, parseRosterCsv } from './rosterImport';
 import { planEligibilityEndings } from './eligibility';
-import { buildSponsorInvoiceDraft } from './invoice';
+import {
+  buildSponsorInvoiceDraft,
+  requiredMemberPaymentForSponsoredEnrollment,
+} from './invoice';
 import { isDependentRelationship, wouldExceedDependentCap } from './caps';
 import { isKnownRosterEnabled } from './flags';
 import { knownRosterRelationship, planKnownRosterEnroll } from './knownRoster';
@@ -768,6 +771,27 @@ export async function provisionSponsoredEnrollment(
     enrollmentId?: string | null;
   },
 ): Promise<{ membershipId: string; enrollmentId: string }> {
+  const { data: plan, error: planError } = await supabase
+    .from('plans')
+    .select('metadata')
+    .eq('id', input.planId)
+    .eq('organization_id', input.organizationId)
+    .maybeSingle();
+  if (planError || !plan) {
+    throw new Error(planError?.message ?? 'Sponsored plan not found');
+  }
+
+  const requiredMemberPayment = requiredMemberPaymentForSponsoredEnrollment(
+    input.amount,
+    plan.metadata,
+  );
+  if (requiredMemberPayment > 0) {
+    throw new Error(
+      `This plan requires ${requiredMemberPayment.toFixed(2)} in member payment, ` +
+        'but sponsored enrollment does not collect split payments. No coverage was activated.',
+    );
+  }
+
   let enrollmentId = input.enrollmentId ?? null;
   if (enrollmentId) {
     await supabase

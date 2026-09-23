@@ -3,7 +3,12 @@ import { decideEnrollmentMatch, rosterMatchKey } from '../match';
 import { computeSponsorStartDate, earliestBackbillStart } from '../cutoff';
 import { applyDependentCapToImport, parseRosterCsv, planRosterImport } from '../rosterImport';
 import { planEligibilityEndings } from '../eligibility';
-import { buildSponsorInvoiceDraft, isCoveredInPeriod } from '../invoice';
+import {
+  buildSponsorInvoiceDraft,
+  isCoveredInPeriod,
+  requiredMemberPaymentForSponsoredEnrollment,
+} from '../invoice';
+import { provisionSponsoredEnrollment } from '../sponsor-service';
 import { canAttachAnotherPlan, wouldExceedDependentCap } from '../caps';
 import { filterPlansForSponsor } from '../landingPlans';
 import { planKnownRosterEnroll } from '../knownRoster';
@@ -109,6 +114,68 @@ describe('eligibility endings', () => {
 });
 
 describe('sponsor invoice', () => {
+  it('blocks sponsored activation when an explicit core rule leaves a member share', async () => {
+    const calls: string[] = [];
+    const query = {
+      select() {
+        return this;
+      },
+      eq() {
+        return this;
+      },
+      async maybeSingle() {
+        return {
+          data: {
+            metadata: {
+              coverage: {
+                rules: [
+                  {
+                    charge_item_code: 'core_membership',
+                    treatment: 'pass_through',
+                    who_pays: 'member',
+                  },
+                ],
+              },
+            },
+          },
+          error: null,
+        };
+      },
+    };
+    const supabase = {
+      from(table: string) {
+        calls.push(table);
+        if (table !== 'plans') throw new Error(`Unexpected write to ${table}`);
+        return query;
+      },
+    };
+
+    await expect(
+      provisionSponsoredEnrollment(supabase as never, {
+        organizationId: 'org1',
+        memberId: 'member1',
+        sponsorId: 'sponsor1',
+        planId: 'plan1',
+        amount: 199,
+        effectiveDate: '2026-10-01',
+      }),
+    ).rejects.toThrow('No coverage was activated');
+    expect(calls).toEqual(['plans']);
+    expect(
+      requiredMemberPaymentForSponsoredEnrollment(199, {
+        coverage: {
+          rules: [
+            {
+              charge_item_code: 'core_membership',
+              treatment: 'pass_through',
+              who_pays: 'member',
+            },
+          ],
+        },
+      }),
+    ).toBe(199);
+  });
+
   it('bills one line per covered life in the period', () => {
     const draft = buildSponsorInvoiceDraft({
       sponsor_id: 'sp1',
@@ -178,6 +245,7 @@ describe('sponsor invoice', () => {
       ],
     });
     expect(noRule.total).toBe(199);
+    expect(requiredMemberPaymentForSponsoredEnrollment(199, undefined)).toBe(0);
 
     const memberPays = buildSponsorInvoiceDraft({
       sponsor_id: 'sp1',
