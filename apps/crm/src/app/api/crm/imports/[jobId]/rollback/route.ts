@@ -47,7 +47,7 @@ export async function POST(
   // but never hand it a job id from another tenant in the first place.
   const { data: job, error: jobErr } = await supabase
     .from('crm_import_jobs')
-    .select('id, source_type, status, started_at, created_at')
+    .select('id, source_type, status, started_at, created_at, stats')
     .eq('id', jobId)
     .eq('org_id', profile.organization_id)
     .maybeSingle();
@@ -76,7 +76,25 @@ export async function POST(
   const STALE_AFTER_MS = 15 * 60 * 1000;
   if (job.status === 'processing') {
     const startedAt = new Date(job.started_at ?? job.created_at).getTime();
-    if (Number.isFinite(startedAt) && Date.now() - startedAt < STALE_AFTER_MS) {
+    const stats =
+      job.stats && typeof job.stats === 'object' && !Array.isArray(job.stats)
+        ? (job.stats as Record<string, unknown>)
+        : null;
+    const lastPassAt =
+      typeof stats?.last_pass_at === 'string'
+        ? new Date(stats.last_pass_at).getTime()
+        : Number.NaN;
+    const lastActivityAt = Math.max(
+      ...[startedAt, lastPassAt].filter(Number.isFinite),
+    );
+
+    // Each resumable pass records stats.last_pass_at. Using only started_at
+    // makes a healthy long-running job look abandoned after 15 minutes and
+    // allows Undo to race the next pass, producing a partially restored file.
+    if (
+      Number.isFinite(lastActivityAt) &&
+      Date.now() - lastActivityAt < STALE_AFTER_MS
+    ) {
       return NextResponse.json(
         {
           error:
