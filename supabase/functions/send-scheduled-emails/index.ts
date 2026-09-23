@@ -23,6 +23,7 @@ import {
 } from '../_shared/cron-auth.ts';
 import { FALLBACK_FROM_EMAIL } from '../_shared/email-sender.ts';
 import { MESSAGE_IDENTITY_CONFLICT_TARGET } from '../_shared/inbox-message-identity.ts';
+import { resolveScheduledEmailAttachments } from '../_shared/scheduled-email-attachments.ts';
 
 async function getOrgEmailConfig(supabaseClient: any, organizationId: string) {
   const { data: settings } = await supabaseClient
@@ -121,6 +122,18 @@ serve(async (req) => {
         const authorEmail = authUser?.user?.email || orgConfig.fromEmail;
         const authorName = author?.full_name || orgConfig.fromName;
 
+        // Draft attachments are durable Storage references, not provider-ready
+        // content. Resolve every requested file before submitting anything so
+        // one missing/cross-tenant object keeps the draft for retry instead of
+        // silently sending a truncated message.
+        const resolvedAttachments = await resolveScheduledEmailAttachments(
+          draft.attachments,
+          draft.org_id,
+          {
+            download: async (bucket, path) => await supabase.storage.from(bucket).download(path),
+          }
+        );
+
         // Send via Resend
         const resendPayload: Record<string, unknown> = {
           from: `${authorName} <${orgConfig.fromEmail}>`,
@@ -134,6 +147,9 @@ serve(async (req) => {
         }
         if (draft.bcc_addresses && (draft.bcc_addresses as unknown[]).length > 0) {
           resendPayload.bcc = (draft.bcc_addresses as Array<{ email: string }>).map(r => r.email);
+        }
+        if (resolvedAttachments.length > 0) {
+          resendPayload.attachments = resolvedAttachments;
         }
 
         const resendRes = await fetch('https://api.resend.com/emails', {
@@ -172,6 +188,7 @@ serve(async (req) => {
             body_text: draft.body_text || draft.body_html?.replace(/<[^>]*>/g, '') || null,
             cc_addresses: draft.cc_addresses || [],
             bcc_addresses: draft.bcc_addresses || [],
+            attachments: draft.attachments || [],
             message_id: messageId,
             status: 'sent',
             sent_at: now,
@@ -210,7 +227,7 @@ serve(async (req) => {
               first_message_at: now,
               tags: [],
               labels: [],
-              metadata: {},
+              metadata: { has_attachments: resolvedAttachments.length > 0 },
             })
             .select()
             .single();
@@ -230,6 +247,7 @@ serve(async (req) => {
               body_text: draft.body_text || draft.body_html?.replace(/<[^>]*>/g, '') || null,
               cc_addresses: draft.cc_addresses || [],
               bcc_addresses: draft.bcc_addresses || [],
+              attachments: draft.attachments || [],
               message_id: messageId,
               status: 'sent',
               sent_at: now,
