@@ -224,7 +224,7 @@ export function NotesPanel({ recordId, notes, orgId, hasLegacyNotes = false }: N
   const lastSavedBodyRef = useRef('');
   const autosavedNoteIdRef = useRef<string | null>(null);
   const savingRef = useRef(false);
-  const pendingCloseRef = useRef(false);
+  const pendingPersistRef = useRef<'autosave' | 'submit' | null>(null);
   const discardOnCloseRef = useRef(false);
   newNoteRef.current = newNote;
   newNoteDateRef.current = newNoteDate;
@@ -357,7 +357,7 @@ export function NotesPanel({ recordId, notes, orgId, hasLegacyNotes = false }: N
     autosavedNoteIdRef.current = null;
     lastSavedBodyRef.current = '';
     setSaveState('idle');
-    pendingCloseRef.current = false;
+    pendingPersistRef.current = null;
   }, []);
 
   const persistDraft = useCallback(
@@ -373,7 +373,11 @@ export function NotesPanel({ recordId, notes, orgId, hasLegacyNotes = false }: N
         return;
       }
       if (savingRef.current) {
-        if (mode === 'submit') pendingCloseRef.current = true;
+        // Coalesce edits made during an in-flight request. An explicit submit
+        // wins because it must persist the newest body before closing.
+        if (mode === 'submit' || pendingPersistRef.current === null) {
+          pendingPersistRef.current = mode;
+        }
         return;
       }
 
@@ -382,6 +386,7 @@ export function NotesPanel({ recordId, notes, orgId, hasLegacyNotes = false }: N
       setSaveState('saving');
       const sanitizedBody = sanitizeNoteHtml(draft.trim());
       const noteDate = backdatedNoteDateOrNull(date, localDateInputValue());
+      let saved = false;
 
       try {
         const existingId = autosavedNoteIdRef.current;
@@ -431,13 +436,20 @@ export function NotesPanel({ recordId, notes, orgId, hasLegacyNotes = false }: N
         setAutosavedNoteId(optimistic.id);
         setOptimisticNotes((prev) => [optimistic, ...prev.filter((n) => n.id !== optimistic.id)]);
         setSaveState('saved');
-        if (mode === 'submit' || pendingCloseRef.current) {
-          if (mode === 'submit' && !existingId) {
-            toast.success(toastCopy.added('Note'));
-          } else if (mode === 'submit') {
-            toast.success(toastCopy.saved('Note'));
+        saved = true;
+        if (mode === 'submit') {
+          if (noteNeedsAutosave(newNoteRef.current, lastSavedBodyRef.current)) {
+            // The user kept typing after pressing Done/Cmd+Enter. Persist that
+            // newer snapshot before the submit path is allowed to close.
+            pendingPersistRef.current = 'submit';
+          } else {
+            if (!existingId) {
+              toast.success(toastCopy.added('Note'));
+            } else {
+              toast.success(toastCopy.saved('Note'));
+            }
+            closeComposer();
           }
-          closeComposer();
         }
       } catch (error) {
         console.error('Failed to save note:', error);
@@ -446,12 +458,14 @@ export function NotesPanel({ recordId, notes, orgId, hasLegacyNotes = false }: N
       } finally {
         savingRef.current = false;
         setIsSubmitting(false);
-        if (pendingCloseRef.current && lastSavedBodyRef.current === draft.trim()) {
-          pendingCloseRef.current = false;
-          closeComposer();
-        } else if (pendingCloseRef.current) {
-          pendingCloseRef.current = false;
-          void persistDraft('submit');
+        const pending = pendingPersistRef.current;
+        pendingPersistRef.current = null;
+        if (saved && pending) {
+          if (noteNeedsAutosave(newNoteRef.current, lastSavedBodyRef.current)) {
+            void persistDraft(pending);
+          } else if (pending === 'submit') {
+            closeComposer();
+          }
         }
       }
     },
@@ -589,7 +603,7 @@ export function NotesPanel({ recordId, notes, orgId, hasLegacyNotes = false }: N
                   onClick={() => {
                     discardOnCloseRef.current = !autosavedNoteId;
                     if (autosavedNoteId) {
-                      closeComposer();
+                      void persistDraft('submit');
                     } else {
                       setIsAdding(false);
                       setNewNote('');
