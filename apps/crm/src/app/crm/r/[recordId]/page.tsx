@@ -117,7 +117,10 @@ async function RecordDetailContent({ params }: PageProps) {
     // (forensic trail in crm_audit_log), silently forward the user to the
     // surviving keeper with a `merged_from=` hint so the destination page
     // can surface a one-time toast.
-    const resolution = await resolveRecordOrMergeDestination(recordId);
+    const resolution = await resolveRecordOrMergeDestination(
+      recordId,
+      profile.organization_id,
+    );
     if (resolution.kind === 'merged') {
       redirect(`/crm/r/${resolution.keeperId}?merged_from=${recordId}`);
     }

@@ -53,11 +53,9 @@ async function recordExistsForUser(recordId: string): Promise<boolean> {
 }
 
 /**
- * Read the audit log with service-role credentials. The audit log is
- * org-scoped already and we only return data about records the caller
- * either originally had access to (we require an ID they were already
- * trying to open) or will have access to after the redirect (same org
- * is enforced by the merge RPC). No information leak.
+ * Read the audit log with service-role credentials. Every query must carry
+ * the authenticated caller's organization because service-role access
+ * bypasses RLS and record ids alone are not an authorization boundary.
  */
 function adminClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -130,7 +128,8 @@ function hopFromAuditRow(
  */
 async function findMergeHopFromAudit(
   admin: AdminClient,
-  cursor: string
+  cursor: string,
+  organizationId: string
 ): Promise<{ mergedAt: string | null; keeperId: string } | null> {
   const c = normalizeRecordId(cursor);
 
@@ -152,6 +151,7 @@ async function findMergeHopFromAudit(
         .select('diff, created_at')
         .in('entity', ['record', 'crm_records'])
         .eq('action', 'merge')
+        .eq('org_id', organizationId)
         .eq('diff->>deleted_id', c)
         .order('created_at', { ascending: false })
         .limit(1)
@@ -169,6 +169,7 @@ async function findMergeHopFromAudit(
               .select('diff, created_at')
               .in('entity', ['record', 'crm_records'])
               .eq('action', 'merge')
+              .eq('org_id', organizationId)
               .eq('entity_id', cursor)
               .order('created_at', { ascending: false })
               .limit(1)
@@ -183,6 +184,7 @@ async function findMergeHopFromAudit(
         .select('diff, created_at')
         .in('entity', ['record', 'crm_records'])
         .eq('action', 'merge')
+        .eq('org_id', organizationId)
         .eq('diff->deleted_snapshot->>id', c)
         .order('created_at', { ascending: false })
         .limit(1)
@@ -204,9 +206,10 @@ async function findMergeHopFromAudit(
 }
 
 export async function resolveRecordOrMergeDestination(
-  recordId: string
+  recordId: string,
+  organizationId: string
 ): Promise<ResolveRecordResult> {
-  if (!recordId) return { kind: 'missing' };
+  if (!recordId || !isUuid(organizationId)) return { kind: 'missing' };
   // A segment that is not a uuid is not a record id and never was one, so
   // there is nothing for the audit walk to find. Returning here keeps the raw
   // segment away from every uuid column at once (PI-2).
@@ -229,7 +232,7 @@ export async function resolveRecordOrMergeDestination(
   let lastMergedAt: string | null = null;
 
   for (let hop = 0; hop < 10; hop++) {
-    const hopResult = await findMergeHopFromAudit(admin, cursor);
+    const hopResult = await findMergeHopFromAudit(admin, cursor, organizationId);
     if (!hopResult) break;
 
     cursor = hopResult.keeperId;
@@ -243,6 +246,7 @@ export async function resolveRecordOrMergeDestination(
       .from('crm_records')
       .select('id, title')
       .eq('id', cursor)
+      .eq('org_id', organizationId)
       .maybeSingle();
 
     if (keeper?.id) {

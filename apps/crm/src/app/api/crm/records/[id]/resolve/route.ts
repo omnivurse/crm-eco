@@ -11,8 +11,9 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthUser } from '@/lib/supabase-server';
+import { getAuthProfile, getAuthUser } from '@/lib/supabase-server';
 import { resolveRecordOrMergeDestination } from '@/lib/crm/resolve-record';
+import { getActiveTenant } from '@/lib/tenant';
 
 export async function GET(
   _request: NextRequest,
@@ -20,13 +21,27 @@ export async function GET(
 ) {
   const { id } = await params;
 
-  const user = await getAuthUser();
+  const { user } = await getAuthUser();
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  const profile = await getAuthProfile();
+  if (!profile) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+  // Match the CRM shell: organization_members can grant access even when the
+  // legacy profiles.crm_role field is empty, including for the home tenant.
+  const activeTenant = profile.crm_role ? null : await getActiveTenant();
+  const admittedViaTenant =
+    activeTenant !== null &&
+    ['owner', 'super_admin', 'admin', 'staff'].includes(activeTenant.role);
+  if (!profile.crm_role && !admittedViaTenant) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
   try {
-    const result = await resolveRecordOrMergeDestination(id);
+    const result = await resolveRecordOrMergeDestination(id, profile.organization_id);
     return NextResponse.json(result, { status: 200 });
   } catch (err) {
     console.error('[resolve-record] error:', err);
