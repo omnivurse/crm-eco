@@ -333,12 +333,15 @@ export default function CampaignsPage() {
           break;
         }
         case 'resume': {
-          // Resume paused campaign
-          const { error } = await supabase
-            .from('email_campaigns')
-            .update({ status: 'sending' })
-            .eq('id', campaignId);
-          if (error) throw error;
+          // Resume through the worker entry point. A bare status update leaves
+          // all remaining recipients pending forever.
+          const response = await fetch(`/api/campaigns/${campaignId}/send`, {
+            method: 'POST',
+          });
+          if (!response.ok) {
+            const payload = await response.json().catch(() => ({}));
+            throw new Error(payload.detail || payload.error || 'Failed to resume campaign');
+          }
           break;
         }
         case 'duplicate': {
