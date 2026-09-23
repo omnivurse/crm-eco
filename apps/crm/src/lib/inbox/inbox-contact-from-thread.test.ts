@@ -4,6 +4,7 @@ import {
   conversationNoteToInsert,
   findThreadParticipant,
   overlayExtractedContact,
+  resolveInboxContactCandidate,
   resolveInboxContactCategory,
 } from './inbox-contact-from-thread';
 
@@ -34,11 +35,13 @@ describe('findThreadParticipant', () => {
       },
     ];
     expect(findThreadParticipant(conversation, messages, 'FRANK@BANK.COM')?.email).toBe(
-      'frank@bank.com',
+      'frank@bank.com'
     );
     expect(findThreadParticipant(conversation, messages, 'pat@vendor.com')?.name).toBe('Pat');
     expect(findThreadParticipant(conversation, messages, 'stranger@elsewhere.com')).toBeNull();
-    expect(findThreadParticipant(conversation, messages, 'wendy@payitforwardhealth.com')).toBeNull();
+    expect(
+      findThreadParticipant(conversation, messages, 'wendy@payitforwardhealth.com')
+    ).toBeNull();
   });
 });
 
@@ -65,7 +68,28 @@ describe('overlay + payload', () => {
     const prefix = 'Email: “ACH setup” — Sep 8, 2026';
     expect(conversationNoteToInsert(prefix, prefix)).toBeNull();
     expect(conversationNoteToInsert(`${prefix}\nTalked wholesale.`, prefix)).toBe(
-      `${prefix}\nTalked wholesale.`,
+      `${prefix}\nTalked wholesale.`
     );
+  });
+});
+
+describe('resolveInboxContactCandidate', () => {
+  it('uses the participant name instead of an arbitrary shared-email row', () => {
+    const candidates = [
+      { id: 'record-a', title: 'Alex Morgan' },
+      { id: 'record-b', title: 'Jordan Morgan' },
+    ];
+
+    expect(resolveInboxContactCandidate(candidates, ' Jordan   Morgan ')).toEqual(candidates[1]);
+  });
+
+  it('fails closed when a shared email does not identify one person', () => {
+    const candidates = [
+      { id: 'record-a', title: 'Alex Morgan' },
+      { id: 'record-b', title: 'Jordan Morgan' },
+    ];
+
+    expect(resolveInboxContactCandidate(candidates, null)).toBeNull();
+    expect(resolveInboxContactCandidate(candidates, 'Morgan Family')).toBeNull();
   });
 });

@@ -65,6 +65,104 @@ describe('POST /api/inbox/[id]/notes', () => {
     expect(await res.json()).toMatchObject({ note_id: 'note-2', record_id: 'rec-1', linked: false });
   });
 
+  it('keeps the linked contact when another record shares the participant email', async () => {
+    const built = buildSupabaseClient(
+      {
+        crm_records: { data: { id: 'rec-1', org_id: 'org-1', email: 'frank@bank.com' } },
+        crm_notes: { data: { id: 'note-2' } },
+      },
+      {
+        rpcResults: {
+          check_crm_duplicate: {
+            data: [
+              { id: 'wrong-record', title: 'Another Person' },
+              { id: 'rec-1', title: 'Frank Burnham' },
+            ],
+          },
+        },
+      },
+    );
+    supabase = built.client;
+    const req = buildRequest('http://localhost/api/inbox/x/notes', {
+      method: 'POST',
+      body: { email: 'frank@bank.com', body: 'Email: “ACH setup”\nFollow-up Tuesday.' },
+    });
+
+    const res = await POST(req, { params: Promise.resolve({ id: CONV.id }) });
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ record_id: 'rec-1' });
+    expect(supabase.rpc).not.toHaveBeenCalled();
+  });
+
+  it('matches the participant name when an unlinked email is shared', async () => {
+    mockGetConversation.mockResolvedValue({
+      ...CONV,
+      contact_id: null,
+      contact_name: 'Frank Burnham',
+    });
+    mockGetMessages.mockResolvedValue({
+      messages: [{ ...MESSAGES[0], from_name: 'Frank Burnham' }],
+      total: 1,
+      hasMore: false,
+    });
+    const built = buildSupabaseClient(
+      {
+        crm_modules: { data: { id: 'mod-contacts' } },
+        crm_records: { data: { id: 'rec-1', org_id: 'org-1', email: 'frank@bank.com' } },
+        crm_notes: { data: { id: 'note-2' } },
+      },
+      {
+        rpcResults: {
+          check_crm_duplicate: {
+            data: [
+              { id: 'wrong-record', title: 'Another Person' },
+              { id: 'rec-1', title: 'Frank Burnham' },
+            ],
+          },
+        },
+      },
+    );
+    supabase = built.client;
+    const req = buildRequest('http://localhost/api/inbox/x/notes', {
+      method: 'POST',
+      body: { email: 'frank@bank.com', body: 'Email: “ACH setup”\nFollow-up Tuesday.' },
+    });
+
+    const res = await POST(req, { params: Promise.resolve({ id: CONV.id }) });
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ record_id: 'rec-1', linked: true });
+  });
+
+  it('fails closed when a shared email does not identify one participant', async () => {
+    mockGetConversation.mockResolvedValue({ ...CONV, contact_id: null });
+    const built = buildSupabaseClient(
+      { crm_modules: { data: { id: 'mod-contacts' } } },
+      {
+        rpcResults: {
+          check_crm_duplicate: {
+            data: [
+              { id: 'record-a', title: 'Alex Morgan' },
+              { id: 'record-b', title: 'Jordan Morgan' },
+            ],
+          },
+        },
+      },
+    );
+    supabase = built.client;
+    const req = buildRequest('http://localhost/api/inbox/x/notes', {
+      method: 'POST',
+      body: { email: 'frank@bank.com', body: 'Email: “ACH setup”\nFollow-up Tuesday.' },
+    });
+
+    const res = await POST(req, { params: Promise.resolve({ id: CONV.id }) });
+
+    expect(res.status).toBe(409);
+    expect(await res.json()).toMatchObject({ code: 'AMBIGUOUS_CONTACT' });
+    expect(mockUpdateConversation).not.toHaveBeenCalled();
+  });
+
   it('rejects an empty note', async () => {
     const req = buildRequest('http://localhost/api/inbox/x/notes', {
       method: 'POST',
