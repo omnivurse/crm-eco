@@ -1,4 +1,10 @@
-import { parseCoverageConfig, sponsorInvoiceAmount } from '@crm-eco/rates';
+import {
+  applyCoverageToCharge,
+  CORE_MEMBERSHIP_CODE,
+  findCoverageRule,
+  parseCoverageConfig,
+  sponsorInvoiceAmount,
+} from '@crm-eco/rates';
 import type { SponsorInvoiceDraft, SponsorInvoiceLine, SponsorRelationship } from './types';
 
 export interface BillableSponsorship {
@@ -16,6 +22,22 @@ export interface BillableSponsorship {
   end_date: string | null;
   /** plans.metadata (or a coverage object). No rule keeps today's full amount. */
   coverage?: unknown;
+}
+
+/**
+ * Sponsored enrollment currently has no split-tender collection step.
+ * Legacy plans without an explicit rule remain fully sponsor-paid.
+ */
+export function requiredMemberPaymentForSponsoredEnrollment(
+  listAmount: number,
+  coverage: unknown,
+): number {
+  const config = parseCoverageConfig(coverage);
+  if (!findCoverageRule(config, CORE_MEMBERSHIP_CODE)) return 0;
+  return applyCoverageToCharge(
+    { code: CORE_MEMBERSHIP_CODE, listAmount },
+    config,
+  ).memberPays;
 }
 
 export function buildSponsorInvoiceDraft(input: {
