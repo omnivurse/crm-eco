@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { crmRoleForTenantRole } from './tenant-role-mapping';
+import {
+  crmRoleForTenantRole,
+  scopeProfileToActiveTenant,
+} from './tenant-role-mapping';
 
 /**
  * `crmRoleForTenantRole` decides what CRM rights a user gets in an org they
@@ -49,5 +52,66 @@ describe('crmRoleForTenantRole', () => {
     expect(crmRoleForTenantRole('staff')).not.toBe('crm_admin');
     expect(crmRoleForTenantRole('read_only')).not.toBe('crm_admin');
     expect(crmRoleForTenantRole('read_only')).not.toBe('crm_agent');
+  });
+});
+
+describe('scopeProfileToActiveTenant', () => {
+  const homeProfile = {
+    id: 'profile-a',
+    organization_id: 'org-a',
+    role: 'admin',
+    crm_role: 'crm_admin',
+  };
+
+  it('downgrades both role fields when an admin switches into a staff tenant', () => {
+    expect(
+      scopeProfileToActiveTenant(homeProfile, {
+        organizationId: 'org-b',
+        role: 'staff',
+      }),
+    ).toEqual({
+      ...homeProfile,
+      organization_id: 'org-b',
+      role: 'staff',
+      crm_role: 'crm_agent',
+      active_tenant_role: 'staff',
+    });
+  });
+
+  it('maps a read-only tenant to viewer access', () => {
+    expect(
+      scopeProfileToActiveTenant(homeProfile, {
+        organizationId: 'org-b',
+        role: 'read_only',
+      }),
+    ).toMatchObject({
+      organization_id: 'org-b',
+      role: 'read_only',
+      crm_role: 'crm_viewer',
+      active_tenant_role: 'read_only',
+    });
+  });
+
+  it('fails closed for an unknown secondary-tenant role', () => {
+    expect(
+      scopeProfileToActiveTenant(homeProfile, {
+        organizationId: 'org-b',
+        role: 'future_role',
+      }),
+    ).toMatchObject({
+      organization_id: 'org-b',
+      role: 'future_role',
+      crm_role: null,
+      active_tenant_role: 'future_role',
+    });
+  });
+
+  it('preserves primary-org roles when no tenant switch occurred', () => {
+    expect(
+      scopeProfileToActiveTenant(homeProfile, {
+        organizationId: 'org-a',
+        role: 'staff',
+      }),
+    ).toEqual({ ...homeProfile, active_tenant_role: null });
   });
 });

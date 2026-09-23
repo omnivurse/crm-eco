@@ -2,6 +2,7 @@ import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { cache } from 'react';
 import type { Database } from '@crm-eco/lib/types';
 import { getActiveTenant } from '@/lib/tenant';
+import { scopeProfileToActiveTenant } from '@/lib/crm/tenant-role-mapping';
 
 type Profile = Database['public']['Tables']['profiles']['Row'] & { organization_id: string };
 
@@ -49,22 +50,12 @@ async function fetchCurrentProfile(): Promise<CurrentUserProfile | null> {
     advisorId = advisor?.id ?? null;
   }
 
-  // Match getAuthProfile: override organization_id when the user has switched
-  // tenants so reports/tickets scoped via this helper use the active org.
+  // Match every CRM profile helper: scope organization and effective roles as
+  // one operation so home-org privileges never leak into a secondary tenant.
   const tenant = await getActiveTenant();
-  if (tenant && tenant.organizationId !== profile.organization_id) {
-    return {
-      ...profile,
-      organization_id: tenant.organizationId,
-      advisorId,
-      active_tenant_role: tenant.role,
-    } as CurrentUserProfile;
-  }
-
   return {
-    ...profile,
+    ...scopeProfileToActiveTenant(profile, tenant),
     advisorId,
-    active_tenant_role: null,
   } as CurrentUserProfile;
 }
 
