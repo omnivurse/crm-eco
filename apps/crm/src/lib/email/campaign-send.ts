@@ -93,24 +93,25 @@ export async function processCampaignEmails(
   try {
     let totalSent = 0;
     let totalFailed = 0;
-    let offset = 0;
     let hasMore = true;
     let haltedBy: 'paused' | 'cancelled' | undefined;
 
     while (hasMore && !haltedBy) {
+      // Process the first page repeatedly. Successful and failed rows leave
+      // the `pending` result set below, so advancing an offset here would skip
+      // an entire page from the now-smaller set.
       const { data: recipients, error: recipientError } = await supabase
         .from('email_campaign_recipients')
         .select('*')
         .eq('campaign_id', campaignId)
         .eq('status', 'pending')
         .order('id', { ascending: true })
-        .range(offset, offset + MAX_RECIPIENTS_PER_BATCH - 1);
+        .range(0, MAX_RECIPIENTS_PER_BATCH - 1);
 
       if (recipientError) throw new Error('Failed to fetch recipients');
       if (!recipients || recipients.length === 0) break;
 
       hasMore = recipients.length === MAX_RECIPIENTS_PER_BATCH;
-      offset += recipients.length;
 
       for (let i = 0; i < recipients.length; i += BATCH_SIZE) {
         // Check between batches so Pause stops the run rather than only
@@ -134,26 +135,33 @@ export async function processCampaignEmails(
         const sentIds: string[] = [];
         const failedIds: string[] = [];
 
-        for (const result of results) {
+        for (const [index, result] of results.entries()) {
           if (result.status === 'fulfilled' && result.value.success) {
             sentIds.push(result.value.id);
             totalSent++;
           } else {
-            const id = result.status === 'fulfilled' ? result.value.id : '';
-            if (id) failedIds.push(id);
+            // Promise.allSettled preserves input order, so even a rejected
+            // enqueue still maps back to a concrete recipient that must leave
+            // the pending page.
+            const id =
+              result.status === 'fulfilled'
+                ? result.value.id
+                : (batch[index].id as string);
+            failedIds.push(id);
             totalFailed++;
           }
         }
 
         if (sentIds.length > 0) {
-          await supabase
+          const { error } = await supabase
             .from('email_campaign_recipients')
             .update({ status: 'sent', sent_at: new Date().toISOString() })
             .in('id', sentIds);
+          if (error) throw new Error('Failed to mark campaign recipients sent');
         }
 
         if (failedIds.length > 0) {
-          await supabase
+          const { error } = await supabase
             .from('email_campaign_recipients')
             .update({
               status: 'failed',
@@ -161,6 +169,7 @@ export async function processCampaignEmails(
               error_message: 'Failed to enqueue email',
             })
             .in('id', failedIds);
+          if (error) throw new Error('Failed to mark campaign recipients failed');
         }
       }
     }
