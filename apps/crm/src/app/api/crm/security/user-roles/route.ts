@@ -5,6 +5,7 @@ import type { CrmRole } from '@/lib/crm/types';
 import { logAuditEvent, AuditActions } from '@crm-eco/lib/audit';
 import { crmRoleForCatalogKey } from '@/lib/crm/catalog-role-map';
 import { revokeUserSessions } from '@/lib/security/revoke-sessions';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,6 +16,16 @@ const assignSchema = z.object({
   /** When true (default), sync profiles.crm_role for known system catalog keys */
   sync_crm_role: z.boolean().optional().default(true),
 });
+
+function createRoleSyncClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !serviceKey) return null;
+
+  return createSupabaseClient(url, serviceKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+}
 
 /**
  * GET /api/crm/security/user-roles?role_id= | ?profile_id=
@@ -54,8 +65,9 @@ export async function GET(request: NextRequest) {
 
       const { data: assignments, error } = await supabase
         .from('crm_user_roles')
-        .select('id, user_id, role_id, granted_by, created_at')
-        .eq('role_id', roleId);
+        .select('id, organization_id, user_id, role_id, granted_by, created_at')
+        .eq('role_id', roleId)
+        .eq('organization_id', profile.organization_id);
 
       if (error) {
         return NextResponse.json({ error: error.message }, { status: 500 });
@@ -111,8 +123,9 @@ export async function GET(request: NextRequest) {
 
     const { data: assignments, error } = await supabase
       .from('crm_user_roles')
-      .select('id, user_id, role_id, granted_by, created_at, crm_roles(id, key, name, is_system)')
-      .eq('user_id', target.user_id);
+      .select('id, organization_id, user_id, role_id, granted_by, created_at, crm_roles(id, key, name, is_system)')
+      .eq('user_id', target.user_id)
+      .eq('organization_id', profile.organization_id);
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
@@ -177,6 +190,7 @@ export async function POST(request: NextRequest) {
       .select('id')
       .eq('user_id', target.user_id)
       .eq('role_id', role_id)
+      .eq('organization_id', profile.organization_id)
       .maybeSingle();
 
     if (existing) {
@@ -186,11 +200,12 @@ export async function POST(request: NextRequest) {
     const { data: assignment, error } = await supabase
       .from('crm_user_roles')
       .insert({
+        organization_id: profile.organization_id,
         user_id: target.user_id,
         role_id,
         granted_by: profile.id,
       })
-      .select('id, user_id, role_id, granted_by, created_at')
+      .select('id, organization_id, user_id, role_id, granted_by, created_at')
       .single();
 
     if (error) {
@@ -200,31 +215,77 @@ export async function POST(request: NextRequest) {
     let syncedCrmRole: CrmRole | null = null;
     const mapped = crmRoleForCatalogKey(role.key);
     if (sync_crm_role && mapped && target.id !== profile.id) {
-      const { error: crmErr } = await supabase
+      // The successful assignment INSERT above is the authorization proof:
+      // its RLS policy requires an active crm_admin in this exact org. Profile
+      // UPDATE is self-only under RLS, so perform only this already-authorized
+      // sync with the server-side client and compensate if it cannot complete.
+      const roleSyncClient = createRoleSyncClient();
+      if (!roleSyncClient) {
+        const { error: rollbackError } = await supabase
+          .from('crm_user_roles')
+          .delete()
+          .eq('id', assignment.id)
+          .eq('organization_id', profile.organization_id);
+        if (rollbackError) {
+          console.error('[security/user-roles POST] assignment rollback failed', {
+            assignmentId: assignment.id,
+            organizationId: profile.organization_id,
+          });
+        }
+        return NextResponse.json(
+          {
+            error: rollbackError
+              ? 'Role sync is unavailable and assignment rollback failed'
+              : 'Role sync is unavailable; assignment was not saved',
+          },
+          { status: 503 },
+        );
+      }
+
+      const { data: updatedProfile, error: crmErr } = await roleSyncClient
         .from('profiles')
         .update({ crm_role: mapped, updated_at: new Date().toISOString() })
         .eq('id', target.id)
-        .eq('organization_id', profile.organization_id);
-      if (!crmErr) {
-        syncedCrmRole = mapped;
-        await revokeUserSessions(target.user_id, 'role_changed').catch(() => undefined);
-        await logAuditEvent({
-          appSource: 'crm',
-          action: AuditActions.ROLE_CHANGED,
-          actionCategory: 'authorization',
-          riskLevel: 'high',
-          targetEntityType: 'profile',
-          targetEntityId: target.id,
-          targetUserId: target.user_id ?? undefined,
-          description: `Catalog role "${role.key}" assigned; CRM role synced to ${mapped}`,
-          details: {
-            source: 'catalog_role_assign',
-            catalog_role_key: role.key,
-            crm_role: mapped,
-            previous_crm_role: target.crm_role,
-          },
-        }).catch(() => undefined);
+        .eq('organization_id', profile.organization_id)
+        .select('id')
+        .maybeSingle();
+
+      if (crmErr || !updatedProfile) {
+        const { error: rollbackError } = await supabase
+          .from('crm_user_roles')
+          .delete()
+          .eq('id', assignment.id)
+          .eq('organization_id', profile.organization_id);
+        if (rollbackError) {
+          console.error('[security/user-roles POST] assignment rollback failed', {
+            assignmentId: assignment.id,
+            organizationId: profile.organization_id,
+          });
+        }
+        return NextResponse.json(
+          { error: 'Role sync failed; assignment was rolled back' },
+          { status: 500 },
+        );
       }
+
+      syncedCrmRole = mapped;
+      await revokeUserSessions(target.user_id, 'role_changed').catch(() => undefined);
+      await logAuditEvent({
+        appSource: 'crm',
+        action: AuditActions.ROLE_CHANGED,
+        actionCategory: 'authorization',
+        riskLevel: 'high',
+        targetEntityType: 'profile',
+        targetEntityId: target.id,
+        targetUserId: target.user_id ?? undefined,
+        description: `Catalog role "${role.key}" assigned; CRM role synced to ${mapped}`,
+        details: {
+          source: 'catalog_role_assign',
+          catalog_role_key: role.key,
+          crm_role: mapped,
+          previous_crm_role: target.crm_role,
+        },
+      }).catch(() => undefined);
     }
 
     return NextResponse.json(
@@ -263,8 +324,9 @@ export async function DELETE(request: NextRequest) {
     const supabase = await createClient();
     const { data: row } = await supabase
       .from('crm_user_roles')
-      .select('id, user_id, role_id')
+      .select('id, organization_id, user_id, role_id')
       .eq('id', id)
+      .eq('organization_id', profile.organization_id)
       .maybeSingle();
 
     if (!row) {
@@ -283,7 +345,11 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Assignment not in this organization' }, { status: 403 });
     }
 
-    const { error } = await supabase.from('crm_user_roles').delete().eq('id', id);
+    const { error } = await supabase
+      .from('crm_user_roles')
+      .delete()
+      .eq('id', id)
+      .eq('organization_id', profile.organization_id);
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
