@@ -74,9 +74,14 @@ export class NmiPaymentProvider implements PaymentProvider {
   }
 
   async chargeOnce(input: ChargeInput): Promise<ChargeResult> {
-    const vaultId = input.gatewayPaymentProfileId || input.gatewayCustomerId;
+    const billingId =
+      input.gatewayPaymentProfileId &&
+      input.gatewayPaymentProfileId !== input.gatewayCustomerId
+        ? input.gatewayPaymentProfileId
+        : undefined;
     const result = await this.gateway.sale({
-      customerVaultId: vaultId,
+      customerVaultId: input.gatewayCustomerId,
+      billingId,
       amountCents: input.amountCents,
       description: input.description,
       idempotencyKey: input.idempotencyKey,

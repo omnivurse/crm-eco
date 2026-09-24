@@ -116,6 +116,7 @@ describe('NmiClient', () => {
       const body = JSON.parse(String(init?.body));
       expect(body.amount).toBe(80);
       expect(body.payment_details.customer_vault_id).toBe('vault_1');
+      expect(body.payment_details.billing_id).toBe('billing_1');
       expect(body.cit_mit.initiated_by).toBe('merchant');
       expect(body.cit_mit.stored_credential_indicator).toBe('used');
       expect(body.orderid).toBe('enroll-123');
@@ -130,6 +131,7 @@ describe('NmiClient', () => {
 
     const result = await client.sale({
       customerVaultId: 'vault_1',
+      billingId: 'billing_1',
       amountCents: 8000,
       idempotencyKey: 'enroll-123',
     });
@@ -184,10 +186,15 @@ describe('NmiPaymentProvider', () => {
   });
 
   it('vaults an NMI opaque token and charges the vault id', async () => {
-    const fetchImpl = vi.fn(async (url: string) => {
+    const fetchImpl = vi.fn(async (url: string, init?: RequestInit) => {
       if (String(url).includes('/customers')) {
-        return jsonResponse({ id: 'vault_9', response: '1' });
+        return jsonResponse({ id: 'vault_9', billing_id: 'billing_9', response: '1' });
       }
+      const body = JSON.parse(String(init?.body));
+      expect(body.payment_details).toEqual({
+        customer_vault_id: 'vault_9',
+        billing_id: 'billing_9',
+      });
       return jsonResponse({ response: '1', id: 'txn_1' });
     });
     const provider = new NmiPaymentProvider(
@@ -206,13 +213,13 @@ describe('NmiPaymentProvider', () => {
     });
     expect(vault.success).toBe(true);
     expect(vault.gatewayCustomerId).toBe('vault_9');
-    expect(vault.gatewayPaymentProfileId).toBe('vault_9');
+    expect(vault.gatewayPaymentProfileId).toBe('billing_9');
 
     const charge = await provider.chargeOnce({
       organizationId: 'org',
       memberId: 'mem',
       gatewayCustomerId: 'vault_9',
-      gatewayPaymentProfileId: 'vault_9',
+      gatewayPaymentProfileId: 'billing_9',
       amountCents: 2500,
       idempotencyKey: 'retry-1',
     });
