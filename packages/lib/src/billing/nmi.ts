@@ -49,6 +49,8 @@ export interface NmiCreateCustomerResult {
 
 export interface NmiSaleInput {
   customerVaultId: string;
+  /** Selects a specific payment method when the customer has multiple billing records. */
+  billingId?: string;
   amountCents: number;
   description?: string;
   idempotencyKey?: string;
@@ -282,9 +284,13 @@ export class NmiClient {
       citMit.initial_transaction_id = input.initialTransactionId;
     }
 
+    const billingId = input.billingId?.trim();
     const payload: Record<string, unknown> = {
       amount,
-      payment_details: { customer_vault_id: vaultId },
+      payment_details: {
+        customer_vault_id: vaultId,
+        ...(billingId ? { billing_id: billingId } : {}),
+      },
       cit_mit: citMit,
     };
     if (input.description) payload.description = input.description;
