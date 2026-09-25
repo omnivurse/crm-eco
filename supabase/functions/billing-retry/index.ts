@@ -14,6 +14,10 @@ import {
   authorizeInternalEdgeRequest,
   unauthorizedResponse,
 } from '../_shared/cron-auth.ts';
+import {
+  BILLING_RETRY_TRANSACTION_TYPE,
+  billingRetryIdempotencyKey,
+} from '../_shared/billing-retry-claim.ts';
 import { isNmiProcessor, nmiSale } from '../_shared/nmi.ts';
 
 const ALLOWED_ORIGINS = (Deno.env.get('ALLOWED_ORIGINS') || '*').split(',').map(s => s.trim());
@@ -169,7 +173,23 @@ serve(async (req) => {
           continue;
         }
 
-        const charge = await processRetryCharge(supabase, failure.billing_schedules, merchantAuth, apiEndpoint);
+        const charge = await processRetryCharge(
+          supabase,
+          failure.billing_schedules,
+          merchantAuth,
+          apiEndpoint,
+          billingRetryIdempotencyKey(failure.id, nextAttempt)
+        );
+
+        if (charge.skipped) {
+          results.push({
+            failure_id: failure.id,
+            status: 'skipped',
+            attempt: nextAttempt,
+            message: charge.errorMessage ?? 'Retry charge is already processing',
+          });
+          continue;
+        }
 
         if (charge.success) {
           await supabase
@@ -268,33 +288,19 @@ async function processRetryCharge(
   schedule: any,
   merchantAuth: { name: string; transactionKey: string },
   apiEndpoint: string,
-): Promise<{ success: boolean; queued?: boolean; transactionId?: string; errorMessage?: string }> {
+  idempotencyKey: string
+): Promise<{
+  success: boolean;
+  queued?: boolean;
+  skipped?: boolean;
+  transactionId?: string;
+  errorMessage?: string;
+}> {
   const profile = schedule.payment_profiles;
   if (!profile) return { success: false, errorMessage: 'No payment profile' };
 
-  if (profile.payment_type === 'bank_account') {
-    const { data: queued, error: queueError } = await supabase
-      .from('billing_transactions')
-      .insert({
-        organization_id: schedule.organization_id,
-        billing_schedule_id: schedule.id,
-        member_id: schedule.member_id,
-        enrollment_id: schedule.enrollment_id,
-        payment_profile_id: profile.id,
-        transaction_type: 'charge',
-        amount: schedule.amount,
-        status: 'pending',
-        description: 'Retry ACH — queued for NACHA',
-      })
-      .select('id')
-      .single();
-    if (queueError || !queued) {
-      return { success: false, errorMessage: queueError?.message || 'Failed to queue ACH retry for NACHA' };
-    }
-    return { success: true, queued: true, transactionId: queued.id };
-  }
-
-  const { data: transaction } = await supabase
+  const isAch = profile.payment_type === 'bank_account';
+  const { data: transaction, error: transactionError } = await supabase
     .from('billing_transactions')
     .insert({
       organization_id: schedule.organization_id,
@@ -302,22 +308,72 @@ async function processRetryCharge(
       member_id: schedule.member_id,
       enrollment_id: schedule.enrollment_id,
       payment_profile_id: profile.id,
-      transaction_type: 'retry_charge',
+      transaction_type: BILLING_RETRY_TRANSACTION_TYPE,
       amount: schedule.amount,
-      status: 'processing',
-      description: `Retry charge - ${schedule.frequency}`,
-      submitted_at: new Date().toISOString(),
-      idempotency_key: `retry_${schedule.id}_${Date.now()}`,
+      status: isAch ? 'pending' : 'processing',
+      description: isAch ? 'Retry ACH — queued for NACHA' : `Retry charge - ${schedule.frequency}`,
+      submitted_at: isAch ? null : new Date().toISOString(),
+      idempotency_key: idempotencyKey,
     })
     .select('id')
     .single();
 
+  if (transactionError || !transaction) {
+    if (transactionError?.code === '23505') {
+      const { data: existing, error: existingError } = await supabase
+        .from('billing_transactions')
+        .select('id, status, authorize_transaction_id, error_message')
+        .eq('organization_id', schedule.organization_id)
+        .eq('idempotency_key', idempotencyKey)
+        .maybeSingle();
+      if (existingError || !existing) {
+        return {
+          success: false,
+          skipped: true,
+          errorMessage: 'Retry charge was already claimed but could not be read',
+        };
+      }
+      if (existing.status === 'success') {
+        return {
+          success: true,
+          transactionId: existing.authorize_transaction_id || existing.id,
+        };
+      }
+      if (isAch && existing.status === 'pending') {
+        return { success: true, queued: true, transactionId: existing.id };
+      }
+      if (existing.status === 'failed') {
+        return {
+          success: false,
+          transactionId: existing.id,
+          errorMessage: existing.error_message || 'Retry charge failed',
+        };
+      }
+      return {
+        success: false,
+        skipped: true,
+        transactionId: existing.id,
+        errorMessage: 'Retry charge is already processing',
+      };
+    }
+    return {
+      success: false,
+      skipped: true,
+      errorMessage: transactionError?.message || 'Failed to claim retry charge',
+    };
+  }
+
+  if (isAch) {
+    return { success: true, queued: true, transactionId: transaction.id };
+  }
+
   if (isNmiProcessor(profile.processor)) {
     const nmi = await nmiSale({
-      customerVaultId: profile.authorize_payment_profile_id || profile.authorize_customer_profile_id,
+      customerVaultId:
+        profile.authorize_payment_profile_id || profile.authorize_customer_profile_id,
       amountDollars: Number(schedule.amount),
       description: `Retry charge - ${schedule.frequency}`,
-      idempotencyKey: transaction?.id,
+      idempotencyKey,
     });
     if (nmi.success && nmi.transactionId) {
       await supabase
