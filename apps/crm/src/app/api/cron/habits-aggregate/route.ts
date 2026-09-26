@@ -4,7 +4,7 @@
  * Nightly (0 tokens): aggregate crm_recently_viewed + crm_user_signals
  * into profiles.ui_preferences.habits for active users. Purges signals >90d.
  *
- * Auth: x-vercel-cron header or Authorization: Bearer CRON_SECRET
+ * Auth: Authorization: Bearer CRON_SECRET
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -20,7 +20,6 @@ export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
 function authorised(request: NextRequest): boolean {
-  if (request.headers.get('x-vercel-cron')) return true;
   const secret = process.env.CRON_SECRET;
   if (!secret) return false;
   const auth = request.headers.get('authorization');
