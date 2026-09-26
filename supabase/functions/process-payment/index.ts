@@ -15,6 +15,7 @@ import {
   nmiSale,
 } from '../_shared/nmi.ts';
 import { persistAchVault } from '../_shared/ach-vault.ts';
+import { canProcessRefund } from './payment-policy.ts';
 
 const ALLOWED_ORIGINS = (Deno.env.get('ALLOWED_ORIGINS') || '*').split(',').map(s => s.trim());
 
@@ -161,7 +162,7 @@ serve(async (req) => {
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('organization_id')
+      .select('organization_id, role, is_active')
       .eq('user_id', user.id)
       .single();
 
@@ -174,6 +175,13 @@ serve(async (req) => {
 
     const organizationId = profile.organization_id;
     const body: PaymentRequest = await req.json();
+
+    if (body.action === 'refund' && !canProcessRefund(profile)) {
+      return new Response(
+        JSON.stringify({ error: 'Only active financial administrators can process refunds' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Get Authorize.Net credentials (supports RUNBOOK AUTHNET_* aliases)
     const apiLoginId =
