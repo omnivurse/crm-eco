@@ -8,6 +8,7 @@ import {
 } from '@crm-eco/lib/gizmo';
 import { ADVISOR_PORTAL_HOWTO, ADVISOR_PORTAL_PLACES } from '@crm-eco/lib/gizmo/catalogs/advisor-portal';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
+import { canUseAdvisorGizmo } from '@/lib/gizmo/access';
 import { searchAdvisorRecords } from '@/lib/gizmo/search-records';
 
 export const dynamic = 'force-dynamic';
@@ -23,11 +24,11 @@ export async function POST(request: NextRequest) {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, advisor_role')
+    .select('id, advisor_role, is_active')
     .eq('user_id', user.id)
     .maybeSingle();
 
-  if (!profile?.advisor_role) {
+  if (!canUseAdvisorGizmo(profile)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
