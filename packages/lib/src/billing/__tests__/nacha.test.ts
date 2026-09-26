@@ -11,6 +11,7 @@ import {
   matchSettlementOffsetReturn,
   mergeAchOriginatorInput,
   missingAchOriginatorFields,
+  nachaServiceClassCode,
   nachaTransactionCode,
   nextFileIdModifier,
   parseAchOriginator,
@@ -143,7 +144,7 @@ describe('generateNachaFile', () => {
     expect(file.debitCents).toBe(1000);
     expect(file.creditCents).toBe(1000);
     expect(file.debitCents).toBe(file.creditCents);
-    expect(file.serviceClassCode).toBe('225');
+    expect(file.serviceClassCode).toBe('200');
     expect(file.entryHash).toBe((2100002 + 2100002) % 10_000_000_000);
     expect(file.fileName).toBe('NACHA_20260920_183045.txt');
 
@@ -154,7 +155,7 @@ describe('generateNachaFile', () => {
     expect(header[33]).toBe('A');
 
     const batch = file.lines[1];
-    expect(batch.slice(0, 4)).toBe('5225');
+    expect(batch.slice(0, 4)).toBe('5200');
     expect(batch.slice(50, 53)).toBe('PPD');
 
     expect(file.lines[2].slice(1, 3)).toBe('27');
@@ -184,7 +185,7 @@ describe('generateNachaFile', () => {
       createdAt,
       fileIdModifier: 'A',
     });
-    expect(file.serviceClassCode).toBe('225');
+    expect(file.serviceClassCode).toBe('200');
     expect(file.lines[2].slice(1, 3)).toBe('32');
     expect(file.lines[3].slice(1, 3)).toBe('27');
     expect(file.debitCents).toBe(file.creditCents);
@@ -201,9 +202,16 @@ describe('generateNachaFile', () => {
     });
     expect(file.debitCents).toBe(1500);
     expect(file.creditCents).toBe(1500);
-    expect(file.serviceClassCode).toBe('225');
+    expect(file.serviceClassCode).toBe('200');
     expect(file.lines[3].slice(1, 3)).toBe('22');
     expect(file.traces.at(-1)?.accountLast4).toBe('7788');
+  });
+
+  it('maps debit and credit composition to NACHA service class codes', () => {
+    expect(nachaServiceClassCode(true, true)).toBe('200');
+    expect(nachaServiceClassCode(false, true)).toBe('220');
+    expect(nachaServiceClassCode(true, false)).toBe('225');
+    expect(() => nachaServiceClassCode(false, false)).toThrow(NachaGenerateError);
   });
 
   it('does not add a second offset when charges and refunds already net to zero', () => {

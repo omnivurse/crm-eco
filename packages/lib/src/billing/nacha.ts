@@ -148,6 +148,17 @@ export function nachaTransactionCode(
   return accountType === 'savings' ? '32' : '22';
 }
 
+/**
+ * NACHA Service Class Codes describe the entries in a batch:
+ * 200 = mixed debits/credits, 220 = credits only, 225 = debits only.
+ */
+export function nachaServiceClassCode(hasDebit: boolean, hasCredit: boolean): string {
+  if (hasDebit && hasCredit) return '200';
+  if (hasCredit) return '220';
+  if (hasDebit) return '225';
+  throw new NachaGenerateError('A NACHA batch must contain at least one debit or credit');
+}
+
 /** Live payment_profiles store last4 on last_four and sometimes account_last4. */
 export function coalesceAccountLast4(
   accountLast4?: string | null,
@@ -363,7 +374,7 @@ export function generateNachaFile(input: GenerateNachaInput): NachaFileResult {
 
   const hasDebit = debitCents > 0;
   const hasCredit = creditCents > 0;
-  const serviceClassCode = hasDebit && hasCredit ? '225' : hasDebit ? '220' : '200';
+  const serviceClassCode = nachaServiceClassCode(hasDebit, hasCredit);
   const entryHash = entryHashFromRoutings(routings);
   const entryDescription = hasDebit && !hasCredit ? 'PAYMENT' : !hasDebit && hasCredit ? 'REFUND' : 'PAYMENT';
 
