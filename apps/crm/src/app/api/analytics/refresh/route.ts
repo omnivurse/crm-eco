@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient, getAuthProfile } from '@/lib/supabase-server';
+import { createServiceRoleClient } from '@crm-eco/lib/supabase/server';
+import { getAuthProfile } from '@/lib/supabase-server';
 import { timingSafeEqual } from 'crypto';
 
 export const dynamic = 'force-dynamic';
@@ -40,7 +41,10 @@ export async function POST(request: NextRequest) {
       authorized = true;
     }
 
-    const supabase = await createClient();
+    // These refresh RPCs are server-only (no `authenticated` EXECUTE), so this
+    // route holds a service-role client. The authorization gate above is the
+    // only thing protecting it -- do not move the client above that gate.
+    const supabase = createServiceRoleClient();
 
     // 1. Refresh materialized views
     const { data: mvResult, error: mvError } = await supabase.rpc('refresh_reporting_views');
@@ -48,8 +52,16 @@ export async function POST(request: NextRequest) {
     // 2. Refresh advisor commission summaries for current month
     const { data: summaryCount, error: summaryError } = await supabase.rpc('refresh_advisor_commission_summary');
 
-    // 3. Daily org KPI snapshots
-    const { data: snapshotCount, error: snapshotError } = await supabase.rpc('project_daily_analytics_snapshots');
+    // 3. Daily org KPI snapshots.
+    // project_daily_analytics_snapshots exists in the database but is absent
+    // from the generated Database types, so its name is not in the rpc() union.
+    // Cast only this call -- the two refresh RPCs above stay fully typed.
+    // Remove the cast after `npm run db:generate-types` picks the function up.
+    const { data: snapshotCount, error: snapshotError } = await (
+      supabase.rpc as unknown as (
+        fn: 'project_daily_analytics_snapshots'
+      ) => Promise<{ data: number | null; error: { message: string } | null }>
+    )('project_daily_analytics_snapshots');
 
     const result = {
       materialized_views: mvError ? { error: mvError.message } : mvResult,
