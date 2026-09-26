@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase-server';
+import { createServiceRoleClient } from '@crm-eco/lib/supabase/server';
 import {
   assertCommissionBatchOrgAccess,
   requireCrmOrgContext,
 } from '@/lib/crm/require-crm-org';
+import { asPayoutRpcResult, payoutRpcNumber } from '@/lib/payouts/rpc-result';
 
 export const dynamic = 'force-dynamic';
 
@@ -43,7 +44,7 @@ export async function POST(
 
     const { batchId } = await params;
     const body = await request.json().catch(() => ({}));
-    const supabase = await createClient();
+    const supabase = createServiceRoleClient();
 
     const batchAccess = await assertCommissionBatchOrgAccess(supabase, batchId, orgCtx.orgId);
     if (!batchAccess.ok) {
@@ -71,19 +72,23 @@ export async function POST(
     if (error) throw error;
 
     // Check for RPC-level compliance blocks
-    if (data?.error) {
+    const result = asPayoutRpcResult(data);
+    if (result?.error) {
       let status = 409;
-      if (data.code === 'SELF_APPROVE_BLOCKED') status = 403;
-      if (data.code === 'DUPLICATE_APPROVAL') status = 409;
+      if (result.code === 'SELF_APPROVE_BLOCKED') status = 403;
+      if (result.code === 'DUPLICATE_APPROVAL') status = 409;
       return NextResponse.json(
-        { error: data.error, code: data.code },
+        { error: result.error, code: result.code },
         { status }
       );
     }
 
+    const anomalyResult = asPayoutRpcResult(anomalies);
+    const flagsRaised = payoutRpcNumber(anomalyResult, 'flags_raised') ?? 0;
+
     return NextResponse.json({
-      ...data,
-      anomalies: anomalies?.flags_raised > 0 ? anomalies : null,
+      ...(result ?? {}),
+      anomalies: flagsRaised > 0 ? anomalies : null,
     });
   } catch (error) {
     console.error('Error approving payout batch:', error);

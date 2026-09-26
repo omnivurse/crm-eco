@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createServiceRoleClient } from '@crm-eco/lib/supabase/server';
 import { createClient as createSessionClient } from '@/lib/supabase-server';
 import { executeBatch } from '@/lib/payouts/execute-batch';
 import {
@@ -8,14 +8,6 @@ import {
 } from '@/lib/crm/require-crm-org';
 
 export const dynamic = 'force-dynamic';
-
-// Use service role for provider transaction management
-function getServiceClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-}
 
 /**
  * POST /api/commissions/payouts/[batchId]/execute
@@ -57,7 +49,7 @@ export async function POST(
       return NextResponse.json({ error: batchAccess.error }, { status: batchAccess.status });
     }
 
-    const supabase = getServiceClient();
+    const supabase = createServiceRoleClient();
 
     const result = await executeBatch(supabase, batchId, providerId);
 
