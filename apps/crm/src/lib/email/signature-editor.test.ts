@@ -30,6 +30,16 @@ const WENDY_LOGO =
 const NEW_LOGO =
   'https://crm.doublehelixhub.com/api/email/public-assets/11111111-1111-4111-8111-111111111111';
 
+const CUSTOM_HTML = `<p><strong>Ada Lovelace</strong><br />
+  <a href="https://example.com/calendar">Book time</a>
+</p>
+<p>Confidentiality notice: intended recipients only.</p>`;
+
+const CUSTOM_STYLED_HTML = `<div style="border-top: 2px solid #0E8C9A">
+  <strong>Ada Lovelace</strong>
+  <p>Custom legal and scheduling content.</p>
+</div>`;
+
 const fallback = {
   full_name: 'Profile Name',
   title: 'Profile Title',
@@ -50,6 +60,17 @@ describe('detectSignatureLayout', () => {
     expect(
       detectSignatureLayout('<img src="/signatures/pifh-signature-banner.png" alt="PIFH" />'),
     ).toBe('pifh-banner');
+  });
+
+  it('uses explicit markers for generated minimal layouts', () => {
+    const html = renderEditorSignatureHtml('minimal', fallback, '');
+    expect(html).toContain('data-signature-layout="minimal"');
+    expect(detectSignatureLayout(html)).toBe('minimal');
+  });
+
+  it('does not classify unmarked custom HTML as a built-in layout', () => {
+    expect(detectSignatureLayout(CUSTOM_HTML)).toBeNull();
+    expect(detectSignatureLayout(CUSTOM_STYLED_HTML)).toBeNull();
   });
 });
 
@@ -85,6 +106,11 @@ describe('renderEditorSignatureHtml', () => {
     expect(html).toContain('/signatures/pifh-signature-banner.png');
     expect(html).toContain('Wendy Scipione');
     expect(html).toContain('Founder / Director');
+  });
+
+  it('preserves unmarked custom HTML during a save round trip', () => {
+    const layout = detectSignatureLayout(CUSTOM_HTML);
+    expect(renderEditorSignatureHtml(layout, fallback, CUSTOM_HTML)).toBe(CUSTOM_HTML);
   });
 });
 

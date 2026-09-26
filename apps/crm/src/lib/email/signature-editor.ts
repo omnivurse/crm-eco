@@ -36,31 +36,72 @@ function imgSrcs(html: string): string[] {
   return [...html.matchAll(/<img\b[^>]*\bsrc=(["'])([^"']*)\1/gi)].map((match) => match[2]);
 }
 
+function includesAll(source: string, fingerprints: string[]): boolean {
+  return fingerprints.every((fingerprint) => source.includes(fingerprint));
+}
+
 export function detectSignatureLayout(html: string | null | undefined): EditorLayoutId {
   const source = html || '';
   if (!source.trim()) return null;
+
+  const markedLayout = source.match(/\bdata-signature-layout=(["'])([^"']+)\1/i)?.[2];
+  if (markedLayout && SIGNATURE_LAYOUTS.some((layout) => layout.id === markedLayout)) {
+    return markedLayout;
+  }
 
   for (const mark of OFFICIAL_SIGNATURES) {
     if (source.includes(mark.image_path) || source.includes(mark.image_path.replace(/^\//, ''))) {
       return mark.id;
     }
   }
-  if (source.includes('border-left: 3px solid #12A065')) return 'pifh-horizontal';
-  if (source.includes('border-top: 2px solid #0E8C9A')) return 'pifh-stacked';
-  if (source.includes('background: #003A5C')) return 'pifh-branded';
-  if (source.includes('border-radius: 50%') && /alt=(["'])Photo\1/i.test(source)) {
+  if (
+    includesAll(source, [
+      'border-left: 3px solid #12A065',
+      'padding-right: 16px',
+      'padding-left: 16px',
+    ])
+  ) {
+    return 'pifh-horizontal';
+  }
+  if (
+    includesAll(source, [
+      'border-top: 2px solid #0E8C9A',
+      'padding-bottom: 12px',
+      'padding-top: 12px',
+    ])
+  ) {
+    return 'pifh-stacked';
+  }
+  if (
+    includesAll(source, [
+      'background: #003A5C',
+      'border: 1px solid #D5E5EF',
+      'border-top: none',
+    ])
+  ) {
+    return 'pifh-branded';
+  }
+  if (
+    includesAll(source, ['border-radius: 50%', 'border-right: 2px solid #0E8C9A']) &&
+    /alt=(["'])Photo\1/i.test(source)
+  ) {
     return 'professional';
   }
-  if (source.includes('&nbsp;·&nbsp;') && source.includes('>Email</a>')) return 'modern';
+  if (
+    includesAll(source, [
+      '&nbsp;·&nbsp;',
+      '>Email</a>',
+      '>Phone</a>',
+      '>Website</a>',
+    ])
+  ) {
+    return 'modern';
+  }
 
   const srcs = imgSrcs(source);
   const text = textFromHtml(source);
   if (srcs.length === 1 && text.length === 0) return 'full-image';
 
-  const minimal = SIGNATURE_LAYOUTS.find((layout) => layout.id === 'minimal');
-  if (minimal && source.includes('<strong>') && !source.includes('<img')) {
-    return 'minimal';
-  }
   return null;
 }
 

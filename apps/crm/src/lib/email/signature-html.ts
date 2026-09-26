@@ -236,7 +236,10 @@ export function renderSignatureHtml(template: string, fields: SignatureFields): 
 export function renderLayoutHtml(layoutId: string, fields: SignatureFields): string | null {
   const layout = SIGNATURE_LAYOUTS.find((item) => item.id === layoutId);
   if (!layout) return null;
-  return renderSignatureHtml(layout.template, fields);
+  return renderSignatureHtml(layout.template, fields).replace(
+    /^(\s*<[a-z][a-z0-9-]*)/i,
+    `$1 data-signature-layout="${escapeHtml(layout.id)}"`,
+  );
 }
 
 export function officialComposerId(id: string): string {
